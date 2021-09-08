@@ -97,9 +97,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// <para> 
-        /// PopulateIndexMetrics is used to obtain the index metrics to understand how the query engine used existing indexes and could use potential new indexes.
-        /// The results will be displayed in QueryMetrics. Please note that this options will incurs overhead, so it should be 
-        /// enabled when debuging slow queries.
+        /// PopulateIndexMetrics is used to obtain the index metrics to understand how the query engine used existing indexes 
+        /// and how it could use potential new indexes.
+        /// The results will be displayed in FeedResponse.IndexMetrics. Please note that this options will incur overhead, so it should be 
+        /// enabled only when debugging slow queries.
         /// </para>
         /// </remarks>
         public bool? PopulateIndexMetrics { get; set; }

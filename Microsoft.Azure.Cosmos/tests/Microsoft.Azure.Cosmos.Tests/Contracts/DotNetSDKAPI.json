@@ -3015,6 +3015,16 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.String get_ETag();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_IndexMetrics()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String get_IndexMetrics();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String IndexMetrics": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.String IndexMetrics;CanRead:True;CanWrite:False;System.String get_IndexMetrics();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos
             this.StatusCode = httpStatusCode;
             this.Diagnostics = diagnostics;
             this.Resource = resources;
-            this.IndexMetrics = string.Empty; 
         }
 
         public override int Count { get; }
