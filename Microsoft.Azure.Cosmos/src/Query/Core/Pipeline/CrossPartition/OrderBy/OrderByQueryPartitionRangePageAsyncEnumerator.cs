@@ -92,30 +92,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             public override ValueTask DisposeAsync() => default;
 
-            protected override Task<TryCatch<OrderByQueryPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
+            protected override async Task<TryCatch<OrderByQueryPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
             {
                 // Unfortunately we need to keep both the epk range and partition key for queries
                 // Since the continuation token format uses epk range even though we only need the partition key to route the request.
                 FeedRangeInternal feedRange = this.PartitionKey.HasValue ? new FeedRangePartitionKey(this.PartitionKey.Value) : this.FeedRangeState.FeedRange;
 
-                return this.queryDataSource
+                TryCatch<QueryPage> monadicQueryPage = await this.queryDataSource
                     .MonadicQueryAsync(
                         sqlQuerySpec: this.SqlQuerySpec,
                         feedRangeState: new FeedRangeState<QueryState>(feedRange, this.FeedRangeState.State),
                         queryPaginationOptions: this.queryPaginationOptions,
                         trace: trace,
-                        cancellationToken)
-                    .ContinueWith<TryCatch<OrderByQueryPage>>(antecedent =>
-                    {
-                        TryCatch<QueryPage> monadicQueryPage = antecedent.GetAwaiter().GetResult();
-                        if (monadicQueryPage.Failed)
-                        {
-                            return TryCatch<OrderByQueryPage>.FromException(monadicQueryPage.Exception);
-                        }
-
-                        QueryPage queryPage = monadicQueryPage.Result;
-                        return TryCatch<OrderByQueryPage>.FromResult(new OrderByQueryPage(queryPage));
-                    }, cancellationToken);
+                        cancellationToken);
+                if (monadicQueryPage.Failed)
+                {
+                    return TryCatch<OrderByQueryPage>.FromException(monadicQueryPage.Exception);
+                }
+                QueryPage queryPage = monadicQueryPage.Result;
+                return TryCatch<OrderByQueryPage>.FromResult(new OrderByQueryPage(queryPage));
             }
         }
     }
