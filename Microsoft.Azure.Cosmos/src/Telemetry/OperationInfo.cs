@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 this.GreaterThan1Kb = responseSizeInBytes > ClientTelemetryOptions.OneKbToBytes;
             }
-            this.Consistency = GetConsistencyString(consistency);
+            this.Consistency = OperationInfo.GetConsistencyString(consistency);
             this.DatabaseName = databaseName;
             this.ContainerName = containerName;
             this.Operation = operation?.ToOperationTypeString();
