@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     cpuHistogram.RecordValue((long)cpuValue);
                 }
 
-                long? memoryLoad = systemUsage.MemoryUsage;
+                long? memoryLoad = systemUsage.MemoryAvailable;
                 if (memoryLoad.HasValue)
                 {
                     long memoryLoadInMb = memoryLoad.Value / ClientTelemetryOptions.BytesToMb;
