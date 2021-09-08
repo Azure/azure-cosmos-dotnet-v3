@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.StatusCode = statusCode;
         }
 
-        private OperationInfo(string regionsContacted, 
+        public OperationInfo(string regionsContacted, 
             bool? greaterThan1Kb, 
             string databaseName, 
             string containerName, 
