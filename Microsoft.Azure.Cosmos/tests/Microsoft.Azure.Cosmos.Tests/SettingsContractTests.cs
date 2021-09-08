@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
@@ -216,6 +217,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             // Two equivalent definitions 
             ContainerProperties cosmosContainerSettings = new ContainerProperties(id, pkPath);
+
             DocumentCollection collection = new DocumentCollection()
             {
                 Id = id,
@@ -240,9 +242,125 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void ContainerSettingsDeserializeWithAdditionalDataTest()
+        {
+            string cosmosSerialized = "{\"id\":\"2a9f501b-6948-4795-8fd1-797defb5c466\",\"partitionKey\":{\"paths\":[\"/partitionKey\"],\"kind\":\"Hash\"}}";
+
+            JObject complexObject = JObject.FromObject(new { id = 1, name = new { fname = "fname", lname = "lname" } });
+
+            // Adding additional information
+            JObject jobject = JObject.Parse(cosmosSerialized);
+            jobject.Add(new JProperty("simple string", "policy value"));
+            jobject.Add(new JProperty("complex object", complexObject));
+
+            // Serialized string
+            cosmosSerialized = SettingsContractTests.CosmosSerialize(jobject);
+
+            ContainerProperties containerDeserSettings = SettingsContractTests.CosmosDeserialize<ContainerProperties>(cosmosSerialized);
+
+            Assert.AreEqual("2a9f501b-6948-4795-8fd1-797defb5c466", containerDeserSettings.Id);
+            Assert.AreEqual("/partitionKey", containerDeserSettings.PartitionKeyPath);
+            Assert.AreEqual(2, containerDeserSettings.AdditionalProperties.Count);
+            Assert.AreEqual("policy value", containerDeserSettings.AdditionalProperties["simple string"]);
+            Assert.AreEqual(complexObject.ToString(), JObject.FromObject(containerDeserSettings.AdditionalProperties["complex object"]).ToString());
+        }
+
+        [TestMethod]
+        public void DatabaseSettingsDeserializeWithAdditionalDataTest()
+        {
+            string cosmosSerialized = "{\"id\":\"2a9f501b-6948-4795-8fd1-797defb5c466\"}";
+
+            JObject complexObject = JObject.FromObject(new { id = 1, name = new { fname = "fname", lname = "lname" } });
+
+            // Adding additional information
+            JObject jobject = JObject.Parse(cosmosSerialized);
+            jobject.Add(new JProperty("simple string", "policy value"));
+            jobject.Add(new JProperty("complex object", complexObject));
+
+            // Serialized string
+            cosmosSerialized = SettingsContractTests.CosmosSerialize(jobject);
+
+            DatabaseProperties containerDeserSettings = SettingsContractTests.CosmosDeserialize<DatabaseProperties>(cosmosSerialized);
+
+            Assert.AreEqual("2a9f501b-6948-4795-8fd1-797defb5c466", containerDeserSettings.Id);
+            Assert.AreEqual(2, containerDeserSettings.AdditionalProperties.Count);
+            Assert.AreEqual("policy value", containerDeserSettings.AdditionalProperties["simple string"]);
+            Assert.AreEqual(complexObject.ToString(), JObject.FromObject(containerDeserSettings.AdditionalProperties["complex object"]).ToString());
+        }
+
+        [TestMethod]
+        public void AccountPropertiesDeserializeWithAdditionalDataTest()
+        {
+            string cosmosSerialized = "{\"id\":\"2a9f501b-6948-4795-8fd1-797defb5c466\"}";
+
+            JObject complexObject = JObject.FromObject(new { id = 1, name = new { fname = "fname", lname = "lname" } });
+
+            // Adding additional information
+            JObject jobject = JObject.Parse(cosmosSerialized);
+            jobject.Add(new JProperty("simple string", "policy value"));
+            jobject.Add(new JProperty("complex object", complexObject));
+
+            // Serialized string
+            cosmosSerialized = SettingsContractTests.CosmosSerialize(jobject);
+
+            AccountProperties containerDeserSettings = SettingsContractTests.CosmosDeserialize<AccountProperties>(cosmosSerialized);
+
+            Assert.AreEqual("2a9f501b-6948-4795-8fd1-797defb5c466", containerDeserSettings.Id);
+            Assert.AreEqual(2, containerDeserSettings.AdditionalProperties.Count);
+            Assert.AreEqual("policy value", containerDeserSettings.AdditionalProperties["simple string"]);
+            Assert.AreEqual(complexObject.ToString(), JObject.FromObject(containerDeserSettings.AdditionalProperties["complex object"]).ToString());
+        }
+
+        [TestMethod]
+        public void ConflictSettingsDeserializeWithAdditionalDataTest()
+        {
+            string cosmosSerialized = "{\"id\":\"2a9f501b-6948-4795-8fd1-797defb5c466\"}";
+
+            JObject complexObject = JObject.FromObject(new { id = 1, name = new { fname = "fname", lname = "lname" } });
+
+            // Adding additional information
+            JObject jobject = JObject.Parse(cosmosSerialized);
+            jobject.Add(new JProperty("simple string", "policy value"));
+            jobject.Add(new JProperty("complex object", complexObject));
+
+            // Serialized string
+            cosmosSerialized = SettingsContractTests.CosmosSerialize(jobject);
+
+            ConflictProperties containerDeserSettings = SettingsContractTests.CosmosDeserialize<ConflictProperties>(cosmosSerialized);
+
+            Assert.AreEqual("2a9f501b-6948-4795-8fd1-797defb5c466", containerDeserSettings.Id);
+            Assert.AreEqual(2, containerDeserSettings.AdditionalProperties.Count);
+            Assert.AreEqual("policy value", containerDeserSettings.AdditionalProperties["simple string"]);
+            Assert.AreEqual(complexObject.ToString(), JObject.FromObject(containerDeserSettings.AdditionalProperties["complex object"]).ToString());
+        }
+
+        [TestMethod]
+        public void StoredProcedureSettingsDeserializeWithAdditionalDataTest()
+        {
+            string cosmosSerialized = "{\"id\":\"2a9f501b-6948-4795-8fd1-797defb5c466\"}";
+
+            JObject complexObject = JObject.FromObject(new { id = 1, name = new { fname = "fname", lname = "lname" } });
+
+            // Adding additional information
+            JObject jobject = JObject.Parse(cosmosSerialized);
+            jobject.Add(new JProperty("simple string", "policy value"));
+            jobject.Add(new JProperty("complex object", complexObject));
+
+            // Serialized string
+            cosmosSerialized = SettingsContractTests.CosmosSerialize(jobject);
+
+            StoredProcedureProperties containerDeserSettings = SettingsContractTests.CosmosDeserialize<StoredProcedureProperties>(cosmosSerialized);
+
+            Assert.AreEqual("2a9f501b-6948-4795-8fd1-797defb5c466", containerDeserSettings.Id);
+            Assert.AreEqual(2, containerDeserSettings.AdditionalProperties.Count);
+            Assert.AreEqual("policy value", containerDeserSettings.AdditionalProperties["simple string"]);
+            Assert.AreEqual(complexObject.ToString(), JObject.FromObject(containerDeserSettings.AdditionalProperties["complex object"]).ToString());
+        }
+
+        [TestMethod]
         public void PartitionKeyDefinitionVersionValuesTest()
         {
-            AssertEnums<Cosmos.PartitionKeyDefinitionVersion, Documents.PartitionKeyDefinitionVersion>();
+            this.AssertEnums<Cosmos.PartitionKeyDefinitionVersion, Documents.PartitionKeyDefinitionVersion>();
         }
 
         [TestMethod]

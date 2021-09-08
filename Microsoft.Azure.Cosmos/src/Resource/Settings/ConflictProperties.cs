@@ -5,8 +5,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents a conflict in the Azure Cosmos DB service.
@@ -65,5 +67,11 @@ namespace Microsoft.Azure.Cosmos
 
         [JsonProperty(PropertyName = Documents.Constants.Properties.ConflictLSN)]
         internal long ConflictLSN { get; set; }
+
+        /// <summary>
+        /// It will contain Additional Properties which are not part of current contract
+        /// </summary>
+        [JsonExtensionData]
+        public IDictionary<string, JToken> AdditionalProperties { get; private set; }
     }
 }

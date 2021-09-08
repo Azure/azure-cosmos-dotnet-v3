@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary> 
     /// Represents a <see cref="AccountProperties"/>. A AccountProperties is the container for databases in the Azure Cosmos DB service.
@@ -233,5 +234,11 @@ namespace Microsoft.Azure.Cosmos
                 return new Dictionary<string, object>();
             }
         }
+
+        /// <summary>
+        /// It will contain Additional Properties which are not part of current contract
+        /// </summary>
+        [JsonExtensionData]
+        public IDictionary<string, JToken> AdditionalProperties { get; private set; }
     }
 }

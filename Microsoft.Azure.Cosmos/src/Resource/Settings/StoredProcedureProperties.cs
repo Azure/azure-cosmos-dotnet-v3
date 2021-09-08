@@ -5,8 +5,10 @@
 namespace Microsoft.Azure.Cosmos.Scripts
 {
     using System;
+    using System.Collections.Generic;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents a stored procedure in the Azure Cosmos DB service.
@@ -116,5 +118,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.RId, NullValueHandling = NullValueHandling.Ignore)]
         internal string ResourceId { get; private set; }
+
+        /// <summary>
+        /// It will contain Additional Properties which are not part of current contract
+        /// </summary>
+        [JsonExtensionData]
+        public IDictionary<string, JToken> AdditionalProperties { get; private set; }
     }
 }
