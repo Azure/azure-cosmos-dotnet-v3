@@ -88,36 +88,37 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Record System Usage and return recorded metrics
         /// </summary>
-        /// <param name="systemUsageRecorder"></param>
+        /// <param name="systemUsageHistory"></param>
         /// <returns>ReportPayload</returns>
-        internal static (SystemInfo cpuInfo, SystemInfo memoryInfo) RecordSystemUsage(SystemUsageHistory systemUsageRecorder)
+        internal static (SystemInfo cpuInfo, SystemInfo memoryInfo) RecordSystemUsage(SystemUsageHistory systemUsageHistory)
         {
-            LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(1,
+            LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.CpuMin,
                                                         ClientTelemetryOptions.CpuMax,
                                                         ClientTelemetryOptions.CpuPrecision);
 
-            LongConcurrentHistogram memoryHistogram = new LongConcurrentHistogram(1,
+            LongConcurrentHistogram memoryHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.MemoryMin,
                                                            ClientTelemetryOptions.MemoryMax,
                                                            ClientTelemetryOptions.MemoryPrecision);
 
-            if (systemUsageRecorder.Values == null)
+            if (systemUsageHistory.Values == null)
             {
                 return (null, null);
             }
 
-            foreach (SystemUsageLoad systemUsage in systemUsageRecorder.Values)
+            DefaultTrace.TraceInformation("System Usage recorded by telemetry is : " + systemUsageHistory);
+
+            foreach (SystemUsageLoad systemUsage in systemUsageHistory.Values)
             {
                 float? cpuValue = systemUsage.CpuUsage;
                 if (cpuValue.HasValue && !float.IsNaN(cpuValue.Value))
                 {
-                    cpuHistogram.RecordValue((long)cpuValue);
+                    cpuHistogram.RecordValue((long)(cpuValue * ClientTelemetryOptions.HistogramPrecisionFactor));
                 }
 
                 long? memoryLoad = systemUsage.MemoryAvailable;
                 if (memoryLoad.HasValue)
                 {
-                    long memoryLoadInMb = memoryLoad.Value / ClientTelemetryOptions.BytesToMb;
-                    memoryHistogram.RecordValue(memoryLoadInMb);
+                    memoryHistogram.RecordValue(memoryLoad.Value);
                 }
             }
 
@@ -125,14 +126,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             if (memoryHistogram.TotalCount > 0)
             {
                 memoryInfoPayload = new SystemInfo(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit);
-                memoryInfoPayload.SetAggregators(memoryHistogram);
+                memoryInfoPayload.SetAggregators(memoryHistogram, ClientTelemetryOptions.KbToMbFactor);
             }
 
             SystemInfo cpuInfoPayload = null;
             if (cpuHistogram.TotalCount > 0)
             {
                 cpuInfoPayload = new SystemInfo(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit);
-                cpuInfoPayload.SetAggregators(cpuHistogram);
+                cpuInfoPayload.SetAggregators(cpuHistogram, ClientTelemetryOptions.HistogramPrecisionFactor);
             }
 
             return (cpuInfoPayload, memoryInfoPayload);
@@ -152,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 OperationInfo payloadForLatency = entry.Key;
                 payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
-                payloadForLatency.SetAggregators(entry.Value.latency, ClientTelemetryOptions.HistogramPrecisionFactor);
+                payloadForLatency.SetAggregators(entry.Value.latency, ClientTelemetryOptions.TicksToMsFactor);
 
                 payloadWithMetricInformation.Add(payloadForLatency);
 
