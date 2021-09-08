@@ -79,10 +79,11 @@ namespace Microsoft.Azure.Cosmos
         private ClientEncryptionPolicy clientEncryptionPolicyInternal;
 
         /// <summary>
-        /// It will contain Additional Properties which are not part of current contract
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        public IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
 
         private IReadOnlyList<IReadOnlyList<string>> partitionKeyPathTokens;
         private string id;
