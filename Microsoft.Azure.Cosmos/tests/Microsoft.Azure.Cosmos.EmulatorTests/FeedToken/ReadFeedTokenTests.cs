@@ -510,7 +510,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             }
             finally
             {
-                await container?.DeleteContainerAsync();
+                await container?.DeleteContainerStreamAsync();
             }
         }
 
