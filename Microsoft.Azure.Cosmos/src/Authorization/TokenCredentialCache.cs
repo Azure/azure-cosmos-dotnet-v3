@@ -305,7 +305,7 @@ namespace Microsoft.Azure.Cosmos
                 catch (Exception ex)
                 {
                     if (this.cancellationTokenSource.IsCancellationRequested &&
-                        (ex is TaskCanceledException || ex is ObjectDisposedException))
+                        (ex is OperationCanceledException || ex is ObjectDisposedException))
                     {
                         return;
                     }

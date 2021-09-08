@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             ChangeFeedObserverFactoryCore<dynamic> factory = new ChangeFeedObserverFactoryCore<dynamic>(handler, new CosmosSerializerCore(serializer));
             FeedProcessorCore processor = new FeedProcessorCore(factory.CreateObserver(), mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object);
 
-            ObserverException caughtException = await Assert.ThrowsExceptionAsync<ObserverException>(() => processor.RunAsync(cancellationTokenSource.Token));
+            ChangeFeedProcessorUserException caughtException = await Assert.ThrowsExceptionAsync<ChangeFeedProcessorUserException>(() => processor.RunAsync(cancellationTokenSource.Token));
             Assert.IsInstanceOfType(caughtException.InnerException, typeof(CustomException));
         }
 
@@ -111,7 +111,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             FeedProcessorCore processor = new FeedProcessorCore(mockObserver.Object, mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object);
 
-            await Assert.ThrowsExceptionAsync<FeedNotFoundException>(() => processor.RunAsync(cancellationTokenSource.Token));
+            CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => processor.RunAsync(cancellationTokenSource.Token));
+            Assert.AreEqual(statusCode, cosmosException.StatusCode);
+            Assert.AreEqual(subStatusCode, (int)cosmosException.Headers.SubStatusCode);
         }
 
         [DataRow(HttpStatusCode.NotFound, (int)Documents.SubStatusCodes.ReadSessionNotAvailable)]
@@ -133,7 +135,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 FeedProcessorCoreTests.DefaultSettings,
                 mockCheckpointer.Object);
 
-            await Assert.ThrowsExceptionAsync<FeedReadSessionNotAvailableException>(() => processor.RunAsync(cancellationTokenSource.Token));
+            CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => processor.RunAsync(cancellationTokenSource.Token));
+            Assert.AreEqual(statusCode, cosmosException.StatusCode);
+            Assert.AreEqual(subStatusCode, (int)cosmosException.Headers.SubStatusCode);
         }
 
         private static ResponseMessage GetResponse(HttpStatusCode statusCode, bool includeItem, int subStatusCode = 0)
