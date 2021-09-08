@@ -9,7 +9,7 @@
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Microsoft.Azure.Cosmos.Tests</RootNamespace>
-	<LangVersion>9.0</LangVersion>
+	<LangVersion>$(LangVersion)</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

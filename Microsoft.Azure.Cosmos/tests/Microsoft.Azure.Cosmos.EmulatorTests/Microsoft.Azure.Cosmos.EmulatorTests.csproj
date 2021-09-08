@@ -11,7 +11,7 @@
     <IsEmulatorTest>true</IsEmulatorTest>
     <EmulatorFlavor>master</EmulatorFlavor>
     <DisableCopyEmulator>True</DisableCopyEmulator>
-	<LangVersion>9.0</LangVersion>
+	<LangVersion>$(LangVersion)</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

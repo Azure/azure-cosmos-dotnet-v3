@@ -7,7 +7,7 @@
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
-    <LangVersion>9.0</LangVersion>
+    <LangVersion>$(LangVersion)</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <None Include="KeyValue.json">
