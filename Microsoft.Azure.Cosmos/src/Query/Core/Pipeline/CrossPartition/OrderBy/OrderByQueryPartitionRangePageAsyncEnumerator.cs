@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
             PartitionKey? partitionKey,
-            QueryPaginationOptions queryPagingationOptions,
+            QueryPaginationOptions queryPaginationOptions,
             string filter,
             CancellationToken cancellationToken)
             : base(feedRangeState, cancellationToken)
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 sqlQuerySpec,
                 feedRangeState,
                 partitionKey,
-                queryPagingationOptions,
+                queryPaginationOptions,
                 filter,
                 cancellationToken);
             this.bufferedEnumerator = new BufferedPartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>(
@@ -107,16 +107,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         cancellationToken)
                     .ContinueWith<TryCatch<OrderByQueryPage>>(antecedent =>
                     {
-                        TryCatch<QueryPage> monadicQueryPage = antecedent.Result;
+                        TryCatch<QueryPage> monadicQueryPage = antecedent.GetAwaiter().GetResult();
                         if (monadicQueryPage.Failed)
                         {
-                            Console.WriteLine(this.SqlQuerySpec);
                             return TryCatch<OrderByQueryPage>.FromException(monadicQueryPage.Exception);
                         }
 
                         QueryPage queryPage = monadicQueryPage.Result;
                         return TryCatch<OrderByQueryPage>.FromResult(new OrderByQueryPage(queryPage));
-                    });
+                    }, cancellationToken);
             }
         }
     }
