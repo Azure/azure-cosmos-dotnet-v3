@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     cpuHistogram.RecordValue((long)(cpuValue * ClientTelemetryOptions.HistogramPrecisionFactor));
                 }
 
-                long? memoryLoad = systemUsage.MemoryUsage;
+                long? memoryLoad = systemUsage.MemoryAvailable;
                 if (memoryLoad.HasValue)
                 {
                     memoryHistogram.RecordValue(memoryLoad.Value);
