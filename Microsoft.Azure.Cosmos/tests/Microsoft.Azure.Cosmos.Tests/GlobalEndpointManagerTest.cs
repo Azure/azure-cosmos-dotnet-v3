@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -474,7 +475,7 @@ namespace Microsoft.Azure.Cosmos
         /// Tests for <see cref="GlobalEndpointManager"/>
         /// </summary>
         [TestMethod]
-        public void ReadLocationRemoveAndAddMockTest()
+        public async Task ReadLocationRemoveAndAddMockTest()
         {
             string originalConfigValue = Environment.GetEnvironmentVariable("MinimumIntervalForNonForceRefreshLocationInMS");
             Environment.SetEnvironmentVariable("MinimumIntervalForNonForceRefreshLocationInMS", "1000");
@@ -482,23 +483,29 @@ namespace Microsoft.Azure.Cosmos
             // Setup dummpy read locations for the database account
             Collection<AccountRegion> readableLocations = new Collection<AccountRegion>();
 
-            AccountRegion writeLocation = new AccountRegion();
-            writeLocation.Name = "WriteLocation";
-            writeLocation.Endpoint = "https://writeendpoint.net/";
+            AccountRegion writeLocation = new AccountRegion
+            {
+                Name = "WriteLocation",
+                Endpoint = "https://writeendpoint.net/"
+            };
 
-            AccountRegion readLocation1 = new AccountRegion();
-            readLocation1.Name = "ReadLocation1";
-            readLocation1.Endpoint = "https://readendpoint1.net/";
+            AccountRegion readLocation1 = new AccountRegion
+            {
+                Name = "ReadLocation1",
+                Endpoint = "https://readendpoint1.net/"
+            };
 
-            AccountRegion readLocation2 = new AccountRegion();
-            readLocation2.Name = "ReadLocation2";
-            readLocation2.Endpoint = "https://readendpoint2.net/";
+            AccountRegion readLocation2 = new AccountRegion
+            {
+                Name = "ReadLocation2",
+                Endpoint = "https://readendpoint2.net/"
+            };
 
             readableLocations.Add(writeLocation);
             readableLocations.Add(readLocation1);
             readableLocations.Add(readLocation2);
 
-            AccountProperties databaseAccount = new AccountProperties();
+            AccountProperties databaseAccount = new();
             databaseAccount.ReadLocationsInternal = readableLocations;
 
             //Setup mock owner "document client"
@@ -527,11 +534,44 @@ namespace Microsoft.Azure.Cosmos
             readableLocations.Add(readLocation1);
             databaseAccount.ReadLocationsInternal = readableLocations;
 
-            //Sleep a bit for the refresh timer to kick in and rediscover location 1
-            Thread.Sleep(2000);
+            bool isGlobalEndpointRefreshStarted = false;
+            void TraceHandler(string message)
+            {
+                if (message.Contains("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Invoking refresh"))
+                {
+                    isGlobalEndpointRefreshStarted = true;
+                }
+            }
+
+            DefaultTrace.TraceSource.Listeners.Add(new TestTraceListener { Callback = TraceHandler });
+            DefaultTrace.InitEventListener();
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            // Wait for the trace message saying the background refresh occurred
+            while (!isGlobalEndpointRefreshStarted)
+            {
+                Assert.IsTrue(stopwatch.Elapsed.TotalSeconds < 15, "Background task did not start within 15 seconds.");
+                await Task.Delay(500);
+            }
+
             Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
 
-            Environment.SetEnvironmentVariable("MinimumIntervalForNonForceRefreshLocationInMS", "1000");
+            Environment.SetEnvironmentVariable("MinimumIntervalForNonForceRefreshLocationInMS", originalConfigValue);
+        }
+
+        private class TestTraceListener : TraceListener
+        {
+            public Action<string> Callback { get; set; }
+            public override bool IsThreadSafe => true;
+            public override void Write(string message)
+            {
+                this.Callback(message);
+            }
+
+            public override void WriteLine(string message)
+            {
+                this.Callback(message);
+            }
         }
     }
 }
