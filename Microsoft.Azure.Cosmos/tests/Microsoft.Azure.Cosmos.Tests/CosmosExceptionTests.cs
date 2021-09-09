@@ -43,6 +43,61 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        public void VerifyDiagnosticsInTimeoutAndServerError()
+        {
+            ITrace trace = NoOpTrace.Singleton;
+            string diagnosticString = new Diagnostics.CosmosTraceDiagnostics(trace).ToString();
+
+            CosmosException cosmosException = new CosmosException(
+                statusCode: HttpStatusCode.RequestTimeout,
+                message: "Test",
+                stackTrace: null,
+                headers: null,
+                trace: trace,
+                error: null,
+                innerException: null);
+
+            Assert.IsTrue(cosmosException.Message.EndsWith(diagnosticString));
+            Assert.IsTrue(cosmosException.ToString().Contains(diagnosticString));
+
+            cosmosException = new CosmosException(
+                statusCode: HttpStatusCode.InternalServerError,
+                message: "Test",
+                stackTrace: null,
+                headers: null,
+                trace: trace,
+                error: null,
+                innerException: null);
+
+            Assert.IsTrue(cosmosException.Message.EndsWith(diagnosticString));
+            Assert.IsTrue(cosmosException.ToString().Contains(diagnosticString));
+
+            cosmosException = new CosmosException(
+                statusCode: HttpStatusCode.ServiceUnavailable,
+                message: "Test",
+                stackTrace: null,
+                headers: null,
+                trace: trace,
+                error: null,
+                innerException: null);
+
+            Assert.IsTrue(cosmosException.Message.EndsWith(diagnosticString));
+            Assert.IsTrue(cosmosException.ToString().Contains(diagnosticString));
+
+            cosmosException = new CosmosException(
+                statusCode: HttpStatusCode.NotFound,
+                message: "Test",
+                stackTrace: null,
+                headers: null,
+                trace: trace,
+                error: null,
+                innerException: null);
+
+            Assert.IsFalse(cosmosException.Message.Contains(diagnosticString));
+            Assert.IsTrue(cosmosException.ToString().Contains(diagnosticString));
+        }
+
+        [TestMethod]
         public void VerifyNullHeaderLogic()
         {
             string testMessage = "Test" + Guid.NewGuid().ToString();
@@ -378,6 +433,13 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(TimeSpan.FromMilliseconds(retryAfter), exception.Headers.RetryAfter);
             Assert.IsTrue(exception.ToString().Contains(message));
             string expectedMessage = $"Response status code does not indicate success: {httpStatusCode} ({(int)httpStatusCode}); Substatus: {substatus}; ActivityId: {exception.ActivityId}; Reason: ({message});";
+
+            if(httpStatusCode == HttpStatusCode.RequestTimeout
+                || httpStatusCode == HttpStatusCode.InternalServerError
+                || httpStatusCode == HttpStatusCode.ServiceUnavailable)
+            {
+                expectedMessage += " Diagnostics:" + new Diagnostics.CosmosTraceDiagnostics(NoOpTrace.Singleton).ToString();
+            }
 
             Assert.AreEqual(expectedMessage, exception.Message);
 
