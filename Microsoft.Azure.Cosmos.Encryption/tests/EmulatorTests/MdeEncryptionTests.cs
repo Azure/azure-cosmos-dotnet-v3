@@ -1173,9 +1173,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
                 Assert.Fail("CreateTransactionalBatch should have failed. ");
             }
-            catch(CosmosException ex)
-            {
-                Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details."));
+            catch(CosmosException)
+            {                
             }
 
             // the previous failure would have updated the policy in the cache.
@@ -1280,9 +1279,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 if (ex.SubStatusCode != 1024)
                 {
                     Assert.Fail("Query should have failed. ");
-                }
-
-                Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. "));
+                }                
             }
 
             // previous failure would have updated the policy in the cache.
