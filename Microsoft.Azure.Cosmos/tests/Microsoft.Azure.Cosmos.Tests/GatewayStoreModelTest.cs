@@ -740,8 +740,9 @@ namespace Microsoft.Azure.Cosmos
                                                   CancellationToken.None);
 
             Assert.AreEqual(clientSideRequestStatistics.HttpResponseStatisticsList.Count, 2);
-            Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[0].Duration.TotalMilliseconds >= 1000, $"First request did was not delayed by at least 1 second. {JsonConvert.SerializeObject(clientSideRequestStatistics.HttpResponseStatisticsList[0])}");
-            Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[1].Duration.TotalMilliseconds >= 1000, $"Second request did was not delayed by at least 1 second. {JsonConvert.SerializeObject(clientSideRequestStatistics.HttpResponseStatisticsList[1])}");
+            // The duration is calculated using date times which can cause the duration to be slightly off. This allows for up to 2 Ms of variance.
+            Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[0].Duration.TotalMilliseconds >= 9998, $"First request did was not delayed by at least 1 second. {JsonConvert.SerializeObject(clientSideRequestStatistics.HttpResponseStatisticsList[0])}");
+            Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[1].Duration.TotalMilliseconds >= 9998, $"Second request did was not delayed by at least 1 second. {JsonConvert.SerializeObject(clientSideRequestStatistics.HttpResponseStatisticsList[1])}");
             Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[0].RequestStartTime < 
                           clientSideRequestStatistics.HttpResponseStatisticsList[1].RequestStartTime);
         }
