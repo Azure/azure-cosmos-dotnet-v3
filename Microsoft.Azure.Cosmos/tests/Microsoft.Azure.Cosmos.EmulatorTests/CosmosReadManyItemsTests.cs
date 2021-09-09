@@ -253,6 +253,83 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ReadManyTestWithIncorrectIntendedContainerRid()
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                await this.Container.CreateItemAsync<ToDoActivity>(ToDoActivity.CreateRandomToDoActivity("pk", i.ToString()));
+            }
+
+            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
+            for (int i = 0; i < 2; i++)
+            {
+                itemList.Add((i.ToString(), new PartitionKey("pk")));
+            }           
+
+            // pass incorrect Rid.
+            ReadManyRequestOptions readManyRequestOptions = new ReadManyRequestOptions
+            {
+                AddRequestHeaders = (headers) =>
+                {
+                    headers["x-ms-cosmos-is-client-encrypted"] = bool.TrueString;
+                    headers["x-ms-cosmos-intended-collection-rid"] = "iCoRrecTrID=";
+                }
+            };
+
+            FeedResponse<ToDoActivity> feedResponse;
+            try
+            {
+                feedResponse = await this.Container.ReadManyItemsAsync<ToDoActivity>(itemList, readManyRequestOptions);
+                Assert.Fail("ReadManyItemsAsync execution should have failed. ");
+            }
+            catch(CosmosException ex)
+            {
+                if (ex.StatusCode != HttpStatusCode.BadRequest || ex.SubStatusCode != 1024)
+                {
+                    Assert.Fail("ReadManyItemsAsync execution should have failed with the StatusCode: BadRequest and SubStatusCode: 1024. ");
+                }
+            }
+
+            using (ResponseMessage responseMessage = await this.Container.ReadManyItemsStreamAsync(itemList , readManyRequestOptions))
+            {
+                if(responseMessage.StatusCode != HttpStatusCode.BadRequest ||
+                    !string.Equals(responseMessage.Headers.Get("x-ms-substatus"), "1024"))
+                {
+                    Assert.Fail("ReadManyItemsStreamAsync execution should have failed with the StatusCode: BadRequest and SubStatusCode: 1024. ");
+                }
+            }
+
+            // validate by passing correct Rid.
+            ContainerInlineCore containerInternal = (ContainerInlineCore)this.Container;
+            string rid = await containerInternal.GetCachedRIDAsync(forceRefresh: false, NoOpTrace.Singleton, cancellationToken: default);
+
+            readManyRequestOptions = new ReadManyRequestOptions
+            {
+                AddRequestHeaders = (headers) =>
+                {
+                    headers["x-ms-cosmos-is-client-encrypted"] = bool.TrueString;
+                    headers["x-ms-cosmos-intended-collection-rid"] = rid;
+                }
+            };
+            
+            feedResponse = await this.Container.ReadManyItemsAsync<ToDoActivity>(itemList, readManyRequestOptions);
+            Assert.AreEqual(feedResponse.Count, 2);
+
+            using (ResponseMessage responseMessage = await this.Container.ReadManyItemsStreamAsync(itemList, readManyRequestOptions))
+            {
+                Assert.AreEqual(responseMessage.StatusCode, HttpStatusCode.OK);
+
+                Assert.IsNotNull(responseMessage);
+                Assert.IsTrue(responseMessage.Headers.RequestCharge > 0);
+                Assert.IsNotNull(responseMessage.Diagnostics);
+
+                ToDoActivity[] items = this.cosmosClient.ClientContext.SerializerCore.FromFeedStream<ToDoActivity>(
+                                        CosmosFeedResponseSerializer.GetStreamWithoutServiceEnvelope(responseMessage.Content));
+                Assert.AreEqual(items.Length, 2);
+            }
+        }
+
+        [TestMethod]
         public async Task ReadMany404ExceptionTest()
         {
             Database database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
@@ -315,6 +392,89 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ReadManyWithNonePkValues()
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                await this.Container.CreateItemAsync(new ActivityWithNoPk("id" + i.ToString()),
+                                                     PartitionKey.None);
+            }
+
+            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
+            for (int i = 0; i < 5; i++)
+            {
+                itemList.Add(("id" + i.ToString(), PartitionKey.None));
+            }
+
+            FeedResponse<ActivityWithNoPk> feedResponse = await this.Container.ReadManyItemsAsync<ActivityWithNoPk>(itemList);
+            Assert.AreEqual(feedResponse.Count, 5);
+            int j = 0;
+            foreach (ActivityWithNoPk item in feedResponse.Resource)
+            {
+                Assert.AreEqual(item.id, "id" + j);
+                j++;
+            }
+        }
+
+        [TestMethod]
+        public async Task ReadManyItemsFromNonPartitionedContainers()
+        {
+            ContainerInternal container = await NonPartitionedContainerHelper.CreateNonPartitionedContainer(this.database,
+                                                                                                             Guid.NewGuid().ToString());
+            for (int i = 0; i < 5; i++)
+            {
+                await NonPartitionedContainerHelper.CreateItemInNonPartitionedContainer(container, "id" + i.ToString());
+            }
+
+            // read using PartitionKey.None pk value
+            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
+            for (int i = 0; i < 5; i++)
+            {
+                itemList.Add(("id" + i.ToString(), PartitionKey.None));
+            }
+
+            FeedResponse<ActivityWithNoPk> feedResponse = await container.ReadManyItemsAsync<ActivityWithNoPk>(itemList);
+            Assert.AreEqual(feedResponse.Count, 5);
+
+            // Start inserting documents with same id but new pk values
+            for (int i = 0; i < 5; i++)
+            {
+                await container.CreateItemAsync(new ActivityWithSystemPk("id" + i.ToString(), "newPK"),
+                                                new PartitionKey("newPK"));
+            }
+
+            feedResponse = await container.ReadManyItemsAsync<ActivityWithNoPk>(itemList);
+            Assert.AreEqual(feedResponse.Count, 5);
+            int j = 0;
+            foreach (ActivityWithNoPk item in feedResponse.Resource)
+            {
+                Assert.AreEqual(item.id, "id" + j);
+                j++;
+            }
+
+            for (int i = 0; i < 5; i++)
+            {
+                itemList.Add(("id" + i.ToString(), new PartitionKey("newPK")));
+            }
+            FeedResponse<ActivityWithSystemPk> feedResponseWithPK = await container.ReadManyItemsAsync<ActivityWithSystemPk>(itemList);
+            Assert.AreEqual(feedResponseWithPK.Count, 10);
+            j = 0;
+            foreach (ActivityWithSystemPk item in feedResponseWithPK.Resource)
+            {
+                Assert.AreEqual(item.id, "id" + (j % 5));
+                if (j > 4)
+                {
+                    Assert.AreEqual(item._partitionKey, "newPK");
+                }
+                else
+                {
+                    Assert.IsNull(item._partitionKey);
+                }
+                j++;
+            }
+        }
+
+        [TestMethod]
         [DataRow(HttpStatusCode.NotFound)]
         public async Task ReadManyExceptionsTest(HttpStatusCode statusCode)
         {
@@ -363,7 +523,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             IReadOnlyList<string> pkPaths = new List<string> { "/pk", "/description" };
             ContainerProperties containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPaths: pkPaths);
-            Container container = await this.database.CreateContainerAsync(this.containerSettings);
+            Container container = await this.database.CreateContainerAsync(containerSettings);
 
             for (int i = 0; i < 5; i++)
             {
@@ -430,6 +590,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 return await base.SendAsync(requestMessage, cancellationToken);
             }
+        }
+
+        private class ActivityWithNoPk
+        {
+            public ActivityWithNoPk(string id)
+            {
+                this.id = id;
+            }
+
+#pragma warning disable IDE1006 // Naming Styles
+            public string id { get; set; }
+#pragma warning restore IDE1006 // Naming Styles
+        }
+
+        private class ActivityWithSystemPk
+        {
+            public ActivityWithSystemPk(string id, string _partitionKey)
+            {
+                this.id = id;
+                this._partitionKey = _partitionKey;
+            }
+
+#pragma warning disable IDE1006 // Naming Styles
+            public string id { get; set; }
+#pragma warning restore IDE1006 // Naming Styles
+
+#pragma warning disable IDE1006 // Naming Styles
+            public string _partitionKey { get; set; }
+#pragma warning restore IDE1006 // Naming Styles
         }
     }
 }

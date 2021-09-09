@@ -298,7 +298,17 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            ReadManyHelper readManyHelper = new ReadManyQueryHelper(await this.GetPartitionKeyDefinitionAsync(),
+            PartitionKeyDefinition partitionKeyDefinition;
+            try
+            {
+                partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
+            }
+            catch (CosmosException ex)
+            {
+                return ex.ToCosmosResponseMessage(request: null);
+            }
+
+            ReadManyHelper readManyHelper = new ReadManyQueryHelper(partitionKeyDefinition,
                                                                     this);
 
             return await readManyHelper.ExecuteReadManyRequestAsync(items,
@@ -1055,7 +1065,7 @@ namespace Microsoft.Azure.Cosmos
                     IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
                     CosmosObject pathTraversal = CosmosObject.Create(jsonNavigator, jsonNavigatorNode);
 
-                    IReadOnlyList<IReadOnlyList<string>> tokenslist = await this.GetPartitionKeyPathTokensAsync(cancellation);
+                    IReadOnlyList<IReadOnlyList<string>> tokenslist = await this.GetPartitionKeyPathTokensAsync(childTrace, cancellation);
                     List<CosmosElement> cosmosElementList = new List<CosmosElement>(tokenslist.Count);
 
                     foreach (IReadOnlyList<string> tokenList in tokenslist)

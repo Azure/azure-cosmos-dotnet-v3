@@ -17,6 +17,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
     using System.IO;
     using Newtonsoft.Json.Linq;
     using Microsoft.Azure.Cosmos.ChangeFeed;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     [EmulatorTests.TestClass]
     public class ContractTests : BaseCosmosClientHelper
@@ -133,6 +135,104 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
 
         [TestMethod]
         [Timeout(30000)]
+        public async Task ChangeFeed_FromOldPreviewToken()
+        {
+            ContainerResponse largerContainer = await this.database.CreateContainerAsync(
+               new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/pk"),
+               throughput: 20000,
+               cancellationToken: this.cancellationToken);
+
+            ContainerInternal container = (ContainerInlineCore)largerContainer;
+
+            int expected = 100;
+            int count = 0;
+            await this.CreateRandomItems((ContainerCore)container, expected, randomPartitionKey: true);
+
+            IReadOnlyList<FeedRange> feedRanges = await container.GetFeedRangesAsync();
+            List<string> continuations = new List<string>();
+            // First do one request to construct the old model information based on Etag
+            foreach (FeedRange feedRange in feedRanges)
+            {
+                IEnumerable<string> pkRangeIds = await container.GetPartitionKeyRangesAsync(feedRange);
+                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
+                {
+                    PageSizeHint = 1
+                };
+                ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(
+                    changeFeedStartFrom: ChangeFeedStartFrom.Beginning(feedRange),
+                    changeFeedMode: ChangeFeedMode.Incremental,
+                    changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
+                ResponseMessage firstResponse = await feedIterator.ReadNextAsync();
+
+                FeedRangeEpk feedRangeEpk = feedRange as FeedRangeEpk;
+
+                // Construct the continuation's range, using PKRangeId + ETag
+                List<dynamic> ct = new List<dynamic>()
+                {
+                    new
+                    {
+                        range = new
+                        {
+                            min = feedRangeEpk.Range.Min,
+                            max = feedRangeEpk.Range.Max
+                        },
+                        token = JObject.Parse(firstResponse.ContinuationToken)["Continuation"][0]["State"]["value"].ToString()
+                    }
+                };
+
+                if (firstResponse.Content != null)
+                {
+                    Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(firstResponse.Content).Data;
+                    count += response.Count;
+                }
+
+                // Extract Etag and manually construct the continuation
+                dynamic oldContinuation = new
+                {
+                    V = 0,
+                    Rid = await container.GetCachedRIDAsync(cancellationToken: this.cancellationToken),
+                    Continuation = ct,
+                    Range = new
+                    {
+                        min = feedRangeEpk.Range.Min,
+                        max = feedRangeEpk.Range.Max
+                    }
+                };
+                continuations.Add(JsonConvert.SerializeObject(oldContinuation));
+            }
+
+            // Now start the new iterators with the constructed continuations from migration
+            foreach (string continuation in continuations)
+            {
+                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
+                {
+                    PageSizeHint = 100,
+                };
+                ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(
+                    changeFeedStartFrom: ChangeFeedStartFrom.ContinuationToken(continuation),
+                    changeFeedMode: ChangeFeedMode.Incremental,
+                    changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
+                ResponseMessage firstResponse = await feedIterator.ReadNextAsync();
+                if (firstResponse.IsSuccessStatusCode)
+                {
+                    Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(firstResponse.Content).Data;
+                    count += response.Count;
+                    string migratedContinuation = firstResponse.ContinuationToken;
+                    TryCatch<CosmosElement> monadicParsedToken = CosmosElement.Monadic.Parse(migratedContinuation);
+                    Assert.IsFalse(monadicParsedToken.Failed);
+                    TryCatch<VersionedAndRidCheckedCompositeToken> monadicVersionedToken = VersionedAndRidCheckedCompositeToken
+                        .MonadicCreateFromCosmosElement(monadicParsedToken.Result);
+                    Assert.IsFalse(monadicVersionedToken.Failed);
+                    VersionedAndRidCheckedCompositeToken versionedAndRidCheckedCompositeToken = monadicVersionedToken.Result;
+                    Assert.AreEqual(VersionedAndRidCheckedCompositeToken.Version.V2, versionedAndRidCheckedCompositeToken.VersionNumber);
+                }
+            }
+
+            Assert.AreEqual(expected, count);
+        }
+
+        [TestMethod]
+        [Timeout(30000)]
         public async Task ChangeFeed_FeedRange_FromV0Token()
         {
             ContainerResponse largerContainer = await this.database.CreateContainerAsync(
@@ -161,23 +261,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                     changeFeedMode: ChangeFeedMode.Incremental,
                     changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
                 ResponseMessage firstResponse = await feedIterator.ReadNextAsync();
-                FeedRangeEpk FeedRangeEpk = feedRange as FeedRangeEpk;
 
                 // Construct the continuation's range, using PKRangeId + ETag
                 List<dynamic> ct = new List<dynamic>()
                 {
                     new
                     {
-                        min = FeedRangeEpk.Range.Min,
-                        max = FeedRangeEpk.Range.Max,
-                        token = (string)null
+                        FeedRange = new
+                        {
+                            type = "Physical Partition Key Range Id",
+                            value = pkRangeIds.First()
+                        },
+                        State = new
+                        {
+                            type = "continuation",
+                            value = JObject.Parse(firstResponse.ContinuationToken)["Continuation"][0]["State"]["value"].ToString()
+                        }
                     }
                 };
+
+                if (firstResponse.Content != null)
+                {
+                    Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(firstResponse.Content).Data;
+                    count += response.Count;
+                }
 
                 // Extract Etag and manually construct the continuation
                 dynamic oldContinuation = new
                 {
-                    V = 0,
+                    V = 2,
                     Rid = await container.GetCachedRIDAsync(cancellationToken: this.cancellationToken),
                     Continuation = ct
                 };
@@ -190,7 +302,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                 ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
                 {
                     PageSizeHint = 100,
-                    EmitOldContinuationToken = true,
                 };
                 ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(
                     changeFeedStartFrom: ChangeFeedStartFrom.ContinuationToken(continuation),
@@ -202,8 +313,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                     Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(firstResponse.Content).Data;
                     count += response.Count;
                     string migratedContinuation = firstResponse.ContinuationToken;
-                    Assert.IsTrue(FeedRangeContinuation.TryParse(migratedContinuation, out FeedRangeContinuation feedRangeContinuation));
-                    Assert.IsTrue(feedRangeContinuation.FeedRange is FeedRangeEpk);
+                    TryCatch<CosmosElement> monadicParsedToken = CosmosElement.Monadic.Parse(migratedContinuation);
+                    Assert.IsFalse(monadicParsedToken.Failed);
+                    TryCatch<VersionedAndRidCheckedCompositeToken> monadicVersionedToken = VersionedAndRidCheckedCompositeToken
+                        .MonadicCreateFromCosmosElement(monadicParsedToken.Result);
+                    Assert.IsFalse(monadicVersionedToken.Failed);
+                    VersionedAndRidCheckedCompositeToken versionedAndRidCheckedCompositeToken = monadicVersionedToken.Result;
+                    Assert.AreEqual(VersionedAndRidCheckedCompositeToken.Version.V2, versionedAndRidCheckedCompositeToken.VersionNumber);                    
                 }
             }
 

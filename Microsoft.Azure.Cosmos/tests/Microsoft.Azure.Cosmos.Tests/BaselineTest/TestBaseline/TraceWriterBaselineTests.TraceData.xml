@@ -204,8 +204,8 @@
         {
             ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
 
-            Uri uri1 = new Uri("http://someUri1.com");
-            Uri uri2 = new Uri("http://someUri2.com");
+            TransportAddressUri uri1 = new TransportAddressUri(new Uri("http://someUri1.com"));
+            TransportAddressUri uri2 = new TransportAddressUri(new Uri("http://someUri2.com"));
 
             datum.ContactedReplicas.Add(uri1);
             datum.ContactedReplicas.Add(uri2);
@@ -214,16 +214,17 @@
                 DateTime.MinValue,
                 DateTime.MaxValue,
                 "http://localhost.com");
-            datum.EndpointToAddressResolutionStatistics["asdf"] = mockStatistics;
-            datum.EndpointToAddressResolutionStatistics["asdf2"] = mockStatistics;
+
+            TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf", mockStatistics);
+            TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf2", mockStatistics);
 
             datum.FailedReplicas.Add(uri1);
             datum.FailedReplicas.Add(uri2);
 
-            datum.RegionsContactedWithName.Add(("local", uri1));
-            datum.RegionsContactedWithName.Add(("local", uri2));
+            datum.RegionsContacted.Add(("local", uri1.Uri));
+            datum.RegionsContacted.Add(("local", uri2.Uri));
 
-            datum.RequestEndTimeUtc = DateTime.MaxValue;
+            TraceWriterBaselineTests.SetEndRequestTime(datum, DateTime.MaxValue);
 
             StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
                 DateTime.MinValue,
@@ -245,11 +246,13 @@
                     sessionToken: new SimpleSessionToken(42),
                     usingLocalLSN: true,
                     activityId: Guid.Empty.ToString(),
-                    backendRequestDurationInMs: "4.2"),
+                    backendRequestDurationInMs: "4.2",
+                    transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                 ResourceType.Document,
                 OperationType.Query,
-                uri1);
-            datum.StoreResponseStatisticsList.Add(storeResponseStatistics);
+                uri1.Uri);
+
+            TraceWriterBaselineTests.GetPrivateField<List<StoreResponseStatistics>>(datum, "storeResponseStatistics").Add(storeResponseStatistics);
             rootTrace.AddDatum("Client Side Request Stats", datum);
         }
 ]]></Setup>
@@ -297,7 +300,6 @@
                 Quorum Info
                   Current Replica Set Size: 4
                   Current Write Quorum: 3
-                Is Client CPU Overloaded: False
                 Exception
         )
 ]]></Text>
@@ -360,11 +362,44 @@
             "CurrentWriteQuorum": 3,
             "CurrentReplicaSetSize": 4,
             "NumberOfReadRegions": 13,
-            "IsClientCpuOverloaded": false,
             "IsValid": true,
             "StorePhysicalAddress": "http://storephysicaladdress.com/",
             "RequestCharge": 3.14,
             "BELatencyInMs": "4.2",
+            "transportRequestTimeline": {
+              "requestTimeline": [
+                {
+                  "event": "Created",
+                  "startTimeUtc": "2021-12-31T23:59:59.059Z",
+                  "durationInMs": 1
+                },
+                {
+                  "event": "ChannelAcquisitionStarted",
+                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
+                  "durationInMs": 0
+                },
+                {
+                  "event": "Pipelined",
+                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
+                  "durationInMs": 0
+                },
+                {
+                  "event": "Transit Time",
+                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
+                  "durationInMs": 0
+                },
+                {
+                  "event": "Received",
+                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
+                  "durationInMs": 0
+                },
+                {
+                  "event": "Completed",
+                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
+                  "durationInMs": 0
+                }
+              ]
+            },
             "TransportException": null
           }
         }
@@ -384,18 +419,14 @@
             ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
             datum.ContactedReplicas.Add(default);
 
-            ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics mockStatistics = new ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics(
-                default,
-                default,
-                targetEndpoint: "asdf");
-            datum.EndpointToAddressResolutionStatistics["asdf"] = default;
-            datum.EndpointToAddressResolutionStatistics["asdf2"] = default;
+            TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf", default);
+            TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf2", default);
 
             datum.FailedReplicas.Add(default);
 
-            datum.RegionsContactedWithName.Add(default);
+            datum.RegionsContacted.Add(default);
 
-            datum.RequestEndTimeUtc = default;
+            TraceWriterBaselineTests.SetEndRequestTime(datum, default);
 
             StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
                 requestStartTime: default,
@@ -417,11 +448,13 @@
                     sessionToken: default,
                     usingLocalLSN: default,
                     activityId: default,
-                    backendRequestDurationInMs: default),
+                    backendRequestDurationInMs: default,
+                     transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                 resourceType: default,
                 operationType: default,
-                locationEndpoint: default); ;
-            datum.StoreResponseStatisticsList.Add(storeResponseStatistics);
+                locationEndpoint: default);
+
+            TraceWriterBaselineTests.GetPrivateField<List<StoreResponseStatistics>>(datum, "storeResponseStatistics").Add(storeResponseStatistics);
             rootTrace.AddDatum("Client Side Request Stats Default", datum);
         }
 ]]></Setup>
@@ -464,7 +497,6 @@
                 Quorum Info
                   Current Replica Set Size: 0
                   Current Write Quorum: 0
-                Is Client CPU Overloaded: False
                 Exception
         )
 ]]></Text>
@@ -520,13 +552,159 @@
             "CurrentWriteQuorum": 0,
             "CurrentReplicaSetSize": 0,
             "NumberOfReadRegions": 0,
-            "IsClientCpuOverloaded": false,
             "IsValid": false,
             "StorePhysicalAddress": null,
             "RequestCharge": 0,
             "BELatencyInMs": null,
+            "transportRequestTimeline": {
+              "requestTimeline": [
+                {
+                  "event": "Created",
+                  "startTimeUtc": "2021-12-31T23:59:59.059Z",
+                  "durationInMs": 1
+                },
+                {
+                  "event": "ChannelAcquisitionStarted",
+                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
+                  "durationInMs": 0
+                },
+                {
+                  "event": "Pipelined",
+                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
+                  "durationInMs": 0
+                },
+                {
+                  "event": "Transit Time",
+                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
+                  "durationInMs": 0
+                },
+                {
+                  "event": "Received",
+                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
+                  "durationInMs": 0
+                },
+                {
+                  "event": "Completed",
+                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
+                  "durationInMs": 0
+                }
+              ]
+            },
             "TransportException": null
           }
+        }
+      ]
+    }
+  }
+}]]></Json>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Client Side Request Stats For Gateway Request</Description>
+      <Setup><![CDATA[
+        TraceForBaselineTesting rootTrace;
+        using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+        {
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
+            TraceWriterBaselineTests.SetEndRequestTime(datum,DateTime.MaxValue);
+
+            HttpResponseStatistics httpResponseStatistics = new HttpResponseStatistics(
+                DateTime.MinValue,
+                DateTime.MaxValue,
+                new Uri("http://someUri1.com"),
+                HttpMethod.Get,
+                ResourceType.Document,
+                new HttpResponseMessage(System.Net.HttpStatusCode.OK) { ReasonPhrase = "Success" },
+                exception: null);
+
+            TraceWriterBaselineTests.GetPrivateField<List<HttpResponseStatistics>>(datum, "httpResponseStatistics").Add(httpResponseStatistics);
+
+            HttpResponseStatistics httpResponseStatisticsException = new HttpResponseStatistics(
+                DateTime.MinValue,
+                DateTime.MaxValue,
+                new Uri("http://someUri1.com"),
+                HttpMethod.Get,
+                ResourceType.Document,
+                responseMessage: null,
+                exception: new OperationCanceledException());
+            TraceWriterBaselineTests.GetPrivateField<List<HttpResponseStatistics>>(datum, "httpResponseStatistics").Add(httpResponseStatisticsException);
+
+            rootTrace.AddDatum("Client Side Request Stats", datum);
+        }
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        (
+            [Client Side Request Stats]
+            Start Time: 12:00:00:000
+            End Time: 11:59:59:999
+            Contacted Replicas
+            Failed to Contact Replicas
+            Regions Contacted
+            Address Resolution Statistics
+            ┌────────────────┬──────────────┬──────────────────────────────────────────────────┐
+            │Start Time (utc)│End Time (utc)│Endpoint                                          │
+            ├────────────────┼──────────────┼──────────────────────────────────────────────────┤
+            └────────────────┴──────────────┴──────────────────────────────────────────────────┘
+            Store Response Statistics
+            Http Response Statistics
+              HttpResponse
+                RequestStartTime: 0001-01-01T00:00:00.0000000
+                DurationInMs: 315537897600000.00
+                RequestUri: http://someuri1.com/
+                ResourceType: Document
+                HttpMethod: GET
+                StatusCode: OK
+              HttpResponse
+                RequestStartTime: 0001-01-01T00:00:00.0000000
+                DurationInMs: 315537897600000.00
+                RequestUri: http://someuri1.com/
+                ResourceType: Document
+                HttpMethod: GET
+                ExceptionType: System.OperationCanceledException
+                ExceptionMessage: The operation was canceled.
+        )
+]]></Text>
+      <Json><![CDATA[{
+  "name": "Trace For Baseline Testing",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
+  },
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {
+    "Client Side Request Stats": {
+      "Id": "AggregatedClientSideRequestStatistics",
+      "ContactedReplicas": [],
+      "RegionsContacted": [],
+      "FailedReplicas": [],
+      "AddressResolutionStatistics": [],
+      "StoreResponseStatistics": [],
+      "HttpResponseStats": [
+        {
+          "StartTimeUTC": "0001-01-01T00:00:00",
+          "DurationInMs": 315537897600000,
+          "RequestUri": "http://someuri1.com/",
+          "ResourceType": "Document",
+          "HttpMethod": "GET",
+          "ActivityId": "00000000-0000-0000-0000-000000000000",
+          "StatusCode": "OK"
+        },
+        {
+          "StartTimeUTC": "0001-01-01T00:00:00",
+          "DurationInMs": 315537897600000,
+          "RequestUri": "http://someuri1.com/",
+          "ResourceType": "Document",
+          "HttpMethod": "GET",
+          "ActivityId": "00000000-0000-0000-0000-000000000000",
+          "ExceptionType": "System.OperationCanceledException",
+          "ExceptionMessage": "The operation was canceled."
         }
       ]
     }
@@ -542,12 +720,20 @@
     using (rootTrace = TraceForBaselineTesting.GetRootTrace())
     {
         CpuHistoryTraceDatum datum = new CpuHistoryTraceDatum(
-            new Documents.Rntbd.CpuLoadHistory(
-                new ReadOnlyCollection<Documents.Rntbd.CpuLoad>(
-                    new List<Documents.Rntbd.CpuLoad>()
+            new Documents.Rntbd.SystemUsageHistory(
+                new ReadOnlyCollection<Documents.Rntbd.SystemUsageLoad>(
+                    new List<Documents.Rntbd.SystemUsageLoad>()
                     {
-                        new Documents.Rntbd.CpuLoad(DateTime.MinValue, 42),
-                        new Documents.Rntbd.CpuLoad(DateTime.MinValue, 23),
+                        new Documents.Rntbd.SystemUsageLoad(
+                            DateTime.MinValue,
+                            this.GetThreadInfo(),
+                            42,
+                            1000),
+                        new Documents.Rntbd.SystemUsageLoad(
+                            DateTime.MinValue,
+                            this.GetThreadInfo(),
+                            23,
+                            9000),
                     }),
                 monitoringInterval: TimeSpan.MaxValue));
         rootTrace.AddDatum("CPU History", datum);
@@ -559,7 +745,7 @@
 └── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         (
             [CPU History]
-            (0001-01-01T00:00:00.0000000 42.000), (0001-01-01T00:00:00.0000000 23.000)
+            {"systemHistory":[{"dateUtc":"0001-01-01T00:00:00.0000000","cpu":42.000,"memory":1000.000,"threadInfo":{"isThreadStarving":"no info"}},{"dateUtc":"0001-01-01T00:00:00.0000000","cpu":23.000,"memory":9000.000,"threadInfo":{"isThreadStarving":"no info"}}]}
         )
 ]]></Text>
       <Json><![CDATA[{
@@ -574,7 +760,7 @@
   "duration in milliseconds": 0,
   "data": {
     "CPU History": {
-      "CPU History": "(0001-01-01T00:00:00.0000000 42.000), (0001-01-01T00:00:00.0000000 23.000)"
+      "CPU History": "{\"systemHistory\":[{\"dateUtc\":\"0001-01-01T00:00:00.0000000\",\"cpu\":42.000,\"memory\":1000.000,\"threadInfo\":{\"isThreadStarving\":\"no info\"}},{\"dateUtc\":\"0001-01-01T00:00:00.0000000\",\"cpu\":23.000,\"memory\":9000.000,\"threadInfo\":{\"isThreadStarving\":\"no info\"}}]}"
     }
   }
 }]]></Json>

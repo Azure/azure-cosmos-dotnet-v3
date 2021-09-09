@@ -7,7 +7,7 @@
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE IS_DEFINED(root["ArrayField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -19,7 +19,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE IS_DEFINED(root["StringField"]) ]]></SqlQuery>
+WHERE IS_DEFINED(root["StringField"])]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -30,7 +30,7 @@ WHERE IS_DEFINED(root["StringField"]) ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE IS_NULL(root["ArrayField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -42,7 +42,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE IS_NULL(root["StringField"]) ]]></SqlQuery>
+WHERE IS_NULL(root["StringField"])]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -53,7 +53,7 @@ WHERE IS_NULL(root["StringField"]) ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE IS_PRIMITIVE(root["ArrayField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -65,7 +65,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE IS_PRIMITIVE(root["StringField"]) ]]></SqlQuery>
+WHERE IS_PRIMITIVE(root["StringField"])]]></SqlQuery>
     </Output>
   </Result>
 </Results>

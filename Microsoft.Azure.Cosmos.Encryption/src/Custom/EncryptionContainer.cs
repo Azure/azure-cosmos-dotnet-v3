@@ -774,50 +774,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.CosmosSerializer);
         }
 
-        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
-            string processorName,
-            ChangesHandler<T> onChangesDelegate)
-        {
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
-            using (diagnosticsContext.CreateScope("GetChangeFeedProcessorBuilder"))
-            {
-                return this.container.GetChangeFeedProcessorBuilder(
-                    processorName,
-                    async (IReadOnlyCollection<JObject> documents, CancellationToken cancellationToken) =>
-                    {
-                        List<T> decryptItems = new List<T>(documents.Count);
-                        if (typeof(T) == typeof(DecryptableItem))
-                        {
-                            foreach (JToken value in documents)
-                            {
-                                DecryptableItemCore item = new DecryptableItemCore(
-                                    value,
-                                    this.Encryptor,
-                                    this.CosmosSerializer);
-
-                                decryptItems.Add((T)(object)item);
-                            }
-                        }
-                        else
-                        {
-                            foreach (JObject document in documents)
-                            {
-                                (JObject decryptedDocument, DecryptionContext _) = await EncryptionProcessor.DecryptAsync(
-                                    document,
-                                    this.Encryptor,
-                                    diagnosticsContext,
-                                    cancellationToken);
-
-                                decryptItems.Add(decryptedDocument.ToObject<T>());
-                            }
-                        }
-
-                        // Call the original passed in delegate
-                        await onChangesDelegate(decryptItems, cancellationToken);
-                    });
-            }
-        }
-
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
@@ -925,6 +881,189 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
+        }
+
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+            string processorName,
+            ChangesHandler<T> onChangesDelegate)
+        {
+            return this.container.GetChangeFeedProcessorBuilder(
+                processorName,
+                async (
+                    IReadOnlyCollection<JObject> documents,
+                    CancellationToken cancellationToken) =>
+                {
+                    List<T> decryptItems = await this.DecryptChangeFeedDocumentsAsync<T>(
+                        documents,
+                        cancellationToken);
+
+                    // Call the original passed in delegate
+                    await onChangesDelegate(decryptItems, cancellationToken);
+                });
+        }
+
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+            string processorName,
+            ChangeFeedHandler<T> onChangesDelegate)
+        {
+            return this.container.GetChangeFeedProcessorBuilder(
+                processorName,
+                async (
+                    ChangeFeedProcessorContext context,
+                    IReadOnlyCollection<JObject> documents,
+                    CancellationToken cancellationToken) =>
+                {
+                    List<T> decryptItems = await this.DecryptChangeFeedDocumentsAsync<T>(
+                        documents,
+                        cancellationToken);
+
+                    // Call the original passed in delegate
+                    await onChangesDelegate(context, decryptItems, cancellationToken);
+                });
+        }
+
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(
+            string processorName,
+            ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate)
+        {
+            return this.container.GetChangeFeedProcessorBuilderWithManualCheckpoint(
+                processorName,
+                async (
+                    ChangeFeedProcessorContext context,
+                    IReadOnlyCollection<JObject> documents,
+                    Func<Task> tryCheckpointAsync,
+                    CancellationToken cancellationToken) =>
+                {
+                    List<T> decryptItems = await this.DecryptChangeFeedDocumentsAsync<T>(
+                        documents,
+                        cancellationToken);
+
+                    // Call the original passed in delegate
+                    await onChangesDelegate(context, decryptItems, tryCheckpointAsync, cancellationToken);
+                });
+        }
+
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
+            string processorName,
+            ChangeFeedStreamHandler onChangesDelegate)
+        {
+            return this.container.GetChangeFeedProcessorBuilder(
+                processorName,
+                async (
+                    ChangeFeedProcessorContext context,
+                    Stream changes,
+                    CancellationToken cancellationToken) =>
+                {
+                    Stream decryptedChanges = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
+                        changes,
+                        this.Encryptor,
+                        cancellationToken);
+
+                    // Call the original passed in delegate
+                    await onChangesDelegate(context, decryptedChanges, cancellationToken);
+                });
+        }
+
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(
+            string processorName,
+            ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate)
+        {
+            return this.container.GetChangeFeedProcessorBuilderWithManualCheckpoint(
+                processorName,
+                async (
+                    ChangeFeedProcessorContext context,
+                    Stream changes,
+                    Func<Task> tryCheckpointAsync,
+                    CancellationToken cancellationToken) =>
+                {
+                    Stream decryptedChanges = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
+                        changes,
+                        this.Encryptor,
+                        cancellationToken);
+
+                    // Call the original passed in delegate
+                    await onChangesDelegate(context, decryptedChanges, tryCheckpointAsync, cancellationToken);
+                });
+        }
+
+        public override Task<ResponseMessage> ReadManyItemsStreamAsync(
+            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
+            ReadManyRequestOptions readManyRequestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            return this.ReadManyItemsHelperAsync(
+                items,
+                readManyRequestOptions,
+                cancellationToken);
+        }
+
+        public override async Task<FeedResponse<T>> ReadManyItemsAsync<T>(
+            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
+            ReadManyRequestOptions readManyRequestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            ResponseMessage responseMessage = await this.ReadManyItemsHelperAsync(
+                items,
+                readManyRequestOptions,
+                cancellationToken);
+
+            return this.ResponseFactory.CreateItemFeedResponse<T>(responseMessage);
+        }
+
+        private async Task<ResponseMessage> ReadManyItemsHelperAsync(
+           IReadOnlyList<(string id, PartitionKey partitionKey)> items,
+           ReadManyRequestOptions readManyRequestOptions = null,
+           CancellationToken cancellationToken = default)
+        {
+            ResponseMessage responseMessage = await this.container.ReadManyItemsStreamAsync(
+                items,
+                readManyRequestOptions,
+                cancellationToken);
+
+            Stream decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
+                responseMessage.Content,
+                this.Encryptor,
+                cancellationToken);
+
+            return new DecryptedResponseMessage(responseMessage, decryptedContent);
+        }
+
+        private async Task<List<T>> DecryptChangeFeedDocumentsAsync<T>(
+            IReadOnlyCollection<JObject> documents,
+            CancellationToken cancellationToken)
+        {
+            List<T> decryptItems = new List<T>(documents.Count);
+            if (typeof(T) == typeof(DecryptableItem))
+            {
+                foreach (JToken value in documents)
+                {
+                    DecryptableItemCore item = new DecryptableItemCore(
+                        value,
+                        this.Encryptor,
+                        this.CosmosSerializer);
+
+                    decryptItems.Add((T)(object)item);
+                }
+            }
+            else
+            {
+                foreach (JObject document in documents)
+                {
+                    CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
+                    using (diagnosticsContext.CreateScope("DecryptChangeFeedDocumentsAsync<"))
+                    {
+                        (JObject decryptedDocument, DecryptionContext _) = await EncryptionProcessor.DecryptAsync(
+                            document,
+                            this.Encryptor,
+                            diagnosticsContext,
+                            cancellationToken);
+
+                        decryptItems.Add(decryptedDocument.ToObject<T>());
+                    }
+                }
+            }
+
+            return decryptItems;
         }
     }
 }

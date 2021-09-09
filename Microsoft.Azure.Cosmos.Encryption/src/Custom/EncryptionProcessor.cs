@@ -478,7 +478,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             JProperty encryptionPropertiesJProp = item.Property(Constants.EncryptedInfo);
             JObject encryptionPropertiesJObj = null;
-            if (encryptionPropertiesJProp != null && encryptionPropertiesJProp.Value != null && encryptionPropertiesJProp.Value.Type == JTokenType.Object)
+            if (encryptionPropertiesJProp?.Value != null && encryptionPropertiesJProp.Value.Type == JTokenType.Object)
             {
                 encryptionPropertiesJObj = (JObject)encryptionPropertiesJProp.Value;
             }
@@ -564,6 +564,41 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Boolean = 5,
             Array = 6,
             Object = 7,
+        }
+
+        internal static async Task<Stream> DeserializeAndDecryptResponseAsync(
+            Stream content,
+            Encryptor encryptor,
+            CancellationToken cancellationToken)
+        {
+            JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
+
+            if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
+            {
+                throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents");
+            }
+
+            foreach (JToken value in documents)
+            {
+                if (!(value is JObject document))
+                {
+                    continue;
+                }
+
+                CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
+                using (diagnosticsContext.CreateScope("EncryptionProcessor.DeserializeAndDecryptResponseAsync"))
+                {
+                    await EncryptionProcessor.DecryptAsync(
+                        document,
+                        encryptor,
+                        diagnosticsContext,
+                        cancellationToken);
+                }
+            }
+
+            // the contents of contentJObj get decrypted in place for MDE algorithm model, and for legacy model _ei property is removed
+            // and corresponding decrypted properties are added back in the documents.
+            return EncryptionProcessor.BaseSerializer.ToStream(contentJObj);
         }
     }
 }

@@ -440,18 +440,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             while (changeIterator.HasMoreResults)
             {
-                try
+                readDocsLazily = await changeIterator.ReadNextAsync();
+                if (readDocsLazily.StatusCode == HttpStatusCode.NotModified)
                 {
-                    readDocsLazily = await changeIterator.ReadNextAsync();
-                    if (readDocsLazily.Resource != null)
-                    {
-                        await this.ValidateLazyDecryptionResponse(readDocsLazily.GetEnumerator(), dek2);
-                    }
-                }
-                catch (CosmosException ex)
-                {
-                    Assert.IsTrue(ex.Message.Contains("Response status code does not indicate success: NotModified (304)"));
                     break;
+                }
+
+                if (readDocsLazily.Resource != null)
+                {
+                    await this.ValidateLazyDecryptionResponse(readDocsLazily.GetEnumerator(), dek2);
                 }
             }
 
@@ -1117,21 +1114,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
             while (changeIterator.HasMoreResults)
             {
-                try
+                FeedResponse<TestDoc> testDocs = await changeIterator.ReadNextAsync();
+                if (testDocs.StatusCode == HttpStatusCode.NotModified)
                 {
-                    FeedResponse<TestDoc> testDocs = await changeIterator.ReadNextAsync();
-                    for (int index = 0; index < testDocs.Count; index++)
-                    {
-                        if (testDocs.Resource.ElementAt(index).Id.Equals(testDoc1.Id) || testDocs.Resource.ElementAt(index).Id.Equals(testDoc2.Id))
-                        {
-                            changeFeedReturnedDocs.Add(testDocs.Resource.ElementAt(index));
-                        }
-                    }
-                }
-                catch (CosmosException ex)
-                {
-                    Assert.IsTrue(ex.Message.Contains("Response status code does not indicate success: NotModified (304)"));
                     break;
+                }
+
+                for (int index = 0; index < testDocs.Count; index++)
+                {
+                    if (testDocs.Resource.ElementAt(index).Id.Equals(testDoc1.Id) || testDocs.Resource.ElementAt(index).Id.Equals(testDoc2.Id))
+                    {
+                        changeFeedReturnedDocs.Add(testDocs.Resource.ElementAt(index));
+                    }
                 }
             }
 

@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             catch (OperationCanceledException ex) when (!(ex is CosmosOperationCanceledException))
             {
-                throw new CosmosOperationCanceledException(ex, new CosmosTraceDiagnostics(trace));
+                throw new CosmosOperationCanceledException(ex, trace);
             }
 
             if (tryGetQueryPage.Succeeded)
@@ -229,7 +229,14 @@ namespace Microsoft.Azure.Cosmos.Query
                     trace: trace);
             }
 
-            CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(tryGetQueryPage.Exception);
+            if (!ExceptionToCosmosException.TryCreateFromException(
+                tryGetQueryPage.Exception, 
+                trace,
+                out CosmosException cosmosException))
+            {
+                throw tryGetQueryPage.Exception;
+            }
+
             if (!IsRetriableException(cosmosException))
             {
                 this.hasMoreResults = false;

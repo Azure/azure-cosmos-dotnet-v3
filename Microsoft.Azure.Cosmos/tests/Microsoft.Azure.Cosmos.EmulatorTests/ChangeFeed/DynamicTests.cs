@@ -83,13 +83,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [TestMethod]
         public async Task TestWithRunningProcessor_WithManualCheckpoint()
         {
+            int leaseAcquireCount = 0;
+            int leaseReleaseCount = 0;
+            int errorCount = 0;
+            Exception exceptionToPropagate = new Exception("Stop here");
             int partitionKey = 0;
             ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
 
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilderWithManualCheckpoint("test", async (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilderWithManualCheckpoint("test", async (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, Func<Task> checkpointAsync, CancellationToken token) =>
                 {
                     this.ValidateContext(context);
                     processedDocCount += docs.Count();
@@ -101,14 +105,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     if (processedDocCount == 3)
                     {
                         // Throwing on the 3rd document, since we checkpointed only on the 1st, we would repeat 2nd and 3rd
-                        throw new Exception("Stop here");
+                        throw exceptionToPropagate;
                     }
 
                     if (processedDocCount == 1) {
                         // Checkpointing on the first document to be able to have a point to rollback to
-                        (bool isSuccess, Exception exception) = await tryCheckpointAsync();
-                        Assert.IsTrue(isSuccess);
-                        Assert.IsNull(exception);
+                        await checkpointAsync();
                     }
 
                     if (processedDocCount == 12)
@@ -119,6 +121,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 })
                 .WithInstanceName("random")
                 .WithMaxItems(1)
+                .WithLeaseAcquireNotification((string leaseToken) =>
+                {
+                    leaseAcquireCount++;
+                    return Task.CompletedTask;
+                })
+                .WithLeaseReleaseNotification((string leaseToken) =>
+                {
+                    leaseReleaseCount++;
+                    return Task.CompletedTask;
+                })
+                .WithErrorNotification((string leaseToken, Exception exception) =>
+                {
+                    errorCount++;
+                    ChangeFeedProcessorUserException cfpException = exception as ChangeFeedProcessorUserException;
+                    Assert.IsNotNull(cfpException);
+                    Assert.ReferenceEquals(exceptionToPropagate, exception.InnerException);
+                    Assert.IsNotNull(cfpException.ChangeFeedProcessorContext.Diagnostics);
+                    Assert.IsNotNull(cfpException.ChangeFeedProcessorContext.Headers);
+                    return Task.CompletedTask;
+                })
                 .WithLeaseContainer(this.LeaseContainer).Build();
 
             // Start the processor, insert 1 document to generate a checkpoint
@@ -133,6 +155,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await processor.StopAsync();
             Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
             Assert.AreEqual("0.1.2.1.2.3.4.5.6.7.8.9.", accumulator);
+
+            // Make sure the notification APIs got all the events
+            Assert.IsTrue(leaseAcquireCount > 0);
+            Assert.IsTrue(leaseReleaseCount > 0);
+            Assert.AreEqual(1, errorCount);
         }
 
         [TestMethod]

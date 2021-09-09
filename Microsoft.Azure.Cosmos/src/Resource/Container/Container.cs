@@ -1234,25 +1234,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A new instance of <see cref="TransactionalBatch"/>.</returns>
         public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
 
-#if INTERNAL
-        /// <summary>
-        /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.
-        /// Starts an asynchronous Cosmos DB background operation which deletes all items in the Container with the specified value. 
-        /// The asynchronous Cosmos DB background operation runs using a percentage of user RUs.
-        /// </summary>
-        /// <param name="partitionKey">The <see cref="PartitionKey"/> of the items to be deleted.</param>
-        /// <param name="requestOptions">(Optional) The options for the Partition Key Delete request.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/>.
-        /// </returns>
-        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
-               Cosmos.PartitionKey partitionKey,
-               RequestOptions requestOptions = null,
-               CancellationToken cancellationToken = default(CancellationToken));
-#endif
-
-#if PREVIEW
         /// <summary>
         /// Obtains a list of <see cref="FeedRange"/> that can be used to parallelize Feed operations.
         /// </summary>
@@ -1272,24 +1253,26 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangesAsync();
-        /// // Distribute feedRanges across multiple compute units and pass each one to a different iterator
-        ///
         /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
         /// {
         ///     PageSizeHint = 10,
         /// }
         /// 
         /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(
-        ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     ChangeFeedStartFrom.Beginning(),
         ///     ChangeFeedMode.Incremental,
         ///     options);
         ///
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     while (feedIterator.HasMoreResults)
+        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
         ///     {
-        ///         using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///         if (response.StatusCode == NotModified) 
+        ///         {
+        ///             // No new changes
+        ///             // Capture response.ContinuationToken and break or sleep for some time
+        ///         }
+        ///         else 
         ///         {
         ///             using (StreamReader sr = new StreamReader(response.Content))
         ///             using (JsonTextReader jtr = new JsonTextReader(sr))
@@ -1319,29 +1302,33 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangessAsync();
-        /// // Distribute feedRangess across multiple compute units and pass each one to a different iterator
-        ///
         /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
         /// {
         ///     PageSizeHint = 10,
         /// }
         /// 
         /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(
-        ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     ChangeFeedStartFrom.Beginning(),
         ///     ChangeFeedMode.Incremental,
         ///     options);
-        /// while (feedIterator.HasMoreResults)
-        /// {
+        ///     
         ///     while (feedIterator.HasMoreResults)
         ///     {
         ///         FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
-        ///         foreach (var item in response)
+        ///
+        ///         if (response.StatusCode == NotModified) 
         ///         {
-        ///             Console.WriteLine(item);
+        ///             // No new changes
+        ///             // Capture response.ContinuationToken and break or sleep for some time
+        ///         }
+        ///         else 
+        ///         {
+        ///             foreach (var item in response)
+        ///             {
+        ///                 Console.WriteLine(item);
+        ///             }
         ///         }
         ///     }
-        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -1351,6 +1338,143 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
+        /// <summary>
+        /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution.
+        /// </summary>
+        /// <param name="context">The context related to the changes.</param>
+        /// <param name="changes">The changes that happened.</param>
+        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
+        public delegate Task ChangeFeedHandler<T>(
+            ChangeFeedProcessorContext context,
+            IReadOnlyCollection<T> changes,
+            CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution with manual checkpoint.
+        /// </summary>
+        /// <param name="context">The context related to the changes.</param>
+        /// <param name="changes">The changes that happened.</param>
+        /// <param name="checkpointAsync">A task representing an asynchronous checkpoint on the progress of a lease.</param>
+        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// (ChangeFeedProcessorContext context, IReadOnlyCollection<T> changes, Func<Task> checkpointAsync, CancellationToken cancellationToken) =>
+        /// {
+        ///     // consume changes
+        ///     
+        ///     // On certain condition, we can checkpoint
+        ///     await checkpointAsync();
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public delegate Task ChangeFeedHandlerWithManualCheckpoint<T>(
+            ChangeFeedProcessorContext context,
+            IReadOnlyCollection<T> changes,
+            Func<Task> checkpointAsync,
+            CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution.
+        /// </summary>
+        /// <param name="context">The context related to the changes.</param>
+        /// <param name="changes">The changes that happened.</param>
+        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
+        public delegate Task ChangeFeedStreamHandler(
+            ChangeFeedProcessorContext context,
+            Stream changes,
+            CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution with manual checkpoint.
+        /// </summary>
+        /// <param name="context">The context related to the changes.</param>
+        /// <param name="changes">The changes that happened.</param>
+        /// <param name="checkpointAsync">A task representing an asynchronous checkpoint on the progress of a lease.</param>
+        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// (ChangeFeedProcessorContext context, Stream stream, Func<Task> checkpointAsync, CancellationToken cancellationToken) =>
+        /// {
+        ///     // consume stream
+        ///     
+        ///     // On certain condition, we can checkpoint
+        ///     await checkpointAsync();
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public delegate Task ChangeFeedStreamHandlerWithManualCheckpoint(
+            ChangeFeedProcessorContext context,
+            Stream changes,
+            Func<Task> checkpointAsync,
+            CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.
+        /// </summary>
+        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
+        /// <param name="onChangesDelegate">Delegate to receive changes.</param>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+            string processorName,
+            ChangeFeedHandler<T> onChangesDelegate);
+
+        /// <summary>
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing with manual checkpoint.
+        /// </summary>
+        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
+        /// <param name="onChangesDelegate">Delegate to receive changes.</param>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(
+            string processorName,
+            ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate);
+
+        /// <summary>
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.
+        /// </summary>
+        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
+        /// <param name="onChangesDelegate">Delegate to receive changes.</param>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
+            string processorName,
+            ChangeFeedStreamHandler onChangesDelegate);
+
+        /// <summary>
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing with manual checkpoint.
+        /// </summary>
+        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
+        /// <param name="onChangesDelegate">Delegate to receive changes.</param>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(
+            string processorName,
+            ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate);
+
+#if INTERNAL
+        /// <summary>
+        /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.
+        /// Starts an asynchronous Cosmos DB background operation which deletes all items in the Container with the specified value. 
+        /// The asynchronous Cosmos DB background operation runs using a percentage of user RUs.
+        /// </summary>
+        /// <param name="partitionKey">The <see cref="PartitionKey"/> of the items to be deleted.</param>
+        /// <param name="requestOptions">(Optional) The options for the Partition Key Delete request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/>.
+        /// </returns>
+        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+               Cosmos.PartitionKey partitionKey,
+               RequestOptions requestOptions = null,
+               CancellationToken cancellationToken = default(CancellationToken));
+#endif
+
+#if PREVIEW
         /// <summary>
         /// Gets the list of Partition Key Range identifiers for a <see cref="FeedRange"/>.
         /// </summary>
@@ -1466,132 +1590,75 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null);
 
         /// <summary>
-        /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution.
+        /// Delegate to notify errors during change feed operations.
         /// </summary>
-        /// <param name="context">The context related to the changes.</param>
-        /// <param name="changes">The changes that happened.</param>
-        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
-        public delegate Task ChangeFeedHandler<T>(
-            ChangeFeedProcessorContext context,
-            IReadOnlyCollection<T> changes,
-            CancellationToken cancellationToken);
-
-        /// <summary>
-        /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution with manual checkpoint.
-        /// </summary>
-        /// <param name="context">The context related to the changes.</param>
-        /// <param name="changes">The changes that happened.</param>
-        /// <param name="tryCheckpointAsync">A task representing an asynchronous checkpoint on the progress of a lease.</param>
-        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
+        /// <param name="leaseToken">A unique identifier for the lease.</param>
+        /// <param name="exception">The exception that happened.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the notification.</returns>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// (ChangeFeedProcessorContext context, IReadOnlyCollection<T> changes, Func<Task<(bool isSuccess, CosmosException error)>> tryCheckpointAsync, CancellationToken cancellationToken) =>
+        /// (string leaseToken, Exception exception) =>
         /// {
-        ///     // consume changes
-        ///     
-        ///     // On certain condition, we can checkpoint
-        ///     (bool isSuccess, Exception error) checkpointResult = await tryCheckpointAsync();
-        ///     if (!isSuccess)
+        ///     if (exception is ChangeFeedProcessorUserException userException)
         ///     {
-        ///         // log error, could not checkpoint
-        ///         throw error;
+        ///         Console.WriteLine($"Current instance's delegate had an unhandled when processing lease {leaseToken}.");
+        ///         Console.WriteLine($"Diagnostics {userException.ExceptionContext.Diagnostics}");
+        ///         Console.WriteLine($"Headers {userException.ExceptionContext.Headers}");
+        ///         Console.WriteLine(userException.ToString());
         ///     }
+        ///     else 
+        ///     {
+        ///         Console.WriteLine($"Current instance faced an exception when processing lease {leaseToken}.");
+        ///         Console.WriteLine(exception.ToString());
+        ///     }
+        ///     
+        ///     return Task.CompletedTask;
         /// }
         /// ]]>
         /// </code>
         /// </example>
-        public delegate Task ChangeFeedHandlerWithManualCheckpoint<T>(
-            ChangeFeedProcessorContext context,
-            IReadOnlyCollection<T> changes,
-            Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
-            CancellationToken cancellationToken);
+        public delegate Task ChangeFeedMonitorErrorDelegate(
+            string leaseToken,
+            Exception exception);
 
         /// <summary>
-        /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution.
+        /// Delegate to notify events of leases being acquired by a change feed processor.
         /// </summary>
-        /// <param name="context">The context related to the changes.</param>
-        /// <param name="changes">The changes that happened.</param>
-        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
-        public delegate Task ChangeFeedStreamHandler(
-            ChangeFeedProcessorContext context,
-            Stream changes,
-            CancellationToken cancellationToken);
-
-        /// <summary>
-        /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution with manual checkpoint.
-        /// </summary>
-        /// <param name="context">The context related to the changes.</param>
-        /// <param name="changes">The changes that happened.</param>
-        /// <param name="tryCheckpointAsync">A task representing an asynchronous checkpoint on the progress of a lease.</param>
-        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
+        /// <param name="leaseToken">A unique identifier for the lease.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the notification.</returns>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// (ChangeFeedProcessorContext context, Stream stream, Func<Task<(bool isSuccess, CosmosException error)>> tryCheckpointAsync, CancellationToken cancellationToken) =>
+        /// (string leaseToken) =>
         /// {
-        ///     // consume stream
+        ///     Console.WriteLine($"Current instance released lease {leaseToken} and stopped processing it.");
         ///     
-        ///     // On certain condition, we can checkpoint
-        ///     (bool isSuccess, Exception error) checkpointResult = await tryCheckpointAsync();
-        ///     if (!isSuccess)
-        ///     {
-        ///         // log error, could not checkpoint
-        ///         throw error;
-        ///     }
+        ///     return Task.CompletedTask;
         /// }
         /// ]]>
         /// </code>
         /// </example>
-        public delegate Task ChangeFeedStreamHandlerWithManualCheckpoint(
-            ChangeFeedProcessorContext context,
-            Stream changes,
-            Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
-            CancellationToken cancellationToken);
+        public delegate Task ChangeFeedMonitorLeaseAcquireDelegate(string leaseToken);
 
         /// <summary>
-        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.
+        /// Delegate to notify events of leases being releases by a change feed processor.
         /// </summary>
-        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
-        /// <param name="onChangesDelegate">Delegate to receive changes.</param>
-        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
-        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
-            string processorName,
-            ChangeFeedHandler<T> onChangesDelegate);
-
-        /// <summary>
-        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing with manual checkpoint.
-        /// </summary>
-        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
-        /// <param name="onChangesDelegate">Delegate to receive changes.</param>
-        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
-        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(
-            string processorName,
-            ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate);
-
-        /// <summary>
-        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.
-        /// </summary>
-        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
-        /// <param name="onChangesDelegate">Delegate to receive changes.</param>
-        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
-        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
-            string processorName,
-            ChangeFeedStreamHandler onChangesDelegate);
-
-        /// <summary>
-        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing with manual checkpoint.
-        /// </summary>
-        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
-        /// <param name="onChangesDelegate">Delegate to receive changes.</param>
-        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
-        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(
-            string processorName,
-            ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate);
+        /// <param name="leaseToken">A unique identifier for the lease.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the notification.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// (string leaseToken) =>
+        /// {
+        ///     Console.WriteLine($"Current instance acquired lease {leaseToken} and will start processing it.");
+        ///     
+        ///     return Task.CompletedTask;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public delegate Task ChangeFeedMonitorLeaseReleaseDelegate(string leaseToken);
 #endif
     }
 }

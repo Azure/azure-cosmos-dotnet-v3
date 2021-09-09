@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
@@ -715,7 +716,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     System.Net.HttpStatusCode.OK,
                     new Headers(),
                     value,
-                    NoOpTrace.Singleton));
+                    new CosmosTraceDiagnostics(NoOpTrace.Singleton)));
         }
 
         private static MethodInfo GetMethodInfoOf<T1, T2>(Func<T1, T2> func)
