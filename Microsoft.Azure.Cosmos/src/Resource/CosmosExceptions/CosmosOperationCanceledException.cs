@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.originalException = originalException ?? throw new ArgumentNullException(nameof(originalException));
             this.Diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
-            this.lazyMessage = new Lazy<string>(() => $"{this.originalException.Message} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
+            this.lazyMessage = new Lazy<string>(() => $"{this.originalException.Message} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics?.ToString() ?? "No Diagnostics"}");
         }
 
         internal CosmosOperationCanceledException(
