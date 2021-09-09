@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary> 
     /// Details of an encryption key for use with the Azure Cosmos DB service.
@@ -61,6 +62,7 @@ namespace Microsoft.Azure.Cosmos
                 this.WrappedDataEncryptionKey = new byte[source.WrappedDataEncryptionKey.Length];
                 source.WrappedDataEncryptionKey.CopyTo(this.WrappedDataEncryptionKey, index: 0);
             }
+            this.AdditionalProperties = source.AdditionalProperties;
         }
 
         /// <summary>
@@ -149,6 +151,13 @@ namespace Microsoft.Azure.Cosmos
         internal string ResourceId { get; set; }
 
         /// <summary>
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+        /// </summary>
+        [JsonExtensionData]
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+
+        /// <summary>
         /// Compares this instance of client encryption key properties to another object.
         /// </summary>
         /// <param name="obj">Object to compare with.</param>
@@ -170,11 +179,41 @@ namespace Microsoft.Azure.Cosmos
                    this.EncryptionAlgorithm == other.EncryptionAlgorithm &&
                    ClientEncryptionKeyProperties.Equals(this.WrappedDataEncryptionKey, other.WrappedDataEncryptionKey) &&
                    EqualityComparer<EncryptionKeyWrapMetadata>.Default.Equals(this.EncryptionKeyWrapMetadata, other.EncryptionKeyWrapMetadata) &&
+                   this.AdditionalProperties != null && other.AdditionalProperties != null &&
+                            this.CompareDictionary(this.AdditionalProperties, other.AdditionalProperties) &&
                    this.CreatedTime == other.CreatedTime &&
                    this.ETag == other.ETag &&
                    this.LastModified == other.LastModified &&
                    this.SelfLink == other.SelfLink &&
                    this.ResourceId == other.ResourceId;
+        }
+
+        private bool CompareDictionary(IDictionary<string, JToken> dict1, IDictionary<string, JToken> dict2)
+        {
+            bool isEqual = false;
+            if (dict1.Count == dict2.Count)
+            {
+                isEqual = true;
+                foreach (KeyValuePair<string, JToken> pair in dict1)
+                {
+                    if (dict2.TryGetValue(pair.Key, out JToken value))
+                    {
+                        // Require value be equal.
+                        if (!value.ToString().Equals(pair.Value.ToString()))
+                        {
+                            isEqual = false;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        // Require key be present.
+                        isEqual = false;
+                        break;
+                    }
+                }
+            }
+            return isEqual;
         }
 
         /// <summary>
