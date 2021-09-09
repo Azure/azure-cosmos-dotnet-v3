@@ -456,7 +456,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<TryCatch<QueryPage>>(cancellationToken);
+            }
             if (sqlQuerySpec == null)
             {
                 throw new ArgumentNullException(nameof(sqlQuerySpec));

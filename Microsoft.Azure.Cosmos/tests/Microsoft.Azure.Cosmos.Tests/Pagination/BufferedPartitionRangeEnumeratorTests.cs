@@ -6,6 +6,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
+    using System.Threading;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -215,16 +216,18 @@
                         cancellationToken: default));
 
             public override IAsyncEnumerator<TryCatch<ReadFeedPage>> CreateEnumerator(
-                IDocumentContainer inMemoryCollection,
-                ReadFeedState state = null) => new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
+                IDocumentContainer inMemoryCollection, ReadFeedState state = null, CancellationToken cancellationToken =default)
+            {
+                return new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
                     new ReadFeedPartitionRangeEnumerator(
                         inMemoryCollection,
                         feedRangeState: new FeedRangeState<ReadFeedState>(
                             new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                             state ?? ReadFeedState.Beginning()),
                         readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
-                        cancellationToken: default),
-                    cancellationToken: default);
+                        cancellationToken: cancellationToken),
+                    cancellationToken: cancellationToken);
+            }
 
             private async Task BufferMoreInBackground(BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> enumerator)
             {
