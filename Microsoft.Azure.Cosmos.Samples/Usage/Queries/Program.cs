@@ -229,9 +229,6 @@
         // <QueryWithContinuationTokens>
         private static async Task QueryWithContinuationTokens(Container container)
         {
-            // Query using two properties within each item. WHERE Id == "" AND Address.City == ""
-            // notice here how we are doing an equality comparison on the string value of City
-
             QueryDefinition query = new QueryDefinition("SELECT * FROM c");
             string continuation = null;
 
@@ -249,32 +246,37 @@
                 results.AddRange(response);
                 if (response.Diagnostics != null)
                 {
-                    Console.WriteLine($"\nQueryWithSqlParameters Diagnostics: {response.Diagnostics.ToString()}");
+                    Console.WriteLine($"\nQueryWithContinuationTokens Diagnostics: {response.Diagnostics.ToString()}");
                 }
 
                 // Get continuation token
-                continuation = response.ContinuationToken;
+                if (response.Diagnostics != null)
+                {
+                    continuation = response.ContinuationToken;
+                }
             }
 
             // Resume query execution using the continuation token
-            using (FeedIterator<Family> resultSetIterator = container.GetItemQueryIterator<Family>(
-                query,
-                requestOptions: new QueryRequestOptions()
-                {
-                    MaxItemCount = 1
-                },
-                continuationToken: continuation))
+            if (continuation != null)
             {
-                while (resultSetIterator.HasMoreResults)
-                {
-                    FeedResponse<Family> response = await resultSetIterator.ReadNextAsync();
-
-                    results.AddRange(response);
-                    if (response.Diagnostics != null)
+                using (FeedIterator<Family> resultSetIterator = container.GetItemQueryIterator<Family>(
+                    query,
+                    requestOptions: new QueryRequestOptions()
                     {
-                        Console.WriteLine($"\nQueryWithSqlParameters Diagnostics: {response.Diagnostics.ToString()}");
-                    }
+                        MaxItemCount = -1
+                    },
+                    continuationToken: continuation))
+                {
+                    while (resultSetIterator.HasMoreResults)
+                    {
+                        FeedResponse<Family> response = await resultSetIterator.ReadNextAsync();
 
+                        results.AddRange(response);
+                        if (response.Diagnostics != null)
+                        {
+                            Console.WriteLine($"\nQueryWithContinuationTokens Diagnostics: {response.Diagnostics.ToString()}");
+                        }
+                    }
                     Assert("Expected 2 families", results.Count == 2);
                 }
             }
