@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -23,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
     internal sealed class QueryIterator : FeedIteratorInternal
     {
+        private static readonly string CorrelatedActivityIdKeyName = "Query Correlated ActivityId";
         private static readonly IReadOnlyList<CosmosElement> EmptyPage = new List<CosmosElement>();
 
         private readonly CosmosQueryContextCore cosmosQueryContext;
@@ -163,7 +165,23 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            trace.AddDatum("Query Correlated ActivityId", this.correlatedActivityId.ToString());
+            // If Correlated Id already exists and is different, add a new one in comma separated list
+            // Scenario: A new iterator is created with same ContinuationToken and Trace 
+            if (trace.Data.TryGetValue(QueryIterator.CorrelatedActivityIdKeyName, out object correlatedActivityIds))
+            {
+                List<string> correlatedIdList = correlatedActivityIds.ToString().Split(',').ToList();
+                if (!correlatedIdList.Contains(this.correlatedActivityId.ToString()))
+                {
+                    correlatedIdList.Add(this.correlatedActivityId.ToString());
+                    trace.AddOrUpdateDatum(QueryIterator.CorrelatedActivityIdKeyName,
+                                            string.Join(",", correlatedIdList));
+                }
+            }
+            else
+            {
+                trace.AddDatum(QueryIterator.CorrelatedActivityIdKeyName, this.correlatedActivityId.ToString());
+            }
+
             TryCatch<QueryPage> tryGetQueryPage;
             try
             {

@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -727,6 +728,56 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             cosmosClient.Dispose();
         }
 
+        [TestMethod]
+        public async Task QueryActivityIdWithContinuationTokenAndTraceTest()
+        {
+            using (ITrace rootTrace = Trace.GetRootTrace("Root Trace"))
+            {
+                CosmosClient client = DirectCosmosClient;
+                Container container = client.GetContainer(DatabaseId, ContainerId);
+                // Create items
+                for (int i = 0; i < 500; i++)
+                {
+                    await container.CreateItemAsync<ToDoActivity>(ToDoActivity.CreateRandomToDoActivity());
+                }
+
+                QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+                {
+                    MaxItemCount = 50
+                };
+
+                FeedIteratorInternal feedIterator = 
+                    (FeedIteratorInternal)container.GetItemQueryStreamIterator(
+                    "select * from c",
+                    null,
+                    queryRequestOptions);
+
+                string continuationToken = (await feedIterator.ReadNextAsync(rootTrace, CancellationToken.None)).ContinuationToken;
+                rootTrace.Data.TryGetValue("Query Correlated ActivityId",
+                                            out object firstCorrelatedActivityId);
+
+                // use Continuation Token to create new iterator and use same trace
+                FeedIteratorInternal feedIteratorNew =
+                    (FeedIteratorInternal)container.GetItemQueryStreamIterator(
+                    "select * from c",
+                    continuationToken,
+                    queryRequestOptions);
+
+                while (feedIteratorNew.HasMoreResults)
+                {
+                    await feedIteratorNew.ReadNextAsync(rootTrace, CancellationToken.None);
+                }
+
+                // Test trace has 2 correlated ActivityIds
+                rootTrace.Data.TryGetValue("Query Correlated ActivityId",
+                                            out object correlatedActivityIds);
+                List<string> correlatedIdList = correlatedActivityIds.ToString().Split(',').ToList();
+                Assert.AreEqual(correlatedIdList.Count, 2);
+                Assert.AreEqual(correlatedIdList[0], firstCorrelatedActivityId.ToString());
+            }
+
+        }
+
         private class CustomHandler : RequestHandler
         {
             string correlatedActivityId;
@@ -741,7 +792,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (requestMessage.OperationType == Documents.OperationType.Query)
                 {
-                    bool headerPresent = requestMessage.Headers.TryGetValue(Microsoft.Azure.Documents.WFConstants.BackendHeaders.CorrelatedActivityId, out string requestActivityId);
+                    bool headerPresent = requestMessage.Headers.CosmosMessageHeaders.TryGetValue(Microsoft.Azure.Documents.WFConstants.BackendHeaders.CorrelatedActivityId, out string requestActivityId);
                     if (!headerPresent)
                     {
                         Assert.Fail("Correlated ActivityId header not present in request");

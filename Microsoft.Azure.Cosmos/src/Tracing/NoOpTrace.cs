@@ -81,5 +81,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             // NoOp
         }
+
+        public void AddOrUpdateDatum(string key, object value)
+        {
+            // NoOp
+        }
     }
 }

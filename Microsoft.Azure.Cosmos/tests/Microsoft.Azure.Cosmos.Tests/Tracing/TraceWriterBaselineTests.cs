@@ -954,6 +954,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             {
                 return new TraceForBaselineTesting("Trace For Baseline Testing", TraceLevel.Info, TraceComponent.Unknown, parent: null);
             }
+
+            public void AddOrUpdateDatum(string key, object value)
+            {
+                this.data[key] = value;
+            }
         }
     }
 }
