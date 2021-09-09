@@ -13,6 +13,34 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.21.0-preview"/> [3.21.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.21.0-preview) - 2021-09-10
+
+#### Added
+- [#2577](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2577) ResponseMessage : Adds setter for Diagnostics
+- [#2613](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2613) Change Feed Processor: Adds notification APIs
+
+#### Fixed
+- [#2599](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2599) Diagnostics : Fixes CosmosResponseFactory.CreateItemResponse to use ResponseMessage.Diagnostics instead of creating a new instance
+
+### <a name="3.21.0"/> [3.21.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.21.0) - 2021-09-10
+
+#### Added
+
+- [#2650](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2650) Change Feed Processor: Adds detailed delegate context, stream, and manual check pointing support
+- [#2687](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2687) Diagnostics: Adds memory usage, thread starvation detection, optimizations to collection logic
+
+#### Fixed
+- [#2599](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2599) Diagnostics: Fixes duration for HttpResponseStatistics 
+- [#2646](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2646) OperationCanceledException: Fixes lost CancellationToken on CosmosOperationCanceledException (Thanks to askazakov)
+- [#2509](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2509) GlobalEndpointManager: Fixes exception handling to have the inner exception stacktrace
+- [#2661](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2661) ReadMany: Fixes ReadMany API for PartitionKey.None value
+- [#2675](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2675) Change Feed: Fixes migration path from preview continuation
+- [#2676](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2676) Performance: Fixes query performance regression. Introduced in 3.17.0 PR [2144](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2144)
+- [#2687](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2687) Diagnostics: Fixes StoreResult start and end time to be accurate and removes duplicate CPU collector
+- [#2697](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2697) Azure Active Directory(AAD): Fixes stuck requests when background refresh fails to refresh token
+- [#2708](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2708) Query: Fixes order by logic to throw original exception instead of AggregateException
+- [#2710](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2710) Security: Fixes ServiceInterop.dll to be BinSkim compliant by adding /guard /Qspectre flags
+
 ### <a name="3.20.1"/> [3.20.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.20.1) - 2021-06-29
 ### <a name="3.20.1-preview"/> [3.20.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.20.1-preview) - 2021-06-29
 
@@ -26,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Added
 - [#2509](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2509) Change Feed: Adds change feed iterator APIs on containers
 - [#2558](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2558) Diagnostics: Adds Duration field to HttpResponseStatistics in Diagnostics
-- [#2502](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2558) Diagnostics: Adds Direct TransportRequestStats for tracking transport request timeline
+- [#2502](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2502) Diagnostics: Adds Direct TransportRequestStats for tracking transport request timeline
 - [#2491](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2491) Change Feed Processor: Adds support for Graph API accounts. Graph API accounts can now create lease containers with `/partitionKey` instead of `/id`.
 
 #### Fixed
@@ -40,7 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#2530](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2530) Gateway: Fixes container recreate scenarios for Gateway Mode in session consistency. Introduced in 3.18.0 PR [#2165](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2165)
 - [#2552](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2552) UserAgent: Fixes UserAgent to have the correct number of clients
 - [#2562](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2562) Diagnostics: Fixes NullReferenceException in service unavailable scenarios. Introduced in 3.18.0 PR [#2312](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2312)
-- [#2502](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2558) Tracing: Removes noisy trace in direct mode
+- [#2502](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2502) Tracing: Removes noisy trace in direct mode
 
 ### <a name="3.20.0-preview"/> [3.20.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.20.0-preview) - 2021-06-21
 
