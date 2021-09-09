@@ -505,8 +505,10 @@ namespace Microsoft.Azure.Cosmos
             readableLocations.Add(readLocation1);
             readableLocations.Add(readLocation2);
 
-            AccountProperties databaseAccount = new();
-            databaseAccount.ReadLocationsInternal = readableLocations;
+            AccountProperties databaseAccount = new AccountProperties
+            {
+                ReadLocationsInternal = readableLocations
+            };
 
             //Setup mock owner "document client"
             Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
