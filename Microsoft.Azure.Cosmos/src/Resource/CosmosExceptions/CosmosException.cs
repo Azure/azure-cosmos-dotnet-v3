@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos
                 || statusCode == HttpStatusCode.ServiceUnavailable
                 || (statusCode == HttpStatusCode.NotFound && headers.SubStatusCode == SubStatusCodes.ReadSessionNotAvailable))
             {
-                stringBuilder.Append(" Diagnostics:");
+                stringBuilder.Append("; Diagnostics:");
                 stringBuilder.Append(diagnostics.ToString());
             }
 
