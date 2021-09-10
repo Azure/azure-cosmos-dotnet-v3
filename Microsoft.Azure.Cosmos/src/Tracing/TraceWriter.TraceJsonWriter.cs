@@ -352,12 +352,15 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             public void Visit(CpuHistoryTraceDatum cpuHistoryTraceDatum)
             {
-                this.jsonWriter.WriteObjectStart();
-
-                this.jsonWriter.WriteFieldName("CPU History");
-                this.jsonWriter.WriteStringValue(cpuHistoryTraceDatum.Value.ToString());
-
-                this.jsonWriter.WriteObjectEnd();
+                if (this.jsonWriter is IJsonTextWriterExtensions jsonTextWriter)
+                {
+                    jsonTextWriter.WriteRawJsonValue(Encoding.UTF8.GetBytes(cpuHistoryTraceDatum.Value.ToString()),
+                                                     isFieldName: false);
+                }
+                else
+                {
+                    throw new NotImplementedException("Writing Raw Json directly to the buffer is currently only supported for text and not for binary, hybridrow");
+                }
             }
 
             public void Visit(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
