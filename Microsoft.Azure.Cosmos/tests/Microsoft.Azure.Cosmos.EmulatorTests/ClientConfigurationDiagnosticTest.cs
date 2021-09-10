@@ -48,7 +48,7 @@
         }
 
         [TestMethod]
-        public void CleintConfigWithOptionsTest()
+        public void ClientConfigWithOptionsTest()
         {
             CosmosClientOptions options = new CosmosClientOptions
             {
@@ -66,7 +66,7 @@
             Assert.AreEqual(tcpconfig.ConnectionTimeout, 30);
             Assert.AreEqual(tcpconfig.IdleConnectionTimeout, -1);
             Assert.AreEqual(tcpconfig.MaxRequestsPerChannel, 30);
-            Assert.AreEqual(tcpconfig.TcpEndpointRediscovery, false);
+            Assert.AreEqual(tcpconfig.TcpEndpointRediscovery, true);
 
             GatewayConnectionConfig gwConfig = cosmosClient.ClientConfigurationTraceDatum.GatewayConnectionConfig;
             Assert.AreEqual(gwConfig.UserRequestTimeout, 50);
