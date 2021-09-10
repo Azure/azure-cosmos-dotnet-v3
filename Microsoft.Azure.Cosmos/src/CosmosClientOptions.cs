@@ -483,7 +483,7 @@ namespace Microsoft.Azure.Cosmos
         /// Does not apply if <see cref="ConnectionMode.Gateway"/> is used.
         /// </remarks>
         /// <value>
-        /// The default value is false
+        /// The default value is true
         /// </value>
         public bool EnableTcpConnectionEndpointRediscovery { get; set; } = true;
 
