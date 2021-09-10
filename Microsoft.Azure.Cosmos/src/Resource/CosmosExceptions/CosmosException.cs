@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
             this.Error = error;
             this.Trace = trace;
             this.Diagnostics = new CosmosTraceDiagnostics(this.Trace ?? NoOpTrace.Singleton);
-            this.lazyMessage = new Lazy<string>(() => GetMessageHelper(
+            this.lazyMessage = new Lazy<string>(() => CosmosException.GetMessageHelper(
                 statusCode,
                 this.Headers,
                 this.ResponseBody,
@@ -213,7 +213,8 @@ namespace Microsoft.Azure.Cosmos
             // to root cause failures.
             if (statusCode == HttpStatusCode.RequestTimeout
                 || statusCode == HttpStatusCode.InternalServerError
-                || statusCode == HttpStatusCode.ServiceUnavailable)
+                || statusCode == HttpStatusCode.ServiceUnavailable
+                || (statusCode == HttpStatusCode.NotFound && headers.SubStatusCode == SubStatusCodes.ReadSessionNotAvailable))
             {
                 stringBuilder.Append(" Diagnostics:");
                 stringBuilder.Append(diagnostics.ToString());
