@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos
                 || statusCode == HttpStatusCode.InternalServerError
                 || statusCode == HttpStatusCode.ServiceUnavailable)
             {
-                stringBuilder.Append(" Diagnostics:");
+                stringBuilder.Append("; Diagnostics:");
                 stringBuilder.Append(diagnostics.ToString());
             }
 
