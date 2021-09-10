@@ -179,8 +179,9 @@ namespace Microsoft.Azure.Cosmos
                    this.EncryptionAlgorithm == other.EncryptionAlgorithm &&
                    ClientEncryptionKeyProperties.Equals(this.WrappedDataEncryptionKey, other.WrappedDataEncryptionKey) &&
                    EqualityComparer<EncryptionKeyWrapMetadata>.Default.Equals(this.EncryptionKeyWrapMetadata, other.EncryptionKeyWrapMetadata) &&
-                   this.AdditionalProperties != null && other.AdditionalProperties != null &&
-                            this.CompareDictionary(this.AdditionalProperties, other.AdditionalProperties) &&
+                   ((this.AdditionalProperties == null && other.AdditionalProperties == null) ||
+                   (this.AdditionalProperties != null && other.AdditionalProperties != null &&
+                            this.CompareDictionary(this.AdditionalProperties, other.AdditionalProperties))) &&
                    this.CreatedTime == other.CreatedTime &&
                    this.ETag == other.ETag &&
                    this.LastModified == other.LastModified &&
