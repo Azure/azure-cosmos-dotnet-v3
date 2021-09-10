@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosOperationCanceledException : OperationCanceledException
     {
         private readonly OperationCanceledException originalException;
+        private readonly Lazy<string> lazyMessage;
 
         /// <summary>
         /// Create an instance of CosmosOperationCanceledException
@@ -30,6 +31,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.originalException = originalException ?? throw new ArgumentNullException(nameof(originalException));
             this.Diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
+            this.lazyMessage = this.CreateLazyMessage();
         }
 
         internal CosmosOperationCanceledException(
@@ -45,6 +47,7 @@ namespace Microsoft.Azure.Cosmos
 
             trace.AddDatum("Operation Cancelled Exception", originalException);
             this.Diagnostics = new CosmosTraceDiagnostics(trace);
+            this.lazyMessage = this.CreateLazyMessage();
         }
 
         /// <inheritdoc/>
@@ -55,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override string Message => this.originalException.Message;
+        public override string Message => this.lazyMessage.Value;
 
         /// <inheritdoc/>
         public override string StackTrace => this.originalException.StackTrace;
@@ -85,6 +88,11 @@ namespace Microsoft.Azure.Cosmos
         public override string ToString()
         {
             return $"{this.originalException} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}";
+        }
+
+        private Lazy<string> CreateLazyMessage()
+        {
+            return new Lazy<string>(() => $"{this.originalException.Message} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
         }
     }
 }
