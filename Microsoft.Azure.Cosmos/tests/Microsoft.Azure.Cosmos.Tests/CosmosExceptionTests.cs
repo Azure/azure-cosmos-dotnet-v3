@@ -343,6 +343,16 @@ namespace Microsoft.Azure.Cosmos
                     requestCharge,
                     retryAfter);
             }
+
+            CosmosException cosmosException = CosmosExceptionFactory.CreateNotFoundException(testMessage, new Headers() { SubStatusCodeLiteral = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString(), ActivityId = activityId, RequestCharge = requestCharge, RetryAfterLiteral = retryAfterLiteral });
+            this.ValidateExceptionInfo(
+                    cosmosException,
+                    HttpStatusCode.NotFound,
+                    ((int)SubStatusCodes.ReadSessionNotAvailable).ToString(),
+                    testMessage,
+                    activityId,
+                    requestCharge,
+                    retryAfter);
         }
 
         [TestMethod]
@@ -436,9 +446,10 @@ namespace Microsoft.Azure.Cosmos
 
             if(httpStatusCode == HttpStatusCode.RequestTimeout
                 || httpStatusCode == HttpStatusCode.InternalServerError
-                || httpStatusCode == HttpStatusCode.ServiceUnavailable)
+                || httpStatusCode == HttpStatusCode.ServiceUnavailable
+                || (httpStatusCode == HttpStatusCode.NotFound && exception.Headers.SubStatusCode == SubStatusCodes.ReadSessionNotAvailable))
             {
-                expectedMessage += " Diagnostics:" + new Diagnostics.CosmosTraceDiagnostics(NoOpTrace.Singleton).ToString();
+                expectedMessage += "; Diagnostics:" + new Diagnostics.CosmosTraceDiagnostics(NoOpTrace.Singleton).ToString();
             }
 
             Assert.AreEqual(expectedMessage, exception.Message);
