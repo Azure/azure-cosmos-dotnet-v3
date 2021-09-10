@@ -485,7 +485,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The default value is false
         /// </value>
-        public bool EnableTcpConnectionEndpointRediscovery { get; set; } = false;
+        public bool EnableTcpConnectionEndpointRediscovery { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a delegate to use to obtain an HttpClient instance to be used for HTTPS communication.

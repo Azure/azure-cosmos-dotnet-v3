@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNotNull(clientOptions.Serializer);
             Assert.IsNull(clientOptions.WebProxy);
             Assert.IsFalse(clientOptions.LimitToEndpoint);
-            Assert.IsFalse(clientOptions.EnableTcpConnectionEndpointRediscovery);
+            Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
             Assert.IsNull(clientOptions.HttpClientFactory);
             Assert.AreNotEqual(consistencyLevel, clientOptions.ConsistencyLevel);
             Assert.IsFalse(clientOptions.EnablePartitionLevelFailover);
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(policy.MaxRequestsPerTcpConnection);
             Assert.IsNull(policy.MaxTcpConnectionsPerEndpoint);
             Assert.IsTrue(policy.EnableEndpointDiscovery);
-            Assert.IsFalse(policy.EnableTcpConnectionEndpointRediscovery);
+            Assert.IsTrue(policy.EnableTcpConnectionEndpointRediscovery);
             Assert.IsNull(policy.HttpClientFactory);
             Assert.AreNotEqual(Cosmos.ConsistencyLevel.Session, clientOptions.ConsistencyLevel);
             Assert.IsFalse(policy.EnablePartitionLevelFailover);
