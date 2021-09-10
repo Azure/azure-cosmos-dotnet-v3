@@ -242,6 +242,24 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void ValidateAdditionalPropertiesAttributeInPropertiesFiles()
+        {
+            IEnumerable<Type> allClasses = from t in Assembly.GetAssembly(typeof(CosmosClient)).GetTypes()
+                                           where t.IsClass && 
+                                           t.IsPublic && 
+                                           !t.IsAbstract
+                                           where t.Name.EndsWith("Properties")
+                                           select t;
+
+            foreach(Type className in allClasses)
+            {
+                PropertyInfo property = className.GetProperty("AdditionalProperties", BindingFlags.NonPublic | BindingFlags.Instance);
+                Assert.IsTrue(property != null);
+            }
+            
+        }
+
+        [TestMethod]
         public void SettingsDeserializeWithAdditionalDataTest()
         {
             this.DeserializeWithAdditionalDataTest<StoredProcedureProperties>();
