@@ -89,14 +89,28 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                                             message: $"Failed to parse get object in composite continuation: {startFromContinuation.Continuation}."));
                                 }
 
-                                if (!cosmosObject.TryGetValue("min", out CosmosString min))
+                                if (!cosmosObject.TryGetValue("range", out CosmosElement rangeItem))
+                                {
+                                    return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
+                                        new MalformedChangeFeedContinuationTokenException(
+                                            message: $"Failed to parse token: {cosmosObject}."));
+                                }
+
+                                if (!(rangeItem is CosmosObject rangeElement))
+                                {
+                                    return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
+                                        new MalformedChangeFeedContinuationTokenException(
+                                            message: $"Failed to parse get object in composite continuation: {startFromContinuation.Continuation}."));
+                                }
+
+                                if (!rangeElement.TryGetValue("min", out CosmosString min))
                                 {
                                     return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
                                         new MalformedChangeFeedContinuationTokenException(
                                             message: $"Failed to parse start of range: {cosmosObject}."));
                                 }
 
-                                if (!cosmosObject.TryGetValue("max", out CosmosString max))
+                                if (!rangeElement.TryGetValue("max", out CosmosString max))
                                 {
                                     return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
                                         new MalformedChangeFeedContinuationTokenException(

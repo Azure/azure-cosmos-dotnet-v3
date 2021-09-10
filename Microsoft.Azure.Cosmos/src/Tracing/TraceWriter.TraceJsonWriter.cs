@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Globalization;
     using System.Linq;
     using System.Net.Http;
+    using System.Text;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -207,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 this.WriteJsonUriArrayWithDuplicatesCounted("ContactedReplicas", clientSideRequestStatisticsTraceDatum.ContactedReplicas);
 
-                this.WriteRegionsContactedArray("RegionsContacted", clientSideRequestStatisticsTraceDatum.RegionsContactedWithName);
+                this.WriteRegionsContactedArray("RegionsContacted", clientSideRequestStatisticsTraceDatum.RegionsContacted);
                 this.WriteJsonUriArray("FailedReplicas", clientSideRequestStatisticsTraceDatum.FailedReplicas);
 
                 this.jsonWriter.WriteFieldName("AddressResolutionStatistics");
@@ -415,9 +416,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName(nameof(storeResult.NumberOfReadRegions));
                 this.jsonWriter.WriteNumber64Value(storeResult.NumberOfReadRegions);
 
-                this.jsonWriter.WriteFieldName(nameof(storeResult.IsClientCpuOverloaded));
-                this.jsonWriter.WriteBoolValue(storeResult.IsClientCpuOverloaded);
-
                 this.jsonWriter.WriteFieldName(nameof(storeResult.IsValid));
                 this.jsonWriter.WriteBoolValue(storeResult.IsValid);
 
@@ -439,14 +437,14 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteObjectEnd();
             }
 
-            private void WriteJsonUriArray(string propertyName, IEnumerable<Uri> uris)
+            private void WriteJsonUriArray(string propertyName, IEnumerable<TransportAddressUri> uris)
             {
                 this.jsonWriter.WriteFieldName(propertyName);
                 this.jsonWriter.WriteArrayStart();
 
                 if (uris != null)
                 {
-                    foreach (Uri contactedReplica in uris)
+                    foreach (TransportAddressUri contactedReplica in uris)
                     {
                         this.WriteStringValueOrNull(contactedReplica?.ToString());
                     }
@@ -473,33 +471,22 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             private void VisitTransportRequestStats(TransportRequestStats transportRequestStats)
             {
-                this.jsonWriter.WriteFieldName("RntbdRequestStats");
+                this.jsonWriter.WriteFieldName("transportRequestTimeline");
                 if (transportRequestStats == null)
                 {
                     this.jsonWriter.WriteNullValue();
                     return;
                 }
 
-                IEnumerable<TransportRequestStats.RequestEvent> events = transportRequestStats.GetRequestTimeline();
-                this.jsonWriter.WriteArrayStart();
-
-                foreach (TransportRequestStats.RequestEvent requestEvent in events)
+                if (this.jsonWriter is IJsonTextWriterExtensions jsonTextWriter)
                 {
-                    this.jsonWriter.WriteObjectStart();
-
-                    this.jsonWriter.WriteFieldName("EventName");
-                    this.jsonWriter.WriteStringValue(requestEvent.EventName);
-
-                    this.jsonWriter.WriteFieldName("StartTime");
-                    this.WriteDateTimeStringValue(requestEvent.StartTime);
-
-                    this.jsonWriter.WriteFieldName("DurationInMicroSec");
-                    this.jsonWriter.WriteStringValue(requestEvent.DurationInMicroSec.ToString(CultureInfo.InvariantCulture));
-
-                    this.jsonWriter.WriteObjectEnd();
+                    jsonTextWriter.WriteRawJsonValue(Encoding.UTF8.GetBytes(transportRequestStats.ToString()),
+                                                     isFieldName: false);
                 }
-
-                this.jsonWriter.WriteArrayEnd();
+                else
+                {
+                    throw new NotImplementedException("Writing Raw Json directly to the buffer is currently only supported for text and not for binary, hybridrow");
+                }
             }
 
             /// <summary>
@@ -507,19 +494,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
             /// Sequential duplicates are counted and written as a single object to prevent
             /// writing the same URI multiple times.
             /// </summary>
-            private void WriteJsonUriArrayWithDuplicatesCounted(string propertyName, IReadOnlyList<Uri> uris)
+            private void WriteJsonUriArrayWithDuplicatesCounted(string propertyName, IReadOnlyList<TransportAddressUri> uris)
             {
                 this.jsonWriter.WriteFieldName(propertyName);
                 this.jsonWriter.WriteArrayStart();
 
                 if (uris != null)
                 {
-                    Uri previous = null;
+                    TransportAddressUri previous = null;
                     int duplicateCount = 1;
                     int totalCount = uris.Count;
                     for (int i = 0; i < totalCount; i++)
                     {
-                        Uri contactedReplica = uris[i];
+                        TransportAddressUri contactedReplica = uris[i];
                         if (contactedReplica == null)
                         {
                             continue;

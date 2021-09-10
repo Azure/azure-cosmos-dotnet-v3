@@ -671,6 +671,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             TestDoc docToDelete = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer, partitionKey);
 
+            TestDoc docToPatch = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer, partitionKey);
+            docToPatch.Sensitive_StringFormat = Guid.NewGuid().ToString();
+            docToPatch.Sensitive_DecimalFormat = 11.11m;
+
+            List<PatchOperation> patchOperations = new List<PatchOperation>
+            {
+                PatchOperation.Replace("/Sensitive_StringFormat", docToPatch.Sensitive_StringFormat),
+                PatchOperation.Replace("/Sensitive_DecimalFormat", docToPatch.Sensitive_DecimalFormat),
+            };
+
             TransactionalBatchResponse batchResponse = await MdeEncryptionTests.encryptionContainer.CreateTransactionalBatch(new Cosmos.PartitionKey(partitionKey))
                 .CreateItem(doc1ToCreate)
                 .CreateItemStream(doc2ToCreate.ToStream())
@@ -681,6 +691,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 .UpsertItem(doc1ToUpsert)
                 .DeleteItem(docToDelete.Id)
                 .UpsertItemStream(doc2ToUpsert.ToStream())
+                .PatchItem(docToPatch.Id, patchOperations)
                 .ExecuteAsync();
 
             Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
@@ -709,6 +720,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TransactionalBatchOperationResult<TestDoc> doc8 = batchResponse.GetOperationResultAtIndex<TestDoc>(8);
             VerifyExpectedDocResponse(doc2ToUpsert, doc8.Resource);
 
+            TransactionalBatchOperationResult<TestDoc> doc9 = batchResponse.GetOperationResultAtIndex<TestDoc>(9);
+            VerifyExpectedDocResponse(docToPatch, doc9.Resource);
+            
             await MdeEncryptionTests.VerifyItemByReadAsync(MdeEncryptionTests.encryptionContainer, doc1ToCreate);
             await MdeEncryptionTests.VerifyItemByReadAsync(MdeEncryptionTests.encryptionContainer, doc2ToCreate);
             await MdeEncryptionTests.VerifyItemByReadAsync(MdeEncryptionTests.encryptionContainer, doc3ToCreate);
@@ -717,10 +731,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await MdeEncryptionTests.VerifyItemByReadAsync(MdeEncryptionTests.encryptionContainer, doc2ToReplace);
             await MdeEncryptionTests.VerifyItemByReadAsync(MdeEncryptionTests.encryptionContainer, doc1ToUpsert);
             await MdeEncryptionTests.VerifyItemByReadAsync(MdeEncryptionTests.encryptionContainer, doc2ToUpsert);
+            await MdeEncryptionTests.VerifyItemByReadAsync(MdeEncryptionTests.encryptionContainer, docToPatch);
 
             ResponseMessage readResponseMessage = await MdeEncryptionTests.encryptionContainer.ReadItemStreamAsync(docToDelete.Id, new PartitionKey(docToDelete.PK));
             Assert.AreEqual(HttpStatusCode.NotFound, readResponseMessage.StatusCode);
-            
         }
 
         [TestMethod]
@@ -739,6 +753,44 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             Assert.AreEqual(HttpStatusCode.Conflict, batchResponse.StatusCode);
             Assert.AreEqual(1, batchResponse.Count);
+        }
+
+        [TestMethod]
+        public async Task EncryptionReadManyItemAsync()
+        {
+            TestDoc testDoc = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
+
+            TestDoc testDoc2 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
+
+            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>
+            {
+                (testDoc.Id, new PartitionKey(testDoc.PK)),
+                (testDoc2.Id, new PartitionKey(testDoc2.PK))
+            };
+
+            FeedResponse<TestDoc> response = await encryptionContainer.ReadManyItemsAsync<TestDoc>(itemList);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.AreEqual(2, response.Count);
+            VerifyExpectedDocResponse(testDoc, response.Resource.ElementAt(0));
+            VerifyExpectedDocResponse(testDoc2, response.Resource.ElementAt(1));
+
+            // stream test.
+            ResponseMessage responseStream = await encryptionContainer.ReadManyItemsStreamAsync(itemList);
+
+            Assert.IsTrue(responseStream.IsSuccessStatusCode);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            JObject contentJObjects = TestCommon.FromStream<JObject>(responseStream.Content);
+
+            if(contentJObjects.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents)
+            {
+                VerifyExpectedDocResponse(testDoc, documents.ElementAt(0).ToObject<TestDoc>());
+                VerifyExpectedDocResponse(testDoc2, documents.ElementAt(1).ToObject<TestDoc>());
+            }
+            else
+            {
+                Assert.Fail("ResponseMessage from ReadManyItemsStreamAsync did not have a valid response. ");
+            }
         }
 
         [TestMethod]
@@ -1123,7 +1175,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
             catch(CosmosException ex)
             {
-                Assert.AreEqual("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. ", ex.Message);
+                Assert.IsNotNull(ex);
+                // Github issue tracking fix: https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2714
+                // Assert.AreEqual("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. ", ex.Message);
             }
 
             // the previous failure would have updated the policy in the cache.
@@ -1472,7 +1526,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyWithRevokedKek };
 
             Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
-            
+
+            TestDoc testDoc1 = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
+
             testEncryptionKeyStoreProvider.RevokeAccessSet = true;
 
             // try creating it and it should fail as it has been revoked.
@@ -1483,6 +1539,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
             catch(RequestFailedException)
             {               
+            }
+
+            // testing query read fail due to revoked access.
+            try
+            {
+                await MdeEncryptionTests.ValidateQueryResultsAsync(
+                encryptionContainer,
+                "SELECT * FROM c",
+                testDoc1);
+                Assert.Fail("Query should have failed, since property path /Sensitive_NestedObjectFormatL1 has been encrypted using Cek with revoked access. ");
+            }
+            catch (RequestFailedException)
+            {
             }
 
             // for unwrap to succeed 

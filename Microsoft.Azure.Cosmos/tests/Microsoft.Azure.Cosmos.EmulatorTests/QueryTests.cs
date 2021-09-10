@@ -2690,7 +2690,7 @@ function sproc(feed) {
             {
                 if (path.Path.Equals(expectedPathName))
                 {
-                    foreach (Index index in path.Indexes)
+                    foreach (Documents.Index index in path.Indexes)
                     {
                         if (index.Kind.Equals(expextedIndexKind))
                         {

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
@@ -367,8 +368,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 webProxy: webProxy);
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build();
-            FieldInfo httpClient = cosmosClient.DocumentClient.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
-            CosmosHttpClient cosmosHttpClient = (CosmosHttpClient)httpClient.GetValue(cosmosClient.DocumentClient);
+            CosmosHttpClient cosmosHttpClient = cosmosClient.DocumentClient.httpClient;
             HttpClientHandler handler = (HttpClientHandler)cosmosHttpClient.HttpMessageHandler;
             
             Assert.IsTrue(object.ReferenceEquals(webProxy, handler.Proxy));
