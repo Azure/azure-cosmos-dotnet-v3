@@ -44,6 +44,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Gets the index utilization metrics to be used for debugging purposes. 
+        /// It's applicable to query response only. Other feed response will return null for this field.
         /// This result is only available if QueryRequestOptions.PopulateIndexMetrics is set to true.
         /// </summary>
         /// <value>
