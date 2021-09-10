@@ -991,15 +991,41 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ReadManyRequestOptions readManyRequestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return this.ReadManyItemsHelperAsync(
+                items,
+                readManyRequestOptions,
+                cancellationToken);
         }
 
-        public override Task<FeedResponse<T>> ReadManyItemsAsync<T>(
+        public override async Task<FeedResponse<T>> ReadManyItemsAsync<T>(
             IReadOnlyList<(string id, PartitionKey partitionKey)> items,
             ReadManyRequestOptions readManyRequestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            ResponseMessage responseMessage = await this.ReadManyItemsHelperAsync(
+                items,
+                readManyRequestOptions,
+                cancellationToken);
+
+            return this.ResponseFactory.CreateItemFeedResponse<T>(responseMessage);
+        }
+
+        private async Task<ResponseMessage> ReadManyItemsHelperAsync(
+           IReadOnlyList<(string id, PartitionKey partitionKey)> items,
+           ReadManyRequestOptions readManyRequestOptions = null,
+           CancellationToken cancellationToken = default)
+        {
+            ResponseMessage responseMessage = await this.container.ReadManyItemsStreamAsync(
+                items,
+                readManyRequestOptions,
+                cancellationToken);
+
+            Stream decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
+                responseMessage.Content,
+                this.Encryptor,
+                cancellationToken);
+
+            return new DecryptedResponseMessage(responseMessage, decryptedContent);
         }
 
         private async Task<List<T>> DecryptChangeFeedDocumentsAsync<T>(

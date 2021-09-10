@@ -24,30 +24,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     [TestClass]
     public class FullPipelineTests
     {
-        private static readonly Dictionary<string, object> DefaultQueryEngineConfiguration = new Dictionary<string, object>()
-        {
-            {"maxSqlQueryInputLength", 30720},
-            {"maxJoinsPerSqlQuery", 5},
-            {"maxLogicalAndPerSqlQuery", 200},
-            {"maxLogicalOrPerSqlQuery", 200},
-            {"maxUdfRefPerSqlQuery", 2},
-            {"maxInExpressionItemsCount", 8000},
-            {"queryMaxInMemorySortDocumentCount", 500},
-            {"maxQueryRequestTimeoutFraction", 0.90},
-            {"sqlAllowNonFiniteNumbers", false},
-            {"sqlAllowAggregateFunctions", true},
-            {"sqlAllowSubQuery", true},
-            {"sqlAllowScalarSubQuery", false},
-            {"allowNewKeywords", true},
-            {"sqlAllowLike", false},
-            {"sqlAllowGroupByClause", false},
-            {"maxSpatialQueryCells", 12},
-            {"spatialMaxGeometryPointCount", 256},
-            {"sqlDisableQueryILOptimization", false},
-            {"sqlDisableFilterPlanOptimization", false}
-        };
-
-        private static readonly QueryPartitionProvider queryPartitionProvider = new QueryPartitionProvider(DefaultQueryEngineConfiguration);
         private static readonly PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
         {
             Paths = new Collection<string>()
@@ -409,7 +385,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static QueryInfo GetQueryPlan(string query)
         {
-            TryCatch<PartitionedQueryExecutionInfoInternal> info = queryPartitionProvider.TryGetPartitionedQueryExecutionInfoInternal(
+            TryCatch<PartitionedQueryExecutionInfoInternal> info = QueryPartitionProviderTestInstance.Object.TryGetPartitionedQueryExecutionInfoInternal(
                 new SqlQuerySpec(query),
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery: true,

@@ -42,14 +42,22 @@ namespace Microsoft.Azure.Cosmos
                                                                                 ITrace trace,
                                                                                 CancellationToken cancellationToken)
         {
-            string resourceId = await this.container.GetCachedRIDAsync(cancellationToken);
-            IDictionary<PartitionKeyRange, List<(string, PartitionKey)>> partitionKeyRangeItemMap =
-                                await this.CreatePartitionKeyRangeItemListMapAsync(items, cancellationToken);
+            IDictionary<PartitionKeyRange, List<(string, PartitionKey)>> partitionKeyRangeItemMap;
+            string resourceId;
+            try
+            {
+                resourceId = await this.container.GetCachedRIDAsync(cancellationToken);
+                partitionKeyRangeItemMap = await this.CreatePartitionKeyRangeItemListMapAsync(items, trace, cancellationToken);
+            }
+            catch (CosmosException ex)
+            {
+                return ex.ToCosmosResponseMessage(request: null);
+            }
 
             List<ResponseMessage>[] queryResponses = await this.ReadManyTaskHelperAsync(partitionKeyRangeItemMap,
-                                                                readManyRequestOptions,
-                                                                trace,
-                                                                cancellationToken);
+                                                                                readManyRequestOptions,
+                                                                                trace,
+                                                                                cancellationToken);
 
             return this.CombineStreamsFromQueryResponses(queryResponses, resourceId, trace); // also disposes the response messages
         }
@@ -60,7 +68,7 @@ namespace Microsoft.Azure.Cosmos
                                                                             CancellationToken cancellationToken)
         {
             IDictionary<PartitionKeyRange, List<(string, PartitionKey)>> partitionKeyRangeItemMap =
-                                await this.CreatePartitionKeyRangeItemListMapAsync(items, cancellationToken);
+                                await this.CreatePartitionKeyRangeItemListMapAsync(items, trace, cancellationToken);
 
             List<ResponseMessage>[] queryResponses = await this.ReadManyTaskHelperAsync(partitionKeyRangeItemMap,
                                                                 readManyRequestOptions,
@@ -116,6 +124,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<IDictionary<PartitionKeyRange, List<(string, PartitionKey)>>> CreatePartitionKeyRangeItemListMapAsync(
             IReadOnlyList<(string, PartitionKey)> items,
+            ITrace trace,
             CancellationToken cancellationToken = default)
         {
             CollectionRoutingMap collectionRoutingMap = await this.container.GetRoutingMapAsync(cancellationToken);
@@ -125,7 +134,9 @@ namespace Microsoft.Azure.Cosmos
 
             foreach ((string id, PartitionKey pk) item in items)
             {
-                string effectivePartitionKeyValue = item.pk.InternalKey.GetEffectivePartitionKeyString(this.partitionKeyDefinition);
+                Documents.Routing.PartitionKeyInternal partitionKeyInternal = 
+                            await this.GetPartitionKeyInternalAsync(item.pk, trace, cancellationToken);
+                string effectivePartitionKeyValue = partitionKeyInternal.GetEffectivePartitionKeyString(this.partitionKeyDefinition);
                 PartitionKeyRange partitionKeyRange = collectionRoutingMap.GetRangeByEffectivePartitionKey(effectivePartitionKeyValue);
                 if (partitionKeyRangeItemMap.TryGetValue(partitionKeyRange, out List<(string, PartitionKey)> itemList))
                 {
@@ -259,14 +270,7 @@ namespace Microsoft.Azure.Cosmos
 
             queryStringBuilder.Append("SELECT * FROM c WHERE ( ");
             for (int i = startIndex; i < totalItemCount; i++)
-            {
-                object[] pkValues = items[i].Item2.InternalKey.ToObjectArray();
-
-                if (pkValues.Length != this.partitionKeyDefinition.Paths.Count)
-                {
-                    throw new ArgumentException("Number of components in the partition key value does not match the definition.");
-                }
-
+            {             
                 string pkParamName = "@param_pk" + i;
                 string idParamName = "@param_id" + i;
                 sqlParameters.Add(new SqlParameter(idParamName, items[i].Item1));
@@ -274,18 +278,37 @@ namespace Microsoft.Azure.Cosmos
                 queryStringBuilder.Append("( ");
                 queryStringBuilder.Append("c.id = ");
                 queryStringBuilder.Append(idParamName);
-                for (int j = 0; j < this.partitionKeySelectors.Count; j++)
+                if (items[i].Item2.IsNone)
                 {
-                    queryStringBuilder.Append(" AND ");
-                    queryStringBuilder.Append("c");
-                    queryStringBuilder.Append(this.partitionKeySelectors[j]);
-                    queryStringBuilder.Append(" = ");
-
-                    string pkParamNameForSinglePath = pkParamName + j;
-                    sqlParameters.Add(new SqlParameter(pkParamNameForSinglePath, pkValues[j]));
-                    queryStringBuilder.Append(pkParamNameForSinglePath);
+                    foreach (string partitionKeySelector in this.partitionKeySelectors)
+                    {
+                        queryStringBuilder.Append(" AND ");
+                        queryStringBuilder.Append("IS_DEFINED(c");
+                        queryStringBuilder.Append(partitionKeySelector);
+                        queryStringBuilder.Append(") = false");
+                    }
                 }
+                else 
+                {
+                    object[] pkValues = items[i].Item2.InternalKey.ToObjectArray();
+                    if (pkValues.Length != this.partitionKeyDefinition.Paths.Count)
+                    {
+                        throw new ArgumentException("Number of components in the partition key " +
+                            "value does not match the definition.");
+                    }
+                    for (int j = 0; j < this.partitionKeySelectors.Count; j++)
+                    {
+                        queryStringBuilder.Append(" AND ");
+                        queryStringBuilder.Append("c");
+                        queryStringBuilder.Append(this.partitionKeySelectors[j]);
+                        queryStringBuilder.Append(" = ");
 
+                        string pkParamNameForSinglePath = pkParamName + j;
+                        sqlParameters.Add(new SqlParameter(pkParamNameForSinglePath, pkValues[j]));
+                        queryStringBuilder.Append(pkParamNameForSinglePath);
+                    }
+                }
+                
                 queryStringBuilder.Append(" )");
 
                 if (i < totalItemCount - 1)
@@ -363,6 +386,19 @@ namespace Microsoft.Azure.Cosmos
             {
                 cancellationTokenSource.Cancel();
             }
+        }
+
+        private ValueTask<Documents.Routing.PartitionKeyInternal> GetPartitionKeyInternalAsync(PartitionKey partitionKey,
+                                                                                    ITrace trace,
+                                                                                    CancellationToken cancellationToken)
+        {
+            if (partitionKey.IsNone)
+            {
+                return new ValueTask<Documents.Routing.PartitionKeyInternal>(
+                    this.container.GetNonePartitionKeyValueAsync(trace, cancellationToken));
+            }
+
+            return new ValueTask<Documents.Routing.PartitionKeyInternal>(partitionKey.InternalKey);
         }
 
         private class ReadManyFeedResponseEnumerable<T> : IEnumerable<T>

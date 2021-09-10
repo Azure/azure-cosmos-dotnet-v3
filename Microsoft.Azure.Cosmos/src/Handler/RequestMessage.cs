@@ -137,6 +137,9 @@ namespace Microsoft.Azure.Cosmos
             this.ResourceType.IsPartitioned() && this.PartitionKeyRangeId == null &&
             this.Headers.PartitionKey == null;
 
+        internal string ContainerId { get; set; }
+        internal string DatabaseId { get; set; }
+
         /// <summary>
         /// Request properties Per request context available to handlers. 
         /// These will not be automatically included into the wire.

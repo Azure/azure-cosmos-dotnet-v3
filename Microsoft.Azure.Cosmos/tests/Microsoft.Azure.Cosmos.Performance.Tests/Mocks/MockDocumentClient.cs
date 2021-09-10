@@ -22,6 +22,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using Microsoft.CodeAnalysis.CSharp.Syntax;
     using System.IO;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Newtonsoft.Json;
 
     internal class MockDocumentClient : DocumentClient, ICosmosAuthorizationTokenProvider
     {
@@ -42,6 +44,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         public static CosmosClient CreateMockCosmosClient(
             bool useCustomSerializer = false,
+            bool? isClientTelemetryEnabled = null,
             Action < CosmosClientBuilder> customizeClientBuilder = null)
         {
             MockDocumentClient documentClient = new MockDocumentClient();
@@ -56,6 +59,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     {
                         IgnoreNullValues = true,
                     });
+            }
+
+            if (isClientTelemetryEnabled.HasValue && isClientTelemetryEnabled.Value)
+            {
+                cosmosClientBuilder.WithTelemetryEnabled();
             }
 
             documentClient.dummyHeaderNames = new string[100];
@@ -96,6 +104,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             return Convert.ToBase64String(randomEntries);
         }
+
+        private static readonly Task<QueryPartitionProvider> SingletonQueryPartitionProvider = Task.FromResult(
+            new QueryPartitionProvider(
+                JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLength\":262144,\"maxJoinsPerSqlQuery\":5,\"maxLogicalAndPerSqlQuery\":500,\"maxLogicalOrPerSqlQuery\":500,\"maxUdfRefPerSqlQuery\":10,\"maxInExpressionItemsCount\":16000,\"queryMaxInMemorySortDocumentCount\":500,\"maxQueryRequestTimeoutFraction\":0.9,\"sqlAllowNonFiniteNumbers\":false,\"sqlAllowAggregateFunctions\":true,\"sqlAllowSubQuery\":true,\"sqlAllowScalarSubQuery\":true,\"allowNewKeywords\":true,\"sqlAllowLike\":true,\"sqlAllowGroupByClause\":true,\"maxSpatialQueryCells\":12,\"spatialMaxGeometryPointCount\":256,\"sqlDisableOptimizationFlags\":0,\"sqlAllowTop\":true,\"enableSpatialIndexing\":true}")));
+
+        internal override Task<QueryPartitionProvider> QueryPartitionProvider => SingletonQueryPartitionProvider;
 
         internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(
             this.globalEndpointManager.Object,
