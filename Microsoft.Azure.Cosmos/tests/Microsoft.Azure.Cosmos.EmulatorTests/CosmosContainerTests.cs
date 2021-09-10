@@ -23,7 +23,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private CosmosClient cosmosClient = null;
         private Cosmos.Database cosmosDatabase = null;
-        private static long ToEpoch(DateTime dateTime) => (long)(dateTime - new DateTime(1970, 1, 1)).TotalSeconds;
+        private static long ToEpoch(DateTime dateTime)
+        {
+            return (long)(dateTime - new DateTime(1970, 1, 1)).TotalSeconds;
+        }
 
         [TestInitialize]
         public async Task TestInit()
@@ -74,8 +77,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await container.ReplaceContainerAsync(existingContainerProperties);
 
             // Check progress
-            ContainerRequestOptions requestOptions = new ContainerRequestOptions();
-            requestOptions.PopulateQuotaInfo = true;
+            ContainerRequestOptions requestOptions = new ContainerRequestOptions
+            {
+                PopulateQuotaInfo = true
+            };
 
             while (true)
             {

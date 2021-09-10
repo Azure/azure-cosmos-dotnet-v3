@@ -20,8 +20,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            CosmosClientOptions clientOptions = new CosmosClientOptions();
-            clientOptions.AllowBulkExecution = true;
+            CosmosClientOptions clientOptions = new CosmosClientOptions
+            {
+                AllowBulkExecution = true
+            };
             CosmosClient client = TestCommon.CreateCosmosClient(clientOptions);
 
             DatabaseResponse response = await client.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
@@ -536,8 +538,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static JObject CreateJObjectWithoutPK(string id)
         {
-            JObject document = new JObject();
-            document["id"] = id;
+            JObject document = new JObject
+            {
+                ["id"] = id
+            };
             return document;
         }
     }

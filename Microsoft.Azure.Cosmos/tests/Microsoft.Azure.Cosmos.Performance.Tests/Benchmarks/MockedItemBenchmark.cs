@@ -108,5 +108,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             await this.CurrentBenchmark.UpsertItem();
         }
+
+        [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
+        public async Task QuerySinglePage()
+        {
+            await this.CurrentBenchmark.QuerySinglePage();
+        }
     }
 }

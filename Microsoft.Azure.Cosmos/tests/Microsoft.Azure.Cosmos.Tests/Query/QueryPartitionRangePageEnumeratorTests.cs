@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -145,7 +146,8 @@
 
             public override IAsyncEnumerator<TryCatch<QueryPage>> CreateEnumerator(
                 IDocumentContainer documentContainer,
-                QueryState state = default)
+                QueryState state = default,
+                CancellationToken cancellationToken = default)
             {
                 List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(
                     trace: NoOpTrace.Singleton, 
@@ -157,7 +159,7 @@
                     feedRangeState: new FeedRangeState<QueryState>(ranges[0], state),
                     partitionKey: null,
                     queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
-                    cancellationToken: default);
+                    cancellationToken: cancellationToken);
             }
         }
     }
