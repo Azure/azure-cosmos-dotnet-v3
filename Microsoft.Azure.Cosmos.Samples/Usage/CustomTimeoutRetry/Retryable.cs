@@ -110,7 +110,7 @@
 
                         TimeSpan? retryAfter = ce.RetryAfter;
 
-                        if (retryAfter.HasValue)   // handles 449?
+                        if (retryAfter.HasValue)   // TODO: handles 449?
                         {
                             // we want to honor any RetryAfter response headers from the server
 
@@ -187,7 +187,8 @@
 
         private static TimeSpan GetJitter()
         {
-            // do we want exponential backoff here too?
+            // TODO: do we want exponential backoff here too?
+            //  many customer scenarios require "fail fast" which seems counter to behavior of EB
 
             return TimeSpan.FromMilliseconds(1000 * _random.NextDouble());
         }
@@ -244,6 +245,7 @@
         {
             Task OnTimeout(Context context, TimeSpan timeoutValue, Task originalTask)
             {
+                // TODO:
                 // a few notes here:
                 //
                 //  we don't await or return the originalTask, because doing so would defeat the timeout itself, by forcing the policy to wait for it to fully complete

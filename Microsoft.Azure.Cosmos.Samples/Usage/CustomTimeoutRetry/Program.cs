@@ -80,6 +80,7 @@
 
                 await BulkInsert(endpoint, authKey);
 
+                // TODO: other settings needed to disable default retry behavior?
                 CosmosClientOptions options = new CosmosClientOptions
                 {
                     MaxRetryAttemptsOnRateLimitedRequests = 0   // we'll control these ourselves instead of relying on SDK defaults
@@ -134,6 +135,7 @@
             // define retryable operation
             async Task<Response<IEnumerable<Item>>> DoQuery(CancellationToken ct)
             {
+                // TODO:
                 // careful observers will note here we create a new iterator for each page of query results, which is not the ideal pattern
                 //  the issue with the ideal pattern is that it conflicts with our retry logic
                 //
