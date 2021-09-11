@@ -181,40 +181,12 @@ namespace Microsoft.Azure.Cosmos
                    EqualityComparer<EncryptionKeyWrapMetadata>.Default.Equals(this.EncryptionKeyWrapMetadata, other.EncryptionKeyWrapMetadata) &&
                    ((this.AdditionalProperties == null && other.AdditionalProperties == null) ||
                    (this.AdditionalProperties != null && other.AdditionalProperties != null &&
-                            this.CompareDictionary(this.AdditionalProperties, other.AdditionalProperties))) &&
+                            AppUtils.CompareDictionary(this.AdditionalProperties, other.AdditionalProperties))) &&
                    this.CreatedTime == other.CreatedTime &&
                    this.ETag == other.ETag &&
                    this.LastModified == other.LastModified &&
                    this.SelfLink == other.SelfLink &&
                    this.ResourceId == other.ResourceId;
-        }
-
-        private bool CompareDictionary(IDictionary<string, JToken> dict1, IDictionary<string, JToken> dict2)
-        {
-            bool isEqual = false;
-            if (dict1.Count == dict2.Count)
-            {
-                isEqual = true;
-                foreach (KeyValuePair<string, JToken> pair in dict1)
-                {
-                    if (dict2.TryGetValue(pair.Key, out JToken value))
-                    {
-                        // Require value be equal.
-                        if (!value.ToString().Equals(pair.Value.ToString()))
-                        {
-                            isEqual = false;
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        // Require key be present.
-                        isEqual = false;
-                        break;
-                    }
-                }
-            }
-            return isEqual;
         }
 
         /// <summary>
