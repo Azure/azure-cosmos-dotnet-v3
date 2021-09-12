@@ -51,9 +51,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
             int sourceLineNumber = 0)
         {
             return this.StartChild(
-name,
-component: this.Component,
-level: TraceLevel.Info);
+                name,
+                component: this.Component,
+                level: TraceLevel.Info);
         }
 
         public ITrace StartChild(
@@ -67,12 +67,17 @@ level: TraceLevel.Info);
             return this;
         }
 
-        public void AddDatum(string key, ITraceDatum traceDatum)
+        public void AddDatum(string key, TraceDatum traceDatum)
         {
             // NoOp
         }
 
         public void AddDatum(string key, object value)
+        {
+            // NoOp
+        }
+
+        public void AddChild(ITrace trace)
         {
             // NoOp
         }

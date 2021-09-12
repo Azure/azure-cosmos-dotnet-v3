@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -18,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestInitialize()
         {
             await base.TestInit();
-            string PartitionKey = "/status";
+            string PartitionKey = "/pk";
             ContainerResponse response = await this.database.CreateContainerAsync(
                 new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
@@ -59,9 +61,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                      if (documentServiceRequest.ResourceType == Documents.ResourceType.Document)
                      {
                          cancellationTokenSource.Cancel();
-                         cancellationTokenSource.Token.ThrowIfCancellationRequested();
                      }
-                 });
+                 },
+                 useGatewayMode: false,
+                 (uri, resourceOperation, documentServiceRequest) 
+                    => TransportClientHelper.ReturnThrottledStoreResponseOnItemOperation(uri, resourceOperation, documentServiceRequest, Guid.NewGuid(), string.Empty));
 
             await this.CheckCancellationTokenTestAsync(withCancellationToken, cancellationTokenSource.Token);
         }
@@ -85,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 await container.CreateItemAsync<ToDoActivity>(
                     toDoActivity,
-                    new Cosmos.PartitionKey(toDoActivity.status),
+                    new Cosmos.PartitionKey(toDoActivity.pk),
                     cancellationToken: cancellationToken);
 
                 Assert.Fail("Should have thrown");
@@ -97,7 +101,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string diagnostics = ce.Diagnostics.ToString();
                 string toString = ce.ToString();
                 Assert.IsTrue(toString.Contains(diagnostics));
-                Assert.IsTrue(toString.Contains(message));
+                Assert.IsTrue(message.Contains(diagnostics));
+                string messageWithoutDiagnostics = message.Substring(0, message.IndexOf(Environment.NewLine)).Trim();
+                Assert.IsTrue(toString.Contains(messageWithoutDiagnostics));
             }
 
             try
@@ -111,12 +117,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (CosmosOperationCanceledException ce)
             {
-                Assert.IsNotNull(ce);
                 string message = ce.Message;
                 string diagnostics = ce.Diagnostics.ToString();
                 string toString = ce.ToString();
                 Assert.IsTrue(toString.Contains(diagnostics));
-                Assert.IsTrue(toString.Contains(message));
+                Assert.IsTrue(message.Contains(diagnostics));
+                string messageWithoutDiagnostics = message.Substring(0, message.IndexOf(Environment.NewLine)).Trim();
+                Assert.IsTrue(toString.Contains(messageWithoutDiagnostics));
             }
         }
     }

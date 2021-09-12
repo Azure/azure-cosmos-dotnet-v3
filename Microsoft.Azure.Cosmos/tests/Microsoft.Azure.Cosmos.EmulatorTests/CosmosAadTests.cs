@@ -16,13 +16,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using global::Azure.Core;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.IdentityModel.Tokens;
+    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
 
     [TestClass]
     public class CosmosAadTests
     {
         [TestMethod]
-        public async Task AadMockTest()
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public async Task AadMockTest(ConnectionMode connectionMode)
         {
+            int requestCount = 0;
             string databaseId = Guid.NewGuid().ToString();
             string containerId = Guid.NewGuid().ToString();
             using (CosmosClient cosmosClient = TestCommon.CreateCosmosClient())
@@ -33,13 +37,50 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "/id");
             }
 
+           
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(authKey);
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
-                ConnectionMode = ConnectionMode.Gateway,
-                ConnectionProtocol = Protocol.Https
+                ConnectionMode = connectionMode,
+                ConnectionProtocol = connectionMode == ConnectionMode.Direct ? Protocol.Tcp : Protocol.Https,
             };
+
+            if (connectionMode == ConnectionMode.Direct)
+            {
+                long lsn = 2;
+                clientOptions.TransportClientHandlerFactory = (transport) => new TransportClientWrapper(transport,
+                 interceptorAfterResult: (request, storeResponse) =>
+                 {
+                     // Force a barrier request on create item.
+                     // There needs to be 2 regions and the GlobalCommittedLSN must be behind the LSN.
+                     if (storeResponse.StatusCode == HttpStatusCode.Created)
+                     {
+                         if (requestCount == 0)
+                         {
+                             requestCount++;
+                             lsn = storeResponse.LSN;
+                             storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.NumberOfReadRegions, "2");
+                             storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.GlobalCommittedLSN, "0");
+                         }
+                     }
+
+                     // Head request is the barrier request
+                     // The GlobalCommittedLSN is set to -1 because the local emulator doesn't have geo-dr so it has to be
+                     // overridden for the validation to succeed.
+                     if (request.OperationType == Documents.OperationType.Head)
+                     {
+                         if (requestCount == 1)
+                         {
+                             requestCount++;
+                             storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.NumberOfReadRegions, "2");
+                             storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.GlobalCommittedLSN, lsn.ToString(CultureInfo.InvariantCulture));
+                         }
+                     }
+
+                     return storeResponse;
+                 });
+            }
 
             using CosmosClient aadClient = new CosmosClient(
                 endpoint,
@@ -58,6 +99,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<ToDoActivity> itemResponse = await aadContainer.CreateItemAsync(
                 toDoActivity,
                 new PartitionKey(toDoActivity.id));
+
+            // Gateway does the barrier requests so only direct mode needs to be validated.
+            if (connectionMode == ConnectionMode.Direct)
+            {
+                Assert.AreEqual(2, requestCount, "The barrier request was never called.");
+            }
 
             toDoActivity.cost = 42.42;
             await aadContainer.ReplaceItemAsync(
@@ -116,8 +163,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Should use cached token
             Assert.AreEqual(1, getAadTokenCount);
 
-            await Task.Delay(TimeSpan.FromSeconds(1));
-            Assert.AreEqual(1, getAadTokenCount);
+            // Token should be refreshed after 1 second
+            await Task.Delay(TimeSpan.FromSeconds(1.2));
+            Assert.AreEqual(2, getAadTokenCount);
         }
 
         [TestMethod]
@@ -153,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 simpleEmulatorTokenCredential,
                 clientOptions))
             {
-                Assert.AreEqual(3, getAadTokenCount);
+                Assert.AreEqual(2, getAadTokenCount);
                 await Task.Delay(TimeSpan.FromSeconds(1));
                 ResponseMessage responseMessage = await aadClient.GetDatabase(Guid.NewGuid().ToString()).ReadStreamAsync();
                 Assert.IsNotNull(responseMessage);
@@ -194,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 simpleEmulatorTokenCredential,
                 clientOptions))
             {
-                Assert.AreEqual(3, getAadTokenCount);
+                Assert.AreEqual(2, getAadTokenCount);
                 await Task.Delay(TimeSpan.FromSeconds(1));
                 try
                 {
@@ -202,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         await aadClient.GetDatabase(Guid.NewGuid().ToString()).ReadStreamAsync();
                     Assert.Fail("Should throw auth error.");
                 }
-                catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.Unauthorized)
+                catch (RequestFailedException ce) when (ce.Status == (int)HttpStatusCode.RequestTimeout)
                 {
                     Assert.IsNotNull(ce.Message);
                     Assert.IsTrue(ce.ToString().Contains(errorMessage));

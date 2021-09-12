@@ -64,10 +64,10 @@ namespace Microsoft.Azure.Cosmos
             unchecked
             {
                 int hashCode = 23;
-                foreach (KeyValuePair<string, SqlParameter> queryParameter in queryDefinition.Parameters)
+                foreach (SqlParameter queryParameter in queryDefinition.Parameters)
                 {
                     // xor is associative so we generate the same hash code if order of parameters is different
-                    hashCode ^= queryParameter.Value.GetHashCode();
+                    hashCode ^= queryParameter.GetHashCode();
                 }
 
                 hashCode = (hashCode * 16777619) + queryDefinition.QueryText.GetHashCode();
@@ -81,24 +81,17 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="parameters"></param>
         /// <param name="otherParameters"></param>
         /// <returns>True if parameters have the same values.</returns>
-        private static bool ParameterEquals(IReadOnlyDictionary<string, SqlParameter> parameters, IReadOnlyDictionary<string, SqlParameter> otherParameters)
+        private static bool ParameterEquals(IReadOnlyList<SqlParameter> parameters, IReadOnlyList<SqlParameter> otherParameters)
         {
             if (parameters.Count != otherParameters.Count)
             {
                 return false;
             }
 
-            foreach (KeyValuePair<string, SqlParameter> queryParameter in parameters)
-            {
-                if (!otherParameters.TryGetValue(queryParameter.Key, out SqlParameter value) ||
-                    !value.Name.Equals(queryParameter.Value.Name) ||
-                    (value.Value != null && !value.Value.Equals(queryParameter.Value.Value)))
-                {
-                    return false;
-                }
-            }
+            HashSet<SqlParameter> set1 = new HashSet<SqlParameter>(parameters);
+            HashSet<SqlParameter> set2 = new HashSet<SqlParameter>(otherParameters);
 
-            return true;
+            return set1.SetEquals(set2);
         }
     }
 }

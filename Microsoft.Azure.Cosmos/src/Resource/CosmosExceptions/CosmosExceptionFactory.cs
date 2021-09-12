@@ -5,32 +5,23 @@
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Net;
+    using System.Text;
+    using System.Text.RegularExpressions;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     internal static class CosmosExceptionFactory
     {
         internal static CosmosException Create(
             DocumentClientException dce,
-            CosmosDiagnosticsContext diagnosticsContext)
+            ITrace trace)
         {
-            Headers headers = new Headers();
-            if (dce.Headers != null)
-            {
-                foreach (string key in dce.Headers)
-                {
-                    string value = dce.Headers[key];
-                    if (value == null)
-                    {
-                        throw new ArgumentNullException(
-                            message: $"{nameof(key)}: {key};",
-                            innerException: dce);
-                    }
-
-                    headers.Add(key, value);
-                }
-            }
+            Headers headers = dce.Headers == null ? new Headers() : new Headers(dce.Headers);
 
             HttpStatusCode httpStatusCode;
             if (dce.StatusCode.HasValue)
@@ -48,14 +39,10 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 
             return CosmosExceptionFactory.Create(
                 httpStatusCode,
-                (int)dce.GetSubStatus(),
                 dce.Message,
                 dce.StackTrace,
-                dce.ActivityId,
-                dce.RequestCharge,
-                dce.RetryAfter,
                 headers,
-                diagnosticsContext,
+                trace,
                 dce.Error,
                 dce.InnerException);
         }
@@ -67,14 +54,10 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
         {
             return CosmosExceptionFactory.Create(
                 statusCode: statusCode,
-                subStatusCode: default,
                 message: errorMessage,
                 stackTrace: null,
-                activityId: requestMessage?.Headers?.ActivityId,
-                requestCharge: 0,
-                retryAfter: default,
                 headers: requestMessage?.Headers,
-                diagnosticsContext: default,
+                trace: NoOpTrace.Singleton,
                 error: default,
                 innerException: default);
         }
@@ -96,26 +79,15 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             (Error error, string contentMessage) = CosmosExceptionFactory.GetErrorFromStream(responseMessage.Content);
             if (!string.IsNullOrEmpty(contentMessage))
             {
-                if (string.IsNullOrEmpty(errorMessage))
-                {
-                    errorMessage = contentMessage;
-                }
-                else
-                {
-                    errorMessage = $"Error Message: {errorMessage}; Content {contentMessage};";
-                }
+                errorMessage = string.IsNullOrEmpty(errorMessage) ? contentMessage : $"Error Message: {errorMessage}; Content {contentMessage};";
             }
 
             return CosmosExceptionFactory.Create(
                 responseMessage.StatusCode,
-                (int)responseMessage.Headers.SubStatusCode,
                 errorMessage,
                 responseMessage?.CosmosException?.StackTrace,
-                responseMessage.Headers.ActivityId,
-                responseMessage.Headers.RequestCharge,
-                responseMessage.Headers.RetryAfter,
                 responseMessage.Headers,
-                responseMessage.DiagnosticsContext,
+                responseMessage.Trace,
                 error,
                 responseMessage.CosmosException?.InnerException);
         }
@@ -137,21 +109,17 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 
             if (responseHeaders == null)
             {
-                responseHeaders = documentServiceResponse.Headers.ToCosmosHeaders();
+                responseHeaders = new Headers(documentServiceResponse.Headers);
             }
 
             (Error error, string errorMessage) = CosmosExceptionFactory.GetErrorFromStream(documentServiceResponse.ResponseBody);
 
             return CosmosExceptionFactory.Create(
                 statusCode: documentServiceResponse.StatusCode,
-                subStatusCode: (int)responseHeaders.SubStatusCode,
                 message: errorMessage,
                 stackTrace: null,
-                activityId: responseHeaders.ActivityId,
-                requestCharge: responseHeaders.RequestCharge,
-                retryAfter: responseHeaders.RetryAfter,
                 headers: responseHeaders,
-                diagnosticsContext: requestMessage.DiagnosticsContext,
+                trace: requestMessage.Trace,
                 error: error,
                 innerException: null);
         }
@@ -171,18 +139,14 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             }
 
             (Error error, string errorMessage) = CosmosExceptionFactory.GetErrorFromStream(storeResponse.ResponseBody);
-            Headers headers = storeResponse.Headers.ToCosmosHeaders();
+            Headers headers = new Headers(storeResponse.Headers);
 
             return CosmosExceptionFactory.Create(
                 statusCode: storeResponse.StatusCode,
-                subStatusCode: (int)headers.SubStatusCode,
                 message: errorMessage,
                 stackTrace: null,
-                activityId: headers.ActivityId,
-                requestCharge: headers.RequestCharge,
-                retryAfter: headers.RetryAfter,
                 headers: headers,
-                diagnosticsContext: requestMessage.DiagnosticsContext,
+                trace: requestMessage.Trace,
                 error: error,
                 innerException: null);
         }
@@ -195,24 +159,36 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 if (content != null
                && content.CanRead)
                 {
-                    try
-                    {
-                        Error error = Documents.Resource.LoadFrom<Error>(content);
-                        if (error != null)
-                        {
-                            // Error format is not consistent across modes
-                            return (error, error.ToString());
-                        }
-                    }
-                    catch (Newtonsoft.Json.JsonReaderException)
-                    {
-                    }
-
-                    // Content is not Json
-                    content.Position = 0;
                     using (StreamReader streamReader = new StreamReader(content))
                     {
-                        return (null, streamReader.ReadToEnd());
+                        string errorContent = streamReader.ReadToEnd();
+                        try
+                        {
+                            JObject errorObj = JObject.Parse(errorContent);
+                            Error error = errorObj.ToObject<Error>();
+                            if (error != null)
+                            {
+                                StringBuilder message = new StringBuilder();
+                                foreach (var err in errorObj)
+                                {
+                                    message
+                                        .Append(Environment.NewLine)
+                                        .Append(err.Key)
+                                        .Append(" : ")
+                                        .Append(err.Value);
+                                }
+                                message.Append(Environment.NewLine);
+                                // Error format is not consistent across modes
+                                return (error, message.ToString());
+                            }
+                        }
+                        catch (Newtonsoft.Json.JsonReaderException)
+                        {
+                        }
+
+                        // Content is not Json
+                        content.Position = 0;
+                        return (null, errorContent);
                     }
                 }
 
@@ -222,183 +198,127 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 
         internal static CosmosException CreateRequestTimeoutException(
             string message,
-            int subStatusCode = default,
+            Headers headers,
             string stackTrace = default,
-            string activityId = default,
-            double requestCharge = default,
-            TimeSpan? retryAfter = default,
-            Headers headers = default,
-            CosmosDiagnosticsContext diagnosticsContext = default,
+            ITrace trace = default,
             Error error = default,
             Exception innerException = default)
         {
             return CosmosExceptionFactory.Create(
                 HttpStatusCode.RequestTimeout,
-                subStatusCode,
                 message,
                 stackTrace,
-                activityId,
-                requestCharge,
-                retryAfter,
                 headers,
-                diagnosticsContext,
+                trace,
                 error,
                 innerException);
         }
 
         internal static CosmosException CreateThrottledException(
             string message,
-            int subStatusCode = default,
+            Headers headers,
             string stackTrace = default,
-            string activityId = default,
-            double requestCharge = default,
-            TimeSpan? retryAfter = default,
-            Headers headers = default,
-            CosmosDiagnosticsContext diagnosticsContext = default,
+            ITrace trace = default,
             Error error = default,
             Exception innerException = default)
         {
             return CosmosExceptionFactory.Create(
                 (HttpStatusCode)StatusCodes.TooManyRequests,
-                subStatusCode,
                 message,
                 stackTrace,
-                activityId,
-                requestCharge,
-                retryAfter,
                 headers,
-                diagnosticsContext,
+                trace,
                 error,
                 innerException);
         }
 
         internal static CosmosException CreateNotFoundException(
             string message,
-            int subStatusCode = default,
+            Headers headers,
             string stackTrace = default,
-            string activityId = default,
-            double requestCharge = default,
-            TimeSpan? retryAfter = default,
-            Headers headers = default,
-            CosmosDiagnosticsContext diagnosticsContext = default,
+            ITrace trace = default,
             Error error = default,
             Exception innerException = default)
         {
             return CosmosExceptionFactory.Create(
                 HttpStatusCode.NotFound,
-                subStatusCode,
                 message,
                 stackTrace,
-                activityId,
-                requestCharge,
-                retryAfter,
                 headers,
-                diagnosticsContext,
+                trace,
                 error,
                 innerException);
         }
 
         internal static CosmosException CreateInternalServerErrorException(
             string message,
-            int subStatusCode = default,
+            Headers headers,
             string stackTrace = default,
-            string activityId = default,
-            double requestCharge = default,
-            TimeSpan? retryAfter = default,
-            Headers headers = default,
-            CosmosDiagnosticsContext diagnosticsContext = default,
+            ITrace trace = default,
             Error error = default,
             Exception innerException = default)
         {
             return CosmosExceptionFactory.Create(
                 HttpStatusCode.InternalServerError,
-                subStatusCode,
                 message,
                 stackTrace,
-                activityId,
-                requestCharge,
-                retryAfter,
                 headers,
-                diagnosticsContext,
+                trace,
                 error,
                 innerException);
         }
 
         internal static CosmosException CreateBadRequestException(
             string message,
-            int subStatusCode = default,
+            Headers headers,
             string stackTrace = default,
-            string activityId = default,
-            double requestCharge = default,
-            TimeSpan? retryAfter = default,
-            Headers headers = default,
-            CosmosDiagnosticsContext diagnosticsContext = default,
+            ITrace trace = default,
             Error error = default,
             Exception innerException = default)
         {
             return CosmosExceptionFactory.Create(
                 HttpStatusCode.BadRequest,
-                subStatusCode,
                 message,
                 stackTrace,
-                activityId,
-                requestCharge,
-                retryAfter,
                 headers,
-                diagnosticsContext,
+                trace,
                 error,
                 innerException);
         }
 
         internal static CosmosException CreateUnauthorizedException(
             string message,
-            int subStatusCode,
+            Headers headers,
             Exception innerException,
             string stackTrace = default,
-            string activityId = default,
-            double requestCharge = default,
-            TimeSpan? retryAfter = default,
-            Headers headers = default,
-            CosmosDiagnosticsContext diagnosticsContext = default,
+            ITrace trace = default,
             Error error = default)
         {
             return CosmosExceptionFactory.Create(
                 HttpStatusCode.Unauthorized,
-                subStatusCode,
                 message,
                 stackTrace,
-                activityId,
-                requestCharge,
-                retryAfter,
                 headers,
-                diagnosticsContext,
+                trace,
                 error,
                 innerException);
         }
 
         internal static CosmosException Create(
             HttpStatusCode statusCode,
-            int subStatusCode,
             string message,
             string stackTrace,
-            string activityId,
-            double requestCharge,
-            TimeSpan? retryAfter,
             Headers headers,
-            CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             Error error,
             Exception innerException)
         {
             return new CosmosException(
                 statusCode,
                 message,
-                subStatusCode,
                 stackTrace,
-                activityId,
-                requestCharge,
-                retryAfter,
                 headers,
-                diagnosticsContext,
+                trace,
                 error,
                 innerException);
         }

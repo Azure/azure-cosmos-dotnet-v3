@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Net;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -15,37 +17,31 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosException : Exception
     {
         private readonly string stackTrace;
+        private readonly Lazy<string> lazyMessage;
 
         internal CosmosException(
             HttpStatusCode statusCode,
             string message,
-            int subStatusCode,
             string stackTrace,
-            string activityId,
-            double requestCharge,
-            TimeSpan? retryAfter,
             Headers headers,
-            CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             Error error,
             Exception innerException)
-            : base(CosmosException.GetMessageHelper(
-                statusCode,
-                subStatusCode,
-                message,
-                activityId), innerException)
+            // The message is overridden. Base exception does not have CTOR for just innerException and the property is not virtual
+            : base(string.Empty, innerException)
         {
             this.ResponseBody = message;
             this.stackTrace = stackTrace;
-            this.ActivityId = activityId;
             this.StatusCode = statusCode;
-            this.SubStatusCode = subStatusCode;
-            this.RetryAfter = retryAfter;
-            this.RequestCharge = requestCharge;
-            this.Headers = headers;
+            this.Headers = headers ?? new Headers();
             this.Error = error;
-
-            // Always have a diagnostic context. A new diagnostic will have useful info like user agent
-            this.DiagnosticsContext = diagnosticsContext ?? new CosmosDiagnosticsContextCore();
+            this.Trace = trace;
+            this.Diagnostics = new CosmosTraceDiagnostics(this.Trace ?? NoOpTrace.Singleton);
+            this.lazyMessage = new Lazy<string>(() => CosmosException.GetMessageHelper(
+                statusCode,
+                this.Headers,
+                this.ResponseBody,
+                this.Diagnostics));
         }
 
         /// <summary>
@@ -65,13 +61,24 @@ namespace Microsoft.Azure.Cosmos
             : base(message)
         {
             this.stackTrace = null;
-            this.SubStatusCode = subStatusCode;
             this.StatusCode = statusCode;
-            this.RequestCharge = requestCharge;
-            this.ActivityId = activityId;
-            this.Headers = new Headers();
-            this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
+            this.ResponseBody = message;
+            this.Trace = NoOpTrace.Singleton;
+            this.lazyMessage = new Lazy<string>(() => message);
+            this.Headers = new Headers()
+            {
+                SubStatusCode = (SubStatusCodes)subStatusCode,
+                RequestCharge = requestCharge,
+            };
+
+            if (!string.IsNullOrEmpty(activityId))
+            {
+                this.Headers.ActivityId = activityId;
+            }
         }
+
+        /// <inheritdoc/>
+        public override string Message => this.lazyMessage.Value;
 
         /// <summary>
         /// The body of the cosmos response message as a string
@@ -88,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the request completion sub status code from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The request completion status code</value>
-        public virtual int SubStatusCode { get; }
+        public virtual int SubStatusCode => Headers.GetIntValueOrDefault(this.Headers.SubStatusCodeLiteral);
 
         /// <summary>
         /// Gets the request charge for this request from the Azure Cosmos DB service.
@@ -96,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The request charge measured in request units.
         /// </value>
-        public virtual double RequestCharge { get; }
+        public virtual double RequestCharge => this.Headers.RequestCharge;
 
         /// <summary>
         /// Gets the activity ID for the request from the Azure Cosmos DB service.
@@ -104,12 +111,12 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The activity ID for the request.
         /// </value>
-        public virtual string ActivityId { get; }
+        public virtual string ActivityId => this.Headers.ActivityId;
 
         /// <summary>
         /// Gets the retry after time. This tells how long a request should wait before doing a retry.
         /// </summary>
-        public virtual TimeSpan? RetryAfter { get; }
+        public virtual TimeSpan? RetryAfter => this.Headers.RetryAfter;
 
         /// <summary>
         /// Gets the response headers
@@ -119,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the diagnostics for the request
         /// </summary>
-        public virtual CosmosDiagnostics Diagnostics => this.DiagnosticsContext.Diagnostics;
+        public virtual CosmosDiagnostics Diagnostics { get; }
 
         /// <inheritdoc/>
         public override string StackTrace
@@ -137,7 +144,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal virtual CosmosDiagnosticsContext DiagnosticsContext { get; }
+        internal virtual ITrace Trace { get; }
 
         /// <summary>
         /// Gets the internal error object.
@@ -178,44 +185,74 @@ namespace Microsoft.Azure.Cosmos
 
         internal ResponseMessage ToCosmosResponseMessage(RequestMessage request)
         {
-            return new ResponseMessage(
+            ResponseMessage responseMessage = new ResponseMessage(
                  headers: this.Headers,
                  requestMessage: request,
                  cosmosException: this,
                  statusCode: this.StatusCode,
-                 diagnostics: this.DiagnosticsContext);
+                 trace: this.Trace);
+
+            return responseMessage;
         }
 
         private static string GetMessageHelper(
             HttpStatusCode statusCode,
-            int subStatusCode,
+            Headers headers,
             string responseBody,
-            string activityId)
+            CosmosDiagnostics diagnostics)
         {
             StringBuilder stringBuilder = new StringBuilder();
 
-            stringBuilder.Append($"Response status code does not indicate success: ");
-            stringBuilder.Append($"{statusCode} ({(int)statusCode})");
-            stringBuilder.Append("; Substatus: ");
-            stringBuilder.Append(subStatusCode);
-            stringBuilder.Append("; ActivityId: ");
-            stringBuilder.Append(activityId ?? string.Empty);
-            stringBuilder.Append("; Reason: (");
-            stringBuilder.Append(responseBody ?? string.Empty);
-            stringBuilder.Append(");");
+            CosmosException.AppendMessageWithoutDiagnostics(
+                stringBuilder,
+                statusCode,
+                headers,
+                responseBody);
+
+            // Include the diagnostics for exceptions where it is critical
+            // to root cause failures.
+            if (statusCode == HttpStatusCode.RequestTimeout
+                || statusCode == HttpStatusCode.InternalServerError
+                || statusCode == HttpStatusCode.ServiceUnavailable
+                || (statusCode == HttpStatusCode.NotFound && headers.SubStatusCode == SubStatusCodes.ReadSessionNotAvailable))
+            {
+                stringBuilder.Append("; Diagnostics:");
+                stringBuilder.Append(diagnostics.ToString());
+            }
 
             return stringBuilder.ToString();
         }
 
+        private static void AppendMessageWithoutDiagnostics(
+            StringBuilder stringBuilder,
+            HttpStatusCode statusCode,
+            Headers headers,
+            string responseBody)
+        {
+            stringBuilder.Append($"Response status code does not indicate success: ");
+            stringBuilder.Append($"{statusCode} ({(int)statusCode})");
+            stringBuilder.Append("; Substatus: ");
+            stringBuilder.Append(headers?.SubStatusCodeLiteral ?? "0");
+            stringBuilder.Append("; ActivityId: ");
+            stringBuilder.Append(headers?.ActivityId ?? string.Empty);
+            stringBuilder.Append("; Reason: (");
+            stringBuilder.Append(responseBody ?? string.Empty);
+            stringBuilder.Append(");");
+        }
+
         private string ToStringHelper(
-        StringBuilder stringBuilder)
+            StringBuilder stringBuilder)
         {
             if (stringBuilder == null)
             {
                 throw new ArgumentNullException(nameof(stringBuilder));
             }
 
-            stringBuilder.Append(this.Message);
+            CosmosException.AppendMessageWithoutDiagnostics(
+                stringBuilder,
+                this.StatusCode,
+                this.Headers,
+                this.ResponseBody);
             stringBuilder.AppendLine();
 
             if (this.InnerException != null)

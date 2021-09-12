@@ -38,7 +38,7 @@
                 ImplementationAsync,
                 "/key");
 
-            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
                 Assert.AreEqual(0, (await QueryTestsBase.RunQueryAsync(
                     container,
@@ -54,7 +54,7 @@
                     List<string> expected = documents
                         .Skip(i * 3)
                         .Take(3)
-                        .Select(doc => ((CosmosString)doc["id"]).Value)
+                        .Select(doc => ((CosmosString)doc["id"]).Value.ToString())
                         .ToList();
                     string expectedResult = string.Join(",", expected);
 
@@ -73,21 +73,13 @@
                         (@"SELECT TOP 10 VALUE r FROM Root r JOIN c IN r.shortArray WHERE c.a BETWEEN 5 and 7", expectedResult),
                         ($@"SELECT * FROM Root r WHERE r.id IN (""{expected[0]}"", ""{expected[1]}"", ""{expected[2]}"") ORDER BY r.prop", expectedOrderByResult),
                         (@"SELECT * FROM Root r WHERE r.prop BETWEEN 1 AND 3 ORDER BY r.prop", expectedOrderByResult),
+                        (@"SELECT DISTINCT * FROM Root r WHERE r.prop BETWEEN 1 AND 3 ORDER BY r.prop", expectedOrderByResult),
                         (@"SELECT VALUE r FROM Root r JOIN c IN r.shortArray WHERE c.a BETWEEN 5 and 7 ORDER BY r.prop", expectedOrderByResult),
                     };
 
                     if (i < keys.Length - 1)
                     {
-                        string key;
-                        if (keys[i] is string)
-                        {
-                            key = "'" + keys[i].ToString() + "'";
-                        }
-                        else
-                        {
-                            key = keys[i].ToString();
-                        }
-
+                        string key = keys[i] is string ? "'" + keys[i].ToString() + "'" : keys[i].ToString();
                         queries.Add((string.Format(CultureInfo.InvariantCulture, @"SELECT * FROM Root r WHERE r.key = {0} ORDER BY r.prop", key), expectedOrderByResult));
                     }
 
@@ -108,7 +100,10 @@
                         }
 
                         string resultDocIds = string.Join(",", result.Select(doc => doc.Id));
-                        Assert.AreEqual(queryAndExpectedResult.Item2, resultDocIds);
+                        Assert.AreEqual(
+                            queryAndExpectedResult.Item2,
+                            resultDocIds,
+                            $"Query: {queryAndExpectedResult.Item1} with partition key: {keys[i]} failed.");
                     }
                 }
             }

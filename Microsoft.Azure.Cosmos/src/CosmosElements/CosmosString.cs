@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #nullable enable
 
     using System;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -28,9 +29,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
         }
 
-        public abstract string Value { get; }
-
-        public abstract bool TryGetBufferedValue(out Utf8Memory bufferedUtf8Value);
+        public abstract UtfAnyString Value { get; }
 
         public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
         {
@@ -79,6 +78,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public static CosmosString Create(string value)
         {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             return value.Length == 0 ? EagerCosmosString.Empty : new EagerCosmosString(value);
         }
 
@@ -119,9 +123,4 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
         }
     }
-#if INTERNAL
-#pragma warning restore SA1601 // Partial elements should be documented
-#pragma warning restore SA1600 // Elements should be documented
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-#endif
 }

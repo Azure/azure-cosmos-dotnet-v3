@@ -184,6 +184,15 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 sqlJoinCollectionExpression.Right.Accept(this) as SqlCollectionExpression);
         }
 
+        public override SqlObject Visit(SqlLikeScalarExpression sqlLikeScalarExpression)
+        {
+            return SqlLikeScalarExpression.Create(
+                sqlLikeScalarExpression.Expression.Accept(this) as SqlScalarExpression,
+                sqlLikeScalarExpression.Pattern.Accept(this) as SqlScalarExpression,
+                sqlLikeScalarExpression.Not,
+                sqlLikeScalarExpression.EscapeSequence?.Accept(this) as SqlStringLiteral);
+        }
+
         public override SqlObject Visit(SqlLimitSpec sqlObject)
         {
             return SqlLimitSpec.Create(SqlNumberLiteral.Create(0));
@@ -251,15 +260,15 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return SqlOffsetSpec.Create(SqlNumberLiteral.Create(0));
         }
 
-        public override SqlObject Visit(SqlOrderbyClause sqlOrderByClause)
+        public override SqlObject Visit(SqlOrderByClause sqlOrderByClause)
         {
-            SqlOrderByItem[] items = new SqlOrderByItem[sqlOrderByClause.OrderbyItems.Length];
-            for (int i = 0; i < sqlOrderByClause.OrderbyItems.Length; i++)
+            SqlOrderByItem[] items = new SqlOrderByItem[sqlOrderByClause.OrderByItems.Length];
+            for (int i = 0; i < sqlOrderByClause.OrderByItems.Length; i++)
             {
-                items[i] = sqlOrderByClause.OrderbyItems[i].Accept(this) as SqlOrderByItem;
+                items[i] = sqlOrderByClause.OrderByItems[i].Accept(this) as SqlOrderByItem;
             }
 
-            return SqlOrderbyClause.Create(items);
+            return SqlOrderByClause.Create(items);
         }
 
         public override SqlObject Visit(SqlOrderByItem sqlOrderByItem)
@@ -311,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 sqlQuery.FromClause?.Accept(this) as SqlFromClause,
                 sqlQuery.WhereClause?.Accept(this) as SqlWhereClause,
                 sqlQuery.GroupByClause?.Accept(this) as SqlGroupByClause,
-                sqlQuery.OrderbyClause?.Accept(this) as SqlOrderbyClause,
+                sqlQuery.OrderByClause?.Accept(this) as SqlOrderByClause,
                 sqlQuery.OffsetLimitClause?.Accept(this) as SqlOffsetLimitClause);
         }
 
@@ -450,7 +459,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             {
                 if (!this.obfuscatedStrings.TryGetValue(value, out obfuscatedString))
                 {
-                    int sequenceNumber = ++sequence;
+                    int sequenceNumber = ++sequence; 
                     obfuscatedString = value.Length < 10 ? $"{prefix}{sequence}" : $"{prefix}{sequence}__{value.Length}";
                     this.obfuscatedStrings.Add(value, obfuscatedString);
                 }

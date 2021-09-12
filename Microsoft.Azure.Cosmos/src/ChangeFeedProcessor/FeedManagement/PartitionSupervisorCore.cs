@@ -12,16 +12,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
 
-    internal sealed class PartitionSupervisorCore<T> : PartitionSupervisor
+    internal sealed class PartitionSupervisorCore : PartitionSupervisor
     {
         private readonly DocumentServiceLease lease;
-        private readonly ChangeFeedObserver<T> observer;
+        private readonly ChangeFeedObserver observer;
         private readonly FeedProcessor processor;
         private readonly LeaseRenewer renewer;
         private readonly CancellationTokenSource renewerCancellation = new CancellationTokenSource();
         private CancellationTokenSource processorCancellation;
 
-        public PartitionSupervisorCore(DocumentServiceLease lease, ChangeFeedObserver<T> observer, FeedProcessor processor, LeaseRenewer renewer)
+        public PartitionSupervisorCore(DocumentServiceLease lease, ChangeFeedObserver observer, FeedProcessor processor, LeaseRenewer renewer)
         {
             this.lease = lease;
             this.observer = observer;
@@ -31,8 +31,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
         public override async Task RunAsync(CancellationToken shutdownToken)
         {
-            ChangeFeedObserverContextCore<T> context = new ChangeFeedObserverContextCore<T>(this.lease.CurrentLeaseToken);
-            await this.observer.OpenAsync(context).ConfigureAwait(false);
+            await this.observer.OpenAsync(this.lease.CurrentLeaseToken).ConfigureAwait(false);
 
             this.processorCancellation = CancellationTokenSource.CreateLinkedTokenSource(shutdownToken);
 
@@ -55,26 +54,21 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 closeReason = ChangeFeedObserverCloseReason.LeaseLost;
                 throw;
             }
-            catch (FeedSplitException)
+            catch (FeedRangeGoneException)
             {
                 closeReason = ChangeFeedObserverCloseReason.LeaseGone;
                 throw;
             }
-            catch (FeedNotFoundException)
+            catch (CosmosException)
             {
-                closeReason = ChangeFeedObserverCloseReason.ResourceGone;
-                throw;
-            }
-            catch (FeedReadSessionNotAvailableException)
-            {
-                closeReason = ChangeFeedObserverCloseReason.ReadSessionNotAvailable;
+                closeReason = ChangeFeedObserverCloseReason.CosmosException;
                 throw;
             }
             catch (OperationCanceledException) when (shutdownToken.IsCancellationRequested)
             {
                 closeReason = ChangeFeedObserverCloseReason.Shutdown;
             }
-            catch (ObserverException)
+            catch (ChangeFeedProcessorUserException)
             {
                 closeReason = ChangeFeedObserverCloseReason.ObserverError;
                 throw;
@@ -86,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
             finally
             {
-                await this.observer.CloseAsync(context, closeReason).ConfigureAwait(false);
+                await this.observer.CloseAsync(this.lease.CurrentLeaseToken, closeReason).ConfigureAwait(false);
             }
         }
 

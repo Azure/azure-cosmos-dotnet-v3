@@ -5,7 +5,10 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -13,17 +16,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Avoid problematic synchronous waits", Justification = "To be fixed, tracked in issue #1575")]
     internal sealed class EncryptionTransactionalBatch : TransactionalBatch
     {
-        private readonly Encryptor encryptor;
         private readonly CosmosSerializer cosmosSerializer;
+        private readonly EncryptionContainer encryptionContainer;
         private TransactionalBatch transactionalBatch;
 
         public EncryptionTransactionalBatch(
             TransactionalBatch transactionalBatch,
-            Encryptor encryptor,
+            EncryptionContainer encryptionContainer,
             CosmosSerializer cosmosSerializer)
         {
             this.transactionalBatch = transactionalBatch ?? throw new ArgumentNullException(nameof(transactionalBatch));
-            this.encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
+            this.encryptionContainer = encryptionContainer ?? throw new ArgumentNullException(nameof(encryptionContainer));
             this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
         }
 
@@ -31,16 +34,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             T item,
             TransactionalBatchItemRequestOptions requestOptions = null)
         {
-            if (!(requestOptions is EncryptionTransactionalBatchItemRequestOptions encryptionItemRequestOptions) ||
-                encryptionItemRequestOptions.EncryptionOptions == null)
-            {
-                this.transactionalBatch = this.transactionalBatch.CreateItem(
-                    item,
-                    requestOptions);
-
-                return this;
-            }
-
             Stream itemStream = this.cosmosSerializer.ToStream<T>(item);
             return this.CreateItemStream(
                 itemStream,
@@ -51,18 +44,24 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Stream streamPayload,
             TransactionalBatchItemRequestOptions requestOptions = null)
         {
-            if (requestOptions is EncryptionTransactionalBatchItemRequestOptions encryptionItemRequestOptions &&
-                encryptionItemRequestOptions.EncryptionOptions != null)
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.CreateScope("EncryptItemStream"))
             {
-                CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
-                using (diagnosticsContext.CreateScope("EncryptItemStream"))
+                EncryptionSettings encryptionSettings = this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: default)
+                    .ConfigureAwait(false)
+                    .GetAwaiter()
+                    .GetResult();
+
+                if (encryptionSettings.PropertiesToEncrypt.Any())
                 {
                     streamPayload = EncryptionProcessor.EncryptAsync(
                         streamPayload,
-                        this.encryptor,
-                        encryptionItemRequestOptions.EncryptionOptions,
+                        encryptionSettings,
                         diagnosticsContext,
-                        cancellationToken: default).Result;
+                        cancellationToken: default)
+                        .ConfigureAwait(false)
+                        .GetAwaiter()
+                        .GetResult();
                 }
             }
 
@@ -100,17 +99,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             T item,
             TransactionalBatchItemRequestOptions requestOptions = null)
         {
-            if (!(requestOptions is EncryptionTransactionalBatchItemRequestOptions encryptionItemRequestOptions) ||
-                encryptionItemRequestOptions.EncryptionOptions == null)
-            {
-                this.transactionalBatch = this.transactionalBatch.ReplaceItem(
-                    id,
-                    item,
-                    requestOptions);
-
-                return this;
-            }
-
             Stream itemStream = this.cosmosSerializer.ToStream<T>(item);
             return this.ReplaceItemStream(
                 id,
@@ -123,18 +111,24 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Stream streamPayload,
             TransactionalBatchItemRequestOptions requestOptions = null)
         {
-            if (requestOptions is EncryptionTransactionalBatchItemRequestOptions encryptionItemRequestOptions &&
-                encryptionItemRequestOptions.EncryptionOptions != null)
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.CreateScope("EncryptItemStream"))
             {
-                CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
-                using (diagnosticsContext.CreateScope("EncryptItemStream"))
+                EncryptionSettings encryptionSettings = this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: default)
+                    .ConfigureAwait(false)
+                    .GetAwaiter()
+                    .GetResult();
+
+                if (encryptionSettings.PropertiesToEncrypt.Any())
                 {
                     streamPayload = EncryptionProcessor.EncryptAsync(
                         streamPayload,
-                        this.encryptor,
-                        encryptionItemRequestOptions.EncryptionOptions,
+                        encryptionSettings,
                         diagnosticsContext,
-                        cancellationToken: default).Result;
+                        default)
+                        .ConfigureAwait(false)
+                        .GetAwaiter()
+                        .GetResult();
                 }
             }
 
@@ -150,16 +144,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             T item,
             TransactionalBatchItemRequestOptions requestOptions = null)
         {
-            if (!(requestOptions is EncryptionTransactionalBatchItemRequestOptions encryptionItemRequestOptions) ||
-                encryptionItemRequestOptions.EncryptionOptions == null)
-            {
-                this.transactionalBatch = this.transactionalBatch.UpsertItem(
-                    item,
-                    requestOptions);
-
-                return this;
-            }
-
             Stream itemStream = this.cosmosSerializer.ToStream<T>(item);
             return this.UpsertItemStream(
                 itemStream,
@@ -170,18 +154,24 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Stream streamPayload,
             TransactionalBatchItemRequestOptions requestOptions = null)
         {
-            if (requestOptions is EncryptionTransactionalBatchItemRequestOptions encryptionItemRequestOptions &&
-                encryptionItemRequestOptions.EncryptionOptions != null)
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.CreateScope("EncryptItemStream"))
             {
-                CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
-                using (diagnosticsContext.CreateScope("EncryptItemStream"))
+                EncryptionSettings encryptionSettings = this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: default)
+                    .ConfigureAwait(false)
+                    .GetAwaiter()
+                    .GetResult();
+
+                if (encryptionSettings.PropertiesToEncrypt.Any())
                 {
                     streamPayload = EncryptionProcessor.EncryptAsync(
                         streamPayload,
-                        this.encryptor,
-                        encryptionItemRequestOptions.EncryptionOptions,
+                        encryptionSettings,
                         diagnosticsContext,
-                        cancellationToken: default).Result;
+                        cancellationToken: default)
+                        .ConfigureAwait(false)
+                        .GetAwaiter()
+                        .GetResult();
                 }
             }
 
@@ -195,30 +185,140 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override async Task<TransactionalBatchResponse> ExecuteAsync(
             CancellationToken cancellationToken = default)
         {
+            return await this.ExecuteAsync(requestOptions: null, cancellationToken: cancellationToken);
+        }
+
+        public override async Task<TransactionalBatchResponse> ExecuteAsync(
+            TransactionalBatchRequestOptions requestOptions,
+            CancellationToken cancellationToken = default)
+        {
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
-            using (diagnosticsContext.CreateScope("TransactionalBatch.ExecuteAsync"))
+            using (diagnosticsContext.CreateScope("TransactionalBatch.ExecuteAsync.WithRequestOptions"))
             {
-                TransactionalBatchResponse response = await this.transactionalBatch.ExecuteAsync(cancellationToken);
+                TransactionalBatchResponse response = null;
 
-                if (response.IsSuccessStatusCode)
+                EncryptionSettings encryptionSettings = await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
+                if (!encryptionSettings.PropertiesToEncrypt.Any())
                 {
-                    for (int index = 0; index < response.Count; index++)
+                    return await this.transactionalBatch.ExecuteAsync(requestOptions, cancellationToken);
+                }
+                else
+                {
+                    TransactionalBatchRequestOptions clonedRequestOptions;
+                    if (requestOptions != null)
                     {
-                        TransactionalBatchOperationResult result = response[index];
-
-                        if (result.ResourceStream != null)
-                        {
-                            (result.ResourceStream, _) = await EncryptionProcessor.DecryptAsync(
-                                result.ResourceStream,
-                                this.encryptor,
-                                diagnosticsContext,
-                                cancellationToken);
-                        }
+                        clonedRequestOptions = (TransactionalBatchRequestOptions)requestOptions.ShallowCopy();
                     }
+                    else
+                    {
+                        clonedRequestOptions = new TransactionalBatchRequestOptions();
+                    }
+
+                    encryptionSettings.SetRequestHeaders(clonedRequestOptions);
+                    response = await this.transactionalBatch.ExecuteAsync(clonedRequestOptions, cancellationToken);
                 }
 
+                // FIXME this should check for BadRequest StatusCode too, requires a service fix to return 400 instead of -1 which is currently returned.
+                if (string.Equals(response.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
+                {
+                    await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                        obsoleteEncryptionSettings: encryptionSettings,
+                        cancellationToken: cancellationToken);
+
+                    throw new CosmosException(
+                        "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + response.ErrorMessage,
+                        HttpStatusCode.BadRequest,
+                        int.Parse(Constants.IncorrectContainerRidSubStatus),
+                        response.Headers.ActivityId,
+                        response.Headers.RequestCharge);
+                }
+
+                return await this.DecryptTransactionalBatchResponseAsync(
+                    response,
+                    encryptionSettings,
+                    diagnosticsContext,
+                    cancellationToken);
+            }
+        }
+
+        public override TransactionalBatch PatchItem(
+            string id,
+            IReadOnlyList<PatchOperation> patchOperations,
+            TransactionalBatchPatchItemRequestOptions requestOptions = null)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (patchOperations == null ||
+                !patchOperations.Any())
+            {
+                throw new ArgumentNullException(nameof(patchOperations));
+            }
+
+            EncryptionSettings encryptionSettings = this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                obsoleteEncryptionSettings: null,
+                cancellationToken: default)
+                .ConfigureAwait(false)
+                .GetAwaiter()
+                .GetResult();
+
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.CreateScope("PatchItem"))
+            {
+                List<PatchOperation> encryptedPatchOperations = this.encryptionContainer.EncryptPatchOperationsAsync(
+                    patchOperations,
+                    encryptionSettings,
+                    cancellationToken: default)
+                    .ConfigureAwait(false)
+                    .GetAwaiter()
+                    .GetResult();
+
+                this.transactionalBatch = this.transactionalBatch.PatchItem(
+                    id,
+                    encryptedPatchOperations,
+                    requestOptions);
+
+                return this;
+            }
+        }
+
+        private async Task<TransactionalBatchResponse> DecryptTransactionalBatchResponseAsync(
+            TransactionalBatchResponse response,
+            EncryptionSettings encryptionSettings,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            if (!encryptionSettings.PropertiesToEncrypt.Any())
+            {
                 return response;
             }
+
+            List<TransactionalBatchOperationResult> decryptedTransactionalBatchOperationResults = new List<TransactionalBatchOperationResult>();
+
+            foreach (TransactionalBatchOperationResult result in response)
+            {
+                if (response.IsSuccessStatusCode && result.ResourceStream != null)
+                {
+                    Stream decryptedStream = await EncryptionProcessor.DecryptAsync(
+                        result.ResourceStream,
+                        encryptionSettings,
+                        diagnosticsContext,
+                        cancellationToken);
+
+                    decryptedTransactionalBatchOperationResults.Add(new EncryptionTransactionalBatchOperationResult(result, decryptedStream));
+                }
+                else
+                {
+                    decryptedTransactionalBatchOperationResults.Add(result);
+                }
+            }
+
+            return new EncryptionTransactionalBatchResponse(
+                decryptedTransactionalBatchOperationResults,
+                response,
+                this.cosmosSerializer);
         }
     }
 }

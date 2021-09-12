@@ -7,11 +7,14 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Net;
+    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Serializer;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
@@ -60,27 +63,36 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(this.requestOptions);
-            using (diagnosticsContext.GetOverallScope())
-            {
-                return await this.ReadNextInternalAsync(diagnosticsContext, cancellationToken);
-            }
+            return this.ReadNextAsync(NoOpTrace.Singleton);
         }
 
-        private async Task<ResponseMessage> ReadNextInternalAsync(
-            CosmosDiagnosticsContext diagnostics,
+        public override async Task<ResponseMessage> ReadNextAsync(
+            ITrace trace, 
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            Stream stream = null;
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            Stream stream;
             OperationType operation = OperationType.ReadFeed;
             if (this.querySpec != null)
             {
-                stream = this.clientContext.SerializerCore.ToStreamSqlQuerySpec(this.querySpec, this.resourceType);
+                using (ITrace querySpecStreamTrace = trace.StartChild("QuerySpec to Stream", TraceComponent.Poco, TraceLevel.Info))
+                {
+                    stream = this.clientContext.SerializerCore.ToStreamSqlQuerySpec(this.querySpec, this.resourceType);
+                }
+
                 operation = OperationType.Query;
+            }
+            else
+            {
+                stream = null;
             }
 
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
@@ -89,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
                operationType: operation,
                requestOptions: this.requestOptions,
                cosmosContainerCore: null,
-               partitionKey: this.requestOptions?.PartitionKey,
+               feedRange: this.requestOptions?.PartitionKey.HasValue ?? false ? new FeedRangePartitionKey(this.requestOptions.PartitionKey.Value) : null,
                streamPayload: stream,
                requestEnricher: request =>
                {
@@ -100,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
                        request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                    }
                },
-               diagnosticsContext: diagnostics,
+               trace: trace,
                cancellationToken: cancellationToken);
 
             this.ContinuationToken = responseMessage.Headers.ContinuationToken;
@@ -108,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (responseMessage.Content != null)
             {
-                await CosmosElementSerializer.RewriteStreamAsTextAsync(responseMessage, this.requestOptions);
+                await RewriteStreamAsTextAsync(responseMessage, this.requestOptions, trace);
             }
 
             return responseMessage;
@@ -117,6 +129,68 @@ namespace Microsoft.Azure.Cosmos
         public override CosmosElement GetCosmosElementContinuationToken()
         {
             throw new NotImplementedException();
+        }
+
+        private static async Task RewriteStreamAsTextAsync(ResponseMessage responseMessage, QueryRequestOptions requestOptions, ITrace trace)
+        {
+            using (ITrace rewriteTrace = trace.StartChild("Rewrite Stream as Text", TraceComponent.Json, TraceLevel.Info))
+            {
+                // Rewrite the payload to be in the specified format.
+                // If it's already in the correct format, then the following will be a memcpy.
+                MemoryStream memoryStream;
+                if (responseMessage.Content is MemoryStream responseContentAsMemoryStream)
+                {
+                    memoryStream = responseContentAsMemoryStream;
+                }
+                else
+                {
+                    memoryStream = new MemoryStream();
+                    await responseMessage.Content.CopyToAsync(memoryStream);
+                }
+
+                ReadOnlyMemory<byte> buffer;
+                if (memoryStream.TryGetBuffer(out ArraySegment<byte> segment))
+                {
+                    buffer = segment.Array.AsMemory().Slice(start: segment.Offset, length: segment.Count);
+                }
+                else
+                {
+                    buffer = memoryStream.ToArray();
+                }
+
+                IJsonNavigator jsonNavigator = JsonNavigator.Create(buffer);
+                if (jsonNavigator.SerializationFormat == JsonSerializationFormat.Text)
+                {
+                    // Exit to avoid the memory allocation.
+                    return;
+                }
+
+                IJsonWriter jsonWriter;
+                if (requestOptions?.CosmosSerializationFormatOptions != null)
+                {
+                    jsonWriter = requestOptions.CosmosSerializationFormatOptions.CreateCustomWriterCallback();
+                }
+                else
+                {
+                    jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+                }
+
+                jsonNavigator.WriteNode(jsonNavigator.GetRootNode(), jsonWriter);
+
+                ReadOnlyMemory<byte> result = jsonWriter.GetResult();
+                MemoryStream rewrittenMemoryStream;
+                if (MemoryMarshal.TryGetArray(result, out ArraySegment<byte> rewrittenSegment))
+                {
+                    rewrittenMemoryStream = new MemoryStream(rewrittenSegment.Array, index: rewrittenSegment.Offset, count: rewrittenSegment.Count, writable: false, publiclyVisible: true);
+                }
+                else
+                {
+                    byte[] toArray = result.ToArray();
+                    rewrittenMemoryStream = new MemoryStream(toArray, index: 0, count: toArray.Length, writable: false, publiclyVisible: true);
+                }
+
+                responseMessage.Content = rewrittenMemoryStream;
+            }
         }
     }
 
@@ -149,12 +223,31 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            return TaskHelper.RunInlineIfNeededAsync(() => this.ReadNextWithRootTraceAsync(cancellationToken));
+        }
 
-            ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken);
-            return this.responseCreator(response);
+        private async Task<FeedResponse<T>> ReadNextWithRootTraceAsync(CancellationToken cancellationToken = default)
+        {
+            using (ITrace trace = Trace.GetRootTrace("FeedIteratorCore ReadNextAsync", TraceComponent.Unknown, TraceLevel.Info))
+            {
+                return await this.ReadNextAsync(trace, cancellationToken);
+            }
+        }
+
+        public override async Task<FeedResponse<T>> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
+        {
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            ResponseMessage response = await this.feedIterator.ReadNextAsync(trace, cancellationToken);
+            using (ITrace childTrace = trace.StartChild("POCO Materialization", TraceComponent.Poco, TraceLevel.Info))
+            {
+                return this.responseCreator(response);
+            }
         }
 
         protected override void Dispose(bool disposing)

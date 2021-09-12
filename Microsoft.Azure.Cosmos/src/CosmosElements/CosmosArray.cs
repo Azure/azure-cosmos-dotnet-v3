@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             UInt128 hash1 = DistinctHash.GetHash(this);
             UInt128 hash2 = DistinctHash.GetHash(cosmosArray);
-            return hash1.CompareTo(hash2);
+            return UInt128BinaryComparer.Singleton.Compare(hash1, hash2);
         }
 
         public static CosmosArray Create(
@@ -94,7 +94,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public static CosmosArray Create() => CosmosArray.Empty;
 
-        public abstract IEnumerator<CosmosElement> GetEnumerator();
+        public abstract Enumerator GetEnumerator();
+
+        IEnumerator<CosmosElement> IEnumerable<CosmosElement>.GetEnumerator() => this.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 
@@ -113,6 +115,35 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             public static TryCatch<CosmosArray> CreateFromBuffer(ReadOnlyMemory<byte> buffer) => CosmosElement.Monadic.CreateFromBuffer<CosmosArray>(buffer);
 
             public static TryCatch<CosmosArray> Parse(string json) => CosmosElement.Monadic.Parse<CosmosArray>(json);
+        }
+
+        public struct Enumerator : IEnumerator<CosmosElement>
+        {
+            private List<CosmosElement>.Enumerator innerEnumerator;
+
+            internal Enumerator(List<CosmosElement>.Enumerator innerEnumerator)
+            {
+                this.innerEnumerator = innerEnumerator;
+            }
+
+            public CosmosElement Current => this.innerEnumerator.Current;
+
+            object IEnumerator.Current => this.innerEnumerator.Current;
+
+            public void Dispose()
+            {
+                this.innerEnumerator.Dispose();
+            }
+
+            public bool MoveNext()
+            {
+                return this.innerEnumerator.MoveNext();
+            }
+
+            public void Reset()
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 #if INTERNAL

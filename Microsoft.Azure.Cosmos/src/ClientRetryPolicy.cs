@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Net;
     using System.Net.Http;
@@ -25,6 +26,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly IDocumentClientRetryPolicy throttlingRetry;
         private readonly GlobalEndpointManager globalEndpointManager;
+        private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
         private int failoverRetryCount;
 
@@ -34,11 +36,11 @@ namespace Microsoft.Azure.Cosmos
         private bool canUseMultipleWriteLocations;
         private Uri locationEndpoint;
         private RetryContext retryContext;
-
-        private IClientSideRequestStatistics sharedStatistics;
+        private DocumentServiceRequest documentServiceRequest;
 
         public ClientRetryPolicy(
             GlobalEndpointManager globalEndpointManager,
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             bool enableEndpointDiscovery,
             RetryOptions retryOptions)
         {
@@ -47,6 +49,7 @@ namespace Microsoft.Azure.Cosmos
                 retryOptions.MaxRetryWaitTimeInSeconds);
 
             this.globalEndpointManager = globalEndpointManager;
+            this.partitionKeyRangeLocationCache = partitionKeyRangeLocationCache;
             this.failoverRetryCount = 0;
             this.enableEndpointDiscovery = enableEndpointDiscovery;
             this.sessionTokenRetryCount = 0;
@@ -64,29 +67,32 @@ namespace Microsoft.Azure.Cosmos
             Exception exception,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             this.retryContext = null;
             // Received Connection error (HttpRequestException), initiate the endpoint rediscovery
-            if (exception is HttpRequestException httpException)
+            if (exception is HttpRequestException _)
             {
-                DefaultTrace.TraceWarning("Endpoint not reachable. Refresh cache and retry");
-                return await this.ShouldRetryOnEndpointFailureAsync(this.isReadRequest, false);
+                DefaultTrace.TraceWarning("ClientRetryPolicy: Gateway HttpRequestException Endpoint not reachable. Failed Location: {0}; ResourceAddress: {1}",
+                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
+                // Mark both read and write requests because it gateway exception.
+                // This means all requests going to the region will fail.
+                return await this.ShouldRetryOnEndpointFailureAsync(
+                    isReadRequest: this.isReadRequest,
+                    markBothReadAndWriteAsUnavailable: true,
+                    forceRefresh: false,
+                    retryOnPreferredLocations: true);
             }
 
-            DocumentClientException clientException = exception as DocumentClientException;
-
-            if (clientException?.RequestStatistics != null)
+            if (exception is DocumentClientException clientException)
             {
-                this.sharedStatistics = clientException.RequestStatistics;
-            }
-
-            ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
-                clientException?.StatusCode,
-                clientException?.GetSubStatus());
-            if (shouldRetryResult != null)
-            {
-                return shouldRetryResult;
+                ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
+                    clientException?.StatusCode,
+                    clientException?.GetSubStatus());
+                if (shouldRetryResult != null)
+                {
+                    return shouldRetryResult;
+                }
             }
 
             return await this.throttlingRetry.ShouldRetryAsync(exception, cancellationToken);
@@ -102,7 +108,6 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             this.retryContext = null;
 
             ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
@@ -125,20 +130,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.isReadRequest = request.IsReadOnlyRequest;
             this.canUseMultipleWriteLocations = this.globalEndpointManager.CanUseMultipleWriteLocations(request);
-
-            if (request.RequestContext.ClientRequestStatistics == null)
-            {
-                if (this.sharedStatistics == null)
-                {
-                    this.sharedStatistics = new CosmosClientSideRequestStatistics();
-                }
-
-                request.RequestContext.ClientRequestStatistics = this.sharedStatistics;
-            }
-            else
-            {
-                this.sharedStatistics = request.RequestContext.ClientRequestStatistics;
-            }
+            this.documentServiceRequest = request;
 
             // clear previous location-based routing directive
             request.RequestContext.ClearRouteToLocation();
@@ -146,7 +138,7 @@ namespace Microsoft.Azure.Cosmos
             if (this.retryContext != null)
             {
                 // set location-based routing directive based on request retry context
-                request.RequestContext.RouteToLocation(this.retryContext.RetryCount, this.retryContext.RetryRequestOnPreferredLocations);
+                request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
             }
 
             // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
@@ -166,12 +158,38 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
+            // Received request timeout
+            if (statusCode == HttpStatusCode.RequestTimeout)
+            {
+                DefaultTrace.TraceWarning("ClientRetryPolicy: RequestTimeout. Failed Location: {0}; ResourceAddress: {1}",
+                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
+                // Mark the partition key range as unavailable to retry future request on a new region.
+                this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
+                     this.documentServiceRequest);
+            }
+
             // Received 403.3 on write region, initiate the endpoint rediscovery
             if (statusCode == HttpStatusCode.Forbidden
                 && subStatusCode == SubStatusCodes.WriteForbidden)
             {
-                DefaultTrace.TraceWarning("Endpoint not writable. Refresh cache and retry");
-                return await this.ShouldRetryOnEndpointFailureAsync(false, true);
+                // It's a write forbidden so it safe to retry
+                if (this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
+                     this.documentServiceRequest))
+                {
+                    return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+                }
+
+                DefaultTrace.TraceWarning("ClientRetryPolicy: Endpoint not writable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
+                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
+                return await this.ShouldRetryOnEndpointFailureAsync(
+                    isReadRequest: false,
+                    markBothReadAndWriteAsUnavailable: false,
+                    forceRefresh: true,
+                    retryOnPreferredLocations: false);
             }
 
             // Regional endpoint is not available yet for reads (e.g. add/ online of region is in progress)
@@ -179,8 +197,15 @@ namespace Microsoft.Azure.Cosmos
                 && subStatusCode == SubStatusCodes.DatabaseAccountNotFound
                 && (this.isReadRequest || this.canUseMultipleWriteLocations))
             {
-                DefaultTrace.TraceWarning("Endpoint not available for reads. Refresh cache and retry");
-                return await this.ShouldRetryOnEndpointFailureAsync(true, false);
+                DefaultTrace.TraceWarning("ClientRetryPolicy: Endpoint not available for reads. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
+                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
+                return await this.ShouldRetryOnEndpointFailureAsync(
+                    isReadRequest: this.isReadRequest,
+                    markBothReadAndWriteAsUnavailable: false,
+                    forceRefresh: false,
+                    retryOnPreferredLocations: false);
             }
 
             if (statusCode == HttpStatusCode.NotFound
@@ -193,17 +218,32 @@ namespace Microsoft.Azure.Cosmos
             if (statusCode == HttpStatusCode.ServiceUnavailable
                 && subStatusCode == SubStatusCodes.Unknown)
             {
+                DefaultTrace.TraceWarning("ClientRetryPolicy: ServiceUnavailable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
+                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
+                // Mark the partition as unavailable.
+                // Let the ClientRetry logic decide if the request should be retried
+                this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
+                     this.documentServiceRequest);
+
                 return this.ShouldRetryOnServiceUnavailable();
             }
 
             return null;
         }
 
-        private async Task<ShouldRetryResult> ShouldRetryOnEndpointFailureAsync(bool isReadRequest, bool forceRefresh)
+        private async Task<ShouldRetryResult> ShouldRetryOnEndpointFailureAsync(
+            bool isReadRequest,
+            bool markBothReadAndWriteAsUnavailable,
+            bool forceRefresh,
+            bool retryOnPreferredLocations)
         {
             if (!this.enableEndpointDiscovery || this.failoverRetryCount > MaxRetryCount)
             {
-                DefaultTrace.TraceInformation("ShouldRetryOnEndpointFailureAsync() Not retrying. Retry count = {0}", this.failoverRetryCount);
+                DefaultTrace.TraceInformation("ClientRetryPolicy: ShouldRetryOnEndpointFailureAsync() Not retrying. Retry count = {0}, Endpoint = {1}", 
+                    this.failoverRetryCount,
+                    this.locationEndpoint?.ToString() ?? string.Empty);
                 return ShouldRetryResult.NoRetry();
             }
 
@@ -211,11 +251,12 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.locationEndpoint != null)
             {
-                if (isReadRequest)
+                if (isReadRequest || markBothReadAndWriteAsUnavailable)
                 {
                     this.globalEndpointManager.MarkEndpointUnavailableForRead(this.locationEndpoint);
                 }
-                else
+                
+                if (!isReadRequest || markBothReadAndWriteAsUnavailable)
                 {
                     this.globalEndpointManager.MarkEndpointUnavailableForWrite(this.locationEndpoint);
                 }
@@ -224,7 +265,7 @@ namespace Microsoft.Azure.Cosmos
             TimeSpan retryDelay = TimeSpan.Zero;
             if (!isReadRequest)
             {
-                DefaultTrace.TraceInformation("Failover happening. retryCount {0}", this.failoverRetryCount);
+                DefaultTrace.TraceInformation("ClientRetryPolicy: Failover happening. retryCount {0}", this.failoverRetryCount);
 
                 if (this.failoverRetryCount > 1)
                 {
@@ -237,12 +278,18 @@ namespace Microsoft.Azure.Cosmos
                 retryDelay = TimeSpan.FromMilliseconds(ClientRetryPolicy.RetryIntervalInMS);
             }
 
-            await this.globalEndpointManager.RefreshLocationAsync(null, forceRefresh);
+            await this.globalEndpointManager.RefreshLocationAsync(forceRefresh);
+
+            int retryLocationIndex = this.failoverRetryCount; // Used to generate a round-robin effect
+            if (retryOnPreferredLocations)
+            {
+                retryLocationIndex = 0; // When the endpoint is marked as unavailable, it is moved to the bottom of the preferrence list
+            }
 
             this.retryContext = new RetryContext
             {
-                RetryCount = this.failoverRetryCount,
-                RetryRequestOnPreferredLocations = false
+                RetryLocationIndex = retryLocationIndex,
+                RetryRequestOnPreferredLocations = retryOnPreferredLocations,
             };
 
             return ShouldRetryResult.RetryAfter(retryDelay);
@@ -273,8 +320,8 @@ namespace Microsoft.Azure.Cosmos
                     {
                         this.retryContext = new RetryContext()
                         {
-                            RetryCount = this.sessionTokenRetryCount - 1,
-                            RetryRequestOnPreferredLocations = this.sessionTokenRetryCount > 1
+                            RetryLocationIndex = this.sessionTokenRetryCount,
+                            RetryRequestOnPreferredLocations = true
                         };
 
                         return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
@@ -292,7 +339,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         this.retryContext = new RetryContext
                         {
-                            RetryCount = this.sessionTokenRetryCount - 1,
+                            RetryLocationIndex = 0,
                             RetryRequestOnPreferredLocations = false
                         };
 
@@ -310,7 +357,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.serviceUnavailableRetryCount++ >= ClientRetryPolicy.MaxServiceUnavailableRetryCount)
             {
-                DefaultTrace.TraceInformation($"ShouldRetryOnServiceUnavailable() Not retrying. Retry count = {this.serviceUnavailableRetryCount}.");
+                DefaultTrace.TraceInformation($"ClientRetryPolicy: ShouldRetryOnServiceUnavailable() Not retrying. Retry count = {this.serviceUnavailableRetryCount}.");
                 return ShouldRetryResult.NoRetry();
             }
 
@@ -326,17 +373,17 @@ namespace Microsoft.Azure.Cosmos
             if (availablePreferredLocations <= 1)
             {
                 // No other regions to retry on
-                DefaultTrace.TraceInformation($"ShouldRetryOnServiceUnavailable() Not retrying. No other regions available for the request. AvailablePreferredLocations = {availablePreferredLocations}.");
+                DefaultTrace.TraceInformation($"ClientRetryPolicy: ShouldRetryOnServiceUnavailable() Not retrying. No other regions available for the request. AvailablePreferredLocations = {availablePreferredLocations}.");
                 return ShouldRetryResult.NoRetry();
             }
 
-            DefaultTrace.TraceInformation($"ShouldRetryOnServiceUnavailable() Retrying. Received on endpoint {this.locationEndpoint}, IsReadRequest = {this.isReadRequest}.");
+            DefaultTrace.TraceInformation($"ClientRetryPolicy: ShouldRetryOnServiceUnavailable() Retrying. Received on endpoint {this.locationEndpoint}, IsReadRequest = {this.isReadRequest}.");
 
             // Retrying on second PreferredLocations
             // RetryCount is used as zero-based index
             this.retryContext = new RetryContext()
             {
-                RetryCount = this.serviceUnavailableRetryCount,
+                RetryLocationIndex = this.serviceUnavailableRetryCount,
                 RetryRequestOnPreferredLocations = true
             };
 
@@ -345,7 +392,7 @@ namespace Microsoft.Azure.Cosmos
 
         private sealed class RetryContext
         {
-            public int RetryCount { get; set; }
+            public int RetryLocationIndex { get; set; }
             public bool RetryRequestOnPreferredLocations { get; set; }
         }
     }

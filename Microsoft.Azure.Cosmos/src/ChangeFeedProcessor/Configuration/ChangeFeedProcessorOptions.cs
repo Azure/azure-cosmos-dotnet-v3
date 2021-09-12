@@ -6,13 +6,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
 {
     using System;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Monitoring;
 
     /// <summary>
-    /// Options to control various aspects of partition distribution happening within <see cref="ChangeFeedProcessorCore{T}"/> instance.
+    /// Options to control various aspects of partition distribution happening within <see cref="ChangeFeedProcessorCore"/> instance.
     /// </summary>
     internal class ChangeFeedProcessorOptions
     {
-        private const int DefaultQueryPartitionsMaxBatchSize = 100;
         private static readonly TimeSpan DefaultFeedPollDelay = TimeSpan.FromSeconds(5);
         private DateTime? startTime;
 
@@ -20,8 +20,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
         public ChangeFeedProcessorOptions()
         {
             this.FeedPollDelay = DefaultFeedPollDelay;
-            this.QueryFeedMaxBatchSize = DefaultQueryPartitionsMaxBatchSize;
-            this.CheckpointFrequency = new CheckpointFrequency();
         }
 
         /// <summary>
@@ -31,11 +29,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
         /// </remarks>
         /// </summary>
         public TimeSpan FeedPollDelay { get; set; }
-
-        /// <summary>
-        /// Gets or sets the frequency how often to checkpoint leases.
-        /// </summary>
-        public CheckpointFrequency CheckpointFrequency { get; set; }
 
         /// <summary>
         /// Gets or sets the maximum number of items to be returned in the enumeration operation in the Azure Cosmos DB service.
@@ -90,14 +83,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
         /// <seealso cref="ChangeFeedOptions.StartFromBeginning"/>
         public bool StartFromBeginning { get; set; }
 
-        /// <summary>
-        /// Gets or sets the session token for use with session consistency in the Azure Cosmos DB service.
-        /// </summary>
-        internal string SessionToken { get; set; }
-
-        /// <summary>
-        /// Gets or sets the Batch size of query API.
-        /// </summary>
-        internal int QueryFeedMaxBatchSize { get; set; }
+        public ChangeFeedProcessorHealthMonitorCore HealthMonitor { get; set; } = new ChangeFeedProcessorHealthMonitorCore();
     }
 }

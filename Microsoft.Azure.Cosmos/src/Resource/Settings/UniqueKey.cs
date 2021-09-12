@@ -1,6 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
 namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.ObjectModel;
@@ -31,5 +32,13 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         [JsonProperty(PropertyName = Constants.Properties.Paths)]
         public Collection<string> Paths { get; internal set; } = new Collection<string>();
+
+#if INTERNAL
+        /// <summary>
+        /// Filter for sparse unique keys.
+        /// </summary>
+        [JsonProperty(PropertyName = "filter", NullValueHandling = NullValueHandling.Ignore)]
+        public QueryDefinition Filter { get; internal set; }
+#endif
     }
 }

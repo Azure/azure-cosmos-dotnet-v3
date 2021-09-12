@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -41,7 +42,41 @@ namespace Microsoft.Azure.Cosmos
             object value,
             JsonSerializer serializer)
         {
-            IReadOnlyList<PatchOperation> patchOperations = (IReadOnlyList<PatchOperation>)value;
+            if (!(value is PatchSpec patchSpec)) 
+            {
+                throw new ArgumentOutOfRangeException("nameof(value) should be of type PatchSpec.");
+            }
+
+            IReadOnlyList<PatchOperation> patchOperations = patchSpec.PatchOperations;
+
+            writer.WriteStartObject();
+
+            patchSpec.RequestOptions.Match(
+                    (PatchItemRequestOptions patchRequestOptions) =>
+                    {
+                        if (patchRequestOptions != null)
+                        {
+                            if (!String.IsNullOrWhiteSpace(patchRequestOptions.FilterPredicate))
+                            {
+                                writer.WritePropertyName(PatchConstants.PatchSpecAttributes.Condition);
+                                writer.WriteValue(patchRequestOptions.FilterPredicate);
+                            }
+                        }
+                        
+                    },
+                    (TransactionalBatchPatchItemRequestOptions transactionalBatchPatchRequestOptions) =>
+                    {
+                        if (transactionalBatchPatchRequestOptions != null)
+                        {
+                            if (!String.IsNullOrWhiteSpace(transactionalBatchPatchRequestOptions.FilterPredicate))
+                            {
+                                writer.WritePropertyName(PatchConstants.PatchSpecAttributes.Condition);
+                                writer.WriteValue(transactionalBatchPatchRequestOptions.FilterPredicate);
+                            }
+                        }
+                    });
+
+            writer.WritePropertyName(PatchConstants.PatchSpecAttributes.Operations);
 
             writer.WriteStartArray();
 
@@ -53,8 +88,17 @@ namespace Microsoft.Azure.Cosmos
                 writer.WritePropertyName(PatchConstants.PropertyNames.Path);
                 writer.WriteValue(operation.Path);
 
-                if (operation.TrySerializeValueParameter(this.userSerializer, out string valueParam))
+                if (operation.TrySerializeValueParameter(this.userSerializer, out Stream valueStream))
                 {
+                    string valueParam;
+                    using (valueStream)
+                    {
+                        using (StreamReader streamReader = new StreamReader(valueStream))
+                        {
+                            valueParam = streamReader.ReadToEnd();
+                        }
+                    }
+
                     writer.WritePropertyName(PatchConstants.PropertyNames.Value);
                     writer.WriteRawValue(valueParam);
                 }
@@ -63,6 +107,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             writer.WriteEndArray();
+
+            writer.WriteEndObject();
         }
 
         /// <summary>

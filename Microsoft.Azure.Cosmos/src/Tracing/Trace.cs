@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
     internal sealed class Trace : ITrace
     {
-        private readonly List<Trace> children;
+        private readonly List<ITrace> children;
         private readonly Dictionary<string, object> data;
         private readonly Stopwatch stopwatch;
 
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.Level = level;
             this.Component = component;
             this.Parent = parent;
-            this.children = new List<Trace>();
+            this.children = new List<ITrace>();
             this.data = new Dictionary<string, object>();
         }
 
@@ -66,12 +66,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
             [CallerLineNumber] int sourceLineNumber = 0)
         {
             return this.StartChild(
-name,
-level: TraceLevel.Verbose,
-component: this.Component,
-memberName: memberName,
-sourceFilePath: sourceFilePath,
-sourceLineNumber: sourceLineNumber);
+                name,
+                level: TraceLevel.Verbose,
+                component: this.Component,
+                memberName: memberName,
+                sourceFilePath: sourceFilePath,
+                sourceLineNumber: sourceLineNumber);
         }
 
         public ITrace StartChild(
@@ -88,16 +88,26 @@ sourceLineNumber: sourceLineNumber);
                 level: level,
                 component: component,
                 parent: this);
-            this.children.Add(child);
+
+            this.AddChild(child);
+
             return child;
+        }
+
+        public void AddChild(ITrace child)
+        {
+            lock (this.children)
+            {
+                this.children.Add(child);
+            }
         }
 
         public static Trace GetRootTrace(string name)
         {
             return Trace.GetRootTrace(
-name,
-component: TraceComponent.Unknown,
-level: TraceLevel.Verbose);
+                name,
+                component: TraceComponent.Unknown,
+                level: TraceLevel.Verbose);
         }
 
         public static Trace GetRootTrace(
@@ -109,14 +119,14 @@ level: TraceLevel.Verbose);
             [CallerLineNumber] int sourceLineNumber = 0)
         {
             return new Trace(
-name: name,
-callerInfo: new CallerInfo(memberName, sourceFilePath, sourceLineNumber),
-level: level,
-component: component,
-parent: null);
+                name: name,
+                callerInfo: new CallerInfo(memberName, sourceFilePath, sourceLineNumber),
+                level: level,
+                component: component,
+                parent: null);
         }
 
-        public void AddDatum(string key, ITraceDatum traceDatum)
+        public void AddDatum(string key, TraceDatum traceDatum)
         {
             this.data.Add(key, traceDatum);
         }

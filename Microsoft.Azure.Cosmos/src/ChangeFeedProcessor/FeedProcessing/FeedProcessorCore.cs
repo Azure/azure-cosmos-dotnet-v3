@@ -5,9 +5,7 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -16,27 +14,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
 
-    internal sealed class FeedProcessorCore<T> : FeedProcessor
+    internal sealed class FeedProcessorCore : FeedProcessor
     {
         private readonly ProcessorOptions options;
         private readonly PartitionCheckpointer checkpointer;
-        private readonly ChangeFeedObserver<T> observer;
+        private readonly ChangeFeedObserver observer;
         private readonly FeedIterator resultSetIterator;
-        private readonly CosmosSerializerCore serializerCore;
 
         public FeedProcessorCore(
-            ChangeFeedObserver<T> observer,
+            ChangeFeedObserver observer,
             FeedIterator resultSetIterator,
             ProcessorOptions options,
-            PartitionCheckpointer checkpointer,
-            CosmosSerializerCore serializerCore)
+            PartitionCheckpointer checkpointer)
         {
-            this.observer = observer;
-            this.options = options;
-            this.checkpointer = checkpointer;
-            this.resultSetIterator = resultSetIterator;
-            this.serializerCore = serializerCore;
+            this.observer = observer ?? throw new ArgumentNullException(nameof(observer));
+            this.options = options ?? throw new ArgumentNullException(nameof(options));
+            this.checkpointer = checkpointer ?? throw new ArgumentNullException(nameof(checkpointer));
+            this.resultSetIterator = resultSetIterator ?? throw new ArgumentNullException(nameof(resultSetIterator));
         }
 
         public override async Task RunAsync(CancellationToken cancellationToken)
@@ -55,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                         if (response.StatusCode != HttpStatusCode.NotModified && !response.IsSuccessStatusCode)
                         {
                             DefaultTrace.TraceWarning("unsuccessful feed read: lease token '{0}' status code {1}. substatuscode {2}", this.options.LeaseToken, response.StatusCode, response.Headers.SubStatusCode);
-                            this.HandleFailedRequest(response.StatusCode, (int)response.Headers.SubStatusCode, lastContinuation);
+                            this.HandleFailedRequest(response, lastContinuation);
 
                             if (response.Headers.RetryAfter.HasValue)
                             {
@@ -74,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                     }
                     while (this.resultSetIterator.HasMoreResults && !cancellationToken.IsCancellationRequested);
                 }
-                catch (TaskCanceledException canceledException)
+                catch (OperationCanceledException canceledException)
                 {
                     if (cancellationToken.IsCancellationRequested)
                     {
@@ -92,53 +88,27 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         }
 
         private void HandleFailedRequest(
-            HttpStatusCode statusCode,
-            int subStatusCode,
+            ResponseMessage responseMessage,
             string lastContinuation)
         {
-            DocDbError docDbError = ExceptionClassifier.ClassifyStatusCodes(statusCode, subStatusCode);
+            DocDbError docDbError = ExceptionClassifier.ClassifyStatusCodes(responseMessage.StatusCode, (int)responseMessage.Headers.SubStatusCode);
             switch (docDbError)
             {
                 case DocDbError.PartitionSplit:
-                    throw new FeedSplitException("Partition split.", lastContinuation);
-                case DocDbError.PartitionNotFound:
-                    throw new FeedNotFoundException("Partition not found.", lastContinuation);
-                case DocDbError.ReadSessionNotAvailable:
-                    throw new FeedReadSessionNotAvailableException("Read session not availalbe.", lastContinuation);
+                    throw new FeedRangeGoneException("Partition split.", lastContinuation);
                 case DocDbError.Undefined:
-                    throw new InvalidOperationException($"Undefined DocDbError for status code {statusCode} and substatus code {subStatusCode}");
+                    throw CosmosExceptionFactory.Create(responseMessage);
                 default:
                     DefaultTrace.TraceCritical($"Unrecognized DocDbError enum value {docDbError}");
                     Debug.Fail($"Unrecognized DocDbError enum value {docDbError}");
-                    throw new InvalidOperationException($"Unrecognized DocDbError enum value {docDbError} for status code {statusCode} and substatus code {subStatusCode}");
+                    throw new InvalidOperationException($"Unrecognized DocDbError enum value {docDbError} for status code {responseMessage.StatusCode} and substatus code {responseMessage.Headers.SubStatusCode}");
             }
         }
 
         private Task DispatchChangesAsync(ResponseMessage response, CancellationToken cancellationToken)
         {
-            ChangeFeedObserverContext context = new ChangeFeedObserverContextCore<T>(this.options.LeaseToken, response, this.checkpointer);
-            IEnumerable<T> asFeedResponse;
-            try
-            {
-                asFeedResponse = CosmosFeedResponseSerializer.FromFeedResponseStream<T>(
-                    this.serializerCore,
-                    response.Content);
-            }
-            catch (Exception serializationException)
-            {
-                // Error using custom serializer to parse stream
-                throw new ObserverException(serializationException);
-            }
-
-            // When StartFromBeginning is used, the first request returns OK but no content
-            if (!asFeedResponse.Any())
-            {
-                return Task.CompletedTask;
-            }
-
-            List<T> asReadOnlyList = new List<T>(asFeedResponse);
-
-            return this.observer.ProcessChangesAsync(context, asReadOnlyList, cancellationToken);
+            ChangeFeedObserverContextCore context = new ChangeFeedObserverContextCore(this.options.LeaseToken, response, this.checkpointer);
+            return this.observer.ProcessChangesAsync(context, response.Content, cancellationToken);
         }
     }
 }

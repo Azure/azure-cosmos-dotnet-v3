@@ -6,26 +6,48 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Linq;
 
     /// <summary>
-    /// This class provides extension methods for <see cref="EncryptionContainer"/>.
+    /// This class provides extension methods for <see cref="Container"/>.
     /// </summary>
     public static class EncryptionContainerExtensions
     {
         /// <summary>
-        /// Get container with <see cref="Encryptor"/> for performing operations using client-side encryption.
+        /// Initializes and Caches the Client Encryption Policy and the corresponding keys configured for the container.
+        /// All the keys configured as per the Client Encryption Policy for the container must be created before its used in the policy.
         /// </summary>
-        /// <param name="container">Regular cosmos container.</param>
-        /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
+        /// <param name="container">Encryption Container.</param>
+        /// <param name="cancellationToken"> cancellation token </param>
         /// <returns>Container to perform operations supporting client-side encryption / decryption.</returns>
-        public static Container WithEncryptor(
+        /// <example>
+        /// This example shows how to get a Container with Encryption support and Initialize it with InitializeEncryptionAsync which allows for pre-fetching the
+        /// encryption policy and the encryption keys for caching.
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClient cosmosClient = new CosmosClient();
+        /// cosmosClient.WithEncryption(azureKeyVaultKeyStoreProvider);
+        /// containerWithEncryption = await this.cosmosDatabase.GetContainer("id").InitializeEncryptionAsync();
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static async Task<Container> InitializeEncryptionAsync(
             this Container container,
-            Encryptor encryptor)
+            CancellationToken cancellationToken = default)
         {
-            return new EncryptionContainer(
-                container,
-                encryptor);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (container is not EncryptionContainer encryptionContainer)
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(InitializeEncryptionAsync)} requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+            }
+
+            await encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
+
+            return container;
         }
 
         /// <summary>
@@ -50,9 +72,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this Container container,
             IQueryable<T> query)
         {
-            if (!(container is EncryptionContainer encryptionContainer))
+            if (container is not EncryptionContainer encryptionContainer)
             {
-                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionFeedIterator)} is only supported with {nameof(EncryptionContainer)}.");
+                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionFeedIterator)} requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
 
             return new EncryptionFeedIterator<T>(
@@ -82,15 +104,51 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this Container container,
             IQueryable<T> query)
         {
-            if (!(container is EncryptionContainer encryptionContainer))
+            if (container is not EncryptionContainer encryptionContainer)
             {
-                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} is only supported with {nameof(EncryptionContainer)}.");
+                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
 
             return new EncryptionFeedIterator(
                 query.ToStreamIterator(),
-                encryptionContainer.Encryptor,
-                encryptionContainer.CosmosSerializer);
+                encryptionContainer,
+                new RequestOptions());
+        }
+
+        /// <summary>
+        /// Create a Microsoft.Azure.Cosmos.QueryDefinition with encryption support.
+        /// </summary>
+        /// <param name="container"> The encryption container.</param>
+        /// <param name="queryText"> A valid Cosmos SQL query "Select * from test t" </param>
+        /// <returns> Microsoft.Azure.Cosmos.QueryDefinition </returns>
+        /// <example>
+        /// This example shows how to get a QueryDefinition with Encryption Support.
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// containerWithEncryption = await this.cosmosDatabase.GetContainer("id").InitializeEncryptionAsync();
+        /// QueryDefinition withEncryptedParameter = containerWithEncryption.CreateQueryDefinition(
+        ///     "SELECT * FROM c where c.PropertyName = @PropertyValue");
+        /// await withEncryptedParameter.AddParameterAsync(
+        ///     "@PropertyName",
+        ///     PropertyValue,
+        ///     "/PropertyName");
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static QueryDefinition CreateQueryDefinition(this Container container, string queryText)
+        {
+            if (string.IsNullOrEmpty(queryText))
+            {
+                throw new ArgumentNullException(nameof(queryText));
+            }
+
+            if (container is not EncryptionContainer)
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(CreateQueryDefinition)} requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+            }
+
+            return new EncryptionQueryDefinition(queryText, container);
         }
     }
 }

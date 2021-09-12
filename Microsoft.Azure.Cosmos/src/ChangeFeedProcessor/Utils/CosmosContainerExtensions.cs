@@ -10,10 +10,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal static class CosmosContainerExtensions
     {
+        private static readonly ItemRequestOptions itemRequestOptionsWithResponseEnabled = new ItemRequestOptions()
+        {
+            EnableContentResponseOnWrite = false
+        };
+
         public static readonly CosmosSerializerCore DefaultJsonSerializer = new CosmosSerializerCore();
 
         public static async Task<T> TryGetItemAsync<T>(
@@ -38,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
         {
             using (Stream itemStream = CosmosContainerExtensions.DefaultJsonSerializer.ToStream<T>(item))
             {
-                using (ResponseMessage response = await container.CreateItemStreamAsync(itemStream, partitionKey).ConfigureAwait(false))
+                using (ResponseMessage response = await container.CreateItemStreamAsync(itemStream, partitionKey, itemRequestOptionsWithResponseEnabled).ConfigureAwait(false))
                 {
                     if (response.StatusCode == HttpStatusCode.Conflict)
                     {
@@ -48,7 +53,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
 
                     response.EnsureSuccessStatusCode();
 
-                    return new ItemResponse<T>(response.StatusCode, response.Headers, CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(response.Content), response.Diagnostics);
+                    return new ItemResponse<T>(
+                        response.StatusCode, 
+                        response.Headers, 
+                        item, 
+                        response.Diagnostics);
                 }
             }
         }
@@ -62,10 +71,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
         {
             using (Stream itemStream = CosmosContainerExtensions.DefaultJsonSerializer.ToStream<T>(item))
             {
+                itemRequestOptions.EnableContentResponseOnWrite = false;
                 using (ResponseMessage response = await container.ReplaceItemStreamAsync(itemStream, itemId, partitionKey, itemRequestOptions).ConfigureAwait(false))
                 {
                     response.EnsureSuccessStatusCode();
-                    return new ItemResponse<T>(response.StatusCode, response.Headers, CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(response.Content), response.Diagnostics);
+                    return new ItemResponse<T>(
+                        response.StatusCode, 
+                        response.Headers,
+                        item, 
+                        response.Diagnostics);
                 }
             }
         }
@@ -76,6 +90,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             string itemId,
             ItemRequestOptions cosmosItemRequestOptions = null)
         {
+            cosmosItemRequestOptions ??= new ItemRequestOptions();
+            cosmosItemRequestOptions.EnableContentResponseOnWrite = false;
             using (ResponseMessage response = await container.DeleteItemStreamAsync(itemId, partitionKey, cosmosItemRequestOptions).ConfigureAwait(false))
             {
                 return response.IsSuccessStatusCode;
@@ -99,7 +115,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             this Container monitoredContainer,
             CancellationToken cancellationToken = default)
         {
-            string containerRid = await ((ContainerInternal)monitoredContainer).GetRIDAsync(cancellationToken);
+            string containerRid = await ((ContainerInternal)monitoredContainer).GetCachedRIDAsync(
+                forceRefresh: false,
+                NoOpTrace.Singleton,
+                cancellationToken: cancellationToken);
             string databaseRid = await ((DatabaseInternal)((ContainerInternal)monitoredContainer).Database).GetRIDAsync(cancellationToken);
             return $"{databaseRid}_{containerRid}";
         }

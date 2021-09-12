@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
@@ -1391,7 +1392,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Container container = await database.CreateContainerAsync(id: "coll1", partitionKeyPath: "/doesnotexist");
                     ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
 
-                    ItemResponse<ToDoActivity> response = await container.CreateItemAsync(toDoActivity, partitionKey: new Cosmos.PartitionKey(toDoActivity.status));
+                    ItemResponse<ToDoActivity> response = await container.CreateItemAsync(toDoActivity, partitionKey: new Cosmos.PartitionKey(toDoActivity.pk));
                     Assert.Fail("Create item should fail with wrong partition key value");
                 }
                 catch (CosmosException ce)
@@ -1458,8 +1459,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                true,
                false);
 
-            PartitionKeyRangeCache routingMapProvider = await client.GetPartitionKeyRangeCacheAsync();
-            Assert.AreNotEqual(sessionToken1.Split(':')[0], (await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange)).First().Id);
+            PartitionKeyRangeCache routingMapProvider = await client.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
+            Assert.AreNotEqual(sessionToken1.Split(':')[0], (await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange, NoOpTrace.Singleton)).First().Id);
 
             Assert.AreEqual(2, client.CreateDocumentQuery("/dbs/db1/colls/coll1", "SELECT * FROM c WHERE c.field1 IN (1, 2)", new FeedOptions { EnableCrossPartitionQuery = true }).AsEnumerable().Count());
 
@@ -1516,8 +1517,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                true,
                false);
 
-            PartitionKeyRangeCache routingMapProvider = await client.GetPartitionKeyRangeCacheAsync();
-            Assert.AreNotEqual(sessionToken1.Split(':')[0], (await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange)).First().Id);
+            PartitionKeyRangeCache routingMapProvider = await client.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
+            Assert.AreNotEqual(sessionToken1.Split(':')[0], (await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange, NoOpTrace.Singleton)).First().Id);
 
             Assert.AreEqual(2, client.CreateDocumentQuery("/dbs/db1/colls/coll1", "SELECT * FROM c WHERE c.field1 IN (1, 2)", new FeedOptions { EnableCrossPartitionQuery = true }).AsEnumerable().Count());
 
@@ -1917,7 +1918,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 document,
                 ResourceType.Document,
                 AuthorizationTokenType.PrimaryMasterKey,
-                new DictionaryNameValueCollection(),
+                new StoreRequestNameValueCollection(),
                 SerializationFormattingPolicy.None))
             {
                 request.Headers[HttpConstants.HttpHeaders.PartitionKey] = PartitionKeyInternal.Empty.ToJsonString();

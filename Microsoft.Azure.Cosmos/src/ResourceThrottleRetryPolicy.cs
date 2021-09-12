@@ -48,10 +48,8 @@ namespace Microsoft.Azure.Cosmos
             Exception exception,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (exception is DocumentClientException)
+            if (exception is DocumentClientException dce)
             {
-                DocumentClientException dce = (DocumentClientException)exception;
                 if (!this.IsValidThrottleStatusCode(dce.StatusCode))
                 {
                     DefaultTrace.TraceError(
@@ -81,7 +79,6 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             if (!this.IsValidThrottleStatusCode(cosmosResponseMessage?.StatusCode))
             {
                 DefaultTrace.TraceError(
@@ -117,17 +114,16 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private string GetExceptionMessage(Exception exception)
+        private object GetExceptionMessage(Exception exception)
         {
-            DocumentClientException dce = exception as DocumentClientException;
-            if (dce != null && dce.StatusCode != null && (int)dce.StatusCode < (int)StatusCodes.InternalServerError)
+            if (exception is DocumentClientException dce && dce.StatusCode != null && (int)dce.StatusCode < (int)StatusCodes.InternalServerError)
             {
                 // for client related errors, don't print out the whole call stack.
                 // simply return the message to prevent CPU overhead on ToString() 
                 return exception.Message;
             }
 
-            return exception.ToString();
+            return exception;
         }
 
         /// <summary>

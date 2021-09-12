@@ -2,10 +2,12 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -17,6 +19,17 @@
         protected PartitionRangeEnumeratorTests(bool singlePartition)
         {
             this.singlePartition = singlePartition;
+        }
+
+        [TestMethod]
+        public async Task TestMoveNextAsyncThrowsTaskCanceledException()
+        {
+            int numItems = 100;
+            IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
+            CancellationTokenSource cts = new CancellationTokenSource();
+            IAsyncEnumerator<TryCatch<TPage>> enumerator = this.CreateEnumerator(inMemoryCollection, cancellationToken: cts.Token);
+            cts.Cancel();
+            await Assert.ThrowsExceptionAsync<TaskCanceledException>(async () => await enumerator.MoveNextAsync());
         }
 
         [TestMethod]
@@ -152,7 +165,7 @@
 
         public abstract IAsyncEnumerable<TryCatch<TPage>> CreateEnumerable(IDocumentContainer documentContainer, TState state = null);
 
-        public abstract IAsyncEnumerator<TryCatch<TPage>> CreateEnumerator(IDocumentContainer documentContainer, TState state = null);
+        public abstract IAsyncEnumerator<TryCatch<TPage>> CreateEnumerator(IDocumentContainer documentContainer, TState state = null, CancellationToken cancellationToken= default);
 
         public async Task<IDocumentContainer> CreateDocumentContainerAsync(
             int numItems,
@@ -178,15 +191,18 @@
 
             if (!this.singlePartition)
             {
-                await documentContainer.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
+                for (int i = 0; i < 3; i++)
+                {
+                    IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(
+                        trace: NoOpTrace.Singleton, 
+                        cancellationToken: default);
+                    foreach (FeedRangeInternal range in ranges)
+                    {
+                        await documentContainer.SplitAsync(range, cancellationToken: default);
+                    }
 
-                await documentContainer.SplitAsync(partitionKeyRangeId: 1, cancellationToken: default);
-                await documentContainer.SplitAsync(partitionKeyRangeId: 2, cancellationToken: default);
-
-                await documentContainer.SplitAsync(partitionKeyRangeId: 3, cancellationToken: default);
-                await documentContainer.SplitAsync(partitionKeyRangeId: 4, cancellationToken: default);
-                await documentContainer.SplitAsync(partitionKeyRangeId: 5, cancellationToken: default);
-                await documentContainer.SplitAsync(partitionKeyRangeId: 6, cancellationToken: default);
+                    await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+                }
             }
 
             for (int i = 0; i < numItems; i++)

@@ -15,6 +15,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using System.Collections.ObjectModel;
+    using System.Net;
 
     /// <summary>
     /// Tests for <see cref="PartitionRoutingHelper"/> class.
@@ -22,11 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     [TestClass]
     public class PartitionRoutingHelperTest
     {
-        PartitionRoutingHelper partitionRoutingHelper;
-        public PartitionRoutingHelperTest()
-        {
-            this.partitionRoutingHelper = new PartitionRoutingHelper();
-        }
+        private readonly PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
 
         /// <summary>
         /// Tests for <see cref="PartitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken"/> method.
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             Func<string, INameValueCollection> getHeadersWithContinuation = (string continuationToken) =>
             {
-                INameValueCollection headers = new DictionaryNameValueCollection();
+                INameValueCollection headers = new StoreRequestNameValueCollection();
                 headers[HttpConstants.HttpHeaders.Continuation] = continuationToken;
                 return headers;
             };
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
                         this.AddFormattedContinuationHeaderHelper(positiveTestData, out headers, out resolvedRanges, out resolvedContinuationTokens);
 
-                        bool answer = await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, positiveTestData.ProvidedRanges, routingMapProvider, null, new PartitionRoutingHelper.ResolvedRangeInfo(resolvedRanges[0], (resolvedContinuationTokens.Count > 0) ? resolvedContinuationTokens : null));
+                        bool answer = await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, positiveTestData.ProvidedRanges, routingMapProvider, null, new PartitionRoutingHelper.ResolvedRangeInfo(resolvedRanges[0], (resolvedContinuationTokens.Count > 0) ? resolvedContinuationTokens : null), NoOpTrace.Singleton);
 
                         Assert.AreEqual(positiveTestData.OutputCompositeContinuationToken, headers[HttpConstants.HttpHeaders.Continuation]);
                     }
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
                             this.AddFormattedContinuationHeaderHelper(negativeTestData, out headers, out resolvedRanges, out resolvedContinuationTokens);
 
-                            bool answer = await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, negativeTestData.ProvidedRanges, routingMapProvider, null, new PartitionRoutingHelper.ResolvedRangeInfo(resolvedRanges[0], (resolvedContinuationTokens.Count > 0) ? resolvedContinuationTokens : null));
+                            bool answer = await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, negativeTestData.ProvidedRanges, routingMapProvider, null, new PartitionRoutingHelper.ResolvedRangeInfo(resolvedRanges[0], (resolvedContinuationTokens.Count > 0) ? resolvedContinuationTokens : null), NoOpTrace.Singleton);
 
                             Assert.Fail("Expect BadRequestException");
                         }
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             Func<string, INameValueCollection> getHeadersWithContinuation = (string continuationToken) =>
             {
-                INameValueCollection localHeaders = new DictionaryNameValueCollection();
+                INameValueCollection localHeaders = new StoreRequestNameValueCollection();
                 if (continuationToken != null)
                 {
                     localHeaders[HttpConstants.HttpHeaders.Continuation] = continuationToken;
@@ -230,11 +230,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                         for (Range<string> currentRange = startRange; currentRange != null;)
                         {
                             RoutingMapProvider routingMapProvider = new RoutingMapProvider(routingMap);
-                            PartitionRoutingHelper.ResolvedRangeInfo resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(testCase.ProvidedRanges, routingMapProvider, string.Empty, currentRange, null);
+                            PartitionRoutingHelper.ResolvedRangeInfo resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(testCase.ProvidedRanges, routingMapProvider, string.Empty, currentRange, null, NoOpTrace.Singleton);
                             actualPartitionKeyRangeIds.Add(resolvedRangeInfo.ResolvedRange.Id);
-                            INameValueCollection headers = new DictionaryNameValueCollection();
+                            INameValueCollection headers = new StoreRequestNameValueCollection();
 
-                            await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, testCase.ProvidedRanges, routingMapProvider, string.Empty, resolvedRangeInfo);
+                            await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, testCase.ProvidedRanges, routingMapProvider, string.Empty, resolvedRangeInfo, NoOpTrace.Singleton);
 
                             List<CompositeContinuationToken> suppliedTokens;
                             Range<string> nextRange = this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out suppliedTokens);
@@ -247,6 +247,141 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             }
         }
 
+        [TestMethod]
+        public void TestCrossPartitionAggregateQueries()
+        {
+            PartitionRoutingHelperTestCase[] testcases = new[]
+            {
+                new PartitionRoutingHelperTestCase
+                {
+                    Query = "SELECT AVG(r.key) FROM r WHERE IS_NUMBER(r.key)",
+                    PartitionKey = "/key",
+                    EnableCrossPartitionQuery = true,
+                    ClientApiVersion = "2018-12-31",
+                    StatusCode = HttpStatusCode.BadRequest,
+                    SubStatusCode = SubStatusCodes.CrossPartitionQueryNotServable,
+                    Message = RMResources.UnsupportedCrossPartitionQuery
+                },
+                new PartitionRoutingHelperTestCase
+                {
+                    Query = "SELECT COUNT(1), MAX(r.key) FROM r",
+                    PartitionKey = "/key",
+                    EnableCrossPartitionQuery = true,
+                    ClientApiVersion = "2018-12-31",
+                    StatusCode = HttpStatusCode.BadRequest,
+                    SubStatusCode = SubStatusCodes.CrossPartitionQueryNotServable,
+                    Message = RMResources.UnsupportedCrossPartitionQuery
+                },
+                new PartitionRoutingHelperTestCase
+                {
+                    Query = "SELECT c.age, COUNT(1) as count FROM c GROUP BY c.age",
+                    PartitionKey = "/key",
+                    EnableCrossPartitionQuery = true,
+                    ClientApiVersion = "2018-12-31",
+                    StatusCode = HttpStatusCode.BadRequest,
+                    SubStatusCode = SubStatusCodes.CrossPartitionQueryNotServable,
+                    Message = RMResources.UnsupportedCrossPartitionQuery
+                },
+                new PartitionRoutingHelperTestCase
+                {
+                    Query = @"SELECT
+                                c.age,
+                                AVG(c.doesNotExist) as undefined_avg,
+                                MIN(c.doesNotExist) as undefined_min,
+                                MAX(c.doesNotExist) as undefined_max,
+                                COUNT(c.doesNotExist) as undefined_count,
+                                SUM(c.doesNotExist) as undefined_sum
+                              FROM c
+                              GROUP BY c.age",
+                    PartitionKey = "/key",
+                    EnableCrossPartitionQuery = true,
+                    ClientApiVersion = "2018-12-31",
+                    StatusCode = HttpStatusCode.BadRequest,
+                    SubStatusCode = SubStatusCodes.CrossPartitionQueryNotServable,
+                    Message = RMResources.UnsupportedCrossPartitionQuery
+                },
+                new PartitionRoutingHelperTestCase
+                {
+                    Query = @"SELECT * FROM c ORDER BY c.age",
+                    PartitionKey = "/key",
+                    EnableCrossPartitionQuery = false,
+                    ClientApiVersion = "2018-12-31",
+                    StatusCode = HttpStatusCode.BadRequest,
+                    SubStatusCode = SubStatusCodes.Unknown,
+                    Message = RMResources.CrossPartitionQueryDisabled
+                },
+                new PartitionRoutingHelperTestCase
+                {
+                    Query = @"SELECT COUNT(1) FROM c WHERE c.age > 18",
+                    PartitionKey = "/key",
+                    EnableCrossPartitionQuery = true,
+                    ClientApiVersion = "2016-07-11",
+                    StatusCode = HttpStatusCode.BadRequest,
+                    SubStatusCode = SubStatusCodes.Unknown,
+                    Message = RMResources.UnsupportedCrossPartitionQueryWithAggregate
+                },
+                new PartitionRoutingHelperTestCase
+                {
+                    Query = @"SELECT COUNT(1) FROM c WHERE c.age > 18",
+                    PartitionKey = "/key",
+                    EnableCrossPartitionQuery = true,
+                    ClientApiVersion = "2016-05-30",
+                    StatusCode = HttpStatusCode.BadRequest,
+                    SubStatusCode = SubStatusCodes.Unknown,
+                    Message = RMResources.UnsupportedCrossPartitionQuery
+                }
+            };
+
+            foreach(PartitionRoutingHelperTestCase testcase in testcases)
+            {
+                try
+                {
+                    IReadOnlyList<Range<string>> _ = PartitionRoutingHelper.GetProvidedPartitionKeyRanges(
+                        querySpec: new Cosmos.Query.Core.SqlQuerySpec(testcase.Query),
+                        enableCrossPartitionQuery: testcase.EnableCrossPartitionQuery,
+                        parallelizeCrossPartitionQuery: false,
+                        isContinuationExpected: true,
+                        hasLogicalPartitionKey: testcase.HasLogicalPartitionKey,
+                        allowDCount: false,
+                        allowNonValueAggregates: true,
+                        partitionKeyDefinition: new PartitionKeyDefinition { Paths = new Collection<string> { testcase.PartitionKey }, Kind = PartitionKind.Hash },
+                        queryPartitionProvider: QueryPartitionProviderTestInstance.Object,
+                        clientApiVersion: testcase.ClientApiVersion,
+                        out QueryInfo info);
+
+                    Assert.Fail();
+                }
+                catch(DocumentClientException dce)
+                {
+                    Assert.AreEqual(testcase.StatusCode, dce.StatusCode);
+                    Assert.AreEqual(testcase.SubStatusCode, dce.GetSubStatus());
+                    Assert.IsTrue(dce.Message.Contains(testcase.Message));
+                    PartitionedQueryExecutionInfo info = JsonConvert.DeserializeObject<PartitionedQueryExecutionInfo>(dce.Error.AdditionalErrorInfo);
+                    Assert.IsNotNull(info);
+                }
+            }
+        }
+
+        internal struct PartitionRoutingHelperTestCase
+        {
+            internal string Query { get; set; }
+
+            internal string PartitionKey { get; set; }
+
+            internal bool EnableCrossPartitionQuery { get; set; }
+
+            internal string ClientApiVersion { get; set; }
+
+            internal bool HasLogicalPartitionKey { get; set; }
+
+            internal HttpStatusCode StatusCode { get; set;}
+
+            internal SubStatusCodes SubStatusCode { get; set; }
+
+            internal string Message { get; set; }
+        }
+
+
         private class RoutingMapProvider : IRoutingMapProvider
         {
             private readonly CollectionRoutingMap collectionRoutingMap;
@@ -256,17 +391,27 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 this.collectionRoutingMap = collectionRoutingMap;
             }
 
-            public Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(string collectionResourceId, Range<string> range, bool forceRefresh = false)
+            public Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
+                string collectionResourceId, 
+                Range<string> range, 
+                ITrace trace,
+                bool forceRefresh = false)
             {
                 return Task.FromResult(this.collectionRoutingMap.GetOverlappingRanges(range));
             }
 
-            public Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(string collectionResourceId, string partitionKeyRangeId, bool forceRefresh = false)
+            public Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(
+                string collectionResourceId, 
+                string partitionKeyRangeId, 
+                ITrace trace,
+                bool forceRefresh = false)
             {
                 return Task.FromResult(this.collectionRoutingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId));
             }
 
-            public Task<PartitionKeyRange> TryGetRangeByEffectivePartitionKey(string collectionResourceId, string effectivePartitionKey)
+            public Task<PartitionKeyRange> TryGetRangeByEffectivePartitionKey(
+                string collectionResourceId, 
+                string effectivePartitionKey)
             {
                 return Task.FromResult(this.collectionRoutingMap.GetOverlappingRanges(Range<string>.GetPointRange(effectivePartitionKey)).Single());
             }

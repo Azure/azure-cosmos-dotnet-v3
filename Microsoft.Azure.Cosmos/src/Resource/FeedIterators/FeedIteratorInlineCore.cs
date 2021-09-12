@@ -8,13 +8,16 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class FeedIteratorInlineCore : FeedIteratorInternal
     {
         private readonly FeedIteratorInternal feedIteratorInternal;
+        private readonly CosmosClientContext clientContext;
 
         internal FeedIteratorInlineCore(
-            FeedIterator feedIterator)
+            FeedIterator feedIterator,
+            CosmosClientContext clientContext)
         {
             if (!(feedIterator is FeedIteratorInternal feedIteratorInternal))
             {
@@ -22,12 +25,15 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.feedIteratorInternal = feedIteratorInternal;
+            this.clientContext = clientContext;
         }
 
         internal FeedIteratorInlineCore(
-            FeedIteratorInternal feedIteratorInternal)
+            FeedIteratorInternal feedIteratorInternal,
+            CosmosClientContext clientContext)
         {
             this.feedIteratorInternal = feedIteratorInternal ?? throw new ArgumentNullException(nameof(feedIteratorInternal));
+            this.clientContext = clientContext;
         }
 
         public override bool HasMoreResults => this.feedIteratorInternal.HasMoreResults;
@@ -39,7 +45,14 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.feedIteratorInternal.ReadNextAsync(cancellationToken));
+            return this.clientContext.OperationHelperAsync("FeedIterator Read Next Async",
+                        requestOptions: null,
+                        task: (trace) => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken));
+        }
+
+        public override Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
+        {
+            return TaskHelper.RunInlineIfNeededAsync(() => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken));
         }
 
         protected override void Dispose(bool disposing)

@@ -8,7 +8,10 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using System.Net.Http;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -33,23 +36,44 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<AccountProperties> GetDatabaseAccountAsync(Uri serviceEndpoint)
         {
-            INameValueCollection headers = new DictionaryNameValueCollection(StringComparer.Ordinal);
+            INameValueCollection headers = new StoreRequestNameValueCollection();
             await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
                 headersCollection: headers,
                 serviceEndpoint,
                 HttpConstants.HttpMethods.Get,
                 AuthorizationTokenType.PrimaryMasterKey);
 
-            using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(
-                uri: serviceEndpoint,
-                additionalHeaders: headers,
-                resourceType: ResourceType.DatabaseAccount,
-                diagnosticsContext: null,
-                cancellationToken: default))
+            IClientSideRequestStatistics stats = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+            try
             {
-                using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
+                using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(
+                    uri: serviceEndpoint,
+                    additionalHeaders: headers,
+                    resourceType: ResourceType.DatabaseAccount,
+                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
+                    clientSideRequestStatistics: stats,
+                    cancellationToken: default))
                 {
-                    return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
+                    using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
+                    {
+                        return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
+                    }
+                }
+            }
+            catch (OperationCanceledException ex)
+            {
+                // Catch Operation Cancelled Exception and convert to Timeout 408 if the user did not cancel it.
+                using (ITrace trace = Trace.GetRootTrace("Account Read Exception", TraceComponent.Transport, TraceLevel.Info))
+                {
+                    trace.AddDatum("Client Side Request Stats", stats);
+                    throw CosmosExceptionFactory.CreateRequestTimeoutException(
+                                                message: ex.Data?["Message"].ToString(),
+                                                headers: new Headers()
+                                                {
+                                                    ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString()
+                                                },
+                                                innerException: ex,
+                                                trace: trace);
                 }
             }
         }
@@ -57,7 +81,10 @@ namespace Microsoft.Azure.Cosmos
         public async Task<AccountProperties> InitializeReaderAsync()
         {
             AccountProperties databaseAccount = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
-                this.serviceEndpoint, this.connectionPolicy.PreferredLocations, this.GetDatabaseAccountAsync);
+                defaultEndpoint: this.serviceEndpoint,
+                locations: this.connectionPolicy.PreferredLocations,
+                getDatabaseAccountFn: this.GetDatabaseAccountAsync,
+                cancellationToken: default);
 
             return databaseAccount;
         }

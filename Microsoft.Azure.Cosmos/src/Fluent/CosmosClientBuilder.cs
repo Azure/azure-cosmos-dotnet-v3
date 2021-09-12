@@ -318,7 +318,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
         /// <seealso cref="CosmosClientOptions.GatewayModeMaxConnectionLimit"/>
-        public CosmosClientBuilder WithConnectionModeGateway(int? maxConnectionLimit = null,
+        public CosmosClientBuilder WithConnectionModeGateway(
+            int? maxConnectionLimit = null,
             IWebProxy webProxy = null)
         {
             this.clientOptions.ConnectionMode = ConnectionMode.Gateway;
@@ -441,6 +442,27 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Gets or sets the boolean to only return the headers and status code in
+        /// the Cosmos DB response for write item operation like Create, Upsert, Patch and Replace.
+        /// Setting the option to false will cause the response to have a null resource. This reduces networking and CPU load by not sending
+        /// the resource back over the network and serializing it on the client.
+        /// </summary>
+        /// <param name="contentResponseOnWrite">a boolean indicating whether payload will be included in the response or not.</param>
+        /// <remarks>
+        /// <para>
+        /// This option can be overriden by similar property in ItemRequestOptions and TransactionalBatchItemRequestOptions
+        /// </para>
+        /// </remarks>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        /// <seealso cref="ItemRequestOptions.EnableContentResponseOnWrite"/>
+        /// <seealso cref="TransactionalBatchItemRequestOptions.EnableContentResponseOnWrite"/>
+        public CosmosClientBuilder WithContentResponseOnWrite(bool contentResponseOnWrite)
+        {
+            this.clientOptions.EnableContentResponseOnWrite = contentResponseOnWrite;
+            return this;
+        }
+
+        /// <summary>
         /// The event handler to be invoked before the request is sent.
         /// </summary>
         internal CosmosClientBuilder WithSendingRequestEventArgs(EventHandler<SendingRequestEventArgs> sendingRequestEventArgs)
@@ -496,6 +518,36 @@ namespace Microsoft.Azure.Cosmos.Fluent
         internal CosmosClientBuilder WithCpuMonitorDisabled()
         {
             this.clientOptions.EnableCpuMonitor = false;
+            return this;
+        }
+
+        /// <summary>
+        /// Disable Telemetry if enabled using environment properties
+        /// </summary>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        internal CosmosClientBuilder WithTelemetryDisabled()
+        {
+            this.clientOptions.EnableClientTelemetry = false;
+            return this;
+        }
+
+        /// <summary>
+        /// To enable Telemetry, set COSMOS.CLIENT_TELEMETRY_ENABLED environment property. 
+        /// This function is used by Test only since this feature is enable only for preview build.
+        /// </summary>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        internal CosmosClientBuilder WithTelemetryEnabled()
+        {
+            this.clientOptions.EnableClientTelemetry = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Enabled partition level failover in the SDK
+        /// </summary>
+        internal CosmosClientBuilder WithPartitionLevelFailoverEnabled()
+        {
+            this.clientOptions.EnablePartitionLevelFailover = true;
             return this;
         }
 

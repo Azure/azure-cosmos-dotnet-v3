@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Security.AccessControl;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -138,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
-                if (this.HttpClientFactory != null && value != ConnectionPolicy.Default.MaxConnectionLimit )
+                if (this.HttpClientFactory != null && value != ConnectionPolicy.Default.MaxConnectionLimit)
                 {
                     throw new ArgumentException($"{nameof(this.httpClientFactory)} can not be set along with {nameof(this.GatewayModeMaxConnectionLimit)}. This must be set on the HttpClientHandler.MaxConnectionsPerServer property.");
                 }
@@ -160,14 +159,9 @@ namespace Microsoft.Azure.Cosmos
         /// This avoids latency issues because the old token is used until the new token is retrieved.
         /// </summary>
         /// <remarks>
-        /// The recommended minimum value is 5 minutes. The default value is 25% of the token expire time.
+        /// The recommended minimum value is 5 minutes. The default value is 50% of the token expire time.
         /// </remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        TimeSpan? TokenCredentialBackgroundRefreshInterval { get; set; }
+        public TimeSpan? TokenCredentialBackgroundRefreshInterval { get; set; }
 
         /// <summary>
         /// Gets the handlers run before the process
@@ -263,6 +257,21 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
         public TimeSpan? MaxRetryWaitTimeOnRateLimitedRequests { get; set; }
+
+        /// <summary>
+        /// Gets or sets the boolean to only return the headers and status code in
+        /// the Cosmos DB response for write item operation like Create, Upsert, Patch and Replace.
+        /// Setting the option to false will cause the response to have a null resource. This reduces networking and CPU load by not sending
+        /// the resource back over the network and serializing it on the client.
+        /// </summary>
+        /// <remarks>
+        /// <para>This is optimal for workloads where the returned resource is not used.</para>
+        /// <para>This option can be overriden by similar property in ItemRequestOptions and TransactionalBatchItemRequestOptions</para>
+        /// </remarks>
+        /// <seealso cref="CosmosClientBuilder.WithContentResponseOnWrite(bool)"/>
+        /// <seealso cref="ItemRequestOptions.EnableContentResponseOnWrite"/>
+        /// <seealso cref="TransactionalBatchItemRequestOptions.EnableContentResponseOnWrite"/>
+        public bool? EnableContentResponseOnWrite { get; set; }
 
         /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.
@@ -371,16 +380,12 @@ namespace Microsoft.Azure.Cosmos
             get => this.webProxy;
             set
             {
-                this.webProxy = value;
-                if (this.ConnectionMode != ConnectionMode.Gateway)
-                {
-                    throw new ArgumentException($"{nameof(this.WebProxy)} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Gateway)}");
-                }
-
-                if (this.HttpClientFactory != null)
+                if (value != null && this.HttpClientFactory != null)
                 {
                     throw new ArgumentException($"{nameof(this.WebProxy)} cannot be set along {nameof(this.HttpClientFactory)}");
                 }
+
+                this.webProxy = value;
             }
         }
 
@@ -389,6 +394,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <example>
         /// An example on how to configure the serialization option to ignore null values
+        /// <code language="c#">
+        /// <![CDATA[
         /// CosmosClientOptions clientOptions = new CosmosClientOptions()
         /// {
         ///     SerializerOptions = new CosmosSerializationOptions(){
@@ -397,6 +404,8 @@ namespace Microsoft.Azure.Cosmos
         /// };
         /// 
         /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
+        /// ]]>
+        /// </code>
         /// </example>
         public CosmosSerializationOptions SerializerOptions
         {
@@ -418,7 +427,9 @@ namespace Microsoft.Azure.Cosmos
         /// SDK owned types such as DatabaseProperties and ContainerProperties will always use the SDK default serializer.
         /// </summary>
         /// <example>
-        /// // An example on how to set a custom serializer. For basic serializer options look at CosmosSerializationOptions
+        /// An example on how to set a custom serializer. For basic serializer options look at CosmosSerializationOptions
+        /// <code language="c#">
+        /// <![CDATA[
         /// CosmosSerializer ignoreNullSerializer = new MyCustomIgnoreNullSerializer();
         ///         
         /// CosmosClientOptions clientOptions = new CosmosClientOptions()
@@ -427,6 +438,8 @@ namespace Microsoft.Azure.Cosmos
         /// };
         /// 
         /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
+        /// ]]>
+        /// </code>
         /// </example>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
         public CosmosSerializer Serializer
@@ -470,9 +483,9 @@ namespace Microsoft.Azure.Cosmos
         /// Does not apply if <see cref="ConnectionMode.Gateway"/> is used.
         /// </remarks>
         /// <value>
-        /// The default value is false
+        /// The default value is true
         /// </value>
-        public bool EnableTcpConnectionEndpointRediscovery { get; set; } = false;
+        public bool EnableTcpConnectionEndpointRediscovery { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a delegate to use to obtain an HttpClient instance to be used for HTTPS communication.
@@ -494,7 +507,7 @@ namespace Microsoft.Azure.Cosmos
             get => this.httpClientFactory;
             set
             {
-                if (this.WebProxy != null)
+                if (value != null && this.WebProxy != null)
                 {
                     throw new ArgumentException($"{nameof(this.HttpClientFactory)} cannot be set along {nameof(this.WebProxy)}");
                 }
@@ -507,6 +520,11 @@ namespace Microsoft.Azure.Cosmos
                 this.httpClientFactory = value;
             }
         }
+
+        /// <summary>
+        /// Enable partition key level failover
+        /// </summary>
+        internal bool EnablePartitionLevelFailover { get; set; } = false;
 
         /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
@@ -612,6 +630,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal bool? EnableCpuMonitor { get; set; }
 
+        /// <summary>
+        /// Flag to enable telemetry
+        /// </summary>
+        internal bool? EnableClientTelemetry { get; set; }
+
         internal void SetSerializerIfNotConfigured(CosmosSerializer serializer)
         {
             if (this.serializerInternal == null)
@@ -626,29 +649,34 @@ namespace Microsoft.Azure.Cosmos
             return cloneConfiguration;
         }
 
-        internal ConnectionPolicy GetConnectionPolicy()
+        internal virtual ConnectionPolicy GetConnectionPolicy(int clientId)
         {
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
-            UserAgentContainer userAgent = this.BuildUserAgentContainer();
-            
+
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
                 MaxConnectionLimit = this.GatewayModeMaxConnectionLimit,
                 RequestTimeout = this.RequestTimeout,
                 ConnectionMode = this.ConnectionMode,
                 ConnectionProtocol = this.ConnectionProtocol,
-                UserAgentContainer = userAgent,
+                UserAgentContainer = this.CreateUserAgentContainerWithFeatures(clientId),
                 UseMultipleWriteLocations = true,
                 IdleTcpConnectionTimeout = this.IdleTcpConnectionTimeout,
                 OpenTcpConnectionTimeout = this.OpenTcpConnectionTimeout,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
+                EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
-                HttpClientFactory = this.httpClientFactory,
+                HttpClientFactory = this.httpClientFactory
             };
+
+            if (this.EnableClientTelemetry.HasValue)
+            {
+                connectionPolicy.EnableClientTelemetry = this.EnableClientTelemetry.Value;
+            }
 
             if (this.ApplicationRegion != null)
             {
@@ -704,21 +732,7 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-            switch (this.ConsistencyLevel.Value)
-            {
-                case Cosmos.ConsistencyLevel.BoundedStaleness:
-                    return Documents.ConsistencyLevel.BoundedStaleness;
-                case Cosmos.ConsistencyLevel.ConsistentPrefix:
-                    return Documents.ConsistencyLevel.BoundedStaleness;
-                case Cosmos.ConsistencyLevel.Eventual:
-                    return Documents.ConsistencyLevel.Eventual;
-                case Cosmos.ConsistencyLevel.Session:
-                    return Documents.ConsistencyLevel.Session;
-                case Cosmos.ConsistencyLevel.Strong:
-                    return Documents.ConsistencyLevel.Strong;
-                default:
-                    throw new ArgumentException($"Unsupported ConsistencyLevel {this.ConsistencyLevel.Value}");
-            }
+            return (Documents.ConsistencyLevel)this.ConsistencyLevel.Value;
         }
 
         internal static string GetAccountEndpoint(string connectionString)
@@ -802,25 +816,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal UserAgentContainer BuildUserAgentContainer()
-        {
-            UserAgentContainer userAgent = new UserAgentContainer();
-            string features = this.GetUserAgentFeatures();
-
-            if (!string.IsNullOrEmpty(features))
-            {
-                userAgent.SetFeatures(features.ToString());
-            }
-            
-            if (!string.IsNullOrEmpty(this.ApplicationName))
-            {
-                userAgent.Suffix = this.ApplicationName;
-            }
-
-            return userAgent;
-        }
-
-        private string GetUserAgentFeatures()
+        internal UserAgentContainer CreateUserAgentContainerWithFeatures(int clientId)
         {
             CosmosClientOptionsFeatures features = CosmosClientOptionsFeatures.NoFeatures;
             if (this.AllowBulkExecution)
@@ -833,12 +829,40 @@ namespace Microsoft.Azure.Cosmos
                 features |= CosmosClientOptionsFeatures.HttpClientFactory;
             }
 
-            if (features == CosmosClientOptionsFeatures.NoFeatures)
+            string featureString = null;
+            if (features != CosmosClientOptionsFeatures.NoFeatures)
             {
-                return null;
+                featureString = Convert.ToString((int)features, 2).PadLeft(8, '0');
             }
-            
-            return Convert.ToString((int)features, 2).PadLeft(8, '0');
+
+            string regionConfiguration = this.GetRegionConfiguration();
+
+            return new UserAgentContainer(
+                        clientId: clientId,
+                        features: featureString,
+                        regionConfiguration: regionConfiguration,
+                        suffix: this.ApplicationName);
+        }
+
+        /// <summary>
+        /// This generates a key that added to the user agent to make it 
+        /// possible to determine if the SDK has region failover enabled.
+        /// </summary>
+        /// <returns>Format Reg-{D (Disabled discovery)}-S(application region)|L(List of preferred regions)|N(None, user did not configure it)</returns>
+        private string GetRegionConfiguration()
+        {
+            string regionConfig = this.LimitToEndpoint ? "D" : string.Empty;
+            if (!string.IsNullOrEmpty(this.ApplicationRegion))
+            {
+                return regionConfig + "S";
+            }
+
+            if (this.ApplicationPreferredRegions != null)
+            {
+                return regionConfig + "L";
+            }
+
+            return regionConfig + "N";
         }
 
         /// <summary>

@@ -22,31 +22,6 @@
     [TestClass]
     public class QueryPlanBaselineTests : BaselineTests<QueryPlanBaselineTestInput, QueryPlanBaselineTestOutput>
     {
-        private static readonly IDictionary<string, object> DefaultQueryEngineConfiguration = new Dictionary<string, object>()
-        {
-            {"maxSqlQueryInputLength", 30720},
-            {"maxJoinsPerSqlQuery", 5},
-            {"maxLogicalAndPerSqlQuery", 200},
-            {"maxLogicalOrPerSqlQuery", 200},
-            {"maxUdfRefPerSqlQuery", 2},
-            {"maxInExpressionItemsCount", 8000},
-            {"queryMaxInMemorySortDocumentCount", 500},
-            {"maxQueryRequestTimeoutFraction", 0.90},
-            {"sqlAllowNonFiniteNumbers", false},
-            {"sqlAllowAggregateFunctions", true},
-            {"sqlAllowSubQuery", true},
-            {"sqlAllowScalarSubQuery", false},
-            {"allowNewKeywords", true},
-            {"sqlAllowLike", false},
-            {"sqlAllowGroupByClause", false},
-            {"maxSpatialQueryCells", 12},
-            {"spatialMaxGeometryPointCount", 256},
-            {"sqlDisableQueryILOptimization", false},
-            {"sqlDisableFilterPlanOptimization", false}
-        };
-
-        private static readonly QueryPartitionProvider queryPartitionProvider = new QueryPartitionProvider(DefaultQueryEngineConfiguration);
-
         [TestMethod]
         [Owner("brchon")]
         public void Aggregates()
@@ -487,6 +462,61 @@
         }
 
         [TestMethod]
+        [Owner("girobins")]
+        public void Like()
+        {
+            List<QueryPlanBaselineTestInput> testVariations = new List<QueryPlanBaselineTestInput>
+            {
+                Hash(
+                @"Projection LIKE",
+                @"SELECT VALUE 'a' LIKE '$a'",
+                @"/a"),
+
+                Hash(
+                @"Projection LIKE",
+                @"SELECT VALUE 'a' LIKE '!%a' ESCAPE '!'",
+                @"/a"),
+
+                Hash(
+                @"LIKE SELECT * NonPartitioned",
+                @"SELECT * FROM c WHERE c.a LIKE '%a%'"),
+
+                Hash(
+                @"LIKE SELECT *",
+                @"SELECT * FROM c WHERE c.a LIKE '%a%'",
+                @"/a"),
+
+                Hash(
+                @"Parameterized LIKE",
+                new SqlQuerySpec(
+                    @"SELECT * FROM c WHERE c.a LIKE @LIKEPATTERN",
+                    new SqlParameterCollection(
+                        new SqlParameter[]
+                        {
+                            new SqlParameter("@LIKEPATTERN", "%a"),
+                        })),
+                @"/a"),
+
+                Hash(
+                @"LIKE and non partition filter",
+                @"SELECT * FROM c WHERE c.a LIKE 'a%'",
+                @"/key"),
+
+                Hash(
+                @"LIKE and partition filter",
+                @"SELECT * FROM c WHERE c.a LIKE 'a%'",
+                @"/a"),
+
+                Hash(
+                @"LIKE and partition filter",
+                @"SELECT * FROM c WHERE c.a LIKE 'a!%' ESCAPE '!'",
+                @"/a")
+            };
+
+            this.ExecuteTestSuite(testVariations);
+        }
+
+        [TestMethod]
         [Owner("brchon")]
         public void ManyRanges()
         {
@@ -629,7 +659,13 @@
 
                 Hash(
                 @"Max UDF Calls",
-                @"SELECT udf.func1(r.a), udf.func2(r.b), udf.func3(r.c), udf.func1(r.d), udf.func2(r.e), udf.func3(r.f) FROM Root r",
+                @"
+                    SELECT
+                        udf.func1(r.a), udf.func2(r.b), udf.func3(r.c),
+                        udf.func1(r.d), udf.func2(r.e), udf.func3(r.f),
+                        udf.func1(r.g), udf.func2(r.h), udf.func3(r.i),
+                        udf.func1(r.j), udf.func2(r.k), udf.func3(r.l),
+                    FROM Root r",
                 @"/key"),
 
                 Hash(
@@ -1342,13 +1378,14 @@
 
         public override QueryPlanBaselineTestOutput ExecuteTest(QueryPlanBaselineTestInput input)
         {
-            TryCatch<PartitionedQueryExecutionInfoInternal> info = queryPartitionProvider.TryGetPartitionedQueryExecutionInfoInternal(
+            TryCatch<PartitionedQueryExecutionInfoInternal> info = QueryPartitionProviderTestInstance.Object.TryGetPartitionedQueryExecutionInfoInternal(
                 input.SqlQuerySpec,
                 input.PartitionKeyDefinition,
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
-                hasLogicalPartitionKey: false);
+                hasLogicalPartitionKey: false,
+                allowDCount: true);
 
             if (info.Failed)
             {

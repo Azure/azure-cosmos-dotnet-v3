@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Moq;
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.ChangeFeed;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     [TestClass]
     public class ChangeFeedResultSetIteratorTests
@@ -35,15 +36,16 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);
             firstResponse.Headers.ETag = "FirstContinuation";
+            Headers headers = new Headers()
+            {
+                ETag = "ShouldNotContainThis"
+            };
             ResponseMessage secondResponse = new ResponseMessage(
                 statusCode: HttpStatusCode.NotFound,
                 requestMessage: null,
-                headers: new Headers()
-                {
-                    ETag = "ShouldNotContainThis"
-                },
-                cosmosException: CosmosExceptionFactory.CreateNotFoundException("something"),
-                diagnostics: new CosmosDiagnosticsContextCore());
+                headers: headers,
+                trace: NoOpTrace.Singleton,
+                cosmosException: CosmosExceptionFactory.CreateNotFoundException("something", headers));
 
             mockContext.SetupSequence(x => x.ProcessResourceOperationAsync<ResponseMessage>(
                 It.IsAny<string>(),
@@ -51,11 +53,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<ContainerInternal>(),
-                It.IsAny<PartitionKey?>(),
+                It.IsAny<Cosmos.FeedRange>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
-                It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse))
                 .Returns(Task.FromResult(secondResponse));
@@ -63,13 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             DatabaseInternal databaseCore = new DatabaseInlineCore(mockContext.Object, "mydb");
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
-                mockContext.Object,
-                new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"),
-                ChangeFeedStartFrom.Beginning(),
-                new ChangeFeedRequestOptions()
-                {
-                    PageSizeHint = 10,
-                });
+                mockContext.Object, new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"), null, 10, new StandByFeedIteratorRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.IsTrue(!firstRequest.Headers.ContinuationToken.Contains(secondResponse.Headers.ETag), "Response should not contain the second continuation");
@@ -81,11 +77,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<ContainerInternal>(),
-                It.IsAny<PartitionKey?>(),
+                It.IsAny<Cosmos.FeedRange>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
-                It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
@@ -113,11 +109,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<ContainerInternal>(),
-                It.IsAny<PartitionKey?>(),
+                It.IsAny<Cosmos.FeedRange>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
-                It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse))
                 .Returns(Task.FromResult(secondResponse));
@@ -125,13 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             DatabaseInternal databaseCore = new DatabaseInlineCore(mockContext.Object, "mydb");
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
-                mockContext.Object,
-                new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"),
-                ChangeFeedStartFrom.Beginning(),
-                new ChangeFeedRequestOptions()
-                {
-                    PageSizeHint = 10,
-                });
+                mockContext.Object, new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"), null, 10, new StandByFeedIteratorRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(secondResponse.Headers.ETag), "Response should contain the second continuation");
@@ -143,11 +133,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<ContainerInternal>(),
-                It.IsAny<PartitionKey?>(),
+                It.IsAny<Cosmos.FeedRange>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
-                It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
@@ -177,11 +167,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<ContainerInternal>(),
-                It.IsAny<PartitionKey?>(),
+                It.IsAny<Cosmos.FeedRange>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
-                It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse))
                 .Returns(Task.FromResult(secondResponse))
@@ -190,13 +180,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             DatabaseInternal databaseCore = new DatabaseInlineCore(mockContext.Object, "mydb");
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
-                mockContext.Object,
-                new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"),
-                ChangeFeedStartFrom.Beginning(),
-                new ChangeFeedRequestOptions()
-                {
-                    PageSizeHint = 10,
-                });
+                mockContext.Object, new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"), null, 10, new StandByFeedIteratorRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(secondResponse.Headers.ETag), "Response should contain the second continuation");
@@ -209,11 +193,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<ContainerInternal>(),
-                It.IsAny<PartitionKey?>(),
+                It.IsAny<Cosmos.FeedRange>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
-                It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()), Times.Exactly(3));
         }
 
@@ -239,24 +223,18 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<ContainerInternal>(),
-                It.IsAny<PartitionKey?>(),
+                It.IsAny<Cosmos.FeedRange>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
-                It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse));
 
             DatabaseInternal databaseCore = new DatabaseInlineCore(mockContext.Object, "mydb");
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
-                mockContext.Object,
-                new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"),
-                ChangeFeedStartFrom.Beginning(),
-                new ChangeFeedRequestOptions()
-                {
-                    PageSizeHint = 10,
-                });
+                mockContext.Object, new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"), null, 10, new StandByFeedIteratorRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.AreEqual(HttpStatusCode.NotModified, firstRequest.StatusCode);
@@ -267,51 +245,17 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<ContainerInternal>(),
-                It.IsAny<PartitionKey?>(),
+                It.IsAny<Cosmos.FeedRange>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
-                It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()), Times.Once);
-        }
-
-        [TestMethod]
-        public async Task GetChangeFeedTokensAsyncReturnsOnePerPartitionKeyRange()
-        {
-            // Setting mock to have 3 ranges, to generate 3 tokens
-            MultiRangeMockDocumentClient documentClient = new MultiRangeMockDocumentClient();
-            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
-            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
-            mockContext.Setup(x => x.ClientOptions).Returns(MockCosmosUtil.GetDefaultConfiguration());
-            mockContext.Setup(x => x.DocumentClient).Returns(documentClient);
-            mockContext.Setup(x => x.SerializerCore).Returns(MockCosmosUtil.Serializer);
-            mockContext.Setup(x => x.Client).Returns(client);
-            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test").OriginalString);
-
-            DatabaseInternal db = new DatabaseInlineCore(mockContext.Object, "test");
-            ContainerInternal container = new ContainerInlineCore(mockContext.Object, db, "test");
-            IEnumerable<string> tokens = await container.GetChangeFeedTokensAsync();
-            Assert.AreEqual(3, tokens.Count());
-
-            PartitionKeyRangeCache pkRangeCache = await documentClient.GetPartitionKeyRangeCacheAsync();
-            foreach (string token in tokens)
-            {
-                // Validate that each token represents a StandByFeedContinuationToken with a single Range
-                List<CompositeContinuationToken> deserialized = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(token);
-                Assert.AreEqual(1, deserialized.Count);
-                CompositeContinuationToken compositeToken = deserialized[0];
-
-                IReadOnlyList<Documents.PartitionKeyRange> rangesForTheToken = await pkRangeCache.TryGetOverlappingRangesAsync("", compositeToken.Range);
-                // Token represents one range
-                Assert.AreEqual(1, rangesForTheToken.Count);
-                Assert.AreEqual(rangesForTheToken[0].MinInclusive, compositeToken.Range.Min);
-                Assert.AreEqual(rangesForTheToken[0].MaxExclusive, compositeToken.Range.Max);
-            }
         }
 
         private class MultiRangeMockDocumentClient : MockDocumentClient
         {
-            private List<Documents.PartitionKeyRange> availablePartitionKeyRanges = new List<Documents.PartitionKeyRange>() {
+            private readonly List<Documents.PartitionKeyRange> availablePartitionKeyRanges = new List<Documents.PartitionKeyRange>() {
                 new Documents.PartitionKeyRange() { MinInclusive = "", MaxExclusive = "AA", Id = "0" },
                 new Documents.PartitionKeyRange() { MinInclusive = "AA", MaxExclusive = "BB", Id = "1" },
                 new Documents.PartitionKeyRange() { MinInclusive = "BB", MaxExclusive = "FF", Id = "2" }

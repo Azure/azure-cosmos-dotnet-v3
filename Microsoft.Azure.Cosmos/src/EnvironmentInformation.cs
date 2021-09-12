@@ -9,14 +9,11 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class EnvironmentInformation
     {
-        private const int MaxClientId = 10;
         private static readonly string clientSDKVersion;
         private static readonly string directPackageVersion;
         private static readonly string framework;
         private static readonly string architecture;
         private static readonly string os;
-        private static readonly object clientCountLock = new object();
-        private static int clientId = 0;
 
         static EnvironmentInformation()
         {
@@ -31,22 +28,7 @@ namespace Microsoft.Azure.Cosmos
 
         public EnvironmentInformation()
         {
-            lock (EnvironmentInformation.clientCountLock)
-            {
-                int newClientId = EnvironmentInformation.MaxClientId;
-                if (EnvironmentInformation.clientId <= EnvironmentInformation.MaxClientId)
-                {
-                    newClientId = EnvironmentInformation.clientId++;
-                }
-
-                this.ClientId = newClientId.ToString().PadLeft(2, '0');
-            }
         }
-
-        /// <summary>
-        /// Unique identifier of a client
-        /// </summary>
-        public string ClientId { get; }
 
         /// <summary>
         /// Version of the current direct package.
@@ -75,13 +57,5 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <seealso cref="RuntimeInformation.ProcessArchitecture"/>
         public string ProcessArchitecture => EnvironmentInformation.architecture;
-
-        /// <summary>
-        /// Only used to reset counter on tests.
-        /// </summary>
-        public static void ResetCounter()
-        {
-            EnvironmentInformation.clientId = 0;
-        }
     }
 }

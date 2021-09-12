@@ -9,10 +9,15 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
 
     internal abstract class ContainerInternal : Container
     {
@@ -31,18 +36,31 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken);
 
-        public abstract Task<string> GetRIDAsync(CancellationToken cancellationToken);
+        public Task<string> GetCachedRIDAsync(
+            CancellationToken cancellationToken)
+        {
+            return this.GetCachedRIDAsync(forceRefresh: false, trace: NoOpTrace.Singleton, cancellationToken);
+        }
+
+        public abstract Task<string> GetCachedRIDAsync(
+            bool forceRefresh,
+            ITrace trace,
+            CancellationToken cancellationToken);
 
         public abstract Task<Documents.PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(
             CancellationToken cancellationToken);
 
         public abstract Task<ContainerProperties> GetCachedContainerPropertiesAsync(
-            CancellationToken cancellationToken = default);
+            bool forceRefresh,
+            ITrace trace,
+            CancellationToken cancellationToken);
 
         public abstract Task<IReadOnlyList<IReadOnlyList<string>>> GetPartitionKeyPathTokensAsync(
+            ITrace trace,
             CancellationToken cancellationToken = default);
 
         public abstract Task<Documents.Routing.PartitionKeyInternal> GetNonePartitionKeyValueAsync(
+            ITrace trace,
             CancellationToken cancellationToken);
 
         public abstract Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken);
@@ -55,9 +73,10 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions,
             CancellationToken cancellationToken = default);
 
-        internal abstract FeedIterator GetStandByFeedIterator(
-            ChangeFeedStartFrom changeFeedStartFrom,
-            ChangeFeedRequestOptions requestOptions = default);
+        public abstract FeedIterator GetStandByFeedIterator(
+            string continuationToken = default,
+            int? maxItemCount = default,
+            StandByFeedIteratorRequestOptions requestOptions = default);
 
         public abstract FeedIteratorInternal GetItemQueryStreamIteratorInternal(
             SqlQuerySpec sqlQuerySpec,
@@ -66,12 +85,27 @@ namespace Microsoft.Azure.Cosmos
             FeedRangeInternal feedRange,
             QueryRequestOptions requestOptions);
 
+        public abstract FeedIteratorInternal GetReadFeedIterator(
+            QueryDefinition queryDefinition,
+            QueryRequestOptions queryRequestOptions,
+            string resourceLink,
+            ResourceType resourceType,
+            string continuationToken,
+            int pageSize);
+
         public abstract Task<PartitionKey> GetPartitionKeyValueFromStreamAsync(
             Stream stream,
+            ITrace trace,
             CancellationToken cancellation);
 
-        public abstract Task<IEnumerable<string>> GetChangeFeedTokensAsync(
-            CancellationToken cancellationToken = default);
+        public abstract IAsyncEnumerable<TryCatch<ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
+            ChangeFeedCrossFeedRangeState state,
+            ChangeFeedMode changeFeedMode,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        public abstract IAsyncEnumerable<TryCatch<ReadFeedPage>> GetReadFeedAsyncEnumerable(
+            ReadFeedCrossFeedRangeState state,
+            QueryRequestOptions requestOptions = null);
 
         /// <summary>
         /// Throw an exception if the partition key is null or empty string
@@ -92,38 +126,29 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if !INTERNAL
+        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+               Cosmos.PartitionKey partitionKey,
+               RequestOptions requestOptions = null,
+               CancellationToken cancellationToken = default(CancellationToken));
+#endif
+
+#if !PREVIEW
+        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+            FeedRange feedRange,
+            CancellationToken cancellationToken = default);
+
         public abstract Task<ResponseMessage> PatchItemStreamAsync(
             string id,
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
-            ItemRequestOptions requestOptions = null,
+            PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
         public abstract Task<ItemResponse<T>> PatchItemAsync<T>(
             string id,
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
-            ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default);
-#endif
-
-#if !PREVIEW
-        public abstract ChangeFeedEstimator GetChangeFeedEstimator(
-           string processorName,
-           Container leaseContainer);
-
-        public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default);
-
-        public abstract FeedIterator GetChangeFeedStreamIterator(
-            ChangeFeedStartFrom changeFeedStartFrom,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null);
-
-        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
-            ChangeFeedStartFrom changeFeedStartFrom,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null);
-
-        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
-            FeedRange feedRange,
+            PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
         public abstract FeedIterator GetItemQueryStreamIterator(
@@ -137,6 +162,14 @@ namespace Microsoft.Azure.Cosmos
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
+
+        public delegate Task ChangeFeedMonitorErrorDelegate(
+            string leaseToken,
+            Exception exception);
+
+        public delegate Task ChangeFeedMonitorLeaseAcquireDelegate(string leaseToken);
+
+        public delegate Task ChangeFeedMonitorLeaseReleaseDelegate(string leaseToken);
 #endif
 
         public abstract class TryExecuteQueryResult

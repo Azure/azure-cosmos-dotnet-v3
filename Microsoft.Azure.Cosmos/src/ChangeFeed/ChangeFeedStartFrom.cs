@@ -5,30 +5,35 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
 
     /// <summary>
     /// Base class for where to start a ChangeFeed operation in <see cref="ChangeFeedRequestOptions"/>.
     /// </summary>
     /// <remarks>Use one of the static constructors to generate a StartFrom option.</remarks>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-        abstract class ChangeFeedStartFrom
+    public abstract class ChangeFeedStartFrom
     {
         /// <summary>
         /// Initializes an instance of the <see cref="ChangeFeedStartFrom"/> class.
         /// </summary>
-        internal ChangeFeedStartFrom()
+        internal ChangeFeedStartFrom(FeedRange feedRange)
         {
             // Internal so people can't derive from this type.
+            this.FeedRange = feedRange;
         }
+
+        /// <summary>
+        /// Gets the (optional) range to start from.
+        /// </summary>
+        internal FeedRange FeedRange { get; }
 
         internal abstract void Accept(ChangeFeedStartFromVisitor visitor);
 
         internal abstract TResult Accept<TResult>(ChangeFeedStartFromVisitor<TResult> visitor);
+
+        internal abstract Task<TResult> AcceptAsync<TInput, TResult>(ChangeFeedStartFromAsyncVisitor<TInput, TResult> visitor, TInput input, CancellationToken cancellationToken);
 
         /// <summary>
         /// Creates a <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from this moment onward.

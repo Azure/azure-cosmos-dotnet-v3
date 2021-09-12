@@ -6,18 +6,12 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Diagnostics;
-    using System.Globalization;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Serializer;
 
     /// <summary>
     /// The Cosmos Change Feed request options
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    sealed class ChangeFeedRequestOptions : RequestOptions
+    public sealed class ChangeFeedRequestOptions : RequestOptions
     {
         private int? pageSizeHint;
 
@@ -27,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The maximum number of items to be returned in the enumeration operation.
         /// </value>
-        /// <remarks>This is just a hint to the server which can return less items per page.</remarks>
+        /// <remarks>This is just a hint to the server which can return less or more items per page. If operations in the container are performed through stored procedures or transactional batch, <see href="https://docs.microsoft.com/azure/cosmos-db/stored-procedures-triggers-udfs#transactions">transaction scope</see> is preserved when reading items from the Change Feed. As a result, the number of items received could be higher than the specified value so that the items changed by the same transaction are returned as part of one atomic batch.</remarks>
         public int? PageSizeHint
         {
             get => this.pageSizeHint;
@@ -51,17 +45,6 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(request != null);
 
             base.PopulateRequestOptions(request);
-
-            if (this.PageSizeHint.HasValue)
-            {
-                request.Headers.Add(
-                    HttpConstants.HttpHeaders.PageSize,
-                    this.PageSizeHint.Value.ToString(CultureInfo.InvariantCulture));
-            }
-
-            request.Headers.Add(
-                HttpConstants.HttpHeaders.A_IM,
-                HttpConstants.A_IMHeaderValues.IncrementalFeed);
         }
 
         /// <summary>
@@ -85,6 +68,16 @@ namespace Microsoft.Azure.Cosmos
             get => throw new NotSupportedException($"{nameof(ChangeFeedRequestOptions)} does not use the {nameof(this.IfNoneMatchEtag)} property.");
             set => throw new NotSupportedException($"{nameof(ChangeFeedRequestOptions)} does not use the {nameof(this.IfNoneMatchEtag)} property.");
         }
+
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+#pragma warning disable SA1601 // Partial elements should be documented
+        public
+#else
+        internal
+#endif
+        JsonSerializationFormatOptions JsonSerializationFormatOptions { get; set; }
 
         internal ChangeFeedRequestOptions Clone()
         {

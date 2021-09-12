@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Represents a lease that is persisted as a document in the lease collection.
@@ -16,12 +17,21 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     /// * Ensure reliable recovery for cases when an instance of <see cref="ChangeFeedProcessor"/> gets disconnected, hangs or crashes.
     /// </summary>
     [Serializable]
+    [JsonConverter(typeof(DocumentServiceLeaseConverter))]
     internal abstract class DocumentServiceLease
     {
+        public const string IdPropertyName = "id";
+        public const string LeasePartitionKeyPropertyName = "partitionKey";
+
         /// <summary>
         /// Gets the processing distribution unit identifier.
         /// </summary>
         public abstract string CurrentLeaseToken { get; }
+
+        /// <summary>
+        /// Gets the range associated with this lease.
+        /// </summary>
+        public abstract FeedRangeInternal FeedRange { get; set; }
 
         /// <summary>
         /// Gets or sets the host name owner of the lease.
@@ -45,6 +55,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// Gets the lease Id.
         /// </summary>
         public abstract string Id { get; }
+
+        /// <summary>
+        /// Gets the lease PartitionKey.
+        /// </summary>
+        public abstract string PartitionKey { get; }
 
         /// <summary>
         /// Gets the Concurrency Token.

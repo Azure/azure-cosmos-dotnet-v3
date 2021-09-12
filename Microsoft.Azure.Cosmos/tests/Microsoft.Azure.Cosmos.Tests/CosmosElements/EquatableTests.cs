@@ -1,13 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using Microsoft.Azure.Cosmos.CosmosElements;
-using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-namespace Microsoft.Azure.Cosmos.Tests.CosmosElements
+﻿namespace Microsoft.Azure.Cosmos.Tests.CosmosElements
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Reflection;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
     [TestClass]
     public class EquatableTests
     {
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Tests.CosmosElements
         public void ObjectPropertyOrderDoesNotMatter()
         {
             CosmosObject cosmosObject = (CosmosObject)Elements.ObjectWithItems;
-            CosmosObject cosmosObjectReversed = CosmosObject.Create(cosmosObject.Reverse().ToList());
+            CosmosObject cosmosObjectReversed = CosmosObject.Create(cosmosObject.Reverse().ToList().ToDictionary(kvp => kvp.Key, kvp => kvp.Value));
 
             Assert.AreEqual(cosmosObject, cosmosObjectReversed);
             Assert.AreEqual(cosmosObject.GetHashCode(), cosmosObjectReversed.GetHashCode());

@@ -599,15 +599,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
                 {
                     CosmosObject.Create(new Dictionary<string, CosmosElement>()
                     {
-                        {"Name", CosmosString.Create(((CosmosString)adam["Name"]).Value.ToUpperInvariant())}
+                        {"Name", CosmosString.Create(((CosmosString)adam["Name"]).Value.ToString().ToUpperInvariant())}
                     }),
                     CosmosObject.Create(new Dictionary<string, CosmosElement>()
                     {
-                        {"Name", CosmosString.Create(((CosmosString)stacy["Name"]).Value.ToUpperInvariant())}
+                        {"Name", CosmosString.Create(((CosmosString)stacy["Name"]).Value.ToString().ToUpperInvariant())}
                     }),
                     CosmosObject.Create(new Dictionary<string, CosmosElement>()
                     {
-                        {"Name", CosmosString.Create(((CosmosString)john["Name"]).Value.ToUpperInvariant())}
+                        {"Name", CosmosString.Create(((CosmosString)john["Name"]).Value.ToString().ToUpperInvariant())}
                     }),
                 },
                 groupByWithArbitaryScalarExpression,
@@ -621,11 +621,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
             // Single Order By
             SqlScalarExpression cDotId = TestUtils.CreatePathExpression("c", "id");
 
-            SqlQuery idAsc = CreateQueryWithOrderBy(SqlOrderbyClause.Create(
+            SqlQuery idAsc = CreateQueryWithOrderBy(SqlOrderByClause.Create(
                 SqlOrderByItem.Create(cDotId, isDescending: false)));
             AssertEvaluation(new CosmosElement[] { AndersenFamily, AndersenFamily, WakefieldFamily, WakefieldFamily }, idAsc, DataSource);
 
-            SqlQuery idDesc = CreateQueryWithOrderBy(SqlOrderbyClause.Create(
+            SqlQuery idDesc = CreateQueryWithOrderBy(SqlOrderByClause.Create(
                 SqlOrderByItem.Create(cDotId, isDescending: true)));
             AssertEvaluation(new CosmosElement[] { WakefieldFamily, WakefieldFamily, AndersenFamily, AndersenFamily }, idDesc, DataSource);
 
@@ -640,9 +640,41 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
                 obj,
             };
 
-            SqlQuery orderByUndefinedArrayObject = CreateQueryWithOrderBy(SqlOrderbyClause.Create(
+            SqlQuery orderByUndefinedArrayObject = CreateQueryWithOrderBy(SqlOrderByClause.Create(
                 SqlOrderByItem.Create(cDotId, isDescending: false)));
             AssertEvaluation(new CosmosElement[] { array, obj }, orderByUndefinedArrayObject, undefinedArrayObject);
+
+            // Order by Object
+            CosmosElement objA = CosmosElement.Parse(@"{""id"": {""a"": ""a""}, ""_rid"": ""iDdHAJ74DSoEAAAAAAAAAA=="" }");
+            CosmosElement objB = CosmosElement.Parse(@"{""id"": {""a"": ""b""}, ""_rid"": ""iDdHAJ74DSoFAAAAAAAAAA==""}");
+            CosmosElement objC = CosmosElement.Parse(@"{""id"": {""a"": ""c""}, ""_rid"": ""iDdHAJ74DSoGAAAAAAAAAA==""}");
+            CosmosElement[] objectData = new CosmosElement[]
+            {
+                obj,
+                objA,
+                objB,
+                objC,
+            };
+
+            SqlQuery orderByObject = CreateQueryWithOrderBy(SqlOrderByClause.Create(
+                SqlOrderByItem.Create(cDotId, isDescending: false)));
+            AssertEvaluation(new CosmosElement[] { objA, obj, objB, objC }, orderByObject, objectData);
+
+            // Order by Array
+            CosmosElement arrayA = CosmosElement.Parse(@"{""id"": [""a""], ""_rid"": ""iDdHAJ74DSoEAAAAAAAAAA=="" }");
+            CosmosElement arrayAB = CosmosElement.Parse(@"{""id"": [""a"", ""b""], ""_rid"": ""iDdHAJ74DSoFAAAAAAAAAA==""}");
+            CosmosElement arrayABC = CosmosElement.Parse(@"{""id"": [""a"", ""b"", ""c""], ""_rid"": ""iDdHAJ74DSoGAAAAAAAAAA==""}");
+            CosmosElement[] arrayData = new CosmosElement[]
+            {
+                array,
+                arrayA,
+                arrayAB,
+                arrayABC,
+            };
+
+            SqlQuery orderByArray = CreateQueryWithOrderBy(SqlOrderByClause.Create(
+                SqlOrderByItem.Create(cDotId, isDescending: false)));
+            AssertEvaluation(new CosmosElement[] { arrayA, array, arrayABC, arrayAB }, orderByArray, arrayData);
 
             // Rid Tie Break Within a Partition
             CosmosObject rid1 = CosmosObject.Parse(@"{""id"": ""A"", ""_rid"": ""iDdHAJ74DSoBAAAAAAAAAA=="" }");
@@ -655,11 +687,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
                 rid2,
             };
 
-            SqlQuery ridTieBreakAsc = CreateQueryWithOrderBy(SqlOrderbyClause.Create(
+            SqlQuery ridTieBreakAsc = CreateQueryWithOrderBy(SqlOrderByClause.Create(
                 SqlOrderByItem.Create(cDotId, isDescending: false)));
             AssertEvaluation(new CosmosElement[] { rid1, rid2, rid3 }, ridTieBreakAsc, ridTieBreakData);
 
-            SqlQuery ridTieBreakDesc = CreateQueryWithOrderBy(SqlOrderbyClause.Create(
+            SqlQuery ridTieBreakDesc = CreateQueryWithOrderBy(SqlOrderByClause.Create(
                 SqlOrderByItem.Create(cDotId, isDescending: true)));
             AssertEvaluation(new CosmosElement[] { rid3, rid2, rid1 }, ridTieBreakDesc, ridTieBreakData);
 
@@ -682,11 +714,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
                 { ((CosmosString)rid1["_rid"]).Value, pk2 },
             };
 
-            SqlQuery partitionAndRidTieBreakAsc = CreateQueryWithOrderBy(SqlOrderbyClause.Create(
+            SqlQuery partitionAndRidTieBreakAsc = CreateQueryWithOrderBy(SqlOrderByClause.Create(
                 SqlOrderByItem.Create(cDotId, isDescending: false)));
             AssertEvaluation(new CosmosElement[] { rid3, rid1, rid2 }, ridTieBreakAsc, ridTieBreakData, ridToPartitionKeyRange);
 
-            SqlQuery partitionAndRidTieBreakDesc = CreateQueryWithOrderBy(SqlOrderbyClause.Create(
+            SqlQuery partitionAndRidTieBreakDesc = CreateQueryWithOrderBy(SqlOrderByClause.Create(
                 SqlOrderByItem.Create(cDotId, isDescending: true)));
             AssertEvaluation(new CosmosElement[] { rid3, rid2, rid1 }, ridTieBreakDesc, ridTieBreakData, ridToPartitionKeyRange);
 
@@ -711,7 +743,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
                 objectField
             };
 
-            SqlQuery mixedTypeAsc = CreateQueryWithOrderBy(SqlOrderbyClause.Create(
+            SqlQuery mixedTypeAsc = CreateQueryWithOrderBy(SqlOrderByClause.Create(
                 SqlOrderByItem.Create(cDotId, isDescending: false)));
             AssertEvaluation(new CosmosElement[]
             {
@@ -724,7 +756,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
                 objectField,
             }, mixedTypeAsc, mixedTypeData);
 
-            SqlQuery mixedTypeDesc = CreateQueryWithOrderBy(SqlOrderbyClause.Create(
+            SqlQuery mixedTypeDesc = CreateQueryWithOrderBy(SqlOrderByClause.Create(
                 SqlOrderByItem.Create(cDotId, isDescending: true)));
             AssertEvaluation(new CosmosElement[]
             {
@@ -749,7 +781,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
 
             SqlScalarExpression cDotAge = TestUtils.CreatePathExpression("c", "age");
 
-            SqlQuery multiOrderByAscAsc = CreateQueryWithOrderBy(SqlOrderbyClause.Create(
+            SqlQuery multiOrderByAscAsc = CreateQueryWithOrderBy(SqlOrderByClause.Create(
                 SqlOrderByItem.Create(cDotName, isDescending: false),
                 SqlOrderByItem.Create(cDotAge, isDescending: false)));
             AssertEvaluation(
@@ -757,7 +789,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
                 multiOrderByAscAsc,
                 multiOrderByData);
 
-            SqlQuery multiOrderByAscDesc = CreateQueryWithOrderBy(SqlOrderbyClause.Create(
+            SqlQuery multiOrderByAscDesc = CreateQueryWithOrderBy(SqlOrderByClause.Create(
                 SqlOrderByItem.Create(cDotName, isDescending: false),
                 SqlOrderByItem.Create(cDotAge, isDescending: true)));
             AssertEvaluation(
@@ -765,7 +797,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
                 multiOrderByAscDesc,
                 multiOrderByData);
 
-            SqlQuery multiOrderByDescAsc = CreateQueryWithOrderBy(SqlOrderbyClause.Create(
+            SqlQuery multiOrderByDescAsc = CreateQueryWithOrderBy(SqlOrderByClause.Create(
                 SqlOrderByItem.Create(cDotName, isDescending: true),
                 SqlOrderByItem.Create(cDotAge, isDescending: false)));
             AssertEvaluation(
@@ -773,7 +805,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
                 multiOrderByDescAsc,
                 multiOrderByData);
 
-            SqlQuery multiOrderByDescDesc = CreateQueryWithOrderBy(SqlOrderbyClause.Create(
+            SqlQuery multiOrderByDescDesc = CreateQueryWithOrderBy(SqlOrderByClause.Create(
                 SqlOrderByItem.Create(cDotName, isDescending: true),
                 SqlOrderByItem.Create(cDotAge, isDescending: true)));
             AssertEvaluation(
@@ -1046,7 +1078,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
             AssertEvaluation(dataset, selectStarWrapped, dataset);
         }
 
-        private static SqlQuery CreateQueryWithOrderBy(SqlOrderbyClause orderBy)
+        private static SqlQuery CreateQueryWithOrderBy(SqlOrderByClause orderBy)
         {
             return SqlQuery.Create(
                 SqlSelectClause.SelectStar,

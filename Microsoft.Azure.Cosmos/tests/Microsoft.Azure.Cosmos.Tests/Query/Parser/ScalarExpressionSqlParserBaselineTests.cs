@@ -130,6 +130,32 @@
                 description: "Logical OR > String Concat",
                 scalarExpression: "1 || 2 OR 3 || 4"));
 
+            // Binary with logical expressions
+            inputs.Add(CreateInput(
+                description: "AND with LIKE expressions",
+                scalarExpression: "r.name LIKE 12  AND r.name LIKE 34"));
+            inputs.Add(CreateInput(
+                description: "OR with LIKE expression",
+                scalarExpression: "r.name LIKE 12  OR r.name LIKE 34"));
+            inputs.Add(CreateInput(
+                description: "AND with IN expression",
+                scalarExpression: "r.name IN (1,2,3)  AND r.name IN (4,5,6)"));
+            inputs.Add(CreateInput(
+                description: "OR with IN expression",
+                scalarExpression: "r.name IN (1,2,3)  OR r.name IN (4,5,6)"));
+            inputs.Add(CreateInput(
+                description: "Double AND",
+                scalarExpression: "r.age = 1 AND r.age = 2 AND r.age = 3"));
+            inputs.Add(CreateInput(
+                description: "Double OR",
+                scalarExpression: "r.age = 1 OR r.age = 2 OR r.age = 3"));
+            inputs.Add(CreateInput(
+                description: "AND and then OR",
+                scalarExpression: "r.age = 1 AND r.age = 2 OR r.age = 3"));
+            inputs.Add(CreateInput(
+                description: "OR and then AND",
+                scalarExpression: "r.age = 1 OR r.age = 2 AND r.age = 3"));
+
             // Negative
             inputs.Add(CreateInput(description: "Missing Right", scalarExpression: "42 +"));
             inputs.Add(CreateInput(description: "Missing Left", scalarExpression: "AND 1337"));
@@ -216,7 +242,8 @@
             {
                 // Positive
                 CreateInput(description: "Basic", scalarExpression: "42 IN(42)"),
-                CreateInput(description: "multiple arguments", scalarExpression: "42 IN ('asdf', 'as')"),
+                CreateInput(description: "multiple arguments", scalarExpression: "42 IN (1, 2, 3)"),
+                CreateInput(description: "multiple string arguments", scalarExpression: "42 IN (\"WA\", \"CA\")"),
                 CreateInput(description: "NOT IN", scalarExpression: "42 NOT IN (42)"),
 
                 // Negative
@@ -282,6 +309,16 @@
                 CreateInput(description: "Empty Object", scalarExpression: "{}"),
                 CreateInput(description: "Single Property", scalarExpression: "{ 'prop' : 42 }"),
                 CreateInput(description: "Multiple Property", scalarExpression: "{ 'prop1' : 42, 'prop2' : 1337 }"),
+
+                CreateInput(description: "Double Quotes", scalarExpression: "{ \"prop\" : \"Some String\" }"),
+                CreateInput(description: "Single Quotes", scalarExpression: "{ 'prop' : 'Some String' }"),
+                CreateInput(description: "Mixed Quotes", scalarExpression: "{ 'prop' : \"Some String\" }"),
+                CreateInput(description: "Mixed Quotes 2", scalarExpression: "{ \"prop\" : 'Some String' }"),
+
+                CreateInput(description: "Double Quotes Within Single Quotes", scalarExpression: "{ 'prop' : 'Some \"String\" Value' }"),
+                CreateInput(description: "Single Quotes Within Double Quotes", scalarExpression: "{ 'prop' : \"Some 'String' Value\" }"),
+
+                CreateInput(description: "Escaped Double Quotes Within Double Quotes", scalarExpression: "{ 'prop' : \"Some \\\"String\\\" Value\" }"),
 
                 // Negative
                 CreateInput(description: "Missing Close Brace", scalarExpression: "{"),

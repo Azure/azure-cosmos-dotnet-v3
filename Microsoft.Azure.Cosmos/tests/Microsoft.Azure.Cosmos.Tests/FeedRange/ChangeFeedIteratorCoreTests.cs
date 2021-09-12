@@ -5,13 +5,19 @@
 namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
-    using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tests.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -23,9 +29,23 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public void ChangeFeedIteratorCore_Null_Container()
         {
             new ChangeFeedIteratorCore(
-                container: null,
+                documentContainer: null,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Beginning(),
-                new ChangeFeedRequestOptions());
+                this.MockClientContext());
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void ChangeFeedIteratorCore_Null_Mode()
+        {
+            new ChangeFeedIteratorCore(
+                documentContainer: Mock.Of<IDocumentContainer>(),
+                changeFeedMode: null,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning(),
+                this.MockClientContext());
         }
 
         [DataTestMethod]
@@ -35,445 +55,430 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public void ChangeFeedIteratorCore_ValidateOptions(int maxItemCount)
         {
             new ChangeFeedIteratorCore(
-                Mock.Of<ContainerInternal>(),
-                ChangeFeedStartFrom.Beginning(),
+                Mock.Of<IDocumentContainer>(),
+                ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions()
                 {
                     PageSizeHint = maxItemCount
-                });
+                },
+                ChangeFeedStartFrom.Beginning(),
+                this.MockClientContext());
         }
 
         [TestMethod]
         public void ChangeFeedIteratorCore_HasMoreResultsDefault()
         {
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
-                Mock.Of<ContainerInternal>(),
+                Mock.Of<IDocumentContainer>(),
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Beginning(),
-                null);
+                this.MockClientContext());
             Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
         }
 
         [TestMethod]
         public async Task ChangeFeedIteratorCore_ReadNextAsync()
         {
-            string continuation = "TBD";
-            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
-            responseMessage.Headers.ETag = continuation;
-            responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
+            int numItems = 100;
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
 
-            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
-            cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
-            cosmosClientContext
-                .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<string>(),
-                    It.IsAny<Documents.ResourceType>(),
-                    It.IsAny<Documents.OperationType>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerInternal>(),
-                    It.IsAny<PartitionKey?>(),
-                    It.IsAny<Stream>(),
-                    It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsContext>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(responseMessage));
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning(),
+                this.MockClientContext());
 
-            ContainerInternal containerCore = Mock.Of<ContainerInternal>();
-            Mock.Get(containerCore)
-                .Setup(c => c.ClientContext)
-                .Returns(cosmosClientContext.Object);
-
-            FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
-            Mock.Get(range)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>()));
-            FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
-            Mock.Get(feedToken)
-                .Setup(f => f.FeedRange)
-                .Returns(range);
-            Mock.Get(feedToken)
-                .Setup(f => f.GetFeedRange())
-                .Returns(range);
-            Mock.Get(feedToken)
-                .Setup(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
-            Mock.Get(feedToken)
-                .Setup(f => f.HandleChangeFeedNotModified(It.IsAny<ResponseMessage>()))
-                .Returns(Documents.ShouldRetryResult.NoRetry());
-
-            ChangeFeedIteratorCore changeFeedIteratorCore = CreateWithCustomFeedToken(containerCore, feedToken);
-            ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
-
-            Mock.Get(feedToken)
-                .Verify(f => f.ReplaceContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
-
-            Mock.Get(feedToken)
-                .Verify(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
-            Mock.Get(feedToken)
-                .Verify(f => f.HandleChangeFeedNotModified(It.IsAny<ResponseMessage>()), Times.Once);
-        }
-
-        [TestMethod]
-        public async Task ChangeFeedIteratorCore_OfT_ReadNextAsync()
-        {
-            string continuation = "TBD";
-            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
-            responseMessage.Headers.ETag = continuation;
-            responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
-
-            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
-            cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
-            cosmosClientContext
-                .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<string>(),
-                    It.IsAny<Documents.ResourceType>(),
-                    It.IsAny<Documents.OperationType>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerInternal>(),
-                    It.IsAny<PartitionKey?>(),
-                    It.IsAny<Stream>(),
-                    It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsContext>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(responseMessage));
-
-            ContainerInternal containerCore = Mock.Of<ContainerInternal>();
-            Mock.Get(containerCore)
-                .Setup(c => c.ClientContext)
-                .Returns(cosmosClientContext.Object);
-            FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
-            Mock.Get(range)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>()));
-            FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
-            Mock.Get(feedToken)
-                .Setup(f => f.FeedRange)
-                .Returns(range);
-            Mock.Get(feedToken)
-                .Setup(f => f.GetFeedRange())
-                .Returns(range);
-            Mock.Get(feedToken)
-               .Setup(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
-               .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
-            Mock.Get(feedToken)
-                .Setup(f => f.HandleChangeFeedNotModified(It.IsAny<ResponseMessage>()))
-                .Returns(Documents.ShouldRetryResult.NoRetry());
-
-            ChangeFeedIteratorCore changeFeedIteratorCore = CreateWithCustomFeedToken(containerCore, feedToken);
-
-            bool creatorCalled = false;
-            Func<ResponseMessage, FeedResponse<dynamic>> creator = (ResponseMessage r) =>
+            int count = 0;
+            while (changeFeedIteratorCore.HasMoreResults)
             {
-                creatorCalled = true;
-                return Mock.Of<FeedResponse<dynamic>>();
-            };
+                ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+                if (responseMessage.StatusCode == HttpStatusCode.NotModified)
+                {
+                    break;
+                }
 
-            FeedIteratorCore<dynamic> changeFeedIteratorCoreOfT = new FeedIteratorCore<dynamic>(changeFeedIteratorCore, creator);
-            FeedResponse<dynamic> response = await changeFeedIteratorCoreOfT.ReadNextAsync();
+                count += GetChanges(responseMessage.Content).Count;
+            }
 
-            Mock.Get(feedToken)
-                .Verify(f => f.ReplaceContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
-
-            Mock.Get(feedToken)
-                .Verify(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
-            Mock.Get(feedToken)
-                .Verify(f => f.HandleChangeFeedNotModified(It.IsAny<ResponseMessage>()), Times.Once);
-
-            Assert.IsTrue(creatorCalled, "Response creator not called");
+            Assert.AreEqual(numItems, count);
         }
 
         [TestMethod]
         public async Task ChangeFeedIteratorCore_UpdatesContinuation_On304()
         {
-            string continuation = "TBD";
-            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.NotModified);
-            responseMessage.Headers.ETag = continuation;
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems: 0);
 
-            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
-            cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
-            cosmosClientContext
-                .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<string>(),
-                    It.IsAny<Documents.ResourceType>(),
-                    It.IsAny<Documents.OperationType>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerInternal>(),
-                    It.IsAny<PartitionKey?>(),
-                    It.IsAny<Stream>(),
-                    It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsContext>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(responseMessage));
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning(),
+                this.MockClientContext());
 
-            ContainerInternal containerCore = Mock.Of<ContainerInternal>();
-            Mock.Get(containerCore)
-                .Setup(c => c.ClientContext)
-                .Returns(cosmosClientContext.Object);
-            FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
-            Mock.Get(range)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>()));
-            FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
-            Mock.Get(feedToken)
-                .Setup(f => f.FeedRange)
-                .Returns(range);
-            Mock.Get(feedToken)
-                .Setup(f => f.GetFeedRange())
-                .Returns(range);
-            Mock.Get(feedToken)
-                .Setup(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
-            Mock.Get(feedToken)
-                .Setup(f => f.HandleChangeFeedNotModified(It.IsAny<ResponseMessage>()))
-                .Returns(Documents.ShouldRetryResult.NoRetry());
+            ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+            Assert.AreEqual(HttpStatusCode.NotModified, responseMessage.StatusCode);
+            string continuationToken = responseMessage.Headers.ContinuationToken;
 
-            ChangeFeedIteratorCore changeFeedIteratorCore = CreateWithCustomFeedToken(containerCore, feedToken);
-            ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
+            ResponseMessage responseMessage2 = await changeFeedIteratorCore.ReadNextAsync();
+            Assert.AreEqual(HttpStatusCode.NotModified, responseMessage.StatusCode);
+            string continuationToken2 = responseMessage2.Headers.ContinuationToken;
 
-            Mock.Get(feedToken)
-                .Verify(f => f.ReplaceContinuation(It.Is<string>(ct => ct == continuation)), Times.Once);
-
-            Mock.Get(feedToken)
-                .Verify(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
-            Mock.Get(feedToken)
-                .Verify(f => f.HandleChangeFeedNotModified(It.IsAny<ResponseMessage>()), Times.Once);
+            Assert.AreNotEqual(continuationToken, continuationToken2);
         }
 
         [TestMethod]
         public async Task ChangeFeedIteratorCore_DoesNotUpdateContinuation_OnError()
         {
-            string continuation = "TBD";
-            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone);
-            responseMessage.Headers.ETag = continuation;
+            int numItems = 100;
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
+                numItems,
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(inject429s: true, injectEmptyPages: true));
 
-            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
-            cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
-            cosmosClientContext
-                .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<string>(),
-                    It.IsAny<Documents.ResourceType>(),
-                    It.IsAny<Documents.OperationType>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerInternal>(),
-                    It.IsAny<PartitionKey?>(),
-                    It.IsAny<Stream>(),
-                    It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsContext>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(responseMessage));
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning(),
+                this.MockClientContext());
 
-            ContainerInternal containerCore = Mock.Of<ContainerInternal>();
-            Mock.Get(containerCore)
-                .Setup(c => c.ClientContext)
-                .Returns(cosmosClientContext.Object);
-            FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
-            Mock.Get(range)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>()));
-            FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
-            Mock.Get(feedToken)
-                .Setup(f => f.FeedRange)
-                .Returns(range);
-            Mock.Get(feedToken)
-                .Setup(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
-            Mock.Get(feedToken)
-                .Setup(f => f.HandleChangeFeedNotModified(It.IsAny<ResponseMessage>()))
-                .Returns(Documents.ShouldRetryResult.NoRetry());
+            int count = 0;
+            int numIterations = 500;
+            while (numIterations-- > 0)
+            {
+                ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+                if (!(responseMessage.IsSuccessStatusCode || responseMessage.StatusCode == HttpStatusCode.NotModified))
+                {
+                    if (responseMessage.Headers.ContinuationToken != null)
+                    {
+                        Assert.Fail();
+                    }
+                }
+                else
+                {
+                    if (responseMessage.StatusCode != HttpStatusCode.NotModified)
+                    {
+                        count += GetChanges(responseMessage.Content).Count;
+                    }
+                }
 
-            ChangeFeedIteratorCore changeFeedIteratorCore = CreateWithCustomFeedToken(containerCore, feedToken);
-            ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
+                if (count > numItems)
+                {
+                    Assert.Fail();
+                }
+            }
 
-            Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
-
-            Mock.Get(feedToken)
-                .Verify(f => f.ReplaceContinuation(It.Is<string>(ct => ct == continuation)), Times.Never);
-
-            Mock.Get(feedToken)
-                .Verify(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
-            Mock.Get(feedToken)
-                .Verify(f => f.HandleChangeFeedNotModified(It.IsAny<ResponseMessage>()), Times.Once);
-        }
-
-        [TestMethod]
-        public async Task ChangeFeedIteratorCore_Retries()
-        {
-            string continuation = "TBD";
-            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
-            responseMessage.Headers.ETag = continuation;
-            responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
-
-            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
-            cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
-            cosmosClientContext
-                .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<string>(),
-                    It.IsAny<Documents.ResourceType>(),
-                    It.IsAny<Documents.OperationType>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerInternal>(),
-                    It.IsAny<PartitionKey?>(),
-                    It.IsAny<Stream>(),
-                    It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsContext>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(responseMessage));
-
-            ContainerInternal containerCore = Mock.Of<ContainerInternal>();
-            Mock.Get(containerCore)
-                .Setup(c => c.ClientContext)
-                .Returns(cosmosClientContext.Object);
-            FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
-            Mock.Get(range)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>()));
-            FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
-            Mock.Get(feedToken)
-                .Setup(f => f.FeedRange)
-                .Returns(range);
-            Mock.Get(feedToken)
-                .Setup(f => f.GetFeedRange())
-                .Returns(range);
-
-            Mock.Get(feedToken)
-                .SetupSequence(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(Documents.ShouldRetryResult.RetryAfter(TimeSpan.Zero)))
-                .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
-            Mock.Get(feedToken)
-                .SetupSequence(f => f.HandleChangeFeedNotModified(It.IsAny<ResponseMessage>()))
-                .Returns(Documents.ShouldRetryResult.RetryAfter(TimeSpan.Zero))
-                .Returns(Documents.ShouldRetryResult.NoRetry())
-                .Returns(Documents.ShouldRetryResult.NoRetry());
-
-            ChangeFeedIteratorCore changeFeedIteratorCore = CreateWithCustomFeedToken(containerCore, feedToken);
-            ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
-
-            Mock.Get(feedToken)
-                .Verify(f => f.ReplaceContinuation(It.IsAny<string>()), Times.Once);
-
-            Mock.Get(feedToken)
-                .Setup(f => f.GetFeedRange())
-                .Returns(range);
-
-            Mock.Get(feedToken)
-                .Verify(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-            Mock.Get(feedToken)
-                .Verify(f => f.HandleChangeFeedNotModified(It.IsAny<ResponseMessage>()), Times.Exactly(3));
-
-            Mock.Get(cosmosClientContext.Object)
-                .Verify(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<string>(),
-                    It.IsAny<Documents.ResourceType>(),
-                    It.IsAny<Documents.OperationType>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerInternal>(),
-                    It.IsAny<PartitionKey?>(),
-                    It.IsAny<Stream>(),
-                    It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsContext>(),
-                    It.IsAny<CancellationToken>()), Times.Exactly(3));
+            Assert.AreEqual(numItems, count);
         }
 
         [TestMethod]
         public async Task ChangeFeedIteratorCore_HandlesSplitsThroughPipeline()
         {
-            int executionCount = 0;
-            CosmosClientContext cosmosClientContext = GetMockedClientContext((RequestMessage requestMessage, CancellationToken cancellationToken) =>
+            int numItems = 100;
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
+
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning(),
+                this.MockClientContext());
+
+            int seed = new Random().Next();
+            Random random = new Random(seed);
+
+            int count = 0;
+            while (changeFeedIteratorCore.HasMoreResults)
             {
-                // Force OnBeforeRequestActions call
-                requestMessage.ToDocumentServiceRequest();
-                if (executionCount++ == 0)
+                ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+                if (responseMessage.StatusCode == HttpStatusCode.NotModified)
                 {
-                    return TestHandler.ReturnStatusCode(HttpStatusCode.Gone, Documents.SubStatusCodes.PartitionKeyRangeGone);
-                }
-
-                return TestHandler.ReturnStatusCode(HttpStatusCode.OK);
-            });
-
-            ContainerInternal containerCore = Mock.Of<ContainerInternal>();
-            Mock.Get(containerCore)
-                .Setup(c => c.ClientContext)
-                .Returns(cosmosClientContext);
-            Mock.Get(containerCore)
-                .Setup(c => c.LinkUri)
-                .Returns("/dbs");
-            FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
-            Mock.Get(range)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>()));
-            FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
-            Mock.Get(feedToken)
-                .Setup(f => f.FeedRange)
-                .Returns(range);
-            Mock.Get(feedToken)
-                .Setup(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
-            Mock.Get(feedToken)
-                .Setup(f => f.HandleChangeFeedNotModified(It.IsAny<ResponseMessage>()))
-                .Returns(Documents.ShouldRetryResult.NoRetry());
-
-            ChangeFeedIteratorCore changeFeedIteratorCore = CreateWithCustomFeedToken(containerCore, feedToken);
-
-            ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
-
-            Assert.AreEqual(1, executionCount, "PartitionKeyRangeGoneRetryHandler handled the Split");
-            Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);
-
-            Mock.Get(feedToken)
-                .Verify(f => f.ReplaceContinuation(It.IsAny<string>()), Times.Never);
-
-            Mock.Get(feedToken)
-                .Verify(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Once);
-            Mock.Get(feedToken)
-                .Verify(f => f.HandleChangeFeedNotModified(It.IsAny<ResponseMessage>()), Times.Once);
-        }
-
-        private static CosmosClientContext GetMockedClientContext(
-            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> handlerFunc)
-        {
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
-            CosmosClientContext clientContext = ClientContextCore.Create(
-               client,
-               new MockDocumentClient(),
-               new CosmosClientOptions());
-            Mock<PartitionRoutingHelper> partitionRoutingHelperMock = MockCosmosUtil.GetPartitionRoutingHelperMock("0");
-
-            TestHandler testHandler = new TestHandler(handlerFunc);
-
-            // Similar to FeedPipeline but with replaced transport
-            RequestHandler[] feedPipeline = new RequestHandler[]
-                {
-                    new NamedCacheRetryHandler(),
-                    new PartitionKeyRangeHandler(client),
-                    testHandler,
-                };
-
-            RequestHandler feedHandler = ClientPipelineBuilder.CreatePipeline(feedPipeline);
-
-            RequestHandler handler = clientContext.RequestHandler.InnerHandler;
-            while (handler != null)
-            {
-                if (handler.InnerHandler is RouterHandler)
-                {
-                    handler.InnerHandler = new RouterHandler(feedHandler, testHandler);
                     break;
                 }
 
-                handler = handler.InnerHandler;
+                count += GetChanges(responseMessage.Content).Count;
+
+                await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+                IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
+                FeedRangeInternal randomRange = ranges[random.Next(ranges.Count)];
+                await documentContainer.SplitAsync(randomRange, cancellationToken: default);
             }
 
-            return clientContext;
+            Assert.AreEqual(numItems, count, seed);
         }
 
-        private static ChangeFeedIteratorCore CreateWithCustomFeedToken(
-            ContainerInternal containerInternal,
-            FeedRangeContinuation feedToken)
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_OnCosmosException_HasMoreResults()
         {
-            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
-                containerInternal,
-                ChangeFeedStartFrom.Beginning(),
-                changeFeedRequestOptions: default);
-            System.Reflection.FieldInfo prop = changeFeedIteratorCore
-                .GetType()
-                .GetField(
-                    "FeedRangeContinuation",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            prop.SetValue(changeFeedIteratorCore, feedToken);
+            CosmosException exception = CosmosExceptionFactory.CreateInternalServerErrorException("something's broken", new Headers());
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
+                numItems:0,
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                    inject429s: false, 
+                    injectEmptyPages: false,
+                    returnFailure: exception));
 
-            return changeFeedIteratorCore;
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Now(),
+                this.MockClientContext());
+
+            ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+            Assert.AreEqual(HttpStatusCode.InternalServerError, responseMessage.StatusCode);
+            Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
+        }
+
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_OnRetriableCosmosException_HasMoreResults()
+        {
+            CosmosException exception = CosmosExceptionFactory.CreateThrottledException("retry", new Headers());
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
+                numItems: 0,
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                    inject429s: false,
+                    injectEmptyPages: false,
+                    returnFailure: exception));
+
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning(),
+                this.MockClientContext());
+
+            ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+            Assert.AreEqual(HttpStatusCode.TooManyRequests, responseMessage.StatusCode);
+            Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
+        }
+
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_OnNonCosmosExceptions_HasMoreResults()
+        {
+            Exception exception = new NotImplementedException();
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
+                numItems: 0,
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                    inject429s: false,
+                    injectEmptyPages: false,
+                    returnFailure: exception));
+
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning(),
+                this.MockClientContext());
+
+            try
+            {
+                ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+                Assert.Fail("Should have thrown");
+            }
+            catch (Exception ex)
+            {
+                Assert.AreEqual(exception, ex);
+                Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
+            }
+        }
+
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_OnTaskCanceledException_HasMoreResultsAndDiagnostics()
+        {
+            Exception exception = new TaskCanceledException();
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
+                numItems: 0,
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                    inject429s: false,
+                    injectEmptyPages: false,
+                    throwException: exception));
+
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning(),
+                this.MockClientContext());
+
+            try
+            {
+                ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+                Assert.Fail("Should have thrown");
+            }
+            catch (OperationCanceledException ex)
+            {
+                Assert.IsTrue(ex is CosmosOperationCanceledException);
+                Assert.IsNotNull(((CosmosOperationCanceledException)ex).Diagnostics);
+                Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
+            }
+        }
+
+        /// <summary>
+        /// If an unhandled exception occurs within the NetworkAttachedDocumentContainer, the exception is transmitted but it does not break the enumerators
+        /// </summary>
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_OnUnhandledException_HasMoreResults()
+        {
+            Exception exception = new Exception("oh no");
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
+                numItems: 0,
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                    inject429s: false,
+                    injectEmptyPages: false,
+                    throwException: exception));
+
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning(),
+                this.MockClientContext());
+
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+            try
+            {
+                ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+                Assert.Fail("Should have thrown");
+            }
+            catch (Exception ex)
+            {
+                Assert.AreEqual(exception, ex);
+                Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
+            }
+
+            // If read a second time, it should not throw any missing page errors related to enumerators
+            try
+            {
+                ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+                Assert.Fail("Should have thrown");
+            }
+            catch (Exception ex)
+            {
+                // TryCatch wraps any exception
+                Assert.AreEqual(exception, ex);
+                Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
+            }
+        }
+
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_CancellationToken_FlowsThrough()
+        {
+            // Generate constant 429
+            CosmosException exception = CosmosExceptionFactory.CreateThrottledException("retry", new Headers());
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
+                numItems: 0,
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                    inject429s: false,
+                    injectEmptyPages: false,
+                    returnFailure: exception));
+
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning(),
+                this.MockClientContext());
+
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+            try
+            {
+                // First request triggers initialization, we don't cancel it
+                ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+                Assert.AreEqual(HttpStatusCode.TooManyRequests, responseMessage.StatusCode);
+
+                // Should be initialized, let's see if cancellation flows through
+                await changeFeedIteratorCore.ReadNextAsync(cancellationTokenSource.Token);
+                Assert.Fail("Should have thrown");
+            }
+            catch (OperationCanceledException)
+            {
+            }
+
+            Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
+        }
+
+        private static CosmosArray GetChanges(Stream stream)
+        {
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                stream.CopyTo(memoryStream);
+                CosmosObject element = CosmosObject.CreateFromBuffer(memoryStream.ToArray());
+                if (!element.TryGetValue("Documents", out CosmosArray value))
+                {
+                    Assert.Fail();
+                }
+
+                return value;
+            }
+        }
+
+        private static async Task<IDocumentContainer> CreateDocumentContainerAsync(
+            int numItems,
+            FlakyDocumentContainer.FailureConfigs failureConfigs = default)
+        {
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
+            {
+                Paths = new System.Collections.ObjectModel.Collection<string>()
+                    {
+                        "/pk"
+                    },
+                Kind = PartitionKind.Hash,
+                Version = PartitionKeyDefinitionVersion.V2,
+            };
+
+            IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(partitionKeyDefinition);
+            if (failureConfigs != null)
+            {
+                monadicDocumentContainer = new FlakyDocumentContainer(monadicDocumentContainer, failureConfigs);
+            }
+
+            DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
+
+            for (int i = 0; i < 3; i++)
+            {
+                IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
+                foreach (FeedRangeInternal range in ranges)
+                {
+                    await documentContainer.SplitAsync(range, cancellationToken: default);
+                }
+
+                await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+            }
+
+            for (int i = 0; i < numItems; i++)
+            {
+                // Insert an item
+                CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
+                while (true)
+                {
+                    TryCatch<Record> monadicCreateRecord = await documentContainer.MonadicCreateItemAsync(item, cancellationToken: default);
+                    if (monadicCreateRecord.Succeeded)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            return documentContainer;
+        }
+
+        private CosmosClientContext MockClientContext()
+        {
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
+                It.IsAny<string>(),
+                It.IsAny<RequestOptions>(),
+                It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
+                It.IsAny<TraceComponent>(),
+                It.IsAny<TraceLevel>()))
+               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, TraceComponent, TraceLevel>(
+                (operationName, requestOptions, func, comp, level) => func(NoOpTrace.Singleton));
+
+            return mockContext.Object;
         }
     }
 }

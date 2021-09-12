@@ -30,8 +30,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public abstract void Visit(SqlIdentifierPathExpression sqlObject);
         public abstract void Visit(SqlInputPathCollection sqlObject);
         public abstract void Visit(SqlInScalarExpression sqlObject);
-        public abstract void Visit(SqlLimitSpec sqlObject);
         public abstract void Visit(SqlJoinCollectionExpression sqlObject);
+        public abstract void Visit(SqlLikeScalarExpression sqlObject);
+        public abstract void Visit(SqlLimitSpec sqlObject);
         public abstract void Visit(SqlLiteralScalarExpression sqlObject);
         public abstract void Visit(SqlMemberIndexerScalarExpression sqlObject);
         public abstract void Visit(SqlNullLiteral sqlObject);
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public abstract void Visit(SqlObjectProperty sqlObject);
         public abstract void Visit(SqlOffsetLimitClause sqlObject);
         public abstract void Visit(SqlOffsetSpec sqlObject);
-        public abstract void Visit(SqlOrderbyClause sqlObject);
+        public abstract void Visit(SqlOrderByClause sqlObject);
         public abstract void Visit(SqlOrderByItem sqlObject);
         public abstract void Visit(SqlParameter sqlObject);
         public abstract void Visit(SqlParameterRefScalarExpression sqlObject);

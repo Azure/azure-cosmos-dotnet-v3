@@ -23,18 +23,21 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         private readonly DocumentServiceLeaseManager leaseManager;
         private readonly PartitionSupervisorFactory partitionSupervisorFactory;
         private readonly PartitionSynchronizer synchronizer;
+        private readonly ChangeFeedProcessorHealthMonitor monitor;
         private CancellationTokenSource shutdownCts;
 
         public PartitionControllerCore(
             DocumentServiceLeaseContainer leaseContainer,
             DocumentServiceLeaseManager leaseManager,
             PartitionSupervisorFactory partitionSupervisorFactory,
-            PartitionSynchronizer synchronizer)
+            PartitionSynchronizer synchronizer,
+            ChangeFeedProcessorHealthMonitor monitor)
         {
             this.leaseContainer = leaseContainer;
             this.leaseManager = leaseManager;
             this.partitionSupervisorFactory = partitionSupervisorFactory;
             this.synchronizer = synchronizer;
+            this.monitor = monitor;
         }
 
         public override async Task InitializeAsync()
@@ -45,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
         public override async Task AddOrUpdateLeaseAsync(DocumentServiceLease lease)
         {
-            TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
+            TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             if (!this.currentlyOwnedPartitions.TryAdd(lease.CurrentLeaseToken, tcs))
             {
@@ -62,11 +65,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                     lease = updatedLease;
                 }
 
-                DefaultTrace.TraceInformation("Lease with token {0}: acquired", lease.CurrentLeaseToken);
+                await this.monitor.NotifyLeaseAcquireAsync(lease.CurrentLeaseToken);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 await this.RemoveLeaseAsync(lease).ConfigureAwait(false);
+                await this.monitor.NotifyErrorAsync(lease.CurrentLeaseToken, ex);
                 throw;
             }
 
@@ -101,15 +105,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 return;
             }
 
-            DefaultTrace.TraceInformation("Lease with token {0}: released", lease.CurrentLeaseToken);
-
             try
             {
                 await this.leaseManager.ReleaseAsync(lease).ConfigureAwait(false);
+
+                await this.monitor.NotifyLeaseReleaseAsync(lease.CurrentLeaseToken);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Extensions.TraceException(e);
+                await this.monitor.NotifyErrorAsync(lease.CurrentLeaseToken, ex);
                 DefaultTrace.TraceWarning("Lease with token {0}: failed to remove lease", lease.CurrentLeaseToken);
             }
             finally
@@ -124,42 +128,46 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             {
                 await partitionSupervisor.RunAsync(this.shutdownCts.Token).ConfigureAwait(false);
             }
-            catch (FeedSplitException ex)
+            catch (FeedRangeGoneException ex)
             {
-                await this.HandleSplitAsync(lease, ex.LastContinuation).ConfigureAwait(false);
+                await this.HandlePartitionGoneAsync(lease, ex.LastContinuation).ConfigureAwait(false);
             }
-            catch (TaskCanceledException)
+            catch (OperationCanceledException) when (this.shutdownCts.IsCancellationRequested)
             {
                 DefaultTrace.TraceVerbose("Lease with token {0}: processing canceled", lease.CurrentLeaseToken);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Extensions.TraceException(e);
+                await this.monitor.NotifyErrorAsync(lease.CurrentLeaseToken, ex);
                 DefaultTrace.TraceWarning("Lease with token {0}: processing failed", lease.CurrentLeaseToken);
             }
 
             await this.RemoveLeaseAsync(lease).ConfigureAwait(false);
         }
 
-        private async Task HandleSplitAsync(DocumentServiceLease lease, string lastContinuationToken)
+        private async Task HandlePartitionGoneAsync(DocumentServiceLease lease, string lastContinuationToken)
         {
             try
             {
                 lease.ContinuationToken = lastContinuationToken;
-                IEnumerable<DocumentServiceLease> addedLeases = await this.synchronizer.SplitPartitionAsync(lease).ConfigureAwait(false);
+                (IEnumerable<DocumentServiceLease> addedLeases, bool shouldDeleteGoneLease) = await this.synchronizer.HandlePartitionGoneAsync(lease).ConfigureAwait(false);
                 Task[] addLeaseTasks = addedLeases.Select(l =>
                     {
                         l.Properties = lease.Properties;
                         return this.AddOrUpdateLeaseAsync(l);
                     }).ToArray();
 
-                await this.leaseManager.DeleteAsync(lease).ConfigureAwait(false);
+                if (shouldDeleteGoneLease)
+                {
+                    await this.leaseManager.DeleteAsync(lease).ConfigureAwait(false);
+                }
+
                 await Task.WhenAll(addLeaseTasks).ConfigureAwait(false);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Extensions.TraceException(e);
-                DefaultTrace.TraceWarning("Lease with token {0}: failed to split", e, lease.CurrentLeaseToken);
+                await this.monitor.NotifyErrorAsync(lease.CurrentLeaseToken, ex);
+                DefaultTrace.TraceWarning("Lease with token {0}: failed to handle gone", ex, lease.CurrentLeaseToken);
             }
         }
     }

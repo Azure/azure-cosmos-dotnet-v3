@@ -234,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string collPrefix = Guid.NewGuid().ToString("N");
 
                 // V2 offer
-                INameValueCollection headers = new DictionaryNameValueCollection();
+                INameValueCollection headers = new StoreRequestNameValueCollection();
                 headers.Add("x-ms-offer-throughput", "8000");
 
                 DocumentCollection[] collections = (from index in Enumerable.Range(1, 1)
@@ -299,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 dbprefix = Guid.NewGuid().ToString("N");
 
                 // V2 offer
-                INameValueCollection headers = new DictionaryNameValueCollection();
+                INameValueCollection headers = new StoreRequestNameValueCollection();
                 headers.Add("x-ms-offer-throughput", "8000");
 
                 List<DocumentCollection> collections = new List<DocumentCollection>();

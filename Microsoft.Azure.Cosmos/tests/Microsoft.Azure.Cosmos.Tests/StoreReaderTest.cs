@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
@@ -13,7 +12,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
-    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -90,23 +88,22 @@ namespace Microsoft.Azure.Cosmos
             {
 
                 // set lsn and activityid on the store response.
-                Headers = new DictionaryNameValueCollection(
-                new NameValueCollection()
+                Headers = new StoreRequestNameValueCollection
                 {
                     { WFConstants.BackendHeaders.LSN, "50"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" }
-                })
+                }
             };
 
             // setup mock transport client
             mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
-                    new Uri(addressInformation[0].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                    new TransportAddressUri(new Uri(addressInformation[0].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                     .ReturnsAsync(mockStoreResponse);
 
             TransportClient mockTransportClientObject = mockTransportClient.Object;
             // get response from mock object
-            StoreResponse response = mockTransportClientObject.InvokeResourceOperationAsync(new Uri(addressInformation[0].PhysicalUri), entity).Result;
+            StoreResponse response = mockTransportClientObject.InvokeResourceOperationAsync(new TransportAddressUri(new Uri(addressInformation[0].PhysicalUri)), entity).Result;
 
             // validate that the LSN matches
             Assert.IsTrue(response.LSN == 50);
@@ -127,31 +124,29 @@ namespace Microsoft.Azure.Cosmos
             StoreResponse mockStoreResponseSlow = new StoreResponse();
 
             // set lsn and activityid on the store response.
-            mockStoreResponseFast.Headers = new DictionaryNameValueCollection(
-                new NameValueCollection()
+            mockStoreResponseFast.Headers = new StoreRequestNameValueCollection
                 {
                     { WFConstants.BackendHeaders.LSN, "50"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" }
-                });
+                };
 
             // set lsn and activityid on the store response.
-            mockStoreResponseSlow.Headers = new DictionaryNameValueCollection(
-                new NameValueCollection()
+            mockStoreResponseSlow.Headers = new StoreRequestNameValueCollection
                 {
                     { WFConstants.BackendHeaders.LSN, "30"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" }
-                });
+                };
 
             // setup mock transport client for the first replica
             mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
-                    new Uri(addressInformation[0].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                    new TransportAddressUri(new Uri(addressInformation[0].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                     .ReturnsAsync(mockStoreResponseFast);
 
             // setup mock transport client with a sequence of outputs
             mockTransportClient.SetupSequence(
                 client => client.InvokeResourceOperationAsync(
-                    new Uri(addressInformation[1].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                    new TransportAddressUri(new Uri(addressInformation[1].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                     .Returns(Task.FromResult<StoreResponse>(mockStoreResponseFast))   // initial read response
                     .Returns(Task.FromResult<StoreResponse>(mockStoreResponseFast))   // barrier retry, count 1
                     .Returns(Task.FromResult<StoreResponse>(mockStoreResponseFast))   // barrier retry, count 2
@@ -181,7 +176,7 @@ namespace Microsoft.Azure.Cosmos
             // 2nd time: returns InvalidPartitionException
             mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
-                    new Uri(addressInformation[2].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                    new TransportAddressUri(new Uri(addressInformation[2].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                     .ReturnsAsync(queueOfResponses.Dequeue());
 
             TransportClient mockTransportClientObject = mockTransportClient.Object;
@@ -209,39 +204,39 @@ namespace Microsoft.Azure.Cosmos
             StoreResponse mockStoreResponse5 = new StoreResponse();
 
             // set lsn and activityid on the store response.
-            mockStoreResponse1.Headers = new DictionaryNameValueCollection(new NameValueCollection()
+            mockStoreResponse1.Headers = new StoreRequestNameValueCollection
             {
                 { WFConstants.BackendHeaders.LSN, "100"},
                 { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" },
                 { WFConstants.BackendHeaders.GlobalCommittedLSN, "90" },
                 { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
-            });
+            };
 
-            mockStoreResponse2.Headers = new DictionaryNameValueCollection(new NameValueCollection()
+            mockStoreResponse2.Headers = new StoreRequestNameValueCollection
             {
                 { WFConstants.BackendHeaders.LSN, "90"},
                 { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_2" },
                 { WFConstants.BackendHeaders.GlobalCommittedLSN, "90" },
                 { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
-            });
+            };
 
-            mockStoreResponse3.Headers = new DictionaryNameValueCollection(new NameValueCollection()
+            mockStoreResponse3.Headers = new StoreRequestNameValueCollection
             {
                 { WFConstants.BackendHeaders.LSN, "92"},
                 { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
                 { WFConstants.BackendHeaders.GlobalCommittedLSN, "90" },
                 { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
-            });
+            };
 
-            mockStoreResponse4.Headers = new DictionaryNameValueCollection(new NameValueCollection()
+            mockStoreResponse4.Headers = new StoreRequestNameValueCollection
             {
                 { WFConstants.BackendHeaders.LSN, "100"},
                 { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
                 { WFConstants.BackendHeaders.GlobalCommittedLSN, "92" },
                 { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
-            });
+            };
 
-            mockStoreResponse5.Headers = new DictionaryNameValueCollection(new NameValueCollection()
+            mockStoreResponse5.Headers = new StoreRequestNameValueCollection
             {
                 { WFConstants.BackendHeaders.LSN, "100"},
                 { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
@@ -249,19 +244,19 @@ namespace Microsoft.Azure.Cosmos
                 { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
                 { WFConstants.BackendHeaders.CurrentReplicaSetSize, "1" },
                 { WFConstants.BackendHeaders.QuorumAckedLSN, "100" },
-            });
+            };
 
             if (result == ReadQuorumResultKind.QuorumMet)
             {
                 // setup mock transport client for the first replica
                 mockTransportClient.Setup(
                     client => client.InvokeResourceOperationAsync(
-                        new Uri(addressInformation[0].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                        new TransportAddressUri(new Uri(addressInformation[0].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                         .ReturnsAsync(mockStoreResponse5);
 
                 mockTransportClient.SetupSequence(
                 client => client.InvokeResourceOperationAsync(
-                    new Uri(addressInformation[1].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                    new TransportAddressUri(new Uri(addressInformation[1].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                     .Returns(Task.FromResult<StoreResponse>(mockStoreResponse1))
                     .Returns(Task.FromResult<StoreResponse>(mockStoreResponse1))
                     .Returns(Task.FromResult<StoreResponse>(mockStoreResponse1))
@@ -271,7 +266,7 @@ namespace Microsoft.Azure.Cosmos
 
                 mockTransportClient.SetupSequence(
                 client => client.InvokeResourceOperationAsync(
-                    new Uri(addressInformation[2].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                    new TransportAddressUri(new Uri(addressInformation[2].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                     .Returns(Task.FromResult<StoreResponse>(mockStoreResponse2))
                     .Returns(Task.FromResult<StoreResponse>(mockStoreResponse2))
                     .Returns(Task.FromResult<StoreResponse>(mockStoreResponse2))
@@ -285,19 +280,19 @@ namespace Microsoft.Azure.Cosmos
                 // setup mock transport client for the first replica
                 mockTransportClient.Setup(
                     client => client.InvokeResourceOperationAsync(
-                        new Uri(addressInformation[0].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                        new TransportAddressUri(new Uri(addressInformation[0].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                         .ReturnsAsync(mockStoreResponse2);
 
                 // setup mock transport client with a sequence of outputs
                 mockTransportClient.Setup(
                     client => client.InvokeResourceOperationAsync(
-                        new Uri(addressInformation[1].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                        new TransportAddressUri(new Uri(addressInformation[1].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                         .ReturnsAsync(mockStoreResponse1);
 
                 // setup mock transport client with a sequence of outputs
                 mockTransportClient.Setup(
                     client => client.InvokeResourceOperationAsync(
-                        new Uri(addressInformation[2].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                        new TransportAddressUri(new Uri(addressInformation[2].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                         .ReturnsAsync(mockStoreResponse2);
             }
             else if (result == ReadQuorumResultKind.QuorumNotSelected)
@@ -305,17 +300,17 @@ namespace Microsoft.Azure.Cosmos
                 // setup mock transport client for the first replica
                 mockTransportClient.Setup(
                     client => client.InvokeResourceOperationAsync(
-                        new Uri(addressInformation[0].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                        new TransportAddressUri(new Uri(addressInformation[0].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                         .ReturnsAsync(mockStoreResponse5);
 
                 mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
-                    new Uri(addressInformation[1].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                    new TransportAddressUri(new Uri(addressInformation[1].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                     .ReturnsAsync(mockStoreResponse5);
 
                 mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
-                    new Uri(addressInformation[2].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                    new TransportAddressUri(new Uri(addressInformation[2].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                     .Throws(new GoneException("test"));
             }
 
@@ -342,50 +337,45 @@ namespace Microsoft.Azure.Cosmos
 
 
             // set lsn and activityid on the store response.
-            mockStoreResponse1.Headers = new DictionaryNameValueCollection(
-                new NameValueCollection()
+            mockStoreResponse1.Headers = new StoreRequestNameValueCollection
                 {
                     { WFConstants.BackendHeaders.LSN, "100"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" },
                     { WFConstants.BackendHeaders.GlobalCommittedLSN, "90" },
                     { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
-                });
+                };
 
-            mockStoreResponse2.Headers = new DictionaryNameValueCollection(
-                new NameValueCollection()
+            mockStoreResponse2.Headers = new StoreRequestNameValueCollection
                 {
                     { WFConstants.BackendHeaders.LSN, "100"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_2" },
                     { WFConstants.BackendHeaders.GlobalCommittedLSN, "100" },
                     { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
-                });
+                };
 
-            mockStoreResponse3.Headers = new DictionaryNameValueCollection(
-                new NameValueCollection()
+            mockStoreResponse3.Headers = new StoreRequestNameValueCollection
                 {
                     { WFConstants.BackendHeaders.LSN, "103"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
                     { WFConstants.BackendHeaders.GlobalCommittedLSN, "100" },
                     { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
-                });
+                };
 
-            mockStoreResponse4.Headers = new DictionaryNameValueCollection(
-                new NameValueCollection()
+            mockStoreResponse4.Headers = new StoreRequestNameValueCollection
                 {
                     { WFConstants.BackendHeaders.LSN, "103"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
                     { WFConstants.BackendHeaders.GlobalCommittedLSN, "103" },
                     { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
-                });
+                };
 
-            mockStoreResponse5.Headers = new DictionaryNameValueCollection(
-                new NameValueCollection()
+            mockStoreResponse5.Headers = new StoreRequestNameValueCollection
                 {
                     { WFConstants.BackendHeaders.LSN, "106"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
                     { WFConstants.BackendHeaders.GlobalCommittedLSN, "103" },
                     { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
-                });
+                };
             StoreResponse finalResponse = null;
             if (undershootGlobalCommittedLsnDuringBarrier)
             {
@@ -422,13 +412,13 @@ namespace Microsoft.Azure.Cosmos
                 if (i == indexOfCaughtUpReplica)
                 {
                     mockTransportClient.SetupSequence(
-                        client => client.InvokeResourceOperationAsync(new Uri(addressInformation[i].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                        client => client.InvokeResourceOperationAsync(new TransportAddressUri(new Uri(addressInformation[i].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                         .Returns(Task.FromResult<StoreResponse>(finalResponse));
                 }
                 else
                 {
                     mockTransportClient.Setup(
-                        client => client.InvokeResourceOperationAsync(new Uri(addressInformation[i].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                        client => client.InvokeResourceOperationAsync(new TransportAddressUri(new Uri(addressInformation[i].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                         .Returns(Task.FromResult<StoreResponse>(mockStoreResponse1));
                 }
             }
@@ -456,7 +446,7 @@ namespace Microsoft.Azure.Cosmos
                     PhysicalUri =
                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/"
                     + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/",
-                    IsPrimary = i == 0 ? true : false,
+                    IsPrimary = i == 0,
                     Protocol = Protocol.Tcp,
                     IsPublic = true
                 };
@@ -520,7 +510,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(addressInfo[0] == addressInformation[0]);
 
             AddressSelector addressSelector = new AddressSelector(mockAddressCache.Object, Protocol.Tcp);
-            Uri primaryAddress = addressSelector.ResolvePrimaryUriAsync(entity, false /*forceAddressRefresh*/).Result;
+            Uri primaryAddress = addressSelector.ResolvePrimaryTransportAddressUriAsync(entity, false /*forceAddressRefresh*/).Result.Uri;
 
             // check if the address return from Address Selector matches the original address info
             Assert.IsTrue(primaryAddress.Equals(addressInformation[0].PhysicalUri));
@@ -529,7 +519,7 @@ namespace Microsoft.Azure.Cosmos
             TransportClient mockTransportClient = this.GetMockTransportClientDuringUpgrade(addressInformation);
 
             // get response from mock object
-            StoreResponse response = mockTransportClient.InvokeResourceOperationAsync(new Uri(addressInformation[0].PhysicalUri), entity).Result;
+            StoreResponse response = mockTransportClient.InvokeResourceOperationAsync(new TransportAddressUri(new Uri(addressInformation[0].PhysicalUri)), entity).Result;
 
             // validate that the LSN matches
             Assert.IsTrue(response.LSN == 50);
@@ -546,6 +536,7 @@ namespace Microsoft.Azure.Cosmos
             StoreReader storeReader =
                 new StoreReader(mockTransportClient,
                     addressSelector,
+                    new AddressEnumerator(),
                     sessionContainer);
 
             // reads always go to read quorum (2) replicas
@@ -603,7 +594,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(addressInfo[0] == addressInformation[0]);
 
             AddressSelector addressSelector = new AddressSelector(mockAddressCache.Object, Protocol.Tcp);
-            Uri primaryAddress = addressSelector.ResolvePrimaryUriAsync(entity, false /*forceAddressRefresh*/).Result;
+            Uri primaryAddress = addressSelector.ResolvePrimaryTransportAddressUriAsync(entity, false /*forceAddressRefresh*/).Result.Uri;
 
             // check if the address return from Address Selector matches the original address info
             Assert.IsTrue(primaryAddress.Equals(addressInformation[0].PhysicalUri));
@@ -621,7 +612,7 @@ namespace Microsoft.Azure.Cosmos
             for (int i = 0; i < addressInformation.Length; i++)
             {
                 TransportClient mockTransportClient = this.GetMockTransportClientForGlobalStrongWrites(addressInformation, i, false, false, false);
-                StoreReader storeReader = new StoreReader(mockTransportClient, addressSelector, sessionContainer);
+                StoreReader storeReader = new StoreReader(mockTransportClient, addressSelector, new AddressEnumerator(), sessionContainer);
                 ConsistencyWriter consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false);
                 StoreResponse response = consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(30)), false).Result;
                 Assert.AreEqual(100, response.LSN);
@@ -695,7 +686,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(addressInfo[0] == addressInformation[0]);
 
             AddressSelector addressSelector = new AddressSelector(mockAddressCache.Object, Protocol.Tcp);
-            Uri primaryAddress = addressSelector.ResolvePrimaryUriAsync(entity, false /*forceAddressRefresh*/).Result;
+            Uri primaryAddress = addressSelector.ResolvePrimaryTransportAddressUriAsync(entity, false /*forceAddressRefresh*/).Result.Uri;
 
             // check if the address return from Address Selector matches the original address info
             Assert.IsTrue(primaryAddress.Equals(addressInformation[0].PhysicalUri));
@@ -712,6 +703,7 @@ namespace Microsoft.Azure.Cosmos
                 StoreReader storeReader =
                     new StoreReader(mockTransportClient,
                         addressSelector,
+                        new AddressEnumerator(),
                         sessionContainer);
 
                 Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
@@ -754,6 +746,7 @@ namespace Microsoft.Azure.Cosmos
                 StoreReader storeReader =
                     new StoreReader(mockTransportClient,
                         addressSelector,
+                        new AddressEnumerator(),
                         sessionContainer);
 
                 Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
@@ -805,6 +798,7 @@ namespace Microsoft.Azure.Cosmos
                 StoreReader storeReader =
                 new StoreReader(mockTransportClient,
                     addressSelector,
+                    new AddressEnumerator(),
                     sessionContainer);
 
                 Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();

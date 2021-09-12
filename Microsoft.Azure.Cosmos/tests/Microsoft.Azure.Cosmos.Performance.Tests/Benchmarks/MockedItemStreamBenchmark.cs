@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
     public class MockedItemStreamBenchmark : IItemBenchmark
     {
-        private MockedItemBenchmarkHelper benchmarkHelper;
+        private readonly MockedItemBenchmarkHelper benchmarkHelper;
 
         public MockedItemStreamBenchmark()
         {
@@ -74,6 +74,25 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
+        public async Task ReadItemExistsWithDiagnosticToString()
+        {
+            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReadItemStreamAsync(
+                MockedItemBenchmarkHelper.ExistingItemId,
+                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
+                {
+                    throw new Exception();
+                }
+
+                string diagnostics = response.Diagnostics.ToString();
+                if (string.IsNullOrEmpty(diagnostics))
+                {
+                    throw new Exception();
+                }
+            }
+        }
+
         public async Task UpdateItem()
         {
             using (MemoryStream ms = this.benchmarkHelper.GetItemPayloadAsStream())
@@ -117,7 +136,25 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task ReadFeed()
         {
-            FeedIterator streamIterator = this.benchmarkHelper.TestContainer.GetItemQueryStreamIterator();
+            using FeedIterator streamIterator = this.benchmarkHelper.TestContainer.GetItemQueryStreamIterator();
+            while (streamIterator.HasMoreResults)
+            {
+                ResponseMessage response = await streamIterator.ReadNextAsync();
+                if (response.StatusCode != HttpStatusCode.OK)
+                {
+                    throw new Exception();
+                }
+            }
+        }
+
+        public async Task QuerySinglePage()
+        {
+            using FeedIterator streamIterator = this.benchmarkHelper.TestContainer.GetItemQueryStreamIterator(
+                "select * from T",
+                requestOptions: new QueryRequestOptions()
+                {
+                    PartitionKey = new PartitionKey("dummyValue"),
+                });
             while (streamIterator.HasMoreResults)
             {
                 ResponseMessage response = await streamIterator.ReadNextAsync();

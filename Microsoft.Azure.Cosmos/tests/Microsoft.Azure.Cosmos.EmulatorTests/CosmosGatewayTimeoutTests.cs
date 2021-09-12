@@ -5,14 +5,21 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
+    using Castle.DynamicProxy.Generators.Emitters;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class CosmosGatewayTimeoutTests
@@ -20,38 +27,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task GatewayStoreClientTimeout()
         {
-            using (CosmosClient client = TestCommon.CreateCosmosClient(useGateway: true))
+            // Cause http client to throw a TaskCanceledException to simulate a timeout
+            HttpClient httpClient = new HttpClient(new TimeOutHttpClientHandler())
             {
-                // Creates the store clients in the document client
-                await client.DocumentClient.EnsureValidClientAsync();
+                Timeout = TimeSpan.FromSeconds(1)
+            };
 
-                // Get the GatewayStoreModel
-                GatewayStoreModel gatewayStore;
-                using (DocumentServiceRequest serviceRequest = new DocumentServiceRequest(
-                                operationType: OperationType.Read,
-                                resourceIdOrFullName: null,
-                                resourceType: ResourceType.Database,
-                                body: null,
-                                headers: null,
-                                isNameBased: false,
-                                authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey))
-                {
-                    serviceRequest.UseGatewayMode = true;
-                    gatewayStore = (GatewayStoreModel)client.DocumentClient.GetStoreProxy(serviceRequest);
-                }
-
-                DocumentClient documentClient = client.DocumentClient;
-                FieldInfo cosmosHttpClientProperty = client.DocumentClient.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
-                CosmosHttpClient cosmosHttpClient = (CosmosHttpClient)cosmosHttpClientProperty.GetValue(documentClient);
-
-                // Set the http request timeout to 10 ms to cause a timeout exception
-                HttpClient httpClient = new HttpClient(new TimeOutHttpClientHandler());
-                FieldInfo httpClientProperty = cosmosHttpClient.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
-                httpClientProperty.SetValue(cosmosHttpClient, httpClient);
-
-                FieldInfo gatewayRequestTimeoutProperty = cosmosHttpClient.GetType().GetField("GatewayRequestTimeout", BindingFlags.NonPublic | BindingFlags.Static);
-                gatewayRequestTimeoutProperty.SetValue(cosmosHttpClient, TimeSpan.FromSeconds(1));
-
+            using (CosmosClient client = TestCommon.CreateCosmosClient(x => x.WithConnectionModeGateway().WithHttpClientFactory(() => httpClient)))
+            {
                 // Verify the failure has the required info
                 try
                 {
@@ -66,6 +49,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsTrue(message.Contains("Http Client Timeout"), "Http Client Timeout:" + message);
                     Assert.IsTrue(message.Contains("Activity id"), "Activity id:" + message);
                 }
+            }
+        }
+
+        [TestMethod]
+        public async Task QueryPlanRetryTimeoutTestAsync()
+        {
+            HttpClientHandlerHelper httpClientHandler = new HttpClientHandlerHelper();
+            using (CosmosClient client = TestCommon.CreateCosmosClient(builder => builder
+                .WithConnectionModeGateway()
+                .WithHttpClientFactory(() => new HttpClient(httpClientHandler))))
+            {
+                Cosmos.Database database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+                ContainerInternal container = (ContainerInternal)await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk");
+
+                Container gatewayQueryPlanContainer = new ContainerInlineCore(
+                    client.ClientContext,
+                    (DatabaseInternal)database,
+                    container.Id,
+                    new DisableServiceInterop(client.ClientContext, container));
+
+                bool isQueryRequestFound = false;
+                httpClientHandler.RequestCallBack = (request, cancellationToken) =>
+                {
+                    if (request.Headers.TryGetValues(HttpConstants.HttpHeaders.IsQueryPlanRequest, out IEnumerable<string> isQueryPlan) &&
+                        isQueryPlan.FirstOrDefault() == bool.TrueString)
+                    {
+                        Assert.IsFalse(isQueryRequestFound, "Should only call get query plan once.");
+                        Assert.AreNotEqual(cancellationToken, default);
+                        isQueryRequestFound = true;
+                    }
+                };
+
+                using FeedIterator<JObject> iterator = gatewayQueryPlanContainer.GetItemQueryIterator<JObject>("select * From T order by T.status");
+                FeedResponse<JObject> response = await iterator.ReadNextAsync();
+
+                Assert.IsTrue(isQueryRequestFound, "Query plan call back was not called.");
+                await database.DeleteStreamAsync();
             }
         }
 
@@ -86,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (CosmosException rte)
                 {
-                    Assert.IsTrue(handler.Count > 7);
+                    Assert.IsTrue(handler.Count >= 6);
                     string message = rte.ToString();
                     Assert.IsTrue(message.Contains("Start Time"), "Start Time:" + message);
                     Assert.IsTrue(message.Contains("Total Duration"), "Total Duration:" + message);
@@ -106,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private class TransientHttpClientCreatorHandler : DelegatingHandler
         {
             public int Count { get; private set; } = 0;
-        
+
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 if (this.Count++ <= 3)
@@ -115,6 +135,36 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 throw new TaskCanceledException();
+            }
+        }
+
+        private class HttpClientHandlerHelper : DelegatingHandler
+        {
+            public HttpClientHandlerHelper() : base(new HttpClientHandler())
+            {
+            }
+
+            public Action<HttpRequestMessage, CancellationToken> RequestCallBack { get; set; }
+
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                this.RequestCallBack?.Invoke(request, cancellationToken);
+                return base.SendAsync(request, cancellationToken);
+            }
+        }
+
+        private class DisableServiceInterop : CosmosQueryClientCore
+        {
+            public DisableServiceInterop(
+                CosmosClientContext clientContext,
+                ContainerInternal cosmosContainerCore) :
+                base(clientContext, cosmosContainerCore)
+            {
+            }
+
+            public override bool ByPassQueryParsing()
+            {
+                return true;
             }
         }
     }

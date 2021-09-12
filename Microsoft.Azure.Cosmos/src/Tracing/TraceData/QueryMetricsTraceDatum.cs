@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
 
-    internal sealed class QueryMetricsTraceDatum : ITraceDatum
+    internal sealed class QueryMetricsTraceDatum : TraceDatum
     {
         public QueryMetricsTraceDatum(QueryMetrics queryMetrics)
         {
@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         public QueryMetrics QueryMetrics { get; }
 
-        public void Accept(ITraceDatumVisitor traceDatumVisitor)
+        internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
         {
             traceDatumVisitor.Visit(this);
         }

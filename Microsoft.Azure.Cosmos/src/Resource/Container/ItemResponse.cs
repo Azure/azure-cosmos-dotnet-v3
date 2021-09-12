@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Net;
+    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// The cosmos item response

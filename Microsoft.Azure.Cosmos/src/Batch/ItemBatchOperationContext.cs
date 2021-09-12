@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -15,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ItemBatchOperationContext : IDisposable
     {
-        public string PartitionKeyRangeId { get; }
+        public string PartitionKeyRangeId { get; private set; }
 
         public BatchAsyncBatcher CurrentBatcher { get; set; }
 
@@ -23,31 +24,46 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly IDocumentClientRetryPolicy retryPolicy;
 
-        private readonly TaskCompletionSource<TransactionalBatchOperationResult> taskCompletionSource = new TaskCompletionSource<TransactionalBatchOperationResult>();
+        private readonly TaskCompletionSource<TransactionalBatchOperationResult> taskCompletionSource = new TaskCompletionSource<TransactionalBatchOperationResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        private readonly ITrace initialTrace;
 
         public ItemBatchOperationContext(
             string partitionKeyRangeId,
+            ITrace trace,
             IDocumentClientRetryPolicy retryPolicy = null)
         {
-            this.PartitionKeyRangeId = partitionKeyRangeId;
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            this.PartitionKeyRangeId = partitionKeyRangeId ?? throw new ArgumentNullException(nameof(partitionKeyRangeId));
+            this.initialTrace = trace;
             this.retryPolicy = retryPolicy;
         }
 
         /// <summary>
         /// Based on the Retry Policy, if a failed response should retry.
         /// </summary>
-        public Task<ShouldRetryResult> ShouldRetryAsync(
+        public async Task<ShouldRetryResult> ShouldRetryAsync(
             TransactionalBatchOperationResult batchOperationResult,
             CancellationToken cancellationToken)
         {
             if (this.retryPolicy == null
                 || batchOperationResult.IsSuccessStatusCode)
             {
-                return Task.FromResult(ShouldRetryResult.NoRetry());
+                return ShouldRetryResult.NoRetry();
             }
 
             ResponseMessage responseMessage = batchOperationResult.ToResponseMessage();
-            return this.retryPolicy.ShouldRetryAsync(responseMessage, cancellationToken);
+            ShouldRetryResult shouldRetry = await this.retryPolicy.ShouldRetryAsync(responseMessage, cancellationToken);
+            if (shouldRetry.ShouldRetry)
+            {
+                this.initialTrace.AddChild(batchOperationResult.Trace);
+            }
+
+            return shouldRetry;
         }
 
         public void Complete(
@@ -56,6 +72,8 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.AssertBatcher(completer))
             {
+                this.initialTrace.AddChild(result.Trace);
+                result.Trace = this.initialTrace;
                 this.taskCompletionSource.SetResult(result);
             }
 
@@ -72,6 +90,14 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.Dispose();
+        }
+
+        public void ReRouteOperation(
+            string newPartitionKeyRangeId,
+            ITrace trace)
+        {
+            this.PartitionKeyRangeId = newPartitionKeyRangeId;
+            this.initialTrace.AddChild(trace);
         }
 
         public void Dispose()

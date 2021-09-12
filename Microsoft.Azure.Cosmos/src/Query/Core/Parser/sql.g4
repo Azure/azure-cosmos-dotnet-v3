@@ -27,7 +27,7 @@ select_item : scalar_expression (K_AS IDENTIFIER)? ;
 /*--------------------------------------------------------------------------------*/
 from_clause : K_FROM collection_expression ;
 collection_expression
-	: collection (K_AS IDENTIFIER)? #AliasedCollectionExpression
+	: collection (K_AS? IDENTIFIER)? #AliasedCollectionExpression
 	| IDENTIFIER K_IN collection #ArrayIteratorCollectionExpression 
 	| collection_expression K_JOIN collection_expression #JoinCollectionExpression
 	;
@@ -88,10 +88,21 @@ scalar_expression
 logical_scalar_expression
 	: binary_scalar_expression
 	| in_scalar_expression
+	| like_scalar_expression
+	| logical_scalar_expression K_AND logical_scalar_expression
+	| logical_scalar_expression K_OR logical_scalar_expression
 	;
 
 in_scalar_expression
-	: binary_scalar_expression K_NOT? K_IN scalar_expression_list
+	: binary_scalar_expression K_NOT? K_IN '(' scalar_expression_list ')'
+	;
+
+like_scalar_expression
+	: binary_scalar_expression K_NOT? K_LIKE binary_scalar_expression escape_expression?
+	;
+
+escape_expression
+	: K_ESCAPE STRING_LITERAL
 	;
 
 binary_scalar_expression
@@ -103,8 +114,6 @@ binary_scalar_expression
 	| binary_scalar_expression bitwise_and_operator binary_scalar_expression
 	| binary_scalar_expression bitwise_exclusive_or_operator binary_scalar_expression
 	| binary_scalar_expression bitwise_inclusive_or_operator binary_scalar_expression
-	| binary_scalar_expression K_AND binary_scalar_expression
-	| binary_scalar_expression K_OR binary_scalar_expression
 	| binary_scalar_expression string_concat_operator binary_scalar_expression
 	;
 
@@ -184,12 +193,14 @@ K_BETWEEN : B E T W E E N;
 K_BY : B Y;
 K_DESC : D E S C;
 K_DISTINCT : D I S T I N C T;
+K_ESCAPE: E S C A P E;
 K_EXISTS : E X I S T S;
 K_FALSE : 'false';
 K_FROM : F R O M;
 K_GROUP : G R O U P;
 K_IN : I N ;
 K_JOIN : J O I N;
+K_LIKE : L I K E;
 K_LIMIT : L I M I T;
 K_NOT : N O T;
 K_NULL : 'null';
@@ -199,7 +210,7 @@ K_ORDER : O R D E R;
 K_SELECT : S E L E C T;
 K_TOP : T O P;
 K_TRUE : 'true';
-K_UDF : U D F;
+K_UDF : 'udf';
 K_UNDEFINED : 'undefined';
 K_VALUE : V A L U E;
 K_WHERE : W H E R E;
@@ -227,7 +238,8 @@ NUMERIC_LITERAL
 	;
 
 STRING_LITERAL
-	: ('\'' | '"') (ESC | SAFECODEPOINT)* ('\'' | '"')
+	: '"' (ESC | SAFECODEPOINTWITHDOUBLEQUOTATION)* '"'
+	| '\'' (ESC | SAFECODEPOINTWITHSINGLEQUOTATION)* '\''
 	;
 
 fragment ESC
@@ -242,13 +254,17 @@ fragment HEX
    : [0-9a-fA-F]
    ;
 
-fragment SAFECODEPOINT
-   : ~ ["\\\u0000-\u001F]
-   ;
+fragment SAFECODEPOINTWITHSINGLEQUOTATION
+	: ~ ['\\\u0000-\u001F]
+	;
+
+fragment SAFECODEPOINTWITHDOUBLEQUOTATION
+	: ~ ["\\\u0000-\u001F]
+	;
 
 IDENTIFIER
-	:
-	| [a-zA-Z_][a-zA-Z_]*DIGIT*
+	: 
+	| [a-zA-Z_]([a-zA-Z_]|DIGIT)*
 	;
 
 PARAMETER

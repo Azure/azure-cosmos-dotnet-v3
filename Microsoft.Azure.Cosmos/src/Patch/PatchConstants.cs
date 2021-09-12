@@ -15,13 +15,19 @@ namespace Microsoft.Azure.Cosmos
             public const string Value = "value";
         }
 
+        public static class PatchSpecAttributes
+        {
+            public const string Operations = "operations";
+            public const string Condition = "condition";
+        }
+
         public static class OperationTypeNames
         {
             public const string Add = "add";
             public const string Remove = "remove";
             public const string Replace = "replace";
             public const string Set = "set";
-            public const string Increment = "inc";
+            public const string Increment = "incr";
         }
 
         public static string ToEnumMemberString(this PatchOperationType patchOperationType)

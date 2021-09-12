@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Handler which selects the pipeline for the requested resource operation
@@ -20,37 +21,31 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestHandler documentFeedHandler,
             RequestHandler pointOperationHandler)
         {
-            if (documentFeedHandler == null)
-            {
-                throw new ArgumentNullException(nameof(documentFeedHandler));
-            }
-
-            if (pointOperationHandler == null)
-            {
-                throw new ArgumentNullException(nameof(pointOperationHandler));
-            }
-
-            this.documentFeedHandler = documentFeedHandler;
-            this.pointOperationHandler = pointOperationHandler;
+            this.documentFeedHandler = documentFeedHandler ?? throw new ArgumentNullException(nameof(documentFeedHandler));
+            this.pointOperationHandler = pointOperationHandler ?? throw new ArgumentNullException(nameof(pointOperationHandler));
         }
 
-        public override Task<ResponseMessage> SendAsync(
+        public override async Task<ResponseMessage> SendAsync(
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            RequestHandler targetHandler = null;
-            if (request.IsPartitionKeyRangeHandlerRequired)
+            RequestHandler targetHandler = request.IsPartitionKeyRangeHandlerRequired ? this.documentFeedHandler : this.pointOperationHandler;
+            // Keep a reference to the current trace.
+            ITrace trace = request.Trace;
+            ITrace childTrace = request.Trace.StartChild(
+                targetHandler.FullHandlerName,
+                TraceComponent.RequestHandler,
+                TraceLevel.Info);
+            try
             {
-                targetHandler = this.documentFeedHandler;
+                request.Trace = childTrace;
+                return await targetHandler.SendAsync(request, cancellationToken);
             }
-            else
+            finally
             {
-                targetHandler = this.pointOperationHandler;
-            }
-
-            using (request.DiagnosticsContext.CreateRequestHandlerScopeScope(targetHandler))
-            {
-                return targetHandler.SendAsync(request, cancellationToken);
+                childTrace.Dispose();
+                // Set the trace back to the parent trace.
+                request.Trace = trace;
             }
         }
     }

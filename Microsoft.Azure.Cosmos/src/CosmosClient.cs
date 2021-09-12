@@ -5,12 +5,16 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Net;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -96,9 +100,18 @@ namespace Microsoft.Azure.Cosmos
         private ConsistencyLevel? accountConsistencyLevel;
         private bool isDisposed = false;
 
+        internal static int numberOfClientsCreated;
+        internal DateTime? DisposedDateTimeUtc { get; private set; } = null;
+
+        internal ClientTelemetry Telemetry;
+
         static CosmosClient()
         {
+#if PREVIEW
+            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2020_07_15;
+#else
             HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_12_31;
+#endif
             HttpConstants.Versions.CurrentVersionUTF8 = Encoding.UTF8.GetBytes(HttpConstants.Versions.CurrentVersion);
 
             // V3 always assumes assemblies exists
@@ -192,24 +205,10 @@ namespace Microsoft.Azure.Cosmos
             string accountEndpoint,
             string authKeyOrResourceToken,
             CosmosClientOptions clientOptions = null)
+             : this(accountEndpoint,
+                     AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken),
+                     clientOptions)
         {
-            if (string.IsNullOrEmpty(accountEndpoint))
-            {
-                throw new ArgumentNullException(nameof(accountEndpoint));
-            }
-
-            if (string.IsNullOrEmpty(authKeyOrResourceToken))
-            {
-                throw new ArgumentNullException(nameof(authKeyOrResourceToken));
-            }
-
-            this.Endpoint = new Uri(accountEndpoint);
-            this.AccountKey = authKeyOrResourceToken;
-            this.AuthorizationTokenProvider = AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken);
-
-            this.ClientContext = ClientContextCore.Create(
-                this,
-                clientOptions);
         }
 
         /// <summary>
@@ -222,34 +221,177 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="accountEndpoint">The cosmos service endpoint to use.</param>
         /// <param name="tokenCredential"><see cref="TokenCredential"/>The token to provide AAD token for authorization.</param>
         /// <param name="clientOptions">(Optional) client options</param>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        CosmosClient(
+        public CosmosClient(
             string accountEndpoint,
             TokenCredential tokenCredential,
             CosmosClientOptions clientOptions = null)
+            : this(accountEndpoint,
+                    new AuthorizationTokenProviderTokenCredential(
+                        tokenCredential,
+                        new Uri(accountEndpoint),
+                        clientOptions?.TokenCredentialBackgroundRefreshInterval),
+                    clientOptions)
         {
-            if (accountEndpoint == null)
+        }
+
+        /// <summary>
+        /// Used by Compute
+        /// Creates a new CosmosClient with the AuthorizationTokenProvider
+        /// </summary>
+        internal CosmosClient(
+             string accountEndpoint,
+             AuthorizationTokenProvider authorizationTokenProvider,
+             CosmosClientOptions clientOptions)
+        {
+            if (string.IsNullOrEmpty(accountEndpoint))
             {
                 throw new ArgumentNullException(nameof(accountEndpoint));
             }
 
-            if (tokenCredential == null)
-            {
-                throw new ArgumentNullException(nameof(tokenCredential));
-            }
-
             this.Endpoint = new Uri(accountEndpoint);
-            this.AuthorizationTokenProvider = new AuthorizationTokenProviderTokenCredential(tokenCredential,
-                accountEndpoint,
-                clientOptions?.TokenCredentialBackgroundRefreshInterval);
+            this.AuthorizationTokenProvider = authorizationTokenProvider ?? throw new ArgumentNullException(nameof(authorizationTokenProvider));
 
+            clientOptions ??= new CosmosClientOptions();
+
+            this.ClientId = this.IncrementNumberOfClientsCreated();
             this.ClientContext = ClientContextCore.Create(
                 this,
                 clientOptions);
+  
+            this.ClientConfigurationTraceDatum = new ClientConfigurationTraceDatum(this.ClientContext, DateTime.UtcNow);
+        }
+
+        /// <summary>
+        /// Creates a new CosmosClient with the account endpoint URI string and TokenCredential.
+        /// In addition to that it initializes the client with containers provided i.e The SDK warms up the caches and 
+        /// connections before the first call to the service is made. Use this to obtain lower latency while startup of your application.
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// of the application which enables efficient connection management and performance. Please refer to the
+        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
+        /// </summary>
+        /// <param name="accountEndpoint">The cosmos service endpoint to use</param>
+        /// <param name="authKeyOrResourceToken">The cosmos account key or resource token to use to create the client.</param>
+        /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
+        /// <param name="cosmosClientOptions">(Optional) client options</param>
+        /// <param name="cancellationToken">(Optional) Cancellation Token</param>
+        /// <returns>
+        /// A CosmosClient object.
+        /// </returns>
+        /// <example>
+        /// The CosmosClient is created with the AccountEndpoint, AccountKey or ResourceToken and 2 containers in the account are initialized
+        /// <code language="c#">
+        /// <![CDATA[
+        /// using Microsoft.Azure.Cosmos;
+        /// List<(string, string)> containersToInitialize = new List<(string, string)>
+        /// { ("DatabaseName1", "ContainerName1"), ("DatabaseName2", "ContainerName2") };
+        /// 
+        /// CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync("account-endpoint-from-portal", 
+        ///                                                                         "account-key-from-portal",
+        ///                                                                         containersToInitialize)
+        /// 
+        /// // Dispose cosmosClient at application exit
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint,
+                                                                        string authKeyOrResourceToken,
+                                                                        IReadOnlyList<(string databaseId, string containerId)> containers,
+                                                                        CosmosClientOptions cosmosClientOptions = null,
+                                                                        CancellationToken cancellationToken = default)
+        {
+            if (containers == null)
+            {
+                throw new ArgumentNullException(nameof(containers));
+            }
+
+            CosmosClient cosmosClient = new CosmosClient(accountEndpoint,
+                                                         authKeyOrResourceToken,
+                                                         cosmosClientOptions);
+
+            await cosmosClient.InitializeContainersAsync(containers, cancellationToken);
+            return cosmosClient;
+        }
+
+        /// <summary>
+        /// Creates a new CosmosClient with the account endpoint URI string and TokenCredential.
+        /// In addition to that it initializes the client with containers provided i.e The SDK warms up the caches and 
+        /// connections before the first call to the service is made. Use this to obtain lower latency while startup of your application.
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// of the application which enables efficient connection management and performance. Please refer to the
+        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
+        /// </summary>
+        /// <param name="connectionString">The connection string to the cosmos account. ex: https://mycosmosaccount.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
+        /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
+        /// <param name="cosmosClientOptions">(Optional) client options</param>
+        /// <param name="cancellationToken">(Optional) Cancellation Token</param>
+        /// <returns>
+        /// A CosmosClient object.
+        /// </returns>
+        /// <example>
+        /// The CosmosClient is created with the ConnectionString and 2 containers in the account are initialized
+        /// <code language="c#">
+        /// <![CDATA[
+        /// using Microsoft.Azure.Cosmos;
+        /// List<(string, string)> containersToInitialize = new List<(string, string)>
+        /// { ("DatabaseName1", "ContainerName1"), ("DatabaseName2", "ContainerName2") };
+        /// 
+        /// CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync("connection-string-from-portal",
+        ///                                                                         containersToInitialize)
+        /// 
+        /// // Dispose cosmosClient at application exit
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static async Task<CosmosClient> CreateAndInitializeAsync(string connectionString,
+                                                                        IReadOnlyList<(string databaseId, string containerId)> containers,
+                                                                        CosmosClientOptions cosmosClientOptions = null,
+                                                                        CancellationToken cancellationToken = default)
+        {
+            if (containers == null)
+            {
+                throw new ArgumentNullException(nameof(containers));
+            }
+
+            CosmosClient cosmosClient = new CosmosClient(connectionString,
+                                                         cosmosClientOptions);
+
+            await cosmosClient.InitializeContainersAsync(containers, cancellationToken);
+            return cosmosClient;
+        }
+
+        /// <summary>
+        /// Creates a new CosmosClient with the account endpoint URI string and TokenCredential.
+        /// In addition to that it initializes the client with containers provided i.e The SDK warms up the caches and 
+        /// connections before the first call to the service is made. Use this to obtain lower latency while startup of your application.
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// of the application which enables efficient connection management and performance. Please refer to the
+        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
+        /// </summary>
+        /// <param name="accountEndpoint">The cosmos service endpoint to use.</param>
+        /// <param name="tokenCredential"><see cref="TokenCredential"/>The token to provide AAD token for authorization.</param>
+        /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
+        /// <param name="cosmosClientOptions">(Optional) client options</param>
+        /// <param name="cancellationToken">(Optional) Cancellation Token</param>
+        /// <returns>
+        /// A CosmosClient object.
+        /// </returns>
+        public static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint,
+                                                                        TokenCredential tokenCredential,
+                                                                        IReadOnlyList<(string databaseId, string containerId)> containers,
+                                                                        CosmosClientOptions cosmosClientOptions = null,
+                                                                        CancellationToken cancellationToken = default)
+        {
+            if (containers == null)
+            {
+                throw new ArgumentNullException(nameof(containers));
+            }
+
+            CosmosClient cosmosClient = new CosmosClient(accountEndpoint,
+                                                         tokenCredential,
+                                                         cosmosClientOptions);
+
+            await cosmosClient.InitializeContainersAsync(containers, cancellationToken);
+            return cosmosClient;
         }
 
         /// <summary>
@@ -290,6 +432,8 @@ namespace Microsoft.Azure.Cosmos
                  this,
                  documentClient,
                  cosmosClientOptions);
+
+            this.ClientConfigurationTraceDatum = new ClientConfigurationTraceDatum(this.ClientContext, DateTime.UtcNow);
         }
 
         /// <summary>
@@ -337,6 +481,8 @@ namespace Microsoft.Azure.Cosmos
         internal DocumentClient DocumentClient => this.ClientContext.DocumentClient;
         internal RequestInvokerHandler RequestHandler => this.ClientContext.RequestHandler;
         internal CosmosClientContext ClientContext { get; }
+        internal ClientConfigurationTraceDatum ClientConfigurationTraceDatum { get; }
+        internal int ClientId { get; }
 
         /// <summary>
         /// Reads the <see cref="Microsoft.Azure.Cosmos.AccountProperties"/> for the Azure Cosmos DB account.
@@ -346,7 +492,10 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         public virtual Task<AccountProperties> ReadAccountAsync()
         {
-            return ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.Endpoint);
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReadAccountAsync),
+                null,
+                (trace) => ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.Endpoint));
         }
 
         /// <summary>
@@ -362,7 +511,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// Database db = cosmosClient.GetDatabase("myDatabaseId"];
+        /// Database db = cosmosClient.GetDatabase("myDatabaseId");
         /// DatabaseResponse response = await db.ReadAsync();
         /// ]]>
         /// </code>
@@ -432,7 +581,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateDatabaseAsync),
                 requestOptions,
-                (diagnostics) =>
+                (trace) =>
                 {
                     DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
                     ThroughputProperties throughputProperties = ThroughputProperties.CreateManualThroughput(throughput);
@@ -441,7 +590,7 @@ namespace Microsoft.Azure.Cosmos
                         databaseProperties: databaseProperties,
                         throughputProperties: throughputProperties,
                         requestOptions: requestOptions,
-                        diagnosticsContext: diagnostics,
+                        trace: trace,
                         cancellationToken: cancellationToken);
                 });
         }
@@ -478,14 +627,14 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateDatabaseAsync),
                 requestOptions,
-                (diagnostics) =>
+                (trace) =>
                 {
                     DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
                     return this.CreateDatabaseInternalAsync(
-                        diagnosticsContext: diagnostics,
                         databaseProperties: databaseProperties,
                         throughputProperties: throughputProperties,
                         requestOptions: requestOptions,
+                        trace: trace,
                         cancellationToken: cancellationToken);
                 });
         }
@@ -533,16 +682,18 @@ namespace Microsoft.Azure.Cosmos
                 : this.ClientContext.OperationHelperAsync(
                 nameof(CreateDatabaseIfNotExistsAsync),
                 requestOptions,
-                async (diagnostics) =>
+                async (trace) =>
             {
+                double totalRequestCharge = 0;
                 // Doing a Read before Create will give us better latency for existing databases
                 DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
                 DatabaseCore database = (DatabaseCore)this.GetDatabase(id);
                 using (ResponseMessage readResponse = await database.ReadStreamAsync(
-                    diagnosticsContext: diagnostics,
                     requestOptions: requestOptions,
+                    trace: trace,
                     cancellationToken: cancellationToken))
                 {
+                    totalRequestCharge = readResponse.Headers.RequestCharge;
                     if (readResponse.StatusCode != HttpStatusCode.NotFound)
                     {
                         return this.ClientContext.ResponseFactory.CreateDatabaseResponse(database, readResponse);
@@ -550,12 +701,15 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 using (ResponseMessage createResponse = await this.CreateDatabaseStreamInternalAsync(
-                    diagnostics,
                     databaseProperties,
                     throughputProperties,
                     requestOptions,
+                    trace,
                     cancellationToken))
                 {
+                    totalRequestCharge += createResponse.Headers.RequestCharge;
+                    createResponse.Headers.RequestCharge = totalRequestCharge;
+
                     if (createResponse.StatusCode != HttpStatusCode.Conflict)
                     {
                         return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), createResponse);
@@ -564,12 +718,16 @@ namespace Microsoft.Azure.Cosmos
 
                 // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
                 // so for the remaining ones we should do a Read instead of throwing Conflict exception
-                ResponseMessage readResponseAfterConflict = await database.ReadStreamAsync(
-                    diagnosticsContext: diagnostics,
+                using (ResponseMessage readResponseAfterConflict = await database.ReadStreamAsync(
                     requestOptions: requestOptions,
-                    cancellationToken: cancellationToken);
+                    trace: trace,
+                    cancellationToken: cancellationToken))
+                {
+                    totalRequestCharge += readResponseAfterConflict.Headers.RequestCharge;
+                    readResponseAfterConflict.Headers.RequestCharge = totalRequestCharge;
 
-                return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), readResponseAfterConflict);
+                    return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), readResponseAfterConflict);
+                }
             });
         }
 
@@ -664,7 +822,8 @@ namespace Microsoft.Azure.Cosmos
                this.GetDatabaseQueryIteratorHelper<T>(
                    queryDefinition,
                    continuationToken,
-                   requestOptions));
+                   requestOptions),
+               this.ClientContext);
         }
 
         /// <summary>
@@ -716,7 +875,8 @@ namespace Microsoft.Azure.Cosmos
                 this.GetDatabaseQueryStreamIteratorHelper(
                     queryDefinition,
                     continuationToken,
-                    requestOptions));
+                    requestOptions),
+                this.ClientContext);
         }
 
         /// <summary>
@@ -768,7 +928,8 @@ namespace Microsoft.Azure.Cosmos
                 this.GetDatabaseQueryIteratorHelper<T>(
                     queryDefinition,
                     continuationToken,
-                    requestOptions));
+                    requestOptions),
+                this.ClientContext);
         }
 
         /// <summary>
@@ -824,7 +985,8 @@ namespace Microsoft.Azure.Cosmos
                 this.GetDatabaseQueryStreamIterator(
                     queryDefinition,
                     continuationToken,
-                    requestOptions));
+                    requestOptions),
+                this.ClientContext);
         }
 
         /// <summary>
@@ -859,14 +1021,14 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                  nameof(CreateDatabaseStreamAsync),
                  requestOptions,
-                 (diagnostics) =>
+                 (trace) =>
                  {
                      this.ClientContext.ValidateResource(databaseProperties.Id);
                      return this.CreateDatabaseStreamInternalAsync(
-                         diagnostics,
                          databaseProperties,
                          ThroughputProperties.CreateManualThroughput(throughput),
                          requestOptions,
+                         trace,
                          cancellationToken);
                  });
         }
@@ -928,23 +1090,23 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateDatabaseIfNotExistsAsync),
                 requestOptions,
-                (diagnostics) =>
+                (trace) =>
                 {
                     this.ClientContext.ValidateResource(databaseProperties.Id);
                     return this.CreateDatabaseStreamInternalAsync(
-                        diagnostics,
                         databaseProperties,
                         throughputProperties,
                         requestOptions,
+                        trace,
                         cancellationToken);
                 });
         }
 
         private async Task<DatabaseResponse> CreateDatabaseInternalAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             DatabaseProperties databaseProperties,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             ResponseMessage response = await this.ClientContext.ProcessResourceOperationStreamAsync(
@@ -953,20 +1115,20 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
                 cosmosContainerCore: null,
-                partitionKey: null,
+                feedRange: null,
                 streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
                 requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputPropertiesHeader(throughputProperties),
-                diagnosticsContext: diagnosticsContext,
+                trace,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), response);
         }
 
         private Task<ResponseMessage> CreateDatabaseStreamInternalAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             DatabaseProperties databaseProperties,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             return this.ClientContext.ProcessResourceOperationAsync(
@@ -975,11 +1137,11 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
                 containerInternal: null,
-                partitionKey: null,
+                feedRange: null,
                 streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
                 requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputPropertiesHeader(throughputProperties),
                 responseCreator: (response) => response,
-                diagnosticsContext: diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -1017,6 +1179,62 @@ namespace Microsoft.Azure.Cosmos
                options: requestOptions);
         }
 
+        private Task InitializeContainersAsync(IReadOnlyList<(string databaseId, string containerId)> containers,
+                                          CancellationToken cancellationToken)
+        {
+            try
+            {
+                List<Task> tasks = new List<Task>();
+                foreach ((string databaseId, string containerId) in containers)
+                {
+                    tasks.Add(this.InitializeContainerAsync(databaseId, containerId, cancellationToken));
+                }
+
+                return Task.WhenAll(tasks);
+            }
+            catch
+            {
+                this.Dispose();
+                throw;
+            }
+        }
+
+        private int IncrementNumberOfClientsCreated()
+        {
+            return Interlocked.Increment(ref numberOfClientsCreated);
+        }
+
+        private async Task InitializeContainerAsync(string databaseId, string containerId, CancellationToken cancellationToken = default)
+        {
+            ContainerInternal container = (ContainerInternal)this.GetContainer(databaseId, containerId);
+            IReadOnlyList<FeedRange> feedRanges = await container.GetFeedRangesAsync(cancellationToken);
+            List<Task> tasks = new List<Task>();
+            foreach (FeedRange feedRange in feedRanges)
+            {
+                tasks.Add(CosmosClient.InitializeFeedRangeAsync(container, feedRange, cancellationToken));
+            }
+
+            await Task.WhenAll(tasks);
+        }
+
+        private static async Task InitializeFeedRangeAsync(ContainerInternal container, FeedRange feedRange, CancellationToken cancellationToken = default)
+        {
+            // Do a dummy querry for each Partition Key Range to warm up the caches and connections
+            string guidToCheck = Guid.NewGuid().ToString();
+            QueryDefinition queryDefinition = new QueryDefinition($"select * from c where c.id = '{guidToCheck}'");
+            using (FeedIterator feedIterator = container.GetItemQueryStreamIterator(feedRange,
+                                                                                    queryDefinition,
+                                                                                    continuationToken: null,
+                                                                                    requestOptions: new QueryRequestOptions() { }))
+            {
+                while (feedIterator.HasMoreResults)
+                {
+                    using ResponseMessage response = await feedIterator.ReadNextAsync(cancellationToken);
+                    response.EnsureSuccessStatusCode();
+                }
+            }
+        }
+
         /// <summary>
         /// Dispose of cosmos client
         /// </summary>
@@ -1033,20 +1251,15 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!this.isDisposed)
             {
+                this.DisposedDateTimeUtc = DateTime.UtcNow;
+
                 if (disposing)
                 {
                     this.ClientContext.Dispose();
+                    this.Telemetry?.Dispose();
                 }
 
                 this.isDisposed = true;
-            }
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (this.isDisposed)
-            {
-                throw new ObjectDisposedException($"Accessing {nameof(CosmosClient)} after it is disposed is invalid.");
             }
         }
     }

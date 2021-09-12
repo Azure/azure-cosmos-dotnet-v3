@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
@@ -40,10 +41,10 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private readonly Protocol protocol;
         private readonly string protocolFilter;
-        private readonly IAuthorizationTokenProvider tokenProvider;
+        private readonly ICosmosAuthorizationTokenProvider tokenProvider;
         private readonly bool enableTcpConnectionEndpointRediscovery;
 
-        private CosmosHttpClient httpClient;
+        private readonly CosmosHttpClient httpClient;
 
         private Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterPartitionAddressCache;
         private DateTime suboptimalMasterPartitionTimestamp;
@@ -51,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         public GatewayAddressCache(
             Uri serviceEndpoint,
             Protocol protocol,
-            IAuthorizationTokenProvider tokenProvider,
+            ICosmosAuthorizationTokenProvider tokenProvider,
             IServiceConfigurationReader serviceConfigReader,
             CosmosHttpClient httpClient,
             long suboptimalPartitionForceRefreshIntervalInSeconds = 600,
@@ -95,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             IReadOnlyList<PartitionKeyRangeIdentity> partitionKeyRangeIdentities,
             CancellationToken cancellationToken)
         {
-            List<Task<FeedResource<Address>>> tasks = new List<Task<FeedResource<Address>>>();
+            List<Task<DocumentServiceResponse>> tasks = new List<Task<DocumentServiceResponse>>();
             int batchSize = GatewayAddressCache.DefaultBatchSize;
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
@@ -132,18 +133,25 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
 
-            foreach (FeedResource<Address> response in await Task.WhenAll(tasks))
+            foreach (DocumentServiceResponse response in await Task.WhenAll(tasks))
             {
-                IEnumerable<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> addressInfos =
-                    response.Where(addressInfo => ProtocolFromString(addressInfo.Protocol) == this.protocol)
-                        .GroupBy(address => address.PartitionKeyRangeId, StringComparer.Ordinal)
-                        .Select(group => this.ToPartitionAddressAndRange(collection.ResourceId, @group.ToList()));
-
-                foreach (Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> addressInfo in addressInfos)
+                using (response)
                 {
-                    this.serverPartitionAddressCache.Set(
-                        new PartitionKeyRangeIdentity(collection.ResourceId, addressInfo.Item1.PartitionKeyRangeId),
-                        addressInfo.Item2);
+                    FeedResource<Address> addressFeed = response.GetResource<FeedResource<Address>>();
+
+                    bool inNetworkRequest = this.IsInNetworkRequest(response);
+
+                    IEnumerable<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> addressInfos =
+                        addressFeed.Where(addressInfo => ProtocolFromString(addressInfo.Protocol) == this.protocol)
+                            .GroupBy(address => address.PartitionKeyRangeId, StringComparer.Ordinal)
+                            .Select(group => this.ToPartitionAddressAndRange(collection.ResourceId, @group.ToList(), inNetworkRequest));
+
+                    foreach (Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> addressInfo in addressInfos)
+                    {
+                        this.serverPartitionAddressCache.Set(
+                            new PartitionKeyRangeIdentity(collection.ResourceId, addressInfo.Item1.PartitionKeyRangeId),
+                            addressInfo.Item2);
+                    }
                 }
             }
         }
@@ -321,17 +329,22 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 try
                 {
-                    FeedResource<Address> masterAddresses = await this.GetMasterAddressesViaGatewayAsync(
+                    using (DocumentServiceResponse response = await this.GetMasterAddressesViaGatewayAsync(
                         request,
                         ResourceType.Database,
                         null,
                         entryUrl,
                         forceRefresh,
-                        false);
+                        false))
+                    {
+                        FeedResource<Address> masterAddresses = response.GetResource<FeedResource<Address>>();
 
-                    masterAddressAndRange = this.ToPartitionAddressAndRange(string.Empty, masterAddresses.ToList());
-                    this.masterPartitionAddressCache = masterAddressAndRange;
-                    this.suboptimalMasterPartitionTimestamp = DateTime.MaxValue;
+                        bool inNetworkRequest = this.IsInNetworkRequest(response);
+
+                        masterAddressAndRange = this.ToPartitionAddressAndRange(string.Empty, masterAddresses.ToList(), inNetworkRequest);
+                        this.masterPartitionAddressCache = masterAddressAndRange;
+                        this.suboptimalMasterPartitionTimestamp = DateTime.MaxValue;
+                    }
                 }
                 catch (Exception)
                 {
@@ -354,33 +367,38 @@ namespace Microsoft.Azure.Cosmos.Routing
             string partitionKeyRangeId,
             bool forceRefresh)
         {
-            FeedResource<Address> response =
-                await this.GetServerAddressesViaGatewayAsync(request, collectionRid, new[] { partitionKeyRangeId }, forceRefresh);
-
-            IEnumerable<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> addressInfos =
-                response.Where(addressInfo => ProtocolFromString(addressInfo.Protocol) == this.protocol)
-                    .GroupBy(address => address.PartitionKeyRangeId, StringComparer.Ordinal)
-                    .Select(group => this.ToPartitionAddressAndRange(collectionRid, @group.ToList()));
-
-            Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> result =
-                addressInfos.SingleOrDefault(
-                    addressInfo => StringComparer.Ordinal.Equals(addressInfo.Item1.PartitionKeyRangeId, partitionKeyRangeId));
-
-            if (result == null)
+            using (DocumentServiceResponse response =
+                await this.GetServerAddressesViaGatewayAsync(request, collectionRid, new[] { partitionKeyRangeId }, forceRefresh))
             {
-                string errorMessage = string.Format(
-                    CultureInfo.InvariantCulture,
-                    RMResources.PartitionKeyRangeNotFound,
-                    partitionKeyRangeId,
-                    collectionRid);
+                FeedResource<Address> addressFeed = response.GetResource<FeedResource<Address>>();
 
-                throw new PartitionKeyRangeGoneException(errorMessage) { ResourceAddress = collectionRid };
+                bool inNetworkRequest = this.IsInNetworkRequest(response);
+
+                IEnumerable<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> addressInfos =
+                    addressFeed.Where(addressInfo => ProtocolFromString(addressInfo.Protocol) == this.protocol)
+                        .GroupBy(address => address.PartitionKeyRangeId, StringComparer.Ordinal)
+                        .Select(group => this.ToPartitionAddressAndRange(collectionRid, @group.ToList(), inNetworkRequest));
+
+                Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> result =
+                    addressInfos.SingleOrDefault(
+                        addressInfo => StringComparer.Ordinal.Equals(addressInfo.Item1.PartitionKeyRangeId, partitionKeyRangeId));
+
+                if (result == null)
+                {
+                    string errorMessage = string.Format(
+                        CultureInfo.InvariantCulture,
+                        RMResources.PartitionKeyRangeNotFound,
+                        partitionKeyRangeId,
+                        collectionRid);
+
+                    throw new PartitionKeyRangeGoneException(errorMessage) { ResourceAddress = collectionRid };
+                }
+
+                return result.Item2;
             }
-
-            return result.Item2;
         }
 
-        private async Task<FeedResource<Address>> GetMasterAddressesViaGatewayAsync(
+        private async Task<DocumentServiceResponse> GetMasterAddressesViaGatewayAsync(
             DocumentServiceRequest request,
             ResourceType resourceType,
             string resourceAddress,
@@ -388,10 +406,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             bool forceRefresh,
             bool useMasterCollectionResolver)
         {
-            INameValueCollection addressQuery = new DictionaryNameValueCollection(StringComparer.Ordinal);
-            addressQuery.Add(HttpConstants.QueryStrings.Url, HttpUtility.UrlEncode(entryUrl));
+            INameValueCollection addressQuery = new StoreRequestNameValueCollection
+            {
+                { HttpConstants.QueryStrings.Url, HttpUtility.UrlEncode(entryUrl) }
+            };
 
-            INameValueCollection headers = new DictionaryNameValueCollection(StringComparer.Ordinal);
+            INameValueCollection headers = new StoreRequestNameValueCollection();
             if (forceRefresh)
             {
                 headers.Set(HttpConstants.HttpHeaders.ForceRefresh, bool.TrueString);
@@ -412,35 +432,37 @@ namespace Microsoft.Azure.Cosmos.Routing
             string resourceTypeToSign = PathsHelper.GetResourcePath(resourceType);
 
             headers.Set(HttpConstants.HttpHeaders.XDate, DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture));
-            (string token, string _) = await this.tokenProvider.GetUserAuthorizationAsync(
-                resourceAddress,
-                resourceTypeToSign,
-                HttpConstants.HttpMethods.Get,
-                headers,
-                AuthorizationTokenType.PrimaryMasterKey);
-
-            headers.Set(HttpConstants.HttpHeaders.Authorization, token);
-
-            Uri targetEndpoint = UrlUtility.SetQuery(this.addressEndpoint, UrlUtility.CreateQuery(addressQuery));
-
-            string identifier = GatewayAddressCache.LogAddressResolutionStart(request, targetEndpoint);
-            using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
-                uri: targetEndpoint,
-                additionalHeaders: headers,
-                resourceType: resourceType,
-                diagnosticsContext: null,
-                cancellationToken: default))
+            using (ITrace trace = Trace.GetRootTrace(nameof(GetMasterAddressesViaGatewayAsync), TraceComponent.Authorization, TraceLevel.Info))
             {
-                using (DocumentServiceResponse documentServiceResponse =
-                        await ClientExtensions.ParseResponseAsync(httpResponseMessage))
+                string token = await this.tokenProvider.GetUserAuthorizationTokenAsync(
+                    resourceAddress,
+                    resourceTypeToSign,
+                    HttpConstants.HttpMethods.Get,
+                    headers,
+                    AuthorizationTokenType.PrimaryMasterKey,
+                    trace);
+
+                headers.Set(HttpConstants.HttpHeaders.Authorization, token);
+
+                Uri targetEndpoint = UrlUtility.SetQuery(this.addressEndpoint, UrlUtility.CreateQuery(addressQuery));
+
+                string identifier = GatewayAddressCache.LogAddressResolutionStart(request, targetEndpoint);
+                using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
+                    uri: targetEndpoint,
+                    additionalHeaders: headers,
+                    resourceType: resourceType,
+                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
+                    clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
+                    cancellationToken: default))
                 {
+                    DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
                     GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
-                    return documentServiceResponse.GetResource<FeedResource<Address>>();
+                    return documentServiceResponse;
                 }
             }
         }
 
-        private async Task<FeedResource<Address>> GetServerAddressesViaGatewayAsync(
+        private async Task<DocumentServiceResponse> GetServerAddressesViaGatewayAsync(
             DocumentServiceRequest request,
             string collectionRid,
             IEnumerable<string> partitionKeyRangeIds,
@@ -448,10 +470,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             string entryUrl = PathsHelper.GeneratePath(ResourceType.Document, collectionRid, true);
 
-            INameValueCollection addressQuery = new DictionaryNameValueCollection();
-            addressQuery.Add(HttpConstants.QueryStrings.Url, HttpUtility.UrlEncode(entryUrl));
+            INameValueCollection addressQuery = new StoreRequestNameValueCollection
+            {
+                { HttpConstants.QueryStrings.Url, HttpUtility.UrlEncode(entryUrl) }
+            };
 
-            INameValueCollection headers = new DictionaryNameValueCollection();
+            INameValueCollection headers = new StoreRequestNameValueCollection();
             if (forceRefresh)
             {
                 headers.Set(HttpConstants.HttpHeaders.ForceRefresh, bool.TrueString);
@@ -469,54 +493,57 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             headers.Set(HttpConstants.HttpHeaders.XDate, DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture));
             string token = null;
-            try
-            {
-                token = (await this.tokenProvider.GetUserAuthorizationAsync(
-                    collectionRid,
-                    resourceTypeToSign,
-                    HttpConstants.HttpMethods.Get,
-                    headers,
-                    AuthorizationTokenType.PrimaryMasterKey)).token;
-            }
-            catch (UnauthorizedException)
-            {
-            }
 
-            if (token == null && request != null && request.IsNameBased)
+            using (ITrace trace = Trace.GetRootTrace(nameof(GetMasterAddressesViaGatewayAsync), TraceComponent.Authorization, TraceLevel.Info))
             {
-                // User doesn't have rid based resource token. Maybe he has name based.
-                string collectionAltLink = PathsHelper.GetCollectionPath(request.ResourceAddress);
-                token = (await this.tokenProvider.GetUserAuthorizationAsync(
-                        collectionAltLink,
+                try
+                {
+                    token = await this.tokenProvider.GetUserAuthorizationTokenAsync(
+                        collectionRid,
                         resourceTypeToSign,
                         HttpConstants.HttpMethods.Get,
                         headers,
-                        AuthorizationTokenType.PrimaryMasterKey)).token;
-            }
-
-            headers.Set(HttpConstants.HttpHeaders.Authorization, token);
-
-            Uri targetEndpoint = UrlUtility.SetQuery(this.addressEndpoint, UrlUtility.CreateQuery(addressQuery));
-
-            string identifier = GatewayAddressCache.LogAddressResolutionStart(request, targetEndpoint);
-            using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
-                uri: targetEndpoint,
-                additionalHeaders: headers,
-                resourceType: ResourceType.Document,
-                diagnosticsContext: null,
-                cancellationToken: default))
-            {
-                using (DocumentServiceResponse documentServiceResponse =
-                        await ClientExtensions.ParseResponseAsync(httpResponseMessage))
+                        AuthorizationTokenType.PrimaryMasterKey,
+                        trace);
+                }
+                catch (UnauthorizedException)
                 {
-                    GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                }
 
-                    return documentServiceResponse.GetResource<FeedResource<Address>>();
+                if (token == null && request != null && request.IsNameBased)
+                {
+                    // User doesn't have rid based resource token. Maybe he has name based.
+                    string collectionAltLink = PathsHelper.GetCollectionPath(request.ResourceAddress);
+                    token = await this.tokenProvider.GetUserAuthorizationTokenAsync(
+                            collectionAltLink,
+                            resourceTypeToSign,
+                            HttpConstants.HttpMethods.Get,
+                            headers,
+                            AuthorizationTokenType.PrimaryMasterKey,
+                            trace);
+                }
+
+                headers.Set(HttpConstants.HttpHeaders.Authorization, token);
+
+                Uri targetEndpoint = UrlUtility.SetQuery(this.addressEndpoint, UrlUtility.CreateQuery(addressQuery));
+
+                string identifier = GatewayAddressCache.LogAddressResolutionStart(request, targetEndpoint);
+                using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
+                    uri: targetEndpoint,
+                    additionalHeaders: headers,
+                    resourceType: ResourceType.Document,
+                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
+                    clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
+                    cancellationToken: default))
+                {
+                    DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
+                    GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                    return documentServiceResponse;
                 }
             }
         }
 
-        internal Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> ToPartitionAddressAndRange(string collectionRid, IList<Address> addresses)
+        internal Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> ToPartitionAddressAndRange(string collectionRid, IList<Address> addresses, bool inNetworkRequest)
         {
             Address address = addresses.First();
 
@@ -554,7 +581,19 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             return Tuple.Create(
                 partitionKeyRangeIdentity,
-                new PartitionAddressInformation(addressInfos));
+                new PartitionAddressInformation(addressInfos, inNetworkRequest));
+        }
+
+        private bool IsInNetworkRequest(DocumentServiceResponse documentServiceResponse)
+        {
+            bool inNetworkRequest = false;
+            string inNetworkHeader = documentServiceResponse.ResponseHeaders.Get(HttpConstants.HttpHeaders.LocalRegionRequest);
+            if (!string.IsNullOrEmpty(inNetworkHeader))
+            {
+                bool.TryParse(inNetworkHeader, out inNetworkRequest);
+            }
+
+            return inNetworkRequest;
         }
 
         private static string LogAddressResolutionStart(DocumentServiceRequest request, Uri targetEndpoint)
@@ -578,32 +617,22 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private static Protocol ProtocolFromString(string protocol)
         {
-            switch (protocol.ToLowerInvariant())
+            return (protocol.ToLowerInvariant()) switch
             {
-                case RuntimeConstants.Protocols.HTTPS:
-                    return Protocol.Https;
-
-                case RuntimeConstants.Protocols.RNTBD:
-                    return Protocol.Tcp;
-
-                default:
-                    throw new ArgumentOutOfRangeException("protocol");
-            }
+                RuntimeConstants.Protocols.HTTPS => Protocol.Https,
+                RuntimeConstants.Protocols.RNTBD => Protocol.Tcp,
+                _ => throw new ArgumentOutOfRangeException("protocol"),
+            };
         }
 
         private static string ProtocolString(Protocol protocol)
         {
-            switch ((int)protocol)
+            return ((int)protocol) switch
             {
-                case (int)Protocol.Https:
-                    return RuntimeConstants.Protocols.HTTPS;
-
-                case (int)Protocol.Tcp:
-                    return RuntimeConstants.Protocols.RNTBD;
-
-                default:
-                    throw new ArgumentOutOfRangeException("protocol");
-            }
+                (int)Protocol.Https => RuntimeConstants.Protocols.HTTPS,
+                (int)Protocol.Tcp => RuntimeConstants.Protocols.RNTBD,
+                _ => throw new ArgumentOutOfRangeException("protocol"),
+            };
         }
     }
 }

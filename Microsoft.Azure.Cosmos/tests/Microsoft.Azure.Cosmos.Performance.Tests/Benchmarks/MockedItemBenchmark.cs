@@ -14,6 +14,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         Stream = 0,
         OfT = 1,
         OfTCustom = 2,
+        OfTWithDiagnosticsToString = 3,
+        OfTWithClientTelemetryEnabled = 4
     }
 
     [Config(typeof(SdkBenchmarkConfiguration))]
@@ -23,70 +25,95 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 new MockedItemStreamBenchmark(),
                 new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper() },
-                new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper(useCustomSerializer: true) },
+                new MockedItemOfTBenchmark() { 
+                    BenchmarkHelper = new MockedItemBenchmarkHelper(
+                        useCustomSerializer: true) },
+                new MockedItemOfTBenchmark() { 
+                    BenchmarkHelper = new MockedItemBenchmarkHelper(
+                        useCustomSerializer: false, 
+                        includeDiagnosticsToString: true) },
+                new MockedItemOfTBenchmark() { 
+                    BenchmarkHelper = new MockedItemBenchmarkHelper(
+                        useCustomSerializer: false, 
+                        includeDiagnosticsToString: false,
+                        isClientTelemetryEnabled: true) }
             };
 
-        [Params(ScenarioType.Stream, ScenarioType.OfT, ScenarioType.OfTCustom)]
+        [Params(
+            ScenarioType.Stream, 
+            ScenarioType.OfT, 
+            ScenarioType.OfTWithDiagnosticsToString, 
+            ScenarioType.OfTCustom,
+            ScenarioType.OfTWithClientTelemetryEnabled)]
         public ScenarioType Type
         {
             get;
             set;
         }
 
-        private IItemBenchmark CurrentBenchmark
-        {
-            get
-            {
-                return MockedItemBenchmark.IterParameters[(int)this.Type];
-            }
-        }
+        private IItemBenchmark CurrentBenchmark => MockedItemBenchmark.IterParameters[(int)this.Type];
 
         [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
         public async Task CreateItem()
         {
             await this.CurrentBenchmark.CreateItem();
         }
 
         [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
         public async Task DeleteItemExists()
         {
             await this.CurrentBenchmark.DeleteItemExists();
         }
 
         [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
         public async Task DeleteItemNotExists()
         {
             await this.CurrentBenchmark.DeleteItemNotExists();
         }
 
         [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
         public async Task ReadFeed()
         {
             await this.CurrentBenchmark.ReadFeed();
         }
 
         [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
         public async Task ReadItemExists()
         {
             await this.CurrentBenchmark.ReadItemExists();
         }
 
         [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
         public async Task ReadItemNotExists()
         {
             await this.CurrentBenchmark.ReadItemNotExists();
         }
 
         [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
         public async Task UpdateItem()
         {
             await this.CurrentBenchmark.UpdateItem();
         }
 
         [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
         public async Task UpsertItem()
         {
             await this.CurrentBenchmark.UpsertItem();
+        }
+
+        [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
+        public async Task QuerySinglePage()
+        {
+            await this.CurrentBenchmark.QuerySinglePage();
         }
     }
 }

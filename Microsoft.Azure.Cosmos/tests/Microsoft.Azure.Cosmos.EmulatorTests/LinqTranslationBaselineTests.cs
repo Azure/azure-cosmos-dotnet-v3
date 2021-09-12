@@ -586,6 +586,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("Contains w/ string", b => getQuery(b).Select(doc => doc.StringField.Contains("str"))),
                 new LinqTestInput("Contains w/ char", b => getQuery(b).Select(doc => doc.StringField.Contains('c'))),
                 new LinqTestInput("Contains in string constant", b => getQuery(b).Select(doc => "str".Contains(doc.StringField))),
+                // Contains (case-sensitive)
+                new LinqTestInput("Contains w/ string (case-sensitive)", b => getQuery(b).Select(doc => doc.StringField.Contains("Str", StringComparison.Ordinal))),
+                new LinqTestInput("Contains in string constant (case-sensitive)", b => getQuery(b).Select(doc => "sTr".Contains(doc.StringField, StringComparison.Ordinal))),
                 // Contains (case-insensitive)
                 new LinqTestInput("Contains w/ string (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.Contains("Str", StringComparison.OrdinalIgnoreCase))),
                 new LinqTestInput("Contains in string constant (case-insensitive)", b => getQuery(b).Select(doc => "sTr".Contains(doc.StringField, StringComparison.OrdinalIgnoreCase))),
@@ -605,6 +608,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 // EndsWith
                 new LinqTestInput("EndsWith", b => getQuery(b).Select(doc => doc.StringField.EndsWith("str"))),
                 new LinqTestInput("Constant string EndsWith", b => getQuery(b).Select(doc => "str".EndsWith(doc.StringField))),
+                // EndsWith (case-sensitive)
+                new LinqTestInput("EndsWith (case-sensitive)", b => getQuery(b).Select(doc => doc.StringField.EndsWith("stR", StringComparison.Ordinal))),
+                new LinqTestInput("Constant string EndsWith (case-sensitive)", b => getQuery(b).Select(doc => "STR".EndsWith(doc.StringField, StringComparison.Ordinal))),
                 // EndsWith (case-insensitive)
                 new LinqTestInput("EndsWith (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.EndsWith("stR", StringComparison.OrdinalIgnoreCase))),
                 new LinqTestInput("Constant string EndsWith (case-insensitive)", b => getQuery(b).Select(doc => "STR".EndsWith(doc.StringField, StringComparison.OrdinalIgnoreCase))),
@@ -627,6 +633,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 //StartsWith
                 new LinqTestInput("StartsWith", b => getQuery(b).Select(doc => doc.StringField.StartsWith("str"))),
                 new LinqTestInput("String constant StartsWith", b => getQuery(b).Select(doc => "str".StartsWith(doc.StringField))),
+                //StartsWith (case-sensitive)
+                new LinqTestInput("StartsWith (case-sensitive)", b => getQuery(b).Select(doc => doc.StringField.StartsWith("Str", StringComparison.Ordinal))),
+                new LinqTestInput("String constant StartsWith (case-sensitive)", b => getQuery(b).Select(doc => "sTr".StartsWith(doc.StringField, StringComparison.Ordinal))),
                 //StartsWith (case-insensitive)
                 new LinqTestInput("StartsWith (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.StartsWith("Str", StringComparison.OrdinalIgnoreCase))),
                 new LinqTestInput("String constant StartsWith (case-insensitive)", b => getQuery(b).Select(doc => "sTr".StartsWith(doc.StringField, StringComparison.OrdinalIgnoreCase))),
@@ -754,6 +763,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             {
                 // Equals
                 new LinqTestInput("Equals", b => getQuery(b).Select(doc => doc.StringField.Equals("str"))),
+                // Equals (case-sensitive)
+                new LinqTestInput("Equals (case-sensitive)", b => getQuery(b).Select(doc => doc.StringField.Equals("STR", StringComparison.Ordinal))),
                 // Equals (case-insensitive)
                 new LinqTestInput("Equals (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.Equals("STR", StringComparison.OrdinalIgnoreCase))),
                 // ToString
@@ -874,7 +885,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [TestCategory("Ignore")]
         public void TestUDFs()
         {
             // The UDFs invokation are not supported on the client side.
@@ -885,26 +895,26 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
-                new LinqTestInput("No param", b => getQuery(b).Select(f => UserDefinedFunctionProvider.Invoke("NoParameterUDF"))),
-                new LinqTestInput("Single param", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("SingleParameterUDF", doc.NumericField))),
-                new LinqTestInput("Single param w/ array", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("SingleParameterUDFWithArray", doc.ArrayField))),
-                new LinqTestInput("Multi param", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("MultiParamterUDF", doc.NumericField, doc.StringField, doc.Point))),
-                new LinqTestInput("Multi param w/ array", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("MultiParamterUDWithArrayF", doc.ArrayField, doc.NumericField, doc.Point))),
-                new LinqTestInput("ArrayCount", b => getQuery(b).Where(doc => (int)UserDefinedFunctionProvider.Invoke("ArrayCount", doc.ArrayField) > 2)),
-                new LinqTestInput("ArrayCount && SomeBooleanUDF", b => getQuery(b).Where(doc => (int)UserDefinedFunctionProvider.Invoke("ArrayCount", doc.ArrayField) > 2 && (bool)UserDefinedFunctionProvider.Invoke("SomeBooleanUDF"))),
-                new LinqTestInput("expression", b => getQuery(b).Where(doc => (int)UserDefinedFunctionProvider.Invoke("SingleParameterUDF", doc.NumericField) + 2 == 4)),
+                new LinqTestInput("No param", b => getQuery(b).Select(f => CosmosLinq.InvokeUserDefinedFunction("NoParameterUDF"))),
+                new LinqTestInput("Single param", b => getQuery(b).Select(doc => CosmosLinq.InvokeUserDefinedFunction("SingleParameterUDF", doc.NumericField))),
+                new LinqTestInput("Single param w/ array", b => getQuery(b).Select(doc => CosmosLinq.InvokeUserDefinedFunction("SingleParameterUDFWithArray", doc.ArrayField))),
+                new LinqTestInput("Multi param", b => getQuery(b).Select(doc => CosmosLinq.InvokeUserDefinedFunction("MultiParamterUDF", doc.NumericField, doc.StringField, doc.Point))),
+                new LinqTestInput("Multi param w/ array", b => getQuery(b).Select(doc => CosmosLinq.InvokeUserDefinedFunction("MultiParamterUDWithArrayF", doc.ArrayField, doc.NumericField, doc.Point))),
+                new LinqTestInput("ArrayCount", b => getQuery(b).Where(doc => (int)CosmosLinq.InvokeUserDefinedFunction("ArrayCount", doc.ArrayField) > 2)),
+                new LinqTestInput("ArrayCount && SomeBooleanUDF", b => getQuery(b).Where(doc => (int)CosmosLinq.InvokeUserDefinedFunction("ArrayCount", doc.ArrayField) > 2 && (bool)CosmosLinq.InvokeUserDefinedFunction("SomeBooleanUDF"))),
+                new LinqTestInput("expression", b => getQuery(b).Where(doc => (int)CosmosLinq.InvokeUserDefinedFunction("SingleParameterUDF", doc.NumericField) + 2 == 4)),
                 // UDF with constant parameters
-                new LinqTestInput("Single constant param", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("SingleParameterUDF", 1))),
-                new LinqTestInput("Single constant int array param", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("SingleParameterUDFWithArray", new int[] { 1, 2, 3 }))),
-                new LinqTestInput("Single constant string array param", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("SingleParameterUDFWithArray", new string[] { "1", "2" }))),
-                new LinqTestInput("Multi constant params", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("MultiParamterUDF", 1, "str", true))),
-                new LinqTestInput("Multi constant array params", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("MultiParamterUDWithArrayF", new int[] { 1, 2, 3 }, 1, "str"))),
-                new LinqTestInput("ArrayCount with constant param", b => getQuery(b).Where(doc => (int)UserDefinedFunctionProvider.Invoke("ArrayCount", new int[] { 1, 2, 3 }) > 2)),
+                new LinqTestInput("Single constant param", b => getQuery(b).Select(doc => CosmosLinq.InvokeUserDefinedFunction("SingleParameterUDF", 1))),
+                new LinqTestInput("Single constant int array param", b => getQuery(b).Select(doc => CosmosLinq.InvokeUserDefinedFunction("SingleParameterUDFWithArray", new int[] { 1, 2, 3 }))),
+                new LinqTestInput("Single constant string array param", b => getQuery(b).Select(doc => CosmosLinq.InvokeUserDefinedFunction("SingleParameterUDFWithArray", new string[] { "1", "2" }))),
+                new LinqTestInput("Multi constant params", b => getQuery(b).Select(doc => CosmosLinq.InvokeUserDefinedFunction("MultiParamterUDF", 1, "str", true))),
+                new LinqTestInput("Multi constant array params", b => getQuery(b).Select(doc => CosmosLinq.InvokeUserDefinedFunction("MultiParamterUDWithArrayF", new int[] { 1, 2, 3 }, 1, "str"))),
+                new LinqTestInput("ArrayCount with constant param", b => getQuery(b).Where(doc => (int)CosmosLinq.InvokeUserDefinedFunction("ArrayCount", new int[] { 1, 2, 3 }) > 2)),
                 // regression (different type parameters including objects)
-                new LinqTestInput("different type parameters including objects", b => getQuery(b).Where(doc => (bool)UserDefinedFunctionProvider.Invoke("MultiParamterUDF2", doc.Point, "str", 1))),
+                new LinqTestInput("different type parameters including objects", b => getQuery(b).Where(doc => (bool)CosmosLinq.InvokeUserDefinedFunction("MultiParamterUDF2", doc.Point, "str", 1))),
                 // errors
-                new LinqTestInput("Null udf name", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke(null))),
-                new LinqTestInput("Empty udf name", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("")))
+                new LinqTestInput("Null udf name", b => getQuery(b).Select(doc => CosmosLinq.InvokeUserDefinedFunction(null))),
+                new LinqTestInput("Empty udf name", b => getQuery(b).Select(doc => CosmosLinq.InvokeUserDefinedFunction("")))
             };
             this.ExecuteTestSuite(inputs);
         }

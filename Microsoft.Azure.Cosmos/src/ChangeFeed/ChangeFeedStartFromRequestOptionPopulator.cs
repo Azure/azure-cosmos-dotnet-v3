@@ -14,22 +14,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private static readonly DateTime StartFromBeginningTime = DateTime.MinValue.ToUniversalTime();
 
         private readonly RequestMessage requestMessage;
-        private readonly FeedRangeRequestMessagePopulatorVisitor feedRangeVisitor;
 
         public ChangeFeedStartFromRequestOptionPopulator(RequestMessage requestMessage)
         {
             this.requestMessage = requestMessage ?? throw new ArgumentNullException(nameof(requestMessage));
-            this.feedRangeVisitor = new FeedRangeRequestMessagePopulatorVisitor(requestMessage);
         }
 
         public override void Visit(ChangeFeedStartFromNow startFromNow)
         {
             this.requestMessage.Headers.IfNoneMatch = ChangeFeedStartFromRequestOptionPopulator.IfNoneMatchAllHeaderValue;
-
-            if (startFromNow.FeedRange != null)
-            {
-                startFromNow.FeedRange.Accept(this.feedRangeVisitor);
-            }
         }
 
         public override void Visit(ChangeFeedStartFromTime startFromTime)
@@ -45,8 +38,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     HttpConstants.HttpHeaders.IfModifiedSince,
                     startFromTime.StartTime.ToString("r", CultureInfo.InvariantCulture));
             }
-
-            startFromTime.FeedRange.Accept(this.feedRangeVisitor);
         }
 
         public override void Visit(ChangeFeedStartFromContinuation startFromContinuation)
@@ -58,9 +49,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public override void Visit(ChangeFeedStartFromBeginning startFromBeginning)
         {
             // We don't need to set any headers to start from the beginning
-
-            // Except for the feed range.
-            startFromBeginning.FeedRange.Accept(this.feedRangeVisitor);
         }
 
         public override void Visit(ChangeFeedStartFromContinuationAndFeedRange startFromContinuationAndFeedRange)
@@ -70,8 +58,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             {
                 this.requestMessage.Headers.IfNoneMatch = startFromContinuationAndFeedRange.Etag;
             }
-
-            startFromContinuationAndFeedRange.FeedRange.Accept(this.feedRangeVisitor);
         }
     }
 }

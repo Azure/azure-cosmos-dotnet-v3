@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal abstract class AbstractRetryHandler : RequestHandler
@@ -25,19 +26,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
             try
             {
                 return await RetryHandler.ExecuteHttpRequestAsync(
-                    callbackMethod: () =>
-                    {
-                        return base.SendAsync(request, cancellationToken);
-                    },
-                    callShouldRetry: (cosmosResponseMessage, token) =>
-                    {
-                        return retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
-                    },
-                    callShouldRetryException: (exception, token) =>
-                    {
-                        return retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken);
-                    },
-                    diagnosticsContext: request.DiagnosticsContext,
+                    callbackMethod: () => base.SendAsync(request, cancellationToken),
+                    callShouldRetry: (cosmosResponseMessage, token) => retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken),
+                    callShouldRetryException: (exception, token) => retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken),
                     cancellationToken: cancellationToken);
             }
             catch (DocumentClientException ex)
@@ -72,7 +63,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
            Func<Task<ResponseMessage>> callbackMethod,
            Func<ResponseMessage, CancellationToken, Task<ShouldRetryResult>> callShouldRetry,
            Func<Exception, CancellationToken, Task<ShouldRetryResult>> callShouldRetryException,
-           CosmosDiagnosticsContext diagnosticsContext,
            CancellationToken cancellationToken)
         {
             while (true)
@@ -89,7 +79,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     }
 
                     result = await callShouldRetry(cosmosResponseMessage, cancellationToken);
-
                     if (!result.ShouldRetry)
                     {
                         return cosmosResponseMessage;

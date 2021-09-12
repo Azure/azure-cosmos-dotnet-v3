@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
@@ -185,7 +186,8 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(storedProcedureExecuteResponse.Content)).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity());
 
             // Verify all the user types use the user specified version
-            cosmosResponseFactory.CreateItemResponse<ToDoActivity>(itemResponse);
+            ItemResponse<ToDoActivity> itemResponseFromFactory = cosmosResponseFactory.CreateItemResponse<ToDoActivity>(itemResponse);
+            Assert.IsNotNull(itemResponseFromFactory.Diagnostics);
             cosmosResponseFactory.CreateStoredProcedureExecuteResponse<ToDoActivity>(storedProcedureExecuteResponse);
 
             // Throw if the setups were not called
@@ -207,7 +209,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             ResponseMessage changeFeedResponseMessage = this.CreateChangeFeedNotModifiedResponse();
             FeedResponse<ToDoActivity> changeFeedResponse = cosmosResponseFactory.CreateItemFeedResponse<ToDoActivity>(changeFeedResponseMessage);
             Assert.AreEqual(HttpStatusCode.NotModified, changeFeedResponse.StatusCode);
-            Assert.IsFalse(changeFeedResponse.Resource.Any());
 
             ResponseMessage queryResponse = this.CreateReadFeedResponse();
             mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity[]>(It.IsAny<Stream>())).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity[] { new ToDoActivity() });
@@ -354,8 +355,8 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                     disallowContinuationTokenMessage: null,
                     resourceType: Documents.ResourceType.Document,
                     "+o4fAPfXPzw="),
-                new CosmosDiagnosticsContextCore(),
-                null);
+                null,
+                NoOpTrace.Singleton);
 
             return cosmosResponse;
         }

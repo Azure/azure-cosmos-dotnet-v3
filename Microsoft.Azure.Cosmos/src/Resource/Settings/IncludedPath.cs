@@ -33,6 +33,12 @@ namespace Microsoft.Azure.Cosmos
         /// The collection of the <see cref="Index"/> objects to be applied for this included path.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.Indexes)]
-        internal Collection<Index> Indexes { get; set; } = new Collection<Index>();
+        internal Collection<Cosmos.Index> Indexes { get; set; } = new Collection<Cosmos.Index>();
+
+        /// <summary>
+        /// Gets or sets whether this is a full index used for collection types.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.IsFullIndex, NullValueHandling = NullValueHandling.Ignore)]
+        internal bool? IsFullIndex { get; set; }
     }
 }

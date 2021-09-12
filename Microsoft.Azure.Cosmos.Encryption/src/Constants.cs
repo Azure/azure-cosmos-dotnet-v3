@@ -7,10 +7,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
     internal static class Constants
     {
         public const string DocumentsResourcePropertyName = "Documents";
-        public const string EncryptedData = "_ed";
-        public const string EncryptedInfo = "_ei";
-        public const string EncryptionAlgorithm = "_ea";
-        public const string EncryptionDekId = "_en";
-        public const string EncryptionFormatVersion = "_ef";
+        public const string SubStatusHeader = "x-ms-substatus";
+        public const string IncorrectContainerRidSubStatus = "1024";
+        public const int SupportedClientEncryptionPolicyFormatVersion = 1;
     }
 }

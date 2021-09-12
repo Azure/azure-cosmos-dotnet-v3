@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -25,14 +26,16 @@ namespace Microsoft.Azure.Cosmos
 
         public string PartitionKeyRangeId { get; }
 
-        public override async Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
+        internal override async Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
-            Documents.PartitionKeyDefinition partitionKeyDefinition)
+            Documents.PartitionKeyDefinition partitionKeyDefinition,
+            ITrace trace)
         {
             Documents.PartitionKeyRange pkRange = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(
                 collectionResourceId: containerRid,
                 partitionKeyRangeId: this.PartitionKeyRangeId,
+                trace: trace,
                 forceRefresh: false);
 
             if (pkRange == null)
@@ -41,6 +44,7 @@ namespace Microsoft.Azure.Cosmos
                 pkRange = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(
                     collectionResourceId: containerRid,
                     partitionKeyRangeId: this.PartitionKeyRangeId,
+                    trace: trace,
                     forceRefresh: true);
             }
 
@@ -48,48 +52,63 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw CosmosExceptionFactory.Create(
                     statusCode: HttpStatusCode.Gone,
-                    subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
                     message: $"The PartitionKeyRangeId: \"{this.PartitionKeyRangeId}\" is not valid for the current container {containerRid} .",
                     stackTrace: string.Empty,
-                    activityId: string.Empty,
-                    requestCharge: 0,
-                    retryAfter: null,
-                    headers: null,
-                    diagnosticsContext: null,
+                    headers: new Headers()
+                    {
+                        SubStatusCode = SubStatusCodes.PartitionKeyRangeGone,
+                    },
                     error: null,
-                    innerException: null);
+                    innerException: null,
+                    trace: NoOpTrace.Singleton);
             }
 
             return new List<Documents.Routing.Range<string>> { pkRange.ToRange() };
         }
 
-        public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+        internal override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            ITrace trace)
         {
             IEnumerable<string> partitionKeyRanges = new List<string>() { this.PartitionKeyRangeId };
             return Task.FromResult(partitionKeyRanges);
         }
 
-        public override void Accept(IFeedRangeVisitor visitor)
+        internal override void Accept(IFeedRangeVisitor visitor)
         {
             visitor.Visit(this);
         }
 
-        public override Task<TResult> AcceptAsync<TResult>(
+        internal override void Accept<TInput>(IFeedRangeVisitor<TInput> visitor, TInput input)
+        {
+            visitor.Visit(this, input);
+        }
+
+        internal override TOutput Accept<TInput, TOutput>(IFeedRangeVisitor<TInput, TOutput> visitor, TInput input)
+        {
+            return visitor.Visit(this, input);
+        }
+
+        internal override Task<TResult> AcceptAsync<TResult>(
             IFeedRangeAsyncVisitor<TResult> visitor,
             CancellationToken cancellationToken = default)
         {
             return visitor.VisitAsync(this, cancellationToken);
         }
 
-        public override Task<TResult> AcceptAsync<TResult, TArg>(
+        internal override Task<TResult> AcceptAsync<TResult, TArg>(
            IFeedRangeAsyncVisitor<TResult, TArg> visitor,
            TArg argument,
            CancellationToken cancellationToken) => visitor.VisitAsync(this, argument, cancellationToken);
 
         public override string ToString() => this.PartitionKeyRangeId;
+
+        internal override TResult Accept<TResult>(IFeedRangeTransformer<TResult> transformer)
+        {
+            return transformer.Visit(this);
+        }
     }
 }

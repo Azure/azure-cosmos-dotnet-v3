@@ -15,6 +15,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -91,20 +92,22 @@
         {
             string partitionKey = testArg;
             IDictionary<string, string> idToRangeMinKeyMap = new Dictionary<string, string>();
-            IRoutingMapProvider routingMapProvider = await this.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            IRoutingMapProvider routingMapProvider = await this.Client.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
 
             ContainerProperties containerSettings = await container.ReadContainerAsync();
             foreach (CosmosObject document in documents)
             {
-                IReadOnlyList<PartitionKeyRange> targetRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
-                containerSettings.ResourceId,
-                Range<string>.GetPointRange(
-                    PartitionKeyInternal.FromObjectArray(
-                        new object[]
-                        {
-                            Number64.ToLong((document[partitionKey] as CosmosNumber).Value)
-                        },
-                        true).GetEffectivePartitionKeyString(containerSettings.PartitionKey)));
+                IReadOnlyList<PartitionKeyRange> targetRanges = await routingMapProvider
+                    .TryGetOverlappingRangesAsync(
+                        containerSettings.ResourceId,
+                        Range<string>.GetPointRange(
+                            PartitionKeyInternal.FromObjectArray(
+                                new object[]
+                                {
+                                    Number64.ToLong((document[partitionKey] as CosmosNumber).Value)
+                                },
+                                strict: true).GetEffectivePartitionKeyString(containerSettings.PartitionKey)),
+                        NoOpTrace.Singleton);
                 Debug.Assert(targetRanges.Count == 1);
                 idToRangeMinKeyMap.Add(((CosmosString)document["id"]).Value, targetRanges[0].MinInclusive);
             }
@@ -267,7 +270,7 @@
 
                                     double time = (DateTime.Now - startTime).TotalMilliseconds;
 
-                                    Trace.TraceInformation("<Query>: {0}, <Document Count>: {1}, <MaxItemCount>: {2}, <MaxDegreeOfParallelism>: {3}, <MaxBufferedItemCount>: {4}, <Time>: {5} ms",
+                                    System.Diagnostics.Trace.TraceInformation("<Query>: {0}, <Document Count>: {1}, <MaxItemCount>: {2}, <MaxDegreeOfParallelism>: {3}, <MaxBufferedItemCount>: {4}, <Time>: {5} ms",
                                         JsonConvert.SerializeObject(querySpec),
                                         actualDocuments.Count(),
                                         maxItemCount,
@@ -278,10 +281,10 @@
                                     string allDocs = JsonConvert.SerializeObject(documents);
 
                                     string expectedResultDocs = JsonConvert.SerializeObject(filteredDocuments);
-                                    IEnumerable<string> expectedResult = filteredDocuments.Select(doc => ((CosmosString)doc["id"]).Value);
+                                    IEnumerable<string> expectedResult = filteredDocuments.Select(doc => ((CosmosString)doc["id"]).Value.ToString());
 
                                     string actualResultDocs = JsonConvert.SerializeObject(actualDocuments);
-                                    IEnumerable<string> actualResult = actualDocuments.Select(doc => ((CosmosString)doc["id"]).Value);
+                                    IEnumerable<string> actualResult = actualDocuments.Select(doc => ((CosmosString)doc["id"]).Value.ToString());
 
                                     Assert.AreEqual(
                                         string.Join(", ", expectedResult),
@@ -428,10 +431,10 @@
 
             FeedResponse<Document> responseWithEmptyContinuationExpected = await container.GetItemQueryIterator<Document>(
                 $"SELECT TOP 0 * FROM r",
-                requestOptions: new QueryRequestOptions() 
-                {  
-                    MaxConcurrency = 10, 
-                    MaxItemCount = -1 
+                requestOptions: new QueryRequestOptions()
+                {
+                    MaxConcurrency = 10,
+                    MaxItemCount = -1
                 }).ReadNextAsync();
 
             Assert.AreEqual(null, responseWithEmptyContinuationExpected.ContinuationToken);
@@ -645,7 +648,7 @@
             };
 
             await this.CreateIngestQueryDeleteAsync(
-                ConnectionModes.Direct,
+                ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestMultiOrderByQueriesHelper,
@@ -716,7 +719,7 @@
                             bool isDesc;
                             foreach (Cosmos.CompositePath compositePath in compositeIndex)
                             {
-                                isDesc = compositePath.Order == Cosmos.CompositePathSortOrder.Descending ? true : false;
+                                isDesc = compositePath.Order == Cosmos.CompositePathSortOrder.Descending;
                                 if (invert)
                                 {
                                     isDesc = !isDesc;
@@ -864,6 +867,238 @@
         }
 
         [TestMethod]
+        public async Task TestOrderByWithUndefinedFieldsAsync()
+        {
+            const string possiblyUndefinedFieldName = "possiblyUndefinedField";
+            const string alwaysDefinedFieldName = "alwaysDefinedFieldName";
+            List<string> inputDocuments = new List<string>();
+            Random random = new Random();
+            for (int i = 0; i < 100; i++)
+            {
+                Dictionary<string, CosmosElement> keyValuePairs = new Dictionary<string, CosmosElement>();
+                bool shouldHaveDefinedField = (random.Next() % 2) == 0;
+                if (shouldHaveDefinedField)
+                {
+                    keyValuePairs[possiblyUndefinedFieldName] = CosmosNumber64.Create(random.Next(0, 100));
+                }
+
+                keyValuePairs[alwaysDefinedFieldName] = CosmosNumber64.Create(random.Next(0, 100));
+
+                CosmosObject document = CosmosObject.Create(keyValuePairs);
+                inputDocuments.Add(document.ToString());
+            }
+
+            Cosmos.IndexingPolicy indexingPolicy = new Cosmos.IndexingPolicy()
+            {
+                IncludedPaths = new Collection<Cosmos.IncludedPath>()
+                {
+                    new Cosmos.IncludedPath()
+                    {
+                        Path = "/*",
+                    },
+                    new Cosmos.IncludedPath()
+                    {
+                        Path = $"/{possiblyUndefinedFieldName}/?",
+                    },
+                    new Cosmos.IncludedPath()
+                    {
+                        Path = $"/{alwaysDefinedFieldName}/?",
+                    }
+                },
+
+                CompositeIndexes = new Collection<Collection<Cosmos.CompositePath>>()
+            };
+
+            foreach (bool switchColumns in new bool[] { true, false })
+            {
+                foreach (bool firstColumnAscending in new bool[] { true, false })
+                {
+                    foreach (bool secondColumnAscending in new bool[] { true, false })
+                    {
+                        Collection<Cosmos.CompositePath> compositeIndex = new Collection<Cosmos.CompositePath>()
+                        {
+                            new Cosmos.CompositePath()
+                            {
+                                Path = "/" + (switchColumns ? possiblyUndefinedFieldName : alwaysDefinedFieldName),
+                                Order = firstColumnAscending ? Cosmos.CompositePathSortOrder.Ascending : Cosmos.CompositePathSortOrder.Descending,
+                            },
+                            new Cosmos.CompositePath()
+                            {
+                                Path = "/" + (switchColumns ? alwaysDefinedFieldName : possiblyUndefinedFieldName),
+                                Order = secondColumnAscending ? Cosmos.CompositePathSortOrder.Ascending : Cosmos.CompositePathSortOrder.Descending,
+                            },
+                        };
+
+                        indexingPolicy.CompositeIndexes.Add(compositeIndex);
+                    }
+                }
+            }
+
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                const string possiblyUndefinedFieldName = "possiblyUndefinedField";
+                const string alwaysDefinedFieldName = "alwaysDefinedFieldName";
+
+                // Handle all the single order by cases
+                foreach (bool ascending in new bool[] { true, false })
+                {
+                    List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
+                        container,
+                        $"SELECT c.{alwaysDefinedFieldName}, c.{possiblyUndefinedFieldName} FROM c ORDER BY c.{possiblyUndefinedFieldName} {(ascending ? "ASC" : "DESC")}",
+                        new QueryRequestOptions()
+                        {
+                            MaxItemCount = 1,
+                        });
+
+                    Assert.AreEqual(
+                        documents.Count(),
+                        queryResults.Count);
+
+                    IEnumerable<CosmosElement> actual = queryResults
+                        .Select(x =>
+                        {
+                            if (!((CosmosObject)x).TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
+                            {
+                                cosmosElement = null;
+                            }
+
+                            return cosmosElement;
+                        });
+
+                    IEnumerable<CosmosElement> expected = documents
+                        .Select(x =>
+                        {
+                            if (!x.TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
+                            {
+                                cosmosElement = null;
+                            }
+
+                            return cosmosElement;
+                        });
+
+                    if (ascending)
+                    {
+                        expected = expected.OrderBy(x => x, MockOrderByComparer.Value);
+                    }
+                    else
+                    {
+                        expected = expected.OrderByDescending(x => x, MockOrderByComparer.Value);
+                    }
+
+                    Assert.IsTrue(
+                        expected.SequenceEqual(actual),
+                        $"Expected: {JsonConvert.SerializeObject(expected)}" +
+                        $"Actual: {JsonConvert.SerializeObject(actual)}");
+                }
+
+                // Handle all the multi order by cases
+                foreach (bool switchColumns in new bool[] { true, false })
+                {
+                    foreach (bool firstColumnAscending in new bool[] { true, false })
+                    {
+                        foreach (bool secondColumnAscending in new bool[] { true, false })
+                        {
+                            string query = $"" +
+                                $"SELECT c.{(switchColumns ? possiblyUndefinedFieldName : alwaysDefinedFieldName)}, c.{(switchColumns ? alwaysDefinedFieldName : possiblyUndefinedFieldName)} " +
+                                $"FROM c " +
+                                $"ORDER BY " +
+                                $"  c.{(switchColumns ? possiblyUndefinedFieldName : alwaysDefinedFieldName)} {(firstColumnAscending ? "ASC" : "DESC")}, " +
+                                $"  c.{(switchColumns ? alwaysDefinedFieldName : possiblyUndefinedFieldName)} {(secondColumnAscending ? "ASC" : "DESC")}";
+
+                            List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
+                                container,
+                                query,
+                                new QueryRequestOptions()
+                                {
+                                    MaxItemCount = 1,
+                                });
+
+                            Assert.AreEqual(
+                                documents.Count(),
+                                queryResults.Count);
+
+                            IEnumerable<CosmosElement> actual = queryResults;
+
+                            IOrderedEnumerable<CosmosElement> expected;
+                            expected = firstColumnAscending
+                                ? documents.OrderBy(
+                                    x =>
+                                    {
+                                        if (!((CosmosObject)x).TryGetValue(switchColumns ? possiblyUndefinedFieldName : alwaysDefinedFieldName, out CosmosElement cosmosElement))
+                                        {
+                                            cosmosElement = null;
+                                        }
+
+                                        return cosmosElement;
+                                    }, MockOrderByComparer.Value)
+                                : documents.OrderByDescending(
+                                    x =>
+                                    {
+                                        if (!((CosmosObject)x).TryGetValue(switchColumns ? possiblyUndefinedFieldName : alwaysDefinedFieldName, out CosmosElement cosmosElement))
+                                        {
+                                            cosmosElement = null;
+                                        }
+
+                                        return cosmosElement;
+                                    }, MockOrderByComparer.Value);
+
+                            expected = secondColumnAscending
+                                ? expected.ThenBy(
+                                    x =>
+                                    {
+                                        if (!((CosmosObject)x).TryGetValue(switchColumns ? alwaysDefinedFieldName : possiblyUndefinedFieldName, out CosmosElement cosmosElement))
+                                        {
+                                            cosmosElement = null;
+                                        }
+
+                                        return cosmosElement;
+                                    }, MockOrderByComparer.Value)
+                                : expected.ThenByDescending(
+                                    x =>
+                                    {
+                                        if (!((CosmosObject)x).TryGetValue(switchColumns ? alwaysDefinedFieldName : possiblyUndefinedFieldName, out CosmosElement cosmosElement))
+                                        {
+                                            cosmosElement = null;
+                                        }
+
+                                        return cosmosElement;
+                                    }, MockOrderByComparer.Value);
+
+                            IEnumerable<CosmosElement> expectedFinal = expected.Select(
+                                x =>
+                                {
+                                    Dictionary<string, CosmosElement> keyValuePairs = new Dictionary<string, CosmosElement>
+                                    {
+                                        [alwaysDefinedFieldName] = ((CosmosObject)x)[alwaysDefinedFieldName]
+                                    };
+
+                                    if (((CosmosObject)x).TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
+                                    {
+                                        keyValuePairs[possiblyUndefinedFieldName] = cosmosElement;
+                                    }
+
+                                    return (CosmosElement)CosmosObject.Create(keyValuePairs);
+                                });
+
+                            Assert.IsTrue(
+                                expectedFinal.SequenceEqual(actual),
+                                $"Query: {query}" +
+                                $"Expected: {JsonConvert.SerializeObject(expectedFinal)}" +
+                                $"Actual: {JsonConvert.SerializeObject(actual)}");
+                        }
+                    }
+                }
+            }
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.MultiPartition,
+                inputDocuments,
+                ImplementationAsync,
+                indexingPolicy: indexingPolicy);
+        }
+
+        [TestMethod]
         public async Task TestMixedTypeOrderByAsync()
         {
             int numberOfDocuments = 1 << 4;
@@ -923,26 +1158,26 @@
             OrderByTypes nonPrimitives = OrderByTypes.Array | OrderByTypes.Object;
             OrderByTypes all = primitives | nonPrimitives | OrderByTypes.Undefined;
 
-            await this.CreateIngestQueryDeleteAsync<OrderByTypes[]>(
-                    ConnectionModes.Direct,
-                    CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
-                    documents,
-                    this.TestMixedTypeOrderByHelper,
-                    new OrderByTypes[]
-                    {
-                        OrderByTypes.Array,
-                        OrderByTypes.Bool,
-                        OrderByTypes.Null,
-                        OrderByTypes.Number,
-                        OrderByTypes.Object,
-                        OrderByTypes.String,
-                        OrderByTypes.Undefined,
-                        primitives,
-                        nonPrimitives,
-                        all,
-                    },
-                    "/id",
-                    indexV2Policy);
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                documents,
+                this.TestMixedTypeOrderByHelper,
+                new OrderByTypes[]
+                {
+                    OrderByTypes.Array,
+                    OrderByTypes.Bool,
+                    OrderByTypes.Null,
+                    OrderByTypes.Number,
+                    OrderByTypes.Object,
+                    OrderByTypes.String,
+                    OrderByTypes.Undefined,
+                    primitives,
+                    nonPrimitives,
+                    all,
+                },
+                "/id",
+                indexV2Policy);
         }
 
         private sealed class MixedTypedDocument
@@ -960,32 +1195,24 @@
 
         private static CosmosElement GenerateRandomJsonValue(Random random)
         {
-            switch (random.Next(0, 7))
+            return (random.Next(0, 7)) switch
             {
                 // Number
-                case 0:
-                    return CosmosNumber64.Create(random.Next());
+                0 => CosmosNumber64.Create(random.Next()),
                 // String
-                case 1:
-                    return CosmosString.Create(new string('a', random.Next(0, 100)));
+                1 => CosmosString.Create(new string('a', random.Next(0, 100))),
                 // Null
-                case 2:
-                    return CosmosNull.Create();
+                2 => CosmosNull.Create(),
                 // Bool
-                case 3:
-                    return CosmosBoolean.Create((random.Next() % 2) == 0);
+                3 => CosmosBoolean.Create((random.Next() % 2) == 0),
                 // Object
-                case 4:
-                    return CosmosObject.Create(new List<KeyValuePair<string, CosmosElement>>());
+                4 => CosmosObject.Create(new Dictionary<string, CosmosElement>()),
                 // Array
-                case 5:
-                    return CosmosArray.Create(new List<CosmosElement>());
+                5 => CosmosArray.Create(new List<CosmosElement>()),
                 // Undefined
-                case 6:
-                    return null;
-                default:
-                    throw new ArgumentException();
-            }
+                6 => null,
+                _ => throw new ArgumentException(),
+            };
         }
 
         private sealed class MockOrderByComparer : IComparer<CosmosElement>
@@ -1073,11 +1300,6 @@
                         MaxConcurrency = 10,
                     };
 
-                    List<CosmosObject> actualFromQueryWithoutContinutionTokens;
-                    actualFromQueryWithoutContinutionTokens = await QueryTestsBase.QueryWithoutContinuationTokensAsync<CosmosObject>(
-                        container,
-                        query,
-                        queryRequestOptions: feedOptions);
 #if false
                         For now we can not serve the query through continuation tokens correctly.
                         This is because we allow order by on mixed types but not comparisions across types
@@ -1085,19 +1307,19 @@
                             SELECT c.MixedTypeField FROM c ORDER BY c.MixedTypeField
                         returns:
                         [
-                            {"MixedTypeField":null},
-                            {"MixedTypeField":false},
-                            {"MixedTypeField":true},
-                            {"MixedTypeField":303093052},
-                            {"MixedTypeField":438985130},
-                            {"MixedTypeField":"aaaaaaaaaaa"}
+                            {"MixedTypeField":[]},
+                            {"MixedTypeField":[1, 2, 3]},
+                            {"MixedTypeField":{}},
                         ]
-                        and we left off on 303093052 then at some point the cross partition code resumes the query by running the following:
-                            SELECT c.MixedTypeField FROM c WHERE c.MixedTypeField > 303093052 ORDER BY c.MixedTypeField
-                        which will only return the following:
-                            { "MixedTypeField":438985130}
-                        and that is because comparision across types is undefined so "aaaaaaaaaaa" > 303093052 never got emitted
+                        and we left off on [1, 2, 3] then at some point the cross partition code resumes the query by running the following:
+                            SELECT c.MixedTypeField FROM c WHERE c.MixedTypeField > [1, 2, 3] ORDER BY c.MixedTypeField
+                        And comparison on arrays and objects is undefined.
 #endif
+
+                    List<CosmosElement> actual = await QueryTestsBase.QueryWithoutContinuationTokensAsync<CosmosElement>(
+                        container,
+                        query,
+                        queryRequestOptions: feedOptions);
 
                     IEnumerable<CosmosObject> insertedDocs = documents
                         .Select(document => CosmosElement.CreateFromBuffer<CosmosObject>(Encoding.UTF8.GetBytes(document.ToString())))
@@ -1179,19 +1401,95 @@
                     }
 
                     Assert.IsTrue(
-                        expected.SequenceEqual(actualFromQueryWithoutContinutionTokens),
+                        expected.SequenceEqual(actual),
                         $@" queryWithoutContinuations: {query},
                             expected:{JsonConvert.SerializeObject(expected)},
-                            actual: {JsonConvert.SerializeObject(actualFromQueryWithoutContinutionTokens)}");
-
-                    // Can't assert for reasons mentioned above
-                    //Assert.IsTrue(
-                    //    expected.SequenceEqual(actualFromQueryWithContinutionTokens, DistinctMapTests.JsonTokenEqualityComparer.Value),
-                    //    $@" queryWithContinuations: {query},
-                    //    expected:{JsonConvert.SerializeObject(expected)},
-                    //    actual: {JsonConvert.SerializeObject(actualFromQueryWithContinutionTokens)}");
+                            actual: {JsonConvert.SerializeObject(actual)}");
                 }
             }
         }
+
+        class OrderByRequestChargeArgs
+        {
+            public string Query { get; set; }
+        }
+
+        [TestMethod]
+        public async Task TestQueryCrossPartitionRequestChargesAsync()
+        {
+            string[] documents = new[]
+            {
+                @"{""id"":""documentId1"",""key"":""A""}",
+                @"{""id"":""documentId2"",""key"":""A"",""prop"":3}",
+                @"{""id"":""documentId3"",""key"":""A""}",
+                @"{""id"":""documentId4"",""key"":5}",
+                @"{""id"":""documentId5"",""key"":5,""prop"":2}",
+                @"{""id"":""documentId6"",""key"":5}",
+                @"{""id"":""documentId7"",""key"":2}",
+                @"{""id"":""documentId8"",""key"":2,""prop"":1}",
+                @"{""id"":""documentId9"",""key"":2}",
+            };
+
+            // Matches no documents
+            await this.CreateIngestQueryDeleteAsync<OrderByRequestChargeArgs>(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                documents,
+                this.TestQueryCrossPartitionRequestChargesHelper,
+                new OrderByRequestChargeArgs
+                {
+                    Query = "SELECT r.id FROM r WHERE r.prop = 'A' ORDER BY r.prop DESC",
+                },
+                "/key");
+
+            // Matches some documents
+            await this.CreateIngestQueryDeleteAsync<OrderByRequestChargeArgs>(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                documents,
+                this.TestQueryCrossPartitionRequestChargesHelper,
+                new OrderByRequestChargeArgs
+                {
+                    Query = "SELECT r.id FROM r ORDER BY r.prop DESC",
+                },
+                "/key");
+
+            // Matches some documents, skipped with OFFSET LIMIT
+            await this.CreateIngestQueryDeleteAsync<OrderByRequestChargeArgs>(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                documents,
+                this.TestQueryCrossPartitionRequestChargesHelper,
+                new OrderByRequestChargeArgs
+                {
+                    Query = "SELECT r.id FROM r ORDER BY r.prop DESC OFFSET 10 LIMIT 1",
+                },
+                "/key");
+        }
+
+        private async Task TestQueryCrossPartitionRequestChargesHelper(
+            Container container,
+            IReadOnlyList<CosmosObject> documents,
+            OrderByRequestChargeArgs args)
+        {
+            base.DirectRequestChargeHandler.StartTracking();
+
+            double totalRUs = 0;
+            await foreach (FeedResponse<CosmosElement> query in QueryTestsBase.RunSimpleQueryAsync<CosmosElement>(
+                container,
+                args.Query,
+                new QueryRequestOptions()
+                {
+                    MaxItemCount = 1,
+                    MaxConcurrency = 1,
+                }))
+            {
+                totalRUs += query.RequestCharge;
+            }
+
+            double expectedRequestCharge = base.DirectRequestChargeHandler.StopTracking();
+            Assert.AreEqual(expectedRequestCharge, totalRUs, 0.01);
+        }
+
     }
 }

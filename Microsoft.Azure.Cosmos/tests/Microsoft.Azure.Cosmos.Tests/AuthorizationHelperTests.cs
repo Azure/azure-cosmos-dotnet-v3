@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Net.Http;
+    using System.Text;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -149,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     foreach (string resourceName in this.ResourceNameValues)
                     {
-                        DictionaryNameValueCollection nvc = new DictionaryNameValueCollection();
+                        StoreRequestNameValueCollection nvc = new StoreRequestNameValueCollection();
                         nvc.Add(HttpConstants.HttpHeaders.XDate, new DateTime(2020, 02, 01, 10, 00, 00).ToString("r"));
                         string authorizationKey = AuthorizationHelper.GenerateKeyAuthorizationSignature(
                             method,
@@ -186,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 string[] baseline = this.AuthorizationBaseline[i];
                 string[] baselineResults = this.AuthorizationBaselineResults[i];
-                DictionaryNameValueCollection nvc = new DictionaryNameValueCollection();
+                StoreRequestNameValueCollection nvc = new StoreRequestNameValueCollection();
                 nvc.Add(HttpConstants.HttpHeaders.XDate, baseline[4]);
                 Uri uri = new Uri(baseline[0]);
                 string authorization = AuthorizationHelper.GenerateKeyAuthorizationSignature(
@@ -226,6 +227,156 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsTrue(AuthorizationHelper.CheckPayloadUsingKey(tokenOutput2, baseline[2], baseline[1], baseline[3], nvc, key));
                 Assert.IsTrue(AuthorizationHelper.CheckPayloadUsingKey(tokenOutput3, baseline[2], baseline[1], baseline[3], nvc, key));
             }
+        }
+
+        [TestMethod]
+        public void Base64UrlEncoderFuzzTest()
+        {
+            Random random = new Random();
+            for(int i = 0; i < 2000; i++)
+            {
+                Span<byte> randomBytes = new byte[random.Next(1, 500)];
+                random.NextBytes(randomBytes);
+                string randomBase64String = Convert.ToBase64String(randomBytes);
+                byte[] randomBase64Bytes = Encoding.UTF8.GetBytes(randomBase64String);
+                Span<byte> buffered = new byte[randomBase64Bytes.Length * 3];
+                randomBase64Bytes.CopyTo(buffered);
+
+                string baseline = null;
+                string newResults = null;
+                try
+                {
+                    baseline = HttpUtility.UrlEncode(randomBase64Bytes);
+                    newResults = AuthorizationHelper.UrlEncodeBase64SpanInPlace(buffered, randomBase64Bytes.Length);
+                }
+                catch(Exception e)
+                {
+                    Assert.Fail($"Url encode failed with string {randomBase64String} ; Exception:{e}");
+                }
+
+                Assert.AreEqual(baseline, newResults);
+            }
+        }
+
+        [TestMethod]
+        public void Base64UrlEncoderEdgeCasesTest()
+        {
+            {
+                Span<byte> singleInvalidChar = new byte[3];
+                singleInvalidChar[0] = (byte)'=';
+                string urlEncoded = AuthorizationHelper.UrlEncodeBase64SpanInPlace(singleInvalidChar, 1);
+                Assert.AreEqual("%3d", urlEncoded);
+            }
+
+            {
+                Span<byte> singleInvalidChar = new byte[3];
+                singleInvalidChar[0] = (byte)'+';
+                string urlEncoded = AuthorizationHelper.UrlEncodeBase64SpanInPlace(singleInvalidChar, 1);
+                Assert.AreEqual("%2b", urlEncoded);
+            }
+
+            {
+                Span<byte> singleInvalidChar = new byte[3];
+                singleInvalidChar[0] = (byte)'/';
+                string urlEncoded = AuthorizationHelper.UrlEncodeBase64SpanInPlace(singleInvalidChar, 1);
+                Assert.AreEqual("%2f", urlEncoded);
+            }
+
+            {
+                Span<byte> multipleInvalidChar = new byte[9];
+                multipleInvalidChar[0] = (byte)'=';
+                multipleInvalidChar[1] = (byte)'+';
+                multipleInvalidChar[2] = (byte)'/';
+                string urlEncoded = AuthorizationHelper.UrlEncodeBase64SpanInPlace(multipleInvalidChar, 3);
+                Assert.AreEqual("%3d%2b%2f", urlEncoded);
+            }
+
+            {
+                Span<byte> singleValidChar = new byte[3];
+                singleValidChar[0] = (byte)'a';
+                string urlEncoded = AuthorizationHelper.UrlEncodeBase64SpanInPlace(singleValidChar, 1);
+                Assert.AreEqual("a", urlEncoded);
+            }
+
+            {
+                byte[] singleInvalidChar = new byte[0];
+                string result = HttpUtility.UrlEncode(singleInvalidChar);
+                string urlEncoded = AuthorizationHelper.UrlEncodeBase64SpanInPlace(singleInvalidChar, 0);
+                Assert.AreEqual(result, urlEncoded);
+            }
+        }
+
+        [TestMethod]
+        public void AuthorizationTokenLengthTest()
+        {
+            // Master Token (limit 1024)
+            this.ValidateTokenParsing(Constants.Properties.MasterToken, 100, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.MasterToken, 1024, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.MasterToken, 1024 + 1, shouldParse: false);
+            this.ValidateTokenParsing(Constants.Properties.MasterToken, 8*1024, shouldParse: false);
+            this.ValidateTokenParsing(Constants.Properties.MasterToken, (8*1024) + 1, shouldParse: false);
+            this.ValidateTokenParsing(Constants.Properties.MasterToken, 16*1024, shouldParse: false);
+            this.ValidateTokenParsing(Constants.Properties.MasterToken, (16*1024) + 1, shouldParse: false);
+
+            // Resource Token (limit 8*1024)
+            this.ValidateTokenParsing(Constants.Properties.ResourceToken, 100, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.ResourceToken, 1024, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.ResourceToken, 1024 + 1, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.ResourceToken, 8 * 1024, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.ResourceToken, (8 * 1024) + 1, shouldParse: false);
+            this.ValidateTokenParsing(Constants.Properties.ResourceToken, 16 * 1024, shouldParse: false);
+            this.ValidateTokenParsing(Constants.Properties.ResourceToken, (16 * 1024) + 1, shouldParse: false);
+
+            // AAD Token (limit 16*1024)
+            this.ValidateTokenParsing(Constants.Properties.AadToken, 100, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.AadToken, 1024, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.AadToken, 1024 + 1, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.AadToken, 8 * 1024, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.AadToken, (8 * 1024) + 1, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.AadToken, 16 * 1024, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.AadToken, (16 * 1024) + 1, shouldParse: false);
+        }
+
+        private void ValidateTokenParsing(string tokenType, int length, bool shouldParse)
+        {
+            string token = this.GenerateSampleToken(tokenType, length, out string expectedParsedToken);
+
+            try
+            {
+                AuthorizationHelper.ParseAuthorizationToken(
+                    token,
+                    out ReadOnlyMemory<char> type,
+                    out ReadOnlyMemory<char> version,
+                    out ReadOnlyMemory<char> parsedToken);
+
+                if (shouldParse)
+                {
+                    Assert.AreEqual(tokenType, type.ToString());
+                    Assert.AreEqual("1.0", version.ToString());
+                    Assert.AreEqual(expectedParsedToken, parsedToken.ToString());
+                }
+                else
+                {
+                    Assert.Fail($"Parsing token of type [{tokenType}] and length [{length}] should have failed.");
+                }
+            }
+            catch (Exception exception)
+            {
+                if (shouldParse)
+                {
+                    Assert.Fail($"Parsing token of type [{tokenType}] and length [{length}] should have succeeded.\n{exception}");
+                }
+
+                Assert.AreEqual(typeof(UnauthorizedException), exception.GetType());
+                StringAssert.Contains(exception.Message, RMResources.InvalidAuthHeaderFormat);
+            }
+        }
+
+        private string GenerateSampleToken(string tokenType, int length, out string tokenValue)
+        {
+            string tokenPrefix = $"type%3d{tokenType}%26ver%3d1.0%26sig%3d";
+            tokenValue = new string('a', length - tokenPrefix.Length);
+            return tokenPrefix + tokenValue;
         }
     }
 }

@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Runtime.Serialization.Formatters.Binary;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
 
     [TestClass]
     [TestCategory("ChangeFeed")]
@@ -58,6 +59,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 LeaseToken = "0",
                 Owner = "owner",
                 ContinuationToken = "continuation",
+                LeasePartitionKey = "pk",
                 Timestamp = DateTime.Now - TimeSpan.FromSeconds(5),
                 Properties = new Dictionary<string, string> { { "key", "value" } }
             };
@@ -76,6 +78,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.AreEqual(originalLease.Owner, lease.Owner);
             Assert.AreEqual(originalLease.ContinuationToken, lease.ContinuationToken);
             Assert.AreEqual(originalLease.Timestamp, lease.Timestamp);
+            Assert.AreEqual(originalLease.PartitionKey, lease.PartitionKey);
             Assert.AreEqual(originalLease.Properties["key"], lease.Properties["key"]);
         }
 
@@ -97,8 +100,85 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.IsNull(lease.LeaseToken);
             Assert.IsNull(lease.Owner);
             Assert.IsNull(lease.ContinuationToken);
+            Assert.IsNull(lease.PartitionKey);
             Assert.AreEqual(new DocumentServiceLeaseCore().Timestamp, lease.Timestamp);
             Assert.IsTrue(lease.Properties.Count == 0);
+        }
+
+        [TestMethod]
+        public void ValidateJsonSerialization_PKRangeLease()
+        {
+            DocumentServiceLeaseCore originalLease = new DocumentServiceLeaseCore
+            {
+                LeaseId = "id",
+                ETag = "etag",
+                LeaseToken = "0",
+                Owner = "owner",
+                ContinuationToken = "continuation",
+                Timestamp = DateTime.Now - TimeSpan.FromSeconds(5),
+                LeasePartitionKey = "partitionKey",
+                Properties = new Dictionary<string, string> { { "key", "value" } },
+                FeedRange = new FeedRangePartitionKeyRange("0")
+            };
+
+            string serialized = JsonConvert.SerializeObject(originalLease);
+
+            DocumentServiceLease documentServiceLease = JsonConvert.DeserializeObject<DocumentServiceLease>(serialized);
+
+            if (documentServiceLease is DocumentServiceLeaseCore documentServiceLeaseCore)
+            {
+                Assert.AreEqual(originalLease.LeaseId, documentServiceLeaseCore.LeaseId);
+                Assert.AreEqual(originalLease.ETag, documentServiceLeaseCore.ETag);
+                Assert.AreEqual(originalLease.LeaseToken, documentServiceLeaseCore.LeaseToken);
+                Assert.AreEqual(originalLease.Owner, documentServiceLeaseCore.Owner);
+                Assert.AreEqual(originalLease.PartitionKey, documentServiceLeaseCore.PartitionKey);
+                Assert.AreEqual(originalLease.ContinuationToken, documentServiceLeaseCore.ContinuationToken);
+                Assert.AreEqual(originalLease.Timestamp, documentServiceLeaseCore.Timestamp);
+                Assert.AreEqual(originalLease.Properties["key"], documentServiceLeaseCore.Properties["key"]);
+                Assert.AreEqual(originalLease.FeedRange.ToJsonString(), documentServiceLeaseCore.FeedRange.ToJsonString());
+            }
+            else
+            {
+                Assert.Fail();
+            }
+        }
+
+        [TestMethod]
+        public void ValidateJsonSerialization_EPKLease()
+        {
+            DocumentServiceLeaseCoreEpk originalLease = new DocumentServiceLeaseCoreEpk
+            {
+                LeaseId = "id",
+                ETag = "etag",
+                LeaseToken = "0",
+                Owner = "owner",
+                ContinuationToken = "continuation",
+                Timestamp = DateTime.Now - TimeSpan.FromSeconds(5),
+                LeasePartitionKey = "partitionKey",
+                Properties = new Dictionary<string, string> { { "key", "value" } },
+                FeedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false))
+            };
+
+            string serialized = JsonConvert.SerializeObject(originalLease);
+
+            DocumentServiceLease documentServiceLease = JsonConvert.DeserializeObject<DocumentServiceLease>(serialized);
+
+            if (documentServiceLease is DocumentServiceLeaseCoreEpk documentServiceLeaseCore)
+            {
+                Assert.AreEqual(originalLease.LeaseId, documentServiceLeaseCore.LeaseId);
+                Assert.AreEqual(originalLease.ETag, documentServiceLeaseCore.ETag);
+                Assert.AreEqual(originalLease.LeaseToken, documentServiceLeaseCore.LeaseToken);
+                Assert.AreEqual(originalLease.Owner, documentServiceLeaseCore.Owner);
+                Assert.AreEqual(originalLease.PartitionKey, documentServiceLeaseCore.PartitionKey);
+                Assert.AreEqual(originalLease.ContinuationToken, documentServiceLeaseCore.ContinuationToken);
+                Assert.AreEqual(originalLease.Timestamp, documentServiceLeaseCore.Timestamp);
+                Assert.AreEqual(originalLease.Properties["key"], documentServiceLeaseCore.Properties["key"]);
+                Assert.AreEqual(originalLease.FeedRange.ToJsonString(), documentServiceLeaseCore.FeedRange.ToJsonString());
+            }
+            else
+            {
+                Assert.Fail();
+            }
         }
     }
 }

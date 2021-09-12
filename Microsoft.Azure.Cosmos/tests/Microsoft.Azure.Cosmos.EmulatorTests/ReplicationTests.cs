@@ -278,10 +278,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static void ValidateQuery<T>(DocumentClient client, string collectionLink, string queryProperty, string queryPropertyValue, int expectedCount, INameValueCollection headers = null)
             where T : Resource, new()
         {
-            if (headers != null)
-                headers = new DictionaryNameValueCollection(headers); // dont mess with the input headers
-            else
-                headers = new DictionaryNameValueCollection();
+            INameValueCollection inputHeaders = headers;
+            headers = new StoreRequestNameValueCollection();
+            if (inputHeaders != null)
+            {
+                headers.Add(inputHeaders); // dont mess with the input headers
+            }
 
             int maxTries = 5;
             const int minIndexInterval = 5000; // 5 seconds

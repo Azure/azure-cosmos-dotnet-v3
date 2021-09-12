@@ -154,6 +154,12 @@ namespace Microsoft.Azure.Cosmos.Json
                         return TryCatch<T>.FromResult(default);
                     }
 
+                    // string needs to be handle differntly since JsonReader return UtfAnyString instead of string.
+                    if (type == typeof(string))
+                    {
+                        return TryCatch<T>.FromResult((T)(object)tryAcceptVisitor.Result.ToString());
+                    }
+
                     throw new InvalidOperationException("Could not cast to T.");
                 }
 
@@ -544,7 +550,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     return TryCatch<object>.FromException(Visitor.Exceptions.ExpectedString);
                 }
 
-                return TryCatch<object>.FromResult(cosmosString.Value);
+                return TryCatch<object>.FromResult(cosmosString.Value.ToString());
             }
         }
 

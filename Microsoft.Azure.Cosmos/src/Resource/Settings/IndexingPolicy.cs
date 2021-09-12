@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the indexing mode (consistent or lazy) in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
-        /// One of the values of the <see cref="T:Microsoft.Azure.Documents.IndexingMode"/> enumeration.
+        /// One of the values of the <see cref="T:Microsoft.Azure.Cosmos.IndexingMode"/> enumeration.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.IndexingMode)]
         [JsonConverter(typeof(StringEnumConverter))]
@@ -115,6 +115,14 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.SpatialIndexes)]
         public Collection<SpatialPath> SpatialIndexes { get; internal set; } = new Collection<SpatialPath>();
+
+#if INTERNAL
+        /// <summary>
+        /// Indexing policy annotation.
+        /// </summary>
+        [JsonProperty(PropertyName = "annotation", NullValueHandling = NullValueHandling.Ignore)]
+        public string Annotation { get; set; }
+#endif
 
         #region EqualityComparers
         internal sealed class CompositePathEqualityComparer : IEqualityComparer<CompositePath>
@@ -315,7 +323,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal sealed class IndexEqualityComparer : IEqualityComparer<Index>
+        internal sealed class IndexEqualityComparer : IEqualityComparer<Cosmos.Index>
         {
             public static readonly IndexEqualityComparer Comparer = new IndexEqualityComparer();
 
@@ -426,8 +434,8 @@ namespace Microsoft.Azure.Cosmos
                     return false;
                 }
 
-                HashSet<Index> indexes1 = new HashSet<Index>(includedPath1.Indexes, indexEqualityComparer);
-                HashSet<Index> indexes2 = new HashSet<Index>(includedPath2.Indexes, indexEqualityComparer);
+                HashSet<Cosmos.Index> indexes1 = new HashSet<Cosmos.Index>(includedPath1.Indexes, indexEqualityComparer);
+                HashSet<Cosmos.Index> indexes2 = new HashSet<Cosmos.Index>(includedPath2.Indexes, indexEqualityComparer);
 
                 return indexes1.SetEquals(indexes2);
             }

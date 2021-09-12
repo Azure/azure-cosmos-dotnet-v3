@@ -118,26 +118,19 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public bool? EnableContentResponseOnWrite { get; set; }
 
-        /// <summary>
-        /// Gets or sets the boolean to only return the headers and status code in
-        /// the Cosmos DB response for read item operations like ReadItemAsync
-        /// This removes the resource from the response. This reduces networking and CPU load by not sending
-        /// the resource back over the network and serializing it on the client.
+        /// <summary> 
+        /// Gets or sets the <see cref="DedicatedGatewayRequestOptions"/> for requests against the dedicated gateway.
+        /// These options are only exercised when <see cref="ConnectionMode"/> is set to ConnectionMode.Gateway and the dedicated gateway endpoint is used for sending requests. 
         /// </summary>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// ItemRequestOption requestOptions = new ItemRequestOptions() { EnableContentResponseOnRead = true };
-        /// ItemResponse itemResponse = await this.container.ReadItemAsync<ToDoActivity>(tests, new PartitionKey(test.status), requestOptions);
-        /// Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
-        /// Assert.IsNull(itemResponse.Resource);
-        /// ]]>
-        /// </code>
-        /// </example>
         /// <remarks>
-        /// This is optimal for workloads where the returned resource is not used.
+        /// Learn more about dedicated gateway <a href="https://azure.microsoft.com/services/cosmos-db/">here</a>. 
         /// </remarks>
-        internal bool? EnableContentResponseOnRead { get; set; }
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
@@ -162,37 +155,10 @@ namespace Microsoft.Azure.Cosmos
                     IndexingDirectiveStrings.FromIndexingDirective(this.IndexingDirective.Value));
             }
 
+            DedicatedGatewayRequestOptions.PopulateMaxIntegratedCacheStalenessOption(this.DedicatedGatewayRequestOptions, request);
+
             RequestOptions.SetSessionToken(request, this.SessionToken);
-
-            if (ItemRequestOptions.ShouldSetNoContentHeader(
-                this.EnableContentResponseOnWrite,
-                this.EnableContentResponseOnRead,
-                request.OperationType))
-            {
-                request.Headers.Add(HttpConstants.HttpHeaders.Prefer, HttpConstants.HttpHeaderValues.PreferReturnMinimal);
-            }
-
             base.PopulateRequestOptions(request);
-        }
-
-        internal static bool ShouldSetNoContentHeader(
-            bool? enableContentResponseOnWrite,
-            bool? enableContentResponseOnRead,
-            OperationType operationType)
-        {
-            if (enableContentResponseOnRead.HasValue &&
-                !enableContentResponseOnRead.Value &&
-                operationType == OperationType.Read)
-            {
-                return true;
-            }
-
-            return enableContentResponseOnWrite.HasValue &&
-              !enableContentResponseOnWrite.Value &&
-              (operationType == OperationType.Create ||
-              operationType == OperationType.Replace ||
-              operationType == OperationType.Upsert ||
-              operationType == OperationType.Patch);
         }
     }
 }

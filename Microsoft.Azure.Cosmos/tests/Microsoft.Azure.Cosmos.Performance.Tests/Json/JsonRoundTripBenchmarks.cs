@@ -44,9 +44,6 @@
             {
                 SerializationFormat.Text => JsonReader.Create(payload.Text),
                 SerializationFormat.Binary => JsonReader.Create(payload.Binary),
-                SerializationFormat.BinaryWithDictionaryEncoding => JsonReader.Create(
-                    payload.BinaryWithDictionaryEncoding.binary,
-                    payload.BinaryWithDictionaryEncoding.dictionary),
                 SerializationFormat.NewtonsoftText => NewtonsoftToCosmosDBReader.CreateFromBuffer(payload.Text),
                 _ => throw new ArgumentException($"Unexpected {nameof(sourceFormat)} of type: '{sourceFormat}'"),
             };
@@ -55,9 +52,6 @@
             {
                 SerializationFormat.Text => JsonWriter.Create(JsonSerializationFormat.Text),
                 SerializationFormat.Binary => JsonWriter.Create(JsonSerializationFormat.Binary),
-                SerializationFormat.BinaryWithDictionaryEncoding => JsonWriter.Create(
-                    JsonSerializationFormat.Binary,
-                    new JsonStringDictionary(capacity: 128)),
                 SerializationFormat.NewtonsoftText => NewtonsoftToCosmosDBWriter.CreateTextWriter(),
                 _ => throw new ArgumentException($"Unexpected {nameof(destinationFormat)} of type: {destinationFormat}"),
             };
@@ -76,9 +70,6 @@
             IJsonNavigator navigator = sourceFormat switch
             {
                 SerializationFormat.Text => JsonNavigator.Create(payload.Text),
-                SerializationFormat.BinaryWithDictionaryEncoding => JsonNavigator.Create(
-                    payload.BinaryWithDictionaryEncoding.binary,
-                    payload.BinaryWithDictionaryEncoding.dictionary),
                 SerializationFormat.Binary => JsonNavigator.Create(payload.Binary),
                 _ => throw new ArgumentException($"Unexpected {nameof(sourceFormat)} of type: '{sourceFormat}'"),
             };
@@ -87,9 +78,6 @@
             {
                 SerializationFormat.Text => JsonWriter.Create(JsonSerializationFormat.Text),
                 SerializationFormat.Binary => JsonWriter.Create(JsonSerializationFormat.Binary),
-                SerializationFormat.BinaryWithDictionaryEncoding => JsonWriter.Create(
-                    JsonSerializationFormat.Binary,
-                    sourceFormat == SerializationFormat.BinaryWithDictionaryEncoding ? payload.BinaryWithDictionaryEncoding.dictionary : new JsonStringDictionary(capacity: 128)),
                 SerializationFormat.NewtonsoftText => NewtonsoftToCosmosDBWriter.CreateTextWriter(),
                 _ => throw new ArgumentException($"Unexpected {nameof(destinationFormat)} of type: {destinationFormat}"),
             };
@@ -101,7 +89,6 @@
         {
             Text,
             Binary,
-            BinaryWithDictionaryEncoding,
             NewtonsoftText,
         }
 
@@ -110,19 +97,16 @@
             private CurratedDocsPayload(
                 string name,
                 ReadOnlyMemory<byte> text,
-                ReadOnlyMemory<byte> binary,
-                (ReadOnlyMemory<byte> binary, JsonStringDictionary dictionary) binaryWithDictionaryEncoding)
+                ReadOnlyMemory<byte> binary)
             {
                 this.Name = name;
                 this.Text = text;
                 this.Binary = binary;
-                this.BinaryWithDictionaryEncoding = binaryWithDictionaryEncoding;
             }
 
             public string Name { get; }
             public ReadOnlyMemory<byte> Text { get; }
             public ReadOnlyMemory<byte> Binary { get; }
-            internal (ReadOnlyMemory<byte> binary, JsonStringDictionary dictionary) BinaryWithDictionaryEncoding { get; }
 
             public static CurratedDocsPayload CreateFromCurratedDocs(string name)
             {
@@ -139,14 +123,11 @@
 
                     ReadOnlyMemory<byte> text = Encoding.UTF8.GetBytes(json);
                     ReadOnlyMemory<byte> binary = JsonTestUtils.ConvertTextToBinary(json);
-                    JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 1024);
-                    ReadOnlyMemory<byte> dictionaryEncodedBinary = JsonTestUtils.ConvertTextToBinary(json, jsonStringDictionary);
 
                     return new CurratedDocsPayload(
                         name: name,
                         text: text,
-                        binary: binary,
-                        binaryWithDictionaryEncoding: (dictionaryEncodedBinary, jsonStringDictionary));
+                        binary: binary);
                 }
                 catch (Exception)
                 {

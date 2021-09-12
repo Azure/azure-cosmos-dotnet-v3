@@ -7,8 +7,11 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.IO;
     using System.Net;
+    using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Serializer;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Represents the template class used by feed methods (enumeration operations) for the Azure Cosmos DB service.
@@ -38,16 +41,16 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryResponseMessageHeaders responseHeaders,
             HttpStatusCode statusCode,
             RequestMessage requestMessage,
-            CosmosDiagnosticsContext diagnostics,
             CosmosException cosmosException,
             Lazy<MemoryStream> memoryStream,
-            CosmosSerializationFormatOptions serializationOptions)
+            CosmosSerializationFormatOptions serializationOptions,
+            ITrace trace)
             : base(
                 statusCode: statusCode,
                 requestMessage: requestMessage,
                 cosmosException: cosmosException,
                 headers: responseHeaders,
-                diagnostics: diagnostics)
+                trace: trace)
         {
             this.CosmosElements = result;
             this.Count = count;
@@ -84,8 +87,8 @@ namespace Microsoft.Azure.Cosmos
             int count,
             long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders,
-            CosmosDiagnosticsContext diagnostics,
-            CosmosSerializationFormatOptions serializationOptions)
+            CosmosSerializationFormatOptions serializationOptions,
+            ITrace trace)
         {
             if (count < 0)
             {
@@ -108,12 +111,12 @@ namespace Microsoft.Azure.Cosmos
                count: count,
                responseLengthBytes: responseLengthBytes,
                responseHeaders: responseHeaders,
-               diagnostics: diagnostics,
                statusCode: HttpStatusCode.OK,
                cosmosException: null,
                requestMessage: null,
                memoryStream: memoryStream,
-               serializationOptions: serializationOptions);
+               serializationOptions: serializationOptions,
+               trace: trace);
 
             return cosmosQueryResponse;
         }
@@ -123,19 +126,19 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode statusCode,
             RequestMessage requestMessage,
             CosmosException cosmosException,
-            CosmosDiagnosticsContext diagnostics)
+            ITrace trace)
         {
             QueryResponse cosmosQueryResponse = new QueryResponse(
                 result: new List<CosmosElement>(),
                 count: 0,
                 responseLengthBytes: 0,
                 responseHeaders: responseHeaders,
-                diagnostics: diagnostics,
                 statusCode: statusCode,
                 cosmosException: cosmosException,
                 requestMessage: requestMessage,
                 memoryStream: null,
-                serializationOptions: null);
+                serializationOptions: null,
+                trace: trace);
 
             return cosmosQueryResponse;
         }
@@ -178,6 +181,15 @@ namespace Microsoft.Azure.Cosmos
             this.Resource = CosmosElementSerializer.GetResources<T>(
                 cosmosArray: cosmosElements,
                 serializerCore: serializerCore);
+
+            this.IndexUtilizationText = new Lazy<string>(() =>
+            {
+                IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText);
+                StringBuilder stringBuilder = new StringBuilder();
+                IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
+                indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);
+                return stringBuilder.ToString();
+            });
         }
 
         public override string ContinuationToken => this.Headers.ContinuationToken;
@@ -193,6 +205,10 @@ namespace Microsoft.Azure.Cosmos
         public override int Count { get; }
 
         internal CosmosQueryResponseMessageHeaders QueryHeaders { get; }
+
+        private Lazy<string> IndexUtilizationText { get; }
+
+        public override string IndexMetrics => this.IndexUtilizationText.Value;
 
         public override IEnumerator<T> GetEnumerator()
         {

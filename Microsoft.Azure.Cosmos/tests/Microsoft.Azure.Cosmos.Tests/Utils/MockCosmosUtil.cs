@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
@@ -26,29 +27,18 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public static CosmosClient CreateMockCosmosClient(
             Action<CosmosClientBuilder> customizeClientBuilder = null,
-            Cosmos.ConsistencyLevel? accountConsistencyLevel = null)
+            Cosmos.ConsistencyLevel? accountConsistencyLevel = null,
+            bool enableTelemetry = false)
         {
-            DocumentClient documentClient;
-            if (accountConsistencyLevel.HasValue)
-            {
-                documentClient = new MockDocumentClient(accountConsistencyLevel.Value);
-            }
-            else
-            {
-                documentClient = new MockDocumentClient();
-            }
-            
+            DocumentClient documentClient = accountConsistencyLevel.HasValue ? new MockDocumentClient(accountConsistencyLevel.Value) : new MockDocumentClient();
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
+            if(enableTelemetry)
+            {
+                cosmosClientBuilder.WithTelemetryEnabled();
+            }
 
             return cosmosClientBuilder.Build(documentClient);
-        }
-
-        public static CosmosDiagnosticsContext CreateDiagnosticsContext()
-        {
-            return new CosmosDiagnosticsContextCore(
-                nameof(CreateDiagnosticsContext),
-                "DiagnosticValidatorUserAgentString");
         }
 
         public static Mock<ContainerInternal> CreateMockContainer(
@@ -110,6 +100,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<string>(),
                 It.IsAny<Range<string>>(),
                 It.IsAny<List<CompositeContinuationToken>>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<RntbdConstants.RntdbEnumerationDirection>()
             )).Returns(Task.FromResult(new ResolvedRangeInfo(new PartitionKeyRange { Id = partitionRangeKeyId }, new List<CompositeContinuationToken>())));
             partitionRoutingHelperMock.Setup(m => m.TryAddPartitionKeyRangeToContinuationTokenAsync(
@@ -118,6 +109,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<IRoutingMapProvider>(),
                 It.IsAny<string>(),
                 It.IsAny<ResolvedRangeInfo>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<RntbdConstants.RntdbEnumerationDirection>()
             )).Returns(Task.FromResult(true));
             return partitionRoutingHelperMock;

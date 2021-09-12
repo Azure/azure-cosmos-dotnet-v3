@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -34,6 +35,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly int maxBatchByteSize;
         private readonly int maxBatchOperationCount;
         private readonly InterlockIncrementCheck interlockIncrementCheck = new InterlockIncrementCheck();
+        private readonly CosmosClientContext clientContext;
         private long currentSize = 0;
         private bool dispatched = false;
 
@@ -44,7 +46,8 @@ namespace Microsoft.Azure.Cosmos
             int maxBatchByteSize,
             CosmosSerializerCore serializerCore,
             BatchAsyncBatcherExecuteDelegate executor,
-            BatchAsyncBatcherRetryDelegate retrier)
+            BatchAsyncBatcherRetryDelegate retrier,
+            CosmosClientContext clientContext)
         {
             if (maxBatchOperationCount < 1)
             {
@@ -62,6 +65,7 @@ namespace Microsoft.Azure.Cosmos
             this.maxBatchByteSize = maxBatchByteSize;
             this.maxBatchOperationCount = maxBatchOperationCount;
             this.serializerCore = serializerCore ?? throw new ArgumentNullException(nameof(serializerCore));
+            this.clientContext = clientContext;
         }
 
         public virtual bool TryAdd(ItemBatchOperation operation)
@@ -109,6 +113,17 @@ namespace Microsoft.Azure.Cosmos
             BatchPartitionMetric partitionMetric,
             CancellationToken cancellationToken = default)
         {
+            using (ITrace trace = Tracing.Trace.GetRootTrace("Batch Dispatch Async", TraceComponent.Batch, Tracing.TraceLevel.Info))
+            {
+                await this.DispatchHelperAsync(trace, partitionMetric, cancellationToken);
+            }
+        }
+
+        private async Task<object> DispatchHelperAsync(
+            ITrace trace,
+            BatchPartitionMetric partitionMetric,
+            CancellationToken cancellationToken = default)
+        {
             this.interlockIncrementCheck.EnterLockCheck();
 
             PartitionKeyRangeServerBatchRequest serverRequest = null;
@@ -143,7 +158,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     Stopwatch stopwatch = Stopwatch.StartNew();
 
-                    PartitionKeyRangeBatchExecutionResult result = await this.executor(serverRequest, cancellationToken);
+                    PartitionKeyRangeBatchExecutionResult result = await this.executor(serverRequest, trace, cancellationToken);
 
                     int numThrottle = result.ServerResponse.Any(r => r.StatusCode == (System.Net.HttpStatusCode)StatusCodes.TooManyRequests) ? 1 : 0;
                     partitionMetric.Add(
@@ -157,21 +172,9 @@ namespace Microsoft.Azure.Cosmos
                         {
                             TransactionalBatchOperationResult response = batchResponse[itemBatchOperation.OperationIndex];
 
-                            // Bulk has diagnostics per a item operation.
-                            // Batch has a single diagnostics for the execute operation
-                            if (itemBatchOperation.DiagnosticsContext != null)
-                            {
-                                response.DiagnosticsContext = itemBatchOperation.DiagnosticsContext;
-                                response.DiagnosticsContext.AddDiagnosticsInternal(batchResponse.DiagnosticsContext);
-                            }
-                            else
-                            {
-                                response.DiagnosticsContext = batchResponse.DiagnosticsContext;
-                            }
-
                             if (!response.IsSuccessStatusCode)
                             {
-                                Documents.ShouldRetryResult shouldRetry = await itemBatchOperation.Context.ShouldRetryAsync(response, cancellationToken);
+                                ShouldRetryResult shouldRetry = await itemBatchOperation.Context.ShouldRetryAsync(response, cancellationToken);
                                 if (shouldRetry.ShouldRetry)
                                 {
                                     await this.retrier(itemBatchOperation, cancellationToken);
@@ -204,6 +207,8 @@ namespace Microsoft.Azure.Cosmos
                 this.batchOperations.Clear();
                 this.dispatched = true;
             }
+
+            return null;
         }
 
         internal virtual async Task<Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>>> CreateServerRequestAsync(CancellationToken cancellationToken)
@@ -227,11 +232,16 @@ namespace Microsoft.Azure.Cosmos
     /// Executor implementation that processes a list of operations.
     /// </summary>
     /// <returns>An instance of <see cref="PartitionKeyRangeBatchResponse"/>.</returns>
-    internal delegate Task<PartitionKeyRangeBatchExecutionResult> BatchAsyncBatcherExecuteDelegate(PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken);
+    internal delegate Task<PartitionKeyRangeBatchExecutionResult> BatchAsyncBatcherExecuteDelegate(
+        PartitionKeyRangeServerBatchRequest request,
+        ITrace trace,
+        CancellationToken cancellationToken);
 
     /// <summary>
     /// Delegate to process a request for retry an operation
     /// </summary>
     /// <returns>An instance of <see cref="PartitionKeyRangeBatchResponse"/>.</returns>
-    internal delegate Task BatchAsyncBatcherRetryDelegate(ItemBatchOperation operation, CancellationToken cancellationToken);
+    internal delegate Task BatchAsyncBatcherRetryDelegate(
+        ItemBatchOperation operation,
+        CancellationToken cancellationToken);
 }

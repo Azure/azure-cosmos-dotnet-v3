@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
-    using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Cosmos;
 
     public class MockedItemOfTBenchmark : IItemBenchmark
@@ -25,6 +24,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 throw new Exception();
             }
+
+            this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
         }
 
         public async Task UpsertItem()
@@ -37,6 +38,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 throw new Exception();
             }
+
+            this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
         }
 
         public async Task ReadItemNotExists()
@@ -50,6 +53,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
+                this.BenchmarkHelper.IncludeDiagnosticToStringHelper(ex.Diagnostics);
             }
         }
 
@@ -63,6 +67,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 throw new Exception();
             }
+
+            this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
         }
 
         public async Task UpdateItem()
@@ -76,6 +82,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 throw new Exception();
             }
+
+            this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
         }
 
         public async Task DeleteItemExists()
@@ -88,6 +96,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 throw new Exception();
             }
+
+            this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
         }
 
         public async Task DeleteItemNotExists()
@@ -100,12 +110,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
+                this.BenchmarkHelper.IncludeDiagnosticToStringHelper(ex.Diagnostics);
             }
         }
 
         public async Task ReadFeed()
         {
-            FeedIterator<ToDoActivity> resultIterator = this.BenchmarkHelper.TestContainer.GetItemQueryIterator<ToDoActivity>();
+            using FeedIterator<ToDoActivity> resultIterator = this.BenchmarkHelper.TestContainer.GetItemQueryIterator<ToDoActivity>();
             while (resultIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> response = await resultIterator.ReadNextAsync();
@@ -113,6 +124,29 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 {
                     throw new Exception();
                 }
+
+                this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
+            }
+        }
+
+        public async Task QuerySinglePage()
+        {
+            using FeedIterator<ToDoActivity> resultIterator = this.BenchmarkHelper.TestContainer.GetItemQueryIterator<ToDoActivity>(
+                "select * from T",
+                requestOptions: new QueryRequestOptions()
+                {
+                    PartitionKey = new PartitionKey("dummyValue"),
+                });
+
+            while (resultIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> response = await resultIterator.ReadNextAsync();
+                if (response.StatusCode != HttpStatusCode.OK || response.Resource.Count() == 0)
+                {
+                    throw new Exception();
+                }
+
+                this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
             }
         }
     }
