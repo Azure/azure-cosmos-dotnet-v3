@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             {
                 if (datums is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
                 {
-                    regionsContacted.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContactedWithName);
+                    regionsContacted.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
                     return;
                 }
             }

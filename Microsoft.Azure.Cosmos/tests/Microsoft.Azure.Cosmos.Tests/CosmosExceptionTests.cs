@@ -43,6 +43,61 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        public void VerifyDiagnosticsInTimeoutAndServerError()
+        {
+            ITrace trace = NoOpTrace.Singleton;
+            string diagnosticString = new Diagnostics.CosmosTraceDiagnostics(trace).ToString();
+
+            CosmosException cosmosException = new CosmosException(
+                statusCode: HttpStatusCode.RequestTimeout,
+                message: "Test",
+                stackTrace: null,
+                headers: null,
+                trace: trace,
+                error: null,
+                innerException: null);
+
+            Assert.IsTrue(cosmosException.Message.EndsWith(diagnosticString));
+            Assert.IsTrue(cosmosException.ToString().Contains(diagnosticString));
+
+            cosmosException = new CosmosException(
+                statusCode: HttpStatusCode.InternalServerError,
+                message: "Test",
+                stackTrace: null,
+                headers: null,
+                trace: trace,
+                error: null,
+                innerException: null);
+
+            Assert.IsTrue(cosmosException.Message.EndsWith(diagnosticString));
+            Assert.IsTrue(cosmosException.ToString().Contains(diagnosticString));
+
+            cosmosException = new CosmosException(
+                statusCode: HttpStatusCode.ServiceUnavailable,
+                message: "Test",
+                stackTrace: null,
+                headers: null,
+                trace: trace,
+                error: null,
+                innerException: null);
+
+            Assert.IsTrue(cosmosException.Message.EndsWith(diagnosticString));
+            Assert.IsTrue(cosmosException.ToString().Contains(diagnosticString));
+
+            cosmosException = new CosmosException(
+                statusCode: HttpStatusCode.NotFound,
+                message: "Test",
+                stackTrace: null,
+                headers: null,
+                trace: trace,
+                error: null,
+                innerException: null);
+
+            Assert.IsFalse(cosmosException.Message.Contains(diagnosticString));
+            Assert.IsTrue(cosmosException.ToString().Contains(diagnosticString));
+        }
+
+        [TestMethod]
         public void VerifyNullHeaderLogic()
         {
             string testMessage = "Test" + Guid.NewGuid().ToString();
@@ -205,7 +260,7 @@ namespace Microsoft.Azure.Cosmos
         public void VerifyDocumentClientExceptionToResponseMessage()
         {
             string errorMessage = "Test Exception!";
-            DocumentClientException dce = null;
+            DocumentClientException dce;
             try
             {
                 throw new DocumentClientException(
@@ -230,7 +285,6 @@ namespace Microsoft.Azure.Cosmos
         public void VerifyTransportExceptionToResponseMessage()
         {
             string errorMessage = "Test Exception!";
-            DocumentClientException dce = null;
             TransportException transportException = new TransportException(
                 errorCode: TransportErrorCode.ConnectionBroken,
                 innerException: null,
@@ -240,6 +294,7 @@ namespace Microsoft.Azure.Cosmos
                 userPayload: true,
                 payloadSent: true);
 
+            DocumentClientException dce;
             try
             {
                 throw new ServiceUnavailableException(
@@ -288,6 +343,16 @@ namespace Microsoft.Azure.Cosmos
                     requestCharge,
                     retryAfter);
             }
+
+            CosmosException cosmosException = CosmosExceptionFactory.CreateNotFoundException(testMessage, new Headers() { SubStatusCodeLiteral = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString(), ActivityId = activityId, RequestCharge = requestCharge, RetryAfterLiteral = retryAfterLiteral });
+            this.ValidateExceptionInfo(
+                    cosmosException,
+                    HttpStatusCode.NotFound,
+                    ((int)SubStatusCodes.ReadSessionNotAvailable).ToString(),
+                    testMessage,
+                    activityId,
+                    requestCharge,
+                    retryAfter);
         }
 
         [TestMethod]
@@ -378,6 +443,14 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(TimeSpan.FromMilliseconds(retryAfter), exception.Headers.RetryAfter);
             Assert.IsTrue(exception.ToString().Contains(message));
             string expectedMessage = $"Response status code does not indicate success: {httpStatusCode} ({(int)httpStatusCode}); Substatus: {substatus}; ActivityId: {exception.ActivityId}; Reason: ({message});";
+
+            if(httpStatusCode == HttpStatusCode.RequestTimeout
+                || httpStatusCode == HttpStatusCode.InternalServerError
+                || httpStatusCode == HttpStatusCode.ServiceUnavailable
+                || (httpStatusCode == HttpStatusCode.NotFound && exception.Headers.SubStatusCode == SubStatusCodes.ReadSessionNotAvailable))
+            {
+                expectedMessage += "; Diagnostics:" + new Diagnostics.CosmosTraceDiagnostics(NoOpTrace.Singleton).ToString();
+            }
 
             Assert.AreEqual(expectedMessage, exception.Message);
 
