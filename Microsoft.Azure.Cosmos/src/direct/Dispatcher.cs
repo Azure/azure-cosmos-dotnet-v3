@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
     // Dispatcher encapsulates the state and logic needed to dispatch multiple requests through
     // a single connection.
-    internal sealed class Dispatcher : IDisposable
+    internal class Dispatcher : IDisposable
     {
         // Connection is thread-safe for sending.
         // Receiving is done only from the receive loop.
@@ -265,17 +265,35 @@ namespace Microsoft.Azure.Documents.Rntbd
                     HttpConstants.HttpHeaders.TransportRequestID,
                     requestId.ToString(CultureInfo.InvariantCulture));
 
-                int headerSize, bodySize;
-                BufferProvider.DisposableBuffer serializedRequest = TransportSerialization.BuildRequest(
+                BufferProvider.DisposableBuffer serializedRequest = this.BuildRequest(
                     request,
                     physicalAddress.PathAndQuery,
                     resourceOperation,
                     activityId,
                     this.connection.BufferProvider,
-                    out headerSize, out bodySize);
+                    out int headerSize, out int bodySize);
 
                 return new PrepareCallResult(requestId, physicalAddress.Uri, serializedRequest);
             }
+        }
+
+        protected virtual BufferProvider.DisposableBuffer BuildRequest(
+                    DocumentServiceRequest request,
+                    string pathAndQuery,
+                    ResourceOperation resourceOperation,
+                    Guid activityId,
+                    BufferProvider bufferProvider,
+                    out int headerSize,
+                    out int bodySize)
+        {
+            return TransportSerialization.BuildRequest(
+                    request,
+                    pathAndQuery,
+                    resourceOperation,
+                    activityId,
+                    this.connection.BufferProvider,
+                    out headerSize,
+                    out bodySize);
         }
 
         public async Task<StoreResponse> CallAsync(ChannelCallArguments args)
@@ -599,8 +617,10 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private async Task NegotiateRntbdContextAsync(ChannelOpenArguments args)
         {
-            byte[] contextMessage = TransportSerialization.BuildContextRequest(
-                args.CommonArguments.ActivityId, this.userAgent, args.CallerId);
+            byte[] contextMessage = this.BuildContextRequest(
+                                        args.CommonArguments.ActivityId,
+                                        this.userAgent,
+                                        args.CallerId);
 
             await this.connection.WriteRequestAsync(args.CommonArguments, new ArraySegment<byte>(contextMessage, 0, contextMessage.Length));
 
@@ -679,6 +699,15 @@ namespace Microsoft.Azure.Documents.Rntbd
             args.OpenTimeline.RecordRntbdHandshakeFinishTime();
         }
 
+        protected virtual byte[] BuildContextRequest(Guid activityId,
+            UserAgentContainer userAgent,
+            RntbdConstants.CallerId callerId)
+        {
+            return TransportSerialization.BuildContextRequest(
+                        activityId,
+                        userAgent,
+                        callerId);
+        }
         private async Task ReceiveLoopAsync()
         {
             CancellationToken cancellationToken = this.cancellation.Token;

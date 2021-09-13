@@ -48,6 +48,44 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             TimeSpan openTimeout = localRegionRequest ? channelProperties.LocalRegionOpenTimeout : channelProperties.OpenTimeout;
 
+#if DEBUG && !(NETSTANDARD15 || NETSTANDARD16)
+            bool sendFuzzedRequest = false;
+            bool sendFuzzedContext = false;
+            string sendFuzzedRequestConfig = Environment.GetEnvironmentVariable("SendFuzzedRequest");
+            if (!string.IsNullOrEmpty(sendFuzzedRequestConfig))
+            {
+                if (!bool.TryParse(sendFuzzedRequestConfig, out sendFuzzedRequest))
+                {
+                    sendFuzzedRequest = false;
+                }
+            }
+
+            string sendFuzzedContextConfig = Environment.GetEnvironmentVariable("SendFuzzedContext");
+            if (!string.IsNullOrEmpty(sendFuzzedContextConfig))
+            {
+                if (!bool.TryParse(sendFuzzedContextConfig, out sendFuzzedContext))
+                {
+                    sendFuzzedContext = false;
+                }
+            }
+
+            if (sendFuzzedRequest || sendFuzzedContext)
+            {
+                this.dispatcher = new FuzzDispatcher(
+                        serverUri,
+                        channelProperties.UserAgent,
+                        channelProperties.ConnectionStateListener,
+                        channelProperties.CertificateHostNameOverride,
+                        channelProperties.ReceiveHangDetectionTime,
+                        channelProperties.SendHangDetectionTime,
+                        channelProperties.IdleTimerPool,
+                        channelProperties.IdleTimeout,
+                        true,
+                        sendFuzzedRequest,
+                        sendFuzzedContext);
+            }
+#endif
+
             this.openArguments = new ChannelOpenArguments(
                 activityId, new ChannelOpenTimeline(),
                 openTimeout,
