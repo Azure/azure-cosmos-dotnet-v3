@@ -240,26 +240,34 @@
                     MaxItemCount = 1
                 }))
             {
-                // Execute first page of query
-                FeedResponse<Family> response = await resultSetIterator.ReadNextAsync();
-
-                results.AddRange(response);
-                if (response.Diagnostics != null)
+                // Execute query and get 1 item in the results. Then, get a continuation token to resume later
+                while (resultSetIterator.HasMoreResults)
                 {
-                    Console.WriteLine($"\nQueryWithContinuationTokens Diagnostics: {response.Diagnostics.ToString()}");
-                }
+                    FeedResponse<Family> response = await resultSetIterator.ReadNextAsync();
 
-                // Get continuation token
-                if (response.Diagnostics != null)
-                {
-                    continuation = response.ContinuationToken;
+                    results.AddRange(response);
+                    if (response.Diagnostics != null)
+                    {
+                        Console.WriteLine($"\nQueryWithContinuationTokens Diagnostics: {response.Diagnostics.ToString()}");
+                    }
+
+                    // Get continuation token once we've gotten > 0 results. 
+                    if (response.Count > 0)
+                    {
+                        continuation = response.ContinuationToken;
+                        break;
+                    }
                 }
             }
 
-            // Resume query execution using the continuation token
-            if (continuation != null)
+            // Check if query has already been fully drained
+            if (continuation == null)
             {
-                using (FeedIterator<Family> resultSetIterator = container.GetItemQueryIterator<Family>(
+                return;
+            }
+
+            // Resume query using continuation token
+            using (FeedIterator<Family> resultSetIterator = container.GetItemQueryIterator<Family>(
                     query,
                     requestOptions: new QueryRequestOptions()
                     {
@@ -279,7 +287,6 @@
                     }
                     Assert("Expected 2 families", results.Count == 2);
                 }
-            }
         }
         // </QueryWithContinuationTokens>
 
