@@ -653,7 +653,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         /// <summary>
         /// This test validates Incremental Change Feed by inserting and deleting documents and verifying nothing reported
         /// </summary>
-        [Ignore]
         [TestMethod]
         public async Task ChangeFeedIteratorCore_DeleteAfterCreate()
         {
@@ -673,8 +672,15 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             FeedIterator<ToDoActivityWithMetadata> changefeedIterator = container.GetChangeFeedIterator<ToDoActivityWithMetadata>(
                 ChangeFeedStartFrom.Beginning(),
                 ChangeFeedMode.Incremental);
-            CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => changefeedIterator.ReadNextAsync());
-            Assert.AreEqual(HttpStatusCode.NotModified, cosmosException.StatusCode, "Incremental Change Feed does not present intermediate results and should return nothing.");
+            while (changefeedIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivityWithMetadata> feedResponse = await changefeedIterator.ReadNextAsync(this.cancellationToken);
+                Assert.AreEqual(HttpStatusCode.NotModified, feedResponse.StatusCode, "Incremental Change Feed does not present intermediate results and should return nothing.");
+                if (feedResponse.StatusCode == HttpStatusCode.NotModified)
+                {
+                    break;
+                }
+            }
         }
 
         /// <summary>
@@ -821,7 +827,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         /// <summary>
         /// This test validates error with Full Fidelity Change Feed and start from beginning.
         /// </summary>
-        [Ignore]
         [TestMethod]
         public async Task ChangeFeedIteratorCore_WithFullFidelityReadFromBeginning()
         {
