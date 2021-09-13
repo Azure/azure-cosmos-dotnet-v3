@@ -4,11 +4,8 @@
 
 namespace Microsoft.Azure.Documents
 {
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
     using System;
-    using System.Collections.ObjectModel;
-    using System.Globalization;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Represents the change feed policy for a collection in the Azure Cosmos DB service.

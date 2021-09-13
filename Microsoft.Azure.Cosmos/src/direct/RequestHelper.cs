@@ -4,10 +4,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Globalization;
-    using System.Threading.Tasks;
 
     internal static class RequestHelper
     {

@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
@@ -159,7 +160,8 @@ namespace Microsoft.Azure.Documents
                         !(this.ResourceType == ResourceType.Snapshot) &&
                         !(this.ResourceType == ResourceType.RoleDefinition) &&
                         !(this.ResourceType == ResourceType.RoleAssignment) &&
-                        !(this.ResourceType == ResourceType.InteropUser)
+                        !(this.ResourceType == ResourceType.InteropUser) &&
+                        !(this.ResourceType == ResourceType.AuthPolicyElement)
 #if !COSMOSCLIENT
                         && !(this.ResourceType == ResourceType.MasterPartition) &&
                         !(this.ResourceType == ResourceType.ServerPartition) &&
@@ -401,6 +403,113 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        /// <summary>
+        /// Get the HttpMethod for request based on OperationType and Body
+        /// </summary>
+        public string HttpMethod
+        {
+            get
+            {
+                switch (this.OperationType)
+                {
+                    case OperationType.Create:
+                    case OperationType.ExecuteJavaScript:
+                    case OperationType.Query:
+                    case OperationType.SqlQuery:
+                    case OperationType.Upsert:
+                    case OperationType.BatchApply:
+                    case OperationType.Batch:
+                    case OperationType.QueryPlan:
+                    case OperationType.CompleteUserTransaction:
+                        return HttpConstants.HttpMethods.Post;
+
+                    case OperationType.Delete:
+                        return HttpConstants.HttpMethods.Delete;
+
+                    case OperationType.Read:
+                        return HttpConstants.HttpMethods.Get;
+
+                    case OperationType.ReadFeed:
+                        {
+                            if (this.Body == null)
+                            {
+                                return HttpConstants.HttpMethods.Get;
+                            }
+                            else
+                            {
+                                return HttpConstants.HttpMethods.Post;
+                            }
+                        }
+
+                    case OperationType.Replace:
+                    case OperationType.CollectionTruncate:
+                        return HttpConstants.HttpMethods.Put;
+
+                    case OperationType.Patch:
+                        return HttpConstants.HttpMethods.Patch;
+
+                    case OperationType.Head:
+                    case OperationType.HeadFeed:
+                        return HttpConstants.HttpMethods.Head;
+
+#if !COSMOSCLIENT
+                // Control operations
+                case OperationType.Pause:
+                case OperationType.Recycle:
+                case OperationType.Resume:
+                case OperationType.Stop:
+                case OperationType.Crash:
+                case OperationType.ForceConfigRefresh:
+                case OperationType.Throttle:
+                case OperationType.PreCreateValidation:
+                case OperationType.Recreate:
+                case OperationType.GetSplitPoint:
+                case OperationType.AbortSplit:
+                case OperationType.CompleteSplit:
+                case OperationType.CompleteMergeOnMaster:
+                case OperationType.CompleteMergeOnTarget:
+                case OperationType.OfferUpdateOperation:
+                case OperationType.OfferPreGrowValidation:
+                case OperationType.BatchReportThroughputUtilization:
+                case OperationType.AbortPartitionMigration:
+                case OperationType.CompletePartitionMigration:
+                case OperationType.PreReplaceValidation:
+                case OperationType.MigratePartition:
+                case OperationType.MasterReplaceOfferOperation:
+                case OperationType.InitiateDatabaseOfferPartitionShrink:
+                case OperationType.CompleteDatabaseOfferPartitionShrink:
+                case OperationType.ServiceReservation:
+                case OperationType.GetSplitPoints:
+                case OperationType.GetUnwrappedDek:
+                case OperationType.GetFederationConfigurations:
+                case OperationType.GetDatabaseAccountConfigurations:
+                case OperationType.GetStorageServiceConfigurations:
+                case OperationType.ForcePartitionBackup:
+                case OperationType.MasterInitiatedProgressCoordination:
+                case OperationType.MetadataCheckAccess:
+                case OperationType.CreateSystemSnapshot:
+                case OperationType.GetAadGroups:
+                case OperationType.UpdateFailoverPriorityList:
+                case OperationType.GetStorageAccountSas:
+                    return HttpConstants.HttpMethods.Post;
+
+                case OperationType.EnsureSnapshotOperation:
+                    return HttpConstants.HttpMethods.Put;
+
+                case OperationType.ReadReplicaFromMasterPartition:
+                case OperationType.ReadReplicaFromServerPartition:
+                case OperationType.GetStorageAuthToken:
+                    return HttpConstants.HttpMethods.Get;
+#endif
+
+                    default:
+                        string message = string.Format(CultureInfo.InvariantCulture, "Unsupported operation type: {0}.", this.OperationType);
+                        Debug.Fail(message);
+                        throw new NotImplementedException(message);
+                }
+            }
+        }
+
         public JsonSerializerSettings SerializerSettings
         {
             get;
@@ -504,6 +613,10 @@ namespace Microsoft.Azure.Documents
                         return true;
                     }
                     else if (this.ResourceType == ResourceType.InteropUser)
+                    {
+                        return true;
+                    }
+                    else if (this.ResourceType == ResourceType.AuthPolicyElement)
                     {
                         return true;
                     }

@@ -126,6 +126,9 @@
   <data name="RemoveWriteRegionNotSupported" xml:space="preserve">
     <value>Cannot remove write region for account {0}. Please issue delete on the account to remove write region</value>
   </data>
+  <data name="AddRemoveRegionOperationFailed" xml:space="preserve">
+    <value>Add or Remove region operation failed.</value>
+  </data>
   <data name="DocumentServiceUnavailable" xml:space="preserve">
     <value>Service is currently unavailable, please retry after a while. If this problem persists please contact support.</value>
   </data>
@@ -1042,17 +1045,17 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="FreeTierUpdateNotSupported" xml:space="preserve">
     <value>Cannot update FreeTier property for existing account.</value>
   </data>
-  <data name="AadAuthMetadataRequestBlocked" xml:space="preserve">
-    <value>Request is blocked because principal [{0}] does not have required RBAC permissions to perform action [{1}] on resource [{2}].</value>
+  <data name="AadAuthRequestBlocked" xml:space="preserve">
+    <value>Request is blocked because principal [{0}] does not have required RBAC permissions to perform action [{1}] on resource [{2}]. Learn more: https://aka.ms/cosmos-native-rbac.</value>
   </data>
   <data name="AadAuthDatabaseAccountRequestBlocked" xml:space="preserve">
-    <value>Request for Read DatabaseAccount is blocked because principal [{0}] does not have required RBAC permissions to perform action [{1}] on any scope.</value>
+    <value>Request for Read DatabaseAccount is blocked because principal [{0}] does not have required RBAC permissions to perform action [{1}] on any scope. Learn more: https://aka.ms/cosmos-native-rbac.</value>
   </data>
   <data name="AadAuthGroupExpansionNeeded" xml:space="preserve">
     <value>This could be because the user's group memberships were not present in the AAD token.</value>
   </data>
   <data name="AadAuthActionNotSupported" xml:space="preserve">
-    <value>The given request [{0} {1}] cannot be authorized by AAD token in data plane.</value>
+    <value>The given request [{0} {1}] cannot be authorized by AAD token in data plane. Learn more: https://aka.ms/cosmos-native-rbac.</value>
   </data>
   <data name="AadAuthenticatorNotAvailable" xml:space="preserve">
     <value>Failed to validate AAD identity since the authenticator is unavailable.</value>
@@ -1108,7 +1111,19 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="InvalidStoreTypeSpecified" xml:space="preserve">
     <value>Invalid store type specified {0}.</value>
   </data>
+  <data name="SasTokenAuthDisabled" xml:space="preserve">
+    <value>SAS Token Authentication is disabled for this account. Please contact Azure Support [https://azure.microsoft.com/support] to enable it.</value>
+  </data>
   <data name="RevokeRegrantNotAllowed" xml:space="preserve">
     <value>Revoke/Grant is not allowed as the Account status is: {0}.</value>
+  </data>
+  <data name="ChannelWaitingToOpenTimeoutException" xml:space="preserve">
+    <value>The TCP channel timed out on waiting to open.</value>
+  </data>
+  <data name="UnsupportedAccessControlType" xml:space="preserve">
+    <value>Resource tokens are not supported by the Dedicated Gateway endpoint. </value>
+  </data>
+  <data name="AadLocalAuthDisabled" xml:space="preserve">
+    <value>Local Authorization is disabled. Use an AAD token to authorize all requests.</value>
   </data>
 </root>

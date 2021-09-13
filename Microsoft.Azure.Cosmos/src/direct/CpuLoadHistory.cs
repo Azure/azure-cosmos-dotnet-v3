@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Documents.Rntbd
 {
     using System;
     using System.Collections.ObjectModel;
-    using System.Diagnostics;
     using System.Threading;
 
     internal sealed class CpuLoadHistory

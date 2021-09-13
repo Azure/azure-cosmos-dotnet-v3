@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Documents
 {
-    using System;
     using System.Runtime.Serialization;
 
     using Newtonsoft.Json;

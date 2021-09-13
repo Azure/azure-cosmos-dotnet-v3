@@ -10,10 +10,13 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
@@ -27,6 +30,10 @@ namespace Microsoft.Azure.Cosmos
         private readonly ConsistencyLevel defaultConsistencyLevel;
 
         private GatewayStoreClient gatewayStoreClient;
+
+        // Caches to resolve the PartitionKeyRange from request. For Session Token Optimization.
+        private ClientCollectionCache clientCollectionCache;
+        private PartitionKeyRangeCache partitionKeyRangeCache;
 
         public GatewayStoreModel(
             GlobalEndpointManager endpointManager,
@@ -49,10 +56,12 @@ namespace Microsoft.Azure.Cosmos
 
         public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default)
         {
-            GatewayStoreModel.ApplySessionToken(
+            await GatewayStoreModel.ApplySessionTokenAsync(
                 request,
                 this.defaultConsistencyLevel,
-                this.sessionContainer);
+                this.sessionContainer,
+                this.partitionKeyRangeCache,
+                this.clientCollectionCache);
 
             DocumentServiceResponse response;
             try
@@ -76,7 +85,9 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        public virtual async Task<AccountProperties> GetDatabaseAccountAsync(Func<ValueTask<HttpRequestMessage>> requestMessage, CancellationToken cancellationToken = default)
+        public virtual async Task<AccountProperties> GetDatabaseAccountAsync(Func<ValueTask<HttpRequestMessage>> requestMessage,
+                                                        IClientSideRequestStatistics clientSideRequestStatistics,
+                                                        CancellationToken cancellationToken = default)
         {
             AccountProperties databaseAccount = null;
 
@@ -85,6 +96,7 @@ namespace Microsoft.Azure.Cosmos
                 requestMessage,
                 ResourceType.DatabaseAccount,
                 HttpTimeoutPolicyControlPlaneRead.Instance,
+                clientSideRequestStatistics,
                 cancellationToken))
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
@@ -143,6 +155,13 @@ namespace Microsoft.Azure.Cosmos
             return databaseAccount;
         }
 
+        public void SetCaches(PartitionKeyRangeCache partitionKeyRangeCache, 
+                              ClientCollectionCache clientCollectionCache)
+        {
+            this.clientCollectionCache = clientCollectionCache;
+            this.partitionKeyRangeCache = partitionKeyRangeCache;
+        }
+
         public void Dispose()
         {
             this.Dispose(true);
@@ -193,10 +212,12 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal static void ApplySessionToken(
+        internal static async Task ApplySessionTokenAsync(
             DocumentServiceRequest request,
             ConsistencyLevel defaultConsistencyLevel,
-            ISessionContainer sessionContainer)
+            ISessionContainer sessionContainer,
+            PartitionKeyRangeCache partitionKeyRangeCache,
+            CollectionCache clientCollectionCache)
         {
             if (request.Headers == null)
             {
@@ -227,18 +248,154 @@ namespace Microsoft.Azure.Cosmos
                 (!string.IsNullOrEmpty(requestConsistencyLevel)
                     && string.Equals(requestConsistencyLevel, ConsistencyLevel.Session.ToString(), StringComparison.OrdinalIgnoreCase));
 
-            if (!sessionConsistency)
+            if (!sessionConsistency || (!request.IsReadOnlyRequest && request.OperationType != OperationType.Batch))
             {
-                return; // Only apply the session token in case of session consistency
+                return; // Only apply the session token in case of session consistency and the request is read only
             }
 
-            //Apply the ambient session.
-            string sessionToken = sessionContainer.ResolveGlobalSessionToken(request);
+            (bool isSuccess, string sessionToken) = await GatewayStoreModel.TryResolveSessionTokenAsync(
+                request,
+                sessionContainer,
+                partitionKeyRangeCache,
+                clientCollectionCache);
+
+            if (!isSuccess)
+            {
+                sessionToken = sessionContainer.ResolveGlobalSessionToken(request);
+            }
 
             if (!string.IsNullOrEmpty(sessionToken))
             {
                 request.Headers[HttpConstants.HttpHeaders.SessionToken] = sessionToken;
             }
+        }
+
+        internal static async Task<Tuple<bool, string>> TryResolveSessionTokenAsync(
+            DocumentServiceRequest request,
+            ISessionContainer sessionContainer,
+            PartitionKeyRangeCache partitionKeyRangeCache,
+            CollectionCache clientCollectionCache)
+        {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            if (sessionContainer == null)
+            {
+                throw new ArgumentNullException(nameof(sessionContainer));
+            }
+
+            if (partitionKeyRangeCache == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKeyRangeCache));
+            }
+
+            if (clientCollectionCache == null)
+            {
+                throw new ArgumentNullException(nameof(clientCollectionCache));
+            }
+
+            if (request.ResourceType.IsPartitioned())
+            {
+                (bool isSuccess, PartitionKeyRange partitionKeyRange) = await TryResolvePartitionKeyRangeAsync(
+                    request: request,
+                    sessionContainer: sessionContainer,
+                    partitionKeyRangeCache: partitionKeyRangeCache,
+                    clientCollectionCache: clientCollectionCache,
+                    refreshCache: false);
+
+                if (isSuccess && sessionContainer is SessionContainer gatewaySessionContainer)
+                {
+                    request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+                    string localSessionToken = gatewaySessionContainer.ResolvePartitionLocalSessionTokenForGateway(request, partitionKeyRange.Id);
+                    if (!string.IsNullOrEmpty(localSessionToken))
+                    {
+                        return new Tuple<bool, string>(true, localSessionToken);
+                    }
+                }
+            }
+
+            return new Tuple<bool, string>(false, null);
+        }
+
+        private static async Task<Tuple<bool, PartitionKeyRange>> TryResolvePartitionKeyRangeAsync(
+            DocumentServiceRequest request,
+            ISessionContainer sessionContainer,
+            PartitionKeyRangeCache partitionKeyRangeCache,
+            CollectionCache clientCollectionCache,
+            bool refreshCache)
+        {
+            if (refreshCache)
+            {
+                request.ForceMasterRefresh = true;
+                request.ForceNameCacheRefresh = true;
+            }
+
+            PartitionKeyRange partitonKeyRange = null;
+            ContainerProperties collection = await clientCollectionCache.ResolveCollectionAsync(
+                request,
+                CancellationToken.None,
+                NoOpTrace.Singleton);
+
+            string partitionKeyString = request.Headers[HttpConstants.HttpHeaders.PartitionKey];
+            if (partitionKeyString != null)
+            {
+                CollectionRoutingMap collectionRoutingMap = await partitionKeyRangeCache.TryLookupAsync(
+                    collectionRid: collection.ResourceId,
+                    previousValue: null,
+                    request: request,
+                    cancellationToken: CancellationToken.None,
+                    NoOpTrace.Singleton);
+
+                if (refreshCache && collectionRoutingMap != null)
+                {
+                    collectionRoutingMap = await partitionKeyRangeCache.TryLookupAsync(
+                        collectionRid: collection.ResourceId,
+                        previousValue: collectionRoutingMap,
+                        request: request,
+                        cancellationToken: CancellationToken.None,
+                        NoOpTrace.Singleton);
+                }
+
+                partitonKeyRange = AddressResolver.TryResolveServerPartitionByPartitionKey(
+                    request: request,
+                    partitionKeyString: partitionKeyString,
+                    collectionCacheUptoDate: false,
+                    collection: collection,
+                    routingMap: collectionRoutingMap);
+            }
+            else if (request.PartitionKeyRangeIdentity != null)
+            {
+                PartitionKeyRangeIdentity partitionKeyRangeId = request.PartitionKeyRangeIdentity;
+                partitonKeyRange = await partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(
+                    collection.ResourceId,
+                    partitionKeyRangeId.PartitionKeyRangeId,
+                    NoOpTrace.Singleton,
+                    refreshCache);
+            }
+            else if (request.RequestContext.ResolvedPartitionKeyRange != null)
+            {
+                partitonKeyRange = request.RequestContext.ResolvedPartitionKeyRange;
+            }
+
+            if (partitonKeyRange == null)
+            {
+                if (refreshCache)
+                {
+                    return new Tuple<bool, PartitionKeyRange>(false, null);
+                }
+
+                // need to refresh cache. Maybe split happened.
+                return await GatewayStoreModel.TryResolvePartitionKeyRangeAsync(
+                    request: request,
+                    sessionContainer: sessionContainer,
+                    partitionKeyRangeCache: partitionKeyRangeCache,
+                    clientCollectionCache: clientCollectionCache,
+                    refreshCache: true);
+            }
+
+            return new Tuple<bool, PartitionKeyRange>(true, partitonKeyRange);
         }
 
         // DEVNOTE: This can be replace with ReplicatedResourceClient.IsMasterOperation on next Direct sync

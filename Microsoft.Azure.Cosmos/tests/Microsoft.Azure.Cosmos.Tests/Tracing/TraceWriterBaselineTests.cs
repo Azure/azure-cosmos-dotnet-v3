@@ -292,7 +292,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             method: HttpMethod.Post,
                             requestUri: "http://localhost.com",
                             requestSessionToken: nameof(PointOperationStatisticsTraceDatum.RequestSessionToken),
-                            responseSessionToken: nameof(PointOperationStatisticsTraceDatum.ResponseSessionToken));
+                            responseSessionToken: nameof(PointOperationStatisticsTraceDatum.ResponseSessionToken),
+                            beLatencyInMs: "0.42");
                         rootTrace.AddDatum("Point Operation Statistics", datum);
                     }
                     endLineNumber = GetLineNumber();
@@ -315,7 +316,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             method: default,
                             requestUri: default,
                             requestSessionToken: default,
-                            responseSessionToken: default);
+                            responseSessionToken: default,
+                            beLatencyInMs: default);
                         rootTrace.AddDatum("Point Operation Statistics Default", datum);
                     }
                     endLineNumber = GetLineNumber();
@@ -397,7 +399,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 itemLSN: 15,
                                 sessionToken: new SimpleSessionToken(42),
                                 usingLocalLSN: true,
-                                activityId: Guid.Empty.ToString()),
+                                activityId: Guid.Empty.ToString(),
+                                backendRequestDurationInMs: "4.2"),
                             ResourceType.Document,
                             OperationType.Query,
                             uri1);
@@ -449,7 +452,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 itemLSN: default,
                                 sessionToken: default,
                                 usingLocalLSN: default,
-                                activityId: default),
+                                activityId: default,
+                                backendRequestDurationInMs: default),
                             resourceType: default,
                             operationType: default,
                             locationEndpoint: default); ;
@@ -459,6 +463,45 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                     endLineNumber = GetLineNumber();
 
                     inputs.Add(new Input("Client Side Request Stats Default", rootTrace, startLineNumber, endLineNumber));
+                }
+
+                {
+                    startLineNumber = GetLineNumber();
+                    TraceForBaselineTesting rootTrace;
+                    using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+                    {
+                        ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue)
+                        {
+                            RequestEndTimeUtc = DateTime.MaxValue
+                        };
+
+                        HttpResponseStatistics httpResponseStatistics = new HttpResponseStatistics(
+                            DateTime.MinValue,
+                            DateTime.MaxValue,
+                            new Uri("http://someUri1.com"),
+                            HttpMethod.Get,
+                            ResourceType.Document,
+                            new HttpResponseMessage(System.Net.HttpStatusCode.OK) { ReasonPhrase = "Success" },
+                            exception: null
+                            );
+                        datum.HttpResponseStatisticsList.Add(httpResponseStatistics);
+
+                        HttpResponseStatistics httpResponseStatisticsException = new HttpResponseStatistics(
+                            DateTime.MinValue,
+                            DateTime.MaxValue,
+                            new Uri("http://someUri1.com"),
+                            HttpMethod.Get,
+                            ResourceType.Document,
+                            responseMessage: null,
+                            exception: new OperationCanceledException()
+                            );
+                        datum.HttpResponseStatisticsList.Add(httpResponseStatisticsException);
+
+                        rootTrace.AddDatum("Client Side Request Stats", datum);
+                    }
+                    endLineNumber = GetLineNumber();
+
+                    inputs.Add(new Input("Client Side Request Stats For Gateway Request", rootTrace, startLineNumber, endLineNumber));
                 }
             }
             //----------------------------------------------------------------
@@ -692,7 +735,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
-                hasLogicalPartitionKey: false);
+                hasLogicalPartitionKey: false,
+                allowDCount: true);
 
             info.ThrowIfFailed();
             return info.Result.QueryInfo;
@@ -778,7 +822,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
         private sealed class TraceForBaselineTesting : ITrace
         {
             private readonly Dictionary<string, object> data;
-            private readonly List<TraceForBaselineTesting> children;
+            private readonly List<ITrace> children;
 
             public TraceForBaselineTesting(
                 string name,
@@ -790,7 +834,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 this.Level = level;
                 this.Component = component;
                 this.Parent = parent;
-                this.children = new List<TraceForBaselineTesting>();
+                this.children = new List<ITrace>();
                 this.data = new Dictionary<string, object>();
             }
 
@@ -836,8 +880,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             public ITrace StartChild(string name, TraceComponent component, TraceLevel level, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
             {
                 TraceForBaselineTesting child = new TraceForBaselineTesting(name, level, component, parent: this);
-                this.children.Add(child);
+                this.AddChild(child);
                 return child;
+            }
+
+            public void AddChild(ITrace trace)
+            {
+                this.children.Add(trace);
             }
 
             public static TraceForBaselineTesting GetRootTrace()

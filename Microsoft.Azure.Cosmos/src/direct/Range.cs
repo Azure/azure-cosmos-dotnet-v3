@@ -5,9 +5,9 @@
 namespace Microsoft.Azure.Documents.Routing
 {
     using System;
-    using Newtonsoft.Json;
     using System.Collections.Generic;
     using System.Globalization;
+    using Newtonsoft.Json;
 
     [JsonObject(MemberSerialization.OptIn)]
     internal sealed class Range<T> where T: IComparable<T>

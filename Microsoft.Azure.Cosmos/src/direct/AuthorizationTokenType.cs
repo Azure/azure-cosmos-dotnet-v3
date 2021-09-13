@@ -18,5 +18,6 @@ namespace Microsoft.Azure.Documents
         ComputeGatewayKey,
         AadToken,
         CompoundToken,
+        SasToken,
     }
 }

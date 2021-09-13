@@ -681,17 +681,7 @@ namespace Microsoft.Azure.Cosmos
             string name,
             string partitionKeyPath)
         {
-            if (string.IsNullOrEmpty(name))
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
-            if (string.IsNullOrEmpty(partitionKeyPath))
-            {
-                throw new ArgumentNullException(nameof(partitionKeyPath));
-            }
-
-            return new ContainerBuilder(this, this.ClientContext, name, partitionKeyPath);
+            return new ContainerBuilder(this, name, partitionKeyPath);
         }
 
 #if PREVIEW

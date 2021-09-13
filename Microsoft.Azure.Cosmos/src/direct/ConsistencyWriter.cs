@@ -185,7 +185,7 @@ For globally strong write:
                                 CultureInfo.InvariantCulture,
                                 out result) && result == 1)
                             {
-                                this.StartBackgroundAddressRefresh(request);
+                                this.addressSelector.StartBackgroundAddressRefresh(request);
                             }
                         }
                     }
@@ -322,25 +322,6 @@ For globally strong write:
             DefaultTrace.TraceInformation("ConsistencyWriter: Highest global committed lsn received for write barrier call is {0}", maxGlobalCommittedLsnReceived);
 
             return false;
-        }
-
-        private void StartBackgroundAddressRefresh(DocumentServiceRequest request)
-        {
-            try
-            {
-                this.addressSelector.ResolvePrimaryTransportAddressUriAsync(request, true).ContinueWith((task) =>
-                {
-                    if (task.IsFaulted)
-                    {
-                        DefaultTrace.TraceWarning(
-                            "Background refresh of the primary address failed with {0}", task.Exception.ToString());
-                    }
-                });
-            }
-            catch (Exception exception)
-            {
-                DefaultTrace.TraceWarning("Background refresh of the primary address failed with {0}", exception.ToString());
-            }
         }
     }
 }

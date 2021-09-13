@@ -3,12 +3,9 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
+    using System;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
-    using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Globalization;
 
     /// <summary>
     /// Represents geospatial configuration for a collection in the Azure Cosmos DB service

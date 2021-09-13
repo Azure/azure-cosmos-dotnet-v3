@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Documents
     using System;
     using System.Collections.Generic;
     using System.Globalization;
-    using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
@@ -153,16 +152,37 @@ namespace Microsoft.Azure.Documents
         {
             entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
-            IReadOnlyList<TransportAddressUri> resolveApiResults = await this.GetTransportAddressesAndClearSessionContainerIfCollectionRecreate(
-                entity,
-                includePrimary);
-
-            ISessionToken requestSessionToken = this.GetRequestSessionTokenAndRemoveIfNotRequired(
-                entity: entity,
-                useSessionToken: useSessionToken,
-                checkMinLSN: checkMinLSN);
-
             List<StoreResult> responseResult = new List<StoreResult>(replicaCountToRead);
+
+            string requestedCollectionRid = entity.RequestContext.ResolvedCollectionRid;
+
+            IReadOnlyList<TransportAddressUri> resolveApiResults = await this.addressSelector.ResolveAllTransportAddressUriAsync(
+                     entity,
+                     includePrimary,
+                     entity.RequestContext.ForceRefreshAddressCache);
+
+            if (!string.IsNullOrEmpty(requestedCollectionRid) && !string.IsNullOrEmpty(entity.RequestContext.ResolvedCollectionRid))
+            {
+                if (!requestedCollectionRid.Equals(entity.RequestContext.ResolvedCollectionRid))
+                {
+                    this.sessionContainer.ClearTokenByResourceId(requestedCollectionRid);
+                }
+            }
+
+            ISessionToken requestSessionToken = null;
+            if (useSessionToken)
+            {
+                SessionTokenHelper.SetPartitionLocalSessionToken(entity, this.sessionContainer);
+                if (checkMinLSN)
+                {
+                    requestSessionToken = entity.RequestContext.SessionToken;
+                }
+            }
+            else
+            {
+                entity.Headers.Remove(HttpConstants.HttpHeaders.SessionToken);
+            }
+
             if (resolveApiResults.Count < replicaCountToRead)
             {
                 if (!entity.RequestContext.ForceRefreshAddressCache)
@@ -174,71 +194,112 @@ namespace Microsoft.Azure.Documents
             }
 
             int replicasToRead = replicaCountToRead;
-            bool enforceSessionCheck = EnforceSessionCheckBasedOnApiVersion(entity);
+
+            string clientVersion = entity.Headers[HttpConstants.HttpHeaders.Version];
+            bool enforceSessionCheck = !string.IsNullOrEmpty(clientVersion) && VersionUtility.IsLaterThan(clientVersion, HttpConstants.VersionDates.v2016_05_30);
 
             this.UpdateContinuationTokenIfReadFeedOrQuery(entity);
 
-            IEnumerator<TransportAddressUri> uriEnumerator;
-
-            if (forceReadAll)
-            {
-                replicasToRead = resolveApiResults.Count;
-                // All the replicas are being read so no reason to give a 
-                // random order
-                uriEnumerator = resolveApiResults.GetEnumerator();
-            }
-            else
-            {
-                uriEnumerator = this.addressEnumerator.GetTransportAddresses(resolveApiResults).GetEnumerator();
-            }
-
-            (bool isSuccess, TransportAddressUri transportAddressUri) ConcurrentGetTransportAddressUri()
-            {
-                lock (uriEnumerator)
-                {
-                    if (uriEnumerator.MoveNext())
-                    {
-                        return (true, uriEnumerator.Current);
-                    }
-
-                    return (false, null);
-                }
-            }
-
-            
-
-           Task<(StoreResult, OperationCanceledException, bool)>[] readStoreTasks = new Task<(StoreResult, OperationCanceledException, bool)>[replicasToRead];
-            // Loop until we have the read quorum number of valid responses or if we have read all the replicas
-            for (int i = 0; i < readStoreTasks.Length; i++)
-            {
-                entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
-
-                readStoreTasks[i] = this.MultipleTaskHelperAsync(
-                    entity,
-                    ConcurrentGetTransportAddressUri,
-                    readMode,
-                    requiresValidLsn,
-                    requestSessionToken,
-                    enforceSessionCheck);
-            }
-
             bool hasGoneException = false;
+            bool hasCancellationException = false;
             Exception cancellationException = null;
             Exception exceptionToThrow = null;
-            foreach (Task<(StoreResult, OperationCanceledException, bool)> task in readStoreTasks)
-            {
-                (StoreResult storeResult, OperationCanceledException operationCanceledException, bool hasGoneExceptionResponse) = await task;
-                hasGoneException |= hasGoneExceptionResponse;
+            IEnumerator<TransportAddressUri> uriEnumerator = this.addressEnumerator.GetTransportAddresses(resolveApiResults).GetEnumerator();
 
-                if(operationCanceledException != null)
+            // Loop until we have the read quorum number of valid responses or if we have read all the replicas
+            while (replicasToRead > 0 && uriEnumerator.MoveNext())
+            {
+                entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
+                Dictionary<Task<StoreResponse>, TransportAddressUri> readStoreTasks = new Dictionary<Task<StoreResponse>, TransportAddressUri>();
+
+                do
                 {
-                    cancellationException = operationCanceledException;
-                }
-                
-                if(storeResult != null)
+                    readStoreTasks.Add(this.ReadFromStoreAsync(
+                            physicalAddress: uriEnumerator.Current,
+                            request: entity),
+                        uriEnumerator.Current);
+
+                    if (!forceReadAll && readStoreTasks.Count == replicasToRead)
+                    {
+                        break;
+                    }
+                } while (uriEnumerator.MoveNext());
+
+                try
                 {
-                    responseResult.Add(storeResult);
+                    await Task.WhenAll(readStoreTasks.Keys);
                 }
+                catch (Exception exception)
+                {
+                    //All task exceptions are visited below.
+                    DefaultTrace.TraceInformation("Exception {0} is thrown while doing readMany", exception);
+                    exceptionToThrow = exception;
+                }
+
+                foreach (KeyValuePair<Task<StoreResponse>, TransportAddressUri> readTaskValuePair in readStoreTasks)
+                {
+                    Task<StoreResponse> readTask = readTaskValuePair.Key;
+                    StoreResponse storeResponse = readTask.Status == TaskStatus.RanToCompletion ? readTask.Result : null;
+                    Exception storeException = readTask.Exception?.InnerException;
+
+                    // IsCanceled can be true with storeException being null if the async call
+                    // gets canceled before it gets scheduled.
+                    if (readTask.IsCanceled || storeException is OperationCanceledException)
+                    {
+                        hasCancellationException = true;
+                        cancellationException ??= storeException;
+                        continue;
+                    }
+
+                    Uri targetUri = readTaskValuePair.Value.Uri;
+
+                    StoreResult storeResult = StoreResult.CreateStoreResult(
+                        storeResponse,
+                        storeException, 
+                        requiresValidLsn,
+                        this.canUseLocalLSNBasedHeaders && readMode != ReadMode.Strong,
+                        targetUri);
+
+                    entity.RequestContext.RequestChargeTracker.AddCharge(storeResult.RequestCharge);
+
+                    if (storeResponse != null)
+                    {
+                        entity.RequestContext.ClientRequestStatistics.ContactedReplicas.Add(targetUri);
+                    }
+
+                    if (storeException != null && storeException.InnerException is TransportException)
+                    {
+                        entity.RequestContext.ClientRequestStatistics.FailedReplicas.Add(targetUri);
+                    }
+
+                    entity.RequestContext.ClientRequestStatistics.RecordResponse(entity, storeResult);
+
+                    if (storeResult.IsValid)
+                    {
+                        if (requestSessionToken == null
+                            || (storeResult.SessionToken != null && requestSessionToken.IsValid(storeResult.SessionToken))
+                            || (!enforceSessionCheck && storeResult.StatusCode != StatusCodes.NotFound))
+                        {
+                            responseResult.Add(storeResult);
+                        }
+                    }
+
+                    hasGoneException |= storeResult.StatusCode == StatusCodes.Gone && storeResult.SubStatusCode != SubStatusCodes.NameCacheIsStale;
+                }
+
+                if (responseResult.Count >= replicaCountToRead)
+                {
+                    if (hasGoneException && !entity.RequestContext.PerformedBackgroundAddressRefresh)
+                    {
+                        this.addressSelector.StartBackgroundAddressRefresh(entity);
+                        entity.RequestContext.PerformedBackgroundAddressRefresh = true;
+                    }
+
+                    return new ReadReplicaResult(false, responseResult);
+                }
+
+                // Remaining replicas
+                replicasToRead = replicaCountToRead - responseResult.Count;
             }
 
             if (responseResult.Count < replicaCountToRead)
@@ -261,7 +322,7 @@ namespace Microsoft.Azure.Documents
                         return new ReadReplicaResult(retryWithForceRefresh: true, responses: responseResult);
                     }
                 }
-                else if (cancellationException != null)
+                else if (hasCancellationException)
                 {
                     // We did not get the required number of responses and we encountered task cancellation on some/all of the store read tasks.
                     // We propagate the first cancellation exception we've found, or a new OperationCanceledException if none.
@@ -271,141 +332,6 @@ namespace Microsoft.Azure.Documents
             }
 
             return new ReadReplicaResult(false, responseResult);
-        }
-
-        private async Task<(StoreResult storeResult, OperationCanceledException operationCanceled, bool hasGoneException)> MultipleTaskHelperAsync(
-            DocumentServiceRequest entity,
-            Func<(bool, TransportAddressUri)> TryGetTransportAddress,
-            ReadMode readMode,
-            bool requiresValidLsn,
-            ISessionToken requestSessionToken,
-            bool enforceSessionCheck)
-        {
-            bool hasGoneException = false;
-            while (true)
-            {
-                (bool isSuccess, TransportAddressUri transportAddressUri) = TryGetTransportAddress();
-                if (!isSuccess)
-                {
-                    return (null, null, hasGoneException);
-                }
-
-                StoreResult storeResult;
-                try
-                {
-                    StoreResponse storeResponse = await this.ReadFromStoreAsync(
-                            physicalAddress: transportAddressUri,
-                            request: entity);
-
-                    storeResult = StoreResult.CreateStoreResult(
-                       storeResponse,
-                       null,
-                       requiresValidLsn,
-                       this.canUseLocalLSNBasedHeaders && readMode != ReadMode.Strong,
-                       transportAddressUri.Uri);
-
-                    if (storeResponse != null)
-                    {
-                        lock (entity.RequestContext.ClientRequestStatistics.ContactedReplicas)
-                        {
-                            entity.RequestContext.ClientRequestStatistics.ContactedReplicas.Add(transportAddressUri.Uri);
-                        }
-                    }
-                }
-                catch (Exception exception)
-                {
-                    //All task exceptions are visited below.
-                    DefaultTrace.TraceInformation("Exception {0} is thrown while doing readMany", exception);
-
-                    // IsCanceled can be true with storeException being null if the async call
-                    // gets canceled before it gets scheduled.
-                    if (exception is OperationCanceledException operationCanceledException)
-                    {
-                        continue;
-                    }
-
-                    storeResult = StoreResult.CreateStoreResult(
-                        null,
-                        exception,
-                        requiresValidLsn,
-                        this.canUseLocalLSNBasedHeaders && readMode != ReadMode.Strong,
-                        transportAddressUri.Uri);
-
-                    if (exception != null && exception is TransportException)
-                    {
-                        lock (entity.RequestContext.ClientRequestStatistics.FailedReplicas)
-                        {
-                            entity.RequestContext.ClientRequestStatistics.FailedReplicas.Add(transportAddressUri.Uri);
-                        }
-                    }
-                }
-
-                entity.RequestContext.RequestChargeTracker.AddCharge(storeResult.RequestCharge);
-                entity.RequestContext.ClientRequestStatistics.RecordResponse(entity, storeResult);
-
-                if (storeResult.IsValid)
-                {
-                    if (requestSessionToken == null
-                        || (storeResult.SessionToken != null && requestSessionToken.IsValid(storeResult.SessionToken))
-                        || (!enforceSessionCheck && storeResult.StatusCode != StatusCodes.NotFound))
-                    {
-                        return (storeResult, null, hasGoneException);
-                    }
-                }
-
-                hasGoneException |= storeResult.StatusCode == StatusCodes.Gone && storeResult.SubStatusCode != SubStatusCodes.NameCacheIsStale;
-            }
-        }
-
-        private static bool EnforceSessionCheckBasedOnApiVersion(DocumentServiceRequest entity)
-        {
-            string clientVersion = entity.Headers[HttpConstants.HttpHeaders.Version];
-            bool enforceSessionCheck = !string.IsNullOrEmpty(clientVersion) && VersionUtility.IsLaterThan(clientVersion, HttpConstants.VersionDates.v2016_05_30);
-            return enforceSessionCheck;
-        }
-
-        private ISessionToken GetRequestSessionTokenAndRemoveIfNotRequired(
-            DocumentServiceRequest entity,
-            bool useSessionToken,
-            bool checkMinLSN)
-        {
-            ISessionToken requestSessionToken = null;
-            if (useSessionToken)
-            {
-                SessionTokenHelper.SetPartitionLocalSessionToken(entity, this.sessionContainer);
-                if (checkMinLSN)
-                {
-                    requestSessionToken = entity.RequestContext.SessionToken;
-                }
-            }
-            else
-            {
-                entity.Headers.Remove(HttpConstants.HttpHeaders.SessionToken);
-            }
-
-            return requestSessionToken;
-        }
-
-        private async Task<IReadOnlyList<TransportAddressUri>> GetTransportAddressesAndClearSessionContainerIfCollectionRecreate(
-            DocumentServiceRequest entity,
-            bool includePrimary)
-        {
-            string requestedCollectionRid = entity.RequestContext.ResolvedCollectionRid;
-
-            IReadOnlyList<TransportAddressUri> resolveApiResults = await this.addressSelector.ResolveAllTransportAddressUriAsync(
-                     entity,
-                     includePrimary,
-                     entity.RequestContext.ForceRefreshAddressCache);
-
-            if (!string.IsNullOrEmpty(requestedCollectionRid) && !string.IsNullOrEmpty(entity.RequestContext.ResolvedCollectionRid))
-            {
-                if (!requestedCollectionRid.Equals(entity.RequestContext.ResolvedCollectionRid))
-                {
-                    this.sessionContainer.ClearTokenByResourceId(requestedCollectionRid);
-                }
-            }
-
-            return resolveApiResults;
         }
 
         private async Task<ReadReplicaResult> ReadPrimaryInternalAsync(
@@ -481,6 +407,7 @@ namespace Microsoft.Azure.Documents
                 case OperationType.ExecuteJavaScript:
 #if !COSMOSCLIENT
                 case OperationType.MetadataCheckAccess:
+                case OperationType.GetStorageAuthToken:
 #endif
                     {
                         return await this.transportClient.InvokeResourceOperationAsync(
@@ -567,29 +494,6 @@ namespace Microsoft.Azure.Documents
 
                 activity.ActivityComplete(true);
                 return response;
-            }
-        }
-
-        private void StartBackgroundAddressRefresh(DocumentServiceRequest request)
-        {
-            try
-            {
-                // ResolveAllTransportAddressUriAsync can modify the DSR properties in the background refresh.
-                // DSR is not thread safe which can lead to race conditions. Clone the request to prevent 
-                // any race condition
-                DocumentServiceRequest clonedRequest = request.Clone();
-                this.addressSelector.ResolveAllTransportAddressUriAsync(clonedRequest, true, true).ContinueWith((task) =>
-                {
-                    if (task.IsFaulted)
-                    {
-                        DefaultTrace.TraceWarning(
-                            "Background refresh of the addresses failed with {0}", task.Exception.ToString());
-                    }
-                });
-            }
-            catch (Exception exception)
-            {
-                DefaultTrace.TraceWarning("Background refresh of the addresses failed with {0}", exception.ToString());
             }
         }
 

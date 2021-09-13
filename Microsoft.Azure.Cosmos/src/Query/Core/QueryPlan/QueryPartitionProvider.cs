@@ -109,15 +109,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
-            bool hasLogicalPartitionKey)
+            bool hasLogicalPartitionKey,
+            bool allowDCount)
         {
             TryCatch<PartitionedQueryExecutionInfoInternal> tryGetInternalQueryInfo = this.TryGetPartitionedQueryExecutionInfoInternal(
-                querySpec,
-                partitionKeyDefinition,
-                requireFormattableOrderByQuery,
-                isContinuationExpected,
-                allowNonValueAggregateQuery,
-                hasLogicalPartitionKey);
+                querySpec: querySpec,
+                partitionKeyDefinition: partitionKeyDefinition,
+                requireFormattableOrderByQuery: requireFormattableOrderByQuery,
+                isContinuationExpected: isContinuationExpected,
+                allowNonValueAggregateQuery: allowNonValueAggregateQuery,
+                hasLogicalPartitionKey: hasLogicalPartitionKey,
+                allowDCount: allowDCount);
             if (!tryGetInternalQueryInfo.Succeeded)
             {
                 return TryCatch<PartitionedQueryExecutionInfo>.FromException(tryGetInternalQueryInfo.Exception);
@@ -156,7 +158,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
-            bool hasLogicalPartitionKey)
+            bool hasLogicalPartitionKey,
+            bool allowDCount)
         {
             if (querySpec == null || partitionKeyDefinition == null)
             {
@@ -200,13 +203,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             {
                 fixed (byte* bytePtr = buffer)
                 {
-                    errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery(
+                    errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery2(
                         this.serviceProvider,
                         queryText,
                         requireFormattableOrderByQuery,
                         isContinuationExpected,
                         allowNonValueAggregateQuery,
                         hasLogicalPartitionKey,
+                        allowDCount,
                         allParts,
                         partsLengths,
                         (uint)partitionKeyDefinition.Paths.Count,
@@ -224,13 +228,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
                         fixed (byte* bytePtr2 = buffer)
                         {
-                            errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery(
+                            errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery2(
                                 this.serviceProvider,
                                 queryText,
                                 requireFormattableOrderByQuery,
                                 isContinuationExpected,
                                 allowNonValueAggregateQuery,
                                 hasLogicalPartitionKey, // has logical partition key
+                                allowDCount,
                                 allParts,
                                 partsLengths,
                                 (uint)partitionKeyDefinition.Paths.Count,

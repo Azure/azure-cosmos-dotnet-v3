@@ -138,6 +138,7 @@ namespace Microsoft.Azure.Cosmos
                     mockDocumentClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(databaseAccount);
 
                     GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+                    GlobalPartitionEndpointManager partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(globalEndpointManager);
 
                     ConnectionPolicy connectionPolicy = new ConnectionPolicy
                     {
@@ -146,6 +147,7 @@ namespace Microsoft.Azure.Cosmos
 
                     GlobalAddressResolver globalAddressResolver = new GlobalAddressResolver(
                         endpointManager: globalEndpointManager,
+                        partitionKeyRangeLocationCache: partitionKeyRangeLocationCache,
                         protocol: Documents.Client.Protocol.Tcp,
                         tokenProvider: this.mockTokenProvider.Object,
                         collectionCache: null,
@@ -165,15 +167,66 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        [TestMethod]
+        [Owner("aysarkar")]
+        public async Task GatewayAddressCacheInNetworkRequestTestAsync()
+        {
+            FakeMessageHandler messageHandler = new FakeMessageHandler();
+            HttpClient httpClient = new HttpClient(messageHandler);
+            httpClient.Timeout = TimeSpan.FromSeconds(120);
+            GatewayAddressCache cache = new GatewayAddressCache(
+                new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
+                Documents.Client.Protocol.Https,
+                this.mockTokenProvider.Object,
+                this.mockServiceConfigReader.Object,
+                MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
+                suboptimalPartitionForceRefreshIntervalInSeconds: 2,
+                enableTcpConnectionEndpointRediscovery: true);
+
+            // No header should be present.
+            PartitionAddressInformation legacyRequest = await cache.TryGetAddressesAsync(
+                DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid),
+                this.testPartitionKeyRangeIdentity,
+                this.serviceIdentity,
+                false,
+                CancellationToken.None);
+
+
+            Assert.IsFalse(legacyRequest.IsLocalRegion);
+
+            // Header indicates the request is from the same azure region.
+            messageHandler.Headers[HttpConstants.HttpHeaders.LocalRegionRequest] = "true";
+            PartitionAddressInformation inNetworkAddresses = await cache.TryGetAddressesAsync(
+                DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid),
+                this.testPartitionKeyRangeIdentity,
+                this.serviceIdentity,
+                true,
+                CancellationToken.None);
+            Assert.IsTrue(inNetworkAddresses.IsLocalRegion);
+
+            // Header indicates the request is not from the same azure region.
+            messageHandler.Headers[HttpConstants.HttpHeaders.LocalRegionRequest] = "false";
+            PartitionAddressInformation outOfNetworkAddresses = await cache.TryGetAddressesAsync(
+                DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid),
+                this.testPartitionKeyRangeIdentity,
+                this.serviceIdentity,
+                true,
+                CancellationToken.None);
+            Assert.IsFalse(outOfNetworkAddresses.IsLocalRegion);
+        }
+
         private class FakeMessageHandler : HttpMessageHandler
         {
             private bool returnFullReplicaSet;
             private bool returnUpdatedAddresses;
 
+            public Dictionary<string, string> Headers { get; set; }
+
             public FakeMessageHandler()
             {
                 this.returnFullReplicaSet = false;
                 this.returnUpdatedAddresses = false;
+                this.Headers = new Dictionary<string, string>();
             }
 
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -223,6 +276,14 @@ namespace Microsoft.Azure.Cosmos
                     StatusCode = HttpStatusCode.OK,
                     Content = content,
                 };
+
+                if (this.Headers != null)
+                {
+                    foreach (KeyValuePair<string, string> headerPair in this.Headers)
+                    {
+                        responseMessage.Headers.Add(headerPair.Key, headerPair.Value);
+                    }
+                }
 
                 return Task.FromResult<HttpResponseMessage>(responseMessage);
             }

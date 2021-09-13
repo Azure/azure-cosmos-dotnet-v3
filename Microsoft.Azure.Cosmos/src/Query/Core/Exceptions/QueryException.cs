@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Exceptions
 {
     using System;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal abstract class QueryException : Exception
     {
@@ -23,6 +24,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Exceptions
         {
         }
 
-        public abstract TResult Accept<TResult>(QueryExceptionVisitor<TResult> visitor);
+        public abstract TResult Accept<TResult>(QueryExceptionVisitor<TResult> visitor, ITrace trace);
     }
 }

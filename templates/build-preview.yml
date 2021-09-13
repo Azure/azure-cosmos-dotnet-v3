@@ -28,6 +28,25 @@ jobs:
       versioningScheme: OFF
       
 - job:
+  displayName: Encryption Project Ref SDK Preview ${{ parameters.BuildConfiguration }} 
+  pool:
+    vmImage: ${{ parameters.VmImage }}
+
+  steps:
+  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos.Encryption Project Ref
+    inputs: 
+      command: build  
+      configuration: $(parameters.BuildConfiguration)
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos.sln 
+      arguments: -p:Optimize=true -p:IsPreview=true;SdkProjectRef=true
+      versioningScheme: OFF
+
+- job:
   displayName: Preview Tests ${{ parameters.BuildConfiguration }}
   pool:
     vmImage: ${{ parameters.VmImage }}

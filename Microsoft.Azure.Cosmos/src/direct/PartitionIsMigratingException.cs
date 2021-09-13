@@ -4,13 +4,12 @@
 
 namespace Microsoft.Azure.Documents.Routing
 {
-    using Collections;
     using System;
-    using System.Collections.Specialized;
     using System.Globalization;
     using System.Net;
     using System.Net.Http.Headers;
     using System.Runtime.Serialization;
+    using Collections;
 
     /// <summary>
     /// This exception is thrown when DocumentServiceRequest reaches partition which is being migrated

@@ -3,10 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-
     internal enum StatusCodes
     {
         // Success
@@ -70,6 +66,8 @@ namespace Microsoft.Azure.Documents
         SharedThroughputOfferGrowNotNeeded = 1011,
         SharedThroughputDatabaseCollectionCountExceeded = 1019,
         SharedThroughputDatabaseCountExceeded = 1020,
+        ComputeInternalError = 1021,
+        ThroughputCapQuotaExceeded = 1028,
 
         // 404: LSN in session token is higher
         ReadSessionNotAvailable = 1002,
@@ -147,9 +145,12 @@ namespace Microsoft.Azure.Documents
         FailedToGetAadToken = 5010,
         AadTokenMissingObjectIdentifier = 5011,
 
+        SasTokenAuthDisabled = 5012,
+
         // 401 : Unauthorized Exception (CosmosDB-side errors start with 52)
         AadTokenInvalidSigningKey = 5200,
         AadTokenGroupExpansionError = 5201,
+        LocalAuthDisabled = 5202,
 
         // 403 Forbidden. Blocked by RBAC authorization.
         RbacOperationNotSupported = 5300,
@@ -157,6 +158,8 @@ namespace Microsoft.Azure.Documents
         RbacUnauthorizedNameBasedDataRequest = 5302,
         RbacUnauthorizedRidBasedDataRequest = 5303,
         RbacRidCannotBeResolved = 5304,
+        RbacMissingUserId = 5305,
+        RbacMissingAction = 5306,
 
         // 403 Forbidden. (CosmosDB-side errors start with 54)
         RbacRequestWasNotAuthorized = 5400,

@@ -76,5 +76,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             // NoOp
         }
+
+        public void AddChild(ITrace trace)
+        {
+            // NoOp
+        }
     }
 }

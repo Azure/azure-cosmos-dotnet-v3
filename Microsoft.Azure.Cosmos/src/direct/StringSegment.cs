@@ -4,7 +4,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
-     
+
     /// <summary>
     /// Wrapper around a string that provides alloc-free methods for
     /// SubString, Trim, and comparisons.

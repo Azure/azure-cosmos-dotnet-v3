@@ -1,8 +1,8 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Documents
+namespace Microsoft.Azure.Documents.Common
 {
     using System;
     using System.Net.Sockets;

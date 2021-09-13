@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Documents.Collections
 
         public string AadAppliedRoleAssignmentId { get; set; }
         public string ActivityId { get; set; }
+        public string AnalyticalMigrationProgress { get; set; }
         public string BackendRequestDurationMilliseconds { get; set; }
         public string CollectionIndexTransformationProgress { get; set; }
         public string CollectionLazyIndexingProgress { get; set; }
@@ -145,6 +146,7 @@ namespace Microsoft.Azure.Documents.Collections
 
             this.AadAppliedRoleAssignmentId = null;
             this.ActivityId = null;
+            this.AnalyticalMigrationProgress = null;
             this.BackendRequestDurationMilliseconds = null;
             this.CollectionIndexTransformationProgress = null;
             this.CollectionLazyIndexingProgress = null;
@@ -226,6 +228,7 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 AadAppliedRoleAssignmentId = this.AadAppliedRoleAssignmentId,
                 ActivityId = this.ActivityId,
+                AnalyticalMigrationProgress = this.AnalyticalMigrationProgress,
                 BackendRequestDurationMilliseconds = this.BackendRequestDurationMilliseconds,
                 CollectionIndexTransformationProgress = this.CollectionIndexTransformationProgress,
                 CollectionLazyIndexingProgress = this.CollectionLazyIndexingProgress,
@@ -565,12 +568,10 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return WFConstants.BackendHeaders.PendingPKDelete;
             }
-
             if (this.AadAppliedRoleAssignmentId != null)
             {
                 yield return HttpConstants.HttpHeaders.AadAppliedRoleAssignmentId;
             }
-
             if (this.CollectionUniqueIndexReIndexProgress != null)
             {
                 yield return WFConstants.BackendHeaders.CollectionUniqueIndexReIndexProgress;
@@ -578,6 +579,10 @@ namespace Microsoft.Azure.Documents.Collections
             if (this.CollectionUniqueKeysUnderReIndex != null)
             {
                 yield return WFConstants.BackendHeaders.CollectionUniqueKeysUnderReIndex;
+            }
+            if (this.AnalyticalMigrationProgress != null)
+            {
+                yield return WFConstants.BackendHeaders.AnalyticalMigrationProgress;
             }
 
             if(this.lazyNotCommonHeaders.IsValueCreated)
@@ -849,12 +854,10 @@ namespace Microsoft.Azure.Documents.Collections
                         {
                             this.nameValueCollection.Add(WFConstants.BackendHeaders.PendingPKDelete, this.PendingPKDelete);
                         }
-
                         if (this.AadAppliedRoleAssignmentId != null)
                         {
                             this.nameValueCollection.Add(HttpConstants.HttpHeaders.AadAppliedRoleAssignmentId, this.AadAppliedRoleAssignmentId);
                         }
-
                         if (this.CollectionUniqueIndexReIndexProgress != null)
                         {
                             this.nameValueCollection.Add(WFConstants.BackendHeaders.CollectionUniqueIndexReIndexProgress, this.CollectionUniqueIndexReIndexProgress);
@@ -863,7 +866,10 @@ namespace Microsoft.Azure.Documents.Collections
                         {
                             this.nameValueCollection.Add(WFConstants.BackendHeaders.CollectionUniqueKeysUnderReIndex, this.CollectionUniqueKeysUnderReIndex);
                         }
-
+                        if (this.AnalyticalMigrationProgress != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.AnalyticalMigrationProgress, this.AnalyticalMigrationProgress);
+                        }
                         if(this.lazyNotCommonHeaders.IsValueCreated)
                         {
                             foreach (KeyValuePair<string, string> keyValuePair in this.lazyNotCommonHeaders.Value)
@@ -1428,6 +1434,13 @@ namespace Microsoft.Azure.Documents.Collections
                     }
 
                     break;
+                case 41:
+                    if (string.Equals(WFConstants.BackendHeaders.AnalyticalMigrationProgress, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.AnalyticalMigrationProgress;
+                    }
+
+                    break;
                 case 42:
                     if (string.Equals(WFConstants.BackendHeaders.XPConfigurationSessionsCount, key, StringComparison.OrdinalIgnoreCase))
                     {
@@ -1447,7 +1460,7 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.CollectionUniqueKeysUnderReIndex;
                     }
-                
+
                     break;
                 case 49:
                     if (string.Equals(HttpConstants.HttpHeaders.CollectionLazyIndexingProgress, key, StringComparison.OrdinalIgnoreCase))
@@ -1469,12 +1482,12 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.UnflushedMergLogEntryCount;
                     }
-                
+
                     if (string.Equals(WFConstants.BackendHeaders.CollectionUniqueIndexReIndexProgress, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.CollectionUniqueIndexReIndexProgress;
                     }
-                
+
                     break;
                 case 56:
                     if (string.Equals(HttpConstants.HttpHeaders.CollectionIndexTransformationProgress, key, StringComparison.OrdinalIgnoreCase))
@@ -2635,6 +2648,18 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.SoftMaxAllowedThroughput = value;
+                        return;
+                    }
+                    break;
+                case 41:
+                    if (string.Equals(WFConstants.BackendHeaders.AnalyticalMigrationProgress, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.AnalyticalMigrationProgress != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.AnalyticalMigrationProgress = value;
                         return;
                     }
                     break;

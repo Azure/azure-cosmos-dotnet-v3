@@ -4,8 +4,8 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
-    using System.Globalization;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Text;
 
     internal sealed class ClientSideRequestStatistics : IClientSideRequestStatistics

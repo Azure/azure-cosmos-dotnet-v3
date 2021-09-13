@@ -273,6 +273,7 @@ namespace Microsoft.Azure.Documents
             public const string ContinuousBackupInformation = "continuousBackupInformation";
             public const string LatestRestorableTimestamp = "latestRestorableTimestamp";
             public const string EnableBinaryEncodingOfContent = "enableBinaryEncodingOfContent";
+            public const string SkipMigrateToComputeDatabaseCollectionChecks = "skipMigrateToComputeDatabaseCollectionChecks";
 
             public const string MasterValue = "masterValue";
             public const string SecondaryValue = "secondaryValue";
@@ -507,6 +508,7 @@ namespace Microsoft.Azure.Documents
             public const string PitrMigrationBeginTimestamp = "pitrMigrationBeginTimestamp";
             public const string PitrMigrationEndTimestamp = "pitrMigrationEndTimestamp";
             public const string PreMigrationBackupPolicy = "preMigrationBackupPolicy";
+            public const string PitrLiteEndTimestamp = "pitrLiteEndTimestamp";
 
             // Backup Storage Accounts
             public const string BackupStorageAccountsEnabled = "BackupStorageAccountsEnabled";
@@ -585,6 +587,7 @@ namespace Microsoft.Azure.Documents
             public const string MasterToken = "master";
             public const string ResourceToken = "resource";
             public const string AadToken = "aad";
+            public const string SasToken = "sas";
             public const string TokenVersion = "1.0";
             public const string AuthSchemaType = "type";
             public const string AuthVersion = "ver";
@@ -779,6 +782,7 @@ namespace Microsoft.Azure.Documents
 
             // Storage Management Store
             public const string EnableStorageAnalytics = "enableStorageAnalytics";
+            public const string EnablePitrAndAnalyticsTogether = "enablePitrAndAnalyticsTogether";
             public const string AnalyticsStorageServiceNames = "analyticsStorageServiceNames";
             public const string LogStoreMetadataStorageAccountName = "logStoreMetadataStorageAccountName";
             public const string IsParallel = "isParallel";
@@ -819,6 +823,7 @@ namespace Microsoft.Azure.Documents
             public const string WrappedDataEncryptionKey = "wrappedDataEncryptionKey";
             public const string EncryptionAlgorithmId = "encryptionAlgorithmId";
             public const string KeyWrapMetadata = "keyWrapMetadata";
+            public const string KeyWrapMetadataName = "name";
             public const string KeyWrapMetadataType = "type";
             public const string KeyWrapMetadataValue = "value";
             public const string EncryptedInfo = "_ei";
@@ -871,8 +876,12 @@ namespace Microsoft.Azure.Documents
 
             // Property to check if point in time restore is enabled for a global database account
             public const string PitrEnabled = "pitrEnabled";
+            public const string PitrSku = "pitrSku";
             public const string EnablePitrMigration = "enablePITRMigration";
             public const string EnableLogstoreHeadStartSequenceVector = "enableLogStoreHeadStartSequenceVector";
+
+            // Property to allow migration to analytical store
+            public const string AllowCollectionMigrationToAnalyticalStore = "allowCollectionMigrationToAnalyticalStore";
 
             // Property to enable storage analytics
             public const string EnableAnalyticalStorage = "enableAnalyticalStorage";
@@ -894,6 +903,7 @@ namespace Microsoft.Azure.Documents
             public const string IsEnabled = "isenabled";
             public const string FabricUri = "fabricUri";
             public const string ResourcePartitionKey = "resourcePartitionKey";
+            public const string CanaryLocationSurffix = "euap";
 
             // Topology Resource
             public const string Topology = "topology";
@@ -950,6 +960,7 @@ namespace Microsoft.Azure.Documents
             public const string SubscriptionTenantId = "tenantId";
             public const string SubscriptionLocationPlacementId = "locationPlacementId";
             public const string SubscriptionQuotaId = "quotaId";
+            public const string SubscriptionAddionalProperties = "additionalProperties";
 
             // Schema resource
             public const string Schema = "schema";
@@ -1231,6 +1242,7 @@ namespace Microsoft.Azure.Documents
             public const string VnetMapPropagationWaitDurationInMinutes = "vnetMapPropagationWaitDurationInMinutes";
             public const string Map = "map";
             public const string IsSqlEndpointSwapped = "isSqlEndpointSwapped";
+            public const string ComputeFederationProcess = "computeFederationProcess";
             public const string DatabaseServicesInfo = "DatabaseServicesInfo";
             public const string RedirectMapVersion = "version";
             public const string IsOwnedByExternalProvider = "isOwnedByExternalProvider";
@@ -1321,6 +1333,11 @@ namespace Microsoft.Azure.Documents
             public const string TrustedAadTenants = "trustedAadTenants";
             public const string NetworkAclBypass = "networkAclBypass";
             public const string NetworkAclBypassResourceIds = "networkAclBypassResourceIds";
+            public const string DisableLocalAuth = "disableLocalAuth";
+
+            //Logging properties
+            public const string DiagnosticLogSettings = "diagnosticLogSettings";
+            public const string EnableFullTextQuery = "enableFullTextQuery";
 
             // Restorable database accounts
             public const string CreationTime = "creationTime";
@@ -1350,9 +1367,14 @@ namespace Microsoft.Azure.Documents
             public const string ShortId = "shortId";
             public const string PublicName = "publicName";
             public const string LongName = "longName";
+            public const string ServicingLocationPublicName = "servicingLocationPublicName";
             public const string HealthServiceName = "healthServiceName";
             public const string SupportsAvailabilityZone = "supportsAvailabilityZone";
+            public const string AvailabilityZonesReady = "availabilityZonesReady";
             public const string IsResidencyRestricted = "isResidencyRestricted";
+
+            public const string EnablePerPartitionAutomaticFailover = "enablePerPartitionAutomaticFailover";
+            public const string EnableFailoverManager = "enableFailoverManager";
         }
 
         public static class DocumentResourceExtendedProperties
@@ -1380,6 +1402,8 @@ namespace Microsoft.Azure.Documents
             public const string Database = "database";
             public const string OfferContent = "offerContent";
             public const string Container = "container";
+            public const string Table = "table";
+            public const string Keyspace = "keyspace";
         }
 
         public static class RestoreMetadataResourceProperties
@@ -1481,6 +1505,18 @@ namespace Microsoft.Azure.Documents
             public const string FederationAzureActiveDirectoryClientId = "FederationAzureActiveDirectoryClientId";
             public const string FederationAzureActiveDirectoryTenantId = "FederationAzureActiveDirectoryTenantId";
             public const string FederationToAadCertDsmsSourceLocation = "FederationToAadCertDsmsSourceLocation";
+            public const string MasterFederationId = "masterFederationId";
+
+            // Account sas related configuration properties
+            public const string SystemSasValidityInHours = "systemSasValidityInHours";
+            public const string PrimaryOrSecondaryKeyBasedSasValidityInHours = "primaryOrSecondaryKeyBasedSasValidityInHours";
+            public const string CacheSystemSasExpiryInHours = "cacheSystemSasExpiryInHours";
+            public const string CachePrimaryOrSecondaryKeyBasedSasExpiryInHours = "cachePrimaryOrSecondaryKeyBasedSasExpiryInHours";
+            public const string SasStartTimeSubtractionIntervalInMinutes = "sasStartTimeSubtractionIntervalInMinutes";
+            public const string AlwaysReturnKey1BasedSas = "alwaysReturnKey1BasedSas";
+            public const string CacheExpirySubtractionTimeInMinutes = "cacheExpirySubtractionTimeInMinutes";
+            public const string EnableMasterSideAuthTokenCaching = "enableMasterSideAuthTokenCaching";
+            public const string EnableSasRequestRoutingToMasterFederation = "enableSasRequestRoutingToMasterFederation";
         }
 
         public static class VNetServiceAssociationLinkProperties

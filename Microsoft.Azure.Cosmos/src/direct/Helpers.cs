@@ -6,13 +6,11 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using System.Globalization;
     using System.Linq;
     using System.Net.Http.Headers;
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     internal static class Helpers
     {        
