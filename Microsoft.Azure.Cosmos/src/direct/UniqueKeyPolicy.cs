@@ -3,10 +3,10 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
-    using Newtonsoft.Json;
     using System;
     using System.Collections.ObjectModel;
     using System.Globalization;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Represents the unique key policy configuration for specifying uniqueness constraints on documents in the collection in the Azure Cosmos DB service.

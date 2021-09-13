@@ -4,10 +4,9 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
-    using System.Globalization;
     using System.IO;
     using System.Threading.Tasks;
-     
+
     internal static class StreamExtension
     {
         async public static Task CopyToAsync(this Stream srcStream,

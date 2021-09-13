@@ -3,18 +3,23 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
-    using Microsoft.Azure.Documents.Collections;
     using System;
-    using System.Collections.Specialized;
     using System.Net;
     using System.Net.Http.Headers;
     using System.Runtime.Serialization;
+    using Microsoft.Azure.Documents.Collections;
 
     [Serializable]
     internal sealed class InternalServerErrorException : DocumentClientException
     {
         public InternalServerErrorException()
             : this(RMResources.InternalServerError)
+        {
+
+        }
+
+        public InternalServerErrorException(SubStatusCodes subStatusCode)
+            : base(message: RMResources.InternalServerError, statusCode: HttpStatusCode.InternalServerError, subStatusCode: subStatusCode)
         {
 
         }

@@ -427,17 +427,30 @@ namespace Microsoft.Azure.Documents.Client
         public bool PopulatePartitionKeyRangeStatistics { get; set; }
 
         /// <summary>
-        ///  Gets or sets the <see cref="PopulateUniqueIndexReIndexProgress"/> for document collection read unique index reindex progres.
+        ///  Gets or sets the <see cref="PopulateUniqueIndexReIndexProgress"/> for document collection read unique index reindex progress.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// <see cref="PopulateUniqueIndexReIndexProgress"/> is used to enable/disable getting unique index reindex progres.
+        /// <see cref="PopulateUniqueIndexReIndexProgress"/> is used to enable/disable getting unique index reindex progress.
         /// </para>
         /// </remarks>
         /// <example>
         /// For usage, please refer to the example in <see cref="Microsoft.Azure.Documents.DocumentCollection.PopulateUniqueIndexReIndexProgress"/>.
         /// </example>
         internal bool PopulateUniqueIndexReIndexProgress { get; set; }
+
+        /// <summary>
+        ///  Gets or sets the <see cref="PopulateAnalyticalMigrationProgress"/> for document collection read requests.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <see cref="PopulateAnalyticalMigrationProgress"/> is used to enable/disable getting analytical migration progress.
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// For usage, please refer to the example in <see cref="Microsoft.Azure.Documents.DocumentCollection.PopulateAnalyticalMigrationProgress"/>.
+        /// </example>
+        internal bool PopulateAnalyticalMigrationProgress { get; set; }
 
         /// <summary>
         /// Gets or sets the Remote storage enablement

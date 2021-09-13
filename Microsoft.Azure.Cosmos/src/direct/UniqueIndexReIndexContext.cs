@@ -3,10 +3,10 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
-    using Newtonsoft.Json;
     using System;
     using System.Collections.ObjectModel;
     using System.Globalization;
+    using Newtonsoft.Json;
 
     internal sealed class UniqueIndexReIndexContext : JsonSerializable
     {

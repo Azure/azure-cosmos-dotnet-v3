@@ -3,9 +3,9 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
+    using System.Collections.ObjectModel;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
-    using System.Collections.ObjectModel;
 
     /// <summary>
     /// Represents a unique key on that enforces uniqueness constraint on documents in the collection in the Azure Cosmos DB service.
@@ -79,6 +79,51 @@ namespace Microsoft.Azure.Documents
             base.Validate();
             base.GetValue<Collection<string>>(Constants.Properties.Paths);
             base.GetValue<JObject>(Constants.Properties.Filter);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is UniqueKey uniqueKey))
+            {
+                return false;
+            }
+
+            if (this.Paths.Count != uniqueKey.Paths.Count) return false;
+
+            foreach (string path in uniqueKey.paths)
+            {
+                if (!this.Paths.Contains(path))
+                {
+                    return false;
+                }
+            }
+
+            if (this.Filter == null && uniqueKey.Filter == null) return true;
+
+            if (this.Filter != null && uniqueKey.Filter != null)
+            {
+                JTokenEqualityComparer comparer = new JTokenEqualityComparer();
+                return comparer.Equals(this.Filter, uniqueKey.Filter);
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            int hashCode = 0;
+            foreach (string token in this.Paths)
+            {
+                hashCode = hashCode ^ token.GetHashCode();
+            }
+
+            if (this.Filter != null)
+            {
+                JTokenEqualityComparer comparer = new JTokenEqualityComparer();
+                hashCode = hashCode ^ comparer.GetHashCode(this.Filter.GetHashCode());
+            }
+
+            return hashCode;
         }
 
         internal override void OnSave()

@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Helper class to generate and parse media id (only used in frontend)

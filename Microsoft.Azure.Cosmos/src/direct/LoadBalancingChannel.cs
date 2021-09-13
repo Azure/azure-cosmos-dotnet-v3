@@ -4,9 +4,7 @@
 namespace Microsoft.Azure.Documents.Rntbd
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Threading;
     using System.Threading.Tasks;
 
     // LoadBalancingChannel encapsulates the management of channels that connect to a single
@@ -54,11 +52,13 @@ namespace Microsoft.Azure.Documents.Rntbd
                         channelProperties.PartitionCount,
                     1,
                     channelProperties.MaxRequestsPerChannel,
+                    channelProperties.MaxConcurrentOpeningConnectionCount,
                     channelProperties.ReceiveHangDetectionTime,
                     channelProperties.SendHangDetectionTime,
                     channelProperties.IdleTimeout,
                     channelProperties.IdleTimerPool,
-                    channelProperties.CallerId);
+                    channelProperties.CallerId,
+                    channelProperties.EnableChannelMultiplexing);
                 this.partitions = new LoadBalancingPartition[channelProperties.PartitionCount];
                 for (int i = 0; i < this.partitions.Length; i++)
                 {

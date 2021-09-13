@@ -4,10 +4,6 @@
 namespace Microsoft.Azure.Documents
 {
     using Newtonsoft.Json.Linq;
-    using System;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Threading.Tasks;
 
     /// <summary>
     /// Type resolver based on an input

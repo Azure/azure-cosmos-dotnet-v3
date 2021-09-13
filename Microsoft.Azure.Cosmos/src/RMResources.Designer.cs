@@ -45,7 +45,11 @@ namespace Microsoft.Azure.Documents
             {
                 if (object.ReferenceEquals(resourceMan, null))
                 {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Cosmos.RMResources", typeof(RMResources).Assembly);
+#if COSMOSCLIENT
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).Assembly);
+#else
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).GetAssembly());
+#endif
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -103,7 +107,7 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to The given request [{0} {1}] cannot be authorized by AAD token in data plane..
+        ///   Looks up a localized string similar to The given request [{0} {1}] cannot be authorized by AAD token in data plane. Learn more: https://aka.ms/cosmos-native-rbac..
         /// </summary>
         internal static string AadAuthActionNotSupported
         {
@@ -125,7 +129,7 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Request for Read DatabaseAccount is blocked because principal [{0}] does not have required RBAC permissions to perform action [{1}] on any scope..
+        ///   Looks up a localized string similar to Request for Read DatabaseAccount is blocked because principal [{0}] does not have required RBAC permissions to perform action [{1}] on any scope. Learn more: https://aka.ms/cosmos-native-rbac..
         /// </summary>
         internal static string AadAuthDatabaseAccountRequestBlocked
         {
@@ -147,13 +151,13 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Request is blocked because principal [{0}] does not have required RBAC permissions to perform action [{1}] on resource [{2}]..
+        ///   Looks up a localized string similar to Request is blocked because principal [{0}] does not have required RBAC permissions to perform action [{1}] on resource [{2}]. Learn more: https://aka.ms/cosmos-native-rbac..
         /// </summary>
-        internal static string AadAuthMetadataRequestBlocked
+        internal static string AadAuthRequestBlocked
         {
             get
             {
-                return ResourceManager.GetString("AadAuthMetadataRequestBlocked", resourceCulture);
+                return ResourceManager.GetString("AadAuthRequestBlocked", resourceCulture);
             }
         }
 
@@ -176,6 +180,28 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("AadAuthPublicKeysFailedToUpdate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to SAS Token Authentication is disabled for this account. Please contact Azure Support [https://azure.microsoft.com/support] to enable it..
+        /// </summary>
+        internal static string SasTokenAuthDisabled
+        {
+            get
+            {
+                return ResourceManager.GetString("SasTokenAuthDisabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Local Authorization is disabled. Use an AAD token to authorize all requests..
+        /// </summary>
+        internal static string AadLocalAuthDisabled
+        {
+            get
+            {
+                return ResourceManager.GetString("AadLocalAuthDisabled", resourceCulture);
             }
         }
 
@@ -2409,6 +2435,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Add or Remove region operation failed.
+        /// </summary>
+        internal static string AddRemoveRegionOperationFailed
+        {
+            get
+            {
+                return ResourceManager.GetString("AddRemoveRegionOperationFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Unable to resolve primary endpoint for partition {0} for service {1}..
         /// </summary>
         internal static string PrimaryNotFound
@@ -2959,6 +2996,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to The TCP channel timed out on waiting to open.
+        /// </summary>
+        internal static string ChannelWaitingToOpenTimeoutException
+        {
+            get
+            {
+                return ResourceManager.GetString("ChannelWaitingToOpenTimeoutException", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Cannot deserialize PartitionKey value &apos;{0}&apos;.
         /// </summary>
         internal static string UnableToDeserializePartitionKeyValue
@@ -3407,6 +3455,17 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("UnsupportedV1OfferVersion", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Resource tokens are not supported by the Dedicated Gateway endpoint.
+        /// </summary>
+        internal static string UnsupportedAccessControlType
+        {
+            get
+            {
+                return ResourceManager.GetString("UnsupportedAccessControlType", resourceCulture);
             }
         }
 

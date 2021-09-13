@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Data.Common;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
@@ -400,6 +401,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <example>
         /// An example on how to configure the serialization option to ignore null values
+        /// <code language="c#">
+        /// <![CDATA[
         /// CosmosClientOptions clientOptions = new CosmosClientOptions()
         /// {
         ///     SerializerOptions = new CosmosSerializationOptions(){
@@ -408,6 +411,8 @@ namespace Microsoft.Azure.Cosmos
         /// };
         /// 
         /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
+        /// ]]>
+        /// </code>
         /// </example>
         public CosmosSerializationOptions SerializerOptions
         {
@@ -429,7 +434,9 @@ namespace Microsoft.Azure.Cosmos
         /// SDK owned types such as DatabaseProperties and ContainerProperties will always use the SDK default serializer.
         /// </summary>
         /// <example>
-        /// // An example on how to set a custom serializer. For basic serializer options look at CosmosSerializationOptions
+        /// An example on how to set a custom serializer. For basic serializer options look at CosmosSerializationOptions
+        /// <code language="c#">
+        /// <![CDATA[
         /// CosmosSerializer ignoreNullSerializer = new MyCustomIgnoreNullSerializer();
         ///         
         /// CosmosClientOptions clientOptions = new CosmosClientOptions()
@@ -438,6 +445,8 @@ namespace Microsoft.Azure.Cosmos
         /// };
         /// 
         /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
+        /// ]]>
+        /// </code>
         /// </example>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
         public CosmosSerializer Serializer
@@ -518,6 +527,11 @@ namespace Microsoft.Azure.Cosmos
                 this.httpClientFactory = value;
             }
         }
+
+        /// <summary>
+        /// Enable partition key level failover
+        /// </summary>
+        internal bool EnablePartitionLevelFailover { get; set; } = false;
 
         /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
@@ -657,6 +671,7 @@ namespace Microsoft.Azure.Cosmos
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
+                EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
                 HttpClientFactory = this.httpClientFactory,

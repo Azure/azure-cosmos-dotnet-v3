@@ -75,6 +75,7 @@ namespace Microsoft.Azure.Documents
 
 #if !COSMOSCLIENT
         TransportControlCommand = 151,
+        StorageAuthToken = 152,
 #endif
 
         // These names make it unclear what they map to in ResourceType.

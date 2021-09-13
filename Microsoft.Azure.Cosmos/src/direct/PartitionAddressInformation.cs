@@ -6,8 +6,6 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
-    using System.Linq;
     using Microsoft.Azure.Documents.Client;
 
     internal sealed class PartitionAddressInformation

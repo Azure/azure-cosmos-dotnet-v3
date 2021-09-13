@@ -70,6 +70,7 @@ namespace Microsoft.Azure.Cosmos
             request.RequestContext.TargetIdentity = result.TargetServiceIdentity;
             request.RequestContext.ResolvedPartitionKeyRange = result.TargetPartitionKeyRange;
             request.RequestContext.RegionName = this.location;
+            request.RequestContext.LocalRegionRequest = result.Addresses.IsLocalRegion;
 
             await this.requestSigner.SignRequestAsync(request, cancellationToken);
 
@@ -451,7 +452,7 @@ namespace Microsoft.Azure.Cosmos
             object effectivePartitionKeyStringObject = null;
             if (partitionKeyString != null)
             {
-                range = this.TryResolveServerPartitionByPartitionKey(
+                range = AddressResolver.TryResolveServerPartitionByPartitionKey(
                     request,
                     partitionKeyString,
                     collectionCacheIsUptodate,
@@ -547,7 +548,7 @@ namespace Microsoft.Azure.Cosmos
                     // due to parallel usage of V3 SDK and a possible storage or throughput split
                     // The current client might be legacy and not aware of this.
                     // In such case route the request to the first partition
-                    return this.TryResolveServerPartitionByPartitionKey(
+                    return AddressResolver.TryResolveServerPartitionByPartitionKey(
                                         request,
                                         "[]", // This corresponds to first partition
                                         collectionCacheIsUptoDate,
@@ -628,7 +629,7 @@ namespace Microsoft.Azure.Cosmos
             return new ResolutionResult(partitionKeyRange, addresses, identity);
         }
 
-        private PartitionKeyRange TryResolveServerPartitionByPartitionKey(
+        internal static PartitionKeyRange TryResolveServerPartitionByPartitionKey(
             DocumentServiceRequest request,
             string partitionKeyString,
             bool collectionCacheUptoDate,

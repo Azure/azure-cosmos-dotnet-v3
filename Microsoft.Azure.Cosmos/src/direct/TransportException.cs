@@ -147,7 +147,8 @@ namespace Microsoft.Azure.Documents
                 (errorCode == TransportErrorCode.RequestTimeout) ||
                 (errorCode == TransportErrorCode.SendLockTimeout) ||
                 (errorCode == TransportErrorCode.SendTimeout) ||
-                (errorCode == TransportErrorCode.ReceiveTimeout);
+                (errorCode == TransportErrorCode.ReceiveTimeout) ||
+                (errorCode == TransportErrorCode.ChannelWaitingToOpenTimeout);
         }
 
         internal void SetCpuLoad(CpuLoadHistory cpuHistory)
@@ -235,7 +236,8 @@ namespace Microsoft.Azure.Documents
                 { TransportErrorCode.SslNegotiationFailed, RMResources.SslNegotiationFailedTransportError },
                 { TransportErrorCode.SslNegotiationTimeout, RMResources.SslNegotiationTimeoutTransportError },
                 { TransportErrorCode.TransportNegotiationTimeout, RMResources.TransportNegotiationTimeoutTransportError },
-                { TransportErrorCode.Unknown, RMResources.UnknownTransportError },
+                { TransportErrorCode.ChannelWaitingToOpenTimeout, RMResources.ChannelWaitingToOpenTimeoutException },
+                { TransportErrorCode.Unknown, RMResources.UnknownTransportError }
             };
         }
 

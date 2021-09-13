@@ -84,11 +84,13 @@ namespace Microsoft.Azure.Documents.Rntbd
                     clientOptions.MaxChannels,
                     clientOptions.PartitionCount,
                     clientOptions.MaxRequestsPerChannel,
+                    clientOptions.MaxConcurrentOpeningConnectionCount,
                     clientOptions.ReceiveHangDetectionTime,
                     clientOptions.SendHangDetectionTime,
                     clientOptions.IdleTimeout,
                     this.idleTimerPool,
-                    clientOptions.CallerId));
+                    clientOptions.CallerId,
+                    clientOptions.EnableChannelMultiplexing));
 
             // CpuMonitor must be disabled inside compute gateway because it presents unnecessary overhead
             // CpuMonitor is useful for customer applications that need help debugging timeouts
@@ -376,10 +378,13 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.SendHangDetectionTime = TimeSpan.FromSeconds(10.0);
                 this.IdleTimeout = TimeSpan.FromSeconds(1800);
                 this.CallerId = RntbdConstants.CallerId.Anonymous;
+                this.EnableChannelMultiplexing = false;
 
                 // CPU monitoring is needed for troubleshooting of client-side timeouts as such it is enabled by default
                 // Ability to disable is exposed to internal clients
                 this.EnableCpuMonitor = true;
+
+                this.MaxConcurrentOpeningConnectionCount = ushort.MaxValue;
             }
 
             public TimeSpan RequestTimeout { get; private set; }
@@ -391,6 +396,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             public TimeSpan IdleTimeout { get; set; }
             public bool EnableCpuMonitor { get; set; }
             public RntbdConstants.CallerId CallerId { get; set; }
+            public bool EnableChannelMultiplexing { get; set; }
 
             public UserAgentContainer UserAgent
             {
@@ -453,6 +459,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 set { this.timerPoolResolution = value; }
             }
 
+            public int MaxConcurrentOpeningConnectionCount { get; set; }
+
             public override string ToString()
             {
                 StringBuilder s = new StringBuilder();
@@ -485,6 +493,10 @@ namespace Microsoft.Azure.Documents.Rntbd
                 s.AppendLine(this.CertificateHostNameOverride);
                 s.Append("  LocalRegionTimeout: ");
                 s.AppendLine(this.LocalRegionOpenTimeout.ToString("c"));
+                s.Append("  EnableChannelMultiplexing: ");
+                s.AppendLine(this.EnableChannelMultiplexing.ToString());
+                s.Append("  MaxConcurrentOpeningConnectionCount: ");
+                s.AppendLine(this.MaxConcurrentOpeningConnectionCount.ToString(CultureInfo.InvariantCulture));
                 return s.ToString();
             }
 

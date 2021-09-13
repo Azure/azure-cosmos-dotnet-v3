@@ -3,8 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
-    using System;
-
     /// <summary>
     /// Specifies the type of the trigger in the Azure Cosmos DB service.
     /// </summary> 
