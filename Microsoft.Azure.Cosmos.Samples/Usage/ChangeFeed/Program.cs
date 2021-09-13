@@ -420,10 +420,7 @@
         /// The delegate receives batches of changes as they are generated in the change feed and can process them.
         /// </summary>
         // <Delegate>
-        static async Task HandleChangesAsync(
-            ChangeFeedProcessorContext context,
-            IReadOnlyCollection<ToDoItem> changes,
-            CancellationToken cancellationToken)
+        static async Task HandleChangesAsync(ChangeFeedProcessorContext context, IReadOnlyCollection<ToDoItem> changes, CancellationToken cancellationToken)
         {
             Console.WriteLine($"Started handling changes for lease {context.LeaseToken}...");
             Console.WriteLine($"Change Feed request consumed {context.Headers.RequestCharge} RU.");
