@@ -142,7 +142,7 @@
 
                         if (retryAfter != null)
                         {
-                            await Task.Delay(retryAfter.Value);
+                            await Task.Delay(retryAfter.Value, ct);
                             continue;
                         }
                     }
@@ -177,9 +177,7 @@
                         Debug.WriteLine($"Current attempt timed out; retrying after {jitter.TotalMilliseconds} milliseconds.");
                         Debug.WriteLine("**********");
 
-                        await Task.Delay(jitter);
-
-                        continue;
+                        await Task.Delay(jitter, ct);
                     }
                 }
             }
