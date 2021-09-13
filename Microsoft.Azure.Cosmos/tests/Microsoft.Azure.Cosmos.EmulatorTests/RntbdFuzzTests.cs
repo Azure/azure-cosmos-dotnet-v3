@@ -23,27 +23,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             //Environment.SetEnvironmentVariable("FuzzLogLocation", "C:\\FuzzTest1");
             Environment.SetEnvironmentVariable("SendFuzzedRequest", "true");
-            await this.Fuzz(100);
+            await this.Fuzz(5);
             Environment.SetEnvironmentVariable("SendFuzzedRequest", null);
         }
 
         private async Task Fuzz(int iterationCount)
         {
             this.InitializeFuzzLogDirectory();
-            CosmosClientOptions options = new CosmosClientOptions
-            {
-                RequestTimeout = new TimeSpan(0, 0, 1)
-            };
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(false);
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(true);
             Cosmos.Database database = (await cosmosClient.CreateDatabaseAsync("FuzzDb_" + Guid.NewGuid().ToString())).Database;
             Container container = await database.CreateContainerAsync("FuzzContainer_" + Guid.NewGuid().ToString(), "/pk");
+            await container.CreateItemAsync(ToDoActivity.CreateRandomToDoActivity());
 
+
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                RequestTimeout = new TimeSpan(0, 0, 1),
+                ConnectionMode = ConnectionMode.Direct
+            };
             await this.RunFuzzAction(
                 1,
                 "Create Document",
                 async delegate {
-                    ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
-                    await container.CreateItemAsync<ToDoActivity>(item);
+                    using (CosmosClient client = TestCommon.CreateCosmosClient(options))
+                    {
+                        Container newContainer = client.GetContainer(database.Id, container.Id);
+                        ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+                        await newContainer.CreateItemAsync<ToDoActivity>(item);
+                    }
                 },
                 iterationCount);
 
@@ -96,8 +103,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task VerifyServiceAvailableAsync(Container container)
         {
             ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
-            ItemResponse<ToDoActivity> itemResponse = await container.CreateItemAsync(item);
-            Assert.IsNotNull(itemResponse.Resource, itemResponse.Diagnostics.ToString());
+            try
+            {
+                ItemResponse<ToDoActivity> itemResponse = await container.CreateItemAsync(item);
+                Assert.IsNotNull(itemResponse.Resource);
+            }
+            catch (CosmosException ex)
+            {
+                Assert.Fail(ex.Diagnostics.ToString());
+            }
         }
 
         private void LogFuzzInfomation(string s)
