@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
                    this.Type == other.Type &&
                    this.Name == other.Name &&
                    this.Value == other.Value &&
-                   AppUtils.CompareDictionary(this.AdditionalProperties, other.AdditionalProperties);
+                   this.AdditionalProperties.IsSameAs(other.AdditionalProperties);
         }
     }
 }

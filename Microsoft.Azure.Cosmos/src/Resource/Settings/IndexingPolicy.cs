@@ -507,7 +507,7 @@ namespace Microsoft.Azure.Cosmos
                 isEqual &= indexingPolicy1.IndexingMode == indexingPolicy2.IndexingMode;
                 isEqual &= compositeIndexesEqualityComparer.Equals(indexingPolicy1.CompositeIndexes, indexingPolicy2.CompositeIndexes);
                 isEqual &= additionalSpatialIndexesEqualityComparer.Equals(indexingPolicy1.SpatialIndexes, indexingPolicy2.SpatialIndexes);
-                isEqual &= AppUtils.CompareDictionary(indexingPolicy1.AdditionalProperties, indexingPolicy2.AdditionalProperties);
+                isEqual &= indexingPolicy1.AdditionalProperties.IsSameAs(indexingPolicy2.AdditionalProperties);
 
                 HashSet<IncludedPath> includedPaths1 = new HashSet<IncludedPath>(indexingPolicy1.IncludedPaths, includedPathEqualityComparer);
                 HashSet<IncludedPath> includedPaths2 = new HashSet<IncludedPath>(indexingPolicy2.IncludedPaths, includedPathEqualityComparer);
