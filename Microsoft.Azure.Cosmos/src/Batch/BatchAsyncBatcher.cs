@@ -38,6 +38,8 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosClientContext clientContext;
         private long currentSize = 0;
         private bool dispatched = false;
+        private bool isClientEncrypted = false;
+        private string intendedCollectionRidValue;
 
         public bool IsEmpty => this.batchOperations.Count == 0;
 
@@ -84,6 +86,12 @@ namespace Microsoft.Azure.Cosmos
             if (operation.Context == null)
             {
                 throw new ArgumentNullException(nameof(operation.Context));
+            }
+
+            if (operation.Context.isClientEncrypted && !this.isClientEncrypted)
+            {
+                this.isClientEncrypted = true;
+                this.intendedCollectionRidValue = operation.Context.intendedCollectionRidValue;
             }
 
             if (this.batchOperations.Count == this.maxBatchOperationCount)
@@ -214,9 +222,6 @@ namespace Microsoft.Azure.Cosmos
             // All operations should be for the same PKRange
             string partitionKeyRangeId = this.batchOperations[0].Context.PartitionKeyRangeId;
 
-            bool isClientEncrypted = this.batchOperations[0].Context.isClientEncrypted;
-            string intendedCollectionRidValue = this.batchOperations[0].Context.intendedCollectionRidValue;
-
             ArraySegment<ItemBatchOperation> operationsArraySegment = new ArraySegment<ItemBatchOperation>(this.batchOperations.ToArray());
             return await PartitionKeyRangeServerBatchRequest.CreateAsync(
                   partitionKeyRangeId,
@@ -226,8 +231,8 @@ namespace Microsoft.Azure.Cosmos
                   ensureContinuousOperationIndexes: false,
                   serializerCore: this.serializerCore,
                   cancellationToken: cancellationToken,
-                  isClientEncrypted: isClientEncrypted,
-                  intendedCollectionRidValue: intendedCollectionRidValue).ConfigureAwait(false);
+                  isClientEncrypted: this.isClientEncrypted,
+                  intendedCollectionRidValue: this.intendedCollectionRidValue).ConfigureAwait(false);
         }
     }
 
