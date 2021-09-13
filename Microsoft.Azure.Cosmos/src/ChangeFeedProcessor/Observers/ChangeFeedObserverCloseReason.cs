@@ -44,5 +44,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// Note: SDK retries on this error.
         /// </summary>
         ReadSessionNotAvailable,
+
+        /// <summary>
+        /// Related to a server response
+        /// </summary>
+        CosmosException,
     }
 }

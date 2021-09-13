@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
@@ -76,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNotNull(clientOptions.Serializer);
             Assert.IsNull(clientOptions.WebProxy);
             Assert.IsFalse(clientOptions.LimitToEndpoint);
-            Assert.IsFalse(clientOptions.EnableTcpConnectionEndpointRediscovery);
+            Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
             Assert.IsNull(clientOptions.HttpClientFactory);
             Assert.AreNotEqual(consistencyLevel, clientOptions.ConsistencyLevel);
             Assert.IsFalse(clientOptions.EnablePartitionLevelFailover);
@@ -92,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(policy.MaxRequestsPerTcpConnection);
             Assert.IsNull(policy.MaxTcpConnectionsPerEndpoint);
             Assert.IsTrue(policy.EnableEndpointDiscovery);
-            Assert.IsFalse(policy.EnableTcpConnectionEndpointRediscovery);
+            Assert.IsTrue(policy.EnableTcpConnectionEndpointRediscovery);
             Assert.IsNull(policy.HttpClientFactory);
             Assert.AreNotEqual(Cosmos.ConsistencyLevel.Session, clientOptions.ConsistencyLevel);
             Assert.IsFalse(policy.EnablePartitionLevelFailover);
@@ -367,8 +368,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 webProxy: webProxy);
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build();
-            FieldInfo httpClient = cosmosClient.DocumentClient.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
-            CosmosHttpClient cosmosHttpClient = (CosmosHttpClient)httpClient.GetValue(cosmosClient.DocumentClient);
+            CosmosHttpClient cosmosHttpClient = cosmosClient.DocumentClient.httpClient;
             HttpClientHandler handler = (HttpClientHandler)cosmosHttpClient.HttpMessageHandler;
             
             Assert.IsTrue(object.ReferenceEquals(webProxy, handler.Proxy));

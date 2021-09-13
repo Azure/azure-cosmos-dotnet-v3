@@ -48,13 +48,13 @@ WHERE ((root["IntField"] >= -2147483648) AND (root["IntField"] <= 2147483647))]]
   <Result>
     <Input>
       <Description><![CDATA[Abs long]]></Description>
-      <Expression><![CDATA[query.Where(doc => ((doc.NumericField >= -9.22337203685478E+18) AndAlso (doc.NumericField <= 9.22337203685478E+18))).Select(doc => Abs(Convert(doc.NumericField, Int64)))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => ((doc.NumericField >= -9.223372036854776E+18) AndAlso (doc.NumericField <= 9.223372036854776E+18))).Select(doc => Abs(Convert(doc.NumericField, Int64)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE ABS(root["NumericField"]) 
 FROM root 
-WHERE ((root["NumericField"] >= -9.2233720368547758E+18) AND (root["NumericField"] <= 9.2233720368547758E+18))]]></SqlQuery>
+WHERE ((root["NumericField"] >= -9.223372036854776E+18) AND (root["NumericField"] <= 9.223372036854776E+18))]]></SqlQuery>
     </Output>
   </Result>
   <Result>

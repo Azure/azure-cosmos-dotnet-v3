@@ -66,7 +66,7 @@ jobs:
 
 - job:
   displayName: EmulatorTests ${{ parameters.BuildConfiguration }}
-  timeoutInMinutes: 90
+  timeoutInMinutes: 120
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
     vmImage: ${{ parameters.VmImage }}

@@ -44,8 +44,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public GatewayTests()
         {
-            this.baseUri = new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]);
-            this.masterKey = ConfigurationManager.AppSettings["MasterKey"];
+            this.baseUri = new Uri(Utils.ConfigurationManager.AppSettings["GatewayEndpoint"]);
+            this.masterKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
         }
 
         private static Document CreateDocument(DocumentClient client, Uri baseUri, DocumentCollection collection, string documentName, string property1, int property2, string pretrigger = null, string posttrigger = null)

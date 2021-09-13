@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos
         }
     }
 
-    internal sealed class IndexEqualityComparer : IEqualityComparer<Index>
+    internal sealed class IndexEqualityComparer : IEqualityComparer<Cosmos.Index>
     {
         public static readonly IndexEqualityComparer Comparer = new IndexEqualityComparer();
 
@@ -318,8 +318,8 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            HashSet<Index> indexes1 = new HashSet<Index>(includedPath1.Indexes, indexEqualityComparer);
-            HashSet<Index> indexes2 = new HashSet<Index>(includedPath2.Indexes, indexEqualityComparer);
+            HashSet<Cosmos.Index> indexes1 = new HashSet<Cosmos.Index>(includedPath1.Indexes, indexEqualityComparer);
+            HashSet<Cosmos.Index> indexes2 = new HashSet<Cosmos.Index>(includedPath2.Indexes, indexEqualityComparer);
 
             return indexes1.SetEquals(indexes2);
         }
@@ -328,7 +328,7 @@ namespace Microsoft.Azure.Cosmos
         {
             int hashCode = 0;
             hashCode = hashCode ^ includedPath.Path.GetHashCode();
-            foreach (Index index in includedPath.Indexes)
+            foreach (Cosmos.Index index in includedPath.Indexes)
             {
                 hashCode = hashCode ^ indexEqualityComparer.GetHashCode(index);
             }

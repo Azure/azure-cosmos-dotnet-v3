@@ -26,7 +26,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             | QueryFeatures.OffsetAndLimit
             | QueryFeatures.OrderBy
             | QueryFeatures.Top
-            | QueryFeatures.NonValueAggregate;
+            | QueryFeatures.NonValueAggregate
+            | QueryFeatures.DCount;
 
         private static readonly string SupportedQueryFeaturesString = SupportedQueryFeatures.ToString();
 

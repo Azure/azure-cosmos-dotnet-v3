@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
+    using System;
     using Microsoft.Azure.Cosmos;
 
     internal sealed class ChangeFeedProcessorContextCore : ChangeFeedProcessorContext

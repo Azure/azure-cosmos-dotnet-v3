@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     using System;
     using System.IO;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -32,9 +33,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public MockedItemBenchmarkHelper(
             bool useCustomSerializer = false,
             bool includeDiagnosticsToString = false,
-            bool useBulk = false)
+            bool useBulk = false,
+            bool? isClientTelemetryEnabled = null)
         {
-            this.TestClient = MockDocumentClient.CreateMockCosmosClient(useCustomSerializer, (builder) => builder.WithBulkExecution(useBulk));
+            this.TestClient = MockDocumentClient.CreateMockCosmosClient(useCustomSerializer, isClientTelemetryEnabled, (builder) => builder.WithBulkExecution(useBulk));
             this.TestContainer = this.TestClient.GetDatabase("myDB").GetContainer("myColl");
             this.IncludeDiagnosticsToString = includeDiagnosticsToString;
 
