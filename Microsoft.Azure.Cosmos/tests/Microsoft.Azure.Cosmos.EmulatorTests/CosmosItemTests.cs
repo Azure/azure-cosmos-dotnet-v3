@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using PartitionKey = Documents.PartitionKey;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
     using System.Reflection;
+    using System.Text.RegularExpressions;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -88,6 +89,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 string message = ce.ToString();
                 Assert.IsNotNull(message);
+                CosmosItemTests.ValidateCosmosException(ce);
             }
 
             // Get a container reference that use RID values
@@ -216,6 +218,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(exception.StartsWith("Microsoft.Azure.Cosmos.CosmosException : Response status code does not indicate success: Forbidden (403); Substatus: 999999; "));
                 string diagnostics = ce.Diagnostics.ToString();
                 Assert.IsTrue(diagnostics.Contains("999999"));
+                CosmosItemTests.ValidateCosmosException(ce);
             }
         }
 
@@ -351,6 +354,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (CosmosException ex)
             {
                 Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
+                CosmosItemTests.ValidateCosmosException(ex);
             }
         }
 
@@ -391,6 +395,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (CosmosException ex)
             {
                 Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
+                CosmosItemTests.ValidateCosmosException(ex);
             }
         }
 
@@ -1710,7 +1715,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
                 Assert.IsTrue(ex.Message.Contains("Resource Not Found"));
                 Assert.IsTrue(ex.Message.Contains("https://aka.ms/cosmosdb-tsg-not-found"));
-
+                CosmosItemTests.ValidateCosmosException(ex);
             }
 
             // adding a child when parent / ancestor does not exist - 400 BadRequest response
@@ -1727,6 +1732,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.AreEqual(HttpStatusCode.BadRequest, ex.StatusCode);
                 Assert.IsTrue(ex.Message.Contains("Add Operation only support adding a leaf node of an existing node(array or object), no path found beyond: 'nonExistentParent'"), ex.Message);
+                CosmosItemTests.ValidateCosmosException(ex);
             }
 
             // precondition failure - 412 response
@@ -1749,6 +1755,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.AreEqual(HttpStatusCode.PreconditionFailed, ex.StatusCode);
                 Assert.IsTrue(ex.Message.Contains("One of the specified pre-condition is not met"));
+                CosmosItemTests.ValidateCosmosException(ex);
             }
         }
 
@@ -2923,6 +2930,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     return;
                 }
             }
+        }
+
+        private static void ValidateCosmosException(CosmosException exception)
+        {
+            if(exception.StatusCode == HttpStatusCode.RequestTimeout ||
+                exception.StatusCode == HttpStatusCode.InternalServerError ||
+                exception.StatusCode == HttpStatusCode.ServiceUnavailable)
+            {
+                Assert.IsTrue(exception.Message.Contains("Diagnostics"));
+            }
+            else
+            {
+                Assert.IsFalse(exception.Message.Contains("Diagnostics"));
+            }
+            
+            string toString = exception.ToString();
+            Assert.AreEqual(1, Regex.Matches(toString, "Client Configuration").Count, $"The Cosmos Diagnostics does not exists or multiple instance are in the ToString(). {toString}");
         }
 
         private static async Task ExecuteQueryAsync(Container container, HttpStatusCode expected)

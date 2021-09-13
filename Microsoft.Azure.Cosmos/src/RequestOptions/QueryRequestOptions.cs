@@ -93,6 +93,19 @@ namespace Microsoft.Azure.Cosmos
         public PartitionKey? PartitionKey { get; set; }
 
         /// <summary>
+        /// Gets or sets the <see cref="PopulateIndexMetrics"/> request option for document query requests in the Azure Cosmos DB service.
+        /// </summary>
+        /// <remarks>
+        /// <para> 
+        /// PopulateIndexMetrics is used to obtain the index metrics to understand how the query engine used existing indexes 
+        /// and how it could use potential new indexes.
+        /// The results will be displayed in FeedResponse.IndexMetrics. Please note that this options will incur overhead, so it should be 
+        /// enabled only when debugging slow queries.
+        /// </para>
+        /// </remarks>
+        public bool? PopulateIndexMetrics { get; set; }
+
+        /// <summary>
         /// Gets or sets the consistency level required for the request in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -240,6 +253,11 @@ namespace Microsoft.Azure.Cosmos
             if (this.EnumerationDirection.HasValue)
             {
                 request.Headers.Set(HttpConstants.HttpHeaders.EnumerationDirection, this.EnumerationDirection.Value.ToString());
+            }
+
+            if (this.PopulateIndexMetrics.HasValue)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.PopulateIndexMetrics, this.PopulateIndexMetrics.ToString());
             }
 
             DedicatedGatewayRequestOptions.PopulateMaxIntegratedCacheStalenessOption(this.DedicatedGatewayRequestOptions, request);
