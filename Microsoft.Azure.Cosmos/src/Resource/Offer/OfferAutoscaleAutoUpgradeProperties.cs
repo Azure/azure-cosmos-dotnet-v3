@@ -49,6 +49,13 @@ namespace Microsoft.Azure.Cosmos
             [JsonProperty(PropertyName = Constants.Properties.AutopilotThroughputPolicyIncrementPercent, NullValueHandling = NullValueHandling.Ignore)]
             public int IncrementPercent { get; private set; }
 
+            /// <summary>
+            /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+            /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+            /// </summary>
+            [JsonExtensionData]
+            internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+
         }
     }
 }

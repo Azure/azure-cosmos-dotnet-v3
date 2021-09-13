@@ -16,31 +16,39 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static bool CompareDictionary(IDictionary<string, JToken> dict1, IDictionary<string, JToken> dict2)
         {
-            bool isEqual = false;
-            if (dict1.Count == dict2.Count)
+            if (dict1 == null && dict2 == null)
             {
-                isEqual = true;
-                foreach (KeyValuePair<string, JToken> pair in dict1)
+                return true;
+            }
+            else if (dict1 != null && dict2 != null)
+            {
+                bool isEqual = false;
+                if (dict1.Count == dict2.Count)
                 {
-                    if (dict2.TryGetValue(pair.Key, out JToken value))
+                    isEqual = true;
+                    foreach (KeyValuePair<string, JToken> pair in dict1)
                     {
-                        // Require value be equal.
-                        if (!value.ToString().Equals(pair.Value.ToString()))
+                        if (dict2.TryGetValue(pair.Key, out JToken value))
                         {
+                            // Require value be equal.
+                            if (!value.ToString().Equals(pair.Value.ToString()))
+                            {
+                                isEqual = false;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            // Require key be present.
                             isEqual = false;
                             break;
                         }
                     }
-                    else
-                    {
-                        // Require key be present.
-                        isEqual = false;
-                        break;
-                    }
                 }
+                return isEqual;
             }
 
-            return isEqual;
+            return false;
         }
     }
 }

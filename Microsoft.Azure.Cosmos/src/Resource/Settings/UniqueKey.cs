@@ -4,9 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents a unique key on that enforces uniqueness constraint on documents in the collection in the Azure Cosmos DB service.
@@ -32,6 +34,13 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         [JsonProperty(PropertyName = Constants.Properties.Paths)]
         public Collection<string> Paths { get; internal set; } = new Collection<string>();
+
+        /// <summary>
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+        /// </summary>
+        [JsonExtensionData]
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
 
 #if INTERNAL
         /// <summary>
