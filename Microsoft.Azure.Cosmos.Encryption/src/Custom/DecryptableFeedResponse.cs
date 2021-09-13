@@ -33,6 +33,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         public override CosmosDiagnostics Diagnostics { get; }
 
+        public override string IndexMetrics => null;
+
 #if SDKPROJECTREF
         public override string IndexMetrics => null;
 #endif

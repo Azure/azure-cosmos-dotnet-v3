@@ -53,8 +53,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
             {
-                EncryptionDiagnosticsContent decryptDiagnostics = new EncryptionDiagnosticsContent();
-                decryptDiagnostics.Begin();
+                EncryptionDiagnosticsContext decryptDiagnostics = new EncryptionDiagnosticsContext();
+                decryptDiagnostics.Begin(Constants.DiagnosticsDecryptOperation);
 
                 Stream decryptedContent = await this.encryptionContainer.DeserializeAndDecryptResponseAsync(
                     responseMessage.Content,
@@ -62,11 +62,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     cancellationToken);
 
                 decryptDiagnostics.End();
-                EncryptionCosmosDiagnostics encryptionDiagnostics = new EncryptionCosmosDiagnostics(
-                    responseMessage.Diagnostics,
-                    decryptContent: decryptDiagnostics);
-
-                responseMessage.Diagnostics = encryptionDiagnostics;
+                decryptDiagnostics.AddEncryptionDiagnostics(responseMessage);
 
                 return new DecryptedResponseMessage(responseMessage, decryptedContent);
             }

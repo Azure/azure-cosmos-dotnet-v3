@@ -15,27 +15,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public EncryptionCosmosDiagnostics(
             CosmosDiagnostics coreDiagnostics,
-            EncryptionDiagnosticsContent encryptContent = null,
-            EncryptionDiagnosticsContent decryptContent = null)
+            JObject encryptContent = null,
+            JObject decryptContent = null)
         {
             this.coreDiagnostics = coreDiagnostics ?? throw new ArgumentNullException(nameof(coreDiagnostics));
             this.encryptionDiagnostics = new JObject();
-            if (encryptContent != null)
+            if (encryptContent?.Count > 0)
             {
-                this.AddChild(Constants.DiagnosticsEncryptOperation, encryptContent);
+                this.encryptionDiagnostics.Add(Constants.DiagnosticsEncryptOperation, encryptContent);
             }
 
-            if (decryptContent != null)
+            if (decryptContent?.Count > 0)
             {
-                this.AddChild(Constants.DiagnosticsDecryptOperation, decryptContent);
+                this.encryptionDiagnostics.Add(Constants.DiagnosticsDecryptOperation, decryptContent);
             }
-        }
-
-        public void AddChild(
-            string operation,
-            EncryptionDiagnosticsContent operationContent)
-        {
-            this.encryptionDiagnostics.Add(operation, operationContent.Content);
         }
 
         public override IReadOnlyList<(string regionName, Uri uri)> GetContactedRegions()

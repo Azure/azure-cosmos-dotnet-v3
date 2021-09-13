@@ -180,24 +180,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
             TransactionalBatchRequestOptions requestOptions,
             CancellationToken cancellationToken = default)
         {
-            TransactionalBatchResponse response = null;
-
             EncryptionSettings encryptionSettings = await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
+            TransactionalBatchResponse response;
             if (!encryptionSettings.PropertiesToEncrypt.Any())
             {
                 return await this.transactionalBatch.ExecuteAsync(requestOptions, cancellationToken);
             }
             else
             {
-                TransactionalBatchRequestOptions clonedRequestOptions;
-                if (requestOptions != null)
-                {
-                    clonedRequestOptions = (TransactionalBatchRequestOptions)requestOptions.ShallowCopy();
-                }
-                else
-                {
-                    clonedRequestOptions = new TransactionalBatchRequestOptions();
-                }
+                TransactionalBatchRequestOptions clonedRequestOptions = requestOptions != null
+                    ? (TransactionalBatchRequestOptions)requestOptions.ShallowCopy()
+                    : new TransactionalBatchRequestOptions();
 
                 encryptionSettings.SetRequestHeaders(clonedRequestOptions);
                 response = await this.transactionalBatch.ExecuteAsync(clonedRequestOptions, cancellationToken);
@@ -247,24 +240,22 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 .GetAwaiter()
                 .GetResult();
 
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
-            using (diagnosticsContext.CreateScope("PatchItem"))
-            {
-                List<PatchOperation> encryptedPatchOperations = this.encryptionContainer.EncryptPatchOperationsAsync(
-                    patchOperations,
-                    encryptionSettings,
-                    cancellationToken: default)
-                    .ConfigureAwait(false)
-                    .GetAwaiter()
-                    .GetResult();
+            EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
+            List<PatchOperation> encryptedPatchOperations = this.encryptionContainer.EncryptPatchOperationsAsync(
+                patchOperations,
+                encryptionSettings,
+                encryptionDiagnosticsContext,
+                cancellationToken: default)
+                .ConfigureAwait(false)
+                .GetAwaiter()
+                .GetResult();
 
-                this.transactionalBatch = this.transactionalBatch.PatchItem(
-                    id,
-                    encryptedPatchOperations,
-                    requestOptions);
+            this.transactionalBatch = this.transactionalBatch.PatchItem(
+                id,
+                encryptedPatchOperations,
+                requestOptions);
 
-                return this;
-            }
+            return this;
         }
 
         private async Task<TransactionalBatchResponse> DecryptTransactionalBatchResponseAsync(
@@ -279,8 +270,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             List<TransactionalBatchOperationResult> decryptedTransactionalBatchOperationResults = new List<TransactionalBatchOperationResult>();
 
-            EncryptionDiagnosticsContent decryptDiagnostics = new EncryptionDiagnosticsContent();
-            decryptDiagnostics.Begin();
+            EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
+            encryptionDiagnosticsContext.Begin(Constants.DiagnosticsDecryptOperation);
             int propertiesDecryptedCount = 0;
 
             foreach (TransactionalBatchOperationResult result in response)
@@ -302,11 +293,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
-            decryptDiagnostics.End();
-            decryptDiagnostics.AddMember(Constants.DiagnosticsPropertiesCount, propertiesDecryptedCount);
+            encryptionDiagnosticsContext.End(propertiesDecryptedCount);
             EncryptionCosmosDiagnostics encryptionDiagnostics = new EncryptionCosmosDiagnostics(
                 response.Diagnostics,
-                decryptContent: decryptDiagnostics);
+                decryptContent: encryptionDiagnosticsContext.DecryptContent);
 
             return new EncryptionTransactionalBatchResponse(
                 decryptedTransactionalBatchOperationResults,

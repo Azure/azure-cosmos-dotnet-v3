@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public static async Task<Stream> EncryptAsync(
             Stream input,
             EncryptionSettings encryptionSettings,
-            EncryptionDiagnosticsContent operationDiagnostics,
+            EncryptionDiagnosticsContext operationDiagnostics,
             CancellationToken cancellationToken)
         {
             if (input == null)
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(input));
             }
 
-            operationDiagnostics?.Begin();
+            operationDiagnostics?.Begin(Constants.DiagnosticsEncryptOperation);
             int propertiesEncryptedCount = 0;
 
             JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
@@ -86,8 +86,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Stream result = EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
             input.Dispose();
 
-            operationDiagnostics?.End();
-            operationDiagnostics?.AddMember(Constants.DiagnosticsPropertiesCount, propertiesEncryptedCount);
+            operationDiagnostics?.End(propertiesEncryptedCount);
             return result;
         }
 
@@ -99,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public static async Task<Stream> DecryptAsync(
             Stream input,
             EncryptionSettings encryptionSettings,
-            EncryptionDiagnosticsContent operationDiagnostics,
+            EncryptionDiagnosticsContext operationDiagnostics,
             CancellationToken cancellationToken)
         {
             if (input == null)
@@ -109,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             Debug.Assert(input.CanSeek);
 
-            operationDiagnostics?.Begin();
+            operationDiagnostics?.Begin(Constants.DiagnosticsDecryptOperation);
             JObject itemJObj = RetrieveItem(input);
 
             int propertiesDecryptedCount = await DecryptObjectAsync(
@@ -120,8 +119,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Stream result = EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
             input.Dispose();
 
-            operationDiagnostics?.End();
-            operationDiagnostics?.AddMember(Constants.DiagnosticsPropertiesCount, propertiesDecryptedCount);
+            operationDiagnostics?.End(propertiesDecryptedCount);
 
             return result;
         }
@@ -129,17 +127,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public static async Task<JObject> DecryptAsync(
             JObject document,
             EncryptionSettings encryptionSettings,
-            EncryptionDiagnosticsContent operationDiagnostics,
             CancellationToken cancellationToken)
         {
             Debug.Assert(document != null);
 
-            int propertiesDecryptedCount = await DecryptObjectAsync(
+            await DecryptObjectAsync(
                 document,
                 encryptionSettings,
                 cancellationToken);
-
-            operationDiagnostics?.AddMember(Constants.DiagnosticsPropertiesCount, propertiesDecryptedCount);
 
             return document;
         }
