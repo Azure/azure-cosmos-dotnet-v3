@@ -707,7 +707,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             return TransportSerialization.BuildContextRequest(
                         activityId,
                         userAgent,
-                        callerId);
+                        callerId,
+                        true);
         }
         private async Task ReceiveLoopAsync()
         {

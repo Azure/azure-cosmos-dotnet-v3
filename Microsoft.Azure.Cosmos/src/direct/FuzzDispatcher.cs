@@ -36,7 +36,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                   receiveHangDetectionTime,
                   sendHangDetectionTime,
                   idleTimerPool,
-                  idleTimeout)
+                  idleTimeout,
+                  true)
         {
             this.sendFuzzedRequest = fuzzRequest;
             this.sendFuzzedContext = fuzzContext;

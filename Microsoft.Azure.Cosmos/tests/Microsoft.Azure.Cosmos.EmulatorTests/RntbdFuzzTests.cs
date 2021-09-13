@@ -21,9 +21,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task SendFuzzedRequestTest()
         {
-            //Environment.SetEnvironmentVariable("FuzzLogLocation", "C:\\FuzzTest1");
+            Environment.SetEnvironmentVariable("FuzzLogLocation", "C:\\FuzzTest2");
             Environment.SetEnvironmentVariable("SendFuzzedRequest", "true");
-            await this.Fuzz(5);
+            await this.Fuzz(10);
             Environment.SetEnvironmentVariable("SendFuzzedRequest", null);
         }
 
