@@ -44,7 +44,7 @@ namespace CosmosCTL
             }
         }
 
-        public async Task RunAsync(
+        public Task RunAsync(
             CTLConfig config,
             CosmosClient cosmosClient,
             ILogger logger,
@@ -52,7 +52,7 @@ namespace CosmosCTL
             string loggingContextIdentifier,
             CancellationToken cancellationToken)
         {
-            await Task.WhenAll(
+            return Task.WhenAll(
                 ExecuteQueryAndGatherResultsAsync(
                     config, 
                     cosmosClient, 
