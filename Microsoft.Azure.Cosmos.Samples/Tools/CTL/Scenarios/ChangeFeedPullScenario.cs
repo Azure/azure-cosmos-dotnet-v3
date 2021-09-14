@@ -61,7 +61,7 @@ namespace CosmosCTL
             {
                 long documentTotal = 0;
                 string continuation = null;
-                FeedIterator<Dictionary<string, string>> changeFeedPull 
+                using FeedIterator<Dictionary<string, string>> changeFeedPull 
                     = container.GetChangeFeedIterator<Dictionary<string, string>>(ChangeFeedStartFrom.Beginning(), ChangeFeedMode.Incremental);
 
                 try

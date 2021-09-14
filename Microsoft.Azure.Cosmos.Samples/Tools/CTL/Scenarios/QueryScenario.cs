@@ -53,7 +53,7 @@ namespace CosmosCTL
             CancellationToken cancellationToken)
         {
             return Task.WhenAll(
-                ExecuteQueryAndGatherResultsAsync(
+                QueryScenario.ExecuteQueryAndGatherResultsAsync(
                     config, 
                     cosmosClient, 
                     logger, 
@@ -63,7 +63,7 @@ namespace CosmosCTL
                     queryText: "select * from c", 
                     queryName: "Star",
                     expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments: 0),
-                ExecuteQueryAndGatherResultsAsync(
+                QueryScenario.ExecuteQueryAndGatherResultsAsync(
                     config, 
                     cosmosClient, 
                     logger, 
@@ -73,7 +73,7 @@ namespace CosmosCTL
                     queryText: "select * from c order by c.id", 
                     queryName: "OrderBy",
                     expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0),
-                ExecuteQueryAndGatherResultsAsync(
+                QueryScenario.ExecuteQueryAndGatherResultsAsync(
                     config, 
                     cosmosClient, 
                     logger, 
@@ -126,9 +126,12 @@ namespace CosmosCTL
                         {
                             // Use continuation to paginate on the query instead of draining just the initial query
                             // This validates that we can indeed move forward with the continuation
+                            query.Dispose();
                             query = container.GetItemQueryIterator<Dictionary<string, string>>(queryText, continuation);
                         }
                     }
+
+                    query.Dispose();
 
                     metrics.Measure.Gauge.SetValue(documentGauge, documentTotal);
 
