@@ -8,6 +8,7 @@
     using System.Diagnostics;
     using System.Linq;
     using System.Net;
+    using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -61,7 +62,7 @@
 
                         Debug.Assert(attempt.Exception != null);
 
-                        throw new Exception("An error occurred during retried Cosmos operation.", attempt.Exception);
+                        ExceptionDispatchInfo.Capture(attempt.Exception).Throw();
                     }
                 }
 
@@ -103,7 +104,7 @@
                             Debug.WriteLine($"Final attempt failed; re-throwing that exception.");
                             Debug.WriteLine("**********");
 
-                            throw new Exception("An error occurred during Cosmos operation.", attempt.Exception);
+                            ExceptionDispatchInfo.Capture(attempt.Exception).Throw();
                         }
 
                         // https://docs.microsoft.com/en-us/azure/cosmos-db/sql/troubleshoot-dot-net-sdk?tabs=diagnostics-v3#common-error-status-codes-
@@ -153,7 +154,7 @@
                     Debug.WriteLine($"Current attempt failed; re-throwing that exception.");
                     Debug.WriteLine("**********");
 
-                    throw new Exception("An error occurred during Cosmos operation.", attempt.Exception);
+                    ExceptionDispatchInfo.Capture(attempt.Exception).Throw();
                 }
                 else
                 {
