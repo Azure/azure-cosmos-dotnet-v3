@@ -410,7 +410,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     this.WriteGatewayRequestSummaryObject(summaryDiagnosticsTraceDatum.GatewayRequestsSummary);
                     this.jsonWriter.WriteObjectEnd();
 
-                    this.jsonWriter.WriteFieldName("MaxGatewayRequestTimeInMs");
+                    this.jsonWriter.WriteFieldName("MaxRequestTimeInMs");
                     this.jsonWriter.WriteNumber64Value(summaryDiagnosticsTraceDatum.MaxGatewayRequestTimeInMs);
                 }
 
