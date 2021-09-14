@@ -34,6 +34,8 @@ namespace Microsoft.Azure.Cosmos
 
         public override CosmosDiagnostics Diagnostics { get; }
 
+        public override string IndexMetrics { get; }
+
         public override IEnumerator<T> GetEnumerator()
         {
             return this.Resource.GetEnumerator();

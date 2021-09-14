@@ -40,6 +40,9 @@ namespace Microsoft.Azure.Cosmos
             this.PartitionKeyRangeHandler = new PartitionKeyRangeHandler(client);
             Debug.Assert(this.PartitionKeyRangeHandler.InnerHandler == null, "The PartitionKeyRangeHandler.InnerHandler must be null to allow other handlers to be linked.");
 
+            // Disable system usage for internal builds. Cosmos DB owns the VMs and already logs
+            // the system information so no need to track it.
+#if !INTERNAL
             this.diagnosticsHandler = new DiagnosticsHandler();
             Debug.Assert(this.diagnosticsHandler.InnerHandler == null, nameof(this.diagnosticsHandler));
 
@@ -48,6 +51,11 @@ namespace Microsoft.Azure.Cosmos
                 this.telemetryHandler = new TelemetryHandler(telemetry);
                 Debug.Assert(this.telemetryHandler.InnerHandler == null, nameof(this.telemetryHandler));
             }
+#else
+            this.diagnosticsHandler = null;
+            this.telemetryHandler = null;
+#endif
+
             this.UseRetryPolicy();
             this.AddCustomHandlers(customHandlers);
         }
@@ -97,15 +105,15 @@ namespace Microsoft.Azure.Cosmos
         ///                                                 |
         ///                                    +-----------------------------+
         ///                                    |                             |
+        ///                                    |       TelemetryHandler      |-> Trigger a thread to monitor system usage/operation information and sends to an API
+        ///                                    |                             |
+        ///                                    +-----------------------------+
+        ///                                                 |
+        ///                                                 |
+        ///                                                 |
+        ///                                    +-----------------------------+
+        ///                                    |                             |
         ///                                    |       RetryHandler          |-> RetryPolicy -> ResetSessionTokenRetryPolicyFactory -> ClientRetryPolicy -> ResourceThrottleRetryPolicy
-        ///                                    |                             |
-        ///                                    +-----------------------------+
-        ///                                                 |
-        ///                                                 |
-        ///                                                 |
-        ///                                    +-----------------------------+
-        ///                                    |                             |
-        ///                                    |       Telemetry Handler     |-> Trigger a thread to monitor system usage/operation information and send it to juno
         ///                                    |                             |
         ///                                    +-----------------------------+
         ///                                                 |
@@ -158,19 +166,25 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
+            // Public SDK should always have the diagnostics handler
+#if !INTERNAL
             Debug.Assert(this.diagnosticsHandler != null, nameof(this.diagnosticsHandler));
-            current.InnerHandler = this.diagnosticsHandler;
-            current = current.InnerHandler;
-
-            Debug.Assert(this.retryHandler != null, nameof(this.retryHandler));
-            current.InnerHandler = this.retryHandler;
-            current = current.InnerHandler;
+#endif
+            if (this.diagnosticsHandler != null)
+            {
+                current.InnerHandler = this.diagnosticsHandler;
+                current = current.InnerHandler;
+            }
 
             if (this.telemetryHandler != null)
             {
                 current.InnerHandler = this.telemetryHandler;
                 current = current.InnerHandler;
             }
+
+            Debug.Assert(this.retryHandler != null, nameof(this.retryHandler));
+            current.InnerHandler = this.retryHandler;
+            current = current.InnerHandler;
 
             // Have a router handler
             RequestHandler feedHandler = this.CreateDocumentFeedPipeline();

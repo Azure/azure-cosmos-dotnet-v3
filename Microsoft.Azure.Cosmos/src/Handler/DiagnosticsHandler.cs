@@ -4,12 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos.Handlers
 {
-    using System;
-    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
-    using Handler;
-    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents.Rntbd;
 
@@ -21,12 +18,22 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class DiagnosticsHandler : RequestHandler
     {
-        public override Task<ResponseMessage> SendAsync(
+        public override async Task<ResponseMessage> SendAsync(
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            DiagnosticsHandlerHelper.Instance().RecordCpuDiagnostics(request, DiagnosticsHandlerHelper.Diagnostickey);
-            return base.SendAsync(request, cancellationToken);
+            ResponseMessage responseMessage = await base.SendAsync(request, cancellationToken);
+
+            // Record the diagnostics on the response to get the CPU of when the request was executing
+            SystemUsageHistory systemUsageHistory = DiagnosticsHandlerHelper.Instance.GetDiagnosticsSystemHistory();
+            if (systemUsageHistory != null)
+            {
+                request.Trace.AddDatum(
+                    "System Info",
+                    new CpuHistoryTraceDatum(systemUsageHistory));
+            }
+
+            return responseMessage;
         }
     }
 }
