@@ -9,12 +9,12 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using Newtonsoft.Json.Linq;
 
-    internal static class DictionaryExtension
+    internal static class DictionaryExtensions
     {
         /// <summary>
         /// Compare two dictionaries and return true if they have same pair of key-values
         /// </summary>
-        internal static bool IsSameAs(this IDictionary<string, JToken> dict1, IDictionary<string, JToken> dict2)
+        internal static bool EqualsTo(this IDictionary<string, JToken> dict1, IDictionary<string, JToken> dict2)
         {
             if (dict1 == null && dict2 == null)
             {
