@@ -28,17 +28,13 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public double MaxNetworkingTimeInMs { get; private set; }
         public double MaxGatewayRequestTimeInMs { get; private set; }
         public RequestSummary DirectRequestsSummary { get; }
-        //public GatewayRequestSummary GatewayRequestsSummary { get; }
+        public GatewayRequestSummary GatewayRequestsSummary { get; }
 
         private void CollectSummaryFromTraceTree(ITrace currentTrace)
         {
             foreach (object datums in currentTrace.Data.Values)
             {
-                if (datums is CpuHistoryTraceDatum cpuHistoryTraceDatum)
-                {
-
-                }
-
+                // TODO: Add MaxCpuUsage using CpuHistoryTraceDatum
                 if (datums is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
                 {
                     this.AgrregateStatsFromStoreResults(clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList);
@@ -53,18 +49,18 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
         }
 
-        //private void AgrregateGatewayStatistics(IReadOnlyList<ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics> httpResponseStatisticsList)
-        //{
-        //    foreach (ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics httpResponseStatistics in httpResponseStatisticsList)
-        //    {
-        //        this.GatewayRequestsSummary.RecordHttpResponse(httpResponseStatistics);
+        private void AgrregateGatewayStatistics(IReadOnlyList<ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics> httpResponseStatisticsList)
+        {
+            foreach (ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics httpResponseStatistics in httpResponseStatisticsList)
+            {
+                this.GatewayRequestsSummary.RecordHttpResponse(httpResponseStatistics);
 
-        //        if (httpResponseStatistics.Duration.TotalMilliseconds > this.MaxGatewayRequestTimeInMs)
-        //        {
-        //            this.MaxGatewayRequestTimeInMs = httpResponseStatistics.Duration.TotalMilliseconds;
-        //        }
-        //    }
-        //}
+                if (httpResponseStatistics.Duration.TotalMilliseconds > this.MaxGatewayRequestTimeInMs)
+                {
+                    this.MaxGatewayRequestTimeInMs = httpResponseStatistics.Duration.TotalMilliseconds;
+                }
+            }
+        }
 
         private void AgrregateStatsFromStoreResults(IReadOnlyList<ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics> storeResponseStatisticsList)
         {
@@ -106,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             traceDatumVisitor.Visit(this);
         }
 
-        public struct RequestSummary
+        public class RequestSummary
         {
             public int TotalCalls { get; protected set; }
             public int NumberOf429s { get; private set; }
@@ -150,39 +146,39 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
         }
 
-        //public class GatewayRequestSummary : RequestSummary
-        //{
-        //    public int NumberOfOperationCancelledExceptions { get; private set; }
-        //    public int NumberOfWebExceptions { get; private set; }
-        //    public int NumberOfHttpRequestExceptions { get; private set; }
-        //    public int OtherExceptions { get; private set; }
+        public class GatewayRequestSummary : RequestSummary
+        {
+            public int NumberOfOperationCancelledExceptions { get; private set; }
+            public int NumberOfWebExceptions { get; private set; }
+            public int NumberOfHttpRequestExceptions { get; private set; }
+            public int OtherExceptions { get; private set; }
 
-        //    public void RecordHttpResponse(ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics httpResponseStatistics)
-        //    {
-        //        this.TotalCalls++;
-        //        if (httpResponseStatistics.Exception != null)
-        //        {
-        //            switch (httpResponseStatistics.Exception)
-        //            {
-        //                case OperationCanceledException operationCanceledException:
-        //                    this.NumberOfOperationCancelledExceptions++;
-        //                    break;
-        //                case WebException webException:
-        //                    this.NumberOfWebExceptions++;
-        //                    break;
-        //                case HttpRequestException httpRequestException:
-        //                    this.NumberOfHttpRequestExceptions++;
-        //                    break;
-        //                default:
-        //                    this.OtherExceptions++;
-        //                    break;
-        //            }
-        //        }
-        //        else if (httpResponseStatistics.HttpResponseMessage != null)
-        //        {
-        //            base.RecordStatusCode((int)httpResponseStatistics.HttpResponseMessage.StatusCode);
-        //        }
-        //    }
-        //}
+            public void RecordHttpResponse(ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics httpResponseStatistics)
+            {
+                this.TotalCalls++;
+                if (httpResponseStatistics.Exception != null)
+                {
+                    switch (httpResponseStatistics.Exception)
+                    {
+                        case OperationCanceledException operationCanceledException:
+                            this.NumberOfOperationCancelledExceptions++;
+                            break;
+                        case WebException webException:
+                            this.NumberOfWebExceptions++;
+                            break;
+                        case HttpRequestException httpRequestException:
+                            this.NumberOfHttpRequestExceptions++;
+                            break;
+                        default:
+                            this.OtherExceptions++;
+                            break;
+                    }
+                }
+                else if (httpResponseStatistics.HttpResponseMessage != null)
+                {
+                    base.RecordStatusCode((int)httpResponseStatistics.HttpResponseMessage.StatusCode);
+                }
+            }
+        }
     }
 }
