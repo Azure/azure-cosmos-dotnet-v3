@@ -406,47 +406,47 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     this.jsonWriter.WriteNumber64Value(summaryDiagnosticsTraceDatum.MaxNetworkingTimeInMs);
                 }
 
-                if (summaryDiagnosticsTraceDatum.GatewayRequestsSummary.TotalCalls > 0)
-                {
-                    this.jsonWriter.WriteFieldName("Gateway Requests");
-                    this.jsonWriter.WriteObjectStart();
-                    this.WriteGatewayRequestSummaryObject(summaryDiagnosticsTraceDatum.GatewayRequestsSummary);
-                    this.jsonWriter.WriteObjectEnd();
+                //if (summaryDiagnosticsTraceDatum.GatewayRequestsSummary.TotalCalls > 0)
+                //{
+                //    this.jsonWriter.WriteFieldName("Gateway Requests");
+                //    this.jsonWriter.WriteObjectStart();
+                //    this.WriteGatewayRequestSummaryObject(summaryDiagnosticsTraceDatum.GatewayRequestsSummary);
+                //    this.jsonWriter.WriteObjectEnd();
 
-                    this.jsonWriter.WriteFieldName("MaxGatewayRequestTimeInMs");
-                    this.jsonWriter.WriteNumber64Value(summaryDiagnosticsTraceDatum.MaxGatewayRequestTimeInMs);
-                }
+                //    this.jsonWriter.WriteFieldName("MaxGatewayRequestTimeInMs");
+                //    this.jsonWriter.WriteNumber64Value(summaryDiagnosticsTraceDatum.MaxGatewayRequestTimeInMs);
+                //}
 
                 this.jsonWriter.WriteObjectEnd();
             }
 
-            private void WriteGatewayRequestSummaryObject(SummaryDiagnosticsTraceDatum.GatewayRequestSummary gatewayRequestSummary)
-            {
-                this.WriteRequestSummaryObject(gatewayRequestSummary);
-                if (gatewayRequestSummary.NumberOfOperationCancelledExceptions > 0)
-                {
-                    this.jsonWriter.WriteFieldName("OperationCancelledException");
-                    this.jsonWriter.WriteNumber64Value(gatewayRequestSummary.NumberOfOperationCancelledExceptions);
-                }
+            //private void WriteGatewayRequestSummaryObject(SummaryDiagnosticsTraceDatum.GatewayRequestSummary gatewayRequestSummary)
+            //{
+            //    this.WriteRequestSummaryObject(gatewayRequestSummary);
+            //    if (gatewayRequestSummary.NumberOfOperationCancelledExceptions > 0)
+            //    {
+            //        this.jsonWriter.WriteFieldName("OperationCancelledException");
+            //        this.jsonWriter.WriteNumber64Value(gatewayRequestSummary.NumberOfOperationCancelledExceptions);
+            //    }
 
-                if (gatewayRequestSummary.NumberOfWebExceptions > 0)
-                {
-                    this.jsonWriter.WriteFieldName("WebExceptions");
-                    this.jsonWriter.WriteNumber64Value(gatewayRequestSummary.NumberOfWebExceptions);
-                }
+            //    if (gatewayRequestSummary.NumberOfWebExceptions > 0)
+            //    {
+            //        this.jsonWriter.WriteFieldName("WebExceptions");
+            //        this.jsonWriter.WriteNumber64Value(gatewayRequestSummary.NumberOfWebExceptions);
+            //    }
 
-                if (gatewayRequestSummary.NumberOfHttpRequestExceptions > 0)
-                {
-                    this.jsonWriter.WriteFieldName("HttpRequestExceptions");
-                    this.jsonWriter.WriteNumber64Value(gatewayRequestSummary.NumberOfHttpRequestExceptions);
-                }
+            //    if (gatewayRequestSummary.NumberOfHttpRequestExceptions > 0)
+            //    {
+            //        this.jsonWriter.WriteFieldName("HttpRequestExceptions");
+            //        this.jsonWriter.WriteNumber64Value(gatewayRequestSummary.NumberOfHttpRequestExceptions);
+            //    }
 
-                if (gatewayRequestSummary.OtherExceptions > 0)
-                {
-                    this.jsonWriter.WriteFieldName("Other Exceptions");
-                    this.jsonWriter.WriteNumber64Value(gatewayRequestSummary.OtherExceptions);
-                }
-            }
+            //    if (gatewayRequestSummary.OtherExceptions > 0)
+            //    {
+            //        this.jsonWriter.WriteFieldName("Other Exceptions");
+            //        this.jsonWriter.WriteNumber64Value(gatewayRequestSummary.OtherExceptions);
+            //    }
+            //}
 
             private void WriteRequestSummaryObject(SummaryDiagnosticsTraceDatum.RequestSummary requestSummary)
             {
