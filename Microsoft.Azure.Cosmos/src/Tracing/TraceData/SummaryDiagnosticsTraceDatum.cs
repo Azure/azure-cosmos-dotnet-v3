@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public SummaryDiagnosticsTraceDatum(ITrace trace)
         {
             this.DirectRequestsSummary = new RequestSummary();
-            this.GatewayRequestsSummary = new GatewayRequestSummary();
+            //this.GatewayRequestsSummary = new GatewayRequestSummary();
             this.TotalTimeInMs = trace.Duration.TotalMilliseconds;
             this.CollectSummaryFromTraceTree(trace);
         }
@@ -36,13 +36,12 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             {
                 if (datums is CpuHistoryTraceDatum cpuHistoryTraceDatum)
                 {
-
                 }
 
                 if (datums is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
                 {
                     this.AgrregateStatsFromStoreResults(clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList);
-                    this.AgrregateGatewayStatistics(clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList);
+                   // this.AgrregateGatewayStatistics(clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList);
                     return;
                 }
             }
@@ -73,18 +72,18 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 StatusCodes statusCode = storeResponseStatistics.StoreResult.StatusCode;
                 this.DirectRequestsSummary.RecordStatusCode((int)statusCode);
 
-                double? transitTimeInMs = null;
-                TransportRequestStats transportRequestStats = storeResponseStatistics.StoreResult.TransportRequestStats;
-                if (transportRequestStats != null)
-                {
-                    foreach (TransportRequestStats.RequestEvent requestEvent in transportRequestStats.GetRequestTimeline())
-                    {
-                        if (requestEvent.EventName == SummaryDiagnosticsTraceDatum.TransitTimeEventName)
-                        {
-                            transitTimeInMs = (double)requestEvent.DurationInMicroSec / 1000;
-                        }
-                    }
-                }
+                //double? transitTimeInMs = null;
+                //TransportRequestStats transportRequestStats = storeResponseStatistics.StoreResult.TransportRequestStats;
+                //if (transportRequestStats != null)
+                //{
+                //    foreach (TransportRequestStats.RequestEvent requestEvent in transportRequestStats.GetRequestTimeline())
+                //    {
+                //        if (requestEvent.EventName == SummaryDiagnosticsTraceDatum.TransitTimeEventName)
+                //        {
+                //            transitTimeInMs = (double)requestEvent.DurationInMicroSec / 1000;
+                //        }
+                //    }
+                //}
 
                 if (double.TryParse(storeResponseStatistics.StoreResult.BackendRequestDurationInMs, out double backendLatency))
                 {
@@ -93,10 +92,10 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                         this.MaxServiceProcessingTimeInMs = backendLatency;
                     }
 
-                    if (transitTimeInMs.HasValue && (transitTimeInMs.Value - backendLatency > this.MaxNetworkingTimeInMs))
-                    {
-                        this.MaxNetworkingTimeInMs = transitTimeInMs.Value - backendLatency;
-                    }
+                    //if (transitTimeInMs.HasValue && (transitTimeInMs.Value - backendLatency > this.MaxNetworkingTimeInMs))
+                    //{
+                    //    this.MaxNetworkingTimeInMs = transitTimeInMs.Value - backendLatency;
+                    //}
                 } 
             }
         }
@@ -108,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         public struct RequestSummary
         {
-            public int TotalCalls { get; protected set; }
+            public int TotalCalls { get; private set; }
             public int NumberOf429s { get; private set; }
             public int NumberOf410s { get; private set; }
             public int NumberOf408s { get; private set; }
