@@ -346,8 +346,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     }
 
                     stringBuilder.AppendLine("Contacted Replicas");
-                    Dictionary<Uri, int> uriAndCounts = new Dictionary<Uri, int>();
-                    foreach (Uri uri in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
+                    Dictionary<Documents.TransportAddressUri, int> uriAndCounts = new Dictionary<Documents.TransportAddressUri, int>();
+                    foreach (Documents.TransportAddressUri uri in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
                     {
                         if (uri == null)
                         {
@@ -362,19 +362,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
                         uriAndCounts[uri] = ++count;
                     }
 
-                    foreach (KeyValuePair<Uri, int> uriAndCount in uriAndCounts)
+                    foreach (KeyValuePair<Documents.TransportAddressUri, int> uriAndCount in uriAndCounts)
                     {
                         stringBuilder.AppendLine($"{space}{uriAndCount.Key?.ToString() ?? "<null>"}: {uriAndCount.Value}");
                     }
 
                     stringBuilder.AppendLine("Failed to Contact Replicas");
-                    foreach (Uri failedToContactReplica in clientSideRequestStatisticsTraceDatum.FailedReplicas)
+                    foreach (Documents.TransportAddressUri failedToContactReplica in clientSideRequestStatisticsTraceDatum.FailedReplicas)
                     {
                         stringBuilder.AppendLine($"{space}{failedToContactReplica?.ToString() ?? "<null>"}");
                     }
 
                     stringBuilder.AppendLine("Regions Contacted");
-                    foreach (Uri regionContacted in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
+                    foreach (Documents.TransportAddressUri regionContacted in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
                     {
                         stringBuilder.AppendLine($"{space}{regionContacted?.ToString() ?? "<null>"}");
                     }
@@ -428,7 +428,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
                             stringBuilder.AppendLine($"{space}{space}Quorum Info");
                             stringBuilder.AppendLine($"{space}{space}{space}Current Replica Set Size: {stat.StoreResult.CurrentReplicaSetSize}");
                             stringBuilder.AppendLine($"{space}{space}{space}Current Write Quorum: {stat.StoreResult.CurrentWriteQuorum}");
-                            stringBuilder.AppendLine($"{space}{space}Is Client CPU Overloaded: {stat.StoreResult.IsClientCpuOverloaded}");
                             stringBuilder.AppendLine($"{space}{space}Exception");
                             try
                             {
