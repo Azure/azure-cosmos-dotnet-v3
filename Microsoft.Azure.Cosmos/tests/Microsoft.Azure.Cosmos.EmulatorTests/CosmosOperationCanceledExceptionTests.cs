@@ -101,7 +101,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string diagnostics = ce.Diagnostics.ToString();
                 string toString = ce.ToString();
                 Assert.IsTrue(toString.Contains(diagnostics));
-                Assert.IsTrue(toString.Contains(message));
+                Assert.IsTrue(message.Contains(diagnostics));
+                string messageWithoutDiagnostics = message.Substring(0, message.IndexOf(Environment.NewLine)).Trim();
+                Assert.IsTrue(toString.Contains(messageWithoutDiagnostics));
             }
 
             try
@@ -115,13 +117,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (CosmosOperationCanceledException ce)
             {
-                Assert.IsNotNull(ce);
                 string message = ce.Message;
                 string diagnostics = ce.Diagnostics.ToString();
-                Assert.IsTrue(diagnostics.Contains("The operation was canceled."));
                 string toString = ce.ToString();
                 Assert.IsTrue(toString.Contains(diagnostics));
-                Assert.IsTrue(toString.Contains(message));
+                Assert.IsTrue(message.Contains(diagnostics));
+                string messageWithoutDiagnostics = message.Substring(0, message.IndexOf(Environment.NewLine)).Trim();
+                Assert.IsTrue(toString.Contains(messageWithoutDiagnostics));
             }
         }
     }

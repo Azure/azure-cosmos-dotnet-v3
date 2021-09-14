@@ -43,13 +43,23 @@ namespace Microsoft.Azure.Cosmos
         public abstract int Count { get; }
 
         /// <summary>
-        /// Get an enumerator of the object
+        /// Gets the index utilization metrics to be used for debugging purposes. 
+        /// It's applicable to query response only. Other feed response will return null for this field.
+        /// This result is only available if QueryRequestOptions.PopulateIndexMetrics is set to true.
+        /// </summary>
+        /// <value>
+        /// The index utilization metrics.
+        /// </value>
+        public abstract string IndexMetrics { get; }
+
+        /// <summary>
+        /// Get an enumerator of the object.
         /// </summary>
         /// <returns>An instance of an Enumerator</returns>
         public abstract IEnumerator<T> GetEnumerator();
 
         /// <summary>
-        /// Get an enumerator of the object
+        /// Get an enumerator of the object.
         /// </summary>
         /// <returns>An instance of an Enumerator</returns>
         IEnumerator IEnumerable.GetEnumerator()
