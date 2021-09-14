@@ -4,21 +4,17 @@
 
 namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 {
-    using System;
     using System.Collections.Generic;
-    using System.Linq;
-    using System.Net;
-    using System.Net.Http;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
 
-    internal sealed class SummaryDiagnosticsTraceDatum : TraceDatum
+    internal struct SummaryDiagnostics
     {
-        private const string TransitTimeEventName = "Transit Time";
-
-        public SummaryDiagnosticsTraceDatum(ITrace trace)
+        public SummaryDiagnostics(ITrace trace)
+            : this()
         {
             this.DirectRequestsSummary = new RequestSummary();
-            this.GatewayRequestsSummary = new GatewayRequestSummary();
+            this.GatewayRequestsSummary = new RequestSummary();
             this.TotalTimeInMs = trace.Duration.TotalMilliseconds;
             this.CollectSummaryFromTraceTree(trace);
         }
@@ -26,8 +22,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public double TotalTimeInMs { get; }
         public double MaxServiceProcessingTimeInMs { get; private set; }
         public double MaxGatewayRequestTimeInMs { get; private set; }
-        public RequestSummary DirectRequestsSummary { get; }
-        public GatewayRequestSummary GatewayRequestsSummary { get; }
+        public RequestSummary DirectRequestsSummary { get; private set; }
+        public RequestSummary GatewayRequestsSummary { get; private set; }
 
         private void CollectSummaryFromTraceTree(ITrace currentTrace)
         {
@@ -51,7 +47,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         {
             foreach (ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics httpResponseStatistics in httpResponseStatisticsList)
             {
-                this.GatewayRequestsSummary.RecordHttpResponse(httpResponseStatistics);
+                this.GatewayRequestsSummary = this.GatewayRequestsSummary.RecordStatusCode((httpResponseStatistics.HttpResponseMessage != null) ? 
+                                                              (int)httpResponseStatistics.HttpResponseMessage.StatusCode : 0);
 
                 if (httpResponseStatistics.Duration.TotalMilliseconds > this.MaxGatewayRequestTimeInMs)
                 {
@@ -65,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             foreach (ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics storeResponseStatistics in storeResponseStatisticsList)
             {
                 StatusCodes statusCode = storeResponseStatistics.StoreResult.StatusCode;
-                this.DirectRequestsSummary.RecordStatusCode((int)statusCode);
+                this.DirectRequestsSummary = this.DirectRequestsSummary.RecordStatusCode((int)statusCode);
 
                 if (double.TryParse(storeResponseStatistics.StoreResult.BackendRequestDurationInMs, out double backendLatency))
                 {
@@ -77,14 +74,86 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
         }
 
-        internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
+        public void WriteSummaryDiagnostics(IJsonWriter jsonWriter)
         {
-            traceDatumVisitor.Visit(this);
+            jsonWriter.WriteObjectStart();
+
+            jsonWriter.WriteFieldName("TotalTimeMs");
+            jsonWriter.WriteNumber64Value(this.TotalTimeInMs);
+
+            if (this.DirectRequestsSummary.TotalCalls > 0)
+            {
+                jsonWriter.WriteFieldName("Direct");
+                jsonWriter.WriteObjectStart();
+                SummaryDiagnostics.WriteRequestSummaryObject(jsonWriter, this.DirectRequestsSummary);
+                jsonWriter.WriteObjectEnd();
+
+                jsonWriter.WriteFieldName("MaxBELatencyMs");
+                jsonWriter.WriteNumber64Value(this.MaxServiceProcessingTimeInMs);
+            }
+
+            if (this.GatewayRequestsSummary.TotalCalls > 0)
+            {
+                jsonWriter.WriteFieldName("Gateway");
+                jsonWriter.WriteObjectStart();
+                SummaryDiagnostics.WriteRequestSummaryObject(jsonWriter, this.GatewayRequestsSummary);
+                jsonWriter.WriteObjectEnd();
+
+                jsonWriter.WriteFieldName("MaxGatewayRequestTimeInMs");
+                jsonWriter.WriteNumber64Value(this.MaxGatewayRequestTimeInMs);
+            }
+
+            jsonWriter.WriteObjectEnd();
         }
 
-        public class RequestSummary
+        private static void WriteRequestSummaryObject(IJsonWriter jsonWriter, RequestSummary requestSummary)
         {
-            public int TotalCalls { get; protected set; }
+            if (requestSummary.SuccessfullCalls > 0)
+            {
+                jsonWriter.WriteFieldName("SuccessfullCalls");
+                jsonWriter.WriteNumber64Value(requestSummary.SuccessfullCalls);
+            }
+
+            if (requestSummary.NumberOf404s > 0)
+            {
+                jsonWriter.WriteFieldName("404");
+                jsonWriter.WriteNumber64Value(requestSummary.NumberOf404s);
+            }
+
+            if (requestSummary.NumberOf408s > 0)
+            {
+                jsonWriter.WriteFieldName("408");
+                jsonWriter.WriteNumber64Value(requestSummary.NumberOf408s);
+            }
+
+            if (requestSummary.NumberOf410s > 0)
+            {
+                jsonWriter.WriteFieldName("410");
+                jsonWriter.WriteNumber64Value(requestSummary.NumberOf410s);
+            }
+
+            if (requestSummary.NumberOf429s > 0)
+            {
+                jsonWriter.WriteFieldName("429");
+                jsonWriter.WriteNumber64Value(requestSummary.NumberOf429s);
+            }
+
+            if (requestSummary.NumberOf449s > 0)
+            {
+                jsonWriter.WriteFieldName("449");
+                jsonWriter.WriteNumber64Value(requestSummary.NumberOf449s);
+            }
+
+            if (requestSummary.OtherErrors > 0)
+            {
+                jsonWriter.WriteFieldName("OtherStatusCodes");
+                jsonWriter.WriteNumber64Value(requestSummary.OtherErrors);
+            }
+        }
+
+        public struct RequestSummary
+        {
+            public int TotalCalls { get; private set; }
             public int NumberOf429s { get; private set; }
             public int NumberOf410s { get; private set; }
             public int NumberOf408s { get; private set; }
@@ -93,16 +162,16 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             public int OtherErrors { get; private set; }
             public int SuccessfullCalls { get; private set; }
 
-            public void RecordStatusCode(int statusCode)
+            public RequestSummary RecordStatusCode(int statusCode)
             {
                 this.TotalCalls++;
                 if (statusCode >= 200 && statusCode <= 299)
                 {
                     this.SuccessfullCalls++;
-                    return;
+                    return this;
                 }
 
-                switch ((int)statusCode)
+                switch (statusCode)
                 {
                     case 429:
                         this.NumberOf429s++;
@@ -123,41 +192,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                         this.OtherErrors++;
                         break;
                 }
-            }
-        }
 
-        public class GatewayRequestSummary : RequestSummary
-        {
-            public int NumberOfOperationCancelledExceptions { get; private set; }
-            public int NumberOfWebExceptions { get; private set; }
-            public int NumberOfHttpRequestExceptions { get; private set; }
-            public int OtherExceptions { get; private set; }
-
-            public void RecordHttpResponse(ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics httpResponseStatistics)
-            {
-                this.TotalCalls++;
-                if (httpResponseStatistics.Exception != null)
-                {
-                    switch (httpResponseStatistics.Exception)
-                    {
-                        case OperationCanceledException operationCanceledException:
-                            this.NumberOfOperationCancelledExceptions++;
-                            break;
-                        case WebException webException:
-                            this.NumberOfWebExceptions++;
-                            break;
-                        case HttpRequestException httpRequestException:
-                            this.NumberOfHttpRequestExceptions++;
-                            break;
-                        default:
-                            this.OtherExceptions++;
-                            break;
-                    }
-                }
-                else if (httpResponseStatistics.HttpResponseMessage != null)
-                {
-                    base.RecordStatusCode((int)httpResponseStatistics.HttpResponseMessage.StatusCode);
-                }
+                return this;
             }
         }
     }

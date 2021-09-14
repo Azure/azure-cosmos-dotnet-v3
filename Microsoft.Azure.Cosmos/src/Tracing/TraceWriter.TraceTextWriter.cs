@@ -497,20 +497,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     this.toStringValue = stringBuilder.ToString();
                 }
 
-                public void Visit(SummaryDiagnosticsTraceDatum summaryDiagnosticsTraceDatum)
-                {
-                    StringBuilder stringBuilder = new StringBuilder();
-                    stringBuilder.AppendLine("Summary Diagnostics");
-                    stringBuilder.AppendLine("Direct Requests:");
-                    stringBuilder.AppendLine($"TotalTimeInMs: {summaryDiagnosticsTraceDatum.TotalTimeInMs}");
-                    stringBuilder.AppendLine($"MaxBELatencyInMs: {summaryDiagnosticsTraceDatum.MaxServiceProcessingTimeInMs}");
-
-                    stringBuilder.AppendLine("Gateway Requests:");
-                    stringBuilder.AppendLine($"MaxGatewayRequestTimeInMs: {summaryDiagnosticsTraceDatum.MaxGatewayRequestTimeInMs}");
-
-                    this.toStringValue = stringBuilder.ToString();
-                }
-
                 public override string ToString()
                 {
                     return this.toStringValue;

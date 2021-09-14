@@ -696,7 +696,7 @@
     "TotalTimeMs": 0,
     "Gateway": {
       "SuccessfullCalls": 1,
-      "OperationCancelledException": 1
+      "OtherStatusCodes": 1
     },
     "MaxGatewayRequestTimeInMs": 315537897600000
   },

@@ -40,18 +40,18 @@
             ItemResponse<ToDoActivity> response = await this.Container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
             Assert.IsNotNull(response.Diagnostics);
             ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
-            SummaryDiagnosticsTraceDatum summaryDiagnosticsTraceDatum = new SummaryDiagnosticsTraceDatum(trace);
+            SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
 
-            Assert.AreEqual(summaryDiagnosticsTraceDatum.DirectRequestsSummary.SuccessfullCalls, 1);
-            Assert.AreEqual(summaryDiagnosticsTraceDatum.DirectRequestsSummary.NumberOf429s, 0);
+            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.SuccessfullCalls, 1);
+            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.NumberOf429s, 0);
 
             response = await this.Container.ReadItemAsync<ToDoActivity>(testItem.id, new PartitionKey(testItem.pk));
             trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
-            summaryDiagnosticsTraceDatum = new SummaryDiagnosticsTraceDatum(trace);
+            summaryDiagnostics = new SummaryDiagnostics(trace);
 
-            Assert.AreEqual(summaryDiagnosticsTraceDatum.DirectRequestsSummary.SuccessfullCalls, 1);
-            Assert.AreEqual(summaryDiagnosticsTraceDatum.GatewayRequestsSummary.SuccessfullCalls, 0);
-            Assert.IsTrue(summaryDiagnosticsTraceDatum.MaxServiceProcessingTimeInMs > 0);
+            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.SuccessfullCalls, 1);
+            Assert.AreEqual(summaryDiagnostics.GatewayRequestsSummary.SuccessfullCalls, 0);
+            Assert.IsTrue(summaryDiagnostics.MaxServiceProcessingTimeInMs > 0);
         }
 
         [TestMethod]
@@ -64,18 +64,18 @@
             ItemResponse<ToDoActivity> response = await container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
             Assert.IsNotNull(response.Diagnostics);
             ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
-            SummaryDiagnosticsTraceDatum summaryDiagnosticsTraceDatum = new SummaryDiagnosticsTraceDatum(trace);
+            SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
 
-            Assert.AreEqual(summaryDiagnosticsTraceDatum.DirectRequestsSummary.SuccessfullCalls, 0);
-            Assert.IsTrue(summaryDiagnosticsTraceDatum.GatewayRequestsSummary.SuccessfullCalls > 0);
+            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.SuccessfullCalls, 0);
+            Assert.IsTrue(summaryDiagnostics.GatewayRequestsSummary.SuccessfullCalls > 0);
 
             response = await container.ReadItemAsync<ToDoActivity>(testItem.id, new PartitionKey(testItem.pk));
             trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
-            summaryDiagnosticsTraceDatum = new SummaryDiagnosticsTraceDatum(trace);
+            summaryDiagnostics = new SummaryDiagnostics(trace);
 
-            Assert.AreEqual(summaryDiagnosticsTraceDatum.DirectRequestsSummary.SuccessfullCalls, 0);
-            Assert.IsTrue(summaryDiagnosticsTraceDatum.GatewayRequestsSummary.SuccessfullCalls > 0);
-            Assert.IsTrue(summaryDiagnosticsTraceDatum.MaxGatewayRequestTimeInMs > 0);
+            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.SuccessfullCalls, 0);
+            Assert.IsTrue(summaryDiagnostics.GatewayRequestsSummary.SuccessfullCalls > 0);
+            Assert.IsTrue(summaryDiagnostics.MaxGatewayRequestTimeInMs > 0);
         }
 
         [TestMethod]
@@ -91,9 +91,9 @@
                 traces.Add(((CosmosTraceDiagnostics)response.Diagnostics).Value);
             }
 
-            SummaryDiagnosticsTraceDatum summaryDiagnosticsTraceDatum = new SummaryDiagnosticsTraceDatum(TraceJoiner.JoinTraces(traces));
-            Assert.IsTrue(summaryDiagnosticsTraceDatum.DirectRequestsSummary.SuccessfullCalls > 1);
-            Assert.IsTrue(summaryDiagnosticsTraceDatum.MaxServiceProcessingTimeInMs > 0);
+            SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(TraceJoiner.JoinTraces(traces));
+            Assert.IsTrue(summaryDiagnostics.DirectRequestsSummary.SuccessfullCalls > 1);
+            Assert.IsTrue(summaryDiagnostics.MaxServiceProcessingTimeInMs > 0);
         }
     }
 }
