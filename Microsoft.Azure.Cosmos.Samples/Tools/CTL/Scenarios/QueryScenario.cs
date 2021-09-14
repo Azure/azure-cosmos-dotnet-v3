@@ -82,11 +82,44 @@ namespace CosmosCTL
                     cancellationToken, 
                     queryText: "select count(1) from c", 
                     queryName: "Aggregates",
+                    expectedResults: 1),
+                QueryScenario.ExecuteQueryWithContinuationAndGatherResultsAsync(
+                    config,
+                    cosmosClient,
+                    logger,
+                    metrics,
+                    loggingContextIdentifier,
+                    cancellationToken,
+                    queryText: "select * from c",
+                    queryName: "Star",
+                    expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0),
+                QueryScenario.ExecuteQueryWithContinuationAndGatherResultsAsync(
+                    config,
+                    cosmosClient,
+                    logger,
+                    metrics,
+                    loggingContextIdentifier,
+                    cancellationToken,
+                    queryText: "select * from c order by c.id",
+                    queryName: "OrderBy",
+                    expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0),
+                QueryScenario.ExecuteQueryWithContinuationAndGatherResultsAsync(
+                    config,
+                    cosmosClient,
+                    logger,
+                    metrics,
+                    loggingContextIdentifier,
+                    cancellationToken,
+                    queryText: "select count(1) from c",
+                    queryName: "Aggregates",
                     expectedResults: 1)
                 );
         }
 
-        private async static Task ExecuteQueryAndGatherResultsAsync(CTLConfig config,
+        /// <summary>
+        /// Executes the query and does paging using continuations.
+        /// </summary>
+        private async static Task ExecuteQueryWithContinuationAndGatherResultsAsync(CTLConfig config,
             CosmosClient cosmosClient,
             ILogger logger,
             IMetrics metrics,
@@ -100,7 +133,7 @@ namespace CosmosCTL
 
             GaugeOptions documentGauge = new GaugeOptions
             {
-                Name = $"#{queryName} Query received documents",
+                Name = $"#{queryName} Query with CT received documents",
                 MeasurementUnit = Unit.Items,
                 Context = loggingContextIdentifier
             };
@@ -138,7 +171,7 @@ namespace CosmosCTL
                     if (expectedResults > 0 && expectedResults != documentTotal)
                     {
                         StringBuilder errorDetail = new StringBuilder();
-                        errorDetail.AppendLine($"{queryName} Query expected to read {expectedResults} but got {documentTotal}");
+                        errorDetail.AppendLine($"{queryName} Query with CT expected to read {expectedResults} but got {documentTotal}");
                         foreach (string c in allContinuations)
                         {
                             errorDetail.AppendLine($"Continuation: {c}");
@@ -152,11 +185,75 @@ namespace CosmosCTL
                     metrics.Measure.Gauge.SetValue(documentGauge, documentTotal);
 
                     StringBuilder errorDetail = new StringBuilder();
-                    errorDetail.AppendLine($"{queryName} Query failure while looping through query.");
+                    errorDetail.AppendLine($"{queryName} Query with CT failure while looping through query.");
                     foreach (string c in allContinuations)
                     {
                         errorDetail.AppendLine($"Continuation: {c}");
                     }
+
+                    logger.LogError(ex, errorDetail.ToString());
+                }
+            }
+
+            stopWatch.Stop();
+        }
+
+        /// <summary>
+        /// Executes the query and drains all results
+        /// </summary>
+        private async static Task ExecuteQueryAndGatherResultsAsync(CTLConfig config,
+            CosmosClient cosmosClient,
+            ILogger logger,
+            IMetrics metrics,
+            string loggingContextIdentifier,
+            CancellationToken cancellationToken,
+            string queryText,
+            string queryName,
+            long expectedResults)
+        {
+            Stopwatch stopWatch = Stopwatch.StartNew();
+
+            GaugeOptions documentGauge = new GaugeOptions
+            {
+                Name = $"#{queryName} Query received documents",
+                MeasurementUnit = Unit.Items,
+                Context = loggingContextIdentifier
+            };
+
+            Container container = cosmosClient.GetContainer(config.Database, config.Collection);
+            while (stopWatch.Elapsed <= config.RunningTimeDurationAsTimespan
+                && !cancellationToken.IsCancellationRequested)
+            {
+                long documentTotal = 0;
+                string continuation = null;
+                using FeedIterator<Dictionary<string, string>> query = container.GetItemQueryIterator<Dictionary<string, string>>(queryText);
+                try
+                {
+                    while (query.HasMoreResults)
+                    {
+                        FeedResponse<Dictionary<string, string>> response = await query.ReadNextAsync();
+                        documentTotal += response.Count;
+                        continuation = response.ContinuationToken;
+                    }
+
+                    metrics.Measure.Gauge.SetValue(documentGauge, documentTotal);
+
+                    if (expectedResults > 0 && expectedResults != documentTotal)
+                    {
+                        StringBuilder errorDetail = new StringBuilder();
+                        errorDetail.AppendLine($"{queryName} Query expected to read {expectedResults} but got {documentTotal}");
+                        errorDetail.AppendLine($"Last continuation: {continuation}");
+
+                        logger.LogError(errorDetail.ToString());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    metrics.Measure.Gauge.SetValue(documentGauge, documentTotal);
+
+                    StringBuilder errorDetail = new StringBuilder();
+                    errorDetail.AppendLine($"{queryName} Query failure while looping through query.");
+                    errorDetail.AppendLine($"Last continuation: {continuation}");
 
                     logger.LogError(ex, errorDetail.ToString());
                 }
