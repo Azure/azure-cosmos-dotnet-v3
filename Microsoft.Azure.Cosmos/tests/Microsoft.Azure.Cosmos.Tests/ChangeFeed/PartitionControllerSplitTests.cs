@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLeaseManager leaseManager = Mock.Of<DocumentServiceLeaseManager>(manager => manager.AcquireAsync(lease) == Task.FromResult(lease));
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
-            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer);
+            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, Mock.Of<ChangeFeedProcessorHealthMonitor>());
 
             await sut.InitializeAsync().ConfigureAwait(false);
 
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLeaseManager leaseManager = Mock.Of<DocumentServiceLeaseManager>(manager => manager.AcquireAsync(lease) == Task.FromResult(lease));
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
-            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer);
+            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, Mock.Of<ChangeFeedProcessorHealthMonitor>());
 
             await sut.InitializeAsync().ConfigureAwait(false);
 
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLeaseManager leaseManager = Mock.Of<DocumentServiceLeaseManager>(manager => manager.AcquireAsync(lease) == Task.FromResult(lease));
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
-            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer);
+            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, Mock.Of<ChangeFeedProcessorHealthMonitor>());
 
             await sut.InitializeAsync().ConfigureAwait(false);
 
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLeaseManager leaseManager = Mock.Of<DocumentServiceLeaseManager>();
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
-            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer);
+            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, Mock.Of<ChangeFeedProcessorHealthMonitor>());
 
             await sut.InitializeAsync().ConfigureAwait(false);
 
@@ -157,7 +157,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLeaseManager leaseManager = Mock.Of<DocumentServiceLeaseManager>(manager => manager.AcquireAsync(lease) == Task.FromResult(lease));
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
-            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer);
+            Mock<ChangeFeedProcessorHealthMonitor> monitor = new Mock<ChangeFeedProcessorHealthMonitor>();
+
+            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, monitor.Object);
 
             await sut.InitializeAsync().ConfigureAwait(false);
 
@@ -175,6 +177,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock.Get(partitionSupervisor1).Verify(p => p.RunAsync(It.IsAny<CancellationToken>()), Times.Once);
             Mock.Get(partitionSupervisor2).Verify(p => p.RunAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+            monitor.Verify(m => m.NotifyLeaseAcquireAsync(leaseChild1.CurrentLeaseToken), Times.Once);
+            monitor.Verify(m => m.NotifyLeaseReleaseAsync(leaseChild2.CurrentLeaseToken), Times.Once);
         }
 
         [TestMethod]
@@ -194,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLeaseManager leaseManager = Mock.Of<DocumentServiceLeaseManager>(manager => manager.AcquireAsync(lease) == Task.FromResult(lease));
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
-            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer);
+            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, Mock.Of<ChangeFeedProcessorHealthMonitor>());
 
             await sut.InitializeAsync().ConfigureAwait(false);
 
@@ -230,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLeaseManager leaseManager = Mock.Of<DocumentServiceLeaseManager>(manager => manager.AcquireAsync(lease) == Task.FromResult(lease));
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
-            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer);
+            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, Mock.Of<ChangeFeedProcessorHealthMonitor>());
 
             await sut.InitializeAsync().ConfigureAwait(false);
 
@@ -272,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             );
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
-            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer);
+            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, Mock.Of<ChangeFeedProcessorHealthMonitor>());
 
             await sut.InitializeAsync().ConfigureAwait(false);
 
@@ -304,7 +309,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 );
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
-            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer);
+            Mock<ChangeFeedProcessorHealthMonitor> monitor = new Mock<ChangeFeedProcessorHealthMonitor>();
+
+            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer, monitor.Object);
 
             await sut.InitializeAsync().ConfigureAwait(false);
 
@@ -315,6 +322,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             await sut.ShutdownAsync().ConfigureAwait(false);
 
             Mock.Get(leaseManager).Verify(manager => manager.DeleteAsync(lease), Times.Once);
+
+            monitor.Verify(m => m.NotifyLeaseAcquireAsync(lease.CurrentLeaseToken), Times.Once);
+            monitor.Verify(m => m.NotifyLeaseReleaseAsync(lease.CurrentLeaseToken), Times.Once);
         }
 
         private DocumentServiceLease CreateMockLease(string partitionId = null)

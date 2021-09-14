@@ -123,6 +123,46 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         /// <returns>A <see cref="StoreResponse"/> instance.</returns>
         public static StoreResponse GetStoreResponse(DocumentServiceRequest request)
         {
+            if (request.ResourceType == ResourceType.Document &&
+               request.OperationType == OperationType.Query)
+            {
+                StoreResponseNameValueCollection queryHeaders = new StoreResponseNameValueCollection()
+                {
+                    ActivityId = Guid.NewGuid().ToString(),
+                    BackendRequestDurationMilliseconds = "1.42",
+                    CurrentReplicaSetSize = "1",
+                    CurrentWriteQuorum = "1",
+                    CurrentResourceQuotaUsage = "documentSize=0;documentsSize=1;documentsCount=1;collectionSize=1;",
+                    GlobalCommittedLSN = "-1",
+                    LSN = "2540",
+                    LocalLSN = "2540",
+                    LastStateChangeUtc = "Wed, 18 Aug 2021 20:30:05.117 GMT",
+                    MaxResourceQuota = "documentSize=10240;documentsSize=10485760;documentsCount=-1;collectionSize=10485760;",
+                    NumberOfReadRegions = "0",
+                    OwnerFullName = "dbs/f4ac3cfd-dd38-4adb-b2d2-be97b3efbd1b/colls/2a926112-a26e-4935-ac6a-66df269c890d",
+                    OwnerId = "GHRtAJahWQ4=",
+                    PartitionKeyRangeId = "0",
+                    PendingPKDelete = "false",
+                    QueryExecutionInfo = "{\"reverseRidEnabled\":false,\"reverseIndexScan\":false}",
+                    QueryMetrics = "totalExecutionTimeInMs=0.78;queryCompileTimeInMs=0.26;queryLogicalPlanBuildTimeInMs=0.04;queryPhysicalPlanBuildTimeInMs=0.18;queryOptimizationTimeInMs=0.01;VMExecutionTimeInMs=0.04;indexLookupTimeInMs=0.00;documentLoadTimeInMs=0.02;systemFunctionExecuteTimeInMs=0.00;userFunctionExecuteTimeInMs=0.00;retrievedDocumentCount=1;retrievedDocumentSize=671;outputDocumentCount=1;outputDocumentSize=720;writeOutputTimeInMs=0.00;indexUtilizationRatio=1.00",
+                    QuorumAckedLSN = "2540" ,
+                    QuorumAckedLocalLSN = "2540",
+                    RequestCharge = "2.27" ,
+                    SchemaVersion = "1.12",
+                    ServerVersion = " version=2.14.0.0",
+                    SessionToken = "0:-1#2540",
+                    TransportRequestID = "2",
+                    XPRole = "0",
+                };
+
+                return new StoreResponse()
+                {
+                    ResponseBody = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
+                    Status = (int)System.Net.HttpStatusCode.OK,
+                    Headers = queryHeaders,
+                };
+            }
+
             StoreResponseNameValueCollection headers = MockRequestHelper.GenerateTestHeaders();
 
             if (request.OperationType == OperationType.Read)

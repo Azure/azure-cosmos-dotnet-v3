@@ -46,23 +46,34 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         [JsonProperty(PropertyName = "operationInfo")]
         internal List<OperationInfo> OperationInfo { get; set; }
-
+        
+        /// <summary>
+        /// Preferred Region set by the client
+        /// </summary>
+        [JsonProperty(PropertyName = "preferredRegions")]
+        internal IReadOnlyList<string> PreferredRegions { get; set; }
+        
         [JsonIgnore]
         private readonly ConnectionMode ConnectionModeEnum;
 
         internal ClientTelemetryProperties(string clientId,
                                    string processId,
                                    string userAgent,
-                                   ConnectionMode connectionMode)
+                                   ConnectionMode connectionMode,
+                                   IReadOnlyList<string> preferredRegions)
         {
             this.ClientId = clientId;
             this.ProcessId = processId;
             this.UserAgent = userAgent;
             this.ConnectionModeEnum = connectionMode;
-            this.ConnectionMode = connectionMode.ToString();
+            this.ConnectionMode = ClientTelemetryProperties.GetConnectionModeString(connectionMode);
             this.SystemInfo = new List<SystemInfo>();
+            this.PreferredRegions = preferredRegions;
         }
 
+        /// <summary>
+        /// Needed by Serializer to deserialize the json
+        /// </summary>
         public ClientTelemetryProperties(string dateTimeUtc,
             string clientId,
             string processId,
@@ -72,6 +83,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string applicationRegion,
             string hostEnvInfo,
             bool? acceleratedNetworking,
+            IReadOnlyList<string> preferredRegions,
             List<SystemInfo> systemInfo,
             List<OperationInfo> cacheRefreshInfo,
             List<OperationInfo> operationInfo)
@@ -88,6 +100,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.SystemInfo = systemInfo;
             this.CacheRefreshInfo = cacheRefreshInfo;
             this.OperationInfo = operationInfo;
+            this.PreferredRegions = preferredRegions;
+        }
+
+        private static string GetConnectionModeString(ConnectionMode connectionMode)
+        {
+            return connectionMode switch
+            {
+                Cosmos.ConnectionMode.Direct => "DIRECT",
+                Cosmos.ConnectionMode.Gateway => "GATEWAY",
+                _ => connectionMode.ToString().ToUpper(),
+            };
         }
     }
 }

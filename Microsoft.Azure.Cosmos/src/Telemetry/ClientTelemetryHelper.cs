@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>Async Task</returns>
         internal static async Task<AccountProperties> SetAccountNameAsync(DocumentClient documentclient)
         {
-            DefaultTrace.TraceInformation("Getting Account Information for Telemetry.");
+            DefaultTrace.TraceVerbose("Getting Account Information for Telemetry.");
             try
             {
                 if (documentclient.GlobalEndpointManager != null)
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (azMetadata == null)
             {
-                DefaultTrace.TraceInformation("Getting VM Metadata Information for Telemetry.");
+                DefaultTrace.TraceVerbose("Getting VM Metadata Information for Telemetry.");
                 try
                 {
                     static ValueTask<HttpRequestMessage> CreateRequestMessage()
@@ -86,65 +86,57 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         /// <summary>
-        /// Record Memory Usage and return recorded memory metrics
+        /// Record System Usage and return recorded metrics
         /// </summary>
-        /// <param name="systemUsageRecorder"></param>
+        /// <param name="systemUsageHistory"></param>
         /// <returns>ReportPayload</returns>
-        internal static SystemInfo RecordMemoryUsage(CpuAndMemoryUsageRecorder systemUsageRecorder)
+        internal static (SystemInfo cpuInfo, SystemInfo memoryInfo) RecordSystemUsage(SystemUsageHistory systemUsageHistory)
         {
-            LongConcurrentHistogram memoryHistogram = new LongConcurrentHistogram(1,
-                                                            ClientTelemetryOptions.MemoryMax,
-                                                            ClientTelemetryOptions.MemoryPrecision);
-
-            MemoryLoadHistory memoryLoadHistory = systemUsageRecorder.MemoryUsage;
-            if (memoryLoadHistory == null)
-            {
-                return null;
-            }
-
-            foreach (MemoryLoad memoryLoad in memoryLoadHistory.MemoryLoad)
-            {
-                long memoryLoadInMb = memoryLoad.Value / ClientTelemetryOptions.BytesToMb;
-                memoryHistogram.RecordValue(memoryLoadInMb);
-            }
-
-            SystemInfo memoryInfoPayload = new SystemInfo(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit);
-            memoryInfoPayload.SetAggregators(memoryHistogram);
-
-            return memoryInfoPayload;
-        }
-
-        /// <summary>
-        /// Record CPU Usage and return recorded Cpu metrics
-        /// </summary>
-        /// <param name="systemUsageRecorder"></param>
-        /// <returns>ReportPayload</returns>
-        internal static SystemInfo RecordCpuUsage(CpuAndMemoryUsageRecorder systemUsageRecorder)
-        {
-            LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(1,
+            LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.CpuMin,
                                                         ClientTelemetryOptions.CpuMax,
                                                         ClientTelemetryOptions.CpuPrecision);
 
-            CpuLoadHistory cpuLoadHistory = systemUsageRecorder.CpuUsage;
-            if (cpuLoadHistory == null)
+            LongConcurrentHistogram memoryHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.MemoryMin,
+                                                           ClientTelemetryOptions.MemoryMax,
+                                                           ClientTelemetryOptions.MemoryPrecision);
+
+            if (systemUsageHistory.Values == null)
             {
-                return null;
+                return (null, null);
             }
 
-            foreach (CpuLoad cpuLoad in cpuLoadHistory.CpuLoad)
+            DefaultTrace.TraceInformation("System Usage recorded by telemetry is : " + systemUsageHistory);
+
+            foreach (SystemUsageLoad systemUsage in systemUsageHistory.Values)
             {
-                float cpuValue = cpuLoad.Value;
-                if (!float.IsNaN(cpuValue))
+                float? cpuValue = systemUsage.CpuUsage;
+                if (cpuValue.HasValue && !float.IsNaN(cpuValue.Value))
                 {
-                    cpuHistogram.RecordValue((long)cpuValue);
+                    cpuHistogram.RecordValue((long)(cpuValue * ClientTelemetryOptions.HistogramPrecisionFactor));
                 }
 
+                long? memoryLoad = systemUsage.MemoryAvailable;
+                if (memoryLoad.HasValue)
+                {
+                    memoryHistogram.RecordValue(memoryLoad.Value);
+                }
             }
 
-            SystemInfo cpuInfoPayload = new SystemInfo(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit);
-            cpuInfoPayload.SetAggregators(cpuHistogram);
+            SystemInfo memoryInfoPayload = null;
+            if (memoryHistogram.TotalCount > 0)
+            {
+                memoryInfoPayload = new SystemInfo(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit);
+                memoryInfoPayload.SetAggregators(memoryHistogram, ClientTelemetryOptions.KbToMbFactor);
+            }
 
-            return cpuInfoPayload;
+            SystemInfo cpuInfoPayload = null;
+            if (cpuHistogram.TotalCount > 0)
+            {
+                cpuInfoPayload = new SystemInfo(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit);
+                cpuInfoPayload.SetAggregators(cpuHistogram, ClientTelemetryOptions.HistogramPrecisionFactor);
+            }
+
+            return (cpuInfoPayload, memoryInfoPayload);
         }
 
         /// <summary>
@@ -161,13 +153,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 OperationInfo payloadForLatency = entry.Key;
                 payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
-                payloadForLatency.SetAggregators(entry.Value.latency);
+                payloadForLatency.SetAggregators(entry.Value.latency, ClientTelemetryOptions.TicksToMsFactor);
 
                 payloadWithMetricInformation.Add(payloadForLatency);
 
                 OperationInfo payloadForRequestCharge = payloadForLatency.Copy();
                 payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
-                payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.AdjustmentFactor);
+                payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.HistogramPrecisionFactor);
 
                 payloadWithMetricInformation.Add(payloadForRequestCharge);
             }

@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -18,6 +19,17 @@
         protected PartitionRangeEnumeratorTests(bool singlePartition)
         {
             this.singlePartition = singlePartition;
+        }
+
+        [TestMethod]
+        public async Task TestMoveNextAsyncThrowsTaskCanceledException()
+        {
+            int numItems = 100;
+            IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
+            CancellationTokenSource cts = new CancellationTokenSource();
+            IAsyncEnumerator<TryCatch<TPage>> enumerator = this.CreateEnumerator(inMemoryCollection, cancellationToken: cts.Token);
+            cts.Cancel();
+            await Assert.ThrowsExceptionAsync<TaskCanceledException>(async () => await enumerator.MoveNextAsync());
         }
 
         [TestMethod]
@@ -153,7 +165,7 @@
 
         public abstract IAsyncEnumerable<TryCatch<TPage>> CreateEnumerable(IDocumentContainer documentContainer, TState state = null);
 
-        public abstract IAsyncEnumerator<TryCatch<TPage>> CreateEnumerator(IDocumentContainer documentContainer, TState state = null);
+        public abstract IAsyncEnumerator<TryCatch<TPage>> CreateEnumerator(IDocumentContainer documentContainer, TState state = null, CancellationToken cancellationToken= default);
 
         public async Task<IDocumentContainer> CreateDocumentContainerAsync(
             int numItems,

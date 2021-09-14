@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using System.Collections.Generic;
+    using System.Threading;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -130,14 +131,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         cancellationToken: default));
 
             public override IAsyncEnumerator<TryCatch<ReadFeedPage>> CreateEnumerator(
-                IDocumentContainer inMemoryCollection,
-                ReadFeedState state = null) => new ReadFeedPartitionRangeEnumerator(
+                IDocumentContainer inMemoryCollection,  ReadFeedState state = null, CancellationToken cancellationToken = default)
+            {
+                return new ReadFeedPartitionRangeEnumerator(
                     inMemoryCollection,
                     feedRangeState: new FeedRangeState<ReadFeedState>(
                         new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                         state ?? ReadFeedState.Beginning()),
                     readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
-                    cancellationToken: default);
+                    cancellationToken: cancellationToken);
+            }
         }
     }
 }
