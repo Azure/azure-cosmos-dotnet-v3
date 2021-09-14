@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 return true;
             }
-            else if (dict1 != null && dict2 != null && (dict1.Count == dict2.Count))
+            else if (dict1 != null && dict2 != null && dict1.Count == dict2.Count)
             {
                 foreach (KeyValuePair<string, JToken> pair in dict1)
                 {
