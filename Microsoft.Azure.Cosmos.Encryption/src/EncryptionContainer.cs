@@ -596,7 +596,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 encryptionDiagnosticsContext,
                 cancellationToken);
 
-            encryptionDiagnosticsContext.AddEncryptionDiagnostics(responseMessage);
+            encryptionDiagnosticsContext.AddEncryptionDiagnosticsToResponseMessage(responseMessage);
             return responseMessage;
         }
 
@@ -748,7 +748,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         obsoleteEncryptionSettings: null,
                         cancellationToken: cancellationToken);
 
-                    Stream decryptedChanges = await this.DeserializeAndDecryptResponseAsync(
+                    (Stream decryptedChanges, _) = await this.DeserializeAndDecryptResponseAsync(
                         changes,
                         encryptionSettings,
                         cancellationToken);
@@ -774,7 +774,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         obsoleteEncryptionSettings: null,
                         cancellationToken: cancellationToken);
 
-                    Stream decryptedChanges = await this.DeserializeAndDecryptResponseAsync(
+                    (Stream decryptedChanges, _) = await this.DeserializeAndDecryptResponseAsync(
                         changes,
                         encryptionSettings,
                         cancellationToken);
@@ -819,14 +819,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cancellationToken: cancellationToken);
         }
 
-        internal async Task<Stream> DeserializeAndDecryptResponseAsync(
+        internal async Task<(Stream, int)> DeserializeAndDecryptResponseAsync(
            Stream content,
            EncryptionSettings encryptionSettings,
            CancellationToken cancellationToken)
         {
             if (!encryptionSettings.PropertiesToEncrypt.Any())
             {
-                return content;
+                return (content, 0);
             }
 
             JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
@@ -836,6 +836,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents. ");
             }
 
+            int propertiesCount = 0;
             foreach (JToken value in documents)
             {
                 if (value is not JObject document)
@@ -843,14 +844,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continue;
                 }
 
-                await EncryptionProcessor.DecryptAsync(
+                (_, propertiesCount) = await EncryptionProcessor.DecryptAsync(
                     document,
                     encryptionSettings,
                     cancellationToken);
             }
 
             // the contents get decrypted in place by DecryptAsync.
-            return EncryptionProcessor.BaseSerializer.ToStream(contentJObj);
+            return (EncryptionProcessor.BaseSerializer.ToStream(contentJObj), propertiesCount);
         }
 
         /// <summary>
@@ -941,7 +942,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 encryptionDiagnosticsContext,
                 cancellationToken);
 
-            encryptionDiagnosticsContext.AddEncryptionDiagnostics(responseMessage);
+            encryptionDiagnosticsContext.AddEncryptionDiagnosticsToResponseMessage(responseMessage);
             return responseMessage;
         }
 
@@ -1002,7 +1003,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 encryptionDiagnosticsContext,
                 cancellationToken);
 
-            encryptionDiagnosticsContext.AddEncryptionDiagnostics(responseMessage);
+            encryptionDiagnosticsContext.AddEncryptionDiagnosticsToResponseMessage(responseMessage);
             return responseMessage;
         }
 
@@ -1079,7 +1080,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 encryptionDiagnosticsContext,
                 cancellationToken);
 
-            encryptionDiagnosticsContext.AddEncryptionDiagnostics(responseMessage);
+            encryptionDiagnosticsContext.AddEncryptionDiagnosticsToResponseMessage(responseMessage);
             return responseMessage;
         }
 
@@ -1152,7 +1153,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 encryptionDiagnosticsContext,
                 cancellationToken);
 
-            encryptionDiagnosticsContext.AddEncryptionDiagnostics(responseMessage);
+            encryptionDiagnosticsContext.AddEncryptionDiagnosticsToResponseMessage(responseMessage);
             return responseMessage;
         }
 
@@ -1198,7 +1199,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             foreach (JObject document in documents)
             {
-                JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
+                (JObject decryptedDocument, _) = await EncryptionProcessor.DecryptAsync(
                     document,
                     encryptionSettings,
                     cancellationToken);
@@ -1258,18 +1259,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     isRetry: true);
             }
 
-            EncryptionDiagnosticsContext decryptDiagnostics = new EncryptionDiagnosticsContext();
-            decryptDiagnostics.Begin(Constants.DiagnosticsDecryptOperation);
-
             if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
             {
-                Stream decryptedContent = await this.DeserializeAndDecryptResponseAsync(
+                EncryptionDiagnosticsContext decryptDiagnostics = new EncryptionDiagnosticsContext();
+                decryptDiagnostics.Begin(Constants.DiagnosticsDecryptOperation);
+
+                (Stream decryptedContent, _) = await this.DeserializeAndDecryptResponseAsync(
                     responseMessage.Content,
                     encryptionSettings,
                     cancellationToken);
 
                 decryptDiagnostics.End();
-                decryptDiagnostics.AddEncryptionDiagnostics(responseMessage);
+                decryptDiagnostics.AddEncryptionDiagnosticsToResponseMessage(responseMessage);
                 return new DecryptedResponseMessage(responseMessage, decryptedContent);
             }
 

@@ -26,6 +26,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public void Begin(string operation)
         {
+            this.stopwatch = Stopwatch.StartNew();
+            this.startTime = DateTime.UtcNow;
+
             switch (operation)
             {
                 case Constants.DiagnosticsEncryptOperation:
@@ -42,9 +45,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     throw new NotSupportedException($"Operation: {operation} is not supported. " +
                         $"Should be either {Constants.DiagnosticsEncryptOperation} or {Constants.DiagnosticsDecryptOperation}.");
             }
-
-            this.stopwatch = Stopwatch.StartNew();
-            this.startTime = DateTime.UtcNow;
         }
 
         public void End(int? propertiesCount = null)
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
-        public void AddEncryptionDiagnostics(
+        public void AddEncryptionDiagnosticsToResponseMessage(
             ResponseMessage responseMessage)
         {
             EncryptionCosmosDiagnostics encryptionDiagnostics = new EncryptionCosmosDiagnostics(

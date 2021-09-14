@@ -56,13 +56,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 EncryptionDiagnosticsContext decryptDiagnostics = new EncryptionDiagnosticsContext();
                 decryptDiagnostics.Begin(Constants.DiagnosticsDecryptOperation);
 
-                Stream decryptedContent = await this.encryptionContainer.DeserializeAndDecryptResponseAsync(
+                (Stream decryptedContent, int propertiesCount) = await this.encryptionContainer.DeserializeAndDecryptResponseAsync(
                     responseMessage.Content,
                     encryptionSettings,
                     cancellationToken);
 
-                decryptDiagnostics.End();
-                decryptDiagnostics.AddEncryptionDiagnostics(responseMessage);
+                decryptDiagnostics.End(propertiesCount);
+                decryptDiagnostics.AddEncryptionDiagnosticsToResponseMessage(responseMessage);
 
                 return new DecryptedResponseMessage(responseMessage, decryptedContent);
             }

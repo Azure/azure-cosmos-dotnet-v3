@@ -272,7 +272,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
             encryptionDiagnosticsContext.Begin(Constants.DiagnosticsDecryptOperation);
-            int propertiesDecryptedCount = 0;
 
             foreach (TransactionalBatchOperationResult result in response)
             {
@@ -285,7 +284,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         cancellationToken);
 
                     decryptedTransactionalBatchOperationResults.Add(new EncryptionTransactionalBatchOperationResult(result, decryptedStream));
-                    propertiesDecryptedCount++;
                 }
                 else
                 {
@@ -293,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
-            encryptionDiagnosticsContext.End(propertiesDecryptedCount);
+            encryptionDiagnosticsContext.End();
             EncryptionCosmosDiagnostics encryptionDiagnostics = new EncryptionCosmosDiagnostics(
                 response.Diagnostics,
                 decryptContent: encryptionDiagnosticsContext.DecryptContent);

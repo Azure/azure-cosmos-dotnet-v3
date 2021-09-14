@@ -695,7 +695,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 .ExecuteAsync();
 
             Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
-            VerifyDiagnostics(batchResponse.Diagnostics, encryptOperation: false, expectedPropertiesDecryptedCount: 9); // delete operation wont be counted in decryption
+            VerifyDiagnostics(batchResponse.Diagnostics, encryptOperation: false, expectedPropertiesDecryptedCount: 0);
 
             TransactionalBatchOperationResult<TestDoc> doc1 = batchResponse.GetOperationResultAtIndex<TestDoc>(0);
             VerifyExpectedDocResponse(doc1ToCreate, doc1.Resource);

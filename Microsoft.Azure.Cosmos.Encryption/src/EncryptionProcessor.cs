@@ -124,19 +124,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return result;
         }
 
-        public static async Task<JObject> DecryptAsync(
+        public static async Task<(JObject, int)> DecryptAsync(
             JObject document,
             EncryptionSettings encryptionSettings,
             CancellationToken cancellationToken)
         {
             Debug.Assert(document != null);
 
-            await DecryptObjectAsync(
+            int propertiesCount = await DecryptObjectAsync(
                 document,
                 encryptionSettings,
                 cancellationToken);
 
-            return document;
+            return (document, propertiesCount);
         }
 
         internal static async Task<Stream> EncryptValueStreamAsync(
