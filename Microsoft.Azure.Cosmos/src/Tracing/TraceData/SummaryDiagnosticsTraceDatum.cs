@@ -25,7 +25,6 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         public double TotalTimeInMs { get; }
         public double MaxServiceProcessingTimeInMs { get; private set; }
-        public double MaxNetworkingTimeInMs { get; private set; }
         public double MaxGatewayRequestTimeInMs { get; private set; }
         public RequestSummary DirectRequestsSummary { get; }
         public GatewayRequestSummary GatewayRequestsSummary { get; }
@@ -39,7 +38,6 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 {
                     this.AgrregateStatsFromStoreResults(clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList);
                     this.AgrregateGatewayStatistics(clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList);
-                    return;
                 }
             }
 
@@ -69,29 +67,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 StatusCodes statusCode = storeResponseStatistics.StoreResult.StatusCode;
                 this.DirectRequestsSummary.RecordStatusCode((int)statusCode);
 
-                double? transitTimeInMs = null;
-                TransportRequestStats transportRequestStats = storeResponseStatistics.StoreResult.TransportRequestStats;
-                if (transportRequestStats != null)
-                {
-                    foreach (TransportRequestStats.RequestEvent requestEvent in transportRequestStats.GetRequestTimeline())
-                    {
-                        if (requestEvent.EventName == SummaryDiagnosticsTraceDatum.TransitTimeEventName)
-                        {
-                            transitTimeInMs = (double)requestEvent.DurationInMicroSec / 1000;
-                        }
-                    }
-                }
-
                 if (double.TryParse(storeResponseStatistics.StoreResult.BackendRequestDurationInMs, out double backendLatency))
                 {
                     if (backendLatency > this.MaxServiceProcessingTimeInMs)
                     {
                         this.MaxServiceProcessingTimeInMs = backendLatency;
-                    }
-
-                    if (transitTimeInMs.HasValue && (transitTimeInMs.Value - backendLatency > this.MaxNetworkingTimeInMs))
-                    {
-                        this.MaxNetworkingTimeInMs = transitTimeInMs.Value - backendLatency;
                     }
                 } 
             }
