@@ -45,7 +45,9 @@
                                     )
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {},
+  "Summary": {
+    "TotalTimeMs": 0
+  },
   "name": "CreateDatabaseAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -177,7 +179,9 @@
                                 )
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {},
+  "Summary": {
+    "TotalTimeMs": 0
+  },
   "name": "CreateDatabaseAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {

@@ -389,15 +389,15 @@ namespace Microsoft.Azure.Cosmos.Tracing
             {
                 this.jsonWriter.WriteObjectStart();
 
+                this.jsonWriter.WriteFieldName("TotalTimeMs");
+                this.jsonWriter.WriteNumber64Value(summaryDiagnosticsTraceDatum.TotalTimeInMs);
+
                 if (summaryDiagnosticsTraceDatum.DirectRequestsSummary.TotalCalls > 0)
                 {
                     this.jsonWriter.WriteFieldName("Direct");
                     this.jsonWriter.WriteObjectStart();
                     this.WriteRequestSummaryObject(summaryDiagnosticsTraceDatum.DirectRequestsSummary);
                     this.jsonWriter.WriteObjectEnd();
-
-                    this.jsonWriter.WriteFieldName("TotalTimeMs");
-                    this.jsonWriter.WriteNumber64Value(summaryDiagnosticsTraceDatum.TotalTimeInMs);
 
                     this.jsonWriter.WriteFieldName("MaxBELatencyMs");
                     this.jsonWriter.WriteNumber64Value(summaryDiagnosticsTraceDatum.MaxServiceProcessingTimeInMs);
@@ -410,7 +410,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     this.WriteGatewayRequestSummaryObject(summaryDiagnosticsTraceDatum.GatewayRequestsSummary);
                     this.jsonWriter.WriteObjectEnd();
 
-                    this.jsonWriter.WriteFieldName("MaxRequestTimeInMs");
+                    this.jsonWriter.WriteFieldName("MaxGatewayRequestTimeInMs");
                     this.jsonWriter.WriteNumber64Value(summaryDiagnosticsTraceDatum.MaxGatewayRequestTimeInMs);
                 }
 

@@ -40,7 +40,9 @@
                                 )
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {},
+  "Summary": {
+    "TotalTimeMs": 0
+  },
   "name": "CreateItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -184,7 +186,9 @@
                                 )
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {},
+  "Summary": {
+    "TotalTimeMs": 0
+  },
   "name": "ReadItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -302,7 +306,9 @@
                                 )
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {},
+  "Summary": {
+    "TotalTimeMs": 0
+  },
   "name": "ReplaceItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -424,7 +430,9 @@
                                 )
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {},
+  "Summary": {
+    "TotalTimeMs": 0
+  },
   "name": "DeleteItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
