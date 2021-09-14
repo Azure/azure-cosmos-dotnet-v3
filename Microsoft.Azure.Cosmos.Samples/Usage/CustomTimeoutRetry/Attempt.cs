@@ -56,19 +56,19 @@
         /// <summary>
         /// This method harvests the results of the original operation passed to it (represented as a Task<Response<typeparamref name="TItem"/>>)
         /// </summary>
-        /// <param name="original">Task representing the Cosmos DB request</param>
+        /// <param name="originalTask">Task representing the Cosmos DB request</param>
         /// <param name="diagnosticsFunc">Optional delegate defining diagnostics handling</param>
-        public void OnTimeout(Task<Response<TItem>> original, Action<CosmosDiagnostics>? diagnosticsFunc = default)
+        public void OnTimeout(Task<Response<TItem>> originalTask, Action<CosmosDiagnostics> diagnosticsFunc)
         {
-            if (original.IsFaulted)
+            if (originalTask.IsFaulted)
             {
                 // this might need to handle AggregateException better (iterate all the inner exceptions?)
 
-                Debug.Assert(original.Exception != null);
-                Debug.Assert(original.Exception is AggregateException);
-                Debug.Assert(original.Exception.InnerException != null);
+                Debug.Assert(originalTask.Exception != null);
+                Debug.Assert(originalTask.Exception is AggregateException);
+                Debug.Assert(originalTask.Exception.InnerException != null);
 
-                if (original.Exception.InnerException is CosmosOperationCanceledException coce)
+                if (originalTask.Exception.InnerException is CosmosOperationCanceledException coce)
                 {
                     // this is how TaskCanceledException and OperationCanceledException are surfaced in Cosmos DB SDK
                     //  if we get here, it means the original operation canceled with no "harvestable" output
@@ -77,31 +77,31 @@
                     this.Exception = null;
                     this.Status = AttemptStatus.TimedOutCanceled;
 
-                    diagnosticsFunc?.Invoke(coce.Diagnostics);
+                    diagnosticsFunc(coce.Diagnostics);
                 }
                 else
                 {
                     // we eventually got an error for this Cosmos DB operation, let's make it available
 
                     this.Result = default;
-                    this.Exception = original.Exception.InnerException;
+                    this.Exception = originalTask.Exception.InnerException;
                     this.Status = AttemptStatus.TimedOutFailed;
 
                     if (this.Exception is CosmosException ce)
                     {
-                        diagnosticsFunc?.Invoke(ce.Diagnostics);
+                        diagnosticsFunc(ce.Diagnostics);
                     }
                 }
             }
-            else if (original.IsCompletedSuccessfully)
+            else if (originalTask.IsCompletedSuccessfully)
             {
                 // we eventually got real data for this Cosmos DB operation, let's make that available
 
-                this.Result = original.Result;
+                this.Result = originalTask.Result;
                 this.Exception = default;
                 this.Status = AttemptStatus.TimedOutSucceeded;
 
-                diagnosticsFunc?.Invoke(this.Result.Diagnostics);
+                diagnosticsFunc(this.Result.Diagnostics);
             }
             else
             {

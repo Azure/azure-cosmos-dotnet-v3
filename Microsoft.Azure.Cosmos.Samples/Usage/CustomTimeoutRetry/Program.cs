@@ -192,9 +192,9 @@
             return result;
         }
 
-        private static void OnDiagnostics(CosmosDiagnostics diagnostics)
+        private static void OnDiagnostics(CosmosDiagnostics diagnostics, Func<TimeSpan, bool> filter)
         {
-            if (diagnostics != null)
+            if (diagnostics != null && filter(diagnostics.GetClientElapsedTime()))
             {
                 Debug.WriteLine(diagnostics.ToString());    // write to log, etc.
             }

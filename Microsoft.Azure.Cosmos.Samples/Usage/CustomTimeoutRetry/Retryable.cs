@@ -23,7 +23,7 @@
             Func<CancellationToken, Task<Response<TItem>>> retryableFunc,
             TimeSpan perAttemptTimeout,
             int retries,
-            Action<CosmosDiagnostics>? diagnosticsFunc = default,
+            Action<CosmosDiagnostics, Func<TimeSpan, bool>> diagnosticsFunc,
             CancellationToken ct = default)
         {
             // we keep track of all attempts, some timed-out attempts may eventually
@@ -196,7 +196,7 @@
             Attempt<TItem> attempt,
             Func<CancellationToken, Task<Response<TItem>>> func,
             TimeSpan timeout,
-            Action<CosmosDiagnostics>? diagnosticsFunc = default,
+            Action<CosmosDiagnostics, Func<TimeSpan, bool>> diagnosticsFunc,
             CancellationToken token = default)
         {
             // Polly has elegant timeout policy handling with support for out-of-band resolution, etc.
@@ -214,8 +214,10 @@
                 attempt.Exception = null;
                 attempt.Status = AttemptStatus.Succeeded;
 
-                // don't forget your diagnostics
-                diagnosticsFunc?.Invoke(response.Diagnostics);
+                // timeout should be configured at P99 latency (or slightly higher) for targeted operations
+                //  so, if elapsed time is 90% or greater of configured timeout, we log diagnostics
+                diagnosticsFunc(
+                    response.Diagnostics, elapsed => (elapsed.TotalSeconds * 100d / timeout.TotalSeconds) >= 90d);
             }
             catch (TimeoutRejectedException)
             {
@@ -234,13 +236,13 @@
                 // don't forget your diagnostics
                 if (ex is CosmosException ce)
                 {
-                    diagnosticsFunc?.Invoke(ce.Diagnostics);
+                    diagnosticsFunc(ce.Diagnostics, _ => true /* always log on error */);
                 }
             }
         }
 
         private static AsyncTimeoutPolicy GetPolicy<TItem>(
-            TimeSpan timeout, Attempt<TItem> attempt, Action<CosmosDiagnostics>? diagnosticsFunc)
+            TimeSpan timeout, Attempt<TItem> attempt, Action<CosmosDiagnostics, Func<TimeSpan, bool>> diagnosticsFunc)
         {
             Task OnTimeout(Context context, TimeSpan timeoutValue, Task originalTask)
             {
@@ -258,7 +260,8 @@
                 {
                     Task<Response<TItem>>? responseTask = (Task<Response<TItem>>)t;
 
-                    attempt.OnTimeout(responseTask, diagnosticsFunc);
+                    attempt.OnTimeout(
+                        responseTask, diagnostics => diagnosticsFunc(diagnostics, _ => true /* always log timed-out diagnostics */));
 
                     return attempt;
                 });
