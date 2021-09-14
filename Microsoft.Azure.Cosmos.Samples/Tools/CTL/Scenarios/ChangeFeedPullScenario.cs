@@ -13,7 +13,7 @@ namespace CosmosCTL
     using App.Metrics;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
-    using App.Metrics.Counter;
+    using App.Metrics.Gauge;
 
     internal class ChangeFeedPullScenario : ICTLScenario
     {
@@ -54,12 +54,13 @@ namespace CosmosCTL
         {
             Stopwatch stopWatch = Stopwatch.StartNew();
 
-            CounterOptions documentCounter = new CounterOptions { Name = "#Documents received", Context = loggingContextIdentifier };
+            GaugeOptions documentGauge= new GaugeOptions { Name = "#Documents received", Context = loggingContextIdentifier };
+            Container container = cosmosClient.GetContainer(config.Database, config.Collection);
+
             while (stopWatch.Elapsed <= config.RunningTimeDurationAsTimespan)
             {
-                int documentTotal = 0;
+                long documentTotal = 0;
                 string continuation = null;
-                Container container = cosmosClient.GetContainer(config.Database, config.Collection);
                 FeedIterator<Dictionary<string, string>> changeFeedPull 
                     = container.GetChangeFeedIterator<Dictionary<string, string>>(ChangeFeedStartFrom.Beginning(), ChangeFeedMode.Incremental);
 
@@ -69,13 +70,14 @@ namespace CosmosCTL
                     {
                         FeedResponse<Dictionary<string, string>> response = await changeFeedPull.ReadNextAsync();
                         documentTotal += response.Count;
-                        metrics.Measure.Counter.Increment(documentCounter, response.Count);
                         continuation = response.ContinuationToken;
                         if (response.StatusCode == HttpStatusCode.NotModified)
                         {
                             break;
                         }
                     }
+
+                    metrics.Measure.Gauge.SetValue(documentGauge, documentTotal);
 
                     if (config.PreCreatedDocuments > 0)
                     {
@@ -91,6 +93,7 @@ namespace CosmosCTL
                 }
                 catch (Exception ex)
                 {
+                    metrics.Measure.Gauge.SetValue(documentGauge, documentTotal);
                     logger.LogError(ex, "Failure while looping through change feed documents");
                 }
             }
