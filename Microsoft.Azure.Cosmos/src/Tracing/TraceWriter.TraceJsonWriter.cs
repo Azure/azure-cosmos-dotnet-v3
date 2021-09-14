@@ -401,9 +401,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                     this.jsonWriter.WriteFieldName("MaxServiceProcessingTimesInMs");
                     this.jsonWriter.WriteNumber64Value(summaryDiagnosticsTraceDatum.MaxServiceProcessingTimeInMs);
-
-                    this.jsonWriter.WriteFieldName("MaxNetworkingTimeInMs");
-                    this.jsonWriter.WriteNumber64Value(summaryDiagnosticsTraceDatum.MaxNetworkingTimeInMs);
                 }
 
                 if (summaryDiagnosticsTraceDatum.GatewayRequestsSummary.TotalCalls > 0)

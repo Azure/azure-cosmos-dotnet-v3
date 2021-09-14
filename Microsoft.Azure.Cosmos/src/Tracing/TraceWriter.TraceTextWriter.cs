@@ -505,7 +505,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     stringBuilder.AppendLine("Direct Requests:");
                     stringBuilder.AppendLine($"TotalTimeInMs: {summaryDiagnosticsTraceDatum.TotalTimeInMs}");
                     stringBuilder.AppendLine($"MaxServiceProcessingTimesInMs: {summaryDiagnosticsTraceDatum.MaxServiceProcessingTimeInMs}");
-                    stringBuilder.AppendLine($"MaxNetworkingTimeInMs: {summaryDiagnosticsTraceDatum.MaxNetworkingTimeInMs}");
 
                     stringBuilder.AppendLine("Gateway Requests:");
                     stringBuilder.AppendLine($"MaxGatewayRequestTimeInMs: {summaryDiagnosticsTraceDatum.MaxGatewayRequestTimeInMs}");
