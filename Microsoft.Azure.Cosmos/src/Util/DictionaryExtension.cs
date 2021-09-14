@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     internal static class DictionaryExtension
     {
         /// <summary>
-        /// Compare two dictonaries and return true if they have same pair of key-values
+        /// Compare two dictionaries and return true if they have same pair of key-values
         /// </summary>
         internal static bool IsSameAs(this IDictionary<string, JToken> dict1, IDictionary<string, JToken> dict2)
         {
