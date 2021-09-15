@@ -748,9 +748,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         obsoleteEncryptionSettings: null,
                         cancellationToken: cancellationToken);
 
-                    (Stream decryptedChanges, _) = await this.DeserializeAndDecryptResponseAsync(
+                    Stream decryptedChanges = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                         changes,
                         encryptionSettings,
+                        operationDiagnostics: null,
                         cancellationToken);
 
                     // Call the original passed in delegate
@@ -774,9 +775,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         obsoleteEncryptionSettings: null,
                         cancellationToken: cancellationToken);
 
-                    (Stream decryptedChanges, _) = await this.DeserializeAndDecryptResponseAsync(
+                    Stream decryptedChanges = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                         changes,
                         encryptionSettings,
+                        operationDiagnostics: null,
                         cancellationToken);
 
                     // Call the original passed in delegate
@@ -817,41 +819,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 obsoleteValue: obsoleteEncryptionSettings,
                 singleValueInitFunc: () => EncryptionSettings.CreateAsync(this, cancellationToken),
                 cancellationToken: cancellationToken);
-        }
-
-        internal async Task<(Stream, int)> DeserializeAndDecryptResponseAsync(
-           Stream content,
-           EncryptionSettings encryptionSettings,
-           CancellationToken cancellationToken)
-        {
-            if (!encryptionSettings.PropertiesToEncrypt.Any())
-            {
-                return (content, 0);
-            }
-
-            JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
-
-            if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
-            {
-                throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents. ");
-            }
-
-            int propertiesCount = 0;
-            foreach (JToken value in documents)
-            {
-                if (value is not JObject document)
-                {
-                    continue;
-                }
-
-                (_, propertiesCount) = await EncryptionProcessor.DecryptAsync(
-                    document,
-                    encryptionSettings,
-                    cancellationToken);
-            }
-
-            // the contents get decrypted in place by DecryptAsync.
-            return (EncryptionProcessor.BaseSerializer.ToStream(contentJObj), propertiesCount);
         }
 
         /// <summary>
@@ -1262,14 +1229,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
             {
                 EncryptionDiagnosticsContext decryptDiagnostics = new EncryptionDiagnosticsContext();
-                decryptDiagnostics.Begin(Constants.DiagnosticsDecryptOperation);
 
-                (Stream decryptedContent, _) = await this.DeserializeAndDecryptResponseAsync(
+                Stream decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                     responseMessage.Content,
                     encryptionSettings,
+                    decryptDiagnostics,
                     cancellationToken);
 
-                decryptDiagnostics.End();
                 decryptDiagnostics.AddEncryptionDiagnosticsToResponseMessage(responseMessage);
                 return new DecryptedResponseMessage(responseMessage, decryptedContent);
             }

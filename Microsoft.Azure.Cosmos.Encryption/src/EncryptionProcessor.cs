@@ -131,12 +131,53 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             Debug.Assert(document != null);
 
-            int propertiesCount = await DecryptObjectAsync(
+            int propertiesDecryptedCount = await DecryptObjectAsync(
                 document,
                 encryptionSettings,
                 cancellationToken);
 
-            return (document, propertiesCount);
+            return (document, propertiesDecryptedCount);
+        }
+
+        internal static async Task<Stream> DeserializeAndDecryptResponseAsync(
+           Stream content,
+           EncryptionSettings encryptionSettings,
+           EncryptionDiagnosticsContext operationDiagnostics,
+           CancellationToken cancellationToken)
+        {
+            if (!encryptionSettings.PropertiesToEncrypt.Any())
+            {
+                return content;
+            }
+
+            operationDiagnostics?.Begin(Constants.DiagnosticsDecryptOperation);
+            JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
+
+            if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
+            {
+                throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents. ");
+            }
+
+            int totalPropertiesDecryptedCount = 0;
+            foreach (JToken value in documents)
+            {
+                if (value is not JObject document)
+                {
+                    continue;
+                }
+
+                (_, int propertiesDecrypted) = await EncryptionProcessor.DecryptAsync(
+                    document,
+                    encryptionSettings,
+                    cancellationToken);
+
+                totalPropertiesDecryptedCount += propertiesDecrypted;
+            }
+
+            operationDiagnostics?.End(totalPropertiesDecryptedCount);
+
+            // the contents get decrypted in place by DecryptAsync.
+            return EncryptionProcessor.BaseSerializer.ToStream(contentJObj);
         }
 
         internal static async Task<Stream> EncryptValueStreamAsync(

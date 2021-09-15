@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (propertiesCount.HasValue)
                 {
-                    this.DecryptContent.Add(Constants.DiagnosticsPropertiesCount, propertiesCount);
+                    this.DecryptContent.Add(Constants.DiagnosticsPropertiesDecryptedCount, propertiesCount);
                 }
             }
             else
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (propertiesCount.HasValue)
                 {
-                    this.EncryptContent.Add(Constants.DiagnosticsPropertiesCount, propertiesCount);
+                    this.EncryptContent.Add(Constants.DiagnosticsPropertiesEncryptedCount, propertiesCount);
                 }
             }
         }

@@ -11,7 +11,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public const string DiagnosticsDuration = "Duration in milliseconds";
         public const string DiagnosticsEncryptionDiagnostics = "EncryptionDiagnostics";
         public const string DiagnosticsEncryptOperation = "Encrypt";
-        public const string DiagnosticsPropertiesCount = "Total properties count";
+        public const string DiagnosticsPropertiesEncryptedCount = "Properties Encrypted Count";
+        public const string DiagnosticsPropertiesDecryptedCount = "Properties Decrypted Count";
         public const string DiagnosticsStartTime = "Start time";
         public const string DocumentsResourcePropertyName = "Documents";
         public const string IncorrectContainerRidSubStatus = "1024";
