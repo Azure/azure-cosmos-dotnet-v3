@@ -393,7 +393,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ClientEncryptionKeyPropertiesDeserializeWithAdditionalDataTest()
         {
-            string cosmosSerialized = "{\"id\":\"id\",\"encryptionAlgorithmId\":\"encryptionAlgorithm\",\"wrappedDataEncryptionKey\":\"AA==\",\"keyWrapMetadata\":{\"type\":\"type\",\"name\":\"name\",\"value\":\"value\", \"additional\":\"value\"}}";
+            string cosmosSerialized = "{\"id\":\"id\",\"encryptionAlgorithm\":\"encryptionAlgorithm\",\"wrappedDataEncryptionKey\":\"AA==\",\"keyWrapMetadata\":{\"type\":\"type\",\"name\":\"name\",\"value\":\"value\", \"additional\":\"value\"}}";
 
             JObject complexObject = JObject.FromObject(new { id = 1, name = new { fname = "fname", lname = "lname" } });
 
