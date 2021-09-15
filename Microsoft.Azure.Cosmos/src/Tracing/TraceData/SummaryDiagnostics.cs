@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 {
     using System.Collections.Generic;
+    using System.Globalization;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
 
@@ -64,7 +65,10 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 StatusCodes statusCode = storeResponseStatistics.StoreResult.StatusCode;
                 this.DirectRequestsSummary = this.DirectRequestsSummary.RecordStatusCode((int)statusCode);
 
-                if (double.TryParse(storeResponseStatistics.StoreResult.BackendRequestDurationInMs, out double backendLatency))
+                if (double.TryParse(storeResponseStatistics.StoreResult.BackendRequestDurationInMs, 
+                                    NumberStyles.Number,
+                                    CultureInfo.InvariantCulture,
+                                    out double backendLatency))
                 {
                     if (backendLatency > this.MaxServiceProcessingTimeInMs)
                     {
