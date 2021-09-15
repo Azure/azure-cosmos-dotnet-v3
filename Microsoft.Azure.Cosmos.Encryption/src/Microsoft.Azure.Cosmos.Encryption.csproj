@@ -3,7 +3,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>Microsoft.Azure.Cosmos.Encryption</AssemblyName>
     <RootNamespace>Microsoft.Azure.Cosmos.Encryption</RootNamespace>
-	<LangVersion>$(LangVersion)</LangVersion>
+    <LangVersion>$(LangVersion)</LangVersion>
     <IsPreview>true</IsPreview>
     
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
