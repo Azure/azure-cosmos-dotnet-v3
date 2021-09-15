@@ -1173,8 +1173,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
                 Assert.Fail("CreateTransactionalBatch should have failed. ");
             }
-            catch(CosmosException)
-            {                
+            catch(CosmosException ex)
+            {
+                Assert.IsNotNull(ex.Message);
             }
 
             // the previous failure would have updated the policy in the cache.
@@ -1275,11 +1276,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 Assert.Fail("ValidateQueryResultAsync should have failed. ");
             }
             catch(CosmosException ex)
-            {
+            {                
                 if (ex.SubStatusCode != 1024)
                 {
                     Assert.Fail("Query should have failed. ");
-                }                
+                }
+
+                Assert.IsNotNull(ex.Message);
             }
 
             // previous failure would have updated the policy in the cache.
