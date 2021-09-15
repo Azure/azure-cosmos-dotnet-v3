@@ -450,7 +450,7 @@
 
 
             // ReadManyStreamApi
-            Console.WriteLine("\n1.5.2Usign Stream API to get many items in container.");
+            Console.WriteLine("\n1.5.2 - Usign Stream API to get many items in container.");
             using (ResponseMessage responseMessage = await container.ReadManyItemsStreamAsync(itemList))
             {
                 if (responseMessage.IsSuccessStatusCode)
