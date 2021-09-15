@@ -27,9 +27,10 @@
     // 1.2 - Read a item by its Id
     // 1.3 - Read all items in a container
     // 1.4 - Query for items by a property other than Id
-    // 1.5 - Replace a item
-    // 1.6 - Upsert a item
-    // 1.7 - Delete a item
+    // 1.5 - Read Many items using Id and PartitionKey values.
+    // 1.6 - Replace a item
+    // 1.7 - Upsert a item
+    // 1.8 - Delete a item
     //
     // 2. Work with dynamic objects
     //
