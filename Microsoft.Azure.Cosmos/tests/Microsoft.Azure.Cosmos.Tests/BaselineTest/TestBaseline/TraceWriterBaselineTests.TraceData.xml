@@ -714,7 +714,7 @@
   </Result>
   <Result>
     <Input>
-      <Description>CPU History</Description>
+      <Description>System Info</Description>
       <Setup><![CDATA[
     TraceForBaselineTesting rootTrace;
     using (rootTrace = TraceForBaselineTesting.GetRootTrace())
@@ -736,7 +736,7 @@
                             9000),
                     }),
                 monitoringInterval: TimeSpan.MaxValue));
-        rootTrace.AddDatum("CPU History", datum);
+        rootTrace.AddDatum("System Info", datum);
     }
 ]]></Setup>
     </Input>
@@ -744,7 +744,7 @@
       <Text><![CDATA[.
 └── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         (
-            [CPU History]
+            [System Info]
             {"systemHistory":[{"dateUtc":"0001-01-01T00:00:00.0000000","cpu":42.000,"memory":1000.000,"threadInfo":{"isThreadStarving":"no info"}},{"dateUtc":"0001-01-01T00:00:00.0000000","cpu":23.000,"memory":9000.000,"threadInfo":{"isThreadStarving":"no info"}}]}
         )
 ]]></Text>
@@ -759,8 +759,25 @@
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
-    "CPU History": {
-      "CPU History": "{\"systemHistory\":[{\"dateUtc\":\"0001-01-01T00:00:00.0000000\",\"cpu\":42.000,\"memory\":1000.000,\"threadInfo\":{\"isThreadStarving\":\"no info\"}},{\"dateUtc\":\"0001-01-01T00:00:00.0000000\",\"cpu\":23.000,\"memory\":9000.000,\"threadInfo\":{\"isThreadStarving\":\"no info\"}}]}"
+    "System Info": {
+      "systemHistory": [
+        {
+          "dateUtc": "0001-01-01T00:00:00",
+          "cpu": 42.0,
+          "memory": 1000.0,
+          "threadInfo": {
+            "isThreadStarving": "no info"
+          }
+        },
+        {
+          "dateUtc": "0001-01-01T00:00:00",
+          "cpu": 23.0,
+          "memory": 9000.0,
+          "threadInfo": {
+            "isThreadStarving": "no info"
+          }
+        }
+      ]
     }
   }
 }]]></Json>

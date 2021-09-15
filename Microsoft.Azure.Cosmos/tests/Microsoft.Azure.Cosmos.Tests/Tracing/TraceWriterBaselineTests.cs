@@ -508,11 +508,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                         9000),
                                 }),
                             monitoringInterval: TimeSpan.MaxValue));
-                    rootTrace.AddDatum("CPU History", datum);
+                    rootTrace.AddDatum("System Info", datum);
                 }
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("CPU History", rootTrace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("System Info", rootTrace, startLineNumber, endLineNumber));
             }
             //----------------------------------------------------------------
 
