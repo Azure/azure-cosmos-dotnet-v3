@@ -8,11 +8,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Data.Common;
-    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Security.AccessControl;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -485,9 +483,9 @@ namespace Microsoft.Azure.Cosmos
         /// Does not apply if <see cref="ConnectionMode.Gateway"/> is used.
         /// </remarks>
         /// <value>
-        /// The default value is false
+        /// The default value is true
         /// </value>
-        public bool EnableTcpConnectionEndpointRediscovery { get; set; } = false;
+        public bool EnableTcpConnectionEndpointRediscovery { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a delegate to use to obtain an HttpClient instance to be used for HTTPS communication.
@@ -632,6 +630,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal bool? EnableCpuMonitor { get; set; }
 
+        /// <summary>
+        /// Flag to enable telemetry
+        /// </summary>
+        internal bool? EnableClientTelemetry { get; set; }
+
         internal void SetSerializerIfNotConfigured(CosmosSerializer serializer)
         {
             if (this.serializerInternal == null)
@@ -667,8 +670,13 @@ namespace Microsoft.Azure.Cosmos
                 EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
-                HttpClientFactory = this.httpClientFactory,
+                HttpClientFactory = this.httpClientFactory
             };
+
+            if (this.EnableClientTelemetry.HasValue)
+            {
+                connectionPolicy.EnableClientTelemetry = this.EnableClientTelemetry.Value;
+            }
 
             if (this.ApplicationRegion != null)
             {

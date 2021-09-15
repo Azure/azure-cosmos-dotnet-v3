@@ -40,6 +40,10 @@
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │       │   (
+        │       │       [System Info]
+        │       │       Redacted To Not Change The Baselines From Run To Run
+        │       │   )
         │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -119,6 +123,9 @@
               "id": "00000000-0000-0000-0000-000000000000",
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
+              "data": {
+                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+              },
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
@@ -220,6 +227,10 @@
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │       │   (
+        │       │       [System Info]
+        │       │       Redacted To Not Change The Baselines From Run To Run
+        │       │   )
         │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -299,6 +310,9 @@
               "id": "00000000-0000-0000-0000-000000000000",
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
+              "data": {
+                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+              },
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
@@ -400,6 +414,10 @@
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │       │   (
+        │       │       [System Info]
+        │       │       Redacted To Not Change The Baselines From Run To Run
+        │       │   )
         │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -479,6 +497,9 @@
               "id": "00000000-0000-0000-0000-000000000000",
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
+              "data": {
+                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+              },
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
@@ -580,6 +601,10 @@
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │       │   (
+        │       │       [System Info]
+        │       │       Redacted To Not Change The Baselines From Run To Run
+        │       │   )
         │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -659,6 +684,9 @@
               "id": "00000000-0000-0000-0000-000000000000",
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
+              "data": {
+                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+              },
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
@@ -760,6 +788,10 @@
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │       │   (
+        │       │       [System Info]
+        │       │       Redacted To Not Change The Baselines From Run To Run
+        │       │   )
         │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -839,6 +871,9 @@
               "id": "00000000-0000-0000-0000-000000000000",
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
+              "data": {
+                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+              },
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
@@ -940,6 +975,10 @@
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │       │   (
+        │       │       [System Info]
+        │       │       Redacted To Not Change The Baselines From Run To Run
+        │       │   )
         │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1019,6 +1058,9 @@
               "id": "00000000-0000-0000-0000-000000000000",
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
+              "data": {
+                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+              },
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
@@ -1120,6 +1162,10 @@
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │       │   (
+        │       │       [System Info]
+        │       │       Redacted To Not Change The Baselines From Run To Run
+        │       │   )
         │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1199,6 +1245,9 @@
               "id": "00000000-0000-0000-0000-000000000000",
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
+              "data": {
+                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+              },
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
@@ -1300,6 +1349,10 @@
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │       │   (
+        │       │       [System Info]
+        │       │       Redacted To Not Change The Baselines From Run To Run
+        │       │   )
         │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1379,6 +1432,9 @@
               "id": "00000000-0000-0000-0000-000000000000",
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
+              "data": {
+                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+              },
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
@@ -1480,6 +1536,10 @@
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │       │   (
+        │       │       [System Info]
+        │       │       Redacted To Not Change The Baselines From Run To Run
+        │       │   )
         │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1559,6 +1619,9 @@
               "id": "00000000-0000-0000-0000-000000000000",
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
+              "data": {
+                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+              },
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
@@ -1660,6 +1723,10 @@
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │       │   (
+        │       │       [System Info]
+        │       │       Redacted To Not Change The Baselines From Run To Run
+        │       │   )
         │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1739,6 +1806,9 @@
               "id": "00000000-0000-0000-0000-000000000000",
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
+              "data": {
+                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+              },
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
@@ -1853,6 +1923,10 @@
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │       │   (
+    │   │       │       [System Info]
+    │   │       │       Redacted To Not Change The Baselines From Run To Run
+    │   │       │   )
     │   │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1889,6 +1963,10 @@
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │       │   (
+    │   │       │       [System Info]
+    │   │       │       Redacted To Not Change The Baselines From Run To Run
+    │   │       │   )
     │   │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1925,6 +2003,10 @@
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │       │   (
+    │   │       │       [System Info]
+    │   │       │       Redacted To Not Change The Baselines From Run To Run
+    │   │       │   )
     │   │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1961,6 +2043,10 @@
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │       │   (
+        │       │       [System Info]
+        │       │       Redacted To Not Change The Baselines From Run To Run
+        │       │   )
         │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │           ├── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │           │   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -2061,6 +2147,9 @@
               "id": "00000000-0000-0000-0000-000000000000",
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
+              "data": {
+                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+              },
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
@@ -2264,6 +2353,9 @@
               "id": "00000000-0000-0000-0000-000000000000",
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
+              "data": {
+                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+              },
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
@@ -2467,6 +2559,9 @@
               "id": "00000000-0000-0000-0000-000000000000",
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
+              "data": {
+                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+              },
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
@@ -2670,6 +2765,9 @@
               "id": "00000000-0000-0000-0000-000000000000",
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
+              "data": {
+                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+              },
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",

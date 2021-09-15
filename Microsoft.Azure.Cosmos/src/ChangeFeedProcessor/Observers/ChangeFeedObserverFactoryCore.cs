@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             Stream stream,
             CancellationToken cancellationToken)
         {
-            IReadOnlyCollection<T> changes = this.AsIReadOnlyCollection(stream);
+            IReadOnlyCollection<T> changes = this.AsIReadOnlyCollection(stream, context);
             if (changes.Count == 0)
             {
                 return Task.CompletedTask;
@@ -111,7 +111,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             return this.onChangesWithManualCheckpoint(context, changes, context.CheckpointAsync, cancellationToken);
         }
 
-        private IReadOnlyCollection<T> AsIReadOnlyCollection(Stream stream)
+        private IReadOnlyCollection<T> AsIReadOnlyCollection(
+            Stream stream,
+            ChangeFeedObserverContextCore context)
         {
             try
             {
@@ -122,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             catch (Exception serializationException)
             {
                 // Error using custom serializer to parse stream
-                throw new ObserverException(serializationException);
+                throw new ChangeFeedProcessorUserException(serializationException, context);
             }
         }
     }
