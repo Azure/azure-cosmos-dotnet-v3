@@ -253,10 +253,46 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             foreach(Type className in allClasses)
             {
-                PropertyInfo property = className.GetProperty("AdditionalProperties", BindingFlags.NonPublic | BindingFlags.Instance);
-                Assert.IsTrue(property != null);
+                SettingsContractTests.ValidateAdditionalProperties(className);
             }
-            
+
+        }
+
+        /// <summary>
+        /// All property types must have an AdditionalProperties with newtonsoft attribute to ensure that an old SDK does not lose any fields that a newer contract may have.
+        /// </summary>
+        /// <param name="className"></param>
+        private static void ValidateAdditionalProperties(Type className)
+        {
+            PropertyInfo property = className.GetProperty("AdditionalProperties", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            Assert.IsTrue(property != null, "AdditionalProperties property is not there for " + className);
+            Assert.AreEqual("Newtonsoft.Json.JsonExtensionDataAttribute", property.CustomAttributes.First().AttributeType.FullName, "AdditionalProperties property is not Newtonsoft.JsonJsonExtensionDataAttribute");
+
+            PropertyInfo[] propertyInfoArr = className.GetProperties(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            foreach (PropertyInfo propInfo in propertyInfoArr)
+            {
+                ValidateProperty(propInfo.PropertyType);
+            }
+        }
+
+        private static void ValidateProperty(Type propInfoType)
+        {
+            if (propInfoType.ToString().Contains("Microsoft.Azure.Cosmos") &&
+                (propInfoType.BaseType == null || propInfoType.BaseType.Name.Equals("Object")))
+            {
+                if (propInfoType.GenericTypeArguments.Length == 0)
+                {
+                    SettingsContractTests.ValidateAdditionalProperties(propInfoType);
+                }
+                else
+                {
+                    foreach (Type genericTypeArgs in propInfoType.GenericTypeArguments)
+                    {
+                        SettingsContractTests.ValidateProperty(genericTypeArgs);
+                    }
+
+                }
+            }
         }
 
         [TestMethod]

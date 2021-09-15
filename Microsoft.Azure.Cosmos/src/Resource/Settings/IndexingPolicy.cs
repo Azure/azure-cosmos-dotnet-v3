@@ -149,7 +149,9 @@ namespace Microsoft.Azure.Cosmos
                     return false;
                 }
 
-                if (compositePath1.Path == compositePath2.Path && compositePath2.Order == compositePath2.Order)
+                if (compositePath1.Path == compositePath2.Path && 
+                    compositePath1.Order == compositePath2.Order && 
+                    compositePath1.AdditionalProperties.EqualsTo(compositePath2.AdditionalProperties))
                 {
                     return true;
                 }
@@ -276,7 +278,8 @@ namespace Microsoft.Azure.Cosmos
                 HashSet<SpatialType> hashedSpatialTypes1 = new HashSet<SpatialType>(spatialSpec1.SpatialTypes);
                 HashSet<SpatialType> hashedSpatialTypes2 = new HashSet<SpatialType>(spatialSpec2.SpatialTypes);
 
-                if (!hashedSpatialTypes1.SetEquals(hashedSpatialTypes2))
+                if (!hashedSpatialTypes1.SetEquals(hashedSpatialTypes2) || 
+                    !spatialSpec1.AdditionalProperties.EqualsTo(spatialSpec2.AdditionalProperties))
                 {
                     return false;
                 }
@@ -316,7 +319,7 @@ namespace Microsoft.Azure.Cosmos
                 HashSet<SpatialPath> hashedAdditionalSpatialIndexes1 = new HashSet<SpatialPath>(additionalSpatialIndexes1, spatialSpecEqualityComparer);
                 HashSet<SpatialPath> hashedAdditionalSpatialIndexes2 = new HashSet<SpatialPath>(additionalSpatialIndexes2, spatialSpecEqualityComparer);
 
-                return hashedAdditionalSpatialIndexes1.SetEquals(additionalSpatialIndexes2);
+                return hashedAdditionalSpatialIndexes1.SetEquals(hashedAdditionalSpatialIndexes2);
             }
 
             public int GetHashCode(Collection<SpatialPath> additionalSpatialIndexes)
@@ -324,7 +327,7 @@ namespace Microsoft.Azure.Cosmos
                 int hashCode = 0;
                 foreach (SpatialPath spatialSpec in additionalSpatialIndexes)
                 {
-                    hashCode = hashCode ^ spatialSpecEqualityComparer.GetHashCode(spatialSpec);
+                    hashCode ^= spatialSpecEqualityComparer.GetHashCode(spatialSpec);
                 }
 
                 return hashCode;
@@ -347,7 +350,7 @@ namespace Microsoft.Azure.Cosmos
                     return false;
                 }
 
-                if (index1.Kind != index2.Kind)
+                if (index1.Kind != index2.Kind || !index1.AdditionalProperties.EqualsTo(index2.AdditionalProperties))
                 {
                     return false;
                 }
@@ -437,7 +440,8 @@ namespace Microsoft.Azure.Cosmos
                     return false;
                 }
 
-                if (includedPath1.Path != includedPath2.Path)
+                if (includedPath1.Path != includedPath2.Path || 
+                    !includedPath1.AdditionalProperties.EqualsTo(includedPath2.AdditionalProperties))
                 {
                     return false;
                 }
@@ -477,7 +481,8 @@ namespace Microsoft.Azure.Cosmos
                     return false;
                 }
 
-                return excludedPath1.Path == excludedPath2.Path;
+                return excludedPath1.Path == excludedPath2.Path && 
+                    excludedPath1.AdditionalProperties.EqualsTo(excludedPath2.AdditionalProperties);
             }
 
             public int GetHashCode(ExcludedPath excludedPath1)

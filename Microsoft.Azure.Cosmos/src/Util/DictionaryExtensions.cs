@@ -20,29 +20,21 @@ namespace Microsoft.Azure.Cosmos
             {
                 return true;
             }
-            else if (dict1 != null && dict2 != null && dict1.Count == dict2.Count)
-            {
-                foreach (KeyValuePair<string, JToken> pair in dict1)
-                {
-                    if (dict2.TryGetValue(pair.Key, out JToken value))
-                    {
-                        // Require value be equal.
-                        if (!JToken.DeepEquals(value, pair.Value))
-                        {
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        // if key is not there
-                        return false;
-                    }
-                }
 
-                return true;
+            if (dict1 == null || dict2 == null || dict1.Count != dict2.Count)
+            {
+                return false;
             }
 
-            return false;
+            foreach (KeyValuePair<string, JToken> pair in dict1)
+            {
+                if (!dict2.TryGetValue(pair.Key, out JToken value) || !JToken.DeepEquals(value, pair.Value))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }
