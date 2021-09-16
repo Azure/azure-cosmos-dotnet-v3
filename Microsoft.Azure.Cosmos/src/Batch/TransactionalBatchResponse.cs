@@ -311,6 +311,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     SubStatusCode = this.SubStatusCode,
                     RetryAfter = TimeSpan.FromMilliseconds(retryAfterMilliseconds),
+                    SessionToken = this.Headers.Session
                 };
 
                 result.Trace = trace;
@@ -342,6 +343,7 @@ namespace Microsoft.Azure.Cosmos
                     }
 
                     operationResult.Trace = trace;
+                    operationResult.SessionToken = responseMessage.Headers.Session;
 
                     results.Add(operationResult);
                     return r;
