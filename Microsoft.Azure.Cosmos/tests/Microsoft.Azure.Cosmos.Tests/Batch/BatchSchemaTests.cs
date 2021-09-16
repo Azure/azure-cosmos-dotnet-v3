@@ -100,8 +100,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializerCore: MockCosmosUtil.Serializer,
                 trace: NoOpTrace.Singleton,
                 cancellationToken: CancellationToken.None);
+            ResponseMessage response = new ResponseMessage((HttpStatusCode)StatusCodes.MultiStatus) { Content = responseContent };
+            response.Headers.Session = Guid.NewGuid().ToString();
             TransactionalBatchResponse batchResponse = await TransactionalBatchResponse.FromResponseMessageAsync(
-                new ResponseMessage((HttpStatusCode)StatusCodes.MultiStatus) { Content = responseContent },
+                response,
                 batchRequest,
                 MockCosmosUtil.Serializer,
                 true,
@@ -111,6 +113,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNotNull(batchRequest);
             Assert.AreEqual(HttpStatusCode.Conflict, batchResponse.StatusCode);
             Assert.AreEqual(2, batchResponse.Count);
+            Assert.AreEqual(response.Headers.Session, batchResponse[0].SessionToken);
+            Assert.AreEqual(response.Headers.Session, batchResponse[1].SessionToken);
+
 
             CosmosBatchOperationResultEqualityComparer comparer = new CosmosBatchOperationResultEqualityComparer();
             Assert.IsTrue(comparer.Equals(results[0], batchResponse[0]));

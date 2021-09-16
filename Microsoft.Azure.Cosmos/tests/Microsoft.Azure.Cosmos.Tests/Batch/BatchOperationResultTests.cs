@@ -15,7 +15,8 @@
             ETag = "TestETag",
             ResourceStream = new MemoryStream(),
             RequestCharge = 1.5,
-            RetryAfter = TimeSpan.FromMilliseconds(1234)
+            RetryAfter = TimeSpan.FromMilliseconds(1234),
+            SessionToken = Guid.NewGuid().ToString(),
         };
 
         [TestMethod]
@@ -37,6 +38,7 @@
             Assert.AreEqual(other.ETag, result.ETag);
             Assert.AreEqual(other.RequestCharge, result.RequestCharge);
             Assert.AreEqual(other.RetryAfter, result.RetryAfter);
+            Assert.AreEqual(other.SessionToken, result.SessionToken);
             Assert.AreSame(other.ResourceStream, result.ResourceStream);
         }
         
@@ -53,6 +55,7 @@
             Assert.AreEqual(other.RequestCharge, result.RequestCharge);
             Assert.AreEqual(other.RetryAfter, result.RetryAfter);
             Assert.AreSame(other.ResourceStream, result.ResourceStream);
+            Assert.AreEqual(other.SessionToken, result.SessionToken);
             Assert.AreSame(testObject, result.Resource);
         }
 
@@ -68,6 +71,7 @@
             Assert.AreEqual(result.ETag, response.Headers.ETag);
             Assert.AreEqual(result.RequestCharge, response.Headers.RequestCharge);
             Assert.AreEqual(result.RetryAfter, response.Headers.RetryAfter);
+            Assert.AreEqual(result.SessionToken, response.Headers.Session);
             Assert.AreSame(result.ResourceStream, response.Content);
             Assert.IsNotNull(response.Diagnostics);
         }
