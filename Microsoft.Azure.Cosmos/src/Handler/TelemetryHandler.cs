@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private ConsistencyLevel? GetConsistencyLevel(RequestMessage request)
         {
-            return request.RequestOptions?.BaseConsistencyLevel.GetValueOrDefault();   
+            return request.RequestOptions?.BaseConsistencyLevel;   
         }
 
         /// <summary>

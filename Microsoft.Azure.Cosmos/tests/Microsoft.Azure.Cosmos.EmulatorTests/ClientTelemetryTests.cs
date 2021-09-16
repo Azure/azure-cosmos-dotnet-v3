@@ -129,6 +129,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
+        public async Task SingleOperationMultipleTimes(ConnectionMode mode)
+        {
+            Container container = await this.GetContainer(mode);
+
+            Dictionary<string, object> properties = new Dictionary<string, object>();
+            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            {
+                Properties = properties
+            };
+
+            // Create an item
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+
+            await container.CreateItemAsync<ToDoActivity>(testItem, requestOptions: requestOptions);
+
+            for(int count = 0; count < 50; count++)
+            {
+                // Read an Item
+                await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
+            }
+            await this.WaitAndAssert(4); // 2 (read, requetLatency + requestCharge) + 2 (create, requestLatency + requestCharge)
+        }
+
+
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
         public async Task PointReadFailureOperationsTest(ConnectionMode mode)
         {
             // Fail Read
@@ -276,7 +303,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 lock (this.actualInfo)
                 {
                     int operationCount = this.actualInfo.Sum(x => x.OperationInfo.Count);
-                    Assert.IsTrue(operationCount <= expectedOperationCount, "More operations were recorded than expected");
+
+                    Assert.IsTrue(operationCount <= expectedOperationCount, $"actual operations({operationCount}) are more than expected operations({expectedOperationCount})");
 
                     if (operationCount == expectedOperationCount)
                     {
@@ -285,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         break;
                     }
 
-                    Assert.IsTrue(stopwatch.Elapsed.TotalMinutes < 1, $"The expected operation count was never hit.  ActualInfo:{JsonConvert.SerializeObject(this.actualInfo)}");
+                    Assert.IsTrue(stopwatch.Elapsed.TotalMinutes < 1, $"The expected operation count({expectedOperationCount}) was never same as actual operation count({operationCount}).  ActualInfo:{JsonConvert.SerializeObject(this.actualInfo)}");
                 }
 
                 await Task.Delay(TimeSpan.FromMilliseconds(200));
@@ -321,6 +349,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(operation.ResponseSizeInBytes, "ResponseSizeInBytes is null");
                 Assert.IsNotNull(operation.StatusCode, "StatusCode is null");
                 Assert.IsNotNull(operation.Consistency, "Consistency is null");
+                Assert.AreEqual("SESSION", operation.Consistency, "Consistency is not SESSION");
 
                 Assert.IsNotNull(operation.MetricInfo, "MetricInfo is null");
                 Assert.IsNotNull(operation.MetricInfo.MetricsName, "MetricsName is null");
