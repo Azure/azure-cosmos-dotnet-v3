@@ -10,10 +10,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class EncryptionDiagnosticsContext
     {
-        public JObject EncryptContent { get; }
-
-        public JObject DecryptContent { get; }
-
         private DateTime startTime;
         private Stopwatch stopwatch;
         private bool isDecryptionOperation;
@@ -23,6 +19,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.EncryptContent = new JObject();
             this.DecryptContent = new JObject();
         }
+
+        public JObject EncryptContent { get; }
+
+        public JObject DecryptContent { get; }
 
         public void Begin(string operation)
         {

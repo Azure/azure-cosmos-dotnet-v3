@@ -6,6 +6,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
+    using System.Text;
+    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     internal sealed class EncryptionCosmosDiagnostics : CosmosDiagnostics
@@ -38,15 +41,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public override string ToString()
         {
-            string coreDiagnosticsString = this.coreDiagnostics.ToString();
-            JObject coreDiagnostics = JObject.Parse(coreDiagnosticsString);
-            JObject diagnostics = new JObject
-            {
-                { Constants.DiagnosticsCoreDiagnostics, coreDiagnostics },
-                { Constants.DiagnosticsEncryptionDiagnostics, this.encryptionDiagnostics },
-            };
+            StringBuilder stringBuilder = new StringBuilder();
+            StringWriter stringWriter = new StringWriter(stringBuilder);
 
-            return diagnostics.ToString();
+            using (JsonWriter writer = new JsonTextWriter(stringWriter))
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName(Constants.DiagnosticsCoreDiagnostics);
+                writer.WriteRawValue(this.coreDiagnostics.ToString());
+                writer.WritePropertyName(Constants.DiagnosticsEncryptionDiagnostics);
+                writer.WriteRawValue(this.encryptionDiagnostics.ToString());
+                writer.WriteEndObject();
+            }
+
+            return stringWriter.ToString();
         }
     }
 }
