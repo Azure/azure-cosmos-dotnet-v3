@@ -53,3 +53,14 @@ if(!(Test-Path -Path $updatedContractFile)){
     Copy-Item -Path $updatedContractFile -Destination ".\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\Contracts\DotNetSDKEncryptionAPI.json"
     Write-Output ("Updated contract " + $updatedContractFile)
 }
+
+#Run the Encryption.Custom SDK contract tests
+$projResult = dotnet test '.\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release
+
+$updatedContractFile = ".\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\bin\Release\netcoreapp3.1\Contracts\DotNetSDKEncryptionCustomAPIChanges.json"
+if(!(Test-Path -Path $updatedContractFile)){
+    Write-Error ("The contract file did not get updated with the build. Please fix the test to output the contract file: " + $updatedContractFile)
+}else{
+    Copy-Item -Path $updatedContractFile -Destination ".\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\Contracts\DotNetSDKEncryptionCustomAPI.json"
+    Write-Output ("Updated contract " + $updatedContractFile)
+}

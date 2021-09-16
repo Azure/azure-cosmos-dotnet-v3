@@ -24,11 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.Encryption.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Contracts\DotNetSDKEncryptionAPI.json">
+    <None Include="Contracts\DotNetSDKEncryptionCustomAPI.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
@@ -43,6 +39,10 @@
 	
   <ItemGroup>
    <PackageReference Include="System.Text.Encoding.CodePages" Version="5.0.0" />
+  </ItemGroup>
+	
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.Encryption.Custom.csproj" />
   </ItemGroup>
 	
   <PropertyGroup>
