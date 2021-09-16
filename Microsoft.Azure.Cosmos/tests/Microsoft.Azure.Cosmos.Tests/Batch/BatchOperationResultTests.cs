@@ -17,6 +17,7 @@
             RequestCharge = 1.5,
             RetryAfter = TimeSpan.FromMilliseconds(1234),
             SessionToken = Guid.NewGuid().ToString(),
+            ActivityId = Guid.NewGuid().ToString(),
         };
 
         [TestMethod]
@@ -39,6 +40,7 @@
             Assert.AreEqual(other.RequestCharge, result.RequestCharge);
             Assert.AreEqual(other.RetryAfter, result.RetryAfter);
             Assert.AreEqual(other.SessionToken, result.SessionToken);
+            Assert.AreEqual(other.ActivityId, result.ActivityId);
             Assert.AreSame(other.ResourceStream, result.ResourceStream);
         }
         
@@ -56,6 +58,7 @@
             Assert.AreEqual(other.RetryAfter, result.RetryAfter);
             Assert.AreSame(other.ResourceStream, result.ResourceStream);
             Assert.AreEqual(other.SessionToken, result.SessionToken);
+            Assert.AreEqual(other.ActivityId, result.ActivityId);
             Assert.AreSame(testObject, result.Resource);
         }
 
@@ -72,6 +75,7 @@
             Assert.AreEqual(result.RequestCharge, response.Headers.RequestCharge);
             Assert.AreEqual(result.RetryAfter, response.Headers.RetryAfter);
             Assert.AreEqual(result.SessionToken, response.Headers.Session);
+            Assert.AreEqual(result.ActivityId, response.Headers.ActivityId);
             Assert.AreSame(result.ResourceStream, response.Content);
             Assert.IsNotNull(response.Diagnostics);
         }

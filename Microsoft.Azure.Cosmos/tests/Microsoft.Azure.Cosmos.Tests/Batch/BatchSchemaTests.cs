@@ -102,6 +102,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 cancellationToken: CancellationToken.None);
             ResponseMessage response = new ResponseMessage((HttpStatusCode)StatusCodes.MultiStatus) { Content = responseContent };
             response.Headers.Session = Guid.NewGuid().ToString();
+            response.Headers.ActivityId = Guid.NewGuid().ToString();
             TransactionalBatchResponse batchResponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 response,
                 batchRequest,
@@ -115,6 +116,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(2, batchResponse.Count);
             Assert.AreEqual(response.Headers.Session, batchResponse[0].SessionToken);
             Assert.AreEqual(response.Headers.Session, batchResponse[1].SessionToken);
+            Assert.AreEqual(response.Headers.ActivityId, batchResponse[0].ActivityId);
+            Assert.AreEqual(response.Headers.ActivityId, batchResponse[1].ActivityId);
 
 
             CosmosBatchOperationResultEqualityComparer comparer = new CosmosBatchOperationResultEqualityComparer();

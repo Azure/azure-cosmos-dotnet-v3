@@ -99,6 +99,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 RetryAfter = TimeSpan.FromSeconds(10),
                 RequestCharge = 4.3,
                 SessionToken = Guid.NewGuid().ToString(),
+                ActivityId = Guid.NewGuid().ToString(),
             };
 
             using (ITrace trace = Trace.GetRootTrace("testtrace"))
@@ -115,6 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(result.StatusCode, response.StatusCode);
             Assert.AreEqual(result.RequestCharge, response.Headers.RequestCharge);
             Assert.AreEqual(result.SessionToken, response.Headers.Session);
+            Assert.AreEqual(result.ActivityId, response.Headers.ActivityId);
             string diagnostics = response.Diagnostics.ToString();
             Assert.IsNotNull(diagnostics);
             Assert.IsTrue(diagnostics.Contains(pointOperationStatistics.ActivityId));
