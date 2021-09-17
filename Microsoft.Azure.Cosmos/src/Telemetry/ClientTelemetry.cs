@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string regionsContacted = this.GetContactedRegions(cosmosDiagnostics);
 
             // If consistency level is not mentioned in request then take the sdk/account level
-            if (consistencyLevel == null || !consistencyLevel.HasValue)
+            if (!consistencyLevel.HasValue)
             {
                 consistencyLevel = (Cosmos.ConsistencyLevel)this.documentClient.ConsistencyLevel;
             }
