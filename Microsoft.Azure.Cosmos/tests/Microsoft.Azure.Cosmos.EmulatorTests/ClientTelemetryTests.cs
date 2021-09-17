@@ -26,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private const string telemetryEndpointUrl = "http://dummy.telemetry.endpoint/";
         private const int scheduledInSeconds = 1;
         private CosmosClientBuilder cosmosClientBuilder;
+        private AccountProperties accountProperties;
 
         private List<ClientTelemetryProperties> actualInfo;
 
@@ -349,7 +350,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(operation.ResponseSizeInBytes, "ResponseSizeInBytes is null");
                 Assert.IsNotNull(operation.StatusCode, "StatusCode is null");
                 Assert.IsNotNull(operation.Consistency, "Consistency is null");
-                Assert.AreEqual("SESSION", operation.Consistency, "Consistency is not SESSION");
+                Assert.AreEqual(this.accountProperties.Consistency.DefaultConsistencyLevel.ToString().ToUpper(), operation.Consistency, "Consistency is not SESSION");
 
                 Assert.IsNotNull(operation.MetricInfo, "MetricInfo is null");
                 Assert.IsNotNull(operation.MetricInfo.MetricsName, "MetricsName is null");
@@ -393,6 +394,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.cosmosClient = this.cosmosClientBuilder.WithConnectionModeGateway().Build();
             }
 
+            this.accountProperties = await this.cosmosClient.ReadAccountAsync();
             this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
             return await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
         }
