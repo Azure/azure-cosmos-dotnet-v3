@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly CosmosHttpClient httpClient;
         private readonly AuthorizationTokenProvider tokenProvider;
         private readonly DiagnosticsHandlerHelper diagnosticsHelper;
+        private readonly Cosmos.ConsistencyLevel clientOrAccountLevelConsistency;
 
         private readonly CancellationTokenSource cancellationTokenSource;
 
@@ -98,6 +99,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             this.httpClient = documentClient.httpClient;
             this.cancellationTokenSource = new CancellationTokenSource();
+            this.clientOrAccountLevelConsistency = (Cosmos.ConsistencyLevel)this.documentClient.ConsistencyLevel;
         }
 
         /// <summary>
@@ -202,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             // If consistency level is not mentioned in request then take the sdk/account level
             if (!consistencyLevel.HasValue)
             {
-                consistencyLevel = (Cosmos.ConsistencyLevel)this.documentClient.ConsistencyLevel;
+                consistencyLevel = this.clientOrAccountLevelConsistency;
             }
 
             // Recording Request Latency and Request Charge
