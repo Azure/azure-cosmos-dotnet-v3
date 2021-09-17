@@ -124,7 +124,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Delete an Item
             await container.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
 
-            await this.WaitAndAssert(12);
+            await this.WaitAndAssert(
+                expectedOperationCount: 12);
         }
 
         [TestMethod]
@@ -150,7 +151,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // Read an Item
                 await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
             }
-            await this.WaitAndAssert(4); // 2 (read, requetLatency + requestCharge) + 2 (create, requestLatency + requestCharge)
+            await this.WaitAndAssert(
+                expectedOperationCount: 4); // 2 (read, requetLatency + requestCharge) + 2 (create, requestLatency + requestCharge)
         }
 
 
@@ -173,7 +175,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(message);
             }
 
-            await this.WaitAndAssert(2);
+            await this.WaitAndAssert(
+                expectedOperationCount: 2);
         }
 
         [TestMethod]
@@ -196,7 +199,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(message);
             }
 
-            await this.WaitAndAssert(2);
+            await this.WaitAndAssert(
+                expectedOperationCount: 2);
         }
 
         [TestMethod]
@@ -233,7 +237,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Delete an Item
             await container.DeleteItemStreamAsync(testItem.id, new Cosmos.PartitionKey(testItem.id));
 
-            await this.WaitAndAssert(12);
+            await this.WaitAndAssert(
+                expectedOperationCount: 12);
         }
 
         [TestMethod]
@@ -259,7 +264,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await Task.WhenAll(tasks);
             }
 
-            await this.WaitAndAssert(2);
+            await this.WaitAndAssert(
+                expectedOperationCount: 2);
         }
 
         [TestMethod]
@@ -289,7 +295,47 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
             }
-            await this.WaitAndAssert(4);
+            await this.WaitAndAssert(
+                expectedOperationCount: 4);
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public async Task QueryMultiPageOperationTest(ConnectionMode mode)
+        {
+            Container container = await this.GetContainer(mode);
+
+            ToDoActivity testItem1 = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue1", "MyTestItemId1");
+            ItemResponse<ToDoActivity> createResponse1 = await container.CreateItemAsync<ToDoActivity>(testItem1);
+            ToDoActivity testItem2 = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue2", "MyTestItemId2");
+            ItemResponse<ToDoActivity> createResponse2 = await container.CreateItemAsync<ToDoActivity>(testItem2);
+
+            if (createResponse1.StatusCode == HttpStatusCode.Created && 
+                createResponse2.StatusCode == HttpStatusCode.Created)
+            {
+                string sqlQueryText = "SELECT * FROM c";
+
+                QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
+                FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(
+                    queryDefinition: queryDefinition,
+                    requestOptions: new QueryRequestOptions()
+                    {
+                        MaxItemCount = 1
+                    });
+
+                List<object> families = new List<object>();
+                while (queryResultSetIterator.HasMoreResults)
+                {
+                    FeedResponse<object> currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                    foreach (object family in currentResultSet)
+                    {
+                        families.Add(family);
+                    }
+                }
+            }
+            await this.WaitAndAssert(
+                expectedOperationCount: 4);
         }
 
         private async Task WaitAndAssert(int expectedOperationCount)
@@ -350,7 +396,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(operation.ResponseSizeInBytes, "ResponseSizeInBytes is null");
                 Assert.IsNotNull(operation.StatusCode, "StatusCode is null");
                 Assert.IsNotNull(operation.Consistency, "Consistency is null");
-                Assert.AreEqual(this.accountProperties.Consistency.DefaultConsistencyLevel.ToString().ToUpper(), operation.Consistency, "Consistency is not SESSION");
+                Assert.AreEqual(this.accountProperties.Consistency.DefaultConsistencyLevel.ToString().ToUpper(), operation.Consistency, $"Consistency is not {this.accountProperties.Consistency.DefaultConsistencyLevel.ToString().ToUpper()}");
 
                 Assert.IsNotNull(operation.MetricInfo, "MetricInfo is null");
                 Assert.IsNotNull(operation.MetricInfo.MetricsName, "MetricsName is null");

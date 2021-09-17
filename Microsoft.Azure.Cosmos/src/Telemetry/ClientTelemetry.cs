@@ -38,9 +38,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly CosmosHttpClient httpClient;
         private readonly AuthorizationTokenProvider tokenProvider;
         private readonly DiagnosticsHandlerHelper diagnosticsHelper;
-        private readonly Cosmos.ConsistencyLevel clientOrAccountLevelConsistency;
-
         private readonly CancellationTokenSource cancellationTokenSource;
+
+        private Cosmos.ConsistencyLevel? clientOrAccountLevelConsistency;
 
         private Task telemetryTask;
 
@@ -99,7 +99,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             this.httpClient = documentClient.httpClient;
             this.cancellationTokenSource = new CancellationTokenSource();
-            this.clientOrAccountLevelConsistency = (Cosmos.ConsistencyLevel)this.documentClient.ConsistencyLevel;
         }
 
         /// <summary>
@@ -204,6 +203,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             // If consistency level is not mentioned in request then take the sdk/account level
             if (!consistencyLevel.HasValue)
             {
+                if (!this.clientOrAccountLevelConsistency.HasValue)
+                {
+                    // cache account level consistency information
+                    this.clientOrAccountLevelConsistency = (Cosmos.ConsistencyLevel)this.documentClient.ConsistencyLevel;
+                }
                 consistencyLevel = this.clientOrAccountLevelConsistency;
             }
 
