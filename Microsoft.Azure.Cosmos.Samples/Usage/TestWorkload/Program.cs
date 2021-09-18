@@ -20,48 +20,61 @@
     // 
     // 1. An Azure Cosmos account - 
     //    https://docs.microsoft.com/azure/cosmos-db/create-cosmosdb-resources-portal
-    //
-    // 2. Microsoft.Azure.Cosmos NuGet package - 
-    //    http://www.nuget.org/packages/Microsoft.Azure.Cosmos/ 
+
     // ----------------------------------------------------------------------------------------------------------
     // Sample - demonstrates the basic usage of the CosmosClient by performing a high volume of operations
     // ----------------------------------------------------------------------------------------------------------
 
     public class Program
     {
+        private class Configuration
+        {
+            public string EndpointUrl { get; set; }
+            public string AuthorizationKey { get; set; }
+            public string DatabaseName { get; set; }
+            public string ContainerName { get; set; }
+
+            public bool ShouldRecreateContainerOnStart { get; set; }
+            public int ContainerThroughput { get; set; }
+            public bool IsContainerAutoScale { get; set; }
+            public bool ShouldContainerIndexAllProperties { get; set; }
+
+            public int ItemsToCreate { get; set; }
+            public int ItemSize { get; set; }
+            public int ItemPropertyCount { get; set; }
+            public int PartitionKeyCount { get; set; }
+
+            public int RequestsPerSecond { get; set; }
+            public int WarmUpRequestCount { get; set; }
+            public int MaxInFlightRequestCount { get; set; }
+
+            public int PreSerializedItemCount { get; set; }
+            public int MaxRuntimeInSeconds { get; set; }
+            public int NumWorkers { get; set; }
+            public bool AllowBulkExecution { get; set; }
+            public bool OmitContentInWriteResponse { get; set; }
+            public bool ShouldDeleteContainerOnFinish { get; set; }
+        }
+
+        private static Configuration configuration;
         private static CosmosClient client;
-        private static int itemsToCreate;
-        private static int preSerializedItemCount;
-        private static int itemSize;
-        private static int itemPropertyCount;
-        private static int maxRuntimeInSeconds;
-        private static bool shouldDeleteContainerOnFinish;
-        private static int numWorkers;
-        private static bool allowBulkExecution;
-        private static bool omitContentInWriteResponse;
-        private static int partitionKeyCount;
-        private static int requestsPerSec;
         private static readonly string partitionKeyValuePrefix = DateTime.UtcNow.ToString("MMddHHmm-");
 
-        public static async Task Main(string[] _)
+        public static async Task Main(string[] args)
         {
             Container container = null;
             try
             {
-                container = await Program.InitializeAsync();
+                container = await Program.InitializeAsync(args);
                 await Program.CreateItemsConcurrentlyAsync(container);
             }
-            catch (CosmosException cre)
+            catch (Exception ex)
             {
-                Console.WriteLine(cre.ToString());
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Error: {0}", e);
+                Console.WriteLine("Error: {0}", ex);
             }
             finally
             {
-                if (Program.shouldDeleteContainerOnFinish)
+                if (configuration.ShouldDeleteContainerOnFinish)
                 {
                     await Program.CleanupContainerAsync(container);
                 }
@@ -74,9 +87,11 @@
 
         private static async Task CreateItemsConcurrentlyAsync(Container container)
         {
-            Console.WriteLine($"Starting creation of {Program.itemsToCreate} items of about {Program.itemSize} bytes each"
-            + $" within {maxRuntimeInSeconds} seconds using {numWorkers} workers.");
-            DataSource dataSource = new DataSource(itemsToCreate, preSerializedItemCount, itemPropertyCount, itemSize, partitionKeyCount);
+            Console.WriteLine($"Starting creation of {configuration.ItemsToCreate} items of about {configuration.ItemSize} bytes each"
+            + $" within {configuration.MaxRuntimeInSeconds} seconds using {configuration.NumWorkers} workers.");
+
+            DataSource dataSource = new DataSource(configuration.ItemsToCreate, configuration.PreSerializedItemCount, 
+                configuration.ItemPropertyCount, configuration.ItemSize, configuration.PartitionKeyCount);
             Console.WriteLine("Datasource initialized; starting ingestion");
 
             ConcurrentDictionary<HttpStatusCode, int> countsByStatus = new ConcurrentDictionary<HttpStatusCode, int>();
@@ -85,22 +100,29 @@
 
             int taskTriggeredCounter = 0;
             int taskCompleteCounter = 0;
+            int actualWarmupRequestCount = 0;
 
-            int itemsToCreatePerWorker = (int)Math.Ceiling((double)(itemsToCreate / numWorkers));
+            int itemsToCreatePerWorker = (int)Math.Ceiling((double)(configuration.ItemsToCreate / configuration.NumWorkers));
             List<Task> workerTasks = new List<Task>();
 
             const int ticksPerMillisecond = 10000;
             const int ticksPerSecond = 1000 * ticksPerMillisecond;
-            int eachTicks = (int)(ticksPerSecond / Program.requestsPerSec);
+            int eachTicks = configuration.RequestsPerSecond <= 0 ? 0 : (int)(ticksPerSecond / configuration.RequestsPerSecond);
             long usageTicks = 0;
 
+            if(configuration.MaxInFlightRequestCount == -1)
+            {
+                configuration.MaxInFlightRequestCount = int.MaxValue;
+            }
+
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            cancellationTokenSource.CancelAfter(maxRuntimeInSeconds * 1000);
+            cancellationTokenSource.CancelAfter(configuration.MaxRuntimeInSeconds * 1000);
             CancellationToken cancellationToken = cancellationTokenSource.Token;
             Stopwatch stopwatch = Stopwatch.StartNew();
+            Stopwatch latencyStopwatch = new Stopwatch();
 
             ItemRequestOptions itemRequestOptions = null;
-            if(Program.omitContentInWriteResponse)
+            if(configuration.OmitContentInWriteResponse)
             {
                 itemRequestOptions = new ItemRequestOptions()
                 {
@@ -108,7 +130,7 @@
                 };
             }
 
-            for (int workerIndex = 0; workerIndex < numWorkers; workerIndex++)
+            for (int workerIndex = 0; workerIndex < configuration.NumWorkers; workerIndex++)
             {
                 int workerIndexLocal = workerIndex;
                 workerTasks.Add(Task.Run(async () =>
@@ -120,7 +142,7 @@
                     {
                         docCounter++;
 
-                        MemoryStream stream = dataSource.GetNextDocItem(out PartitionKey partitionKeyValue);
+                        MemoryStream stream = dataSource.GetNextItem(out PartitionKey partitionKeyValue);
 
                         long elapsedTicks = stopwatch.ElapsedTicks;
                         if (usageTicks < elapsedTicks)
@@ -132,6 +154,11 @@
                         if (usageTicks - elapsedTicks > ticksPerSecond)
                         {
                             await Task.Delay((int)((usageTicks - elapsedTicks - ticksPerSecond) / ticksPerMillisecond));
+                        }
+
+                        if(taskTriggeredCounter - taskCompleteCounter > configuration.MaxInFlightRequestCount)
+                        {
+                            await Task.Delay((int)((taskTriggeredCounter - taskCompleteCounter - configuration.MaxInFlightRequestCount) / configuration.MaxInFlightRequestCount));
                         }
 
                         _ = container.UpsertItemStreamAsync(stream, partitionKeyValue, itemRequestOptions, cancellationToken)
@@ -147,7 +174,10 @@
                                         if (responseMessage.StatusCode < HttpStatusCode.BadRequest)
                                         {
                                             Interlocked.Add(ref totalRequestCharge, (int)(responseMessage.Headers.RequestCharge * 100));
-                                            latencies.Add(responseMessage.Diagnostics.GetClientElapsedTime());
+                                            if(latencyStopwatch.IsRunning)
+                                            {
+                                                latencies.Add(responseMessage.Diagnostics.GetClientElapsedTime());
+                                            }
                                         }
                                         else
                                         {
@@ -166,9 +196,10 @@
                                 }
 
                                 task.Dispose();
-                                if (Interlocked.Increment(ref taskCompleteCounter) >= itemsToCreate)
+                                if (Interlocked.Increment(ref taskCompleteCounter) >= configuration.ItemsToCreate)
                                 {
                                     stopwatch.Stop();
+                                    latencyStopwatch.Stop();
                                 }
                             });
 
@@ -177,9 +208,9 @@
                 }));
             }
 
-            while (taskCompleteCounter < itemsToCreate)
+            while (taskCompleteCounter < configuration.ItemsToCreate)
             {
-                Console.Write($"In progress. Triggered: {taskTriggeredCounter} Processed: {taskCompleteCounter}, Pending: {itemsToCreate - taskCompleteCounter}");
+                Console.Write($"In progress. Triggered: {taskTriggeredCounter} Processed: {taskCompleteCounter}, Pending: {configuration.ItemsToCreate - taskCompleteCounter}");
                 int nonFailedCount = 0;
                 foreach (KeyValuePair<HttpStatusCode, int> countForStatus in countsByStatus)
                 {
@@ -190,101 +221,64 @@
                     }
                 }
 
-                long elapsedSeconds = stopwatch.ElapsedMilliseconds / 1000;
-                Console.Write($", RPS: {(elapsedSeconds == 0 ? -1 : nonFailedCount / elapsedSeconds)}");
+                if(actualWarmupRequestCount == 0 && nonFailedCount >= configuration.WarmUpRequestCount)
+                {
+                    actualWarmupRequestCount = nonFailedCount;
+                    latencyStopwatch.Start();
+                }
+
+                long elapsedSeconds = latencyStopwatch.ElapsedMilliseconds / 1000;
+                Console.Write($", RPS: {(elapsedSeconds == 0 ? -1 : (nonFailedCount - actualWarmupRequestCount) / elapsedSeconds)}");
                 Console.WriteLine();
 
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    Console.WriteLine($"Could not insert {itemsToCreate} items in {maxRuntimeInSeconds} seconds.");
+                    Console.WriteLine($"Could not handle {configuration.ItemsToCreate} items in {configuration.MaxRuntimeInSeconds} seconds.");
                     break;
                 }
 
                 await Task.Delay(1000);
             }
 
-            long elapsedFinal = stopwatch.ElapsedMilliseconds / 1000;
+            long elapsedFinal = latencyStopwatch.ElapsedMilliseconds / 1000;
             int nonFailedCountFinal = countsByStatus.Where(x => x.Key < HttpStatusCode.BadRequest).Sum(p => p.Value);
-            Console.WriteLine($"Successfully handled {nonFailedCountFinal} items in {elapsedFinal} seconds at {(elapsedFinal == 0 ? -1 : nonFailedCountFinal / elapsedFinal)} items/sec.");
+            int nonFailedCountFinalForLatency = nonFailedCountFinal - actualWarmupRequestCount;
+            Console.WriteLine($"Successfully handled {nonFailedCountFinal} items; handled {nonFailedCountFinalForLatency} in {elapsedFinal} seconds at {(elapsedFinal == 0 ? -1 : nonFailedCountFinalForLatency / elapsedFinal)} items/sec.");
 
             Console.WriteLine("Counts by StatusCode:");
             Console.WriteLine(string.Join(',', countsByStatus.Select(countForStatus => countForStatus.Key + ": " + countForStatus.Value)));
 
             List<TimeSpan> latenciesList = latencies.ToList();
             latenciesList.Sort();
-            int requestCount = latenciesList.Count;
-            Console.WriteLine("Latencies (non-failed):"
-            + $"   P90: {latenciesList[(int)(requestCount * 0.90)].TotalMilliseconds}"
-            + $"   P99: {latenciesList[(int)(requestCount * 0.99)].TotalMilliseconds}"
-            + $"   P99.9: {latenciesList[(int)(requestCount * 0.999)].TotalMilliseconds}"
-            + $"   Max: {latenciesList[requestCount - 1].TotalMilliseconds}");
+            int nonWarmupRequestCount = latenciesList.Count;
+            if(nonWarmupRequestCount > 0)
+            {
+                Console.WriteLine("Latencies (non-failed):"
+                + $"   P90: {latenciesList[(int)(nonWarmupRequestCount * 0.90)].TotalMilliseconds}"
+                + $"   P99: {latenciesList[(int)(nonWarmupRequestCount * 0.99)].TotalMilliseconds}"
+                + $"   P99.9: {latenciesList[(int)(nonWarmupRequestCount * 0.999)].TotalMilliseconds}"
+                + $"   Max: {latenciesList[nonWarmupRequestCount - 1].TotalMilliseconds}");
+            }
 
             Console.WriteLine("Average RUs (non-failed): " + (totalRequestCharge / (100.0 * nonFailedCountFinal)));
         }
 
-        private class MyDocument
+        private static async Task<Container> InitializeAsync(string[] args)
         {
-            [JsonProperty("id")]
-            public string Id { get; set; }
-
-            [JsonProperty("pk")]
-            public string PK { get; set; }
-
-            [JsonProperty("arr")]
-            public List<string> Arr {get; set;}
-
-            [JsonProperty("other")]
-            public string Other { get; set; }
-
-            [JsonProperty(PropertyName = "_ts")]
-            public int LastModified { get; set; }
-
-            [JsonProperty(PropertyName = "_rid")]
-            public string ResourceId { get; set; }
-        }
-
-        private static async Task<Container> InitializeAsync()
-        {
-            IConfigurationRoot configuration = new ConfigurationBuilder()
+            IConfigurationRoot configurationRoot = new ConfigurationBuilder()
                     .AddJsonFile("appSettings.json")
+                    .AddCommandLine(args)
                     .Build();
 
-            string endpointUrl = configuration["EndPointUrl"];
-            if (string.IsNullOrEmpty(endpointUrl))
+            Program.configuration = new Configuration();
+            configurationRoot.Bind(Program.configuration);
+
+            Program.client = GetClientInstance(configuration.EndpointUrl, configuration.AuthorizationKey);
+            Container container = client.GetDatabase(configuration.DatabaseName).GetContainer(configuration.ContainerName);
+            if (configuration.ShouldRecreateContainerOnStart)
             {
-                throw new ArgumentNullException("Please specify a valid EndPointUrl in the appSettings.json");
-            }
-
-            string authKey = configuration["AuthorizationKey"];
-            if (string.IsNullOrEmpty(authKey) || string.Equals(authKey, "Super secret key"))
-            {
-                throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
-            }
-
-            Program.itemsToCreate = GetConfig(configuration, "ItemsToCreate", 100000);
-            Program.itemSize = GetConfig(configuration, "ItemSize", 1024);
-            Program.itemPropertyCount = GetConfig(configuration, "ItemPropertyCount", 10);
-            Program.partitionKeyCount = GetConfig(configuration, "PartitionKeyCount", int.MaxValue);
-            Program.requestsPerSec = GetConfig(configuration, "RequestsPerSec", 1000);
-            Program.numWorkers = GetConfig(configuration, "NumWorkers", 1);
-            Program.allowBulkExecution = GetConfig(configuration, "AllowBulkExecution", false);
-            Program.omitContentInWriteResponse = GetConfig(configuration, "OmitContentInWriteResponse", true);
-            Program.preSerializedItemCount = GetConfig(configuration, "PreSerializedItemCount", 0);
-            Program.maxRuntimeInSeconds = GetConfig(configuration, "MaxRuntimeInSeconds", 300);
-            Program.shouldDeleteContainerOnFinish = GetConfig(configuration, "ShouldDeleteContainerOnFinish", false);
-
-            string databaseName = GetConfig(configuration, "DatabaseName", "demodatabase");
-            string containerName = GetConfig(configuration, "ContainerName", "democontainer");
-            bool shouldRecreateContainerOnStart = GetConfig(configuration, "ShouldRecreateContainerOnStart", false);
-            int containerThroughput = GetConfig(configuration, "ContainerThroughput", 10000);
-            bool isContainerAutoScale = GetConfig(configuration, "IsContainerAutoscale", true);
-            bool shouldIndexAllProperties = GetConfig(configuration, "ShouldContainerIndexAllProperties", false);
-
-            Program.client = GetClientInstance(endpointUrl, authKey);
-            Container container = client.GetDatabase(databaseName).GetContainer(containerName);
-            if (shouldRecreateContainerOnStart)
-            {
-                container = await Program.RecreateContainerAsync(client, databaseName, containerName, shouldIndexAllProperties, containerThroughput, isContainerAutoScale);
+                container = await Program.RecreateContainerAsync(client, configuration.DatabaseName, configuration.ContainerName, configuration.ShouldContainerIndexAllProperties, configuration.ContainerThroughput, configuration.IsContainerAutoScale);
+                await Task.Delay(5000);
             }
 
             try
@@ -293,7 +287,7 @@
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error in reading collection: {0}", ex.Message);
+                Console.WriteLine("Error in reading collection: {0}", ex);
                 throw;
             }
 
@@ -307,7 +301,7 @@
             return new CosmosClient(endpoint, authKey, new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                AllowBulkExecution = Program.allowBulkExecution,
+                AllowBulkExecution = configuration.AllowBulkExecution,
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 PortReuseMode = PortReuseMode.ReuseUnicastPort
             });
@@ -349,10 +343,10 @@
                 containerBuilder.WithIndexingPolicy()
                     .WithIndexingMode(IndexingMode.Consistent)
                     .WithIncludedPaths()
-                        .Path("/pk/*")
+                        .Path("/")
                         .Attach()
                     .WithExcludedPaths()
-                        .Path("/*")
+                        .Path("/other/*")
                         .Attach()
                 .Attach();
             }
@@ -364,34 +358,25 @@
             return await containerBuilder.CreateAsync(throughputProperties);
         }
 
-        private static int GetConfig(IConfigurationRoot iConfigurationRoot, string configName, int defaultValue)
+        private class MyDocument
         {
-            if(!string.IsNullOrEmpty(iConfigurationRoot[configName]))
-            {
-                return int.Parse(iConfigurationRoot[configName]);
-            }
+            [JsonProperty("id")]
+            public string Id { get; set; }
 
-            return defaultValue;
-        }
+            [JsonProperty("pk")]
+            public string PK { get; set; }
 
-        private static bool GetConfig(IConfigurationRoot iConfigurationRoot, string configName, bool defaultValue)
-        {
-            if(!string.IsNullOrEmpty(iConfigurationRoot[configName]))
-            {
-                return bool.Parse(iConfigurationRoot[configName]);
-            }
+            [JsonProperty("arr")]
+            public List<string> Arr {get; set;}
 
-            return defaultValue;
-        }
+            [JsonProperty("other")]
+            public string Other { get; set; }
 
-        private static string GetConfig(IConfigurationRoot iConfigurationRoot, string configName, string defaultValue)
-        {
-            if(!string.IsNullOrEmpty(iConfigurationRoot[configName]))
-            {
-                return iConfigurationRoot[configName];
-            }
+            [JsonProperty(PropertyName = "_ts")]
+            public int LastModified { get; set; }
 
-            return defaultValue;
+            [JsonProperty(PropertyName = "_rid")]
+            public string ResourceId { get; set; }
         }
 
         private class DataSource
@@ -453,7 +438,7 @@
                 }
             }
 
-            private MemoryStream CreateNextDocItem(string partitionKey, string id = null)
+            public MemoryStream CreateNextDocItem(string partitionKey, string id = null)
             {
                 if(id == null) { id = Guid.NewGuid().ToString(); }
 
@@ -468,7 +453,7 @@
                 return new MemoryStream(Encoding.UTF8.GetBytes(value));
             }
 
-            public MemoryStream GetNextDocItem(out PartitionKey partitionKey)
+            public MemoryStream GetNextItem(out PartitionKey partitionKey)
             {
                 int incremented = Interlocked.Increment(ref this.itemIndex);
                 int currentPKIndex = incremented % this.partitionKeyCount;
