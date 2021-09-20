@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class CosmosItemBulkTests
     {
         private Container container;
-        private Container nonBulkContainer;
         private Database database;
 
         [TestInitialize]
@@ -26,20 +25,50 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 AllowBulkExecution = true
             };
             CosmosClient client = TestCommon.CreateCosmosClient(clientOptions);
-            CosmosClient nonBulkClient = TestCommon.CreateCosmosClient();
 
             DatabaseResponse response = await client.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
             this.database = response.Database;
 
             ContainerResponse containerResponse = await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk", 10000);
             this.container = containerResponse;
-            this.nonBulkContainer = nonBulkClient.GetContainer(this.database.Id, this.container.Id);
         }
 
         [TestCleanup]
         public async Task Cleanup()
         {
             await this.database.DeleteAsync();
+        }
+
+        [TestMethod]
+        public async Task ValidateRequestOptions()
+        {
+            List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
+            for (int i = 0; i < 100; i++)
+            {
+                tasks.Add(ExecuteCreateStreamAsync(this.container, CreateItem(i.ToString()), 
+                    new ItemRequestOptions() {
+                        Properties = new Dictionary<string, object>() { { "test", "test" } },
+                        DedicatedGatewayRequestOptions = new DedicatedGatewayRequestOptions { MaxIntegratedCacheStaleness = TimeSpan.FromMinutes(3) },
+                        SessionToken = Guid.NewGuid().ToString(),
+                        PreTriggers = new List<string>() { "preTrigger" },
+                        PostTriggers = new List<string>() { "postTrigger" }
+                    }));
+            }
+
+            try
+            {
+                await Task.WhenAll(tasks);
+            }
+            catch (InvalidOperationException)
+            {
+            }
+
+            for (int i = 0; i < 100; i++)
+            {
+                Task<ResponseMessage> task = tasks[i];
+                Assert.IsTrue(task.IsFaulted);
+                Assert.IsTrue(task.Exception.InnerException is InvalidOperationException _);
+            }
         }
 
         [TestMethod]
@@ -532,9 +561,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return container.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.pk));
         }
 
-        private static Task<ResponseMessage> ExecuteCreateStreamAsync(Container container, ToDoActivity item)
+        private static Task<ResponseMessage> ExecuteCreateStreamAsync(Container container, ToDoActivity item, ItemRequestOptions itemRequestOptions = null)
         {
-            return container.CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new PartitionKey(item.pk));
+            return container.CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new PartitionKey(item.pk), itemRequestOptions);
         }
 
         private static Task<ResponseMessage> ExecuteUpsertStreamAsync(Container container, ToDoActivity item)
