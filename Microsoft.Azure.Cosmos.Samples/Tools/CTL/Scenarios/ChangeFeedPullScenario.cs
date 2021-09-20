@@ -57,48 +57,66 @@ namespace CosmosCTL
             GaugeOptions documentGauge= new GaugeOptions { Name = "#Documents received", Context = loggingContextIdentifier };
             Container container = cosmosClient.GetContainer(config.Database, config.Collection);
 
-            while (stopWatch.Elapsed <= config.RunningTimeDurationAsTimespan)
+            try
             {
-                long documentTotal = 0;
-                string continuation = null;
-                using FeedIterator<Dictionary<string, string>> changeFeedPull 
-                    = container.GetChangeFeedIterator<Dictionary<string, string>>(ChangeFeedStartFrom.Beginning(), ChangeFeedMode.Incremental);
-
-                try
+                while (stopWatch.Elapsed <= config.RunningTimeDurationAsTimespan)
                 {
-                    while (changeFeedPull.HasMoreResults)
+                    long documentTotal = 0;
+                    string continuation = null;
+                    using FeedIterator<Dictionary<string, string>> changeFeedPull
+                        = container.GetChangeFeedIterator<Dictionary<string, string>>(ChangeFeedStartFrom.Beginning(), ChangeFeedMode.Incremental);
+
+                    try
                     {
-                        FeedResponse<Dictionary<string, string>> response = await changeFeedPull.ReadNextAsync();
-                        documentTotal += response.Count;
-                        continuation = response.ContinuationToken;
-                        if (response.StatusCode == HttpStatusCode.NotModified)
+                        while (changeFeedPull.HasMoreResults)
                         {
-                            break;
+                            FeedResponse<Dictionary<string, string>> response = await changeFeedPull.ReadNextAsync();
+                            documentTotal += response.Count;
+                            continuation = response.ContinuationToken;
+                            if (response.StatusCode == HttpStatusCode.NotModified)
+                            {
+                                break;
+                            }
+                        }
+
+                        metrics.Measure.Gauge.SetValue(documentGauge, documentTotal);
+
+                        if (config.PreCreatedDocuments > 0)
+                        {
+                            if (this.initializationResult.InsertedDocuments == documentTotal)
+                            {
+                                logger.LogInformation($"Success: The number of new documents match the number of pre-created documents: {this.initializationResult.InsertedDocuments}");
+                            }
+                            else
+                            {
+                                logger.LogError($"The prepopulated documents and the change feed documents don't match.  Preconfigured Docs = {this.initializationResult.InsertedDocuments}, Change feed Documents = {documentTotal}.{Environment.NewLine}{continuation}");
+                            }
                         }
                     }
-
-                    metrics.Measure.Gauge.SetValue(documentGauge, documentTotal);
-
-                    if (config.PreCreatedDocuments > 0)
+                    catch (Exception ex)
                     {
-                        if (this.initializationResult.InsertedDocuments == documentTotal)
-                        {
-                            logger.LogInformation($"Success: The number of new documents match the number of pre-created documents: {this.initializationResult.InsertedDocuments}");
-                        }
-                        else
-                        {
-                            logger.LogError($"The prepopulated documents and the change feed documents don't match.  Preconfigured Docs = {this.initializationResult.InsertedDocuments}, Change feed Documents = {documentTotal}.{Environment.NewLine}{continuation}");
-                        }
+                        metrics.Measure.Gauge.SetValue(documentGauge, documentTotal);
+                        logger.LogError(ex, "Failure while looping through change feed documents");
                     }
-                }
-                catch (Exception ex)
-                {
-                    metrics.Measure.Gauge.SetValue(documentGauge, documentTotal);
-                    logger.LogError(ex, "Failure while looping through change feed documents");
                 }
             }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failure during Change Feed Pull scenario");
+            }
+            finally
+            {
+                stopWatch.Stop();
+                if (this.initializationResult.CreatedContainer)
+                {
+                    await cosmosClient.GetContainer(config.Database, config.Collection).DeleteContainerStreamAsync();
+                }
 
-            stopWatch.Stop();
+                if (this.initializationResult.CreatedDatabase)
+                {
+                    await cosmosClient.GetDatabase(config.Database).DeleteStreamAsync();
+                }
+            }
         }
     }
 }
