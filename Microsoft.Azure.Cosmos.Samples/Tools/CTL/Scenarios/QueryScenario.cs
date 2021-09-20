@@ -44,7 +44,7 @@ namespace CosmosCTL
             }
         }
 
-        public Task RunAsync(
+        public async Task RunAsync(
             CTLConfig config,
             CosmosClient cosmosClient,
             ILogger logger,
@@ -52,68 +52,87 @@ namespace CosmosCTL
             string loggingContextIdentifier,
             CancellationToken cancellationToken)
         {
-            return Task.WhenAll(
-                QueryScenario.ExecuteQueryAndGatherResultsAsync(
-                    config, 
-                    cosmosClient, 
-                    logger, 
-                    metrics, 
-                    loggingContextIdentifier, 
-                    cancellationToken, 
-                    queryText: "select * from c", 
-                    queryName: "Star",
-                    expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments: 0),
-                QueryScenario.ExecuteQueryAndGatherResultsAsync(
-                    config, 
-                    cosmosClient, 
-                    logger, 
-                    metrics, 
-                    loggingContextIdentifier, 
-                    cancellationToken, 
-                    queryText: "select * from c order by c.id", 
-                    queryName: "OrderBy",
-                    expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0),
-                QueryScenario.ExecuteQueryAndGatherResultsAsync(
-                    config, 
-                    cosmosClient, 
-                    logger, 
-                    metrics, 
-                    loggingContextIdentifier, 
-                    cancellationToken, 
-                    queryText: "select count(1) from c", 
-                    queryName: "Aggregates",
-                    expectedResults: 1),
-                QueryScenario.ExecuteQueryWithContinuationAndGatherResultsAsync(
-                    config,
-                    cosmosClient,
-                    logger,
-                    metrics,
-                    loggingContextIdentifier,
-                    cancellationToken,
-                    queryText: "select * from c",
-                    queryName: "Star",
-                    expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0),
-                QueryScenario.ExecuteQueryWithContinuationAndGatherResultsAsync(
-                    config,
-                    cosmosClient,
-                    logger,
-                    metrics,
-                    loggingContextIdentifier,
-                    cancellationToken,
-                    queryText: "select * from c order by c.id",
-                    queryName: "OrderBy",
-                    expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0),
-                QueryScenario.ExecuteQueryWithContinuationAndGatherResultsAsync(
-                    config,
-                    cosmosClient,
-                    logger,
-                    metrics,
-                    loggingContextIdentifier,
-                    cancellationToken,
-                    queryText: "select count(1) from c",
-                    queryName: "Aggregates",
-                    expectedResults: 1)
-                );
+            try
+            {
+                await Task.WhenAll(
+                        QueryScenario.ExecuteQueryAndGatherResultsAsync(
+                            config,
+                            cosmosClient,
+                            logger,
+                            metrics,
+                            loggingContextIdentifier,
+                            cancellationToken,
+                            queryText: "select * from c",
+                            queryName: "Star",
+                            expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0),
+                        QueryScenario.ExecuteQueryAndGatherResultsAsync(
+                            config,
+                            cosmosClient,
+                            logger,
+                            metrics,
+                            loggingContextIdentifier,
+                            cancellationToken,
+                            queryText: "select * from c order by c.id",
+                            queryName: "OrderBy",
+                            expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0),
+                        QueryScenario.ExecuteQueryAndGatherResultsAsync(
+                            config,
+                            cosmosClient,
+                            logger,
+                            metrics,
+                            loggingContextIdentifier,
+                            cancellationToken,
+                            queryText: "select count(1) from c",
+                            queryName: "Aggregates",
+                            expectedResults: 1),
+                        QueryScenario.ExecuteQueryWithContinuationAndGatherResultsAsync(
+                            config,
+                            cosmosClient,
+                            logger,
+                            metrics,
+                            loggingContextIdentifier,
+                            cancellationToken,
+                            queryText: "select * from c",
+                            queryName: "Star",
+                            expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0),
+                        QueryScenario.ExecuteQueryWithContinuationAndGatherResultsAsync(
+                            config,
+                            cosmosClient,
+                            logger,
+                            metrics,
+                            loggingContextIdentifier,
+                            cancellationToken,
+                            queryText: "select * from c order by c.id",
+                            queryName: "OrderBy",
+                            expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0),
+                        QueryScenario.ExecuteQueryWithContinuationAndGatherResultsAsync(
+                            config,
+                            cosmosClient,
+                            logger,
+                            metrics,
+                            loggingContextIdentifier,
+                            cancellationToken,
+                            queryText: "select count(1) from c",
+                            queryName: "Aggregates",
+                            expectedResults: 1)
+                        );
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failure during Query scenario");
+            }
+            finally
+            {
+                if (this.initializationResult.CreatedContainer)
+                {
+                    await cosmosClient.GetContainer(config.Database, config.Collection).DeleteContainerStreamAsync();
+                }
+
+                if (this.initializationResult.CreatedDatabase)
+                {
+                    await cosmosClient.GetDatabase(config.Database).DeleteStreamAsync();
+                }
+            }
         }
 
         /// <summary>
