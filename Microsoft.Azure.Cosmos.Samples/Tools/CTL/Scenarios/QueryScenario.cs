@@ -54,6 +54,7 @@ namespace CosmosCTL
         {
             try
             {
+                SemaphoreSlim concurrencyControlSemaphore = new SemaphoreSlim(config.Concurrency);
                 await Task.WhenAll(
                         QueryScenario.ExecuteQueryAndGatherResultsAsync(
                             config,
@@ -64,7 +65,8 @@ namespace CosmosCTL
                             cancellationToken,
                             queryText: "select * from c",
                             queryName: "Star",
-                            expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0),
+                            expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0,
+                            concurrencyControlSemaphore: concurrencyControlSemaphore),
                         QueryScenario.ExecuteQueryAndGatherResultsAsync(
                             config,
                             cosmosClient,
@@ -74,7 +76,8 @@ namespace CosmosCTL
                             cancellationToken,
                             queryText: "select * from c order by c.id",
                             queryName: "OrderBy",
-                            expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0),
+                            expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0,
+                            concurrencyControlSemaphore: concurrencyControlSemaphore),
                         QueryScenario.ExecuteQueryAndGatherResultsAsync(
                             config,
                             cosmosClient,
@@ -84,7 +87,8 @@ namespace CosmosCTL
                             cancellationToken,
                             queryText: "select count(1) from c",
                             queryName: "Aggregates",
-                            expectedResults: 1),
+                            expectedResults: 1,
+                            concurrencyControlSemaphore: concurrencyControlSemaphore),
                         QueryScenario.ExecuteQueryWithContinuationAndGatherResultsAsync(
                             config,
                             cosmosClient,
@@ -94,7 +98,8 @@ namespace CosmosCTL
                             cancellationToken,
                             queryText: "select * from c",
                             queryName: "Star",
-                            expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0),
+                            expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0,
+                            concurrencyControlSemaphore: concurrencyControlSemaphore),
                         QueryScenario.ExecuteQueryWithContinuationAndGatherResultsAsync(
                             config,
                             cosmosClient,
@@ -104,7 +109,8 @@ namespace CosmosCTL
                             cancellationToken,
                             queryText: "select * from c order by c.id",
                             queryName: "OrderBy",
-                            expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0),
+                            expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0,
+                            concurrencyControlSemaphore: concurrencyControlSemaphore),
                         QueryScenario.ExecuteQueryWithContinuationAndGatherResultsAsync(
                             config,
                             cosmosClient,
@@ -114,7 +120,8 @@ namespace CosmosCTL
                             cancellationToken,
                             queryText: "select count(1) from c",
                             queryName: "Aggregates",
-                            expectedResults: 1)
+                            expectedResults: 1,
+                            concurrencyControlSemaphore: concurrencyControlSemaphore)
                         );
             }
             catch (Exception ex)
@@ -146,7 +153,8 @@ namespace CosmosCTL
             CancellationToken cancellationToken,
             string queryText,
             string queryName,
-            long expectedResults)
+            long expectedResults,
+            SemaphoreSlim concurrencyControlSemaphore)
         {
             Stopwatch stopWatch = Stopwatch.StartNew();
 
@@ -170,16 +178,24 @@ namespace CosmosCTL
                 {
                     while (query.HasMoreResults)
                     {
-                        FeedResponse<Dictionary<string, string>> response = await query.ReadNextAsync();
-                        documentTotal += response.Count;
-                        continuation = response.ContinuationToken;
-                        allContinuations.Add(continuation);
-                        if (continuation != null)
+                        await concurrencyControlSemaphore.WaitAsync();
+                        try
                         {
-                            // Use continuation to paginate on the query instead of draining just the initial query
-                            // This validates that we can indeed move forward with the continuation
-                            query.Dispose();
-                            query = container.GetItemQueryIterator<Dictionary<string, string>>(queryText, continuation);
+                            FeedResponse<Dictionary<string, string>> response = await query.ReadNextAsync();
+                            documentTotal += response.Count;
+                            continuation = response.ContinuationToken;
+                            allContinuations.Add(continuation);
+                            if (continuation != null)
+                            {
+                                // Use continuation to paginate on the query instead of draining just the initial query
+                                // This validates that we can indeed move forward with the continuation
+                                query.Dispose();
+                                query = container.GetItemQueryIterator<Dictionary<string, string>>(queryText, continuation);
+                            }
+                        }
+                        finally
+                        {
+                            concurrencyControlSemaphore.Release();
                         }
                     }
 
@@ -232,7 +248,8 @@ namespace CosmosCTL
             CancellationToken cancellationToken,
             string queryText,
             string queryName,
-            long expectedResults)
+            long expectedResults,
+            SemaphoreSlim concurrencyControlSemaphore)
         {
             Stopwatch stopWatch = Stopwatch.StartNew();
 
@@ -254,9 +271,17 @@ namespace CosmosCTL
                 {
                     while (query.HasMoreResults)
                     {
-                        FeedResponse<Dictionary<string, string>> response = await query.ReadNextAsync();
-                        documentTotal += response.Count;
-                        continuation = response.ContinuationToken;
+                        await concurrencyControlSemaphore.WaitAsync();
+                        try
+                        {
+                            FeedResponse<Dictionary<string, string>> response = await query.ReadNextAsync();
+                            documentTotal += response.Count;
+                            continuation = response.ContinuationToken;
+                        }
+                        finally
+                        {
+                            concurrencyControlSemaphore.Release();
+                        }
                     }
 
                     metrics.Measure.Gauge.SetValue(documentGauge, documentTotal);
