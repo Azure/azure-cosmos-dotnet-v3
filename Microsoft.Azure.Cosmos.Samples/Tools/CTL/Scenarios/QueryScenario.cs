@@ -173,29 +173,22 @@ namespace CosmosCTL
                 List<string> allContinuations = new List<string>();
                 long documentTotal = 0;
                 string continuation;
+                await concurrencyControlSemaphore.WaitAsync();
                 FeedIterator<Dictionary<string, string>> query = container.GetItemQueryIterator<Dictionary<string, string>>(queryText);
                 try
                 {
                     while (query.HasMoreResults)
                     {
-                        await concurrencyControlSemaphore.WaitAsync();
-                        try
+                        FeedResponse<Dictionary<string, string>> response = await query.ReadNextAsync();
+                        documentTotal += response.Count;
+                        continuation = response.ContinuationToken;
+                        allContinuations.Add(continuation);
+                        if (continuation != null)
                         {
-                            FeedResponse<Dictionary<string, string>> response = await query.ReadNextAsync();
-                            documentTotal += response.Count;
-                            continuation = response.ContinuationToken;
-                            allContinuations.Add(continuation);
-                            if (continuation != null)
-                            {
-                                // Use continuation to paginate on the query instead of draining just the initial query
-                                // This validates that we can indeed move forward with the continuation
-                                query.Dispose();
-                                query = container.GetItemQueryIterator<Dictionary<string, string>>(queryText, continuation);
-                            }
-                        }
-                        finally
-                        {
-                            concurrencyControlSemaphore.Release();
+                            // Use continuation to paginate on the query instead of draining just the initial query
+                            // This validates that we can indeed move forward with the continuation
+                            query.Dispose();
+                            query = container.GetItemQueryIterator<Dictionary<string, string>>(queryText, continuation);
                         }
                     }
 
@@ -232,6 +225,10 @@ namespace CosmosCTL
 
                     logger.LogError(ex, errorDetail.ToString());
                 }
+                finally
+                {
+                    concurrencyControlSemaphore.Release();
+                }
             }
 
             stopWatch.Stop();
@@ -266,22 +263,15 @@ namespace CosmosCTL
             {
                 long documentTotal = 0;
                 string continuation = null;
+                await concurrencyControlSemaphore.WaitAsync();
                 using FeedIterator<Dictionary<string, string>> query = container.GetItemQueryIterator<Dictionary<string, string>>(queryText);
                 try
                 {
                     while (query.HasMoreResults)
                     {
-                        await concurrencyControlSemaphore.WaitAsync();
-                        try
-                        {
-                            FeedResponse<Dictionary<string, string>> response = await query.ReadNextAsync();
-                            documentTotal += response.Count;
-                            continuation = response.ContinuationToken;
-                        }
-                        finally
-                        {
-                            concurrencyControlSemaphore.Release();
-                        }
+                        FeedResponse<Dictionary<string, string>> response = await query.ReadNextAsync();
+                        documentTotal += response.Count;
+                        continuation = response.ContinuationToken;
                     }
 
                     metrics.Measure.Gauge.SetValue(documentGauge, documentTotal);
@@ -308,6 +298,10 @@ namespace CosmosCTL
                     errorDetail.AppendLine($"Last continuation: {continuation}");
 
                     logger.LogError(ex, errorDetail.ToString());
+                }
+                finally
+                {
+                    concurrencyControlSemaphore.Release();
                 }
             }
 
