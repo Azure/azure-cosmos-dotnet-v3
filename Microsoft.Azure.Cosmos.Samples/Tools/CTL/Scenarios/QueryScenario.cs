@@ -199,6 +199,10 @@ namespace CosmosCTL
                         logger.LogError(errorDetail.ToString());
                     }
                 }
+                catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                {
+                    //Logging 429s is not relevant
+                }
                 catch (Exception ex)
                 {
                     metrics.Measure.Gauge.SetValue(documentGauge, documentTotal);
@@ -265,6 +269,10 @@ namespace CosmosCTL
 
                         logger.LogError(errorDetail.ToString());
                     }
+                }
+                catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                {
+                    //Logging 429s is not relevant
                 }
                 catch (Exception ex)
                 {
