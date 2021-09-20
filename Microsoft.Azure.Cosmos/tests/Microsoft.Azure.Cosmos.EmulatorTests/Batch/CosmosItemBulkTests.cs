@@ -42,33 +42,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ValidateRequestOptions()
         {
-            List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
-            for (int i = 0; i < 100; i++)
+            async Task ExecuteAndValidateCreateItemAsync(int i)
             {
-                tasks.Add(CosmosItemBulkTests.ExecuteCreateStreamAsync(this.container, CosmosItemBulkTests.CreateItem(i.ToString()), 
-                    new ItemRequestOptions() {
-                        Properties = new Dictionary<string, object>() { { "test", "test" } },
-                        DedicatedGatewayRequestOptions = new DedicatedGatewayRequestOptions { MaxIntegratedCacheStaleness = TimeSpan.FromMinutes(3) },
-                        SessionToken = Guid.NewGuid().ToString(),
-                        PreTriggers = new List<string>() { "preTrigger" },
-                        PostTriggers = new List<string>() { "postTrigger" }
-                    }));
+                try
+                {
+                    await CosmosItemBulkTests.ExecuteCreateStreamAsync(
+                        this.container,
+                        CosmosItemBulkTests.CreateItem(i.ToString()),
+                           new ItemRequestOptions()
+                           {
+                               Properties = new Dictionary<string, object>() { { "test", "test" } },
+                               DedicatedGatewayRequestOptions = new DedicatedGatewayRequestOptions { MaxIntegratedCacheStaleness = TimeSpan.FromMinutes(3) },
+                               SessionToken = Guid.NewGuid().ToString(),
+                               PreTriggers = new List<string>() { "preTrigger" },
+                               PostTriggers = new List<string>() { "postTrigger" }
+                           });
+                    Assert.Fail("Request should have failed");
+                }
+                catch (InvalidOperationException)
+                {
+                }
             }
 
-            try
-            {
-                await Task.WhenAll(tasks);
-            }
-            catch (InvalidOperationException)
-            {
-            }
-
+            List<Task> tasks = new List<Task>();
             for (int i = 0; i < 100; i++)
             {
-                Task<ResponseMessage> task = tasks[i];
-                Assert.IsTrue(task.IsFaulted);
-                Assert.IsTrue(task.Exception.InnerException is InvalidOperationException _);
+                tasks.Add(ExecuteAndValidateCreateItemAsync(i));
             }
+
+            await Task.WhenAll(tasks);
         }
 
         [TestMethod]
