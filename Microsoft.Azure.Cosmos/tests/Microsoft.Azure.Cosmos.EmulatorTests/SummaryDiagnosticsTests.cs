@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -12,7 +13,7 @@
     public class SummaryDiagnosticsTest
     {
         private Container Container = null;
-        private Database Database = null;
+        private Cosmos.Database Database = null;
         private CosmosClient Client = null;
 
         [TestInitialize]
@@ -20,7 +21,7 @@
         {
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
-                ConsistencyLevel = ConsistencyLevel.Session
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Session
             };
             this.Client = TestCommon.CreateCosmosClient(clientOptions);
             this.Database = (await this.Client.CreateDatabaseAsync(Guid.NewGuid().ToString())).Database;
@@ -42,16 +43,16 @@
             ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
             SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
 
-            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.SuccessfullCalls, 1);
-            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.NumberOf429s, 0);
+            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value[(201, 0)], 1);
+            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value.Keys.Count, 1);
 
-            response = await this.Container.ReadItemAsync<ToDoActivity>(testItem.id, new PartitionKey(testItem.pk));
+            response = await this.Container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
             trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
             summaryDiagnostics = new SummaryDiagnostics(trace);
 
-            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.SuccessfullCalls, 1);
-            Assert.AreEqual(summaryDiagnostics.GatewayRequestsSummary.SuccessfullCalls, 0);
-            Assert.IsTrue(summaryDiagnostics.MaxServiceProcessingTimeInMs > 0);
+            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value[(200, 0)], 1);
+            Assert.IsFalse(summaryDiagnostics.GatewayRequestsSummary.IsValueCreated);
+            Assert.AreEqual(summaryDiagnostics.AllRegionsContacted.Value.Count, 1);
         }
 
         [TestMethod]
@@ -66,16 +67,15 @@
             ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
             SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
 
-            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.SuccessfullCalls, 0);
-            Assert.IsTrue(summaryDiagnostics.GatewayRequestsSummary.SuccessfullCalls > 0);
+            Assert.IsFalse(summaryDiagnostics.DirectRequestsSummary.IsValueCreated);
+            Assert.IsTrue(summaryDiagnostics.GatewayRequestsSummary.Value[201] > 0);
 
-            response = await container.ReadItemAsync<ToDoActivity>(testItem.id, new PartitionKey(testItem.pk));
+            response = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
             trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
             summaryDiagnostics = new SummaryDiagnostics(trace);
 
-            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.SuccessfullCalls, 0);
-            Assert.IsTrue(summaryDiagnostics.GatewayRequestsSummary.SuccessfullCalls > 0);
-            Assert.IsTrue(summaryDiagnostics.MaxGatewayRequestTimeInMs > 0);
+            Assert.IsFalse(summaryDiagnostics.DirectRequestsSummary.IsValueCreated);
+            Assert.IsTrue(summaryDiagnostics.GatewayRequestsSummary.Value[200] > 0);
         }
 
         [TestMethod]
@@ -83,6 +83,7 @@
         {
             Container container = (await this.Database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk", throughput: 20000)).Container;
 
+            // cross partition query
             FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>($"select * from c where c.id='{Guid.NewGuid()}'");
             List<ITrace> traces = new List<ITrace>();
             while (feedIterator.HasMoreResults)
@@ -92,8 +93,42 @@
             }
 
             SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(TraceJoiner.JoinTraces(traces));
-            Assert.IsTrue(summaryDiagnostics.DirectRequestsSummary.SuccessfullCalls > 1);
-            Assert.IsTrue(summaryDiagnostics.MaxServiceProcessingTimeInMs > 0);
+            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value.Keys.Count, 1);
+            Assert.IsTrue(summaryDiagnostics.DirectRequestsSummary.Value[(200, 0)] > 1);
+            Assert.AreEqual(summaryDiagnostics.AllRegionsContacted.Value.Count, 1);
+        }
+
+        [TestMethod]
+        public async Task DirectPointOperationsWithTransportErrors()
+        {
+            int failed = 0;
+            Container withTransportErrors = TransportClientHelper.GetContainerWithIntercepter(
+                 this.Database.Id,
+                 this.Container.Id,
+                 (uri, resourceOperation, request) =>
+                 {
+                     if (request.ResourceType == ResourceType.Document && failed < 3)
+                     {
+                         failed++;
+                         TransportException transportException = new TransportException(
+                                        errorCode: TransportErrorCode.Unknown,
+                                        innerException: null,
+                                        activityId: Guid.Empty,
+                                        requestUri: uri,
+                                        sourceDescription: null,
+                                        userPayload: true,
+                                        payloadSent: false);
+                         throw Documents.Rntbd.TransportExceptions.GetGoneException(uri, Guid.NewGuid());
+                     }
+                 },
+                 useGatewayMode: false);
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            ItemResponse<ToDoActivity> response = await withTransportErrors.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
+            ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
+            SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
+            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value.Keys.Count, 2);
+            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value[(410, 0)], 3);
+            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value[(201, 0)], 1);
         }
     }
 }

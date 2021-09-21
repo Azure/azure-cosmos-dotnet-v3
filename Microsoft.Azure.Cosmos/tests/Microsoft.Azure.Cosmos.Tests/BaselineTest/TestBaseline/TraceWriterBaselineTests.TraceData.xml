@@ -36,9 +36,7 @@
         )
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {
-    "TotalTimeMs": 0
-  },
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -103,9 +101,7 @@
         )
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {
-    "TotalTimeMs": 0
-  },
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -186,9 +182,7 @@
         )
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {
-    "TotalTimeMs": 0
-  },
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -314,11 +308,10 @@
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {
-    "TotalTimeMs": 0,
-    "Direct": {
-      "OtherStatusCodes": 1
+    "DirectCalls": {
+      "(0, 0)": 1
     },
-    "MaxBELatencyMs": 4.2
+    "RegionsContacted": 2
   },
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
@@ -518,11 +511,10 @@
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {
-    "TotalTimeMs": 0,
-    "Direct": {
-      "OtherStatusCodes": 1
+    "DirectCalls": {
+      "(0, 0)": 1
     },
-    "MaxBELatencyMs": 0
+    "RegionsContacted": 1
   },
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
@@ -693,12 +685,10 @@
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {
-    "TotalTimeMs": 0,
-    "Gateway": {
-      "SuccessfullCalls": 1,
-      "OtherStatusCodes": 1
-    },
-    "MaxGatewayRequestTimeInMs": 315537897600000
+    "GatewayCalls": {
+      "200": 1,
+      "0": 1
+    }
   },
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
@@ -780,9 +770,7 @@
         )
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {
-    "TotalTimeMs": 0
-  },
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {

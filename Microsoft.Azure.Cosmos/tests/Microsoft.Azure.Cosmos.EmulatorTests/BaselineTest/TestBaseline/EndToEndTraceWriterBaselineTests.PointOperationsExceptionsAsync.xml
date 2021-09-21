@@ -65,9 +65,7 @@
     └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {
-    "TotalTimeMs": 0
-  },
+  "Summary": {},
   "name": "CreateItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -324,9 +322,7 @@
     └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {
-    "TotalTimeMs": 0
-  },
+  "Summary": {},
   "name": "CreateItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -737,9 +733,7 @@
     └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {
-    "TotalTimeMs": 0
-  },
+  "Summary": {},
   "name": "CreateItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -1041,9 +1035,7 @@
     └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {
-    "TotalTimeMs": 0
-  },
+  "Summary": {},
   "name": "CreateItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -1394,9 +1386,7 @@
     └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {
-    "TotalTimeMs": 0
-  },
+  "Summary": {},
   "name": "CreateItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {

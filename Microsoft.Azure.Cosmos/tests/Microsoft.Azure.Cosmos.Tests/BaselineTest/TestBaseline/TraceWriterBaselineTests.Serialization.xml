@@ -14,9 +14,7 @@
 └── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {
-    "TotalTimeMs": 0
-  },
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -77,9 +75,7 @@
         )
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {
-    "TotalTimeMs": 0
-  },
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -114,9 +110,7 @@
     └── Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {
-    "TotalTimeMs": 0
-  },
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -194,9 +188,7 @@
             )
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {
-    "TotalTimeMs": 0
-  },
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -249,9 +241,7 @@
     └── Child2(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {
-    "TotalTimeMs": 0
-  },
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -378,9 +368,7 @@
             )
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {
-    "TotalTimeMs": 0
-  },
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -492,9 +480,7 @@
         └── Child2Child3(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
-  "Summary": {
-    "TotalTimeMs": 0
-  },
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
