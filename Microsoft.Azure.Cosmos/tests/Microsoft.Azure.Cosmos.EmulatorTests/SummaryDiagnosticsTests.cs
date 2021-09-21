@@ -110,14 +110,6 @@
                      if (request.ResourceType == ResourceType.Document && failed < 3)
                      {
                          failed++;
-                         TransportException transportException = new TransportException(
-                                        errorCode: TransportErrorCode.Unknown,
-                                        innerException: null,
-                                        activityId: Guid.Empty,
-                                        requestUri: uri,
-                                        sourceDescription: null,
-                                        userPayload: true,
-                                        payloadSent: false);
                          throw Documents.Rntbd.TransportExceptions.GetGoneException(uri, Guid.NewGuid());
                      }
                  },
