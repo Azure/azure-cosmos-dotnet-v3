@@ -65,12 +65,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             DefaultTrace.TraceInformation("Initiating telemetry with background task.");
 
-            ClientTelemetry clientTelemetry = new ClientTelemetry(documentClient,
-            userAgent,
-            connectionMode,
-            authorizationTokenProvider,
-            diagnosticsHelper,
-            preferredRegions);
+            ClientTelemetry clientTelemetry = new ClientTelemetry(
+                documentClient: documentClient,
+                userAgent: userAgent,
+                connectionMode: connectionMode,
+                authorizationTokenProvider: authorizationTokenProvider,
+                diagnosticsHelper: diagnosticsHelper,
+                preferredRegions: preferredRegions);
 
             clientTelemetry.StartObserverTask();
 
@@ -283,6 +284,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return;
             }
 
+            if (this.httpClient == null)
+            {
+                DefaultTrace.TraceError("Telemetry is enabled but httpClient is not available");
+                return;
+            }
+             
             try
             {
                 DefaultTrace.TraceInformation("Sending Telemetry Data to " + endpointUrl.AbsoluteUri);

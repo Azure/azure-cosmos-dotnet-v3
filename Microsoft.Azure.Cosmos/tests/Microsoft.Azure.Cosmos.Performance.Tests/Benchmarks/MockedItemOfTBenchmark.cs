@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        public async Task QuerySinglePage()
+        public async Task QuerySinglePageSinglePartition()
         {
             using FeedIterator<ToDoActivity> resultIterator = this.BenchmarkHelper.TestContainer.GetItemQueryIterator<ToDoActivity>(
                 "select * from T",
@@ -149,5 +149,33 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
             }
         }
+
+        public async Task QueryMultiplePageSinglePartition()
+        {
+            using FeedIterator<ToDoActivity> resultIterator = this.BenchmarkHelper.TestContainer.GetItemQueryIterator<ToDoActivity>(
+                "select * from T",
+                requestOptions: new QueryRequestOptions()
+                {
+                    MaxItemCount = 1,
+                    PartitionKey = new PartitionKey("dummyValue"),
+                });
+
+            while (resultIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> response = await resultIterator.ReadNextAsync();
+
+                if (response.StatusCode != HttpStatusCode.OK)
+                {
+                    throw new Exception();
+                }
+
+                this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
+            }
+        }
+
+        /*public async Task QuerySinglePageCrossPartition()
+        {
+
+        }*/
     }
 }

@@ -24,6 +24,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public Task ReadFeed();
 
-        public Task QuerySinglePage();
+        public Task QuerySinglePageSinglePartition();
+
+        public Task QueryMultiplePageSinglePartition();
+/*
+        public Task QuerySinglePageCrossPartition();*/
     }
 }

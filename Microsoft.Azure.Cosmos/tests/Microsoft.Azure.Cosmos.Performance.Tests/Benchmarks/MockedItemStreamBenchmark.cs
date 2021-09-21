@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Net;
     using System.Threading.Tasks;
@@ -147,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        public async Task QuerySinglePage()
+        public async Task QuerySinglePageSinglePartition()
         {
             using FeedIterator streamIterator = this.benchmarkHelper.TestContainer.GetItemQueryStreamIterator(
                 "select * from T",
@@ -164,5 +165,33 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 }
             }
         }
+
+        public async Task QueryMultiplePageSinglePartition()
+        {
+            using FeedIterator streamIterator = this.benchmarkHelper.TestContainer.GetItemQueryStreamIterator(
+              "select * from T",
+              requestOptions: new QueryRequestOptions()
+              {
+                  MaxItemCount = 1,
+                  PartitionKey = new PartitionKey("dummyValue"),
+              });
+
+            while (streamIterator.HasMoreResults)
+            {
+                ResponseMessage response = await streamIterator.ReadNextAsync();
+
+                CosmosJsonDotNetSerializer serialize = new CosmosJsonDotNetSerializer();
+                if (response.StatusCode != HttpStatusCode.OK)
+                {
+                    throw new Exception();
+                }
+            }
+        }
+
+/*        public async Task QuerySinglePageCrossPartition()
+        {
+
+        }*/
+
     }
 }

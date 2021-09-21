@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
         {
             using (content)
             {
-                if (content != null
+                if (content != null && content != Stream.Null
                && content.CanRead)
                 {
                     using (StreamReader streamReader = new StreamReader(content))
