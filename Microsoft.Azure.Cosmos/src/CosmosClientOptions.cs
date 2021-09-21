@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
         /// the SDK auto-selects fallback regions based on proximity from the given region. When
         /// this property is not specified at all, the SDK uses the write region
         /// as the preferred region for all operations. See also 
-        /// <seealso href="https://docs.microsoft.com/en-us/azure/cosmos-db/sql/troubleshoot-sdk-availability">Diagnose
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-sdk-availability">Diagnose
         /// and troubleshoot the availability of Cosmos SDKs</seealso> for more details.
         /// This configuration is an alternative to <see cref="ApplicationPreferredRegions"/>, either one can be set but not both.
         /// </remarks>
