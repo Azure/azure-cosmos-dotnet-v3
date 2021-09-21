@@ -12,8 +12,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure.Core;
-    using global::Azure.Identity;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.Azure.Cosmos.Scripts;

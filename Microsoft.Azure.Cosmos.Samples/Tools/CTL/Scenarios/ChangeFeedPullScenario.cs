@@ -13,16 +13,18 @@ namespace CosmosCTL
     using App.Metrics;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
+    using App.Metrics.Gauge;
 
     internal class ChangeFeedPullScenario : ICTLScenario
     {
-        private InitializationResult initializationResult;
+        private Utils.InitializationResult initializationResult;
+
         public async Task InitializeAsync(
             CTLConfig config,
             CosmosClient cosmosClient,
             ILogger logger)
         {
-            this.initializationResult = await CreateDatabaseAndContainerAsync(config, cosmosClient);
+            this.initializationResult = await Utils.CreateDatabaseAndContainerAsync(config, cosmosClient);
 
             if (this.initializationResult.CreatedDatabase)
             {
@@ -37,7 +39,8 @@ namespace CosmosCTL
             if (config.PreCreatedDocuments > 0)
             {
                 logger.LogInformation("Pre-populating {0} documents", config.PreCreatedDocuments);
-                await Utils.PopulateDocumentsAsync(config, logger, new List<Container>() { cosmosClient.GetContainer(config.Database, config.Collection) });
+                IReadOnlyDictionary<string, IReadOnlyList<Dictionary<string, string>>> insertedDocuments = await Utils.PopulateDocumentsAsync(config, logger, new List<Container>() { cosmosClient.GetContainer(config.Database, config.Collection) });
+                this.initializationResult.InsertedDocuments = insertedDocuments[config.Collection].Count;
             }
         }
 
@@ -51,85 +54,73 @@ namespace CosmosCTL
         {
             Stopwatch stopWatch = Stopwatch.StartNew();
 
-            while (stopWatch.Elapsed <= config.RunningTimeDurationAsTimespan)
+            GaugeOptions documentGauge= new GaugeOptions { Name = "#Documents received", Context = loggingContextIdentifier };
+            Container container = cosmosClient.GetContainer(config.Database, config.Collection);
+
+            try
             {
-                int documentTotal = 0;
-                string continuation = null;
-                Container container = cosmosClient.GetContainer(config.Database, config.Collection);
-                FeedIterator<Dictionary<string, string>> changeFeedPull = container.GetChangeFeedIterator<Dictionary<string, string>>
-                                                                                (ChangeFeedStartFrom.Beginning(), ChangeFeedMode.Incremental);
-                try
+                while (stopWatch.Elapsed <= config.RunningTimeDurationAsTimespan)
                 {
-                    while (changeFeedPull.HasMoreResults)
+                    long documentTotal = 0;
+                    string continuation = null;
+                    using FeedIterator<Dictionary<string, string>> changeFeedPull
+                        = container.GetChangeFeedIterator<Dictionary<string, string>>(ChangeFeedStartFrom.Beginning(), ChangeFeedMode.Incremental);
+
+                    try
                     {
-                        FeedResponse<Dictionary<string, string>> response = await changeFeedPull.ReadNextAsync();
-                        documentTotal += response.Count;
-                        continuation = response.ContinuationToken;
-                        if (response.StatusCode == HttpStatusCode.NotModified)
+                        while (changeFeedPull.HasMoreResults)
                         {
-                            break;
+                            FeedResponse<Dictionary<string, string>> response = await changeFeedPull.ReadNextAsync();
+                            documentTotal += response.Count;
+                            continuation = response.ContinuationToken;
+                            if (response.StatusCode == HttpStatusCode.NotModified)
+                            {
+                                break;
+                            }
+                        }
+
+                        metrics.Measure.Gauge.SetValue(documentGauge, documentTotal);
+
+                        if (config.PreCreatedDocuments > 0)
+                        {
+                            if (this.initializationResult.InsertedDocuments == documentTotal)
+                            {
+                                logger.LogInformation($"Success: The number of new documents match the number of pre-created documents: {this.initializationResult.InsertedDocuments}");
+                            }
+                            else
+                            {
+                                logger.LogError($"The prepopulated documents and the change feed documents don't match.  Preconfigured Docs = {this.initializationResult.InsertedDocuments}, Change feed Documents = {documentTotal}.{Environment.NewLine}{continuation}");
+                            }
                         }
                     }
-
-                    if (config.PreCreatedDocuments == documentTotal)
+                    catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                     {
-                        logger.LogInformation($"Success: The number of new documents match the number of pre-created documents: {config.PreCreatedDocuments}");
+                        //Logging 429s is not relevant
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        logger.LogError($"The prepopulated documents and the new documents don't match.  Preconfigured Docs = {config.PreCreatedDocuments}, New Documents = {documentTotal}");
-                        logger.LogError(continuation);
+                        metrics.Measure.Gauge.SetValue(documentGauge, documentTotal);
+                        logger.LogError(ex, "Failure while looping through change feed documents");
                     }
                 }
-                catch (Exception ex)
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failure during Change Feed Pull scenario");
+            }
+            finally
+            {
+                stopWatch.Stop();
+                if (this.initializationResult.CreatedContainer)
                 {
-                    logger.LogError(ex, "Failure while looping through new documents");
+                    await cosmosClient.GetContainer(config.Database, config.Collection).DeleteContainerStreamAsync();
+                }
+
+                if (this.initializationResult.CreatedDatabase)
+                {
+                    await cosmosClient.GetDatabase(config.Database).DeleteStreamAsync();
                 }
             }
-
-            stopWatch.Stop();
-        }
-        private static async Task<InitializationResult> CreateDatabaseAndContainerAsync(
-            CTLConfig config,
-            CosmosClient cosmosClient)
-        {
-            InitializationResult result = new InitializationResult()
-            {
-                CreatedDatabase = false,
-                CreatedContainer = false
-            };
-
-            Database database;
-
-            try
-            {
-                database = await cosmosClient.GetDatabase(config.Database).ReadAsync();
-            }
-            catch (CosmosException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
-            {
-                DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(config.Database, config.Throughput);
-                result.CreatedDatabase = true;
-                database = databaseResponse.Database;
-            }
-
-            Container container;
-            
-            try
-            {
-                container = await database.GetContainer(config.Collection).ReadContainerAsync();
-            }
-            catch (CosmosException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
-            {
-                await database.CreateContainerAsync(config.Collection, $"/{config.CollectionPartitionKey}");
-                result.CreatedContainer = true;
-            }
-
-            return result;
-        }
-        private struct InitializationResult
-        {
-            public bool CreatedDatabase;
-            public bool CreatedContainer;
         }
     }
 }
