@@ -124,8 +124,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Delete an Item
             await container.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
 
+            IDictionary<string, int> expectedRecordCountInOperation = new Dictionary<string, int>
+            {
+                { Documents.OperationType.Create.ToString(), 1},
+                { Documents.OperationType.Upsert.ToString(), 1},
+                { Documents.OperationType.Read.ToString(), 1},
+                { Documents.OperationType.Replace.ToString(), 1},
+                { Documents.OperationType.Patch.ToString(), 1},
+                { Documents.OperationType.Delete.ToString(), 1}
+            };
+
             await this.WaitAndAssert(
-                expectedOperationCount: 12);
+                expectedOperationCount: 12,
+                operationRecordCountMap: expectedRecordCountInOperation);
         }
 
         [TestMethod]
@@ -151,8 +162,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // Read an Item
                 await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
             }
+
+            IDictionary<string, int> expectedRecordCountInOperation = new Dictionary<string, int>
+            {
+                { Documents.OperationType.Read.ToString(), 50},
+                { Documents.OperationType.Create.ToString(), 1}
+            };
+
             await this.WaitAndAssert(
-                expectedOperationCount: 4); // 2 (read, requetLatency + requestCharge) + 2 (create, requestLatency + requestCharge)
+                expectedOperationCount: 4,
+                operationRecordCountMap: expectedRecordCountInOperation); // 2 (read, requetLatency + requestCharge) + 2 (create, requestLatency + requestCharge)
         }
 
 
@@ -175,8 +194,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(message);
             }
 
+
+            IDictionary<string, int> expectedRecordCountInOperation = new Dictionary<string, int>
+            {
+                { Documents.OperationType.Read.ToString(), 1}
+            };
+
             await this.WaitAndAssert(
-                expectedOperationCount: 2);
+                expectedOperationCount: 2,
+                operationRecordCountMap: expectedRecordCountInOperation);
         }
 
         [TestMethod]
@@ -199,8 +225,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(message);
             }
 
+            IDictionary<string, int> expectedRecordCountInOperation = new Dictionary<string, int>
+            {
+                { Documents.OperationType.Read.ToString(), 1}
+            };
+
             await this.WaitAndAssert(
-                expectedOperationCount: 2);
+                expectedOperationCount: 2,
+                operationRecordCountMap: expectedRecordCountInOperation);
         }
 
         [TestMethod]
@@ -237,8 +269,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Delete an Item
             await container.DeleteItemStreamAsync(testItem.id, new Cosmos.PartitionKey(testItem.id));
 
+            IDictionary<string, int> expectedRecordCountInOperation = new Dictionary<string, int>
+            {
+                { Documents.OperationType.Create.ToString(), 1},
+                { Documents.OperationType.Upsert.ToString(), 1},
+                { Documents.OperationType.Read.ToString(), 1},
+                { Documents.OperationType.Replace.ToString(), 1},
+                { Documents.OperationType.Patch.ToString(), 1},
+                { Documents.OperationType.Delete.ToString(), 1}
+            };
+
             await this.WaitAndAssert(
-                expectedOperationCount: 12);
+                expectedOperationCount: 12,
+                operationRecordCountMap: expectedRecordCountInOperation);
         }
 
         [TestMethod]
@@ -258,20 +301,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<Task<TransactionalBatchOperationResult>> tasks = new List<Task<TransactionalBatchOperationResult>>();
                 for (int i = 0; i < 10; i++)
                 {
-                    tasks.Add(executor.AddAsync(CreateItem(i.ToString()), NoOpTrace.Singleton, default));
+                    tasks.Add(executor.AddAsync(ClientTelemetryTests.CreateItem(i.ToString()), NoOpTrace.Singleton, default));
                 }
 
                 await Task.WhenAll(tasks);
             }
 
+
+            IDictionary<string, int> expectedRecordCountInOperation = new Dictionary<string, int>
+            {
+                { Documents.OperationType.Batch.ToString(), 1}
+            };
+
             await this.WaitAndAssert(
-                expectedOperationCount: 2);
+                expectedOperationCount: 2,
+                operationRecordCountMap: expectedRecordCountInOperation);
         }
 
         [TestMethod]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
-        public async Task QueryOperationTest(ConnectionMode mode)
+        public async Task QueryOperationSinglePatitionTest(ConnectionMode mode)
         {
             Container container = await this.GetContainer(mode);
 
@@ -295,14 +345,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
             }
+
+            IDictionary<string, int> expectedRecordCountInOperation = new Dictionary<string, int>
+            {
+                { Documents.OperationType.Query.ToString(), 1},
+                { Documents.OperationType.Create.ToString(), 1}
+            };
+
             await this.WaitAndAssert(
-                expectedOperationCount: 4);
+                expectedOperationCount: 4,
+                operationRecordCountMap: expectedRecordCountInOperation);
         }
 
         [TestMethod]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
-        public async Task QueryMultiPageOperationTest(ConnectionMode mode)
+        public async Task QueryMultiPageSinglePatitionOperationTest(ConnectionMode mode)
         {
             Container container = await this.GetContainer(mode);
 
@@ -334,11 +392,57 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
             }
+
+            IDictionary<string, int> expectedRecordCountInOperation = new Dictionary<string, int>
+            {
+                { Documents.OperationType.Query.ToString(), 3},
+                { Documents.OperationType.Create.ToString(), 1}
+            };
+
             await this.WaitAndAssert(
-                expectedOperationCount: 4);
+                expectedOperationCount: 4,
+                operationRecordCountMap: expectedRecordCountInOperation);
         }
 
-        private async Task WaitAndAssert(int expectedOperationCount)
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public async Task QueryOperationMultiplePatitionTest(ConnectionMode mode)
+        {
+            Container container = await this.GetContainer(mode);
+
+            await ToDoActivity.CreateRandomItems(
+                container: container, 
+                pkCount: 4, 
+                perPKItemCount: 5);
+            
+            string sqlQueryText = "SELECT * FROM c";
+
+            QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
+            FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(queryDefinition);
+
+            List<object> families = new List<object>();
+            while (queryResultSetIterator.HasMoreResults)
+            {
+                FeedResponse<object> currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                foreach (object family in currentResultSet)
+                {
+                    families.Add(family);
+                }
+            }
+
+            IDictionary<string, int> expectedRecordCountInOperation = new Dictionary<string, int>
+            {
+                { Documents.OperationType.Query.ToString(), 1},
+                { Documents.OperationType.Create.ToString(), 20}
+            };
+
+            await this.WaitAndAssert(
+                expectedOperationCount: 4,
+                operationRecordCountMap: expectedRecordCountInOperation);
+        }
+
+        private async Task WaitAndAssert(int expectedOperationCount, IDictionary<string, int> operationRecordCountMap)
         {
             Assert.IsNotNull(this.actualInfo, "Telemetry Information not available");
 
@@ -398,11 +502,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(operation.Consistency, "Consistency is null");
                 Assert.AreEqual(this.accountProperties.Consistency.DefaultConsistencyLevel.ToString().ToUpper(), operation.Consistency, $"Consistency is not {this.accountProperties.Consistency.DefaultConsistencyLevel.ToString().ToUpper()}");
 
+                operationRecordCountMap.TryGetValue(operation.Operation, out int recordCount);
+
                 Assert.IsNotNull(operation.MetricInfo, "MetricInfo is null");
                 Assert.IsNotNull(operation.MetricInfo.MetricsName, "MetricsName is null");
                 Assert.IsNotNull(operation.MetricInfo.UnitName, "UnitName is null");
                 Assert.IsNotNull(operation.MetricInfo.Percentiles, "Percentiles is null");
                 Assert.IsTrue(operation.MetricInfo.Count > 0, "MetricInfo Count is not greater than 0");
+                Assert.AreEqual(recordCount, operation.MetricInfo.Count, "Record Count not matched");
+
                 Assert.IsTrue(operation.MetricInfo.Mean >= 0, "MetricInfo Mean is not greater than or equal to 0");
                 Assert.IsTrue(operation.MetricInfo.Max >= 0, "MetricInfo Max is not greater than or equal to 0");
                 Assert.IsTrue(operation.MetricInfo.Min >= 0, "MetricInfo Min is not greater than or equal to 0");
@@ -425,7 +533,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static ItemBatchOperation CreateItem(string itemId)
         {
             var testItem = new { id = itemId, Status = itemId };
-            return new ItemBatchOperation(Documents.OperationType.Create, 0, new Cosmos.PartitionKey(itemId), itemId, TestCommon.SerializerCore.ToStream(testItem));
+            return new ItemBatchOperation(
+                operationType: Documents.OperationType.Create, 
+                operationIndex: 0, 
+                partitionKey: new Cosmos.PartitionKey(itemId), 
+                id: itemId, 
+                resourceStream: TestCommon.SerializerCore.ToStream(testItem));
         }
 
         private async Task<Container> GetContainer(ConnectionMode mode)
@@ -442,6 +555,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             this.accountProperties = await this.cosmosClient.ReadAccountAsync();
             this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+
             return await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
         }
 

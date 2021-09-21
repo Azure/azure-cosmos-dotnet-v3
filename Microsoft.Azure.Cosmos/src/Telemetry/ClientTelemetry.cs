@@ -40,8 +40,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly DiagnosticsHandlerHelper diagnosticsHelper;
         private readonly CancellationTokenSource cancellationTokenSource;
 
-        private Cosmos.ConsistencyLevel? clientOrAccountLevelConsistency;
-
         private Task telemetryTask;
 
         private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
@@ -199,17 +197,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
 
             string regionsContacted = this.GetContactedRegions(cosmosDiagnostics);
-
-            // If consistency level is not mentioned in request then take the sdk/account level
-            if (!consistencyLevel.HasValue)
-            {
-                if (!this.clientOrAccountLevelConsistency.HasValue)
-                {
-                    // cache account level consistency information
-                    this.clientOrAccountLevelConsistency = (Cosmos.ConsistencyLevel)this.documentClient.ConsistencyLevel;
-                }
-                consistencyLevel = this.clientOrAccountLevelConsistency;
-            }
 
             // Recording Request Latency and Request Charge
             OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),

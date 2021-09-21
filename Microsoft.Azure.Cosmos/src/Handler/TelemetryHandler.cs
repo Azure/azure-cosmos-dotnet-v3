@@ -14,10 +14,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
     internal class TelemetryHandler : RequestHandler
     {
         private readonly ClientTelemetry telemetry;
+        private readonly CosmosClient cosmosClient;
 
-        public TelemetryHandler(ClientTelemetry telemetry)
+        public TelemetryHandler(CosmosClient client, ClientTelemetry telemetry)
         {
             this.telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
+            this.cosmosClient = client ?? throw new ArgumentNullException(nameof(client));
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -29,6 +31,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 try
                 {
+                    ConsistencyLevel? consistencyLevel = await this.GetConsistencyLevelAsync(request);
+
                     this.telemetry
                         .Collect(
                                 cosmosDiagnostics: response.Diagnostics,
@@ -38,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 databaseId: request.DatabaseId,
                                 operationType: request.OperationType,
                                 resourceType: request.ResourceType,
-                                consistencyLevel: this.GetConsistencyLevel(request),
+                                consistencyLevel: consistencyLevel,
                                 requestCharge: response.Headers.RequestCharge);
                 }
                 catch (Exception ex)
@@ -54,9 +58,22 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return ClientTelemetryOptions.AllowedResourceTypes.Equals(request.ResourceType);
         }
 
-        private ConsistencyLevel? GetConsistencyLevel(RequestMessage request)
+        private async Task<ConsistencyLevel?> GetConsistencyLevelAsync(RequestMessage request)
         {
-            return request.RequestOptions?.BaseConsistencyLevel;   
+            // Request level Consistency
+           if (request.RequestOptions != null && request.RequestOptions.BaseConsistencyLevel.HasValue)
+           {
+                return request.RequestOptions.BaseConsistencyLevel;
+           }
+
+           // Client level Consistency
+           if (this.cosmosClient.ClientOptions != null && this.cosmosClient.ClientOptions.ConsistencyLevel.HasValue)
+           {
+                return this.cosmosClient.ClientOptions.ConsistencyLevel;
+           }
+           
+           // Account level Consistency
+           return await this.cosmosClient.GetAccountConsistencyLevelAsync();   
         }
 
         /// <summary>
