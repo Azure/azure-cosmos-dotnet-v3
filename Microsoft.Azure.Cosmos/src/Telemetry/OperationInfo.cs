@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         [JsonProperty(PropertyName = "statusCode")]
         public int? StatusCode { get; }
 
-        [JsonProperty(PropertyName = "responseSizeInBytes")]
+        [JsonIgnore]
         public long? ResponseSizeInBytes { get; }
 
         [JsonProperty(PropertyName = "metricInfo")]

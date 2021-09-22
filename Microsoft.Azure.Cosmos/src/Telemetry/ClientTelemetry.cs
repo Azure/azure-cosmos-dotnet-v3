@@ -328,10 +328,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     INameValueCollection headersCollection = new NameValueCollectionWrapperFactory().CreateNewNameValueCollection();
                     await this.tokenProvider.AddAuthorizationHeaderAsync(
-                            headersCollection,
-                            endpointUrl,
-                            "POST",
-                            AuthorizationTokenType.PrimaryMasterKey);
+                            headersCollection: headersCollection,
+                            requestAddress: endpointUrl,
+                            verb: "POST",
+                            tokenType: AuthorizationTokenType.PrimaryMasterKey);
 
                     foreach (string key in headersCollection.AllKeys())
                     {
