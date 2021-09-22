@@ -40,12 +40,46 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ValidateRequestOptions()
+        {
+            async Task ExecuteAndValidateCreateItemAsync(int i)
+            {
+                try
+                {
+                    await CosmosItemBulkTests.ExecuteCreateStreamAsync(
+                        this.container,
+                        CosmosItemBulkTests.CreateItem(i.ToString()),
+                           new ItemRequestOptions()
+                           {
+                               Properties = new Dictionary<string, object>() { { "test", "test" } },
+                               DedicatedGatewayRequestOptions = new DedicatedGatewayRequestOptions { MaxIntegratedCacheStaleness = TimeSpan.FromMinutes(3) },
+                               SessionToken = Guid.NewGuid().ToString(),
+                               PreTriggers = new List<string>() { "preTrigger" },
+                               PostTriggers = new List<string>() { "postTrigger" }
+                           });
+                    Assert.Fail("Request should have failed");
+                }
+                catch (InvalidOperationException)
+                {
+                }
+            }
+
+            List<Task> tasks = new List<Task>();
+            for (int i = 0; i < 100; i++)
+            {
+                tasks.Add(ExecuteAndValidateCreateItemAsync(i));
+            }
+
+            await Task.WhenAll(tasks);
+        }
+
+        [TestMethod]
         public async Task CreateItemStream_WithBulk()
         {
             List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
             for (int i = 0; i < 100; i++)
             {
-                tasks.Add(ExecuteCreateStreamAsync(this.container, CreateItem(i.ToString())));
+                tasks.Add(CosmosItemBulkTests.ExecuteCreateStreamAsync(this.container, CosmosItemBulkTests.CreateItem(i.ToString())));
             }
 
             await Task.WhenAll(tasks);
@@ -56,6 +90,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ResponseMessage result = await task;
                 Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
                 Assert.IsTrue(result.Headers.RequestCharge > 0);
+                Assert.IsNotNull(result.Headers.Session);
+                Assert.IsNotNull(result.Headers.ActivityId);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 ToDoActivity document = TestCommon.SerializerCore.FromStream<ToDoActivity>(result.Content);
                 Assert.AreEqual(i.ToString(), document.id);
@@ -68,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<ItemResponse<ToDoActivity>>> tasks = new List<Task<ItemResponse<ToDoActivity>>>();
             for (int i = 0; i < 100; i++)
             {
-                tasks.Add(ExecuteCreateAsync(this.container, CreateItem(i.ToString())));
+                tasks.Add(CosmosItemBulkTests.ExecuteCreateAsync(this.container, CosmosItemBulkTests.CreateItem(i.ToString())));
             }
 
             await Task.WhenAll(tasks);
@@ -78,6 +114,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Task<ItemResponse<ToDoActivity>> task = tasks[i];
                 ItemResponse<ToDoActivity> result = await task;
                 Assert.IsTrue(result.Headers.RequestCharge > 0);
+                Assert.IsNotNull(result.Headers.Session);
+                Assert.IsNotNull(result.Headers.ActivityId);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
             }
@@ -89,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<ItemResponse<JObject>>> tasks = new List<Task<ItemResponse<JObject>>>();
             for (int i = 0; i < 100; i++)
             {
-                tasks.Add(this.container.CreateItemAsync(CreateJObjectWithoutPK(i.ToString())));
+                tasks.Add(this.container.CreateItemAsync(CosmosItemBulkTests.CreateJObjectWithoutPK(i.ToString())));
             }
 
             await Task.WhenAll(tasks);
@@ -99,6 +137,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Task<ItemResponse<JObject>> task = tasks[i];
                 ItemResponse<JObject> result = await task;
                 Assert.IsTrue(result.Headers.RequestCharge > 0);
+                Assert.IsNotNull(result.Headers.Session);
+                Assert.IsNotNull(result.Headers.ActivityId);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
             }
@@ -110,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
             for (int i = 0; i < 100; i++)
             {
-                tasks.Add(ExecuteUpsertStreamAsync(this.container, CreateItem(i.ToString())));
+                tasks.Add(CosmosItemBulkTests.ExecuteUpsertStreamAsync(this.container, CosmosItemBulkTests.CreateItem(i.ToString())));
             }
 
             await Task.WhenAll(tasks);
@@ -121,6 +161,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ResponseMessage result = await task;
                 Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
                 Assert.IsTrue(result.Headers.RequestCharge > 0);
+                Assert.IsNotNull(result.Headers.Session);
+                Assert.IsNotNull(result.Headers.ActivityId);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 ToDoActivity document = TestCommon.SerializerCore.FromStream<ToDoActivity>(result.Content);
                 Assert.AreEqual(i.ToString(), document.id);
@@ -133,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<ItemResponse<ToDoActivity>>> tasks = new List<Task<ItemResponse<ToDoActivity>>>();
             for (int i = 0; i < 100; i++)
             {
-                tasks.Add(ExecuteUpsertAsync(this.container, CreateItem(i.ToString())));
+                tasks.Add(CosmosItemBulkTests.ExecuteUpsertAsync(this.container, CosmosItemBulkTests.CreateItem(i.ToString())));
             }
 
             await Task.WhenAll(tasks);
@@ -143,6 +185,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Task<ItemResponse<ToDoActivity>> task = tasks[i];
                 ItemResponse<ToDoActivity> result = await task;
                 Assert.IsTrue(result.Headers.RequestCharge > 0);
+                Assert.IsNotNull(result.Headers.Session);
+                Assert.IsNotNull(result.Headers.ActivityId);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
             }
@@ -156,9 +200,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
             for (int i = 0; i < 100; i++)
             {
-                ToDoActivity createdDocument = CreateItem(i.ToString());
+                ToDoActivity createdDocument = CosmosItemBulkTests.CreateItem(i.ToString());
                 createdDocuments.Add(createdDocument);
-                tasks.Add(ExecuteCreateStreamAsync(this.container, createdDocument));
+                tasks.Add(CosmosItemBulkTests.ExecuteCreateStreamAsync(this.container, createdDocument));
             }
 
             await Task.WhenAll(tasks);
@@ -167,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Delete the items
             foreach (ToDoActivity createdDocument in createdDocuments)
             {
-                deleteTasks.Add(ExecuteDeleteStreamAsync(this.container, createdDocument));
+                deleteTasks.Add(CosmosItemBulkTests.ExecuteDeleteStreamAsync(this.container, createdDocument));
             }
 
             await Task.WhenAll(deleteTasks);
@@ -176,6 +220,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Task<ResponseMessage> task = deleteTasks[i];
                 ResponseMessage result = await task;
                 Assert.IsTrue(result.Headers.RequestCharge > 0);
+                Assert.IsNotNull(result.Headers.Session);
+                Assert.IsNotNull(result.Headers.ActivityId);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.NoContent, result.StatusCode);
             }
@@ -189,9 +235,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<ItemResponse<ToDoActivity>>> tasks = new List<Task<ItemResponse<ToDoActivity>>>();
             for (int i = 0; i < 100; i++)
             {
-                ToDoActivity createdDocument = CreateItem(i.ToString());
+                ToDoActivity createdDocument = CosmosItemBulkTests.CreateItem(i.ToString());
                 createdDocuments.Add(createdDocument);
-                tasks.Add(ExecuteCreateAsync(this.container, createdDocument));
+                tasks.Add(CosmosItemBulkTests.ExecuteCreateAsync(this.container, createdDocument));
             }
 
             await Task.WhenAll(tasks);
@@ -200,7 +246,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Delete the items
             foreach (ToDoActivity createdDocument in createdDocuments)
             {
-                deleteTasks.Add(ExecuteDeleteAsync(this.container, createdDocument));
+                deleteTasks.Add(CosmosItemBulkTests.ExecuteDeleteAsync(this.container, createdDocument));
             }
 
             await Task.WhenAll(deleteTasks);
@@ -209,6 +255,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Task<ItemResponse<ToDoActivity>> task = deleteTasks[i];
                 ItemResponse<ToDoActivity> result = await task;
                 Assert.IsTrue(result.Headers.RequestCharge > 0);
+                Assert.IsNotNull(result.Headers.Session);
+                Assert.IsNotNull(result.Headers.ActivityId);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.NoContent, result.StatusCode);
             }
@@ -222,9 +270,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
             for (int i = 0; i < 100; i++)
             {
-                ToDoActivity createdDocument = CreateItem(i.ToString());
+                ToDoActivity createdDocument = CosmosItemBulkTests.CreateItem(i.ToString());
                 createdDocuments.Add(createdDocument);
-                tasks.Add(ExecuteCreateStreamAsync(this.container, createdDocument));
+                tasks.Add(CosmosItemBulkTests.ExecuteCreateStreamAsync(this.container, createdDocument));
             }
 
             await Task.WhenAll(tasks);
@@ -233,7 +281,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Read the items
             foreach (ToDoActivity createdDocument in createdDocuments)
             {
-                readTasks.Add(ExecuteReadStreamAsync(this.container, createdDocument));
+                readTasks.Add(CosmosItemBulkTests.ExecuteReadStreamAsync(this.container, createdDocument));
             }
 
             await Task.WhenAll(readTasks);
@@ -242,6 +290,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Task<ResponseMessage> task = readTasks[i];
                 ResponseMessage result = await task;
                 Assert.IsTrue(result.Headers.RequestCharge > 0);
+                Assert.IsNotNull(result.Headers.Session);
+                Assert.IsNotNull(result.Headers.ActivityId);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
@@ -255,9 +305,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<ItemResponse<ToDoActivity>>> tasks = new List<Task<ItemResponse<ToDoActivity>>>();
             for (int i = 0; i < 100; i++)
             {
-                ToDoActivity createdDocument = CreateItem(i.ToString());
+                ToDoActivity createdDocument = CosmosItemBulkTests.CreateItem(i.ToString());
                 createdDocuments.Add(createdDocument);
-                tasks.Add(ExecuteCreateAsync(this.container, createdDocument));
+                tasks.Add(CosmosItemBulkTests.ExecuteCreateAsync(this.container, createdDocument));
             }
 
             await Task.WhenAll(tasks);
@@ -266,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Read the items
             foreach (ToDoActivity createdDocument in createdDocuments)
             {
-                readTasks.Add(ExecuteReadAsync(this.container, createdDocument));
+                readTasks.Add(CosmosItemBulkTests.ExecuteReadAsync(this.container, createdDocument));
             }
 
             await Task.WhenAll(readTasks);
@@ -275,6 +325,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Task<ItemResponse<ToDoActivity>> task = readTasks[i];
                 ItemResponse<ToDoActivity> result = await task;
                 Assert.IsTrue(result.Headers.RequestCharge > 0);
+                Assert.IsNotNull(result.Headers.Session);
+                Assert.IsNotNull(result.Headers.ActivityId);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
@@ -288,9 +340,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
             for (int i = 0; i < 100; i++)
             {
-                ToDoActivity createdDocument = CreateItem(i.ToString());
+                ToDoActivity createdDocument = CosmosItemBulkTests.CreateItem(i.ToString());
                 createdDocuments.Add(createdDocument);
-                tasks.Add(ExecuteCreateStreamAsync(this.container, createdDocument));
+                tasks.Add(CosmosItemBulkTests.ExecuteCreateStreamAsync(this.container, createdDocument));
             }
 
             await Task.WhenAll(tasks);
@@ -299,7 +351,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Replace the items
             foreach (ToDoActivity createdDocument in createdDocuments)
             {
-                replaceTasks.Add(ExecuteReplaceStreamAsync(this.container, createdDocument));
+                replaceTasks.Add(CosmosItemBulkTests.ExecuteReplaceStreamAsync(this.container, createdDocument));
             }
 
             await Task.WhenAll(replaceTasks);
@@ -308,6 +360,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Task<ResponseMessage> task = replaceTasks[i];
                 ResponseMessage result = await task;
                 Assert.IsTrue(result.Headers.RequestCharge > 0);
+                Assert.IsNotNull(result.Headers.Session);
+                Assert.IsNotNull(result.Headers.ActivityId);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
@@ -321,9 +375,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<ItemResponse<ToDoActivity>>> tasks = new List<Task<ItemResponse<ToDoActivity>>>();
             for (int i = 0; i < 100; i++)
             {
-                ToDoActivity createdDocument = CreateItem(i.ToString());
+                ToDoActivity createdDocument = CosmosItemBulkTests.CreateItem(i.ToString());
                 createdDocuments.Add(createdDocument);
-                tasks.Add(ExecuteCreateAsync(this.container, createdDocument));
+                tasks.Add(CosmosItemBulkTests.ExecuteCreateAsync(this.container, createdDocument));
             }
 
             await Task.WhenAll(tasks);
@@ -332,7 +386,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Replace the items
             foreach (ToDoActivity createdDocument in createdDocuments)
             {
-                replaceTasks.Add(ExecuteReplaceAsync(this.container, createdDocument));
+                replaceTasks.Add(CosmosItemBulkTests.ExecuteReplaceAsync(this.container, createdDocument));
             }
 
             await Task.WhenAll(replaceTasks);
@@ -341,6 +395,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Task<ItemResponse<ToDoActivity>> task = replaceTasks[i];
                 ItemResponse<ToDoActivity> result = await task;
                 Assert.IsTrue(result.Headers.RequestCharge > 0);
+                Assert.IsNotNull(result.Headers.Session);
+                Assert.IsNotNull(result.Headers.ActivityId);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
@@ -354,9 +410,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
             for (int i = 0; i < 100; i++)
             {
-                ToDoActivity createdDocument = CreateItem(i.ToString());
+                ToDoActivity createdDocument = CosmosItemBulkTests.CreateItem(i.ToString());
                 createdDocuments.Add(createdDocument);
-                tasks.Add(ExecuteCreateStreamAsync(this.container, createdDocument));
+                tasks.Add(CosmosItemBulkTests.ExecuteCreateStreamAsync(this.container, createdDocument));
             }
 
             await Task.WhenAll(tasks);
@@ -369,7 +425,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Patch the items
             foreach (ToDoActivity createdDocument in createdDocuments)
             {
-                PatchTasks.Add(ExecutePatchStreamAsync((ContainerInternal)this.container, createdDocument, patch));
+                PatchTasks.Add(CosmosItemBulkTests.ExecutePatchStreamAsync((ContainerInternal)this.container, createdDocument, patch));
             }
 
             await Task.WhenAll(PatchTasks);
@@ -378,6 +434,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Task<ResponseMessage> task = PatchTasks[i];
                 ResponseMessage result = await task;
                 Assert.IsTrue(result.Headers.RequestCharge > 0);
+                Assert.IsNotNull(result.Headers.Session);
+                Assert.IsNotNull(result.Headers.ActivityId);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
@@ -391,9 +449,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<ItemResponse<ToDoActivity>>> tasks = new List<Task<ItemResponse<ToDoActivity>>>();
             for (int i = 0; i < 100; i++)
             {
-                ToDoActivity createdDocument = CreateItem(i.ToString());
+                ToDoActivity createdDocument = CosmosItemBulkTests.CreateItem(i.ToString());
                 createdDocuments.Add(createdDocument);
-                tasks.Add(ExecuteCreateAsync(this.container, createdDocument));
+                tasks.Add(CosmosItemBulkTests.ExecuteCreateAsync(this.container, createdDocument));
             }
 
             await Task.WhenAll(tasks);
@@ -406,7 +464,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Patch the items
             foreach (ToDoActivity createdDocument in createdDocuments)
             {
-                patchTasks.Add(ExecutePatchAsync((ContainerInternal)this.container, createdDocument, patch));
+                patchTasks.Add(CosmosItemBulkTests.ExecutePatchAsync((ContainerInternal)this.container, createdDocument, patch));
             }
 
             await Task.WhenAll(patchTasks);
@@ -415,6 +473,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Task<ItemResponse<ToDoActivity>> task = patchTasks[i];
                 ItemResponse<ToDoActivity> result = await task;
                 Assert.IsTrue(result.Headers.RequestCharge > 0);
+                Assert.IsNotNull(result.Headers.Session);
+                Assert.IsNotNull(result.Headers.ActivityId);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
                 Assert.AreEqual("patched", result.Resource.description);
@@ -441,10 +501,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
             for (int i = 0; i < 3; i++)
             {
-                ToDoActivity item = CreateItem(i.ToString());
+                ToDoActivity item = CosmosItemBulkTests.CreateItem(i.ToString());
 
                 if (i == 1) { item.description = new string('x', appxItemSize); }
-                tasks.Add(ExecuteCreateStreamAsync(this.container, item));
+                tasks.Add(CosmosItemBulkTests.ExecuteCreateStreamAsync(this.container, item));
             }
 
             await Task.WhenAll(tasks);
@@ -456,6 +516,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 if (i == 0 || i == 2)
                 {
                     Assert.IsTrue(result.Headers.RequestCharge > 0);
+                    Assert.IsNotNull(result.Headers.Session);
+                    Assert.IsNotNull(result.Headers.ActivityId);
                     Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                     Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
                 }
@@ -501,9 +563,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return container.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.pk));
         }
 
-        private static Task<ResponseMessage> ExecuteCreateStreamAsync(Container container, ToDoActivity item)
+        private static Task<ResponseMessage> ExecuteCreateStreamAsync(Container container, ToDoActivity item, ItemRequestOptions itemRequestOptions = null)
         {
-            return container.CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new PartitionKey(item.pk));
+            return container.CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new PartitionKey(item.pk), itemRequestOptions);
         }
 
         private static Task<ResponseMessage> ExecuteUpsertStreamAsync(Container container, ToDoActivity item)
