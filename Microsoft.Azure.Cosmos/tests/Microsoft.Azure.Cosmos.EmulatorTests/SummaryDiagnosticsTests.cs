@@ -68,14 +68,14 @@
             SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
 
             Assert.IsFalse(summaryDiagnostics.DirectRequestsSummary.IsValueCreated);
-            Assert.IsTrue(summaryDiagnostics.GatewayRequestsSummary.Value[201] > 0);
+            Assert.IsTrue(summaryDiagnostics.GatewayRequestsSummary.Value[(201, 0)] > 0);
 
             response = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
             trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
             summaryDiagnostics = new SummaryDiagnostics(trace);
 
             Assert.IsFalse(summaryDiagnostics.DirectRequestsSummary.IsValueCreated);
-            Assert.IsTrue(summaryDiagnostics.GatewayRequestsSummary.Value[200] > 0);
+            Assert.IsTrue(summaryDiagnostics.GatewayRequestsSummary.Value[(200, 0)] > 0);
         }
 
         [TestMethod]

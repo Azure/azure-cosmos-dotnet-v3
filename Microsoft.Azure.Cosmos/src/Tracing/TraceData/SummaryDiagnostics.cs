@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using Microsoft.Azure.Cosmos.Json;
 
     internal struct SummaryDiagnostics
@@ -15,8 +16,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         {
             this.DirectRequestsSummary = new Lazy<Dictionary<(int, int), int>>(() =>
                                                 new Dictionary<(int, int), int>());
-            this.GatewayRequestsSummary = new Lazy<Dictionary<int, int>>(() =>
-                                                new Dictionary<int, int>());
+            this.GatewayRequestsSummary = new Lazy<Dictionary<(int, int), int>>(() =>
+                                                new Dictionary<(int, int), int>());
             this.AllRegionsContacted = new Lazy<HashSet<Uri>>(() => new HashSet<Uri>());
             this.CollectSummaryFromTraceTree(trace);
         }
@@ -24,9 +25,9 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public Lazy<HashSet<Uri>> AllRegionsContacted { get; private set; }
 
         // Count of (StatusCode, SubStatusCode) tuples
-        public Lazy<Dictionary<(int, int), int>> DirectRequestsSummary { get; private set; }
+        public Lazy<Dictionary<(int statusCode, int subStatusCode), int>> DirectRequestsSummary { get; private set; }
 
-        public Lazy<Dictionary<int, int>> GatewayRequestsSummary { get; private set; }
+        public Lazy<Dictionary<(int statusCode, int subStatusCode), int>> GatewayRequestsSummary { get; private set; }
 
         private void CollectSummaryFromTraceTree(ITrace currentTrace)
         {
@@ -58,15 +59,30 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         {
             foreach (ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics httpResponseStatistics in httpResponseStatisticsList)
             {
-                int statusCode = (httpResponseStatistics.HttpResponseMessage != null) ? 
-                                  (int)httpResponseStatistics.HttpResponseMessage.StatusCode : 0;
-                if (!this.GatewayRequestsSummary.Value.ContainsKey(statusCode))
+                int statusCode = 0;
+                int substatusCode = 0;
+                if (httpResponseStatistics.HttpResponseMessage != null)
                 {
-                    this.GatewayRequestsSummary.Value[statusCode] = 1;
+                    statusCode = (int)httpResponseStatistics.HttpResponseMessage.StatusCode;
+                    HttpResponseHeadersWrapper gatewayHeaders = new HttpResponseHeadersWrapper(
+                                                    httpResponseStatistics.HttpResponseMessage.Headers,
+                                                    httpResponseStatistics.HttpResponseMessage.Content?.Headers);
+                    if (!int.TryParse(gatewayHeaders.SubStatus,
+                                NumberStyles.Integer,
+                                CultureInfo.InvariantCulture,
+                                out substatusCode))
+                    {
+                        substatusCode = 0;
+                    }
+                }
+
+                if (!this.GatewayRequestsSummary.Value.ContainsKey((statusCode, substatusCode)))
+                {
+                    this.GatewayRequestsSummary.Value[(statusCode, substatusCode)] = 1;
                 }
                 else
                 {
-                    this.GatewayRequestsSummary.Value[statusCode]++;
+                    this.GatewayRequestsSummary.Value[(statusCode, substatusCode)]++;
                 }
             }
         }
@@ -114,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             {
                 jsonWriter.WriteFieldName("GatewayCalls");
                 jsonWriter.WriteObjectStart();
-                foreach (KeyValuePair<int, int> kvp in this.GatewayRequestsSummary.Value)
+                foreach (KeyValuePair<(int, int), int> kvp in this.GatewayRequestsSummary.Value)
                 {
                     jsonWriter.WriteFieldName(kvp.Key.ToString());
                     jsonWriter.WriteNumber64Value(kvp.Value);
