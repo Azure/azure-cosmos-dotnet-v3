@@ -321,7 +321,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
-        public async Task QueryOperationSinglePatitionTest(ConnectionMode mode)
+        public async Task QueryOperationSinglePartitionTest(ConnectionMode mode)
         {
             Container container = await this.GetContainer(mode);
 
@@ -360,7 +360,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
-        public async Task QueryMultiPageSinglePatitionOperationTest(ConnectionMode mode)
+        public async Task QueryMultiPageSinglePartitionOperationTest(ConnectionMode mode)
         {
             Container container = await this.GetContainer(mode);
 
@@ -396,7 +396,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
             {
                 { Documents.OperationType.Query.ToString(), 3},
-                { Documents.OperationType.Create.ToString(), 1}
+                { Documents.OperationType.Create.ToString(), 2}
             };
 
             await this.WaitAndAssert(
@@ -407,7 +407,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
-        public async Task QueryOperationMultiplePatitionTest(ConnectionMode mode)
+        public async Task QueryOperationCrossPartitionTest(ConnectionMode mode)
         {
             // Multi Partiton Operation takes time
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
@@ -459,7 +459,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
-        public async Task QueryOperationMutiplePageMultiplePatitionTest(ConnectionMode mode)
+        public async Task QueryOperationMutiplePageCrossPartitionTest(ConnectionMode mode)
         {
             // Multi Partiton Operation takes time
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");

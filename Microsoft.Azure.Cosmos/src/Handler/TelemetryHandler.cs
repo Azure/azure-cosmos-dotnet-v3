@@ -60,19 +60,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private async Task<ConsistencyLevel?> GetConsistencyLevelAsync(RequestMessage request)
         {
-            // Request level Consistency
-           if (request.RequestOptions != null && request.RequestOptions.BaseConsistencyLevel.HasValue)
+            // Send whatever set to requet header
+           if (request.Headers.TryGetValue(Documents.HttpConstants.HttpHeaders.ConsistencyLevel, out string consistency) &&
+                !String.IsNullOrEmpty(consistency))
            {
-                return request.RequestOptions.BaseConsistencyLevel;
+                return (ConsistencyLevel?)Enum.Parse(typeof(ConsistencyLevel), consistency);
            }
 
-           // Client level Consistency
-           if (this.cosmosClient.ClientOptions != null && this.cosmosClient.ClientOptions.ConsistencyLevel.HasValue)
-           {
-                return this.cosmosClient.ClientOptions.ConsistencyLevel;
-           }
-           
-           // Account level Consistency
+           // Or Account level Consistency
            return await this.cosmosClient.GetAccountConsistencyLevelAsync();   
         }
 
