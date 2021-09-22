@@ -333,16 +333,27 @@ namespace Microsoft.Azure.Cosmos.Tests
             string token = "Token";
             bool throwExceptionOnGetToken = false;
             Exception exception = new Exception();
-
-            TestTokenCredential testTokenCredential = new TestTokenCredential(() =>
+            const int semaphoreCount = 10;
+            using SemaphoreSlim semaphoreSlim = new SemaphoreSlim(semaphoreCount);
+            TestTokenCredential testTokenCredential = new TestTokenCredential(async () =>
             {
-                if (throwExceptionOnGetToken)
+                try
                 {
-                    throw exception;
+                    await semaphoreSlim.WaitAsync();
+                
+                    Assert.AreEqual(semaphoreCount-1, semaphoreSlim.CurrentCount, "Only a single refresh should occur at a time.");
+                    if (throwExceptionOnGetToken)
+                    {
+                        throw exception;
+                    }
+                    else
+                    {
+                        return new AccessToken(token, DateTimeOffset.UtcNow + TimeSpan.FromSeconds(8));
+                    }
                 }
-                else
+                finally
                 {
-                    return new ValueTask<AccessToken>(new AccessToken(token, DateTimeOffset.UtcNow + TimeSpan.FromSeconds(8)));
+                    semaphoreSlim.Release();
                 }
             });
 
@@ -413,7 +424,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
 
                 await Task.WhenAll(tasks);
-                Assert.AreEqual(numGetTokenCallsAfterFailures+1, testTokenCredential.NumTimesInvoked, "There should only be 1 GetToken call to get the new token after the failures");
 
                 this.ValidateSemaphoreIsReleased(tokenCredentialCache);
             }

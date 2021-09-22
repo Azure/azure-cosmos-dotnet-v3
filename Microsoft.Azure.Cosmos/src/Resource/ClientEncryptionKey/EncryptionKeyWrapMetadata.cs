@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Metadata that a key wrapping provider can use to wrap/unwrap data encryption keys.
@@ -69,6 +70,13 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = "value", NullValueHandling = NullValueHandling.Ignore)]
         public string Value { get; private set; }
 
+        /// <summary>
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+        /// </summary>
+        [JsonExtensionData]
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+
         /// <inheritdoc/>
         public override bool Equals(object obj)
         {
@@ -98,7 +106,8 @@ namespace Microsoft.Azure.Cosmos
             return other != null &&
                    this.Type == other.Type &&
                    this.Name == other.Name &&
-                   this.Value == other.Value;
+                   this.Value == other.Value &&
+                   this.AdditionalProperties.EqualsTo(other.AdditionalProperties);
         }
     }
 }
