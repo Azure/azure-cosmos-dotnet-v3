@@ -6,8 +6,8 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <RootNamespace>Microsoft.Azure.Cosmos.Encryption.EmulatorTests</RootNamespace>
-    <AssemblyName>Microsoft.Azure.Cosmos.Encryption.EmulatorTests</AssemblyName>
+    <RootNamespace>Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests</RootNamespace>
+    <AssemblyName>Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests</AssemblyName>
     <IsEmulatorTest>true</IsEmulatorTest>
     <EmulatorFlavor>master</EmulatorFlavor>
     <DisableCopyEmulator>True</DisableCopyEmulator>
@@ -40,9 +40,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos.Encryption\src\Microsoft.Azure.Cosmos.Encryption.csproj" />
-  </ItemGroup>
 	
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="3.1.7" />
@@ -54,6 +51,10 @@
 	
   <ItemGroup>
     <PackageReference Include="System.Text.Encoding.CodePages" Version="5.0.0" />
+  </ItemGroup>
+	
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.Encryption.Custom.csproj" />
   </ItemGroup>
 	
   <PropertyGroup>
