@@ -90,6 +90,8 @@
 
             await Program.QueryWithSqlParameters(container);
 
+            await Program.QueryWithContinuationTokens(container);
+
             // Uncomment to Cleanup
             //await cosmosDatabase.DeleteAsync();
         }
@@ -223,6 +225,70 @@
             }
         }
         // </QueryWithSqlParameters>
+
+        // <QueryWithContinuationTokens>
+        private static async Task QueryWithContinuationTokens(Container container)
+        {
+            QueryDefinition query = new QueryDefinition("SELECT * FROM c");
+            string continuation = null;
+
+            List<Family> results = new List<Family>();
+            using (FeedIterator<Family> resultSetIterator = container.GetItemQueryIterator<Family>(
+                query,
+                requestOptions: new QueryRequestOptions()
+                {
+                    MaxItemCount = 1
+                }))
+            {
+                // Execute query and get 1 item in the results. Then, get a continuation token to resume later
+                while (resultSetIterator.HasMoreResults)
+                {
+                    FeedResponse<Family> response = await resultSetIterator.ReadNextAsync();
+
+                    results.AddRange(response);
+                    if (response.Diagnostics != null)
+                    {
+                        Console.WriteLine($"\nQueryWithContinuationTokens Diagnostics: {response.Diagnostics.ToString()}");
+                    }
+
+                    // Get continuation token once we've gotten > 0 results. 
+                    if (response.Count > 0)
+                    {
+                        continuation = response.ContinuationToken;
+                        break;
+                    }
+                }
+            }
+
+            // Check if query has already been fully drained
+            if (continuation == null)
+            {
+                return;
+            }
+
+            // Resume query using continuation token
+            using (FeedIterator<Family> resultSetIterator = container.GetItemQueryIterator<Family>(
+                    query,
+                    requestOptions: new QueryRequestOptions()
+                    {
+                        MaxItemCount = -1
+                    },
+                    continuationToken: continuation))
+                {
+                    while (resultSetIterator.HasMoreResults)
+                    {
+                        FeedResponse<Family> response = await resultSetIterator.ReadNextAsync();
+
+                        results.AddRange(response);
+                        if (response.Diagnostics != null)
+                        {
+                            Console.WriteLine($"\nQueryWithContinuationTokens Diagnostics: {response.Diagnostics.ToString()}");
+                        }
+                    }
+                    Assert("Expected 2 families", results.Count == 2);
+                }
+        }
+        // </QueryWithContinuationTokens>
 
         // <QueryPartitionedContainerInParallelAsync>
         private static async Task QueryPartitionedContainerInParallelAsync(Container container)
