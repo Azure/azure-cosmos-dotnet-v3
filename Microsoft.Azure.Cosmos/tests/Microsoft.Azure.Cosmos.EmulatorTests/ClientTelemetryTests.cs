@@ -95,7 +95,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task PointSuccessOperationsTest(ConnectionMode mode)
         {
-            Container container = await this.GetContainer(mode);
+            // Passing consistency level at client level
+            Container container = await this.GetContainer(
+                mode: mode,
+                consistencyLevel: ConsistencyLevel.Eventual);
 
             // Create an item
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
@@ -136,7 +139,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.WaitAndAssert(
                 expectedOperationCount: 12,
-                expectedOperationRecordCountMap: expectedRecordCountInOperation);
+                expectedOperationRecordCountMap: expectedRecordCountInOperation,
+                expectedConsistencyLevel: ConsistencyLevel.Eventual.ToString().ToUpper());
         }
 
         [TestMethod]
@@ -173,7 +177,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 expectedOperationCount: 4,
                 expectedOperationRecordCountMap: expectedRecordCountInOperation); // 2 (read, requetLatency + requestCharge) + 2 (create, requestLatency + requestCharge)
         }
-
 
         [TestMethod]
         [DataRow(ConnectionMode.Direct)]
@@ -326,14 +329,30 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container = await this.GetContainer(mode);
 
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue", "MyTestItemId");
-            ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(testItem);
+            Dictionary<string, object> properties = new Dictionary<string, object>();
+            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            {
+                ConsistencyLevel = ConsistencyLevel.ConsistentPrefix,
+                Properties = properties
+            };
+
+            ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(
+                item: testItem, 
+                requestOptions: requestOptions);
+
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
+            {
+                ConsistencyLevel = ConsistencyLevel.ConsistentPrefix,
+            };
 
             if (createResponse.StatusCode == HttpStatusCode.Created)
             {
                 string sqlQueryText = "SELECT * FROM c";
 
                 QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
-                FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(queryDefinition);
+                FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(
+                    queryDefinition: queryDefinition,
+                    requestOptions: queryRequestOptions);
 
                 List<object> families = new List<object>();
                 while (queryResultSetIterator.HasMoreResults)
@@ -354,7 +373,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.WaitAndAssert(
                 expectedOperationCount: 4,
-                expectedOperationRecordCountMap: expectedRecordCountInOperation);
+                expectedOperationRecordCountMap: expectedRecordCountInOperation,
+                expectedConsistencyLevel: ConsistencyLevel.ConsistentPrefix.ToString().ToUpper());
         }
 
         [TestMethod]
@@ -362,12 +382,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task QueryMultiPageSinglePartitionOperationTest(ConnectionMode mode)
         {
-            Container container = await this.GetContainer(mode);
+            Container container = await this.GetContainer(mode: mode, 
+                consistencyLevel: ConsistencyLevel.Eventual);
+
+            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            {
+                ConsistencyLevel = ConsistencyLevel.ConsistentPrefix
+            };
 
             ToDoActivity testItem1 = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue1", "MyTestItemId1");
-            ItemResponse<ToDoActivity> createResponse1 = await container.CreateItemAsync<ToDoActivity>(testItem1);
+            ItemResponse<ToDoActivity> createResponse1 = await container.CreateItemAsync<ToDoActivity>(
+                item: testItem1,
+                requestOptions: requestOptions);
             ToDoActivity testItem2 = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue2", "MyTestItemId2");
-            ItemResponse<ToDoActivity> createResponse2 = await container.CreateItemAsync<ToDoActivity>(testItem2);
+            ItemResponse<ToDoActivity> createResponse2 = await container.CreateItemAsync<ToDoActivity>(
+                item:testItem2,
+                requestOptions: requestOptions);
 
             if (createResponse1.StatusCode == HttpStatusCode.Created && 
                 createResponse2.StatusCode == HttpStatusCode.Created)
@@ -379,6 +409,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     queryDefinition: queryDefinition,
                     requestOptions: new QueryRequestOptions()
                     {
+                        ConsistencyLevel = ConsistencyLevel.ConsistentPrefix,
                         MaxItemCount = 1
                     });
 
@@ -401,7 +432,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.WaitAndAssert(
                 expectedOperationCount: 4,
-                expectedOperationRecordCountMap: expectedRecordCountInOperation);
+                expectedOperationRecordCountMap: expectedRecordCountInOperation,
+                expectedConsistencyLevel: ConsistencyLevel.ConsistentPrefix.ToString().ToUpper());
         }
 
         [TestMethod]
@@ -513,7 +545,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 expectedOperationRecordCountMap: expectedRecordCountInOperation);
         }
 
-        private async Task WaitAndAssert(int? expectedOperationCount, IDictionary<string, long> expectedOperationRecordCountMap)
+        private async Task WaitAndAssert(int? expectedOperationCount, 
+            IDictionary<string, long> expectedOperationRecordCountMap, 
+            string expectedConsistencyLevel = null)
         {
             Assert.IsNotNull(this.actualInfo, "Telemetry Information not available");
 
@@ -541,6 +575,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await Task.Delay(TimeSpan.FromMilliseconds(200));
             }
             while (localCopyOfActualInfo == null);
+
+            if(expectedConsistencyLevel == null)
+            {
+                expectedConsistencyLevel = this.accountProperties.Consistency.DefaultConsistencyLevel.ToString().ToUpper();
+            }
 
             List<OperationInfo> actualOperationList = new List<OperationInfo>();
             List<SystemInfo> actualSystemInformation = new List<SystemInfo>();
@@ -571,7 +610,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(operation.Resource, "Resource Type is null");
                 Assert.IsNotNull(operation.StatusCode, "StatusCode is null");
                 Assert.IsNotNull(operation.Consistency, "Consistency is null");
-                Assert.AreEqual(this.accountProperties.Consistency.DefaultConsistencyLevel.ToString().ToUpper(), operation.Consistency, $"Consistency is not {this.accountProperties.Consistency.DefaultConsistencyLevel.ToString().ToUpper()}");
+                Assert.AreEqual(expectedConsistencyLevel, operation.Consistency, $"Consistency is not {this.accountProperties.Consistency.DefaultConsistencyLevel.ToString().ToUpper()}");
 
                 Assert.IsNotNull(operation.MetricInfo, "MetricInfo is null");
                 Assert.IsNotNull(operation.MetricInfo.MetricsName, "MetricsName is null");
@@ -624,8 +663,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 resourceStream: TestCommon.SerializerCore.ToStream(testItem));
         }
 
-        private async Task<ContainerResponse> GetContainer(ConnectionMode mode, bool isLargeContainer = false)
+        private async Task<ContainerResponse> GetContainer(ConnectionMode mode, bool isLargeContainer = false, ConsistencyLevel? consistencyLevel = null)
         {
+            if (consistencyLevel.HasValue)
+            {
+                this.cosmosClientBuilder = this.cosmosClientBuilder.WithConsistencyLevel(consistencyLevel.Value);
+            }
+
             if (mode == ConnectionMode.Direct)
             {
                 this.cosmosClient = this.cosmosClientBuilder.WithConnectionModeDirect().Build();
