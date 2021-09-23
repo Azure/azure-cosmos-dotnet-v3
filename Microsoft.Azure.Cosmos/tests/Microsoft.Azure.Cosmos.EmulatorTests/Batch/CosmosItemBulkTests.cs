@@ -138,8 +138,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 AddRequestHeaders = (headers) =>
                 {
-                    headers["x-ms-cosmos-is-client-encrypted"] = bool.TrueString;
-                    headers["x-ms-cosmos-intended-collection-rid"] = rid;
+                    headers[Documents.HttpConstants.HttpHeaders.IsClientEncrypted] = bool.TrueString;
+                    headers[Documents.WFConstants.BackendHeaders.IntendedCollectionRid] = rid;
                 }
             };
 
@@ -177,8 +177,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 AddRequestHeaders = (headers) =>
                 {
-                    headers["x-ms-cosmos-is-client-encrypted"] = bool.FalseString;
-                    headers["x-ms-cosmos-intended-collection-rid"] = rid;
+                    headers[Documents.HttpConstants.HttpHeaders.IsClientEncrypted] = bool.FalseString;
+                    headers[Documents.WFConstants.BackendHeaders.IntendedCollectionRid] = rid;
                 }
             };
 
@@ -208,8 +208,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 AddRequestHeaders = (headers) =>
                 {
-                    headers["x-ms-cosmos-is-client-encrypted"] = bool.TrueString;
-                    headers["x-ms-cosmos-intended-collection-rid"] = rid;
+                    headers[Documents.HttpConstants.HttpHeaders.IsClientEncrypted] = bool.TrueString;
+                    headers[Documents.WFConstants.BackendHeaders.IntendedCollectionRid] = rid;
                 }
             };
 
