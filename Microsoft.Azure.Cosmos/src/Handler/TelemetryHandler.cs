@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     {
         private readonly ClientTelemetry telemetry;
         private readonly CosmosClient cosmosClient;
+        private string accountLevelConsistency;
 
         public TelemetryHandler(CosmosClient client, ClientTelemetry telemetry)
         {
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 databaseId: request.DatabaseId,
                                 operationType: request.OperationType,
                                 resourceType: request.ResourceType,
-                                consistencyLevel: consistencyLevel.ToUpper(),
+                                consistencyLevel: consistencyLevel,
                                 requestCharge: response.Headers.RequestCharge);
                 }
                 catch (Exception ex)
@@ -64,13 +65,17 @@ namespace Microsoft.Azure.Cosmos.Handlers
            if (request.Headers.TryGetValue(Documents.HttpConstants.HttpHeaders.ConsistencyLevel, out string consistency) &&
                 !String.IsNullOrEmpty(consistency))
            {
-                return consistency;
+                return consistency.ToUpper();
            }
 
-           // Or Account level Consistency
-           ConsistencyLevel accountLevelConsistency = await this.cosmosClient.GetAccountConsistencyLevelAsync();
-
-           return accountLevelConsistency.ToString();
+           // Cache the string type of account level consistency information
+           if (this.accountLevelConsistency == null)
+           {
+                // Or Account level Consistency
+                ConsistencyLevel accountLevelConsistency = await this.cosmosClient.GetAccountConsistencyLevelAsync();
+                this.accountLevelConsistency = accountLevelConsistency.ToString().ToUpper();
+           }
+           return this.accountLevelConsistency;
         }
 
         /// <summary>
