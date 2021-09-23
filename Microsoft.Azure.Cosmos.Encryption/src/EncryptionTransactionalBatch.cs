@@ -294,6 +294,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             encryptionDiagnosticsContext.End();
             EncryptionCosmosDiagnostics encryptionDiagnostics = new EncryptionCosmosDiagnostics(
                 response.Diagnostics,
+                encryptContent: null,
                 decryptContent: encryptionDiagnosticsContext.DecryptContent);
 
             return new EncryptionTransactionalBatchResponse(

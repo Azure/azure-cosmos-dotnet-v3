@@ -14,23 +14,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
     internal sealed class EncryptionCosmosDiagnostics : CosmosDiagnostics
     {
         private readonly CosmosDiagnostics coreDiagnostics;
-        private readonly JObject encryptionDiagnostics;
+        private readonly JObject encryptContent;
+        private readonly JObject decryptContent;
 
         public EncryptionCosmosDiagnostics(
             CosmosDiagnostics coreDiagnostics,
-            JObject encryptContent = null,
-            JObject decryptContent = null)
+            JObject encryptContent,
+            JObject decryptContent)
         {
             this.coreDiagnostics = coreDiagnostics ?? throw new ArgumentNullException(nameof(coreDiagnostics));
-            this.encryptionDiagnostics = new JObject();
             if (encryptContent?.Count > 0)
             {
-                this.encryptionDiagnostics.Add(Constants.DiagnosticsEncryptOperation, encryptContent);
+                this.encryptContent = encryptContent;
             }
 
             if (decryptContent?.Count > 0)
             {
-                this.encryptionDiagnostics.Add(Constants.DiagnosticsDecryptOperation, decryptContent);
+                this.decryptContent = decryptContent;
             }
         }
 
@@ -50,7 +50,21 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 writer.WritePropertyName(Constants.DiagnosticsCoreDiagnostics);
                 writer.WriteRawValue(this.coreDiagnostics.ToString());
                 writer.WritePropertyName(Constants.DiagnosticsEncryptionDiagnostics);
-                writer.WriteRawValue(this.encryptionDiagnostics.ToString());
+                writer.WriteStartObject();
+
+                if (this.encryptContent != null)
+                {
+                    writer.WritePropertyName(Constants.DiagnosticsEncryptOperation);
+                    writer.WriteRawValue(this.encryptContent.ToString());
+                }
+
+                if (this.decryptContent != null)
+                {
+                    writer.WritePropertyName(Constants.DiagnosticsDecryptOperation);
+                    writer.WriteRawValue(this.decryptContent.ToString());
+                }
+
+                writer.WriteEndObject();
                 writer.WriteEndObject();
             }
 

@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         public override CosmosDiagnostics Diagnostics { get; }
 
+        // TODO: https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2750
         public override string IndexMetrics => null;
 
         public override IEnumerator<T> GetEnumerator()
