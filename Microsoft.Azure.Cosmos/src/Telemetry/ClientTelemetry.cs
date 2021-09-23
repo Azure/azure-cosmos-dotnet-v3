@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             string databaseId,
                             OperationType operationType,
                             ResourceType resourceType,
-                            Cosmos.ConsistencyLevel? consistencyLevel,
+                            string consistencyLevel,
                             double requestCharge)
         {
             DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");

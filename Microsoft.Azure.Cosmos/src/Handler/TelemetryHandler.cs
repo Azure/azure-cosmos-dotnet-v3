@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 try
                 {
-                    ConsistencyLevel? consistencyLevel = await this.GetConsistencyLevelAsync(request);
+                    string consistencyLevel = await this.GetConsistencyLevelAsync(request);
 
                     this.telemetry
                         .Collect(
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 databaseId: request.DatabaseId,
                                 operationType: request.OperationType,
                                 resourceType: request.ResourceType,
-                                consistencyLevel: consistencyLevel,
+                                consistencyLevel: consistencyLevel.ToUpper(),
                                 requestCharge: response.Headers.RequestCharge);
                 }
                 catch (Exception ex)
@@ -58,17 +58,19 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return ClientTelemetryOptions.AllowedResourceTypes.Equals(request.ResourceType);
         }
 
-        private async Task<ConsistencyLevel?> GetConsistencyLevelAsync(RequestMessage request)
+        private async Task<string> GetConsistencyLevelAsync(RequestMessage request)
         {
             // Send whatever set to requet header
            if (request.Headers.TryGetValue(Documents.HttpConstants.HttpHeaders.ConsistencyLevel, out string consistency) &&
                 !String.IsNullOrEmpty(consistency))
            {
-                return (ConsistencyLevel?)Enum.Parse(typeof(ConsistencyLevel), consistency);
+                return consistency;
            }
 
            // Or Account level Consistency
-           return await this.cosmosClient.GetAccountConsistencyLevelAsync();   
+           ConsistencyLevel accountLevelConsistency = await this.cosmosClient.GetAccountConsistencyLevelAsync();
+
+           return accountLevelConsistency.ToString();
         }
 
         /// <summary>

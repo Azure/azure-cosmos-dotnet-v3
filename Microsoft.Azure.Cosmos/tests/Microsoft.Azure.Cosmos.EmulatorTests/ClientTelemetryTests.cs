@@ -174,8 +174,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             await this.WaitAndAssert(
-                expectedOperationCount: 4,
-                expectedOperationRecordCountMap: expectedRecordCountInOperation); // 2 (read, requetLatency + requestCharge) + 2 (create, requestLatency + requestCharge)
+                expectedOperationCount: 4, // 2 (read, requetLatency + requestCharge) + 2 (create, requestLatency + requestCharge)
+                expectedOperationRecordCountMap: expectedRecordCountInOperation); 
         }
 
         [TestMethod]
