@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     context.isClientEncrypted = bool.Parse(encrypted);
 
-                    if (encryptionHeaders.TryGetValue("x-ms-cosmos-intended-collection-rid", out string ridValue))
+                    if (context.isClientEncrypted && encryptionHeaders.TryGetValue(WFConstants.BackendHeaders.IntendedCollectionRid, out string ridValue))
                     {
                         context.intendedCollectionRidValue = ridValue;
                     }
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos
             if (partitionKeyRangeServerBatchRequest.isClientEncrypted)
             {
                 requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsClientEncrypted, partitionKeyRangeServerBatchRequest.isClientEncrypted.ToString());
-                requestMessage.Headers.Add("x-ms-cosmos-intended-collection-rid", partitionKeyRangeServerBatchRequest.intendedCollectionRidValue);
+                requestMessage.Headers.Add(WFConstants.BackendHeaders.IntendedCollectionRid, partitionKeyRangeServerBatchRequest.intendedCollectionRidValue);
             }
 
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.ShouldBatchContinueOnError, bool.TrueString);
