@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Handler
         /// Right now only 2 recorders are available : Diagnostic and Telemetry
         /// </summary>
         /// <returns> CpuAndMemoryUsageRecorder</returns>
-        public SystemUsageHistory GetClientTelemtrySystemHistory()
+        public SystemUsageHistory GetClientTelemetrySystemHistory()
         {
             if (!this.isMonitoringEnabled)
             {

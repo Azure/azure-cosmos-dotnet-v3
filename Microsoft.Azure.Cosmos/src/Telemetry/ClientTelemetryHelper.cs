@@ -19,6 +19,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private static readonly Uri vmMetadataEndpointUrl = ClientTelemetryOptions.GetVmMetadataUrl();
 
+        private static readonly LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.CpuMin,
+                                            ClientTelemetryOptions.CpuMax,
+                                            ClientTelemetryOptions.CpuPrecision);
+
+        private static readonly LongConcurrentHistogram memoryHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.MemoryMin,
+                                                       ClientTelemetryOptions.MemoryMax,
+                                                       ClientTelemetryOptions.MemoryPrecision);
+
         /// <summary>
         /// Task to get Account Properties from cache if available otherwise make a network call.
         /// </summary>
@@ -92,14 +100,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>ReportPayload</returns>
         internal static (SystemInfo cpuInfo, SystemInfo memoryInfo) RecordSystemUsage(SystemUsageHistory systemUsageHistory)
         {
-            LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.CpuMin,
-                                                        ClientTelemetryOptions.CpuMax,
-                                                        ClientTelemetryOptions.CpuPrecision);
+            // reset histograms
+            cpuHistogram.Reset();
+            memoryHistogram.Reset();
 
-            LongConcurrentHistogram memoryHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.MemoryMin,
-                                                           ClientTelemetryOptions.MemoryMax,
-                                                           ClientTelemetryOptions.MemoryPrecision);
-
+            // recalculate values
             if (systemUsageHistory.Values == null)
             {
                 return (null, null);
