@@ -44,13 +44,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
             = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
-        
-        private static readonly LongConcurrentHistogram latencyHistogramForOperationMap = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
-                                                        ClientTelemetryOptions.RequestLatencyMax,
-                                                        ClientTelemetryOptions.RequestLatencyPrecision);
-        private static readonly LongConcurrentHistogram requestChargeHistogramForOperationMap = new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
-                                                        ClientTelemetryOptions.RequestChargeMax,
-                                                        ClientTelemetryOptions.RequestChargePrecision);
 
         /// <summary>
         /// Factory method to intiakize telemetry object and start observer task
@@ -203,21 +196,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 throw new ArgumentNullException(nameof(cosmosDiagnostics));
             }
 
-            TimeSpan clientElapsedTime = cosmosDiagnostics.GetClientElapsedTime();
-
-            // Found few instances in CTL with this scenerio so tracing it.
-            if (clientElapsedTime == null || clientElapsedTime.Equals(TimeSpan.Zero))
-            {
-                DefaultTrace.TraceWarning("Client Elapsed information is not there in the diagnostics so not collecting it in telemetry : " + cosmosDiagnostics.ToString());
-                return;
-            }
-
             string regionsContacted = this.GetContactedRegions(cosmosDiagnostics);
-
-            if (String.IsNullOrEmpty(regionsContacted))
-            {
-                DefaultTrace.TraceWarning("Region Contacted information is not there in the diagnostics : " + cosmosDiagnostics.ToString());
-            }
 
             // Recording Request Latency and Request Charge
             OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
@@ -230,16 +209,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                             statusCode: (int)statusCode);
 
             (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
-                    .GetOrAdd(payloadKey, x =>
-                    {
-                        latencyHistogramForOperationMap.Reset();
-                        requestChargeHistogramForOperationMap.Reset();
-
-                        return (latency: latencyHistogramForOperationMap, requestcharge: requestChargeHistogramForOperationMap);
-                    });
+                    .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+                                                        ClientTelemetryOptions.RequestLatencyMax,
+                                                        ClientTelemetryOptions.RequestLatencyPrecision),
+                            requestcharge: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
+                                                        ClientTelemetryOptions.RequestChargeMax,
+                                                        ClientTelemetryOptions.RequestChargePrecision)));
             try
             {
-                latency.RecordValue(clientElapsedTime.Ticks);
+                latency.RecordValue(cosmosDiagnostics.GetClientElapsedTime().Ticks);
             } 
             catch (Exception ex)
             {
@@ -295,7 +273,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 DefaultTrace.TraceVerbose("Started Recording System Usage for telemetry.");
 
-                SystemUsageHistory systemUsageHistory = this.diagnosticsHelper.GetClientTelemetrySystemHistory();
+                SystemUsageHistory systemUsageHistory = this.diagnosticsHelper.GetClientTelemtrySystemHistory();
 
                 if (systemUsageHistory != null )
                 {
