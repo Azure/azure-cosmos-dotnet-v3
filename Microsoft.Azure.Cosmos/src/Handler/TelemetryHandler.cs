@@ -61,11 +61,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private async Task<string> GetConsistencyLevelAsync(RequestMessage request)
         {
-            // Send whatever set to requet header
-           if (request.Headers.TryGetValue(Documents.HttpConstants.HttpHeaders.ConsistencyLevel, out string consistency) &&
-                !String.IsNullOrEmpty(consistency))
+           // Send whatever set to request header
+           string requestLevelConsistency = request.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel];
+           if (requestLevelConsistency != null)
            {
-                return consistency;
+                return requestLevelConsistency;
            }
 
            // Cache the string type of account level consistency information
