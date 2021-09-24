@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 try
                 {
-                    string consistencyLevel = await this.GetConsistencyLevelAsync(request);
+                    //string consistencyLevel = await this.GetConsistencyLevelAsync(request);
 
                     this.telemetry
                         .Collect(
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 databaseId: request.DatabaseId,
                                 operationType: request.OperationType,
                                 resourceType: request.ResourceType,
-                                consistencyLevel: consistencyLevel,
+                                consistencyLevel: "SESSION",
                                 requestCharge: response.Headers.RequestCharge);
                 }
                 catch (Exception ex)
