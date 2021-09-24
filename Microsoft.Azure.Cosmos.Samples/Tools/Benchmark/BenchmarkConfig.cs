@@ -9,6 +9,7 @@ namespace CosmosBenchmark
     using System.Linq;
     using System.Runtime;
     using CommandLine;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
 
@@ -160,28 +161,25 @@ namespace CosmosBenchmark
             return options;
         }
 
-        internal Microsoft.Azure.Cosmos.CosmosClient CreateCosmosClient(string accountKey)
+        internal CosmosClient CreateCosmosClient(string accountKey)
         {
-            Microsoft.Azure.Cosmos.CosmosClientOptions clientOptions = new Microsoft.Azure.Cosmos.CosmosClientOptions()
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ApplicationName = BenchmarkConfig.UserAgentSuffix,
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
+#if ProjectRef
                 EnableClientTelemetry = this.EnableTelemetry
+#endif
             };
-
-            if(this.EnableTelemetry)
-            {
-                Environment.SetEnvironmentVariable(Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
-            }
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
             {
                 clientOptions.ConsistencyLevel = (Microsoft.Azure.Cosmos.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Cosmos.ConsistencyLevel), this.ConsistencyLevel, ignoreCase: true);
             }
 
-            return new Microsoft.Azure.Cosmos.CosmosClient(
+            return new CosmosClient(
                         this.EndPoint,
                         accountKey,
                         clientOptions);
