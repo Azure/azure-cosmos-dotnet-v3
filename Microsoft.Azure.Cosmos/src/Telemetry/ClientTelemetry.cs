@@ -196,7 +196,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 throw new ArgumentNullException(nameof(cosmosDiagnostics));
             }
 
+            TimeSpan diagnosticsClientElapsedTime = cosmosDiagnostics.GetClientElapsedTime();
+            if (diagnosticsClientElapsedTime == null || diagnosticsClientElapsedTime.Equals(TimeSpan.Zero))
+            {
+                DefaultTrace.TraceWarning("Diagnostics Client Elased Time is not Available : " + cosmosDiagnostics.ToString());
+
+                //Don't record these values
+                return;
+            }
             string regionsContacted = this.GetContactedRegions(cosmosDiagnostics);
+
+            if (String.IsNullOrEmpty(regionsContacted))
+            {
+                DefaultTrace.TraceWarning("Diagnostics Region Contacted is not Available : " + cosmosDiagnostics.ToString());
+            }
 
             // Recording Request Latency and Request Charge
             OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),

@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Diagnostics;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper
@@ -345,24 +346,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConsistencyLevel = ConsistencyLevel.ConsistentPrefix,
             };
 
+            List<object> families = new List<object>();
             if (createResponse.StatusCode == HttpStatusCode.Created)
             {
                 string sqlQueryText = "SELECT * FROM c";
 
                 QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
-                FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(
+                using (FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(
                     queryDefinition: queryDefinition,
-                    requestOptions: queryRequestOptions);
-
-                List<object> families = new List<object>();
-                while (queryResultSetIterator.HasMoreResults)
+                    requestOptions: queryRequestOptions))
                 {
-                    FeedResponse<object> currentResultSet = await queryResultSetIterator.ReadNextAsync();
-                    foreach (object family in currentResultSet)
+                    while (queryResultSetIterator.HasMoreResults)
                     {
-                        families.Add(family);
+                        FeedResponse<object> currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                        foreach (object family in currentResultSet)
+                        {
+                            families.Add(family);
+                        }
                     }
                 }
+
+                Assert.AreEqual(1, families.Count);
+                
             }
 
             IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
@@ -404,24 +409,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 string sqlQueryText = "SELECT * FROM c";
 
+                List<object> families = new List<object>();
                 QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
-                FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(
+                using (FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(
                     queryDefinition: queryDefinition,
                     requestOptions: new QueryRequestOptions()
                     {
                         ConsistencyLevel = ConsistencyLevel.ConsistentPrefix,
                         MaxItemCount = 1
-                    });
-
-                List<object> families = new List<object>();
-                while (queryResultSetIterator.HasMoreResults)
+                    }))
                 {
-                    FeedResponse<object> currentResultSet = await queryResultSetIterator.ReadNextAsync();
-                    foreach (object family in currentResultSet)
+                    while (queryResultSetIterator.HasMoreResults)
                     {
-                        families.Add(family);
+                        FeedResponse<object> currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                        foreach (object family in currentResultSet)
+                        {
+                            families.Add(family);
+                        }
                     }
                 }
+
+                Assert.AreEqual(2, families.Count);
+               
             }
 
             IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
@@ -464,18 +473,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             
             string sqlQueryText = "SELECT * FROM c";
 
-            QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
-            FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(queryDefinition);
-
             List<object> families = new List<object>();
-            while (queryResultSetIterator.HasMoreResults)
+
+            QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
+            using (FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(queryDefinition))
             {
-                FeedResponse<object> currentResultSet = await queryResultSetIterator.ReadNextAsync();
-                foreach (object family in currentResultSet)
+                while (queryResultSetIterator.HasMoreResults)
                 {
-                    families.Add(family);
+                    FeedResponse<object> currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                    foreach (object family in currentResultSet)
+                    {
+                        families.Add(family);
+                    }
                 }
             }
+
+            Assert.AreEqual(10, families.Count);
 
             IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
             {
@@ -516,23 +529,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string sqlQueryText = "SELECT * FROM c";
 
+            List<object> families = new List<object>();
             QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
-            FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(
+            using (FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(
                  queryDefinition: queryDefinition,
                  requestOptions: new QueryRequestOptions()
                  {
                      MaxItemCount = 1
-                 });
-
-            List<object> families = new List<object>();
-            while (queryResultSetIterator.HasMoreResults)
+                 }))
             {
-                FeedResponse<object> currentResultSet = await queryResultSetIterator.ReadNextAsync();
-                foreach (object family in currentResultSet)
+                while (queryResultSetIterator.HasMoreResults)
                 {
-                    families.Add(family);
+                    FeedResponse<object> currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                    foreach (object family in currentResultSet)
+                    {
+                        families.Add(family);
+                    }
                 }
             }
+
+            Assert.AreEqual(10, families.Count);
 
             IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
             {
@@ -545,8 +561,39 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 expectedOperationRecordCountMap: expectedRecordCountInOperation);
         }
 
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public async Task QueryOperationInvalidContinuationToken(ConnectionMode mode)
+        {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
+            Container container = await this.GetContainer(mode);
+
+            List<ToDoActivity> results = new List<ToDoActivity>();
+            using (FeedIterator<ToDoActivity> resultSetIterator = container.GetItemQueryIterator<ToDoActivity>(
+                  "SELECT * FROM c",
+                  continuationToken: "dummy token"))
+            {
+                try
+                {
+                    while (resultSetIterator.HasMoreResults)
+                    {
+                        FeedResponse<ToDoActivity> response = await resultSetIterator.ReadNextAsync();
+                        results.AddRange(response);
+                    }
+                }
+                catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.BadRequest)
+                {
+                    string message = ce.ToString();
+                    Assert.IsNotNull(message);
+                }
+            }
+
+            await this.WaitAndAssert(expectedOperationCount: 0); // Does not record telemetry
+        }
+
         private async Task WaitAndAssert(int? expectedOperationCount, 
-            IDictionary<string, long> expectedOperationRecordCountMap, 
+            IDictionary<string, long> expectedOperationRecordCountMap = null, 
             string expectedConsistencyLevel = null)
         {
             Assert.IsNotNull(this.actualInfo, "Telemetry Information not available");
@@ -636,7 +683,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(operation.MetricInfo.Min >= 0, "MetricInfo Min is not greater than or equal to 0");
             }
 
-            Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo(actualOperationRecordCountMap), "record count for operation does not match");
+            if (expectedOperationRecordCountMap != null)
+            {
+                Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo(actualOperationRecordCountMap), "record count for operation does not match");
+            }
 
             // Asserting If system information list is as expected
             foreach (SystemInfo operation in actualSystemInformation)

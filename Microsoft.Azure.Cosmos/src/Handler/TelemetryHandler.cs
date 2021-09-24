@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     {
         private readonly ClientTelemetry telemetry;
         private readonly CosmosClient cosmosClient;
-        private string accountLevelConsistency;
+       // private string accountLevelConsistency;
 
         public TelemetryHandler(CosmosClient client, ClientTelemetry telemetry)
         {
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 try
                 {
-                    string consistencyLevel = await this.GetConsistencyLevelAsync(request);
+                    string consistencyLevel = this.GetConsistencyLevel(request);
 
                     this.telemetry
                         .Collect(
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return ClientTelemetryOptions.AllowedResourceTypes.Equals(request.ResourceType);
         }
 
-        private async Task<string> GetConsistencyLevelAsync(RequestMessage request)
+        private string GetConsistencyLevel(RequestMessage request)
         {
            // Send whatever set to request header
            string requestLevelConsistency = request.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel];
@@ -69,13 +69,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
            }
 
            // Cache the string type of account level consistency information
-           if (this.accountLevelConsistency == null)
+           /*if (this.accountLevelConsistency == null)
            {
                 // Or Account level Consistency
                 ConsistencyLevel accountLevelConsistency = await this.cosmosClient.GetAccountConsistencyLevelAsync();
                 this.accountLevelConsistency = accountLevelConsistency.ToString();
-           }
-           return this.accountLevelConsistency;
+           }*/
+           return "SESSION";
         }
 
         /// <summary>
