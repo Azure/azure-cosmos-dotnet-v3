@@ -665,7 +665,7 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>201</term><description>Created - New database is created.</description>
         ///     </item>
         ///     <item>
-        ///         <term>200</term><description>Accepted - This means the database already exists.</description>
+        ///         <term>200</term><description>OK - This means the database already exists.</description>
         ///     </item>
         /// </list>
         /// </returns>
@@ -757,7 +757,7 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>201</term><description>Created - New database is created.</description>
         ///     </item>
         ///     <item>
-        ///         <term>200</term><description>Accepted - This means the database already exists.</description>
+        ///         <term>200</term><description>OK- This means the database already exists.</description>
         ///     </item>
         /// </list>
         /// </returns>
