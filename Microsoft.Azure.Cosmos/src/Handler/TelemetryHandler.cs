@@ -16,6 +16,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
         private readonly ClientTelemetry telemetry;
         private readonly CosmosClient cosmosClient;
 
+        private static string AccountLevelConsistency;
+
         public TelemetryHandler(CosmosClient client, ClientTelemetry telemetry)
         {
             this.telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
@@ -59,7 +61,17 @@ namespace Microsoft.Azure.Cosmos.Handlers
         private static async Task<string> GetConsistencyLevelAsync(CosmosClient client, RequestMessage request)
         {
             // Send whatever set to request header
-            return request.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel] ?? (await client.GetAccountConsistencyLevelAsync()).ToString();
+            string requestConsistencyLevel = request.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel];
+            if (requestConsistencyLevel != null)
+            {
+                return requestConsistencyLevel;
+            }
+
+            if (AccountLevelConsistency == null)
+            {
+                AccountLevelConsistency = (await client.GetAccountConsistencyLevelAsync()).ToString();
+            }
+            return AccountLevelConsistency;
         }
 
         /// <summary>
