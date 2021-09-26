@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     {
         private readonly ClientTelemetry telemetry;
         private readonly CosmosClient cosmosClient;
-        private string accountLevelConsistency;
+        private static string accountLevelConsistency;
 
         public TelemetryHandler(CosmosClient client, ClientTelemetry telemetry)
         {
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 try
                 {
-                    string consistencyLevel = await this.GetConsistencyLevelAsync(request);
+                    string consistencyLevel = await TelemetryHandler.GetConsistencyLevelAsync(this.cosmosClient, request);
 
                     this.telemetry
                         .Collect(
@@ -59,23 +59,23 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return ClientTelemetryOptions.AllowedResourceTypes.Equals(request.ResourceType);
         }
 
-        private async Task<string> GetConsistencyLevelAsync(RequestMessage request)
+        private static async Task<string> GetConsistencyLevelAsync(CosmosClient client, RequestMessage request)
         {
            // Send whatever set to request header
-          /* string requestLevelConsistency = request.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel];
+           string requestLevelConsistency = request.Headers.ConsistencyLevel;
            if (requestLevelConsistency != null)
            {
                 return requestLevelConsistency;
-           }*/
+           }
 
            // Cache the string type of account level consistency information
-           if (this.accountLevelConsistency == null)
+           if (accountLevelConsistency == null)
            {
                 // Or Account level Consistency
-                ConsistencyLevel accountLevelConsistency = await this.cosmosClient.GetAccountConsistencyLevelAsync();
-                this.accountLevelConsistency = accountLevelConsistency.ToString();
+                ConsistencyLevel accountLevelConsistencyEnum = await client.GetAccountConsistencyLevelAsync();
+                accountLevelConsistency = accountLevelConsistencyEnum.ToString();
            }
-           return this.accountLevelConsistency;
+           return accountLevelConsistency;
         }
 
         /// <summary>

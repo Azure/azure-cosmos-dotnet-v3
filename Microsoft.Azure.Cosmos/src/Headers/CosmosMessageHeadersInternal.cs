@@ -141,6 +141,12 @@ namespace Microsoft.Azure.Cosmos
             set => this.SetProperty(HttpConstants.HttpHeaders.PageSize, value);
         }
 
+        public virtual string ConsistencyLevel
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.ConsistencyLevel);
+            set => this.SetProperty(HttpConstants.HttpHeaders.ConsistencyLevel, value);
+        }
+
         public virtual string this[string headerName] 
         {
             get
