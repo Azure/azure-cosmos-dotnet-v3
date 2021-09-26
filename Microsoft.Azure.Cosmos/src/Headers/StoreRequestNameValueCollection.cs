@@ -22,7 +22,6 @@ namespace Microsoft.Azure.Cosmos
         public override string Authorization { get; set; }
         public string ClientRetryAttemptCount { get; set; }
         public string CollectionRid { get; set; }
-        public string ConsistencyLevel { get; set; }
         public override string Continuation { get; set; }
         public string EffectivePartitionKey { get; set; }
         public string ExcludeSystemProperties { get; set; }
@@ -85,7 +84,6 @@ namespace Microsoft.Azure.Cosmos
             this.Authorization = null;
             this.ClientRetryAttemptCount = null;
             this.CollectionRid = null;
-            this.ConsistencyLevel = null;
             this.Continuation = null;
             this.EffectivePartitionKey = null;
             this.ExcludeSystemProperties = null;
@@ -127,7 +125,6 @@ namespace Microsoft.Azure.Cosmos
                 Authorization = this.Authorization,
                 ClientRetryAttemptCount = this.ClientRetryAttemptCount,
                 CollectionRid = this.CollectionRid,
-                ConsistencyLevel = this.ConsistencyLevel,
                 Continuation = this.Continuation,
                 EffectivePartitionKey = this.EffectivePartitionKey,
                 ExcludeSystemProperties = this.ExcludeSystemProperties,
@@ -172,7 +169,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 return new string[] { value };
             }
-
+            
             return null;
         }
 
@@ -197,10 +194,6 @@ namespace Microsoft.Azure.Cosmos
             if (this.ClientRetryAttemptCount != null)
             {
                 yield return HttpConstants.HttpHeaders.ClientRetryAttemptCount;
-            }
-            if (this.ConsistencyLevel != null)
-            {
-                yield return HttpConstants.HttpHeaders.ConsistencyLevel;
             }
             if (this.Continuation != null)
             {
@@ -311,42 +304,42 @@ namespace Microsoft.Azure.Cosmos
                     {
                         return this.HttpDate;
                     }
-
+                
                     break;
                 case 6:
                     if (string.Equals(HttpConstants.HttpHeaders.Prefer, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.Prefer;
                     }
-
+                
                     break;
                 case 9:
                     if (string.Equals(HttpConstants.HttpHeaders.XDate, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.XDate;
                     }
-
+                
                     break;
                 case 12:
                     if (string.Equals(HttpConstants.HttpHeaders.Version, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.Version;
                     }
-
+                
                     break;
                 case 13:
                     if (string.Equals(HttpConstants.HttpHeaders.Authorization, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.Authorization;
                     }
-
+                
                     break;
                 case 15:
                     if (string.Equals(HttpConstants.HttpHeaders.TargetLsn, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.TargetLsn;
                     }
-
+                
                     break;
                 case 17:
                     if (object.ReferenceEquals(HttpConstants.HttpHeaders.Continuation, key))
@@ -361,40 +354,33 @@ namespace Microsoft.Azure.Cosmos
                     {
                         return this.Continuation;
                     }
-
+                
                     if (string.Equals(WFConstants.BackendHeaders.TransactionId, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.TransactionId;
                     }
-
+                
                     break;
                 case 18:
                     if (string.Equals(HttpConstants.HttpHeaders.SessionToken, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.SessionToken;
                     }
-
+                
                     break;
                 case 21:
                     if (string.Equals(WFConstants.BackendHeaders.TransactionCommit, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.TransactionCommit;
                     }
-
-                    break;
-                case 22:
-                    if (string.Equals(HttpConstants.HttpHeaders.ConsistencyLevel, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.ConsistencyLevel;
-                    }
-
+                
                     break;
                 case 24:
                     if (string.Equals(HttpConstants.HttpHeaders.IsBatchAtomic, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.IsBatchAtomic;
                     }
-
+                
                     break;
                 case 25:
                     if (object.ReferenceEquals(HttpConstants.HttpHeaders.IsBatchOrdered, key))
@@ -417,22 +403,22 @@ namespace Microsoft.Azure.Cosmos
                     {
                         return this.IsBatchOrdered;
                     }
-
+                
                     if (string.Equals(HttpConstants.HttpHeaders.IsUpsert, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.IsUpsert;
                     }
-
+                
                     if (string.Equals(HttpConstants.HttpHeaders.TransportRequestID, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.TransportRequestID;
                     }
-
+                
                     if (string.Equals(WFConstants.BackendHeaders.ResourceTypes, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.ResourceTypes;
                     }
-
+                
                     break;
                 case 28:
                     if (object.ReferenceEquals(HttpConstants.HttpHeaders.PartitionKey, key))
@@ -451,17 +437,17 @@ namespace Microsoft.Azure.Cosmos
                     {
                         return this.PartitionKey;
                     }
-
+                
                     if (string.Equals(WFConstants.BackendHeaders.EffectivePartitionKey, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.EffectivePartitionKey;
                     }
-
+                
                     if (string.Equals(WFConstants.BackendHeaders.TimeToLiveInSeconds, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.TimeToLiveInSeconds;
                     }
-
+                
                     break;
                 case 30:
                     if (object.ReferenceEquals(HttpConstants.HttpHeaders.ResourceTokenExpiry, key))
@@ -480,31 +466,31 @@ namespace Microsoft.Azure.Cosmos
                     {
                         return this.ResourceTokenExpiry;
                     }
-
+                
                     if (string.Equals(WFConstants.BackendHeaders.CollectionRid, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.CollectionRid;
                     }
-
+                
                     if (string.Equals(WFConstants.BackendHeaders.ExcludeSystemProperties, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.ExcludeSystemProperties;
                     }
-
+                
                     break;
                 case 31:
                     if (string.Equals(HttpConstants.HttpHeaders.ClientRetryAttemptCount, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.ClientRetryAttemptCount;
                     }
-
+                
                     break;
                 case 32:
                     if (string.Equals(HttpConstants.HttpHeaders.TargetGlobalCommittedLsn, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.TargetGlobalCommittedLsn;
                     }
-
+                
                     break;
                 case 35:
                     if (object.ReferenceEquals(HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest, key))
@@ -519,12 +505,12 @@ namespace Microsoft.Azure.Cosmos
                     {
                         return this.RemainingTimeInMsOnClientRequest;
                     }
-
+                
                     if (string.Equals(HttpConstants.HttpHeaders.ShouldBatchContinueOnError, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.ShouldBatchContinueOnError;
                     }
-
+                
                     break;
                 default:
                     break;
@@ -535,7 +521,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 return value;
             }
-
+            
             return null;
         }
 
@@ -552,8 +538,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.UpdateHelper(
-                key: key,
-                value: value,
+                key: key, 
+                value: value, 
                 throwIfAlreadyExists: true);
         }
 
@@ -565,8 +551,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.UpdateHelper(
-                key: key,
-                value: null,
+                key: key, 
+                value: null, 
                 throwIfAlreadyExists: false);
         }
 
@@ -584,13 +570,13 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.UpdateHelper(
-                key: key,
-                value: value,
+                key: key, 
+                value: value, 
                 throwIfAlreadyExists: false);
         }
 
         public void UpdateHelper(
-            string key,
+            string key, 
             string value,
             bool throwIfAlreadyExists)
         {
@@ -736,18 +722,6 @@ namespace Microsoft.Azure.Cosmos
                         }
 
                         this.TransactionCommit = value;
-                        return;
-                    }
-                    break;
-                case 22:
-                    if (string.Equals(HttpConstants.HttpHeaders.ConsistencyLevel, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (throwIfAlreadyExists && this.ConsistencyLevel != null)
-                        {
-                            throw new ArgumentException($"The {key} already exists in the collection");
-                        }
-
-                        this.ConsistencyLevel = value;
                         return;
                     }
                     break;

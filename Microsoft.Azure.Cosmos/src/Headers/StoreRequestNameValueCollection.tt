@@ -15,7 +15,6 @@
     ("HttpConstants.HttpHeaders.XDate", "x-ms-date", true),
     ("HttpConstants.HttpHeaders.Version", "x-ms-version", false),
     ("HttpConstants.HttpHeaders.ClientRetryAttemptCount", "x-ms-client-retry-attempt-count", false),
-    ("HttpConstants.HttpHeaders.ConsistencyLevel", "x-ms-consistency-level", false),
     ("HttpConstants.HttpHeaders.Continuation", "x-ms-continuation", true),
     ("HttpConstants.HttpHeaders.IsBatchAtomic", "x-ms-cosmos-batch-atomic", false),
     ("HttpConstants.HttpHeaders.IsBatchOrdered", "x-ms-cosmos-batch-ordered", false),

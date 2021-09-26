@@ -206,7 +206,6 @@ namespace Microsoft.Azure.Cosmos
             get => this.CosmosMessageHeaders.BackendRequestDurationMilliseconds;
             set => this.CosmosMessageHeaders.BackendRequestDurationMilliseconds = value;
         }
-
         internal virtual string ConsistencyLevel
         {
             get => this.CosmosMessageHeaders.ConsistencyLevel;

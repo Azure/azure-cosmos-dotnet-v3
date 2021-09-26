@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private static async Task<string> GetConsistencyLevelAsync(CosmosClient client, RequestMessage request)
         {
-           // Send whatever set to request header
+            // Send whatever set to request header
            string requestLevelConsistency = request.Headers.ConsistencyLevel;
            if (requestLevelConsistency != null)
            {
