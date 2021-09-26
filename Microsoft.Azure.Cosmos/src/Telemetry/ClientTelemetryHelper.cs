@@ -123,12 +123,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
             }
 
-            SystemInfo memoryInfoPayload = new SystemInfo(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit);
-            memoryInfoPayload.SetAggregators(memoryHistogram, ClientTelemetryOptions.KbToMbFactor);
+            SystemInfo memoryInfoPayload = null;
+            if (memoryHistogram.TotalCount > 0)
+            {
+                memoryInfoPayload = new SystemInfo(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit);
+                memoryInfoPayload.SetAggregators(memoryHistogram, ClientTelemetryOptions.KbToMbFactor);
+            }
 
-            SystemInfo cpuInfoPayload = new SystemInfo(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit);
-            cpuInfoPayload.SetAggregators(cpuHistogram, ClientTelemetryOptions.HistogramPrecisionFactor);
-
+            SystemInfo cpuInfoPayload = null;
+            if (cpuHistogram.TotalCount > 0)
+            {
+                cpuInfoPayload = new SystemInfo(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit);
+                cpuInfoPayload.SetAggregators(cpuHistogram, ClientTelemetryOptions.HistogramPrecisionFactor);
+            }
+            
             return (cpuInfoPayload, memoryInfoPayload);
         }
 
@@ -145,15 +153,24 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             foreach (KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry in metrics)
             {
                 OperationInfo payloadForLatency = entry.Key;
+                LongConcurrentHistogram latencyHist = entry.Value.latency;
+
                 payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
-                payloadForLatency.SetAggregators(entry.Value.latency, ClientTelemetryOptions.TicksToMsFactor);
+                if (latencyHist.TotalCount > 0)
+                {
+                    payloadForLatency.SetAggregators(latencyHist, ClientTelemetryOptions.TicksToMsFactor);
+                }
 
                 payloadWithMetricInformation.Add(payloadForLatency);
 
                 OperationInfo payloadForRequestCharge = payloadForLatency.Copy();
+                LongConcurrentHistogram rcHist = entry.Value.requestcharge;
                 payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
-                payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.HistogramPrecisionFactor);
-
+                if (rcHist.TotalCount > 0)
+                {
+                    payloadForRequestCharge.SetAggregators(rcHist, ClientTelemetryOptions.HistogramPrecisionFactor);
+                }
+                
                 payloadWithMetricInformation.Add(payloadForRequestCharge);
             }
 

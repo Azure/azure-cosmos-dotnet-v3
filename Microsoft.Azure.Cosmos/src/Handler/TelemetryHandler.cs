@@ -49,6 +49,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 {
                     DefaultTrace.TraceError("Error while collecting telemetry information : " + ex.Message);
                 }
+                finally
+                {
+                    GC.Collect();
+                }
             }
             return response;
         }
@@ -67,11 +71,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 return requestConsistencyLevel;
             }
 
-            if (AccountLevelConsistency == null)
+            if (TelemetryHandler.AccountLevelConsistency == null)
             {
-                AccountLevelConsistency = (await client.GetAccountConsistencyLevelAsync()).ToString();
+                TelemetryHandler.AccountLevelConsistency = (await client.GetAccountConsistencyLevelAsync()).ToString();
             }
-            return AccountLevelConsistency;
+            return TelemetryHandler.AccountLevelConsistency;
         }
 
         /// <summary>

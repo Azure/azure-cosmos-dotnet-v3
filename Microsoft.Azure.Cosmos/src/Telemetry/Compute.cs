@@ -4,8 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
+    using System;
     using Newtonsoft.Json;
 
+    [Serializable]
     internal class Compute
     {
         public Compute(string location, string sKU, string azEnvironment, string oSType, string vMSize)
