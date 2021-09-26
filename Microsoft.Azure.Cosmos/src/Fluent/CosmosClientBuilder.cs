@@ -91,6 +91,17 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="accountEndpoint">The Uri to the Cosmos Account. Example: https://{Cosmos Account Name}.documents.azure.com:443/ </param>
         /// <param name="tokenCredential">An instance of <see cref="TokenCredential"/></param>
+        /// <example>
+        /// The example below creates a new <see cref="CosmosClientBuilder"/> using a <see cref="TokenCredential"/>.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+        ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
+        ///     tokenCredential: new DefaultAzureCredential());
+        /// CosmosClient client = cosmosClientBuilder.Build();
+        /// ]]>
+        /// </code>
+        /// </example>
         public CosmosClientBuilder(
             string accountEndpoint, 
             TokenCredential tokenCredential)
