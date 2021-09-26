@@ -204,8 +204,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 //Don't record these values
                 return;
             }
-            string regionsContacted = this.GetContactedRegions(cosmosDiagnostics);
 
+            string regionsContacted = this.GetContactedRegions(cosmosDiagnostics);
             if (String.IsNullOrEmpty(regionsContacted))
             {
                 DefaultTrace.TraceWarning("Diagnostics Region Contacted is not Available : " + cosmosDiagnostics.ToString());

@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
     {
         private readonly ClientTelemetry telemetry;
         private readonly CosmosClient cosmosClient;
-        private static string accountLevelConsistency;
 
         public TelemetryHandler(CosmosClient client, ClientTelemetry telemetry)
         {
@@ -28,22 +27,20 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken cancellationToken)
         {
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
-            if (this.IsAllowed(request))
+            if (TelemetryHandler.IsAllowed(request))
             {
                 try
                 {
-                    string consistencyLevel = await TelemetryHandler.GetConsistencyLevelAsync(this.cosmosClient, request);
-
                     this.telemetry
                         .Collect(
                                 cosmosDiagnostics: response.Diagnostics,
                                 statusCode: response.StatusCode,
-                                responseSizeInBytes: this.GetPayloadSize(response),
+                                responseSizeInBytes: TelemetryHandler.GetPayloadSize(response),
                                 containerId: request.ContainerId,
                                 databaseId: request.DatabaseId,
                                 operationType: request.OperationType,
                                 resourceType: request.ResourceType,
-                                consistencyLevel: consistencyLevel,
+                                consistencyLevel: await TelemetryHandler.GetConsistencyLevelAsync(this.cosmosClient, request),
                                 requestCharge: response.Headers.RequestCharge);
                 }
                 catch (Exception ex)
@@ -54,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return response;
         }
 
-        private bool IsAllowed(RequestMessage request)
+        private static bool IsAllowed(RequestMessage request)
         { 
             return ClientTelemetryOptions.AllowedResourceTypes.Equals(request.ResourceType);
         }
@@ -62,20 +59,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         private static async Task<string> GetConsistencyLevelAsync(CosmosClient client, RequestMessage request)
         {
             // Send whatever set to request header
-           string requestLevelConsistency = request.Headers.ConsistencyLevel;
-           if (requestLevelConsistency != null)
-           {
-                return requestLevelConsistency;
-           }
-
-           // Cache the string type of account level consistency information
-           if (accountLevelConsistency == null)
-           {
-                // Or Account level Consistency
-                ConsistencyLevel accountLevelConsistencyEnum = await client.GetAccountConsistencyLevelAsync();
-                accountLevelConsistency = accountLevelConsistencyEnum.ToString();
-           }
-           return accountLevelConsistency;
+            return request.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel] ?? (await client.GetAccountConsistencyLevelAsync()).ToString();
         }
 
         /// <summary>
@@ -85,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// </summary>
         /// <param name="response"></param>
         /// <returns>Size of Payload</returns>
-        private long GetPayloadSize(ResponseMessage response)
+        private static long GetPayloadSize(ResponseMessage response)
         {
             if (response != null)
             {

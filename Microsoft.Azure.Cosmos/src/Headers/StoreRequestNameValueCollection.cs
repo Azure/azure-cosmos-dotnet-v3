@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos
         public override string Authorization { get; set; }
         public string ClientRetryAttemptCount { get; set; }
         public string CollectionRid { get; set; }
+        public string ConsistencyLevel { get; set; }
         public override string Continuation { get; set; }
         public string EffectivePartitionKey { get; set; }
         public string ExcludeSystemProperties { get; set; }
@@ -84,6 +85,7 @@ namespace Microsoft.Azure.Cosmos
             this.Authorization = null;
             this.ClientRetryAttemptCount = null;
             this.CollectionRid = null;
+            this.ConsistencyLevel = null;
             this.Continuation = null;
             this.EffectivePartitionKey = null;
             this.ExcludeSystemProperties = null;
@@ -125,6 +127,7 @@ namespace Microsoft.Azure.Cosmos
                 Authorization = this.Authorization,
                 ClientRetryAttemptCount = this.ClientRetryAttemptCount,
                 CollectionRid = this.CollectionRid,
+                ConsistencyLevel = this.ConsistencyLevel,
                 Continuation = this.Continuation,
                 EffectivePartitionKey = this.EffectivePartitionKey,
                 ExcludeSystemProperties = this.ExcludeSystemProperties,
@@ -194,6 +197,10 @@ namespace Microsoft.Azure.Cosmos
             if (this.ClientRetryAttemptCount != null)
             {
                 yield return HttpConstants.HttpHeaders.ClientRetryAttemptCount;
+            }
+            if (this.ConsistencyLevel != null)
+            {
+                yield return HttpConstants.HttpHeaders.ConsistencyLevel;
             }
             if (this.Continuation != null)
             {
@@ -372,6 +379,13 @@ namespace Microsoft.Azure.Cosmos
                     if (string.Equals(WFConstants.BackendHeaders.TransactionCommit, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.TransactionCommit;
+                    }
+                
+                    break;
+                case 22:
+                    if (string.Equals(HttpConstants.HttpHeaders.ConsistencyLevel, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.ConsistencyLevel;
                     }
                 
                     break;
@@ -722,6 +736,18 @@ namespace Microsoft.Azure.Cosmos
                         }
 
                         this.TransactionCommit = value;
+                        return;
+                    }
+                    break;
+                case 22:
+                    if (string.Equals(HttpConstants.HttpHeaders.ConsistencyLevel, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.ConsistencyLevel != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.ConsistencyLevel = value;
                         return;
                     }
                     break;
