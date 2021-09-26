@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return;
             }
 
-            string regionsContacted = this.GetContactedRegions(cosmosDiagnostics);
+            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics);
             if (String.IsNullOrEmpty(regionsContacted))
             {
                 DefaultTrace.TraceWarning("Diagnostics Region Contacted is not Available : " + cosmosDiagnostics.ToString());
@@ -246,35 +246,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : " + requestChargeToRecord + "  Exception : " + ex.Message);
             }
-        }
-
-        /// <summary>
-        /// Get comma separated list of regions contacted from the diagnostic
-        /// </summary>
-        /// <param name="cosmosDiagnostics"></param>
-        /// <returns>Comma separated region list</returns>
-        private string GetContactedRegions(CosmosDiagnostics cosmosDiagnostics)
-        {
-            IReadOnlyList<(string regionName, Uri uri)> regionList = cosmosDiagnostics.GetContactedRegions();
-
-            if (regionList.Count == 1)
-            {
-                return regionList[0].regionName;
-            }
-
-            StringBuilder regionsContacted = new StringBuilder();
-            foreach ((_, Uri uri) in regionList)
-            {
-                if (regionsContacted.Length > 0)
-                {
-                    regionsContacted.Append(",");
-
-                }
-
-                regionsContacted.Append(uri);
-            }
-
-            return regionsContacted.ToString();
         }
 
         /// <summary>
