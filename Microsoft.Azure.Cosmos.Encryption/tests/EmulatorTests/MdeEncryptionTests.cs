@@ -1532,7 +1532,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
                 Assert.Fail("Create Item should have failed.");
             }
-            catch(RequestFailedException)
+            catch(InvalidOperationException)
             {               
             }
 
@@ -1545,7 +1545,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 testDoc1);
                 Assert.Fail("Query should have failed, since property path /Sensitive_NestedObjectFormatL1 has been encrypted using Cek with revoked access. ");
             }
-            catch (RequestFailedException)
+            catch (InvalidOperationException)
             {
             }
 
