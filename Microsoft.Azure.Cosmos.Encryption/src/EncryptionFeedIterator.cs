@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     cancellationToken: cancellationToken);
 
                 throw new CosmosException(
-                    "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + responseMessage.ErrorMessage,
+                    "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Retrying can possibly fix the issue. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + responseMessage.ErrorMessage,
                     responseMessage.StatusCode,
                     int.Parse(Constants.IncorrectContainerRidSubStatus),
                     responseMessage.Headers.ActivityId,
