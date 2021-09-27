@@ -61,7 +61,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// <returns>Consistency level</returns>
         private static async Task<string> GetConsistencyLevelAsync(CosmosClient client, string requestConsistencyLevel)
         {
-            // Send whatever set to request header
+            Console.Write(client + requestConsistencyLevel);
+            return await Task.FromResult("SESSON");
+            /*// Send whatever set to request header
             if (requestConsistencyLevel == null)
             {
                 if (TelemetryHandler.AccountLevelConsistency == null)
@@ -79,7 +81,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
                 return TelemetryHandler.AccountLevelConsistency;
             }
-            _ = requestConsistencyLevel switch
+
+            requestConsistencyLevel = requestConsistencyLevel switch
             {
                 "Strong" => "STRONG",
                 "Session" => "SESSION",
@@ -89,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 _ => requestConsistencyLevel,
             };
 
-            return requestConsistencyLevel;
+            return requestConsistencyLevel;*/
         }
 
         /// <summary>
