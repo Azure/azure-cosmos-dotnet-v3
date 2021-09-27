@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (itemRequestOptions != null)
             {
-                // get the header value if any passed by the encryption package.
+                // get the header value if any, passed by the encryption package.
                 Headers encryptionHeaders = new Headers();
                 itemRequestOptions.AddRequestHeaders?.Invoke(encryptionHeaders);
 
