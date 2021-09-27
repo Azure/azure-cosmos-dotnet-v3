@@ -232,9 +232,9 @@ namespace Microsoft.Azure.Cosmos
                   this.maxBatchOperationCount,
                   ensureContinuousOperationIndexes: false,
                   serializerCore: this.serializerCore,
-                  cancellationToken: cancellationToken,
                   isClientEncrypted: this.isClientEncrypted,
-                  intendedCollectionRidValue: this.intendedCollectionRidValue).ConfigureAwait(false);
+                  intendedCollectionRidValue: this.intendedCollectionRidValue,
+                  cancellationToken: cancellationToken).ConfigureAwait(false);
         }
     }
 
