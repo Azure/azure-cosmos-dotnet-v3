@@ -814,79 +814,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return encryptedPatchOperations;
         }
 
-        internal async Task<List<PatchOperation>> EncryptPatchOperationsAsync(
-            IReadOnlyList<PatchOperation> patchOperations,
-            EncryptionSettings encryptionSettings,
-            EncryptionDiagnosticsContext operationDiagnostics,
-            CancellationToken cancellationToken = default)
-        {
-            List<PatchOperation> encryptedPatchOperations = new List<PatchOperation>(patchOperations.Count);
-            operationDiagnostics.Begin(Constants.DiagnosticsEncryptOperation);
-            int propertiesEncryptedCount = 0;
-
-            foreach (PatchOperation patchOperation in patchOperations)
-            {
-                if (patchOperation.OperationType == PatchOperationType.Remove)
-                {
-                    encryptedPatchOperations.Add(patchOperation);
-                    continue;
-                }
-
-                if (string.IsNullOrWhiteSpace(patchOperation.Path) || patchOperation.Path[0] != '/')
-                {
-                    throw new ArgumentException($"Invalid path '{patchOperation.Path}'.");
-                }
-
-                // get the top level path's encryption setting.
-                EncryptionSettingForProperty settingforProperty = encryptionSettings.GetEncryptionSettingForProperty(
-                    patchOperation.Path.Split('/')[1]);
-
-                // non-encrypted path
-                if (settingforProperty == null)
-                {
-                    encryptedPatchOperations.Add(patchOperation);
-                    continue;
-                }
-                else if (patchOperation.OperationType == PatchOperationType.Increment)
-                {
-                    throw new InvalidOperationException($"Increment patch operation is not allowed for encrypted path '{patchOperation.Path}'.");
-                }
-
-                if (!patchOperation.TrySerializeValueParameter(this.CosmosSerializer, out Stream valueParam))
-                {
-                    throw new ArgumentException($"Cannot serialize value parameter for operation: {patchOperation.OperationType}, path: {patchOperation.Path}.");
-                }
-
-                Stream encryptedPropertyValue = await EncryptionProcessor.EncryptValueStreamAsync(
-                    valueParam,
-                    settingforProperty,
-                    cancellationToken);
-
-                propertiesEncryptedCount++;
-
-                switch (patchOperation.OperationType)
-                {
-                    case PatchOperationType.Add:
-                        encryptedPatchOperations.Add(PatchOperation.Add(patchOperation.Path, encryptedPropertyValue));
-                        break;
-
-                    case PatchOperationType.Replace:
-                        encryptedPatchOperations.Add(PatchOperation.Replace(patchOperation.Path, encryptedPropertyValue));
-                        break;
-
-                    case PatchOperationType.Set:
-                        encryptedPatchOperations.Add(PatchOperation.Set(patchOperation.Path, encryptedPropertyValue));
-                        break;
-
-                    default:
-                        throw new NotSupportedException(nameof(patchOperation.OperationType));
-                }
-            }
-
-            operationDiagnostics?.End(propertiesEncryptedCount);
-            return encryptedPatchOperations;
-        }
-
         /// <summary>
         /// Returns a cloned copy of the passed RequestOptions if passed else creates a new ItemRequestOptions.
         /// </summary>
@@ -1214,6 +1141,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             List<PatchOperation> encryptedPatchOperations = await this.EncryptPatchOperationsAsync(
                    patchOperations,
                    encryptionSettings,
+                   encryptionDiagnosticsContext,
                    cancellationToken);
 
             ResponseMessage responseMessage = await this.container.PatchItemStreamAsync(
