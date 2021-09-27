@@ -153,6 +153,7 @@
                         └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "Trace Forest",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -1096,6 +1097,7 @@
         └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "Trace Forest",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -2080,6 +2082,7 @@
                         └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "Trace Forest",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -3024,6 +3027,7 @@
         └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "Trace Forest",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {

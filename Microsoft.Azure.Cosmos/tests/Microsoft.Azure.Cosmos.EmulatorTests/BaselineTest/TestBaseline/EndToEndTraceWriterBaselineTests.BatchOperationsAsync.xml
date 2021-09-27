@@ -59,6 +59,7 @@
             └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "ExecuteAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {

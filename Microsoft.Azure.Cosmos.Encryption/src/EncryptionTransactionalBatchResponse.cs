@@ -13,17 +13,38 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private readonly IReadOnlyList<TransactionalBatchOperationResult> results;
         private readonly TransactionalBatchResponse response;
         private readonly CosmosSerializer cosmosSerializer;
+        private readonly CosmosDiagnostics diagnostics;
         private bool isDisposed = false;
 
         public EncryptionTransactionalBatchResponse(
             IReadOnlyList<TransactionalBatchOperationResult> results,
             TransactionalBatchResponse response,
-            CosmosSerializer cosmosSerializer)
+            CosmosSerializer cosmosSerializer,
+            CosmosDiagnostics diagnostics)
         {
             this.results = results;
             this.response = response;
             this.cosmosSerializer = cosmosSerializer;
+            this.diagnostics = diagnostics;
         }
+
+        public override Headers Headers => this.response.Headers;
+
+        public override string ActivityId => this.response.ActivityId;
+
+        public override double RequestCharge => this.response.RequestCharge;
+
+        public override TimeSpan? RetryAfter => this.response.RetryAfter;
+
+        public override HttpStatusCode StatusCode => this.response.StatusCode;
+
+        public override string ErrorMessage => this.response.ErrorMessage;
+
+        public override bool IsSuccessStatusCode => this.response.IsSuccessStatusCode;
+
+        public override int Count => this.results?.Count ?? 0;
+
+        public override CosmosDiagnostics Diagnostics => this.diagnostics;
 
         public override TransactionalBatchOperationResult this[int index] => this.results[index];
 
@@ -44,24 +65,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             return this.results.GetEnumerator();
         }
-
-        public override Headers Headers => this.response.Headers;
-
-        public override string ActivityId => this.response.ActivityId;
-
-        public override double RequestCharge => this.response.RequestCharge;
-
-        public override TimeSpan? RetryAfter => this.response.RetryAfter;
-
-        public override HttpStatusCode StatusCode => this.response.StatusCode;
-
-        public override string ErrorMessage => this.response.ErrorMessage;
-
-        public override bool IsSuccessStatusCode => this.response.IsSuccessStatusCode;
-
-        public override int Count => this.results?.Count ?? 0;
-
-        public override CosmosDiagnostics Diagnostics => this.response.Diagnostics;
 
         protected override void Dispose(bool disposing)
         {
