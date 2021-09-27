@@ -66,10 +66,29 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 if (TelemetryHandler.AccountLevelConsistency == null)
                 {
-                    TelemetryHandler.AccountLevelConsistency = (await client.GetAccountConsistencyLevelAsync()).ToString();
+                    ConsistencyLevel accountConsistency = await client.GetAccountConsistencyLevelAsync();
+                    TelemetryHandler.AccountLevelConsistency = accountConsistency switch
+                    {
+                        ConsistencyLevel.Strong => "STRONG",
+                        ConsistencyLevel.Session => "SESSION",
+                        ConsistencyLevel.Eventual => "EVENTUAL",
+                        ConsistencyLevel.ConsistentPrefix => "CONSISTENTPREFIX",
+                        ConsistencyLevel.BoundedStaleness => "BOUNDEDSTALENESS",
+                        _ => accountConsistency.ToString(),
+                    };
                 }
                 return TelemetryHandler.AccountLevelConsistency;
             }
+            _ = requestConsistencyLevel switch
+            {
+                "Strong" => "STRONG",
+                "Session" => "SESSION",
+                "Eventual" => "EVENTUAL",
+                "ConsistentPrefix" => "CONSISTENTPREFIX",
+                "BoundedStaleness" => "BOUNDEDSTALENESS",
+                _ => requestConsistencyLevel,
+            };
+
             return requestConsistencyLevel;
         }
 
