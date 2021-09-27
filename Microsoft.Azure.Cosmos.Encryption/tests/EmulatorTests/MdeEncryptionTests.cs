@@ -1045,6 +1045,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             ContainerResponse containerResponse = await database.CreateContainerAsync(containerProperties, 400);
 
+            try
+            {
+                await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+            }
+            catch (CosmosException ex)
+            {
+                if (ex.SubStatusCode != 1024)
+                {
+                    Assert.Fail("Create operation should have failed. ");
+                }
+
+                Assert.IsNotNull(ex.Message);
+            }
+
             TestDoc docToReplace = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
 
             docToReplace.Sensitive_StringFormat = "docTobeReplace";
@@ -1059,6 +1073,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer),
             };
 
+            try
+            {
+                await Task.WhenAll(tasks);
+            }
+            catch (CosmosException ex)
+            {
+                if (ex.SubStatusCode != 1024)
+                {
+                    Assert.Fail("Bulk operation should have failed. ");
+                }
+
+                Assert.IsNotNull(ex.Message);
+            }
+
+            tasks = new List<Task>()
+            {
+                MdeEncryptionTests.MdeUpsertItemAsync(otherEncryptionContainer, docToUpsert, HttpStatusCode.OK),
+                MdeEncryptionTests.MdeReplaceItemAsync(otherEncryptionContainer, docToReplace),
+                MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer),
+            };
             await Task.WhenAll(tasks);
 
             tasks = new List<Task>()
@@ -1146,6 +1180,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             containerProperties = new ContainerProperties(encryptionContainerToDelete.Id, "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
 
             ContainerResponse containerResponse = await database.CreateContainerAsync(containerProperties, 400);
+            
+            // operation fails, policy gets updated.
+            try
+            {
+                await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+            }
+            catch (CosmosException ex)
+            {
+                if (ex.SubStatusCode != 1024)
+                {
+                    Assert.Fail("Create operation should have failed. ");
+                }
+
+                Assert.IsNotNull(ex.Message);
+            }
 
             TestDoc testDoc = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
 
@@ -1256,6 +1305,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             containerProperties = new ContainerProperties(encryptionContainerToDelete.Id, "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
 
             ContainerResponse containerResponse = await database.CreateContainerAsync(containerProperties, 400);
+
+            try
+            {
+                await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+            }
+            catch (CosmosException ex)
+            {
+                if (ex.SubStatusCode != 1024)
+                {
+                    Assert.Fail("Create operation should have failed. ");
+                }
+
+                Assert.IsNotNull(ex.Message);
+            }
 
             TestDoc testDoc = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
 
@@ -1371,6 +1434,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             ContainerResponse containerResponse = await database.CreateContainerAsync(containerProperties, 400);
 
+            // operation fails, policy gets updated.
+            try
+            {
+                await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+            }
+            catch (CosmosException ex)
+            {
+                if (ex.SubStatusCode != 1024)
+                {
+                    Assert.Fail("Create operation should have failed. ");
+                }
+
+                Assert.IsNotNull(ex.Message);
+            }
+
             TestDoc docPostPatching = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
 
             // request should fail and pick up new policy.
@@ -1422,6 +1500,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 PatchOperation.Set("/Sensitive_NestedObjectFormatL1/Sensitive_ArrayFormatL1/0", docPostPatching.Sensitive_NestedObjectFormatL1.Sensitive_ArrayFormatL1[0])
             };
 
+            try
+            {
+                await MdeEncryptionTests.MdePatchItemAsync(otherEncryptionContainer, patchOperations, docPostPatching, HttpStatusCode.OK);
+            }
+            catch (CosmosException ex)
+            {
+                if (ex.SubStatusCode != 1024)
+                {
+                    Assert.Fail("Patch operation should have failed. ");
+                }
+
+                Assert.IsNotNull(ex.Message);
+            }
+
+            // retry post policy refresh.
             await MdeEncryptionTests.MdePatchItemAsync(otherEncryptionContainer, patchOperations, docPostPatching, HttpStatusCode.OK);
         }
 
@@ -1543,10 +1636,41 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             containerProperties = new ContainerProperties(encryptionContainerToDelete.Id, "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
 
             ContainerResponse containerResponse = await mainDatabase.CreateContainerAsync(containerProperties, 400);
-            //encryptionContainerToDelete = containerResponse;
 
+            // container gets re-created with a new policy, hence an already referenced client/container would hold an obselete policy and should fail.
+            try
+            {
+                await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+            }
+            catch (CosmosException ex)
+            {
+                if (ex.SubStatusCode != 1024)
+                {
+                    Assert.Fail("Create operation should have failed. ");
+                }
+
+                Assert.IsNotNull(ex.Message);
+            }
+
+            // retrying the operation should succeed.
             TestDoc testDoc = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
 
+            // try from other container. Should fail due to policy mismatch.
+            try
+            {
+                await MdeEncryptionTests.VerifyItemByReadAsync(otherEncryptionContainer, testDoc);
+            }
+            catch (CosmosException ex)
+            {
+                if (ex.SubStatusCode != 1024)
+                {
+                    Assert.Fail("Read operation should have failed. ");
+                }
+
+                Assert.IsNotNull(ex.Message);
+            }
+
+            // retry should be a success.
             await MdeEncryptionTests.VerifyItemByReadAsync(otherEncryptionContainer, testDoc);
 
             // create new container in other client.
