@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -140,6 +141,19 @@ namespace Microsoft.Azure.Cosmos
         internal string ContainerId { get; set; }
         internal string DatabaseId { get; set; }
 
+        /// <summary>
+        /// Check if this request is eligible for telemetry collection
+        /// </summary>
+        internal bool IsTelemetryAllowed()
+        {
+            return ClientTelemetryOptions.AllowedResourceTypes.Equals(this.ResourceType);
+        }
+
+        /// <summary>
+        /// Calculated consistency level in request
+        /// </summary>
+        internal string ConsistencyLevel => this.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel];
+        
         /// <summary>
         /// Request properties Per request context available to handlers. 
         /// These will not be automatically included into the wire.

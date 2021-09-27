@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken cancellationToken)
         {
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
-            if (TelemetryHandler.IsAllowed(request))
+            if (request.IsTelemetryAllowed())
             {
                 try
                 {
@@ -42,40 +42,35 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 databaseId: request.DatabaseId,
                                 operationType: request.OperationType,
                                 resourceType: request.ResourceType,
-                                consistencyLevel: await TelemetryHandler.GetConsistencyLevelAsync(this.cosmosClient, request),
+                                consistencyLevel: await TelemetryHandler.GetConsistencyLevelAsync(this.cosmosClient, request.ConsistencyLevel),
                                 requestCharge: response.Headers.RequestCharge);
                 }
                 catch (Exception ex)
                 {
                     DefaultTrace.TraceError("Error while collecting telemetry information : " + ex.Message);
                 }
-                finally
-                {
-                    GC.Collect();
-                }
             }
             return response;
         }
 
-        private static bool IsAllowed(RequestMessage request)
-        { 
-            return ClientTelemetryOptions.AllowedResourceTypes.Equals(request.ResourceType);
-        }
-
-        private static async Task<string> GetConsistencyLevelAsync(CosmosClient client, RequestMessage request)
+        /// <summary>
+        /// Get Consistency level from header (if available) otherwise account level
+        /// </summary>
+        /// <param name="client"></param>
+        /// <param name="requestConsistencyLevel"></param>
+        /// <returns>Consistency level</returns>
+        private static async Task<string> GetConsistencyLevelAsync(CosmosClient client, string requestConsistencyLevel)
         {
             // Send whatever set to request header
-            string requestConsistencyLevel = request.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel];
-            if (requestConsistencyLevel != null)
+            if (requestConsistencyLevel == null)
             {
-                return requestConsistencyLevel;
+                if (TelemetryHandler.AccountLevelConsistency == null)
+                {
+                    TelemetryHandler.AccountLevelConsistency = (await client.GetAccountConsistencyLevelAsync()).ToString();
+                }
+                return TelemetryHandler.AccountLevelConsistency;
             }
-
-            if (TelemetryHandler.AccountLevelConsistency == null)
-            {
-                TelemetryHandler.AccountLevelConsistency = (await client.GetAccountConsistencyLevelAsync()).ToString();
-            }
-            return TelemetryHandler.AccountLevelConsistency;
+            return requestConsistencyLevel;
         }
 
         /// <summary>
