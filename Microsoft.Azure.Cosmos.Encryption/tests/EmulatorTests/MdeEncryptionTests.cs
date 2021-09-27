@@ -1048,12 +1048,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+                Assert.Fail("Create operation should have failed.");
             }
             catch (CosmosException ex)
             {
                 if (ex.SubStatusCode != 1024)
                 {
-                    Assert.Fail("Create operation should have failed. ");
+                    Assert.Fail("Create operation should have failed with 1024 SubStatusCode. ");
                 }
 
                 Assert.IsNotNull(ex.Message);
@@ -1076,12 +1077,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 await Task.WhenAll(tasks);
+                Assert.Fail("Bulk operation should have failed. ");
             }
             catch (CosmosException ex)
             {
                 if (ex.SubStatusCode != 1024)
                 {
-                    Assert.Fail("Bulk operation should have failed. ");
+                    Assert.Fail("Bulk operation should have failed with 1024 SubStatusCode.");
                 }
 
                 Assert.IsNotNull(ex.Message);
@@ -1185,12 +1187,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+                Assert.Fail("Create operation should have failed. ");
             }
             catch (CosmosException ex)
             {
                 if (ex.SubStatusCode != 1024)
                 {
-                    Assert.Fail("Create operation should have failed. ");
+                    Assert.Fail("Create operation should have failed with 1024 SubStatusCode");
                 }
 
                 Assert.IsNotNull(ex.Message);
@@ -1309,12 +1312,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+                Assert.Fail("Create operation should have failed. ");
             }
             catch (CosmosException ex)
             {
                 if (ex.SubStatusCode != 1024)
                 {
-                    Assert.Fail("Create operation should have failed. ");
+                    Assert.Fail("Create operation should have failed with 1024 SubStatusCode .");
                 }
 
                 Assert.IsNotNull(ex.Message);
@@ -1336,7 +1340,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {          
                 if (ex.SubStatusCode != 1024)
                 {
-                    Assert.Fail("Query should have failed. ");
+                    Assert.Fail("Query should have failed with 1024 SubStatusCode. ");
                 }
 
                 Assert.IsNotNull(ex.Message);
@@ -1438,12 +1442,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+                Assert.Fail("Create operation should have failed. ");
             }
             catch (CosmosException ex)
             {
                 if (ex.SubStatusCode != 1024)
                 {
-                    Assert.Fail("Create operation should have failed. ");
+                    Assert.Fail("Create operation should have failed with 1024 SubStatusCode.");
                 }
 
                 Assert.IsNotNull(ex.Message);
@@ -1503,12 +1508,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 await MdeEncryptionTests.MdePatchItemAsync(otherEncryptionContainer, patchOperations, docPostPatching, HttpStatusCode.OK);
+                Assert.Fail("Patch operation should have failed. ");
             }
             catch (CosmosException ex)
             {
                 if (ex.SubStatusCode != 1024)
                 {
-                    Assert.Fail("Patch operation should have failed. ");
+                    Assert.Fail("Patch operation should have failed with 1024 SubStatusCode. ");
                 }
 
                 Assert.IsNotNull(ex.Message);
@@ -1641,12 +1647,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+                Assert.Fail("Create operation should have failed. ");
             }
             catch (CosmosException ex)
             {
                 if (ex.SubStatusCode != 1024)
                 {
-                    Assert.Fail("Create operation should have failed. ");
+                    Assert.Fail("Create operation should have failed with 1024 SubStatusCode. ");
                 }
 
                 Assert.IsNotNull(ex.Message);
@@ -1659,12 +1666,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 await MdeEncryptionTests.VerifyItemByReadAsync(otherEncryptionContainer, testDoc);
+                Assert.Fail("Read operation should have failed. ");
             }
             catch (CosmosException ex)
             {
                 if (ex.SubStatusCode != 1024)
                 {
-                    Assert.Fail("Read operation should have failed. ");
+                    Assert.Fail("Read operation should have failed with 1024 SubStatusCode. ");
                 }
 
                 Assert.IsNotNull(ex.Message);
