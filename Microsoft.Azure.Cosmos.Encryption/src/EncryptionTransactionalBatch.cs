@@ -196,8 +196,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 response = await this.transactionalBatch.ExecuteAsync(clonedRequestOptions, cancellationToken);
             }
 
-            // FIXME this should check for BadRequest StatusCode too, requires a service fix to return 400 instead of -1 which is currently returned.
-            if (string.Equals(response.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
+            if (response.StatusCode == HttpStatusCode.BadRequest && string.Equals(response.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
             {
                 await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(
                     obsoleteEncryptionSettings: encryptionSettings,
