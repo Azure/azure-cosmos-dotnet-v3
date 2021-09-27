@@ -36,8 +36,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
 
             // check for Bad Request and Wrong RID intended and update the cached RID and Client Encryption Policy.
-            if (responseMessage.StatusCode == HttpStatusCode.BadRequest
-                && string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
+            if (EncryptionContainer.CheckIfRequestNeedsARetryPostPolicyRefresh(responseMessage))
             {
                 await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(
                     obsoleteEncryptionSettings: encryptionSettings,
