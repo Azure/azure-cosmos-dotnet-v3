@@ -29,8 +29,8 @@ namespace Microsoft.Azure.Cosmos
             : base(maxBodyLength, maxOperationCount, serializerCore)
         {
             this.PartitionKeyRangeId = partitionKeyRangeId;
-            this.isClientEncrypted = isClientEncrypted;
-            this.intendedCollectionRidValue = intendedCollectionRidValue;
+            this.IsClientEncrypted = isClientEncrypted;
+            this.IntendedCollectionRidValue = intendedCollectionRidValue;
         }
 
         /// <summary>
@@ -38,9 +38,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public string PartitionKeyRangeId { get; }
 
-        public bool isClientEncrypted { get; }
+        public bool IsClientEncrypted { get; }
 
-        public string intendedCollectionRidValue { get; }
+        public string IntendedCollectionRidValue { get; }
 
         /// <summary>
         /// Creates an instance of <see cref="PartitionKeyRangeServerBatchRequest"/>.

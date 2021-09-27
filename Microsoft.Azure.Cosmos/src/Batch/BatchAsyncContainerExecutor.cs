@@ -105,11 +105,11 @@ namespace Microsoft.Azure.Cosmos
                 // and prevent creating data with wrong Encryption Policy.
                 if (encryptionHeaders.TryGetValue(HttpConstants.HttpHeaders.IsClientEncrypted, out string encrypted))
                 {
-                    context.isClientEncrypted = bool.Parse(encrypted);
+                    context.IsClientEncrypted = bool.Parse(encrypted);
 
-                    if (context.isClientEncrypted && encryptionHeaders.TryGetValue(WFConstants.BackendHeaders.IntendedCollectionRid, out string ridValue))
+                    if (context.IsClientEncrypted && encryptionHeaders.TryGetValue(WFConstants.BackendHeaders.IntendedCollectionRid, out string ridValue))
                     {
-                        context.intendedCollectionRidValue = ridValue;
+                        context.IntendedCollectionRidValue = ridValue;
                     }
                 }
             }
@@ -202,10 +202,10 @@ namespace Microsoft.Azure.Cosmos
         {
             requestMessage.Headers.PartitionKeyRangeId = partitionKeyRangeServerBatchRequest.PartitionKeyRangeId;
 
-            if (partitionKeyRangeServerBatchRequest.isClientEncrypted)
+            if (partitionKeyRangeServerBatchRequest.IsClientEncrypted)
             {
-                requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsClientEncrypted, partitionKeyRangeServerBatchRequest.isClientEncrypted.ToString());
-                requestMessage.Headers.Add(WFConstants.BackendHeaders.IntendedCollectionRid, partitionKeyRangeServerBatchRequest.intendedCollectionRidValue);
+                requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsClientEncrypted, partitionKeyRangeServerBatchRequest.IsClientEncrypted.ToString());
+                requestMessage.Headers.Add(WFConstants.BackendHeaders.IntendedCollectionRid, partitionKeyRangeServerBatchRequest.IntendedCollectionRidValue);
             }
 
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.ShouldBatchContinueOnError, bool.TrueString);

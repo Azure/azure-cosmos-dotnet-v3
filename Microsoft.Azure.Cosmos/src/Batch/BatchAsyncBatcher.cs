@@ -88,10 +88,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(operation.Context));
             }
 
-            if (operation.Context.isClientEncrypted && !this.isClientEncrypted)
+            if (operation.Context.IsClientEncrypted && !this.isClientEncrypted)
             {
                 this.isClientEncrypted = true;
-                this.intendedCollectionRidValue = operation.Context.intendedCollectionRidValue;
+                this.intendedCollectionRidValue = operation.Context.IntendedCollectionRidValue;
             }
 
             if (this.batchOperations.Count == this.maxBatchOperationCount)

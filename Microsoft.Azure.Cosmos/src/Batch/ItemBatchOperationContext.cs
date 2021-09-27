@@ -18,9 +18,9 @@ namespace Microsoft.Azure.Cosmos
     {
         public string PartitionKeyRangeId { get; private set; }
 
-        public bool isClientEncrypted { get; set; }
+        public bool IsClientEncrypted { get; set; }
 
-        public string intendedCollectionRidValue { get; set; }
+        public string IntendedCollectionRidValue { get; set; }
 
         public BatchAsyncBatcher CurrentBatcher { get; set; }
 
