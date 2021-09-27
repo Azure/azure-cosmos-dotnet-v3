@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>MetricInfo</returns>
         internal MetricInfo SetAggregators(LongConcurrentHistogram histogram, double adjustment = 1)
         {
-            if (histogram != null)
+            if (histogram != null && histogram.TotalCount > 0)
             {
                 this.Count = histogram.TotalCount;
                 this.Max = histogram.GetMaxValue() / adjustment;

@@ -16,8 +16,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
         private readonly ClientTelemetry telemetry;
         private readonly CosmosClient cosmosClient;
 
-        private static string AccountLevelConsistency;
-
         public TelemetryHandler(CosmosClient client, ClientTelemetry telemetry)
         {
             this.telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
@@ -33,7 +31,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 try
                 {
-                    string consistencyLevel = await TelemetryHandler.GetConsistencyLevelAsync(this.cosmosClient, request.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel]);
                     this.telemetry
                         .Collect(
                                 cosmosDiagnostics: response.Diagnostics,
@@ -43,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 databaseId: request.DatabaseId,
                                 operationType: request.OperationType,
                                 resourceType: request.ResourceType,
-                                consistencyLevel: consistencyLevel,
+                                consistencyLevel: request.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
                                 requestCharge: response.Headers.RequestCharge);
                 }
                 catch (Exception ex)
@@ -54,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return response;
         }
 
-        /// <summary>
+/*        /// <summary>
         /// Get Consistency level from header (if available) otherwise account level
         /// </summary>
         /// <param name="client"></param>
@@ -81,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
             return requestConsistencyLevel.ToUpper();
         }
-
+*/
         /// <summary>
         /// It returns the payload size after reading it from the Response content stream. 
         /// To avoid blocking IO calls to get the stream length, it will return response content length if stream is of Memory Type

@@ -39,6 +39,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly DiagnosticsHandlerHelper diagnosticsHelper;
         private readonly CancellationTokenSource cancellationTokenSource;
 
+        private string accountConsistency;
+
         private Task telemetryTask;
 
         private ConcurrentDictionary<OperationInfo, (IList<long> latency, IList<long> requestcharge)> operationInfoMap 
@@ -120,10 +122,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 while (!this.cancellationTokenSource.IsCancellationRequested)
                 {
                     // Load account information if not available, cache is already implemented
-                    if (String.IsNullOrEmpty(this.clientTelemetryInfo.GlobalDatabaseAccountName))
+                    if (String.IsNullOrEmpty(this.clientTelemetryInfo.GlobalDatabaseAccountName) ||
+                        this.accountConsistency == null)
                     {
                         AccountProperties accountProperties = await ClientTelemetryHelper.SetAccountNameAsync(this.documentClient);
                         this.clientTelemetryInfo.GlobalDatabaseAccountName = accountProperties?.Id;
+                        this.accountConsistency = accountProperties?.Consistency.ToString().ToUpper();
                     }
 
                     // Load host information if not available (it caches the information)
@@ -153,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     ConcurrentDictionary<OperationInfo, (IList<long> latency, IList<long> requestcharge)> operationInfoSnapshot 
                         = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (IList<long> latency, IList<long> requestcharge)>());
 
-                    this.clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot);
+                    this.clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot, this.accountConsistency);
 
                     await this.SendAsync();
                 }
@@ -213,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             // Recording Request Latency and Request Charge
             OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
                                             responseSizeInBytes: responseSizeInBytes,
-                                            consistency: consistencyLevel,
+                                            consistency: consistencyLevel.ToUpper(),
                                             databaseName: databaseId,
                                             containerName: containerId,
                                             operation: operationType,

@@ -124,19 +124,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
             }
 
-            SystemInfo memoryInfoPayload = null;
-            if (memoryHistogram.TotalCount > 0)
-            {
-                memoryInfoPayload = new SystemInfo(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit);
-                memoryInfoPayload.SetAggregators(memoryHistogram, ClientTelemetryOptions.KbToMbFactor);
-            }
+            SystemInfo memoryInfoPayload = new SystemInfo(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit);
+            memoryInfoPayload.SetAggregators(memoryHistogram, ClientTelemetryOptions.KbToMbFactor);
 
-            SystemInfo cpuInfoPayload = null;
-            if (cpuHistogram.TotalCount > 0)
-            {
-                cpuInfoPayload = new SystemInfo(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit);
-                cpuInfoPayload.SetAggregators(cpuHistogram, ClientTelemetryOptions.HistogramPrecisionFactor);
-            }
+            SystemInfo cpuInfoPayload = new SystemInfo(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit);
+            cpuInfoPayload.SetAggregators(cpuHistogram, ClientTelemetryOptions.HistogramPrecisionFactor);
             
             return (cpuInfoPayload, memoryInfoPayload);
         }
@@ -145,8 +137,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Convert map with operation information to list of operations along with request latency and request charge metrics
         /// </summary>
         /// <param name="metrics"></param>
+        /// <param name="accountConsistency"></param>
         /// <returns>Collection of ReportPayload</returns>
-        internal static IList<OperationInfo> ToListWithMetricsInfo(IDictionary<OperationInfo, (IList<long> latency, IList<long> requestcharge)> metrics)
+        internal static IList<OperationInfo> ToListWithMetricsInfo(IDictionary<OperationInfo, (IList<long> latency, IList<long> requestcharge)> metrics,
+            string accountConsistency)
         {
             DefaultTrace.TraceInformation("Aggregating operation information to list started");
 
@@ -164,21 +158,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 rcHist.ResetAndRecordValues(entry.Value.requestcharge);
 
                 OperationInfo payloadForLatency = entry.Key;
-                payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
-                if (latencyHist.TotalCount > 0)
+
+                if (String.IsNullOrEmpty(payloadForLatency.Consistency))
                 {
-                    payloadForLatency.SetAggregators(latencyHist, ClientTelemetryOptions.TicksToMsFactor);
+                    payloadForLatency.Consistency = accountConsistency;
                 }
+                payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit)
+                    .SetAggregators(latencyHist, ClientTelemetryOptions.TicksToMsFactor);
 
                 payloadWithMetricInformation.Add(payloadForLatency);
 
                 OperationInfo payloadForRequestCharge = payloadForLatency.Copy();
-                payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
-                if (rcHist.TotalCount > 0)
-                {
-                    payloadForRequestCharge.SetAggregators(rcHist, ClientTelemetryOptions.HistogramPrecisionFactor);
-                }
-                
+                payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit)
+                    .SetAggregators(rcHist, ClientTelemetryOptions.HistogramPrecisionFactor);
+
                 payloadWithMetricInformation.Add(payloadForRequestCharge);
             }
 
