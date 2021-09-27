@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
         /// In case of direct mode requests, all the operations are expected to belong to the same PartitionKeyRange.
         /// The body of the request is populated with operations till it reaches the provided maxBodyLength.
         /// </summary>
-        /// <param name="partitionKeyRangeId">The partition key range id associated with all requests.</param>       
+        /// <param name="partitionKeyRangeId">The partition key range id associated with all requests.</param>
         /// <param name="operations">Operations to be added into this batch request.</param>
         /// <param name="maxBodyLength">Desired maximum length of the request body.</param>
         /// <param name="maxOperationCount">Maximum number of operations allowed in the request.</param>
