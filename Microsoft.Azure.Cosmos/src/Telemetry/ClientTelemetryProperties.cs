@@ -39,13 +39,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private bool? AcceleratedNetworking { get; set; }
 
         [JsonProperty(PropertyName = "systemInfo")]
-        internal List<SystemInfo> SystemInfo { get; set; }
+        internal IList<SystemInfo> SystemInfo { get; set; }
 
         [JsonProperty(PropertyName = "cacheRefreshInfo")]
-        private List<OperationInfo> CacheRefreshInfo { get; set; }
+        private IList<OperationInfo> CacheRefreshInfo { get; set; }
 
         [JsonProperty(PropertyName = "operationInfo")]
-        internal List<OperationInfo> OperationInfo { get; set; }
+        internal IList<OperationInfo> OperationInfo { get; set; }
         
         /// <summary>
         /// Preferred Region set by the client

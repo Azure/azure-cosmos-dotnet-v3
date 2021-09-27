@@ -41,8 +41,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private Task telemetryTask;
 
-        private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
-            = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
+        private ConcurrentDictionary<OperationInfo, (IList<long> latency, IList<long> requestcharge)> operationInfoMap 
+            = new ConcurrentDictionary<OperationInfo, (IList<long> latency, IList<long> requestcharge)>();
 
         /// <summary>
         /// Factory method to intiakize telemetry object and start observer task
@@ -150,8 +150,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     this.clientTelemetryInfo.DateTimeUtc = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
 
-                    ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
-                        = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
+                    ConcurrentDictionary<OperationInfo, (IList<long> latency, IList<long> requestcharge)> operationInfoSnapshot 
+                        = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (IList<long> latency, IList<long> requestcharge)>());
 
                     this.clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot);
 
@@ -220,16 +220,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                             resource: resourceType,
                                             statusCode: (int)statusCode);
 
-            (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
-                    .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
-                                                        ClientTelemetryOptions.RequestLatencyMax,
-                                                        ClientTelemetryOptions.RequestLatencyPrecision),
-                            requestcharge: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
-                                                        ClientTelemetryOptions.RequestChargeMax,
-                                                        ClientTelemetryOptions.RequestChargePrecision)));
+            (IList<long> latency, IList<long> requestcharge) = this.operationInfoMap.GetOrAdd(payloadKey, 
+                x => (latency: new List<long>(),
+                      requestcharge: new List<long>()));
             try
             {
-                latency.RecordValue(cosmosDiagnostics.GetClientElapsedTime().Ticks);
+                latency.Add(cosmosDiagnostics.GetClientElapsedTime().Ticks);
             } 
             catch (Exception ex)
             {
@@ -239,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             long requestChargeToRecord = (long)(requestCharge * ClientTelemetryOptions.HistogramPrecisionFactor);
             try
             {
-                requestcharge.RecordValue(requestChargeToRecord);
+                requestcharge.Add(requestChargeToRecord);
             }
             catch (Exception ex)
             {

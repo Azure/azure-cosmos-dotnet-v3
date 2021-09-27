@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Threading.Tasks;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Util;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 
@@ -145,16 +146,24 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         /// <param name="metrics"></param>
         /// <returns>Collection of ReportPayload</returns>
-        internal static List<OperationInfo> ToListWithMetricsInfo(IDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> metrics)
+        internal static IList<OperationInfo> ToListWithMetricsInfo(IDictionary<OperationInfo, (IList<long> latency, IList<long> requestcharge)> metrics)
         {
             DefaultTrace.TraceInformation("Aggregating operation information to list started");
 
-            List<OperationInfo> payloadWithMetricInformation = new List<OperationInfo>();
-            foreach (KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry in metrics)
-            {
-                OperationInfo payloadForLatency = entry.Key;
-                LongConcurrentHistogram latencyHist = entry.Value.latency;
+            LongConcurrentHistogram latencyHist = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+                                                  ClientTelemetryOptions.RequestLatencyMax,
+                                                  ClientTelemetryOptions.RequestLatencyPrecision);
+            LongConcurrentHistogram rcHist = new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
+                                                   ClientTelemetryOptions.RequestChargeMax,
+                                                   ClientTelemetryOptions.RequestChargePrecision);
 
+            IList<OperationInfo> payloadWithMetricInformation = new List<OperationInfo>();
+            foreach (KeyValuePair<OperationInfo, (IList<long> latency, IList<long> requestcharge)> entry in metrics)
+            {
+                latencyHist.ResetAndRecordValues(entry.Value.latency);
+                rcHist.ResetAndRecordValues(entry.Value.requestcharge);
+
+                OperationInfo payloadForLatency = entry.Key;
                 payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
                 if (latencyHist.TotalCount > 0)
                 {
@@ -164,7 +173,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 payloadWithMetricInformation.Add(payloadForLatency);
 
                 OperationInfo payloadForRequestCharge = payloadForLatency.Copy();
-                LongConcurrentHistogram rcHist = entry.Value.requestcharge;
                 payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
                 if (rcHist.TotalCount > 0)
                 {

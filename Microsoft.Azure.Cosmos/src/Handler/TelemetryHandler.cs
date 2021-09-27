@@ -33,14 +33,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 try
                 {
-                    long memory = GC.GetTotalMemory(true);
-
-                    Console.WriteLine("memory before : " + memory);
-                   // string consistencyLevel = await TelemetryHandler.GetConsistencyLevelAsync(this.cosmosClient, request.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel]);
-
-                    memory = GC.GetTotalMemory(true);
-                    Console.WriteLine("memory after : " + memory);
-
+                    string consistencyLevel = await TelemetryHandler.GetConsistencyLevelAsync(this.cosmosClient, request.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel]);
                     this.telemetry
                         .Collect(
                                 cosmosDiagnostics: response.Diagnostics,
@@ -50,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 databaseId: request.DatabaseId,
                                 operationType: request.OperationType,
                                 resourceType: request.ResourceType,
-                                consistencyLevel: "SESSION",
+                                consistencyLevel: consistencyLevel,
                                 requestCharge: response.Headers.RequestCharge);
                 }
                 catch (Exception ex)
@@ -69,19 +62,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// <returns>Consistency level</returns>
         private static async Task<string> GetConsistencyLevelAsync(CosmosClient client, string requestConsistencyLevel)
         {
-            long memory = GC.GetTotalMemory(true);
-            Console.WriteLine("memory 1 : " + memory);
             if (String.IsNullOrEmpty(requestConsistencyLevel))
             {
                 if (TelemetryHandler.AccountLevelConsistency == null)
                 {
-                    memory = GC.GetTotalMemory(true);
-                    Console.WriteLine("memory 2 : " + memory);
-
                     ConsistencyLevel accountConsistencyLevel = await client.GetAccountConsistencyLevelAsync();
-                    memory = GC.GetTotalMemory(true);
-                    Console.WriteLine("memory 3 : " + memory);
-
                     TelemetryHandler.AccountLevelConsistency = accountConsistencyLevel switch
                     {
                         ConsistencyLevel.Strong => "STRONG",
@@ -94,10 +79,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
                 return TelemetryHandler.AccountLevelConsistency;
             }
-
-            memory = GC.GetTotalMemory(true);
-            Console.WriteLine("memory 4 : " + memory);
-            return requestConsistencyLevel;
+            return requestConsistencyLevel.ToUpper();
         }
 
         /// <summary>
