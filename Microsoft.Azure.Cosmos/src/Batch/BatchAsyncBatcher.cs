@@ -174,22 +174,24 @@ namespace Microsoft.Azure.Cosmos
                         timeTakenInMilliseconds: stopwatch.ElapsedMilliseconds,
                         numberOfThrottles: numThrottle);
 
-                    PartitionKeyRangeBatchResponse batchResponse = new PartitionKeyRangeBatchResponse(serverRequest.Operations.Count, result.ServerResponse, this.serializerCore);
-                    foreach (ItemBatchOperation itemBatchOperation in batchResponse.Operations)
+                    using (PartitionKeyRangeBatchResponse batchResponse = new PartitionKeyRangeBatchResponse(serverRequest.Operations.Count, result.ServerResponse, this.serializerCore))
                     {
-                        TransactionalBatchOperationResult response = batchResponse[itemBatchOperation.OperationIndex];
-
-                        if (!response.IsSuccessStatusCode)
+                        foreach (ItemBatchOperation itemBatchOperation in batchResponse.Operations)
                         {
-                            ShouldRetryResult shouldRetry = await itemBatchOperation.Context.ShouldRetryAsync(response, cancellationToken);
-                            if (shouldRetry.ShouldRetry)
-                            {
-                                await this.retrier(itemBatchOperation, cancellationToken);
-                                continue;
-                            }
-                        }
+                            TransactionalBatchOperationResult response = batchResponse[itemBatchOperation.OperationIndex];
 
-                        itemBatchOperation.Context.Complete(this, response);
+                            if (!response.IsSuccessStatusCode)
+                            {
+                                ShouldRetryResult shouldRetry = await itemBatchOperation.Context.ShouldRetryAsync(response, cancellationToken);
+                                if (shouldRetry.ShouldRetry)
+                                {
+                                    await this.retrier(itemBatchOperation, cancellationToken);
+                                    continue;
+                                }
+                            }
+
+                            itemBatchOperation.Context.Complete(this, response);
+                        }
                     }
                 }
                 catch (Exception ex)
