@@ -203,13 +203,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     obsoleteEncryptionSettings: encryptionSettings,
                     cancellationToken: cancellationToken);
 
-                    throw new CosmosException(
+                throw new CosmosException(
                         "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Retrying can possibly fix the issue. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + response.ErrorMessage,
                         HttpStatusCode.BadRequest,
                         int.Parse(Constants.IncorrectContainerRidSubStatus),
                         response.Headers.ActivityId,
                         response.Headers.RequestCharge);
-                }
+            }
 
             return await this.DecryptTransactionalBatchResponseAsync(
                 response,
