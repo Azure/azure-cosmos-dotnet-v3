@@ -18,14 +18,14 @@ namespace CosmosCTL
 
     internal class ChangeFeedProcessorScenario : ICTLScenario
     {
-        private InitializationResult initializationResult;
+        private Utils.InitializationResult initializationResult;
 
         public async Task InitializeAsync(
             CTLConfig config,
             CosmosClient cosmosClient,
             ILogger logger)
         {
-            this.initializationResult = await CreateDatabaseAndContainerAsync(config, cosmosClient);
+            this.initializationResult = await Utils.CreateDatabaseAndContainerAsync(config, cosmosClient);
             if (this.initializationResult.CreatedDatabase)
             {
                 logger.LogInformation("Created database for execution");
@@ -39,7 +39,8 @@ namespace CosmosCTL
             if (config.PreCreatedDocuments > 0)
             {
                 logger.LogInformation("Pre-populating {0} documents", config.PreCreatedDocuments);
-                await Utils.PopulateDocumentsAsync(config, logger, new List<Container>() { cosmosClient.GetContainer(config.Database, config.Collection) });
+                IReadOnlyDictionary<string, IReadOnlyList<Dictionary<string, string>>> insertedDocuments = await Utils.PopulateDocumentsAsync(config, logger, new List<Container>() { cosmosClient.GetContainer(config.Database, config.Collection) });
+                this.initializationResult.InsertedDocuments = insertedDocuments[config.Collection].Count;
             }
         }
 
@@ -61,10 +62,17 @@ namespace CosmosCTL
 
             try
             {
+                object lockObject = new object();
+                long documentTotal = 0;
                 ChangeFeedProcessor changeFeedProcessor = cosmosClient.GetContainer(config.Database, config.Collection)
                     .GetChangeFeedProcessorBuilder<SimpleItem>("ctlProcessor",
                     (IReadOnlyCollection<SimpleItem> docs, CancellationToken token) =>
                     {
+                        lock (lockObject)
+                        {
+                            documentTotal += docs.Count;
+                        }
+
                         metrics.Measure.Counter.Increment(documentCounter, docs.Count);
                         return Task.CompletedTask;
                     })
@@ -112,6 +120,14 @@ namespace CosmosCTL
 
                     previousMin = sortedRange.Max;
                 }
+
+                if (config.PreCreatedDocuments > 0)
+                {
+                    if (this.initializationResult.InsertedDocuments != documentTotal)
+                    {
+                        logger.LogError($"Expected to receive {this.initializationResult.InsertedDocuments} documents and got {documentTotal}");
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -130,48 +146,6 @@ namespace CosmosCTL
                     await cosmosClient.GetContainer(config.Database, config.Collection).DeleteContainerAsync();
                 }
             }
-        }
-
-        private static async Task<InitializationResult> CreateDatabaseAndContainerAsync(
-            CTLConfig config,
-            CosmosClient cosmosClient)
-        {
-            InitializationResult result = new InitializationResult()
-            {
-                CreatedDatabase = false,
-                CreatedContainer = false
-            };
-
-            Database database;
-            try
-            {
-                database = await cosmosClient.GetDatabase(config.Database).ReadAsync();
-            }
-            catch (CosmosException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
-            {
-                DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(config.Database, config.Throughput);
-                result.CreatedDatabase = true;
-                database = databaseResponse.Database;
-            }
-
-            Container container;
-            try
-            {
-                container = await database.GetContainer(config.Collection).ReadContainerAsync();
-            }
-            catch (CosmosException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
-            {
-                await database.CreateContainerAsync(config.Collection, $"/{config.CollectionPartitionKey}");
-                result.CreatedContainer = true;
-            }
-
-            return result;
-        }
-
-        private struct InitializationResult
-        {
-            public bool CreatedDatabase;
-            public bool CreatedContainer;
         }
 
         private class SimpleItem

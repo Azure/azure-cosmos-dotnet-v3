@@ -21,23 +21,6 @@
             Assert.AreEqual(regionsContacted.Count, 4);
         }
 
-        [TestMethod]
-        public void ContactedRegionsWithoutNameTest()
-        {
-            ClientSideRequestStatisticsTraceDatum clientSideRequestStatistics = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
-            Assert.AreEqual(clientSideRequestStatistics.RegionsContacted.Count, 0);
-
-            Uri uri1 = new Uri("http://someUri1.com");
-            clientSideRequestStatistics.RegionsContactedWithName.Add(("WestUs", uri1));
-            Assert.AreEqual(clientSideRequestStatistics.RegionsContacted.Count, 1);
-            Assert.IsTrue(clientSideRequestStatistics.RegionsContacted.Contains(uri1));
-
-            Uri uri2 = new Uri("http://someUri2.com");
-            clientSideRequestStatistics.RegionsContactedWithName.Add(("EastUs", uri2));
-            Assert.AreEqual(clientSideRequestStatistics.RegionsContacted.Count, 2);
-            Assert.IsTrue(clientSideRequestStatistics.RegionsContacted.Contains(uri2));
-        }
-
         private ITrace CreateTestTraceTree()
         {
             ITrace trace;
@@ -72,11 +55,11 @@
         {
             ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
             Uri uri1 = new Uri("http://someUri1.com");
-            datum.RegionsContactedWithName.Add((regionName1, uri1));
+            datum.RegionsContacted.Add((regionName1, uri1));
             if (regionName2 != null)
             {
                 Uri uri2 = new Uri("http://someUri2.com");
-                datum.RegionsContactedWithName.Add((regionName2, uri2));
+                datum.RegionsContacted.Add((regionName2, uri2));
             }
 
             return datum;
