@@ -33,6 +33,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 try
                 {
+                    long memory = GC.GetTotalMemory(true);
+
+                    Console.WriteLine("memory before : " + memory);
+                   // string consistencyLevel = await TelemetryHandler.GetConsistencyLevelAsync(this.cosmosClient, request.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel]);
+
+                    memory = GC.GetTotalMemory(true);
+                    Console.WriteLine("memory after : " + memory);
+
                     this.telemetry
                         .Collect(
                                 cosmosDiagnostics: response.Diagnostics,
@@ -42,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 databaseId: request.DatabaseId,
                                 operationType: request.OperationType,
                                 resourceType: request.ResourceType,
-                                consistencyLevel: await TelemetryHandler.GetConsistencyLevelAsync(this.cosmosClient, request.ConsistencyLevel),
+                                consistencyLevel: "SESSION",
                                 requestCharge: response.Headers.RequestCharge);
                 }
                 catch (Exception ex)
@@ -61,38 +69,35 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// <returns>Consistency level</returns>
         private static async Task<string> GetConsistencyLevelAsync(CosmosClient client, string requestConsistencyLevel)
         {
-            Console.Write(client + requestConsistencyLevel);
-            return await Task.FromResult("SESSON");
-            /*// Send whatever set to request header
-            if (requestConsistencyLevel == null)
+            long memory = GC.GetTotalMemory(true);
+            Console.WriteLine("memory 1 : " + memory);
+            if (String.IsNullOrEmpty(requestConsistencyLevel))
             {
                 if (TelemetryHandler.AccountLevelConsistency == null)
                 {
-                    ConsistencyLevel accountConsistency = await client.GetAccountConsistencyLevelAsync();
-                    TelemetryHandler.AccountLevelConsistency = accountConsistency switch
+                    memory = GC.GetTotalMemory(true);
+                    Console.WriteLine("memory 2 : " + memory);
+
+                    ConsistencyLevel accountConsistencyLevel = await client.GetAccountConsistencyLevelAsync();
+                    memory = GC.GetTotalMemory(true);
+                    Console.WriteLine("memory 3 : " + memory);
+
+                    TelemetryHandler.AccountLevelConsistency = accountConsistencyLevel switch
                     {
                         ConsistencyLevel.Strong => "STRONG",
                         ConsistencyLevel.Session => "SESSION",
                         ConsistencyLevel.Eventual => "EVENTUAL",
                         ConsistencyLevel.ConsistentPrefix => "CONSISTENTPREFIX",
                         ConsistencyLevel.BoundedStaleness => "BOUNDEDSTALENESS",
-                        _ => accountConsistency.ToString(),
+                        _ => accountConsistencyLevel.ToString()
                     };
                 }
                 return TelemetryHandler.AccountLevelConsistency;
             }
 
-            requestConsistencyLevel = requestConsistencyLevel switch
-            {
-                "Strong" => "STRONG",
-                "Session" => "SESSION",
-                "Eventual" => "EVENTUAL",
-                "ConsistentPrefix" => "CONSISTENTPREFIX",
-                "BoundedStaleness" => "BOUNDEDSTALENESS",
-                _ => requestConsistencyLevel,
-            };
-
-            return requestConsistencyLevel;*/
+            memory = GC.GetTotalMemory(true);
+            Console.WriteLine("memory 4 : " + memory);
+            return requestConsistencyLevel;
         }
 
         /// <summary>

@@ -150,11 +150,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Calculated consistency level in request
-        /// </summary>
-        internal string ConsistencyLevel => this.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel];
-        
-        /// <summary>
         /// Request properties Per request context available to handlers. 
         /// These will not be automatically included into the wire.
         /// </summary>
