@@ -20,7 +20,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             public static void WriteTrace(
                 IJsonWriter writer,
-                ITrace trace)
+                ITrace trace,
+                bool isRootTrace)
             {
                 if (writer == null)
                 {
@@ -33,6 +34,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 }
 
                 writer.WriteObjectStart();
+
+                if (isRootTrace)
+                {
+                    writer.WriteFieldName("Summary");
+                    SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
+                    summaryDiagnostics.WriteSummaryDiagnostics(writer);
+                }
 
                 writer.WriteFieldName("name");
                 writer.WriteStringValue(trace.Name);
@@ -90,7 +98,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                     foreach (ITrace child in trace.Children)
                     {
-                        WriteTrace(writer, child);
+                        WriteTrace(writer, 
+                            child, 
+                            isRootTrace: false);
                     }
 
                     writer.WriteArrayEnd();
