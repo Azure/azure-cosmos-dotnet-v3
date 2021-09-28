@@ -162,7 +162,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await container.CreateItemAsync<ToDoActivity>(testItem, requestOptions: requestOptions);
 
-            Task.Delay(2000).Wait();
            /* for(int count = 0; count < 1; count++)
             {
                 // Read an Item

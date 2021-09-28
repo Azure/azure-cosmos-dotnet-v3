@@ -43,8 +43,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const String CpuName = "CPU";
         internal const String CpuUnit = "Percentage";
 
-        // Expecting histogram to have Minimum Memory Remaining of 1 MB and Maximum Memory Remaining of Long Max Value
-        internal const long MemoryMax = Int64.MaxValue;
+        // Expecting histogram to have Minimum Memory Remaining of 1 MB and Maximum Memory Remaining of Int Max Value (200 GB)
         internal const long MemoryMin = 1;
         internal const int MemoryPrecision = 5;
         internal const String MemoryName = "MemoryRemaining";
@@ -69,7 +68,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         internal static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
         // Expecting histogram to have Minimum Latency of 1 and Maximum Latency of 15 minutes (which is never going to happen)
-        internal static long RequestLatencyMax = TimeSpan.TicksPerHour / 4;
+        internal static readonly long RequestLatencyMax = TimeSpan.TicksPerHour / 4;
+        internal static readonly long MemoryMax = (long)int.MaxValue * 100;
 
         private static Uri vmMetadataUrl;
         private static TimeSpan scheduledTimeSpan = TimeSpan.Zero;

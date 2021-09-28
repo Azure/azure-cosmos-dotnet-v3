@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 databaseId: request.DatabaseId,
                                 operationType: request.OperationType,
                                 resourceType: request.ResourceType,
-                                consistencyLevel: "SESSION",
+                                consistencyLevel: request.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
                                 requestCharge: response.Headers.RequestCharge);
 
                     Console.WriteLine("TelemetryHandler 4: " + GC.GetTotalMemory(true));
