@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         public TelemetryHandler(ClientTelemetry telemetry)
         {
-            Console.WriteLine("TelemetryHandler 1: " + GC.GetTotalMemory(true));
+            //Console.WriteLine("TelemetryHandler 1: " + GC.GetTotalMemory(true));
             this.telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
         }
 
@@ -25,11 +25,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            Console.WriteLine("TelemetryHandler 2: " + GC.GetTotalMemory(true));
+            //Console.WriteLine("TelemetryHandler 2: " + GC.GetTotalMemory(true));
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
             if (request.IsTelemetryAllowed())
             {
-                Console.WriteLine("TelemetryHandler 3: " + GC.GetTotalMemory(true));
+                //Console.WriteLine("TelemetryHandler 3: " + GC.GetTotalMemory(true));
                 try
                 {
                     this.telemetry
@@ -44,16 +44,16 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 consistencyLevel: request.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
                                 requestCharge: response.Headers.RequestCharge);
 
-                    Console.WriteLine("TelemetryHandler 4: " + GC.GetTotalMemory(true));
+                    //Console.WriteLine("TelemetryHandler 4: " + GC.GetTotalMemory(true));
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("TelemetryHandler 5: " + GC.GetTotalMemory(true));
+                    //Console.WriteLine("TelemetryHandler 5: " + GC.GetTotalMemory(true));
                     DefaultTrace.TraceError("Error while collecting telemetry information : " + ex.Message);
                 }
             }
 
-            Console.WriteLine("TelemetryHandler 6: " + GC.GetTotalMemory(true));
+            //Console.WriteLine("TelemetryHandler 6: " + GC.GetTotalMemory(true));
             return response;
         }
 
