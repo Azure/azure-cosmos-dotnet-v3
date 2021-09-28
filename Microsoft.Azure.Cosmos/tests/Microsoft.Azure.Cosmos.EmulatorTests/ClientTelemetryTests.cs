@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             this.actualInfo = new List<ClientTelemetryProperties>();
 
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "5");
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, telemetryEndpointUrl);
 
             HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await container.CreateItemAsync<ToDoActivity>(testItem, requestOptions: requestOptions);
 
-            for(int count = 0; count < 50; count++)
+            for(int count = 0; count < 1; count++)
             {
                 // Read an Item
                 await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
             {
-                { Documents.OperationType.Read.ToString(), 50},
+                { Documents.OperationType.Read.ToString(), 1},
                 { Documents.OperationType.Create.ToString(), 1}
             };
 

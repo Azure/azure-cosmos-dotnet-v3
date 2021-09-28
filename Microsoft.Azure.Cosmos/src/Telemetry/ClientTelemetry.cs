@@ -116,11 +116,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>Async Task</returns>
         private async Task EnrichAndSendAsync()
         {
+            Console.WriteLine("6: " + GC.GetTotalMemory(true));
             DefaultTrace.TraceInformation("Telemetry Job Started with Observing window : " + observingWindow);
             try
             {
                 while (!this.cancellationTokenSource.IsCancellationRequested)
                 {
+                    Console.WriteLine("6.1: " + GC.GetTotalMemory(true));
                     // Load account information if not available, cache is already implemented
                     if (String.IsNullOrEmpty(this.clientTelemetryInfo.GlobalDatabaseAccountName) ||
                         this.accountConsistency == null)
@@ -130,6 +132,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         this.accountConsistency = accountProperties?.Consistency.DefaultConsistencyLevel.ToString().ToUpper();
                     }
 
+                    Console.WriteLine("6.2: " + GC.GetTotalMemory(true));
                     // Load host information if not available (it caches the information)
                     AzureVMMetadata azMetadata = await ClientTelemetryHelper.LoadAzureVmMetaDataAsync(this.httpClient);
 
@@ -141,6 +144,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         //TODO: Set AcceleratingNetwork flag from instance metadata once it is available.
                     }
 
+                    Console.WriteLine("6.3: " + GC.GetTotalMemory(true));
                     await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
 
                     // If cancellation is requested after the delay then return from here.
@@ -149,17 +153,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         DefaultTrace.TraceInformation("Observer Task Cancelled.");
                         return;
                     }
-
+                    Console.WriteLine("6.4: " + GC.GetTotalMemory(true));
                     this.RecordSystemUtilization();
-
+                    Console.WriteLine("6.5: " + GC.GetTotalMemory(true));
                     this.clientTelemetryInfo.DateTimeUtc = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
 
                     ConcurrentDictionary<OperationInfo, (IList<long> latency, IList<long> requestcharge)> operationInfoSnapshot 
                         = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (IList<long> latency, IList<long> requestcharge)>());
 
                     this.clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot, this.accountConsistency);
-
+                    Console.WriteLine("6.6: " + GC.GetTotalMemory(true));
                     await this.SendAsync();
+                    Console.WriteLine("6.7: " + GC.GetTotalMemory(true));
                 }
             }
             catch (Exception ex)
@@ -208,12 +213,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return;
             }
 
+            Console.WriteLine("3.1: " + GC.GetTotalMemory(true));
+
             string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics);
             if (String.IsNullOrEmpty(regionsContacted))
             {
                 DefaultTrace.TraceWarning("Diagnostics Region Contacted is not Available : " + cosmosDiagnostics.ToString());
             }
 
+            Console.WriteLine("3.2: " + GC.GetTotalMemory(true));
             // Recording Request Latency and Request Charge
             OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
                                             responseSizeInBytes: responseSizeInBytes,
@@ -224,6 +232,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                             resource: resourceType,
                                             statusCode: (int)statusCode);
 
+            Console.WriteLine("3.3: " + GC.GetTotalMemory(true));
             (IList<long> latency, IList<long> requestcharge) = this.operationInfoMap.GetOrAdd(payloadKey, x => (latency: new List<long>(), requestcharge: new List<long>()));
             try
             {
@@ -234,6 +243,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : " + ex.Message);
             }
 
+            Console.WriteLine("3.4: " + GC.GetTotalMemory(true));
+
             long requestChargeToRecord = (long)(requestCharge * ClientTelemetryOptions.HistogramPrecisionFactor);
             try
             {
@@ -243,6 +254,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : " + requestChargeToRecord + "  Exception : " + ex.Message);
             }
+            Console.WriteLine("3.5: " + GC.GetTotalMemory(true));
         }
 
         /// <summary>
@@ -252,10 +264,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             try
             {
+                Console.WriteLine("6.4.1: " + GC.GetTotalMemory(true));
                 DefaultTrace.TraceVerbose("Started Recording System Usage for telemetry.");
 
                 SystemUsageHistory systemUsageHistory = this.diagnosticsHelper.GetClientTelemtrySystemHistory();
-
+                Console.WriteLine("6.4.2: " + GC.GetTotalMemory(true));
                 if (systemUsageHistory != null )
                 {
                     (SystemInfo cpuUsagePayload, SystemInfo memoryUsagePayload) = ClientTelemetryHelper.RecordSystemUsage(systemUsageHistory);
@@ -271,11 +284,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         DefaultTrace.TraceVerbose("Recorded Memory Usage for telemetry.");
                     }
                 }
+                Console.WriteLine("6.4.3: " + GC.GetTotalMemory(true));
             }
             catch (Exception ex)
             {
                 DefaultTrace.TraceError("System Usage Recording Error : " + ex.Message);
             }
+            Console.WriteLine("6.4.4: " + GC.GetTotalMemory(true));
         }
 
         /// <summary>
@@ -347,6 +362,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
+                //this.operationInfoMap.Clear();
                 DefaultTrace.TraceError("Exception while sending telemetry data : " + ex.Message);
             }
             finally

@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         public TelemetryHandler(ClientTelemetry telemetry)
         {
+            Console.WriteLine("1: " + GC.GetTotalMemory(true));
             this.telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
         }
 
@@ -24,9 +25,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestMessage request,
             CancellationToken cancellationToken)
         {
+            Console.WriteLine("2: " + GC.GetTotalMemory(true));
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
             if (request.IsTelemetryAllowed())
             {
+                Console.WriteLine("3: " + GC.GetTotalMemory(true));
                 try
                 {
                     this.telemetry
@@ -40,12 +43,16 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 resourceType: request.ResourceType,
                                 consistencyLevel: request.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
                                 requestCharge: response.Headers.RequestCharge);
+
+                    Console.WriteLine("4: " + GC.GetTotalMemory(true));
                 }
                 catch (Exception ex)
                 {
                     DefaultTrace.TraceError("Error while collecting telemetry information : " + ex.Message);
                 }
             }
+
+            Console.WriteLine("5: " + GC.GetTotalMemory(true));
             return response;
         }
 
