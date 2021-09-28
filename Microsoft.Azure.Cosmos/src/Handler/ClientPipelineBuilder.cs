@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (telemetry != null)
             {
-                this.telemetryHandler = new TelemetryHandler(client, telemetry);
+                this.telemetryHandler = new TelemetryHandler(telemetry);
                 Debug.Assert(this.telemetryHandler.InnerHandler == null, nameof(this.telemetryHandler));
             }
 #else

@@ -14,12 +14,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
     internal class TelemetryHandler : RequestHandler
     {
         private readonly ClientTelemetry telemetry;
-        private readonly CosmosClient cosmosClient;
 
-        public TelemetryHandler(CosmosClient client, ClientTelemetry telemetry)
+        public TelemetryHandler(ClientTelemetry telemetry)
         {
             this.telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
-            this.cosmosClient = client ?? throw new ArgumentNullException(nameof(client));
         }
 
         public override async Task<ResponseMessage> SendAsync(

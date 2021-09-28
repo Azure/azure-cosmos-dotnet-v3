@@ -224,9 +224,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                             resource: resourceType,
                                             statusCode: (int)statusCode);
 
-            (IList<long> latency, IList<long> requestcharge) = this.operationInfoMap.GetOrAdd(payloadKey, 
-                x => (latency: new List<long>(),
-                      requestcharge: new List<long>()));
+            (IList<long> latency, IList<long> requestcharge) = this.operationInfoMap.GetOrAdd(payloadKey, x => (latency: new List<long>(), requestcharge: new List<long>()));
             try
             {
                 latency.Add(cosmosDiagnostics.GetClientElapsedTime().Ticks);
