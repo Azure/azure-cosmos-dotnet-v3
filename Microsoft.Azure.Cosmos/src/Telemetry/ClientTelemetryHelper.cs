@@ -94,21 +94,22 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>ReportPayload</returns>
         internal static (SystemInfo cpuInfo, SystemInfo memoryInfo) RecordSystemUsage(SystemUsageHistory systemUsageHistory)
         {
-            LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.CpuMin,
-                                                        ClientTelemetryOptions.CpuMax,
-                                                        ClientTelemetryOptions.CpuPrecision);
-
-            LongConcurrentHistogram memoryHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.MemoryMin,
-                                                           ClientTelemetryOptions.MemoryMax,
-                                                           ClientTelemetryOptions.MemoryPrecision);
-
             if (systemUsageHistory.Values == null)
             {
                 return (null, null);
             }
 
             DefaultTrace.TraceInformation("System Usage recorded by telemetry is : " + systemUsageHistory);
+            Console.WriteLine("RecordSystemUsage 6.4.2.1: " + GC.GetTotalMemory(true));
 
+            LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.CpuMin,
+                                            ClientTelemetryOptions.CpuMax,
+                                            ClientTelemetryOptions.CpuPrecision);
+            Console.WriteLine("RecordSystemUsage 6.4.2.2: " + GC.GetTotalMemory(true));
+            LongConcurrentHistogram memoryHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.MemoryMin,
+                                                           ClientTelemetryOptions.MemoryMax,
+                                                           ClientTelemetryOptions.MemoryPrecision);
+            Console.WriteLine("RecordSystemUsage 6.4.2.3: " + GC.GetTotalMemory(true));
             foreach (SystemUsageLoad systemUsage in systemUsageHistory.Values)
             {
                 float? cpuValue = systemUsage.CpuUsage;
@@ -116,20 +117,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     cpuHistogram.RecordValue((long)(cpuValue * ClientTelemetryOptions.HistogramPrecisionFactor));
                 }
-
+                Console.WriteLine("RecordSystemUsage 6.4.2.4: " + GC.GetTotalMemory(true));
                 long? memoryLoad = systemUsage.MemoryAvailable;
                 if (memoryLoad.HasValue)
                 {
                     memoryHistogram.RecordValue(memoryLoad.Value);
                 }
+                Console.WriteLine("RecordSystemUsage 6.4.2.5: " + GC.GetTotalMemory(true));
             }
 
             SystemInfo memoryInfoPayload = new SystemInfo(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit);
             memoryInfoPayload.SetAggregators(memoryHistogram, ClientTelemetryOptions.KbToMbFactor);
-
+            Console.WriteLine("RecordSystemUsage 6.4.2.6: " + GC.GetTotalMemory(true));
             SystemInfo cpuInfoPayload = new SystemInfo(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit);
             cpuInfoPayload.SetAggregators(cpuHistogram, ClientTelemetryOptions.HistogramPrecisionFactor);
-            
+            Console.WriteLine("RecordSystemUsage 6.4.2.7: " + GC.GetTotalMemory(true));
             return (cpuInfoPayload, memoryInfoPayload);
         }
 
@@ -143,20 +145,23 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string accountConsistency)
         {
             DefaultTrace.TraceInformation("Aggregating operation information to list started");
+            Console.WriteLine("ToListWithMetricsInfo 6.6.1: " + GC.GetTotalMemory(true));
 
             LongConcurrentHistogram latencyHist = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                   ClientTelemetryOptions.RequestLatencyMax,
                                                   ClientTelemetryOptions.RequestLatencyPrecision);
+            Console.WriteLine("ToListWithMetricsInfo 6.6.2: " + GC.GetTotalMemory(true));
             LongConcurrentHistogram rcHist = new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
                                                    ClientTelemetryOptions.RequestChargeMax,
                                                    ClientTelemetryOptions.RequestChargePrecision);
+            Console.WriteLine("ToListWithMetricsInfo 6.6.3: " + GC.GetTotalMemory(true));
 
             IList<OperationInfo> payloadWithMetricInformation = new List<OperationInfo>();
             foreach (KeyValuePair<OperationInfo, (IList<long> latency, IList<long> requestcharge)> entry in metrics)
             {
                 latencyHist.ResetAndRecordValues(entry.Value.latency);
                 rcHist.ResetAndRecordValues(entry.Value.requestcharge);
-
+                Console.WriteLine("ToListWithMetricsInfo 6.6.4: " + GC.GetTotalMemory(true));
                 OperationInfo payloadForLatency = entry.Key;
 
                 if (String.IsNullOrEmpty(payloadForLatency.Consistency))
@@ -165,18 +170,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
                 payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit)
                     .SetAggregators(latencyHist, ClientTelemetryOptions.TicksToMsFactor);
-
+                Console.WriteLine("ToListWithMetricsInfo 6.6.5: " + GC.GetTotalMemory(true));
                 payloadWithMetricInformation.Add(payloadForLatency);
 
                 OperationInfo payloadForRequestCharge = payloadForLatency.Copy();
                 payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit)
                     .SetAggregators(rcHist, ClientTelemetryOptions.HistogramPrecisionFactor);
-
+                Console.WriteLine("ToListWithMetricsInfo 6.6.6: " + GC.GetTotalMemory(true));
                 payloadWithMetricInformation.Add(payloadForRequestCharge);
             }
 
             DefaultTrace.TraceInformation("Aggregating operation information to list done");
-
+            Console.WriteLine("ToListWithMetricsInfo 6.6.7: " + GC.GetTotalMemory(true));
             return payloadWithMetricInformation;
         }
 

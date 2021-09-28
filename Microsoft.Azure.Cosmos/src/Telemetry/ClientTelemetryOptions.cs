@@ -20,8 +20,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         internal const int OneKbToBytes = 1024;
 
-        // Expecting histogram to have Minimum Latency of 1 and Maximum Latency of 1 hour (which is never going to happen)
-        internal const long RequestLatencyMax = TimeSpan.TicksPerHour;
+        // Expecting histogram to have Minimum Latency of 1 and Maximum Latency of 15 minutes (which is never going to happen)
         internal const long RequestLatencyMin = 1;
         internal const int RequestLatencyPrecision = 5;
         internal const string RequestLatencyName = "RequestLatency";
@@ -69,6 +68,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal static readonly ResourceType AllowedResourceTypes = ResourceType.Document;
 
         internal static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
+        // Expecting histogram to have Minimum Latency of 1 and Maximum Latency of 15 minutes (which is never going to happen)
+        internal static long RequestLatencyMax = TimeSpan.TicksPerHour / 4;
 
         private static Uri vmMetadataUrl;
         private static TimeSpan scheduledTimeSpan = TimeSpan.Zero;
