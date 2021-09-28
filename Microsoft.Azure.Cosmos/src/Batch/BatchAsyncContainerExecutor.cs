@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
                 trace,
                 BatchAsyncContainerExecutor.GetRetryPolicy(this.cosmosContainer, operation.OperationType, this.retryOptions));
 
-            if (itemRequestOptions != null)
+            if (itemRequestOptions != null && itemRequestOptions.AddRequestHeaders != null)
             {
                 // get the header value if any, passed by the encryption package.
                 Headers encryptionHeaders = new Headers();
