@@ -124,14 +124,22 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public override bool Equals(object obj)
         {
             bool isequal = obj is OperationInfo payload &&
-                   this.RegionsContacted != null && payload.RegionsContacted != null && this.RegionsContacted.Equals(payload.RegionsContacted) &&
-                   this.GreaterThan1Kb != null && payload.GreaterThan1Kb != null && this.GreaterThan1Kb.Equals(payload.GreaterThan1Kb) &&
-                   this.Consistency != null && payload.Consistency != null && this.Consistency.Equals(payload.Consistency) &&
-                   this.DatabaseName != null && payload.DatabaseName != null && this.DatabaseName.Equals(payload.DatabaseName) &&
-                   this.ContainerName != null && payload.ContainerName != null && this.ContainerName.Equals(payload.ContainerName) &&
-                   this.Operation != null && payload.Operation != null && this.Operation.Equals(payload.Operation) &&
-                   this.Resource != null && payload.Resource != null && this.Resource.Equals(payload.Resource) &&
-                   this.StatusCode != null && payload.StatusCode != null && this.StatusCode.Equals(payload.StatusCode);
+                   ((this.RegionsContacted == null && payload.RegionsContacted == null) || 
+                                (this.RegionsContacted != null && payload.RegionsContacted != null && this.RegionsContacted.Equals(payload.RegionsContacted))) &&
+                   ((this.GreaterThan1Kb == null && payload.GreaterThan1Kb == null) || 
+                                (this.GreaterThan1Kb != null && payload.GreaterThan1Kb != null && this.GreaterThan1Kb.Equals(payload.GreaterThan1Kb))) &&
+                   ((this.Consistency == null && payload.Consistency == null) || 
+                                (this.Consistency != null && payload.Consistency != null && this.Consistency.Equals(payload.Consistency))) &&
+                   ((this.DatabaseName == null && payload.DatabaseName == null) || 
+                                (this.DatabaseName != null && payload.DatabaseName != null && this.DatabaseName.Equals(payload.DatabaseName))) &&
+                   ((this.ContainerName == null && payload.ContainerName == null) ||
+                                (this.ContainerName != null && payload.ContainerName != null && this.ContainerName.Equals(payload.ContainerName))) &&
+                   ((this.Operation == null && payload.Operation == null) || 
+                                (this.Operation != null && payload.Operation != null && this.Operation.Equals(payload.Operation))) &&
+                   ((this.Resource == null && payload.Resource == null) || 
+                                (this.Resource != null && payload.Resource != null && this.Resource.Equals(payload.Resource))) &&
+                   ((this.StatusCode == null && payload.StatusCode == null) || 
+                                (this.StatusCode != null && payload.StatusCode != null && this.StatusCode.Equals(payload.StatusCode)));
 
             return isequal;
         }

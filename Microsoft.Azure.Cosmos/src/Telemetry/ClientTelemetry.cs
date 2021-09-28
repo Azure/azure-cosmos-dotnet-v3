@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     {
                         AccountProperties accountProperties = await ClientTelemetryHelper.SetAccountNameAsync(this.documentClient);
                         this.clientTelemetryInfo.GlobalDatabaseAccountName = accountProperties?.Id;
-                        this.accountConsistency = accountProperties?.Consistency.ToString().ToUpper();
+                        this.accountConsistency = accountProperties?.Consistency.DefaultConsistencyLevel.ToString().ToUpper();
                     }
 
                     // Load host information if not available (it caches the information)
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             // Recording Request Latency and Request Charge
             OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
                                             responseSizeInBytes: responseSizeInBytes,
-                                            consistency: consistencyLevel.ToUpper(),
+                                            consistency: consistencyLevel?.ToUpper(),
                                             databaseName: databaseId,
                                             containerName: containerId,
                                             operation: operationType,

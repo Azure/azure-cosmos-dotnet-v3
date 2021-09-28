@@ -1290,14 +1290,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {
-            long memory = GC.GetTotalMemory(true);
-            Console.WriteLine("memory 2.1.1 : " + memory);
-
             await this.EnsureValidClientAsync(NoOpTrace.Singleton);
-
-            memory = GC.GetTotalMemory(true);
-            Console.WriteLine("memory 2.1.2 : " + memory);
-
             return (ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel;
         }
 

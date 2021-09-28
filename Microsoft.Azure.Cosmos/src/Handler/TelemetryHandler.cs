@@ -51,34 +51,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return response;
         }
 
-/*        /// <summary>
-        /// Get Consistency level from header (if available) otherwise account level
-        /// </summary>
-        /// <param name="client"></param>
-        /// <param name="requestConsistencyLevel"></param>
-        /// <returns>Consistency level</returns>
-        private static async Task<string> GetConsistencyLevelAsync(CosmosClient client, string requestConsistencyLevel)
-        {
-            if (String.IsNullOrEmpty(requestConsistencyLevel))
-            {
-                if (TelemetryHandler.AccountLevelConsistency == null)
-                {
-                    ConsistencyLevel accountConsistencyLevel = await client.GetAccountConsistencyLevelAsync();
-                    TelemetryHandler.AccountLevelConsistency = accountConsistencyLevel switch
-                    {
-                        ConsistencyLevel.Strong => "STRONG",
-                        ConsistencyLevel.Session => "SESSION",
-                        ConsistencyLevel.Eventual => "EVENTUAL",
-                        ConsistencyLevel.ConsistentPrefix => "CONSISTENTPREFIX",
-                        ConsistencyLevel.BoundedStaleness => "BOUNDEDSTALENESS",
-                        _ => accountConsistencyLevel.ToString()
-                    };
-                }
-                return TelemetryHandler.AccountLevelConsistency;
-            }
-            return requestConsistencyLevel.ToUpper();
-        }
-*/
         /// <summary>
         /// It returns the payload size after reading it from the Response content stream. 
         /// To avoid blocking IO calls to get the stream length, it will return response content length if stream is of Memory Type
