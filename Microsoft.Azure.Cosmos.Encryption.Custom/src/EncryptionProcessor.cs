@@ -197,31 +197,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
-            DecryptionContext decryptionContext;
-
-            switch (encryptionProperties.EncryptionAlgorithm)
+            DecryptionContext decryptionContext = encryptionProperties.EncryptionAlgorithm switch
             {
-                case CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized:
-                    decryptionContext = await EncryptionProcessor.MdeEncAlgoDecryptObjectAsync(
-                        itemJObj,
-                        encryptor,
-                        encryptionProperties,
-                        diagnosticsContext,
-                        cancellationToken);
-                    break;
-
-                case CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized:
-                    decryptionContext = await EncryptionProcessor.LegacyEncAlgoDecryptContentAsync(
-                        itemJObj,
-                        encryptionProperties,
-                        encryptor,
-                        diagnosticsContext,
-                        cancellationToken);
-                    break;
-
-                default:
-                    throw new NotSupportedException($"Encryption Algorithm : {encryptionProperties.EncryptionAlgorithm} is not supported.");
-            }
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await EncryptionProcessor.MdeEncAlgoDecryptObjectAsync(
+                    itemJObj,
+                    encryptor,
+                    encryptionProperties,
+                    diagnosticsContext,
+                    cancellationToken),
+                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized => await EncryptionProcessor.LegacyEncAlgoDecryptContentAsync(
+                    itemJObj,
+                    encryptionProperties,
+                    encryptor,
+                    diagnosticsContext,
+                    cancellationToken),
+                _ => throw new NotSupportedException($"Encryption Algorithm : {encryptionProperties.EncryptionAlgorithm} is not supported."),
+            };
 
             input.Dispose();
             return (EncryptionProcessor.BaseSerializer.ToStream(itemJObj), decryptionContext);
@@ -245,32 +236,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
-
-            DecryptionContext decryptionContext;
-
-            switch (encryptionProperties.EncryptionAlgorithm)
+            DecryptionContext decryptionContext = encryptionProperties.EncryptionAlgorithm switch
             {
-                case CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized:
-                    decryptionContext = await EncryptionProcessor.MdeEncAlgoDecryptObjectAsync(
-                        document,
-                        encryptor,
-                        encryptionProperties,
-                        diagnosticsContext,
-                        cancellationToken);
-                    break;
-
-                case CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized:
-                    decryptionContext = await EncryptionProcessor.LegacyEncAlgoDecryptContentAsync(
-                        document,
-                        encryptionProperties,
-                        encryptor,
-                        diagnosticsContext,
-                        cancellationToken);
-                    break;
-
-                default:
-                    throw new NotSupportedException($"Encryption Algorithm : {encryptionProperties.EncryptionAlgorithm} is not supported.");
-            }
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await EncryptionProcessor.MdeEncAlgoDecryptObjectAsync(
+                    document,
+                    encryptor,
+                    encryptionProperties,
+                    diagnosticsContext,
+                    cancellationToken),
+                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized => await EncryptionProcessor.LegacyEncAlgoDecryptContentAsync(
+                    document,
+                    encryptionProperties,
+                    encryptor,
+                    diagnosticsContext,
+                    cancellationToken),
+                _ => throw new NotSupportedException($"Encryption Algorithm : {encryptionProperties.EncryptionAlgorithm} is not supported."),
+            };
 
             return (document, decryptionContext);
         }
