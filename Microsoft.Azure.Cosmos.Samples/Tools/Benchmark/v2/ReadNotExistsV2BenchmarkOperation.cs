@@ -9,7 +9,6 @@ namespace CosmosBenchmark
     using System.IO;
     using System.Net;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
