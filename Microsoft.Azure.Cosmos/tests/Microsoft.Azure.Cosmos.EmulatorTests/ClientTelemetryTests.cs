@@ -29,8 +29,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private List<ClientTelemetryProperties> actualInfo;
 
-        private AccountProperties accountProperties;
-
         [TestInitialize]
         public void TestInitialize()
         {
@@ -308,11 +306,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<OperationInfo> actualOperationList = new List<OperationInfo>();
             List<SystemInfo> actualSystemInformation = new List<SystemInfo>();
 
-            if (!expectedConsistencyLevel.HasValue)
-            {
-                expectedConsistencyLevel = this.accountProperties.Consistency.DefaultConsistencyLevel;
-            }
-
             // Asserting If basic client telemetry object is as expected
             foreach (ClientTelemetryProperties telemetryInfo in localCopyOfActualInfo)
             {
@@ -378,12 +371,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.cosmosClientBuilder = this.cosmosClientBuilder.WithConsistencyLevel(consistency.Value);
             }
 
-            if (mode == ConnectionMode.Gateway)
-            {
-                this.cosmosClient = this.cosmosClientBuilder.WithConnectionModeGateway().Build();
-            }
+            this.cosmosClient = mode == ConnectionMode.Gateway
+                ? this.cosmosClientBuilder.WithConnectionModeGateway().Build()
+                : this.cosmosClientBuilder.Build();
 
-            this.accountProperties = await this.cosmosClient.ReadAccountAsync();
             this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
             return await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
         }

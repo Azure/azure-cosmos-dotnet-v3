@@ -41,8 +41,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private readonly CancellationTokenSource cancellationTokenSource;
 
-        private static string accountConsistencyLevel;
-
         private Task telemetryTask;
 
         private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
@@ -128,7 +126,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     {
                         AccountProperties accountProperties = await ClientTelemetryHelper.SetAccountNameAsync(this.documentClient);
                         this.clientTelemetryInfo.GlobalDatabaseAccountName = accountProperties?.Id;
-                        accountConsistencyLevel = accountProperties?.Consistency.DefaultConsistencyLevel.ToString();
                     }
 
                     // Load host information if not available (it caches the information)
@@ -158,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
                         = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
 
-                    this.clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot, accountConsistencyLevel);
+                    this.clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot);
 
                     await this.SendAsync();
                 }
