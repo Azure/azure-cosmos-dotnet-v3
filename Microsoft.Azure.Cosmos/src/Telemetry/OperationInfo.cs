@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal string Resource { get; }
 
         [JsonProperty(PropertyName = "consistency")]
-        internal string Consistency { get; set; }
+        internal string Consistency { get; }
 
         [JsonProperty(PropertyName = "statusCode")]
         public int? StatusCode { get; }
