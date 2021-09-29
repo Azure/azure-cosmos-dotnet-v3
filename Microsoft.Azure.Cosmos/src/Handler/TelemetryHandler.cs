@@ -27,9 +27,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
             if (this.IsAllowed(request))
             {
-                Enum.TryParse(request.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel], 
-                    out ConsistencyLevel consistencyLevel);
-
                 try
                 {
                     this.telemetry
@@ -41,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 databaseId: request.DatabaseId,
                                 operationType: request.OperationType,
                                 resourceType: request.ResourceType,
-                                consistencyLevel: consistencyLevel,
+                                consistencyLevel: request.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
                                 requestCharge: response.Headers.RequestCharge);
                 }
                 catch (Exception ex)

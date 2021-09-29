@@ -143,8 +143,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Convert map with operation information to list of operations along with request latency and request charge metrics
         /// </summary>
         /// <param name="metrics"></param>
+        /// <param name="accountConsistencyLevel"></param>
         /// <returns>Collection of ReportPayload</returns>
-        internal static List<OperationInfo> ToListWithMetricsInfo(IDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> metrics)
+        internal static List<OperationInfo> ToListWithMetricsInfo(IDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> metrics,
+            string accountConsistencyLevel)
         {
             DefaultTrace.TraceInformation("Aggregating operation information to list started");
 
@@ -152,6 +154,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             foreach (KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry in metrics)
             {
                 OperationInfo payloadForLatency = entry.Key;
+
+                if (payloadForLatency.Consistency == null)
+                {
+                    payloadForLatency.Consistency = accountConsistencyLevel;
+                }
                 payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
                 payloadForLatency.SetAggregators(entry.Value.latency, ClientTelemetryOptions.TicksToMsFactor);
 
