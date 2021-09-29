@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
-            return null;
+            throw new InvalidOperationException("Failed to build ProtectedDataEncryptionKey. ");
         }
     }
 }
