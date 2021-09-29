@@ -29,6 +29,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private List<ClientTelemetryProperties> actualInfo;
 
+        private AccountProperties accountProperties;
+
         [TestInitialize]
         public void TestInitialize()
         {
@@ -134,10 +136,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Fail Read
             try
             {
-                Container container = await this.GetContainer(mode);
+                Container container = await this.GetContainer(mode, ConsistencyLevel.ConsistentPrefix);
                 await container.ReadItemAsync<JObject>(
                     new Guid().ToString(),
-                    new Cosmos.PartitionKey(new Guid().ToString()));
+                    new Cosmos.PartitionKey(new Guid().ToString()),
+                     new ItemRequestOptions()
+                     {
+                         BaseConsistencyLevel = ConsistencyLevel.Eventual // overriding client level consistency
+                     });
             }
             catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.NotFound)
             {
@@ -145,7 +151,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(message);
             }
 
-            await this.WaitAndAssert(2);
+            await this.WaitAndAssert(expectedOperationCount: 2,
+                expectedConsistencyLevel: ConsistencyLevel.Eventual);
         }
 
         [TestMethod]
@@ -160,7 +167,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 await container.ReadItemStreamAsync(
                     new Guid().ToString(),
-                    new Cosmos.PartitionKey(new Guid().ToString()));
+                    new Cosmos.PartitionKey(new Guid().ToString()),
+                    new ItemRequestOptions()
+                    {
+                        BaseConsistencyLevel = ConsistencyLevel.ConsistentPrefix // Request level consistency
+                    });
             }
             catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.NotFound)
             {
@@ -168,7 +179,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(message);
             }
 
-            await this.WaitAndAssert(2);
+            await this.WaitAndAssert(expectedOperationCount: 2,
+                expectedConsistencyLevel: ConsistencyLevel.ConsistentPrefix);
         }
 
         [TestMethod]
@@ -213,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task BatchOperationsTest(ConnectionMode mode)
         {
-            Container container = await this.GetContainer(mode);
+            Container container = await this.GetContainer(mode, ConsistencyLevel.Eventual); // Client level consistency
             using (BatchAsyncContainerExecutor executor =
                 new BatchAsyncContainerExecutor(
                     (ContainerInlineCore)container,
@@ -231,7 +243,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await Task.WhenAll(tasks);
             }
 
-            await this.WaitAndAssert(2);
+            await this.WaitAndAssert(expectedOperationCount: 2,
+                expectedConsistencyLevel: ConsistencyLevel.Eventual);
         }
 
         [TestMethod]
@@ -264,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.WaitAndAssert(4);
         }
 
-        private async Task WaitAndAssert(int expectedOperationCount)
+        private async Task WaitAndAssert(int expectedOperationCount, ConsistencyLevel? expectedConsistencyLevel = null)
         {
             Assert.IsNotNull(this.actualInfo, "Telemetry Information not available");
 
@@ -295,6 +308,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<OperationInfo> actualOperationList = new List<OperationInfo>();
             List<SystemInfo> actualSystemInformation = new List<SystemInfo>();
 
+            if (!expectedConsistencyLevel.HasValue)
+            {
+                expectedConsistencyLevel = this.accountProperties.Consistency.DefaultConsistencyLevel;
+            }
+
             // Asserting If basic client telemetry object is as expected
             foreach (ClientTelemetryProperties telemetryInfo in localCopyOfActualInfo)
             {
@@ -321,6 +339,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(operation.ResponseSizeInBytes, "ResponseSizeInBytes is null");
                 Assert.IsNotNull(operation.StatusCode, "StatusCode is null");
                 Assert.IsNotNull(operation.Consistency, "Consistency is null");
+                Assert.AreEqual(expectedConsistencyLevel.ToString(), operation.Consistency, $"Consistency is not {expectedConsistencyLevel}");
 
                 Assert.IsNotNull(operation.MetricInfo, "MetricInfo is null");
                 Assert.IsNotNull(operation.MetricInfo.MetricsName, "MetricsName is null");
@@ -352,18 +371,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return new ItemBatchOperation(Documents.OperationType.Create, 0, new Cosmos.PartitionKey(itemId), itemId, TestCommon.SerializerCore.ToStream(testItem));
         }
 
-        private async Task<Container> GetContainer(ConnectionMode mode)
+        private async Task<Container> GetContainer(ConnectionMode mode, ConsistencyLevel? consistency = null)
         {
+            if (consistency.HasValue)
+            {
+                this.cosmosClientBuilder = this.cosmosClientBuilder.WithConsistencyLevel(consistency.Value);
+            }
+
             if (mode == ConnectionMode.Direct)
             {
                 this.cosmosClient = this.cosmosClientBuilder.WithConnectionModeDirect().Build();
-            }
-
-            if (mode == ConnectionMode.Gateway)
+            } else if (mode == ConnectionMode.Gateway)
             {
                 this.cosmosClient = this.cosmosClientBuilder.WithConnectionModeGateway().Build();
             }
 
+            this.accountProperties = await this.cosmosClient.ReadAccountAsync();
             this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
             return await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
         }
