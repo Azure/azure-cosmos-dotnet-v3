@@ -4113,6 +4113,11 @@
           "Attributes": [],
           "MethodInfo": "[Void .ctor(System.String), Void .ctor(System.String)]"
         },
+        "Void .ctor(System.String, Azure.Core.TokenCredential)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(System.String, Azure.Core.TokenCredential), Void .ctor(System.String, Azure.Core.TokenCredential)]"
+        },
         "Void .ctor(System.String, System.String)": {
           "Type": "Constructor",
           "Attributes": [],
