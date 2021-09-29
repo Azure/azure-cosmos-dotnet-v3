@@ -248,21 +248,169 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
-        public async Task QueryOperationTest(ConnectionMode mode)
+        public async Task SingleOperationMultipleTimes(ConnectionMode mode)
+        {
+            Container container = await this.GetContainer(mode);
+
+            Dictionary<string, object> properties = new Dictionary<string, object>();
+            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            {
+                Properties = properties
+            };
+
+            // Create an item
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+
+            await container.CreateItemAsync<ToDoActivity>(testItem, requestOptions: requestOptions);
+
+            for (int count = 0; count < 1; count++)
+            {
+                // Read an Item
+                await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
+            }
+
+            await this.WaitAndAssert(
+                expectedOperationCount: 4); // 2 (read, requetLatency + requestCharge) + 2 (create, requestLatency + requestCharge)
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public async Task QueryOperationSinglePartitionTest(ConnectionMode mode)
         {
             Container container = await this.GetContainer(mode);
 
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue", "MyTestItemId");
-            ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(testItem);
+            Dictionary<string, object> properties = new Dictionary<string, object>();
+            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            {
+                ConsistencyLevel = ConsistencyLevel.ConsistentPrefix,
+                Properties = properties
+            };
 
+            ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(
+                item: testItem,
+                requestOptions: requestOptions);
+
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
+            {
+                ConsistencyLevel = ConsistencyLevel.ConsistentPrefix,
+            };
+
+            List<object> families = new List<object>();
             if (createResponse.StatusCode == HttpStatusCode.Created)
             {
                 string sqlQueryText = "SELECT * FROM c";
 
                 QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
-                FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(queryDefinition);
+                using (FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(
+                    queryDefinition: queryDefinition,
+                    requestOptions: queryRequestOptions))
+                {
+                    while (queryResultSetIterator.HasMoreResults)
+                    {
+                        FeedResponse<object> currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                        foreach (object family in currentResultSet)
+                        {
+                            families.Add(family);
+                        }
+                    }
+                }
+
+                Assert.AreEqual(1, families.Count);
+
+            }
+
+            await this.WaitAndAssert(expectedOperationCount: 4);
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public async Task QueryMultiPageSinglePartitionOperationTest(ConnectionMode mode)
+        {
+            Container container = await this.GetContainer(mode: mode);
+
+            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            {
+                ConsistencyLevel = ConsistencyLevel.ConsistentPrefix
+            };
+
+            ToDoActivity testItem1 = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue1", "MyTestItemId1");
+            ItemResponse<ToDoActivity> createResponse1 = await container.CreateItemAsync<ToDoActivity>(
+                item: testItem1,
+                requestOptions: requestOptions);
+            ToDoActivity testItem2 = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue2", "MyTestItemId2");
+            ItemResponse<ToDoActivity> createResponse2 = await container.CreateItemAsync<ToDoActivity>(
+                item: testItem2,
+                requestOptions: requestOptions);
+
+            if (createResponse1.StatusCode == HttpStatusCode.Created &&
+                createResponse2.StatusCode == HttpStatusCode.Created)
+            {
+                string sqlQueryText = "SELECT * FROM c";
 
                 List<object> families = new List<object>();
+                QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
+                using (FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(
+                    queryDefinition: queryDefinition,
+                    requestOptions: new QueryRequestOptions()
+                    {
+                        ConsistencyLevel = ConsistencyLevel.ConsistentPrefix,
+                        MaxItemCount = 1
+                    }))
+                {
+                    while (queryResultSetIterator.HasMoreResults)
+                    {
+                        FeedResponse<object> currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                        foreach (object family in currentResultSet)
+                        {
+                            families.Add(family);
+                        }
+                    }
+                }
+
+                Assert.AreEqual(2, families.Count);
+
+            }
+
+            await this.WaitAndAssert(
+                expectedOperationCount: 4);
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public async Task QueryOperationCrossPartitionTest(ConnectionMode mode)
+        {
+            // Multi Partiton Operation takes time
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
+
+            ContainerInternal itemsCore = (ContainerInternal)await this.GetContainer(
+                mode: mode,
+                isLargeContainer: true);
+
+            // Verify container has multiple partitions
+            int pkRangesCount = (await itemsCore.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(itemsCore.LinkUri)).Count;
+
+            IEnumerable<FeedRange> tokens = await itemsCore.GetFeedRangesAsync();
+            Assert.IsTrue(pkRangesCount > 1, "Should have created a multi partition container.");
+            Assert.AreEqual(pkRangesCount, tokens.Count());
+
+            Container container = (Container)itemsCore;
+
+            await ToDoActivity.CreateRandomItems(
+                container: container,
+                pkCount: 2,
+                perPKItemCount: 5);
+
+            string sqlQueryText = "SELECT * FROM c";
+
+            List<object> families = new List<object>();
+
+            QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
+            using (FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(queryDefinition))
+            {
                 while (queryResultSetIterator.HasMoreResults)
                 {
                     FeedResponse<object> currentResultSet = await queryResultSetIterator.ReadNextAsync();
@@ -272,7 +420,94 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
             }
-            await this.WaitAndAssert(4);
+
+            Assert.AreEqual(10, families.Count);
+
+            await this.WaitAndAssert(
+                expectedOperationCount: 6);
+        }
+
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public async Task QueryOperationMutiplePageCrossPartitionTest(ConnectionMode mode)
+        {
+            // Multi Partiton Operation takes time
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
+
+            ContainerInternal itemsCore = (ContainerInternal)await this.GetContainer(
+                mode: mode,
+                isLargeContainer: true);
+
+            // Verify container has multiple partitions
+            int pkRangesCount = (await itemsCore.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(itemsCore.LinkUri)).Count;
+
+            IEnumerable<FeedRange> tokens = await itemsCore.GetFeedRangesAsync();
+            Assert.IsTrue(pkRangesCount > 1, "Should have created a multi partition container.");
+            Assert.AreEqual(pkRangesCount, tokens.Count());
+
+            Container container = (Container)itemsCore;
+
+            await ToDoActivity.CreateRandomItems(
+                container: container,
+                pkCount: 2,
+                perPKItemCount: 5);
+
+            string sqlQueryText = "SELECT * FROM c";
+
+            List<object> families = new List<object>();
+            QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
+            using (FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(
+                 queryDefinition: queryDefinition,
+                 requestOptions: new QueryRequestOptions()
+                 {
+                     MaxItemCount = 1
+                 }))
+            {
+                while (queryResultSetIterator.HasMoreResults)
+                {
+                    FeedResponse<object> currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                    foreach (object family in currentResultSet)
+                    {
+                        families.Add(family);
+                    }
+                }
+            }
+
+            Assert.AreEqual(10, families.Count);
+
+            await this.WaitAndAssert(
+                expectedOperationCount: 4);
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public async Task QueryOperationInvalidContinuationToken(ConnectionMode mode)
+        {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
+            Container container = await this.GetContainer(mode);
+
+            List<ToDoActivity> results = new List<ToDoActivity>();
+            using (FeedIterator<ToDoActivity> resultSetIterator = container.GetItemQueryIterator<ToDoActivity>(
+                  "SELECT * FROM c",
+                  continuationToken: "dummy token"))
+            {
+                try
+                {
+                    while (resultSetIterator.HasMoreResults)
+                    {
+                        FeedResponse<ToDoActivity> response = await resultSetIterator.ReadNextAsync();
+                        results.AddRange(response);
+                    }
+                }
+                catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.BadRequest)
+                {
+                    string message = ce.ToString();
+                    Assert.IsNotNull(message);
+                }
+            }
+
+            await this.WaitAndAssert(expectedOperationCount: 0); // Does not record telemetry
         }
 
         private async Task WaitAndAssert(int expectedOperationCount, ConsistencyLevel? expectedConsistencyLevel = null)
@@ -363,7 +598,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return new ItemBatchOperation(Documents.OperationType.Create, 0, new Cosmos.PartitionKey(itemId), itemId, TestCommon.SerializerCore.ToStream(testItem));
         }
 
-        private async Task<Container> GetContainer(ConnectionMode mode, ConsistencyLevel? consistency = null)
+        private async Task<Container> GetContainer(ConnectionMode mode, ConsistencyLevel? consistency = null, , bool isLargeContainer = false)
         {
             if (consistency.HasValue)
             {
@@ -375,6 +610,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 : this.cosmosClientBuilder.Build();
 
             this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            if (isLargeContainer)
+            {
+                return await this.database.CreateContainerAsync(
+                    id: Guid.NewGuid().ToString(),
+                    partitionKeyPath: "/id",
+                    throughput: 30000);
+            }
+
             return await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
         }
 
