@@ -331,8 +331,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(operation.Resource, "Resource Type is null");
                 Assert.IsNotNull(operation.ResponseSizeInBytes, "ResponseSizeInBytes is null");
                 Assert.IsNotNull(operation.StatusCode, "StatusCode is null");
-                Assert.IsNotNull(operation.Consistency, "Consistency is null");
-                Assert.AreEqual(expectedConsistencyLevel.ToString(), operation.Consistency, $"Consistency is not {expectedConsistencyLevel}");
+                Assert.AreEqual(expectedConsistencyLevel?.ToString(), operation.Consistency, $"Consistency is not {expectedConsistencyLevel}");
 
                 Assert.IsNotNull(operation.MetricInfo, "MetricInfo is null");
                 Assert.IsNotNull(operation.MetricInfo.MetricsName, "MetricsName is null");
