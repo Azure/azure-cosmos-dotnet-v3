@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary> 
         /// <value>Default value is null.</value> 
         /// <remarks> 
-        /// For requests where the <see cref="ConsistencyLevel"/> is <see cref="ConsistencyLevel.Eventual"/>, responses from the integrated cache are guaranteed to be no staler than value indicated by this MaxIntegratedCacheStaleness. 
+        /// For requests where the <see cref="ConsistencyLevel"/> is <see cref="ConsistencyLevel.Eventual"/> or <see cref="ConsistencyLevel.Session"/>, responses from the integrated cache are guaranteed to be no staler than value indicated by this MaxIntegratedCacheStaleness. 
         /// Cache Staleness is supported in milliseconds granularity. Anything smaller than milliseconds will be ignored.
         /// </remarks> 
         public TimeSpan? MaxIntegratedCacheStaleness { get; set; }
