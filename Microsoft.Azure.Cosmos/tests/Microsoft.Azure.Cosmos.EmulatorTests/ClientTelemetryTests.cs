@@ -378,11 +378,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.cosmosClientBuilder = this.cosmosClientBuilder.WithConsistencyLevel(consistency.Value);
             }
 
-            if (mode == ConnectionMode.Direct)
-            {
-                this.cosmosClient = this.cosmosClientBuilder.WithConnectionModeDirect().Build();
-            } 
-            else if (mode == ConnectionMode.Gateway)
+            if (mode == ConnectionMode.Gateway)
             {
                 this.cosmosClient = this.cosmosClientBuilder.WithConnectionModeGateway().Build();
             }
