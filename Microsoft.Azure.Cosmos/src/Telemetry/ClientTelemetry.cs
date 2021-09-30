@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             string databaseId,
                             OperationType operationType,
                             ResourceType resourceType,
-                            Cosmos.ConsistencyLevel? consistencyLevel,
+                            string consistencyLevel,
                             double requestCharge)
         {
             DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
@@ -198,12 +198,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
 
             string regionsContacted = this.GetContactedRegions(cosmosDiagnostics);
-
-            // If consistency level is not mentioned in request then take the sdk/account level
-            if (consistencyLevel == null)
-            {
-                consistencyLevel = (Cosmos.ConsistencyLevel)this.documentClient.ConsistencyLevel;
-            }
 
             // Recording Request Latency and Request Charge
             OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
