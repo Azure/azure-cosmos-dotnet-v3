@@ -22,6 +22,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private readonly Dictionary<string, EncryptionSettingForProperty> encryptionSettingsDictByPropertyName;
 
+        private EncryptionSettings(string containerRidValue)
+        {
+            this.ContainerRidValue = containerRidValue;
+            this.encryptionSettingsDictByPropertyName = new Dictionary<string, EncryptionSettingForProperty>();
+            this.PropertiesToEncrypt = this.encryptionSettingsDictByPropertyName.Keys;
+        }
+
         public string ContainerRidValue { get; }
 
         public IEnumerable<string> PropertiesToEncrypt { get; }
@@ -33,11 +40,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public EncryptionSettingForProperty GetEncryptionSettingForProperty(string propertyName)
         {
-            if (string.IsNullOrEmpty(propertyName))
-            {
-                return null;
-            }
-
             this.encryptionSettingsDictByPropertyName.TryGetValue(propertyName, out EncryptionSettingForProperty encryptionSettingsForProperty);
 
             return encryptionSettingsForProperty;
@@ -50,13 +52,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 headers.Add(IsClientEncryptedHeader, bool.TrueString);
                 headers.Add(IntendedCollectionHeader, this.ContainerRidValue);
             };
-        }
-
-        private EncryptionSettings(string containerRidValue)
-        {
-            this.ContainerRidValue = containerRidValue;
-            this.encryptionSettingsDictByPropertyName = new Dictionary<string, EncryptionSettingForProperty>();
-            this.PropertiesToEncrypt = this.encryptionSettingsDictByPropertyName.Keys;
         }
 
         private static EncryptionType GetEncryptionTypeForProperty(ClientEncryptionIncludedPath clientEncryptionIncludedPath)

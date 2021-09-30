@@ -1337,7 +1337,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 Assert.Fail("ValidateQueryResultAsync should have failed. ");
             }
             catch(CosmosException ex)
-            {          
+            {
                 if (ex.SubStatusCode != 1024)
                 {
                     Assert.Fail("Query should have failed with 1024 SubStatusCode. ");

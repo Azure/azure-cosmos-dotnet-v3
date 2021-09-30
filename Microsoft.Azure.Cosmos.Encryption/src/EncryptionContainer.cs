@@ -730,15 +730,35 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cancellationToken: cancellationToken);
         }
 
-        internal static bool CheckIfRequestNeedsARetryPostPolicyRefresh(ResponseMessage responseMessage)
+        /// <summary>
+        /// This function handles the scenario where a container is deleted(say from different Client) and recreated with same Id but with different client encryption policy.
+        /// The idea is to have the container Rid cached and sent out as part of RequestOptions with Container Rid set in "x-ms-cosmos-intended-collection-rid" header.
+        /// So when the container being referenced here gets recreated we would end up with a stale encryption settings and container Rid and this would result in BadRequest( and a substatus 1024).
+        /// This would allow us to refresh the encryption settings and Container Rid, on the premise that the container recreated could possibly be configured with a new encryption policy.
+        /// </summary>
+        /// <param name="responseMessage"> Response message to validate. </param>
+        /// <param name="encryptionSettings"> Current cached encryption settings to refresh if required. </param>
+        /// <param name="cancellationToken"> Cancellation token. </param>
+        internal async Task ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(
+            ResponseMessage responseMessage,
+            EncryptionSettings encryptionSettings,
+            CancellationToken cancellationToken)
         {
             if (responseMessage.StatusCode == HttpStatusCode.BadRequest &&
                 string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
             {
-                return true;
-            }
+                // get the latest encryption settings.
+                await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                   obsoleteEncryptionSettings: encryptionSettings,
+                   cancellationToken: cancellationToken);
 
-            return false;
+                throw new CosmosException(
+                   "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Retrying may fix the issue. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + responseMessage.ErrorMessage,
+                   HttpStatusCode.BadRequest,
+                   int.Parse(Constants.IncorrectContainerRidSubStatus),
+                   responseMessage.Headers.ActivityId,
+                   responseMessage.Headers.RequestCharge);
+            }
         }
 
         internal async Task<List<PatchOperation>> EncryptPatchOperationsAsync(
@@ -860,31 +880,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            // This handles the scenario where a container is deleted(say from different Client) and recreated with same Id but with different client encryption policy.
-            // The idea is to have the container Rid cached and sent out as part of RequestOptions with Container Rid set in "x-ms-cosmos-intended-collection-rid" header.
-            // So when the container being referenced here gets recreated we would end up with a stale encryption settings and container Rid and this would result in BadRequest( and a substatus 1024).
-            // This would allow us to refresh the encryption settings and Container Rid, on the premise that the container recreated could possibly be configured with a new encryption policy.
-            if (CheckIfRequestNeedsARetryPostPolicyRefresh(responseMessage))
-            {
-                // Even though the streamPayload position is expected to be 0,
-                // because for MemoryStream we just use the underlying buffer to send over the wire rather than using the Stream APIs
-                // resetting it 0 to be on a safer side.
-                streamPayload.Position = 0;
-
-                // Now the streamPayload itself is not disposed off(and hence safe to use it in the below call) since the stream that is passed to CreateItemStreamAsync is a MemoryStream and not the original Stream
-                // that the user has passed. The call to EncryptAsync reads out the stream(and processes it) and returns a MemoryStream which is eventually cloned in the
-                // Cosmos SDK and then used. This stream however is to be disposed off as part of ResponseMessage when this gets returned.
-                await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                    obsoleteEncryptionSettings: encryptionSettings,
-                    cancellationToken: cancellationToken);
-
-                throw new CosmosException(
-                   "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Retrying can possibly fix the issue. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + responseMessage.ErrorMessage,
-                   HttpStatusCode.BadRequest,
-                   int.Parse(Constants.IncorrectContainerRidSubStatus),
-                   responseMessage.Headers.ActivityId,
-                   responseMessage.Headers.RequestCharge);
-            }
+            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, cancellationToken);
 
             responseMessage.Content = await EncryptionProcessor.DecryptAsync(
                 responseMessage.Content,
@@ -923,20 +919,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            if (CheckIfRequestNeedsARetryPostPolicyRefresh(responseMessage))
-            {
-                // get the latest encryption settings.
-                await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                   obsoleteEncryptionSettings: encryptionSettings,
-                   cancellationToken: cancellationToken);
-
-                throw new CosmosException(
-                   "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Retrying can possibly fix the issue. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + responseMessage.ErrorMessage,
-                   HttpStatusCode.BadRequest,
-                   int.Parse(Constants.IncorrectContainerRidSubStatus),
-                   responseMessage.Headers.ActivityId,
-                   responseMessage.Headers.RequestCharge);
-            }
+            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, cancellationToken);
 
             EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
             responseMessage.Content = await EncryptionProcessor.DecryptAsync(
@@ -993,19 +976,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            if (CheckIfRequestNeedsARetryPostPolicyRefresh(responseMessage))
-            {
-                await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                   obsoleteEncryptionSettings: encryptionSettings,
-                   cancellationToken: cancellationToken);
-
-                throw new CosmosException(
-                   "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Retrying can possibly fix the issue. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + responseMessage.ErrorMessage,
-                   HttpStatusCode.BadRequest,
-                   int.Parse(Constants.IncorrectContainerRidSubStatus),
-                   responseMessage.Headers.ActivityId,
-                   responseMessage.Headers.RequestCharge);
-            }
+            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, cancellationToken);
 
             responseMessage.Content = await EncryptionProcessor.DecryptAsync(
                 responseMessage.Content,
@@ -1058,19 +1029,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            if (CheckIfRequestNeedsARetryPostPolicyRefresh(responseMessage))
-            {
-                await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                   obsoleteEncryptionSettings: encryptionSettings,
-                   cancellationToken: cancellationToken);
-
-                throw new CosmosException(
-                   "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Retrying can possibly fix the issue. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + responseMessage.ErrorMessage,
-                   HttpStatusCode.BadRequest,
-                   int.Parse(Constants.IncorrectContainerRidSubStatus),
-                   responseMessage.Headers.ActivityId,
-                   responseMessage.Headers.RequestCharge);
-            }
+            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, cancellationToken);
 
             responseMessage.Content = await EncryptionProcessor.DecryptAsync(
                 responseMessage.Content,
@@ -1119,19 +1078,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            if (CheckIfRequestNeedsARetryPostPolicyRefresh(responseMessage))
-            {
-                await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                   obsoleteEncryptionSettings: encryptionSettings,
-                   cancellationToken: cancellationToken);
-
-                throw new CosmosException(
-                   "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Retrying can possibly fix the issue. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + responseMessage.ErrorMessage,
-                   HttpStatusCode.BadRequest,
-                   int.Parse(Constants.IncorrectContainerRidSubStatus),
-                   responseMessage.Headers.ActivityId,
-                   responseMessage.Headers.RequestCharge);
-            }
+            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, cancellationToken);
 
             responseMessage.Content = await EncryptionProcessor.DecryptAsync(
                 responseMessage.Content,
@@ -1193,20 +1140,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            if (CheckIfRequestNeedsARetryPostPolicyRefresh(responseMessage))
-            {
-                // get the latest encryption settings.
-                await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                   obsoleteEncryptionSettings: encryptionSettings,
-                   cancellationToken: cancellationToken);
-
-                throw new CosmosException(
-                   "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Retrying can possibly fix the issue. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + responseMessage.ErrorMessage,
-                   HttpStatusCode.BadRequest,
-                   int.Parse(Constants.IncorrectContainerRidSubStatus),
-                   responseMessage.Headers.ActivityId,
-                   responseMessage.Headers.RequestCharge);
-            }
+            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, cancellationToken);
 
             if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
             {
