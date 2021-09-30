@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Net.Http;
     using System.Reflection;
+    using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -284,6 +285,22 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             options.Serializer = new CosmosJsonDotNetSerializer();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void ThrowOnNullTokenCredential()
+        {
+            new CosmosClientBuilder(AccountEndpoint, tokenCredential: null);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void VerifyAuthorizationTokenProviderIsSet()
+        {
+            CosmosClient cosmosClient = new CosmosClientBuilder(
+                AccountEndpoint, new Mock<TokenCredential>().Object).Build();
+            Assert.IsNotNull(cosmosClient.AuthorizationTokenProvider);
         }
 
         [TestMethod]
