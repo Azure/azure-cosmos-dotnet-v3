@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task PointSuccessOperationsTest(ConnectionMode mode)
         {
-            Container container = await this.GetContainer(mode);
+            Container container = await this.CreateClientAndContainer(mode);
 
             // Create an item
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Fail Read
             try
             {
-                Container container = await this.GetContainer(mode, ConsistencyLevel.ConsistentPrefix);
+                Container container = await this.CreateClientAndContainer(mode, ConsistencyLevel.ConsistentPrefix);
                 await container.ReadItemAsync<JObject>(
                     new Guid().ToString(),
                     new Cosmos.PartitionKey(new Guid().ToString()),
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task StreamReadFailureOperationsTest(ConnectionMode mode)
         {
-            Container container = await this.GetContainer(mode);
+            Container container = await this.CreateClientAndContainer(mode);
 
             // Fail Read
             try
@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task StreamOperationsTest(ConnectionMode mode)
         {
-            Container container = await this.GetContainer(mode);
+            Container container = await this.CreateClientAndContainer(mode);
             // Create an item
             var testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working", status = "done" };
             await container
@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task BatchOperationsTest(ConnectionMode mode)
         {
-            Container container = await this.GetContainer(mode, ConsistencyLevel.Eventual); // Client level consistency
+            Container container = await this.CreateClientAndContainer(mode, ConsistencyLevel.Eventual); // Client level consistency
             using (BatchAsyncContainerExecutor executor =
                 new BatchAsyncContainerExecutor(
                     (ContainerInlineCore)container,
@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task SingleOperationMultipleTimes(ConnectionMode mode)
         {
-            Container container = await this.GetContainer(mode);
+            Container container = await this.CreateClientAndContainer(mode);
 
             // Create an item
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
@@ -319,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task QueryOperationSinglePartitionTest(ConnectionMode mode)
         {
-            Container container = await this.GetContainer(mode);
+            Container container = await this.CreateClientAndContainer(mode);
 
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue", "MyTestItemId");
             ItemRequestOptions requestOptions = new ItemRequestOptions()
@@ -376,7 +376,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task QueryMultiPageSinglePartitionOperationTest(ConnectionMode mode)
         {
-            Container container = await this.GetContainer(mode: mode);
+            Container container = await this.CreateClientAndContainer(mode: mode);
 
             ItemRequestOptions requestOptions = new ItemRequestOptions()
             {
@@ -441,7 +441,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Multi Partiton Operation takes time
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
 
-            ContainerInternal itemsCore = (ContainerInternal)await this.GetContainer(
+            ContainerInternal itemsCore = (ContainerInternal)await this.CreateClientAndContainer(
                 mode: mode,
                 isLargeContainer: true);
 
@@ -497,7 +497,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Multi Partiton Operation takes time
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
 
-            ContainerInternal itemsCore = (ContainerInternal)await this.GetContainer(
+            ContainerInternal itemsCore = (ContainerInternal)await this.CreateClientAndContainer(
                 mode: mode,
                 isLargeContainer: true);
 
@@ -555,7 +555,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task QueryOperationInvalidContinuationToken(ConnectionMode mode)
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
-            Container container = await this.GetContainer(mode);
+            Container container = await this.CreateClientAndContainer(mode);
 
             List<ToDoActivity> results = new List<ToDoActivity>();
             using (FeedIterator<ToDoActivity> resultSetIterator = container.GetItemQueryIterator<ToDoActivity>(
@@ -687,7 +687,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return new ItemBatchOperation(Documents.OperationType.Create, 0, new Cosmos.PartitionKey(itemId), itemId, TestCommon.SerializerCore.ToStream(testItem));
         }
 
-        private async Task<Container> GetContainer(ConnectionMode mode, ConsistencyLevel? consistency = null, bool isLargeContainer = false)
+        private async Task<Container> CreateClientAndContainer(ConnectionMode mode, ConsistencyLevel? consistency = null, bool isLargeContainer = false)
         {
             if (consistency.HasValue)
             {
