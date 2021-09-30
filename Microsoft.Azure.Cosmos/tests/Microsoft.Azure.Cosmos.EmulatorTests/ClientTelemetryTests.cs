@@ -292,18 +292,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Container container = await this.GetContainer(mode);
 
-            Dictionary<string, object> properties = new Dictionary<string, object>();
-            ItemRequestOptions requestOptions = new ItemRequestOptions()
-            {
-                Properties = properties
-            };
-
             // Create an item
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
 
-            await container.CreateItemAsync<ToDoActivity>(testItem, requestOptions: requestOptions);
+            await container.CreateItemAsync<ToDoActivity>(testItem, requestOptions: new ItemRequestOptions());
 
-            for (int count = 0; count < 1; count++)
+            for (int count = 0; count < 50; count++)
             {
                 // Read an Item
                 await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
@@ -311,13 +305,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
             {
-                { Documents.OperationType.Read.ToString(), 1},
+                { Documents.OperationType.Read.ToString(), 50},
                 { Documents.OperationType.Create.ToString(), 1}
             };
 
             await this.WaitAndAssert(
-                expectedOperationCount: 4,
-                expectedOperationRecordCountMap: expectedRecordCountInOperation); // 2 (read, requetLatency + requestCharge) + 2 (create, requestLatency + requestCharge)
+                expectedOperationCount: 4,// 2 (read, requetLatency + requestCharge) + 2 (create, requestLatency + requestCharge)
+                expectedOperationRecordCountMap: expectedRecordCountInOperation); 
         }
 
         [TestMethod]
@@ -328,11 +322,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container = await this.GetContainer(mode);
 
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue", "MyTestItemId");
-            Dictionary<string, object> properties = new Dictionary<string, object>();
             ItemRequestOptions requestOptions = new ItemRequestOptions()
             {
-                ConsistencyLevel = ConsistencyLevel.ConsistentPrefix,
-                Properties = properties
+                ConsistencyLevel = ConsistencyLevel.ConsistentPrefix
             };
 
             ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(
@@ -497,6 +489,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 expectedOperationRecordCountMap: expectedRecordCountInOperation);
         }
 
+        [TestMethod]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
         public async Task QueryOperationMutiplePageCrossPartitionTest(ConnectionMode mode)
@@ -671,7 +664,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (expectedOperationRecordCountMap != null)
             {
-                Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo(actualOperationRecordCountMap), "record count for operation does not match");
+                Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo(actualOperationRecordCountMap), $"actual record count({actualOperationRecordCountMap}) for operation does not match with expected record count({expectedOperationRecordCountMap})");
             }
 
             // Asserting If system information list is as expected
@@ -706,15 +699,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 : this.cosmosClientBuilder.Build();
 
             this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
-            if (isLargeContainer)
-            {
-                return await this.database.CreateContainerAsync(
-                    id: Guid.NewGuid().ToString(),
-                    partitionKeyPath: "/id",
-                    throughput: 30000);
-            }
+    
+            return await this.database.CreateContainerAsync(
+                id: Guid.NewGuid().ToString(),
+                partitionKeyPath: "/id",
+                throughput: isLargeContainer? 30000 : 400);
 
-            return await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
         }
 
     }

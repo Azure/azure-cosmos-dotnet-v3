@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
 
             foreach (KeyValuePair<string, long> pair in dict1)
             {
-                if (!dict2.TryGetValue(pair.Key, out long value) || !(pair.Value != value))
+                if (!dict2.TryGetValue(pair.Key, out long value) || pair.Value != value)
                 {
                     return false;
                 }
