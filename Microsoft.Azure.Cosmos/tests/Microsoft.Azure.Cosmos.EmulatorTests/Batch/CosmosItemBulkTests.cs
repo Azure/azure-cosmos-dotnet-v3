@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Net;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
 
@@ -116,6 +117,114 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsNotNull(result.Headers.Session);
                 Assert.IsNotNull(result.Headers.ActivityId);
+                Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
+                Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public async Task CreateItemAsyncValidateIntendedCollRid_WithBulk()
+        {
+            Container container = await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk", 10000);
+
+            List<Task<ItemResponse<ToDoActivity>>> tasks = new List<Task<ItemResponse<ToDoActivity>>>();
+
+            ContainerInlineCore containerInternal = (ContainerInlineCore)container;
+
+            string rid = await containerInternal.GetCachedRIDAsync(forceRefresh: false, NoOpTrace.Singleton, cancellationToken: default);
+
+            // case 1. use wrong rid by using a stale rid.
+            ItemRequestOptions itemRequestOptions = new ItemRequestOptions()
+            {
+                AddRequestHeaders = (headers) =>
+                {
+                    headers[Documents.HttpConstants.HttpHeaders.IsClientEncrypted] = bool.TrueString;
+                    headers[Documents.WFConstants.BackendHeaders.IntendedCollectionRid] = rid;
+                }
+            };
+
+            // delete the container.
+            using (await this.database.GetContainer(container.Id).DeleteContainerStreamAsync())
+            { }
+            
+            // recreate with same id.
+            await this.database.CreateContainerAsync(container.Id, "/pk", 10000);
+
+
+            for (int i = 0; i < 2; i++)
+            {
+                tasks.Add(ExecuteCreateAsync(container, CreateItem(i.ToString()), itemRequestOptions));
+            }
+
+            try
+            {
+                await Task.WhenAll(tasks);
+                Assert.Fail("Bulk execution should have failed. ");
+            }
+            catch(CosmosException ex)
+            {
+                if(ex.StatusCode == HttpStatusCode.Created || ex.SubStatusCode != 1024)
+                {
+                    Assert.Fail("Bulk execution should have failed with these specific status codes. ");
+                }
+            }
+
+            // case 2.
+            tasks.Clear();
+
+            // should ignore if the item is not encrypted.
+            itemRequestOptions = new ItemRequestOptions()
+            {
+                AddRequestHeaders = (headers) =>
+                {
+                    headers[Documents.HttpConstants.HttpHeaders.IsClientEncrypted] = bool.FalseString;
+                    headers[Documents.WFConstants.BackendHeaders.IntendedCollectionRid] = rid;
+                }
+            };
+
+            for (int i = 0; i < 2; i++)
+            {
+                tasks.Add(ExecuteCreateAsync(container, CreateItem(i.ToString()), itemRequestOptions));
+            }
+
+            await Task.WhenAll(tasks);
+
+            for (int i = 0; i < 2; i++)
+            {
+                Task<ItemResponse<ToDoActivity>> task = tasks[i];
+                ItemResponse<ToDoActivity> result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
+                Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
+                Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
+            }
+
+            // case 3.
+            tasks.Clear();
+
+            // use the correct rid.
+            rid = await containerInternal.GetCachedRIDAsync(forceRefresh: false, NoOpTrace.Singleton, cancellationToken: default);
+
+            itemRequestOptions = new ItemRequestOptions()
+            {
+                AddRequestHeaders = (headers) =>
+                {
+                    headers[Documents.HttpConstants.HttpHeaders.IsClientEncrypted] = bool.TrueString;
+                    headers[Documents.WFConstants.BackendHeaders.IntendedCollectionRid] = rid;
+                }
+            };
+
+            for (int i = 3; i < 8; i++)
+            {
+                tasks.Add(ExecuteCreateAsync(container, CreateItem(i.ToString()), itemRequestOptions));
+            }
+
+            await Task.WhenAll(tasks);
+
+            for (int i = 0; i < 5; i++)
+            {
+                Task<ItemResponse<ToDoActivity>> task = tasks[i];
+                ItemResponse<ToDoActivity> result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
                 Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
             }
@@ -528,9 +637,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private static Task<ItemResponse<ToDoActivity>> ExecuteCreateAsync(Container container, ToDoActivity item)
+        private static Task<ItemResponse<ToDoActivity>> ExecuteCreateAsync(Container container, ToDoActivity item, ItemRequestOptions itemRequestOptions = null)
         {
-            return container.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.pk));
+            return container.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.pk), itemRequestOptions);
         }
 
         private static Task<ItemResponse<JObject>> ExecuteCreateAsync(Container container, JObject item)

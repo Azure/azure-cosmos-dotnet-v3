@@ -38,6 +38,8 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosClientContext clientContext;
         private long currentSize = 0;
         private bool dispatched = false;
+        private bool isClientEncrypted = false;
+        private string intendedCollectionRidValue;
 
         public bool IsEmpty => this.batchOperations.Count == 0;
 
@@ -84,6 +86,12 @@ namespace Microsoft.Azure.Cosmos
             if (operation.Context == null)
             {
                 throw new ArgumentNullException(nameof(operation.Context));
+            }
+
+            if (operation.Context.IsClientEncrypted && !this.isClientEncrypted)
+            {
+                this.isClientEncrypted = true;
+                this.intendedCollectionRidValue = operation.Context.IntendedCollectionRidValue;
             }
 
             if (this.batchOperations.Count == this.maxBatchOperationCount)
@@ -224,6 +232,8 @@ namespace Microsoft.Azure.Cosmos
                   this.maxBatchOperationCount,
                   ensureContinuousOperationIndexes: false,
                   serializerCore: this.serializerCore,
+                  isClientEncrypted: this.isClientEncrypted,
+                  intendedCollectionRidValue: this.intendedCollectionRidValue,
                   cancellationToken: cancellationToken).ConfigureAwait(false);
         }
     }
