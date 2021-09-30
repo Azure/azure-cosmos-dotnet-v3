@@ -78,6 +78,11 @@ namespace CosmosCTL
                     })
                     .WithLeaseContainer(leaseContainer)
                     .WithInstanceName(Guid.NewGuid().ToString())
+                    .WithErrorNotification((string leaseToken, Exception ex) =>
+                    {
+                        Utils.LogError(logger, loggingContextIdentifier, ex);
+                        return Task.CompletedTask;
+                    })
                     .WithStartTime(DateTime.MinValue.ToUniversalTime())
                     .Build();
 
@@ -115,7 +120,8 @@ namespace CosmosCTL
                 {
                     if (previousMin != sortedRange.Min)
                     {
-                        logger.LogError($"Expected a sorted range with Min <{previousMin}> but encountered range <{sortedRange.Min}>:<{sortedRange.Max}>");
+                        Utils.LogError(logger, loggingContextIdentifier, 
+                            $"Expected a sorted range with Min <{previousMin}> but encountered range <{sortedRange.Min}>:<{sortedRange.Max}>");
                     }
 
                     previousMin = sortedRange.Max;
@@ -125,13 +131,13 @@ namespace CosmosCTL
                 {
                     if (this.initializationResult.InsertedDocuments != documentTotal)
                     {
-                        logger.LogError($"Expected to receive {this.initializationResult.InsertedDocuments} documents and got {documentTotal}");
+                        Utils.LogError(logger, loggingContextIdentifier, $"Expected to receive {this.initializationResult.InsertedDocuments} documents and got {documentTotal}");
                     }
                 }
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failure during Change Feed Processor initialization");
+                Utils.LogError(logger, loggingContextIdentifier, ex);
             }
             finally
             {

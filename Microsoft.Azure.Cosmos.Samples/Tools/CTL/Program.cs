@@ -144,7 +144,7 @@ namespace CosmosCTL
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Unhandled exception during execution");
+                Utils.LogError(logger, "Unhandled exception during execution", ex);
             }
         }
 

@@ -83,30 +83,22 @@ namespace CosmosCTL
 
                         if (config.PreCreatedDocuments > 0)
                         {
-                            if (this.initializationResult.InsertedDocuments == documentTotal)
+                            if (this.initializationResult.InsertedDocuments != documentTotal)
                             {
-                                logger.LogInformation($"Success: The number of new documents match the number of pre-created documents: {this.initializationResult.InsertedDocuments}");
-                            }
-                            else
-                            {
-                                logger.LogError($"The prepopulated documents and the change feed documents don't match.  Preconfigured Docs = {this.initializationResult.InsertedDocuments}, Change feed Documents = {documentTotal}.{Environment.NewLine}{continuation}");
+                                Utils.LogError(logger, loggingContextIdentifier, $"The prepopulated documents and the change feed documents don't match.  Preconfigured Docs = {this.initializationResult.InsertedDocuments}, Change feed Documents = {documentTotal}.{Environment.NewLine}{continuation}");
                             }
                         }
-                    }
-                    catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-                    {
-                        //Logging 429s is not relevant
                     }
                     catch (Exception ex)
                     {
                         metrics.Measure.Gauge.SetValue(documentGauge, documentTotal);
-                        logger.LogError(ex, "Failure while looping through change feed documents");
+                        Utils.LogError(logger, loggingContextIdentifier, ex);
                     }
                 }
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failure during Change Feed Pull scenario");
+                Utils.LogError(logger, loggingContextIdentifier, ex);
             }
             finally
             {
