@@ -1057,7 +1057,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Assert.Fail("Create operation should have failed with 1024 SubStatusCode. ");
                 }
 
-                Assert.IsNotNull(ex.Message);
+                Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
 
             TestDoc docToReplace = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
@@ -1086,7 +1086,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Assert.Fail("Bulk operation should have failed with 1024 SubStatusCode.");
                 }
 
-                Assert.IsNotNull(ex.Message);
+                Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
 
             tasks = new List<Task>()
@@ -1196,7 +1196,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Assert.Fail("Create operation should have failed with 1024 SubStatusCode");
                 }
 
-                Assert.IsNotNull(ex.Message);
+                Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
 
             TestDoc testDoc = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
@@ -1321,7 +1321,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Assert.Fail("Create operation should have failed with 1024 SubStatusCode .");
                 }
 
-                Assert.IsNotNull(ex.Message);
+                Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
 
             TestDoc testDoc = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
@@ -1343,7 +1343,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Assert.Fail("Query should have failed with 1024 SubStatusCode. ");
                 }
 
-                Assert.IsNotNull(ex.Message);
+                Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
 
             // previous failure would have updated the policy in the cache.
@@ -1451,7 +1451,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Assert.Fail("Create operation should have failed with 1024 SubStatusCode.");
                 }
 
-                Assert.IsNotNull(ex.Message);
+                Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
 
             TestDoc docPostPatching = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
@@ -1517,7 +1517,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Assert.Fail("Patch operation should have failed with 1024 SubStatusCode. ");
                 }
 
-                Assert.IsNotNull(ex.Message);
+                Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
 
             // retry post policy refresh.
@@ -1656,7 +1656,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Assert.Fail("Create operation should have failed with 1024 SubStatusCode. ");
                 }
 
-                Assert.IsNotNull(ex.Message);
+                Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
 
             // retrying the operation should succeed.
@@ -1675,7 +1675,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Assert.Fail("Read operation should have failed with 1024 SubStatusCode. ");
                 }
 
-                Assert.IsNotNull(ex.Message);
+                Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
 
             // retry should be a success.
