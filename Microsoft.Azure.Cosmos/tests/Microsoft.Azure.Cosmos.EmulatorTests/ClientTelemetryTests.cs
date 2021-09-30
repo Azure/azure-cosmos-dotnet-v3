@@ -592,7 +592,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 lock (this.actualInfo)
                 {
                     int operationCount = this.actualInfo.Sum(x => x.OperationInfo.Count);
-                    Assert.IsTrue(operationCount <= expectedOperationCount, "More operations were recorded than expected");
+                    Assert.IsTrue(operationCount <= expectedOperationCount, $"actual operation count({operationCount}) recorded is greater than expected opertaion count({operationCount})");
 
                     if (operationCount == expectedOperationCount)
                     {
@@ -703,7 +703,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return await this.database.CreateContainerAsync(
                 id: Guid.NewGuid().ToString(),
                 partitionKeyPath: "/id",
-                throughput: isLargeContainer? 30000 : 400);
+                throughput: isLargeContainer? 15000 : 400);
 
         }
 
