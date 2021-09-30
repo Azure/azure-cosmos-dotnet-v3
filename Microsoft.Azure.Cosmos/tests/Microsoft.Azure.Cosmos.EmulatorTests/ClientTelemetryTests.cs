@@ -434,13 +434,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [DataRow(ConnectionMode.Direct)]
+        //[DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
         public async Task QueryOperationCrossPartitionTest(ConnectionMode mode)
         {
-            // Multi Partiton Operation takes time
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
-
             ContainerInternal itemsCore = (ContainerInternal)await this.CreateClientAndContainer(
                 mode: mode,
                 isLargeContainer: true);
@@ -485,7 +482,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             await this.WaitAndAssert(
-                expectedOperationCount: 6,
+                expectedOperationCount: 4,
                 expectedOperationRecordCountMap: expectedRecordCountInOperation);
         }
 
@@ -494,9 +491,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task QueryOperationMutiplePageCrossPartitionTest(ConnectionMode mode)
         {
-            // Multi Partiton Operation takes time
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
-
             ContainerInternal itemsCore = (ContainerInternal)await this.CreateClientAndContainer(
                 mode: mode,
                 isLargeContainer: true);
@@ -554,7 +548,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task QueryOperationInvalidContinuationToken(ConnectionMode mode)
         {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
             Container container = await this.CreateClientAndContainer(mode);
 
             List<ToDoActivity> results = new List<ToDoActivity>();
@@ -601,7 +594,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         break;
                     }
 
-                    Assert.IsTrue(stopwatch.Elapsed.TotalMinutes < 1, $"The expected operation count was never hit.  ActualInfo:{JsonConvert.SerializeObject(this.actualInfo)}");
+                    Assert.IsTrue(stopwatch.Elapsed.TotalMinutes < 1, $"The expected operation count({expectedOperationCount}) was never hit.  ActualInfo:{JsonConvert.SerializeObject(this.actualInfo)}");
                 }
 
                 await Task.Delay(TimeSpan.FromMilliseconds(200));
