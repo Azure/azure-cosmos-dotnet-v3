@@ -123,7 +123,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Delete an Item
             await container.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
 
-            await this.WaitAndAssert(12);
+            IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
+            {
+                { Documents.OperationType.Create.ToString(), 1},
+                { Documents.OperationType.Upsert.ToString(), 1},
+                { Documents.OperationType.Read.ToString(), 1},
+                { Documents.OperationType.Replace.ToString(), 1},
+                { Documents.OperationType.Patch.ToString(), 1},
+                { Documents.OperationType.Delete.ToString(), 1}
+            };
+
+            await this.WaitAndAssert(expectedOperationCount: 12,
+                expectedOperationRecordCountMap: expectedRecordCountInOperation);
         }
 
         [TestMethod]
@@ -149,8 +160,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(message);
             }
 
+            IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
+            {
+                { Documents.OperationType.Read.ToString(), 1}
+            };
+
             await this.WaitAndAssert(expectedOperationCount: 2,
-                expectedConsistencyLevel: ConsistencyLevel.Eventual);
+                expectedConsistencyLevel: ConsistencyLevel.Eventual,
+                expectedOperationRecordCountMap: expectedRecordCountInOperation);
         }
 
         [TestMethod]
@@ -177,8 +194,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(message);
             }
 
+            IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
+            {
+                { Documents.OperationType.Read.ToString(), 1}
+            };
+
             await this.WaitAndAssert(expectedOperationCount: 2,
-                expectedConsistencyLevel: ConsistencyLevel.ConsistentPrefix);
+                expectedConsistencyLevel: ConsistencyLevel.ConsistentPrefix,
+                expectedOperationRecordCountMap: expectedRecordCountInOperation);
         }
 
         [TestMethod]
@@ -215,7 +238,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Delete an Item
             await container.DeleteItemStreamAsync(testItem.id, new Cosmos.PartitionKey(testItem.id));
 
-            await this.WaitAndAssert(12);
+            IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
+            {
+                { Documents.OperationType.Create.ToString(), 1},
+                { Documents.OperationType.Upsert.ToString(), 1},
+                { Documents.OperationType.Read.ToString(), 1},
+                { Documents.OperationType.Replace.ToString(), 1},
+                { Documents.OperationType.Patch.ToString(), 1},
+                { Documents.OperationType.Delete.ToString(), 1}
+            };
+
+            await this.WaitAndAssert(expectedOperationCount: 12,
+                expectedOperationRecordCountMap: expectedRecordCountInOperation);
         }
 
         [TestMethod]
@@ -241,8 +275,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await Task.WhenAll(tasks);
             }
 
+            IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
+            {
+                { Documents.OperationType.Batch.ToString(), 1}
+            };
+
             await this.WaitAndAssert(expectedOperationCount: 2,
-                expectedConsistencyLevel: ConsistencyLevel.Eventual);
+                expectedConsistencyLevel: ConsistencyLevel.Eventual,
+                expectedOperationRecordCountMap: expectedRecordCountInOperation);
         }
 
         [TestMethod]
@@ -269,8 +309,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
             }
 
+            IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
+            {
+                { Documents.OperationType.Read.ToString(), 1},
+                { Documents.OperationType.Create.ToString(), 1}
+            };
+
             await this.WaitAndAssert(
-                expectedOperationCount: 4); // 2 (read, requetLatency + requestCharge) + 2 (create, requestLatency + requestCharge)
+                expectedOperationCount: 4,
+                expectedOperationRecordCountMap: expectedRecordCountInOperation); // 2 (read, requetLatency + requestCharge) + 2 (create, requestLatency + requestCharge)
         }
 
         [TestMethod]
@@ -321,7 +368,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             }
 
-            await this.WaitAndAssert(expectedOperationCount: 4);
+            IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
+            {
+                { Documents.OperationType.Query.ToString(), 1},
+                { Documents.OperationType.Create.ToString(), 1}
+            };
+
+            await this.WaitAndAssert(expectedOperationCount: 4,
+                expectedOperationRecordCountMap: expectedRecordCountInOperation,
+                expectedConsistencyLevel: ConsistencyLevel.ConsistentPrefix);
         }
 
         [TestMethod]
@@ -374,8 +429,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             }
 
+            IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
+            {
+                { Documents.OperationType.Query.ToString(), 3},
+                { Documents.OperationType.Create.ToString(), 2}
+            };
+
             await this.WaitAndAssert(
-                expectedOperationCount: 4);
+                expectedOperationCount: 4,
+                expectedOperationRecordCountMap: expectedRecordCountInOperation,
+                expectedConsistencyLevel: ConsistencyLevel.ConsistentPrefix);
         }
 
         [TestMethod]
@@ -423,8 +486,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.AreEqual(10, families.Count);
 
+            IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
+            {
+                { Documents.OperationType.Query.ToString(), pkRangesCount},
+                { Documents.OperationType.Create.ToString(), 10}
+            };
+
             await this.WaitAndAssert(
-                expectedOperationCount: 6);
+                expectedOperationCount: 6,
+                expectedOperationRecordCountMap: expectedRecordCountInOperation);
         }
 
         [DataRow(ConnectionMode.Direct)]
@@ -475,8 +545,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.AreEqual(10, families.Count);
 
+            IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
+            {
+                { Documents.OperationType.Query.ToString(), pkRangesCount + 10}, // 10 is number of items
+                { Documents.OperationType.Create.ToString(), 10}
+            };
+
             await this.WaitAndAssert(
-                expectedOperationCount: 4);
+                expectedOperationCount: 4,
+                expectedOperationRecordCountMap: expectedRecordCountInOperation);
         }
 
         [TestMethod]
@@ -510,7 +587,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.WaitAndAssert(expectedOperationCount: 0); // Does not record telemetry
         }
 
-        private async Task WaitAndAssert(int expectedOperationCount, ConsistencyLevel? expectedConsistencyLevel = null)
+        private async Task WaitAndAssert(int expectedOperationCount, ConsistencyLevel? expectedConsistencyLevel = null, IDictionary<string, long> expectedOperationRecordCountMap = null)
         {
             Assert.IsNotNull(this.actualInfo, "Telemetry Information not available");
 
@@ -559,6 +636,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             Assert.AreEqual(expectedOperationCount, actualOperationList.Count, "Operation Information Count doesn't Match");
 
+            IDictionary<string, long> actualOperationRecordCountMap = new Dictionary<string, long>();
+
             // Asserting If operation list is as expected
             foreach (OperationInfo operation in actualOperationList)
             {
@@ -576,6 +655,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(operation.MetricInfo.Mean >= 0, "MetricInfo Mean is not greater than or equal to 0");
                 Assert.IsTrue(operation.MetricInfo.Max >= 0, "MetricInfo Max is not greater than or equal to 0");
                 Assert.IsTrue(operation.MetricInfo.Min >= 0, "MetricInfo Min is not greater than or equal to 0");
+                if (operation.MetricInfo.MetricsName.Equals(ClientTelemetryOptions.RequestLatencyName)) // putting this condition to avoid doubling of count as we have same information for each metrics
+                {
+                    if (!actualOperationRecordCountMap.TryGetValue(operation.Operation.ToString(), out long recordCount))
+                    {
+                        actualOperationRecordCountMap.Add(operation.Operation.ToString(), operation.MetricInfo.Count);
+                    }
+                    else
+                    {
+                        actualOperationRecordCountMap.Remove(operation.Operation.ToString());
+                        actualOperationRecordCountMap.Add(operation.Operation.ToString(), recordCount + operation.MetricInfo.Count);
+                    }
+                }
+            }
+
+            if (expectedOperationRecordCountMap != null)
+            {
+                Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo(actualOperationRecordCountMap), "record count for operation does not match");
             }
 
             // Asserting If system information list is as expected
@@ -598,7 +694,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return new ItemBatchOperation(Documents.OperationType.Create, 0, new Cosmos.PartitionKey(itemId), itemId, TestCommon.SerializerCore.ToStream(testItem));
         }
 
-        private async Task<Container> GetContainer(ConnectionMode mode, ConsistencyLevel? consistency = null, , bool isLargeContainer = false)
+        private async Task<Container> GetContainer(ConnectionMode mode, ConsistencyLevel? consistency = null, bool isLargeContainer = false)
         {
             if (consistency.HasValue)
             {
