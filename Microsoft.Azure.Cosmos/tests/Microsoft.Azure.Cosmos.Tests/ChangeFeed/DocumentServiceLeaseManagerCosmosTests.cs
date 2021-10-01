@@ -210,6 +210,53 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         /// <summary>
+        /// Verifies a Release sets the owner on null
+        /// </summary>
+        [TestMethod]
+        public async Task ReleaseWhenNotExistDoesNotThrow()
+        {
+            DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
+            {
+                HostName = Guid.NewGuid().ToString()
+            };
+
+            DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore()
+            {
+                LeaseId = Guid.NewGuid().ToString(),
+                LeaseToken = "0",
+                Owner = Guid.NewGuid().ToString(),
+                FeedRange = new FeedRangePartitionKeyRange("0")
+            };
+
+            Mock<DocumentServiceLeaseUpdater> mockUpdater = new Mock<DocumentServiceLeaseUpdater>();
+
+            ResponseMessage leaseResponse = new ResponseMessage(System.Net.HttpStatusCode.NotFound);
+
+            Mock<ContainerInternal> mockedContainer = new Mock<ContainerInternal>();
+            mockedContainer.Setup(c => c.ReadItemStreamAsync(
+                It.Is<string>(id => id == lease.LeaseId),
+                It.IsAny<PartitionKey>(),
+                It.IsAny<ItemRequestOptions>(),
+                It.IsAny<CancellationToken>())).ReturnsAsync(leaseResponse);
+
+
+            DocumentServiceLeaseManagerCosmos documentServiceLeaseManagerCosmos = new DocumentServiceLeaseManagerCosmos(
+                Mock.Of<ContainerInternal>(),
+                mockedContainer.Object,
+                mockUpdater.Object,
+                options,
+                Mock.Of<RequestOptionsFactory>());
+
+            await documentServiceLeaseManagerCosmos.ReleaseAsync(lease);
+
+            mockUpdater.Verify(c => c.UpdateLeaseAsync(
+                It.IsAny<DocumentServiceLease>(),
+                It.IsAny<string>(),
+                It.IsAny<PartitionKey>(),
+                It.IsAny<Func<DocumentServiceLease, DocumentServiceLease>>()), Times.Never);
+        }
+
+        /// <summary>
         /// Verifies that if the updater read a different Owner from the captured in memory, throws a LeaseLost
         /// </summary>
         [ExpectedException(typeof(LeaseLostException))]
