@@ -190,6 +190,7 @@ namespace CosmosCTL
                 WorkloadType.ChangeFeedProcessor => new ChangeFeedProcessorScenario(),
                 WorkloadType.ChangeFeedPull => new ChangeFeedPullScenario(),
                 WorkloadType.Query => new QueryScenario(),
+                WorkloadType.ReadMany => new ReadManyScenario(),
                 _ => throw new NotImplementedException($"No mapping for {workloadType}"),
             };
         }
