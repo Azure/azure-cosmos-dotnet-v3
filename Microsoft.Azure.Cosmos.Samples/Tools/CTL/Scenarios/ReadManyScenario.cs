@@ -13,6 +13,7 @@ namespace CosmosCTL
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
     using App.Metrics.Gauge;
+    using App.Metrics.Timer;
 
     internal class ReadManyScenario : ICTLScenario
     {
@@ -68,13 +69,34 @@ namespace CosmosCTL
                     Context = loggingContextIdentifier
                 };
 
+                TimerOptions readLatencyTimer = new TimerOptions
+                {
+                    Name = "Latency",
+                    MeasurementUnit = Unit.Requests,
+                    DurationUnit = TimeUnit.Milliseconds,
+                    RateUnit = TimeUnit.Seconds,
+                    Context = loggingContextIdentifier,
+                    Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
+                };
+
+                long diagnosticsThresholdDuration = (long)config.DiagnosticsThresholdDurationAsTimespan.TotalMilliseconds;
                 Container container = cosmosClient.GetContainer(config.Database, config.Collection);
                 while (stopWatch.Elapsed <= config.RunningTimeDurationAsTimespan
                     && !cancellationToken.IsCancellationRequested)
                 {
                     try
                     {
-                        FeedResponse<Dictionary<string, string>> response = await container.ReadManyItemsAsync<Dictionary<string, string>>(this.idAndPkPairs);
+                        FeedResponse<Dictionary<string, string>> response;
+                        using (TimerContext timerContext = metrics.Measure.Timer.Time(readLatencyTimer))
+                        {
+                            response = await container.ReadManyItemsAsync<Dictionary<string, string>>(this.idAndPkPairs);
+                            long latency = (long)timerContext.Elapsed.TotalMilliseconds;
+                            if (latency > diagnosticsThresholdDuration)
+                            {
+                                logger.LogInformation("ReadMany request took more than latency threshold {0}, diagnostics: {1}", config.DiagnosticsThresholdDuration, response.Diagnostics.ToString());
+                            }
+                        }
+
                         metrics.Measure.Gauge.SetValue(documentGauge, response.Count);
                         if (this.idAndPkPairs.Count > 0 && this.idAndPkPairs.Count != response.Count)
                         {
