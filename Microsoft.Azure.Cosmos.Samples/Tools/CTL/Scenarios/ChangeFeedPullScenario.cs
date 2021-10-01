@@ -14,6 +14,7 @@ namespace CosmosCTL
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
     using App.Metrics.Gauge;
+    using App.Metrics.Timer;
 
     internal class ChangeFeedPullScenario : ICTLScenario
     {
@@ -54,7 +55,19 @@ namespace CosmosCTL
         {
             Stopwatch stopWatch = Stopwatch.StartNew();
 
+            long diagnosticsThresholdDuration = (long)config.DiagnosticsThresholdDurationAsTimespan.TotalMilliseconds;
             GaugeOptions documentGauge= new GaugeOptions { Name = "#Documents received", Context = loggingContextIdentifier };
+
+            TimerOptions readLatencyTimer = new TimerOptions
+            {
+                Name = "Latency",
+                MeasurementUnit = Unit.Requests,
+                DurationUnit = TimeUnit.Milliseconds,
+                RateUnit = TimeUnit.Seconds,
+                Context = loggingContextIdentifier,
+                Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
+            };
+
             Container container = cosmosClient.GetContainer(config.Database, config.Collection);
 
             try
@@ -70,7 +83,17 @@ namespace CosmosCTL
                     {
                         while (changeFeedPull.HasMoreResults)
                         {
-                            FeedResponse<Dictionary<string, string>> response = await changeFeedPull.ReadNextAsync();
+                            FeedResponse<Dictionary<string, string>> response;
+                            using (TimerContext timerContext = metrics.Measure.Timer.Time(readLatencyTimer))
+                            {
+                                response = await changeFeedPull.ReadNextAsync();
+                                long latency = (long)timerContext.Elapsed.TotalMilliseconds;
+                                if (latency > diagnosticsThresholdDuration)
+                                {
+                                    logger.LogInformation("Change Feed request took more than latency threshold {0}, diagnostics: {1}", config.DiagnosticsThresholdDuration, response.Diagnostics.ToString());
+                                }
+                            }
+
                             documentTotal += response.Count;
                             continuation = response.ContinuationToken;
                             if (response.StatusCode == HttpStatusCode.NotModified)
