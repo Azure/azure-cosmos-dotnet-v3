@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
     using System;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
@@ -147,9 +148,21 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public override async Task ReleaseAsync(DocumentServiceLease lease)
         {
             if (lease == null)
+            {
                 throw new ArgumentNullException(nameof(lease));
+            }
 
-            DocumentServiceLease refreshedLease = await this.TryGetLeaseAsync(lease).ConfigureAwait(false);
+            DocumentServiceLease refreshedLease;
+            try
+            {
+                refreshedLease = await this.TryGetLeaseAsync(lease).ConfigureAwait(false);
+            }
+            catch (CosmosException cosmosException) when (cosmosException.StatusCode == HttpStatusCode.NotFound)
+            {
+                // Lease is being released after a split, the split itself delete the lease, this is expected
+                return;
+            }
+
             if (refreshedLease == null)
             {
                 DefaultTrace.TraceInformation("Lease with token {0} failed to release lease. The lease is gone already.", lease.CurrentLeaseToken);
