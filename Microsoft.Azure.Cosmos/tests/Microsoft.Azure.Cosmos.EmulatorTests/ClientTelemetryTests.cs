@@ -434,8 +434,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        //[DataRow(ConnectionMode.Direct)]
-        [DataRow(ConnectionMode.Gateway)]
+        [DataRow(ConnectionMode.Direct)]
+        //[DataRow(ConnectionMode.Gateway)]
         public async Task QueryOperationCrossPartitionTest(ConnectionMode mode)
         {
             ContainerInternal itemsCore = (ContainerInternal)await this.CreateClientAndContainer(
@@ -481,9 +481,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 { Documents.OperationType.Create.ToString(), 10}
             };
 
-            await this.WaitAndAssert(
-                expectedOperationCount: 4,
-                expectedOperationRecordCountMap: expectedRecordCountInOperation);
+            if(mode == ConnectionMode.Gateway)
+            {
+                await this.WaitAndAssert(
+                               expectedOperationCount: 4,
+                               expectedOperationRecordCountMap: expectedRecordCountInOperation);
+            } 
+            else if(mode == ConnectionMode.Direct)
+            {
+                await this.WaitAndAssert(
+                              expectedOperationCount: 6, // In Direct Mode, Response size is more than 1 Kb for few requests
+                              expectedOperationRecordCountMap: expectedRecordCountInOperation);
+            }
         }
 
         [TestMethod]
@@ -585,7 +594,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 lock (this.actualInfo)
                 {
                     int operationCount = this.actualInfo.Sum(x => x.OperationInfo.Count);
-                    Assert.IsTrue(operationCount <= expectedOperationCount, $"actual operation count({operationCount}) recorded is greater than expected opertaion count({operationCount})");
+                    Assert.IsTrue(operationCount <= expectedOperationCount, $"actual operation count({operationCount}) recorded is greater than expected opertaion count({expectedOperationCount})");
 
                     if (operationCount == expectedOperationCount)
                     {
@@ -657,7 +666,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (expectedOperationRecordCountMap != null)
             {
-                Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo(actualOperationRecordCountMap), $"actual record count({actualOperationRecordCountMap}) for operation does not match with expected record count({expectedOperationRecordCountMap})");
+                Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo(actualOperationRecordCountMap), $"actual record count({actualOperationRecordCountMap.Count}) for operation does not match with expected record count({expectedOperationRecordCountMap.Count})");
             }
 
             // Asserting If system information list is as expected
