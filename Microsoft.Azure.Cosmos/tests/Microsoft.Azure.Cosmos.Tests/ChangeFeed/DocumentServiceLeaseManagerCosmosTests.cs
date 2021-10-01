@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         /// <summary>
-        /// Verifies a Release sets the owner on null
+        /// Verifies a Release when the lease has already been deleted does not throw
         /// </summary>
         [TestMethod]
         public async Task ReleaseWhenNotExistDoesNotThrow()
