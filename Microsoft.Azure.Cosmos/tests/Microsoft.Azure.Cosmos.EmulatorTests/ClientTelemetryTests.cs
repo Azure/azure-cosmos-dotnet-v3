@@ -319,6 +319,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task QueryOperationSinglePartitionTest(ConnectionMode mode)
         {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
+
             Container container = await this.CreateClientAndContainer(mode);
 
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue", "MyTestItemId");
@@ -376,6 +378,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task QueryMultiPageSinglePartitionOperationTest(ConnectionMode mode)
         {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
+
             Container container = await this.CreateClientAndContainer(mode: mode);
 
             ItemRequestOptions requestOptions = new ItemRequestOptions()
@@ -435,19 +439,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [DataRow(ConnectionMode.Direct)]
-        //[DataRow(ConnectionMode.Gateway)]
+        [DataRow(ConnectionMode.Gateway)]
         public async Task QueryOperationCrossPartitionTest(ConnectionMode mode)
         {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
+
             ContainerInternal itemsCore = (ContainerInternal)await this.CreateClientAndContainer(
                 mode: mode,
                 isLargeContainer: true);
 
             // Verify container has multiple partitions
             int pkRangesCount = (await itemsCore.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(itemsCore.LinkUri)).Count;
-
-            IEnumerable<FeedRange> tokens = await itemsCore.GetFeedRangesAsync();
             Assert.IsTrue(pkRangesCount > 1, "Should have created a multi partition container.");
-            Assert.AreEqual(pkRangesCount, tokens.Count());
 
             Container container = (Container)itemsCore;
 
@@ -481,18 +484,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 { Documents.OperationType.Create.ToString(), 10}
             };
 
-            if(mode == ConnectionMode.Gateway)
-            {
-                await this.WaitAndAssert(
-                               expectedOperationCount: 4,
-                               expectedOperationRecordCountMap: expectedRecordCountInOperation);
-            } 
-            else if(mode == ConnectionMode.Direct)
-            {
-                await this.WaitAndAssert(
-                              expectedOperationCount: 6, // In Direct Mode, Response size is more than 1 Kb for few requests
-                              expectedOperationRecordCountMap: expectedRecordCountInOperation);
-            }
+            await this.WaitAndAssert(
+                            expectedOperationCount: 4,
+                            expectedOperationRecordCountMap: expectedRecordCountInOperation);
         }
 
         [TestMethod]
@@ -500,16 +494,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task QueryOperationMutiplePageCrossPartitionTest(ConnectionMode mode)
         {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
+
             ContainerInternal itemsCore = (ContainerInternal)await this.CreateClientAndContainer(
                 mode: mode,
                 isLargeContainer: true);
 
             // Verify container has multiple partitions
             int pkRangesCount = (await itemsCore.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(itemsCore.LinkUri)).Count;
-
-            IEnumerable<FeedRange> tokens = await itemsCore.GetFeedRangesAsync();
             Assert.IsTrue(pkRangesCount > 1, "Should have created a multi partition container.");
-            Assert.AreEqual(pkRangesCount, tokens.Count());
 
             Container container = (Container)itemsCore;
 
@@ -582,7 +575,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.WaitAndAssert(expectedOperationCount: 0); // Does not record telemetry
         }
 
-        private async Task WaitAndAssert(int expectedOperationCount, ConsistencyLevel? expectedConsistencyLevel = null, IDictionary<string, long> expectedOperationRecordCountMap = null)
+        private async Task WaitAndAssert(int expectedOperationCount, // Number of unique OperationInfo irrespective of response size
+            ConsistencyLevel? expectedConsistencyLevel = null, // Asset Consistency level of the operation recorded by telemetry
+            IDictionary<string, long> expectedOperationRecordCountMap = null)// Number of requests recorded for each operation 
         {
             Assert.IsNotNull(this.actualInfo, "Telemetry Information not available");
 
@@ -591,19 +586,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Stopwatch stopwatch = Stopwatch.StartNew();
             do
             {
+                HashSet<OperationInfo> actualOperationSet = new HashSet<OperationInfo>();
                 lock (this.actualInfo)
                 {
-                    int operationCount = this.actualInfo.Sum(x => x.OperationInfo.Count);
-                    Assert.IsTrue(operationCount <= expectedOperationCount, $"actual operation count({operationCount}) recorded is greater than expected opertaion count({expectedOperationCount})");
+                    // Setting the number of unique OperationInfo irrespective of response size.
+                    this.actualInfo
+                        .ForEach(x => x.OperationInfo
+                                       .ForEach(y => { 
+                                           y.GreaterThan1Kb = false;
+                                           actualOperationSet.Add(y);
+                                       }));
 
-                    if (operationCount == expectedOperationCount)
+                    if (actualOperationSet.Count == expectedOperationCount/2)
                     {
                         // Copy the list to avoid it being modified while validating
                         localCopyOfActualInfo = new List<ClientTelemetryProperties>(this.actualInfo);
                         break;
                     }
 
-                    Assert.IsTrue(stopwatch.Elapsed.TotalMinutes < 1, $"The expected operation count({expectedOperationCount}) was never hit.  ActualInfo:{JsonConvert.SerializeObject(this.actualInfo)}");
+                    Assert.IsTrue(stopwatch.Elapsed.TotalMinutes < 1, $"The expected operation count({expectedOperationCount}) was never hit, Actual Operation Count is {actualOperationSet.Count}.  ActualInfo:{JsonConvert.SerializeObject(this.actualInfo)}");
                 }
 
                 await Task.Delay(TimeSpan.FromMilliseconds(200));
@@ -629,7 +630,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual("region2", telemetryInfo.PreferredRegions[1]);
 
             }
-            Assert.AreEqual(expectedOperationCount, actualOperationList.Count, "Operation Information Count doesn't Match");
 
             IDictionary<string, long> actualOperationRecordCountMap = new Dictionary<string, long>();
 
@@ -638,7 +638,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.IsNotNull(operation.Operation, "Operation Type is null");
                 Assert.IsNotNull(operation.Resource, "Resource Type is null");
-                Assert.IsNotNull(operation.ResponseSizeInBytes, "ResponseSizeInBytes is null");
                 Assert.IsNotNull(operation.StatusCode, "StatusCode is null");
                 Assert.AreEqual(expectedConsistencyLevel?.ToString(), operation.Consistency, $"Consistency is not {expectedConsistencyLevel}");
 
@@ -689,7 +688,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return new ItemBatchOperation(Documents.OperationType.Create, 0, new Cosmos.PartitionKey(itemId), itemId, TestCommon.SerializerCore.ToStream(testItem));
         }
 
-        private async Task<Container> CreateClientAndContainer(ConnectionMode mode, ConsistencyLevel? consistency = null, bool isLargeContainer = false)
+        private async Task<Container> CreateClientAndContainer(ConnectionMode mode, 
+            ConsistencyLevel? consistency = null, 
+            bool isLargeContainer = false)
         {
             if (consistency.HasValue)
             {
