@@ -140,6 +140,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 request.OperationType,
                 locationEndpoint);
 
+            this.Accumulator?.RecordResponse(storeResult);
             lock (this.storeResponseStatistics)
             {
                 if (locationEndpoint != null)
