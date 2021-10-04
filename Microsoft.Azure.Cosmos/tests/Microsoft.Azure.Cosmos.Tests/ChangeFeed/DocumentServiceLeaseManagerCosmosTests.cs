@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         /// Verifies a Release when attempting to access the lease returns a 404 with some particular substatus
         /// </summary>
         [TestMethod]
-        public async Task ReleaseWhenNot404WithSomeSubstatusDoesThrow()
+        public async Task ReleaseWhen404WithSomeSubstatusDoesThrow()
         {
             DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
             {
