@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos
         ///    {
         ///         Automatic = false,
         ///         IndexingMode = IndexingMode.Lazy,
-        ///    };
+        ///    }
         /// };
         ///
         /// ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(
@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos
         ///    {
         ///         Automatic = false,
         ///         IndexingMode = IndexingMode.Lazy,
-        ///    };
+        ///    }
         /// };
         ///
         /// ContainerResponse response = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
@@ -412,7 +412,7 @@ namespace Microsoft.Azure.Cosmos
         ///    {
         ///         Automatic = false,
         ///         IndexingMode = IndexingMode.Lazy,
-        ///    };
+        ///    }
         /// };
         ///
         /// ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(containerProperties);
@@ -488,7 +488,7 @@ namespace Microsoft.Azure.Cosmos
         ///    {
         ///         Automatic = false,
         ///         IndexingMode = IndexingMode.Lazy,
-        ///    };
+        ///    }
         /// };
         ///
         /// ContainerResponse response = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerProperties);
