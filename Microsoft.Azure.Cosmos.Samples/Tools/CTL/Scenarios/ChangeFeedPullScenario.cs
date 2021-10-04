@@ -14,6 +14,7 @@ namespace CosmosCTL
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
     using App.Metrics.Gauge;
+    using App.Metrics.Timer;
 
     internal class ChangeFeedPullScenario : ICTLScenario
     {
@@ -54,7 +55,19 @@ namespace CosmosCTL
         {
             Stopwatch stopWatch = Stopwatch.StartNew();
 
+            long diagnosticsThresholdDuration = (long)config.DiagnosticsThresholdDurationAsTimespan.TotalMilliseconds;
             GaugeOptions documentGauge= new GaugeOptions { Name = "#Documents received", Context = loggingContextIdentifier };
+
+            TimerOptions readLatencyTimer = new TimerOptions
+            {
+                Name = "Latency",
+                MeasurementUnit = Unit.Requests,
+                DurationUnit = TimeUnit.Milliseconds,
+                RateUnit = TimeUnit.Seconds,
+                Context = loggingContextIdentifier,
+                Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
+            };
+
             Container container = cosmosClient.GetContainer(config.Database, config.Collection);
 
             try
@@ -70,7 +83,17 @@ namespace CosmosCTL
                     {
                         while (changeFeedPull.HasMoreResults)
                         {
-                            FeedResponse<Dictionary<string, string>> response = await changeFeedPull.ReadNextAsync();
+                            FeedResponse<Dictionary<string, string>> response;
+                            using (TimerContext timerContext = metrics.Measure.Timer.Time(readLatencyTimer))
+                            {
+                                response = await changeFeedPull.ReadNextAsync();
+                                long latency = (long)timerContext.Elapsed.TotalMilliseconds;
+                                if (latency > diagnosticsThresholdDuration)
+                                {
+                                    logger.LogInformation("Change Feed request took more than latency threshold {0}, diagnostics: {1}", config.DiagnosticsThresholdDuration, response.Diagnostics.ToString());
+                                }
+                            }
+
                             documentTotal += response.Count;
                             continuation = response.ContinuationToken;
                             if (response.StatusCode == HttpStatusCode.NotModified)
@@ -83,30 +106,22 @@ namespace CosmosCTL
 
                         if (config.PreCreatedDocuments > 0)
                         {
-                            if (this.initializationResult.InsertedDocuments == documentTotal)
+                            if (this.initializationResult.InsertedDocuments != documentTotal)
                             {
-                                logger.LogInformation($"Success: The number of new documents match the number of pre-created documents: {this.initializationResult.InsertedDocuments}");
-                            }
-                            else
-                            {
-                                logger.LogError($"The prepopulated documents and the change feed documents don't match.  Preconfigured Docs = {this.initializationResult.InsertedDocuments}, Change feed Documents = {documentTotal}.{Environment.NewLine}{continuation}");
+                                Utils.LogError(logger, loggingContextIdentifier, $"The prepopulated documents and the change feed documents don't match.  Preconfigured Docs = {this.initializationResult.InsertedDocuments}, Change feed Documents = {documentTotal}.{Environment.NewLine}{continuation}");
                             }
                         }
-                    }
-                    catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-                    {
-                        //Logging 429s is not relevant
                     }
                     catch (Exception ex)
                     {
                         metrics.Measure.Gauge.SetValue(documentGauge, documentTotal);
-                        logger.LogError(ex, "Failure while looping through change feed documents");
+                        Utils.LogError(logger, loggingContextIdentifier, ex);
                     }
                 }
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failure during Change Feed Pull scenario");
+                Utils.LogError(logger, loggingContextIdentifier, ex);
             }
             finally
             {
