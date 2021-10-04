@@ -157,7 +157,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             {
                 refreshedLease = await this.TryGetLeaseAsync(lease).ConfigureAwait(false);
             }
-            catch (CosmosException cosmosException) when (cosmosException.StatusCode == HttpStatusCode.NotFound)
+            catch (CosmosException cosmosException) 
+            when (cosmosException.StatusCode == HttpStatusCode.NotFound && cosmosException.SubStatusCode == (int)SubStatusCodes.Unknown)
             {
                 // Lease is being released after a split, the split itself delete the lease, this is expected
                 return;

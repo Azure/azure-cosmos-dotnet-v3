@@ -257,6 +257,57 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         /// <summary>
+        /// Verifies a Release when attempting to access the lease returns a 404 with some particular substatus
+        /// </summary>
+        [TestMethod]
+        public async Task ReleaseWhenNot404WithSomeSubstatusDoesThrow()
+        {
+            DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
+            {
+                HostName = Guid.NewGuid().ToString()
+            };
+
+            DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore()
+            {
+                LeaseId = Guid.NewGuid().ToString(),
+                LeaseToken = "0",
+                Owner = Guid.NewGuid().ToString(),
+                FeedRange = new FeedRangePartitionKeyRange("0")
+            };
+
+            Mock<DocumentServiceLeaseUpdater> mockUpdater = new Mock<DocumentServiceLeaseUpdater>();
+
+            ResponseMessage leaseResponse = new ResponseMessage(System.Net.HttpStatusCode.NotFound);
+            leaseResponse.Headers.SubStatusCode = Documents.SubStatusCodes.ReadSessionNotAvailable;
+
+            Mock<ContainerInternal> mockedContainer = new Mock<ContainerInternal>();
+            mockedContainer.Setup(c => c.ReadItemStreamAsync(
+                It.Is<string>(id => id == lease.LeaseId),
+                It.IsAny<PartitionKey>(),
+                It.IsAny<ItemRequestOptions>(),
+                It.IsAny<CancellationToken>())).ReturnsAsync(leaseResponse);
+
+
+            DocumentServiceLeaseManagerCosmos documentServiceLeaseManagerCosmos = new DocumentServiceLeaseManagerCosmos(
+                Mock.Of<ContainerInternal>(),
+                mockedContainer.Object,
+                mockUpdater.Object,
+                options,
+                Mock.Of<RequestOptionsFactory>());
+
+            CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => documentServiceLeaseManagerCosmos.ReleaseAsync(lease));
+
+            Assert.AreEqual(System.Net.HttpStatusCode.NotFound, cosmosException.StatusCode);
+            Assert.AreEqual((int)Documents.SubStatusCodes.ReadSessionNotAvailable, cosmosException.SubStatusCode);
+
+            mockUpdater.Verify(c => c.UpdateLeaseAsync(
+                It.IsAny<DocumentServiceLease>(),
+                It.IsAny<string>(),
+                It.IsAny<PartitionKey>(),
+                It.IsAny<Func<DocumentServiceLease, DocumentServiceLease>>()), Times.Never);
+        }
+
+        /// <summary>
         /// Verifies that if the updater read a different Owner from the captured in memory, throws a LeaseLost
         /// </summary>
         [ExpectedException(typeof(LeaseLostException))]
