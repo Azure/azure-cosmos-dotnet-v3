@@ -575,9 +575,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.WaitAndAssert(expectedOperationCount: 0); // Does not record telemetry
         }
 
-        private async Task WaitAndAssert(int expectedOperationCount, // Number of unique OperationInfo irrespective of response size
-            ConsistencyLevel? expectedConsistencyLevel = null, // Asset Consistency level of the operation recorded by telemetry
-            IDictionary<string, long> expectedOperationRecordCountMap = null)// Number of requests recorded for each operation 
+        /// <summary>
+        /// This method wait for the expected operations to get recorded by telemetry and assert the values
+        /// </summary>
+        /// <param name="expectedOperationCount"> Expected number of unique OperationInfo irrespective of response size.  </param>
+        /// <param name="expectedConsistencyLevel"> Expected Consistency level of the operation recorded by telemetry</param>
+        /// <param name="expectedOperationRecordCountMap"> Expected number of requests recorded for each operation </param>
+        /// <returns></returns>
+        private async Task WaitAndAssert(int expectedOperationCount,
+            ConsistencyLevel? expectedConsistencyLevel = null, 
+            IDictionary<string, long> expectedOperationRecordCountMap = null) 
         {
             Assert.IsNotNull(this.actualInfo, "Telemetry Information not available");
 
@@ -589,7 +596,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 HashSet<OperationInfo> actualOperationSet = new HashSet<OperationInfo>();
                 lock (this.actualInfo)
                 {
-                    // Setting the number of unique OperationInfo irrespective of response size.
+                    // Setting the number of unique OperationInfo irrespective of response size as response size is varying in case of queries.
                     this.actualInfo
                         .ForEach(x => x.OperationInfo
                                        .ForEach(y => { 
