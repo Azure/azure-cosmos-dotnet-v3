@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 databaseId: request.DatabaseId,
                                 operationType: request.OperationType,
                                 resourceType: request.ResourceType,
-                                consistencyLevel: this.GetConsistencyLevel(request),
+                                consistencyLevel: request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
                                 requestCharge: response.Headers.RequestCharge);
                 }
                 catch (Exception ex)
@@ -52,11 +52,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
         private bool IsAllowed(RequestMessage request)
         { 
             return ClientTelemetryOptions.AllowedResourceTypes.Equals(request.ResourceType);
-        }
-
-        private ConsistencyLevel? GetConsistencyLevel(RequestMessage request)
-        {
-            return request.RequestOptions?.BaseConsistencyLevel.GetValueOrDefault();   
         }
 
         /// <summary>
