@@ -53,6 +53,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         protected override async Task<TryCatch<OrderByQueryPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
         {
+            Console.WriteLine(" OrderByQueryPartitionRangePageAsyncEnumerator GetNextPageAsync");
+
             this.StartOfPageState = this.FeedRangeState.State;
             await this.bufferedEnumerator.MoveNextAsync(trace);
             return this.bufferedEnumerator.Current;
@@ -75,6 +77,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 CancellationToken cancellationToken)
                 : base(feedRangeState, cancellationToken)
             {
+                Console.WriteLine("InnerEnumerator queryPaginationOptions maxpagesize : " + queryPaginationOptions?.PageSizeLimit);
+                
                 this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
                 this.PartitionKey = partitionKey;

@@ -113,6 +113,7 @@ namespace Microsoft.Azure.Cosmos
         {
             requestOptions.MaxItemCount = pageSize;
 
+            Console.WriteLine("cosmosqueryclientcore pagesize: " + pageSize);
             ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,

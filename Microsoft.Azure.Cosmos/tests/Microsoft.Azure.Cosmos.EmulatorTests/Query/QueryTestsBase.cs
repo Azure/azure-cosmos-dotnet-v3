@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
         {
             ContainerResponse containerResponse = await this.CreatePartitionedContainer(
-                throughput: 25000,
+                throughput: 50000,
                 partitionKey: partitionKey,
                 indexingPolicy: indexingPolicy);
 
@@ -165,6 +165,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             string partitionKey = "/id",
             Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
         {
+            Console.WriteLine("Account Endpoint: " + this.database.Client.Endpoint);
             // Assert that database exists (race deletes are possible when used concurrently)
             ResponseMessage responseMessage = await this.database.ReadStreamAsync();
             Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
@@ -494,13 +495,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                 await Task.WhenAll(queryTasks);
 
-                List<Task<ContainerResponse>> deleteContainerTasks = new List<Task<ContainerResponse>>();
+               /* List<Task<ContainerResponse>> deleteContainerTasks = new List<Task<ContainerResponse>>();
                 foreach (Container container in collectionsAndDocuments.Select(tuple => tuple.Item1))
                 {
                     deleteContainerTasks.Add(container.DeleteContainerAsync());
                 }
 
-                await Task.WhenAll(deleteContainerTasks);
+                await Task.WhenAll(deleteContainerTasks);*/
             }
             catch (Exception ex) when (ex.GetType() != typeof(AssertFailedException))
             {
@@ -836,6 +837,41 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 {
                     FeedResponse<T> response = await resultSetIterator.ReadNextAsync();
                     yield return response;
+                }
+            }
+        }
+
+        internal static async IAsyncEnumerable<FeedResponse<T>> RunSimpleQueryWithNewIteratorAsync<T>(
+           Container container,
+           string query,
+           QueryRequestOptions requestOptions = null)
+        {
+            string continuationToken = null;
+            int count = 1;
+            while (true)
+            {
+                Console.WriteLine("Creating new Iterator");
+                using (FeedIterator<T> resultSetIterator = container.GetItemQueryIterator<T>(
+                query,
+                continuationToken,
+                requestOptions: requestOptions))
+                {
+                    while (resultSetIterator.HasMoreResults)
+                    {
+                        Console.WriteLine("count : " + count++);
+                        FeedResponse<T> response = await resultSetIterator.ReadNextAsync();
+                        Console.WriteLine(response.Diagnostics.ToString());
+                        Console.WriteLine("");
+
+                        continuationToken = response.ContinuationToken;
+
+                        yield return response;
+
+                        break;
+                    }
+
+                    if (!resultSetIterator.HasMoreResults)
+                        break;
                 }
             }
         }

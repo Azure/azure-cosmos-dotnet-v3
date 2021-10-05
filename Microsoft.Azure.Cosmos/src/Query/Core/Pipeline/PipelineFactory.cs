@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Newtonsoft.Json;
 
     internal static class PipelineFactory
     {
@@ -64,6 +65,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             sqlQuerySpec = !string.IsNullOrEmpty(queryInfo.RewrittenQuery) ? new SqlQuerySpec(queryInfo.RewrittenQuery, sqlQuerySpec.Parameters) : sqlQuerySpec;
 
             MonadicCreatePipelineStage monadicCreatePipelineStage;
+            Console.WriteLine("Pipeline Factory : queryPaginationOptions" + queryPaginationOptions?.PageSizeLimit + ", queryInfo: " + JsonConvert.SerializeObject(queryInfo));
+            int counter = 0;
+            foreach (FeedRangeEpk feedpk in targetRanges)
+            {
+                Console.WriteLine("Pipeline Factory : targetRanges " + counter + " : " + feedpk.ToJsonString());
+            }
+           
             if (queryInfo.HasOrderBy)
             {
                 monadicCreatePipelineStage = (continuationToken, cancellationToken) => OrderByCrossPartitionQueryPipelineStage.MonadicCreate(

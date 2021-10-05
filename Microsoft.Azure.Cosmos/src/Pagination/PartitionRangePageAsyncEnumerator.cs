@@ -48,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
             using (ITrace childTrace = trace.StartChild(name: $"{this.FeedRangeState.FeedRange} move next", TraceComponent.Pagination, TraceLevel.Info))
             {
+                Console.WriteLine("this.FeedRangeState.State : " + this.FeedRangeState.State + " this.HasStarted : " + this.HasStarted + " this.HasMoreResults : " + this.HasMoreResults);
                 if (!this.HasMoreResults)
                 {
                     return false;

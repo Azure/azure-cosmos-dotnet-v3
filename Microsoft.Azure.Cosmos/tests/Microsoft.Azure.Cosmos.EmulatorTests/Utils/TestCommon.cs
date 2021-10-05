@@ -70,6 +70,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
 
+            Console.WriteLine("authkey : " + authKey);
+            Console.WriteLine("endpoint : " + endpoint);
             return (endpoint, authKey);
         }
 

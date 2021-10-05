@@ -30,6 +30,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
         {
             try
             {
+                Console.WriteLine("TransportHandler SendAsync : " + request.Headers[Documents.HttpConstants.HttpHeaders.PageSize]);
+
                 ResponseMessage response = await this.ProcessMessageAsync(request, cancellationToken);
                 Debug.Assert(System.Diagnostics.Trace.CorrelationManager.ActivityId != Guid.Empty, "Trace activity id is missing");
                 return response;

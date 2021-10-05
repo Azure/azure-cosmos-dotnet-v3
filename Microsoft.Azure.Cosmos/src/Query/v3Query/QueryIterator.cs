@@ -158,7 +158,18 @@ namespace Microsoft.Azure.Cosmos.Query
 
             TryCatch<QueryPage> tryGetQueryPage;
             try
-            {
+            { 
+                Console.WriteLine("ReadNextAsync");
+                if (this.requestOptions != null && 
+                    this.requestOptions.Properties != null 
+                    && this.requestOptions.Properties.Count > 0)
+                {
+                    foreach (KeyValuePair<string, object> kv in this.requestOptions.Properties)
+                    {
+                        Console.WriteLine("key: " + kv.Key + ", value: " + kv.Value);
+                    }
+                }
+                
                 // This catches exception thrown by the pipeline and converts it to QueryResponse
                 this.queryPipelineStage.SetCancellationToken(cancellationToken);
                 if (!await this.queryPipelineStage.MoveNextAsync(trace))
