@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [DataRow(ConnectionMode.Direct)]
-        [DataRow(ConnectionMode.Gateway)]
+        //[DataRow(ConnectionMode.Gateway)]
         public async Task PointSuccessOperationsTest(ConnectionMode mode)
         {
             Container container = await this.GetContainer(mode);
@@ -99,8 +99,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Create an item
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
             ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(testItem);
-            ToDoActivity testItemCreated = createResponse.Resource;
 
+            File.AppendAllText(@"C:\Users\sourabhjain\TelemetryData\6\diag.txt", createResponse.Diagnostics.ToString());
+          //  ToDoActivity testItemCreated = createResponse.Resource;
+/*
             // Read an Item
             await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
 
@@ -121,9 +123,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 patch);
 
             // Delete an Item
-            await container.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
+            await container.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));*/
 
-            await this.WaitAndAssert(12);
+            await this.WaitAndAssert(2);
         }
 
         [TestMethod]
@@ -183,39 +185,41 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [DataRow(ConnectionMode.Direct)]
-        [DataRow(ConnectionMode.Gateway)]
+        //[DataRow(ConnectionMode.Gateway)]
         public async Task StreamOperationsTest(ConnectionMode mode)
         {
             Container container = await this.GetContainer(mode);
             // Create an item
             var testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working", status = "done" };
-            await container
+            ResponseMessage createResponse = await container
                 .CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem),
                 new Cosmos.PartitionKey(testItem.id));
 
-            //Upsert an Item
-            await container.UpsertItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), new Cosmos.PartitionKey(testItem.id));
+            File.AppendAllText(@"C:\Users\sourabhjain\TelemetryData\6\diag.txt", createResponse.Diagnostics.ToString());
 
-            //Read an Item
-            await container.ReadItemStreamAsync(testItem.id, new Cosmos.PartitionKey(testItem.id));
+            /*  //Upsert an Item
+              await container.UpsertItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), new Cosmos.PartitionKey(testItem.id));
 
-            //Replace an Item
-            await container.ReplaceItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), testItem.id, new Cosmos.PartitionKey(testItem.id));
+              //Read an Item
+              await container.ReadItemStreamAsync(testItem.id, new Cosmos.PartitionKey(testItem.id));
 
-            // Patch an Item
-            List<PatchOperation> patch = new List<PatchOperation>()
-            {
-                PatchOperation.Add("/new", "patched")
-            };
-            await ((ContainerInternal)container).PatchItemStreamAsync(
-                partitionKey: new Cosmos.PartitionKey(testItem.id),
-                id: testItem.id,
-                patchOperations: patch);
+              //Replace an Item
+              await container.ReplaceItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), testItem.id, new Cosmos.PartitionKey(testItem.id));
 
-            //Delete an Item
-            await container.DeleteItemStreamAsync(testItem.id, new Cosmos.PartitionKey(testItem.id));
+              // Patch an Item
+              List<PatchOperation> patch = new List<PatchOperation>()
+              {
+                  PatchOperation.Add("/new", "patched")
+              };
+              await ((ContainerInternal)container).PatchItemStreamAsync(
+                  partitionKey: new Cosmos.PartitionKey(testItem.id),
+                  id: testItem.id,
+                  patchOperations: patch);
 
-            await this.WaitAndAssert(12);
+              //Delete an Item
+              await container.DeleteItemStreamAsync(testItem.id, new Cosmos.PartitionKey(testItem.id));*/
+
+            await this.WaitAndAssert(2);
         }
 
         [TestMethod]
@@ -263,9 +267,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(queryDefinition);
 
                 List<object> families = new List<object>();
+                int count = 0;
                 while (queryResultSetIterator.HasMoreResults)
                 {
                     FeedResponse<object> currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                    File.AppendAllText(@"C:\Users\sourabhjain\TelemetryData\7\diag-" + count + ".txt", currentResultSet.Diagnostics.ToString());
+
                     foreach (object family in currentResultSet)
                     {
                         families.Add(family);
@@ -303,6 +310,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             while (localCopyOfActualInfo == null);
 
+            File.AppendAllText(@"C:\Users\sourabhjain\TelemetryData\7\telemetry.txt", JsonConvert.SerializeObject(localCopyOfActualInfo));
             List<OperationInfo> actualOperationList = new List<OperationInfo>();
             List<SystemInfo> actualSystemInformation = new List<SystemInfo>();
 

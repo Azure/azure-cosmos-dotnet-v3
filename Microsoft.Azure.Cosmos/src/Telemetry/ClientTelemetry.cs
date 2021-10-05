@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private Task telemetryTask;
 
-        private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
+        private static ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
             = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
 
         /// <summary>
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.clientTelemetryInfo.DateTimeUtc = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
 
                     ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
-                        = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
+                        = Interlocked.Exchange(ref operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
 
                     this.clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot);
 
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="resourceType"></param>
         /// <param name="consistencyLevel"></param>
         /// <param name="requestCharge"></param>
-        internal void Collect(CosmosDiagnostics cosmosDiagnostics,
+        internal static void Collect(CosmosDiagnostics cosmosDiagnostics,
                             HttpStatusCode statusCode,
                             long responseSizeInBytes,
                             string containerId,
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 throw new ArgumentNullException(nameof(cosmosDiagnostics));
             }
 
-            string regionsContacted = this.GetContactedRegions(cosmosDiagnostics);
+            string regionsContacted = GetContactedRegions(cosmosDiagnostics);
 
             // Recording Request Latency and Request Charge
             OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                             resource: resourceType,
                                             statusCode: (int)statusCode);
 
-            (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
+            (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = operationInfoMap
                     .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                         ClientTelemetryOptions.RequestLatencyMax,
                                                         ClientTelemetryOptions.RequestLatencyPrecision),
@@ -241,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         /// <param name="cosmosDiagnostics"></param>
         /// <returns>Comma separated region list</returns>
-        private string GetContactedRegions(CosmosDiagnostics cosmosDiagnostics)
+        private static string GetContactedRegions(CosmosDiagnostics cosmosDiagnostics)
         {
             IReadOnlyList<(string regionName, Uri uri)> regionList = cosmosDiagnostics.GetContactedRegions();
 

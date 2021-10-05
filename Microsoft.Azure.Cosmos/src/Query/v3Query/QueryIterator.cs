@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class QueryIterator : FeedIteratorInternal
@@ -30,16 +31,19 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly CosmosSerializationFormatOptions cosmosSerializationFormatOptions;
         private readonly RequestOptions requestOptions;
         private readonly CosmosClientContext clientContext;
+        private readonly ContainerCore containerCore;
 
         private bool hasMoreResults;
 
         private QueryIterator(
+            ContainerCore containerCore,
             CosmosQueryContextCore cosmosQueryContext,
             IQueryPipelineStage cosmosQueryExecutionContext,
             CosmosSerializationFormatOptions cosmosSerializationFormatOptions,
             RequestOptions requestOptions,
             CosmosClientContext clientContext)
         {
+            this.containerCore = containerCore ?? throw new ArgumentNullException(nameof(containerCore));
             this.cosmosQueryContext = cosmosQueryContext ?? throw new ArgumentNullException(nameof(cosmosQueryContext));
             this.queryPipelineStage = cosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
             this.cosmosSerializationFormatOptions = cosmosSerializationFormatOptions;
@@ -93,6 +97,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         if (tryParse.Failed)
                         {
                             return new QueryIterator(
+                                containerCore,
                                 cosmosQueryContext,
                                 new FaultedQueryPipelineStage(
                                     new MalformedContinuationTokenException(
@@ -135,6 +140,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 testInjections: queryRequestOptions.TestSettings);
 
             return new QueryIterator(
+                containerCore,
                 cosmosQueryContext,
                 CosmosQueryExecutionContextFactory.Create(documentContainer, cosmosQueryContext, inputParameters, NoOpTrace.Singleton),
                 queryRequestOptions.CosmosSerializationFormatOptions,
@@ -164,22 +170,27 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (!await this.queryPipelineStage.MoveNextAsync(trace))
                 {
                     this.hasMoreResults = false;
-                    return QueryResponse.CreateSuccess(
-                        result: EmptyPage,
-                        count: EmptyPage.Count,
-                        responseLengthBytes: default,
-                        serializationOptions: this.cosmosSerializationFormatOptions,
-                        responseHeaders: new CosmosQueryResponseMessageHeaders(
-                            continauationToken: default,
-                            disallowContinuationTokenMessage: default,
-                            this.cosmosQueryContext.ResourceTypeEnum,
-                            this.cosmosQueryContext.ContainerResourceId)
-                        {
-                            RequestCharge = default,
-                            ActivityId = Guid.Empty.ToString(),
-                            SubStatusCode = Documents.SubStatusCodes.Unknown
-                        },
-                        trace: trace);
+                    return ClientTelemetryPublisher.Publish(
+                        operationType: Documents.OperationType.Query,
+                        resourceType: this.cosmosQueryContext.ResourceTypeEnum,
+                        requestOptions: this.requestOptions, 
+                        container: this.containerCore,
+                        response: QueryResponse.CreateSuccess(
+                            result: EmptyPage,
+                            count: EmptyPage.Count,
+                            responseLengthBytes: default,
+                            serializationOptions: this.cosmosSerializationFormatOptions,
+                            responseHeaders: new CosmosQueryResponseMessageHeaders(
+                                continauationToken: default,
+                                disallowContinuationTokenMessage: default,
+                                this.cosmosQueryContext.ResourceTypeEnum,
+                                this.cosmosQueryContext.ContainerResourceId)
+                            {
+                                RequestCharge = default,
+                                ActivityId = Guid.Empty.ToString(),
+                                SubStatusCode = Documents.SubStatusCodes.Unknown
+                            },
+                            trace: trace));
                 }
 
                 tryGetQueryPage = this.queryPipelineStage.Current;
@@ -212,13 +223,18 @@ namespace Microsoft.Azure.Cosmos.Query
                     headers[kvp.Key] = kvp.Value;
                 }
 
-                return QueryResponse.CreateSuccess(
-                    result: tryGetQueryPage.Result.Documents,
-                    count: tryGetQueryPage.Result.Documents.Count,
-                    responseLengthBytes: tryGetQueryPage.Result.ResponseLengthInBytes,
-                    serializationOptions: this.cosmosSerializationFormatOptions,
-                    responseHeaders: headers,
-                    trace: trace);
+                return ClientTelemetryPublisher.Publish(
+                        operationType: Documents.OperationType.Query,
+                        resourceType: this.cosmosQueryContext.ResourceTypeEnum,
+                        requestOptions: this.requestOptions,
+                        container: this.containerCore,
+                        response: QueryResponse.CreateSuccess(
+                            result: tryGetQueryPage.Result.Documents,
+                            count: tryGetQueryPage.Result.Documents.Count,
+                            responseLengthBytes: tryGetQueryPage.Result.ResponseLengthInBytes,
+                            serializationOptions: this.cosmosSerializationFormatOptions,
+                            responseHeaders: headers,
+                            trace: trace));
             }
 
             if (!ExceptionToCosmosException.TryCreateFromException(
@@ -234,17 +250,22 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.hasMoreResults = false;
             }
 
-            return QueryResponse.CreateFailure(
-                statusCode: cosmosException.StatusCode,
-                cosmosException: cosmosException,
-                requestMessage: null,
-                responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(
-                    cosmosException.Headers,
-                    this.cosmosQueryContext.ResourceTypeEnum,
-                    this.cosmosQueryContext.ContainerResourceId,
-                    cosmosException.SubStatusCode,
-                    cosmosException.ActivityId),
-                trace: trace);
+            return ClientTelemetryPublisher.Publish(
+                        operationType: Documents.OperationType.Query,
+                        resourceType: this.cosmosQueryContext.ResourceTypeEnum,
+                        requestOptions: this.requestOptions,
+                        container: this.containerCore,
+                        response: QueryResponse.CreateFailure(
+                            statusCode: cosmosException.StatusCode,
+                            cosmosException: cosmosException,
+                            requestMessage: null,
+                            responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(
+                                cosmosException.Headers,
+                                this.cosmosQueryContext.ResourceTypeEnum,
+                                this.cosmosQueryContext.ContainerResourceId,
+                                cosmosException.SubStatusCode,
+                                cosmosException.ActivityId),
+                            trace: trace));
         }
 
         public override CosmosElement GetCosmosElementContinuationToken() => this.queryPipelineStage.Current.Result.State?.Value;

@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Serializer;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -57,14 +58,19 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return await this.ProcessItemStreamAsync(
-                partitionKey: partitionKey,
-                itemId: null,
-                streamPayload: streamPayload,
+            return ClientTelemetryPublisher.Publish(
                 operationType: OperationType.Create,
+                resourceType: ResourceType.Document,
                 requestOptions: requestOptions,
-                trace: trace,
-                cancellationToken: cancellationToken);
+                container: this,
+                response: await this.ProcessItemStreamAsync(
+                    partitionKey: partitionKey,
+                    itemId: null,
+                    streamPayload: streamPayload,
+                    operationType: OperationType.Create,
+                    requestOptions: requestOptions,
+                    trace: trace,
+                    cancellationToken: cancellationToken));
         }
 
         public async Task<ItemResponse<T>> CreateItemAsync<T>(
@@ -88,7 +94,12 @@ namespace Microsoft.Azure.Cosmos
                 trace: trace,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
+            return ClientTelemetryPublisher.Publish<T>(
+                        operationType: OperationType.Create,
+                        resourceType: ResourceType.Document,
+                        requestOptions: requestOptions,
+                        container: this,
+                        response: this.ClientContext.ResponseFactory.CreateItemResponse<T>(response));
         }
 
         public async Task<ResponseMessage> ReadItemStreamAsync(
@@ -1294,5 +1305,6 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedProcessor: changeFeedProcessor,
                 applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
         }
+
     }
 }
