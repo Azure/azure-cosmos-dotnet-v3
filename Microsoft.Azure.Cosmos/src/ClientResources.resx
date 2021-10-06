@@ -298,7 +298,7 @@
     <value>Instantiation of only value types, anonymous types and spatial types are supported.</value>
   </data>
   <data name="UnsupportedBulkRequestOptions" xml:space="preserve">
-    <value>Consistency, Session, and Triggers are not allowed when AllowBulkExecution is set to true.</value>
+    <value>Consistency, Session, Properties, and Triggers are not allowed when AllowBulkExecution is set to true.</value>
   </data>
   <data name="EncryptorNotConfigured" xml:space="preserve">
     <value>The client was not configured to allow for encryption. Create the client by using cosmosClientBuilder.WithEncryptor.</value>

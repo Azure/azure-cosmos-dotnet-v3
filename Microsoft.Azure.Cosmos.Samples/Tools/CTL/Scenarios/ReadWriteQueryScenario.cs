@@ -30,7 +30,7 @@ namespace CosmosCTL
         {
             if (!TryParseReadWriteQueryPercentages(config.ReadWriteQueryPercentage, out this.readWriteQueryPercentage))
             {
-                logger.LogError("Cannot correctly parse {0} = {1}", nameof(config.ReadWriteQueryPercentage), config.ReadWriteQueryPercentage);
+                Utils.LogError(logger, "Config", $"Cannot correctly parse {nameof(config.ReadWriteQueryPercentage)} = {config.ReadWriteQueryPercentage}");
                 return;
             }
 
@@ -70,7 +70,7 @@ namespace CosmosCTL
             }
             catch (Exception unhandledException)
             {
-                logger.LogError(unhandledException, "Unhandled exception executing {0}", nameof(ReadWriteQueryScenario));
+                Utils.LogError(logger, loggingContextIdentifier, unhandledException);
             }
             finally
             {
@@ -162,7 +162,7 @@ namespace CosmosCTL
                         {
                             concurrencyControlSemaphore.Release();
                             metrics.Measure.Counter.Increment(readFailureMeter);
-                            logger.LogError(ex, "Failure during read operation");
+                            Utils.LogError(logger, loggingContextIdentifier, ex, "Failure during read operation");
                         },
                         logDiagnostics: (ItemResponse<Dictionary<string, string>> response) => logger.LogInformation("Read request took more than latency threshold {0}, diagnostics: {1}", config.DiagnosticsThresholdDuration, response.Diagnostics.ToString()),
                         cancellationToken: cancellationToken));
@@ -186,7 +186,7 @@ namespace CosmosCTL
                         {
                             concurrencyControlSemaphore.Release();
                             metrics.Measure.Counter.Increment(writeFailureMeter);
-                            logger.LogError(ex, "Failure during write operation");
+                            Utils.LogError(logger, loggingContextIdentifier, ex, "Failure during write operation");
                         },
                         logDiagnostics: (ItemResponse<Dictionary<string, string>> response) => logger.LogInformation("Write request took more than latency threshold {0}, diagnostics: {1}", config.DiagnosticsThresholdDuration, response.Diagnostics.ToString()),
                         cancellationToken: cancellationToken));
@@ -209,7 +209,7 @@ namespace CosmosCTL
                         {
                             concurrencyControlSemaphore.Release();
                             metrics.Measure.Counter.Increment(queryFailureMeter);
-                            logger.LogError(ex, "Failure during query operation");
+                            Utils.LogError(logger, loggingContextIdentifier, ex, "Failure during query operation");
                         },
                         logDiagnostics: (FeedResponse<Dictionary<string, string>> response) => logger.LogInformation("Query request took more than latency threshold {0}, diagnostics: {1}", config.DiagnosticsThresholdDuration, response.Diagnostics.ToString()),
                         cancellationToken: cancellationToken));

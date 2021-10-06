@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -99,6 +100,15 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void Builder_InvalidEndpointAndKey(string endpoint, string key)
         {
             new CosmosClientBuilder(endpoint, key);
+        }
+
+        [TestMethod]
+        public void Builder_InvalidEndpointAndTokenCredential()
+        {
+            TokenCredential tokenCredential = new Mock<TokenCredential>().Object;
+            Assert.ThrowsException<ArgumentNullException>(() => new CosmosClientBuilder("", tokenCredential));
+            Assert.ThrowsException<ArgumentNullException>(() => new CosmosClientBuilder(null, tokenCredential));
+            Assert.ThrowsException<ArgumentNullException>(() => new CosmosClientBuilder(AccountEndpoint, tokenCredential: null));
         }
 
         [DataTestMethod]

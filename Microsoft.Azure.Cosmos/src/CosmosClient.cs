@@ -449,12 +449,7 @@ namespace Microsoft.Azure.Cosmos
         /// a custom container that modifies the response. For example the client encryption
         /// uses this to decrypt responses before returning to the caller.
         /// </remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        virtual CosmosResponseFactory ResponseFactory => this.ClientContext.ResponseFactory;
+        public virtual CosmosResponseFactory ResponseFactory => this.ClientContext.ResponseFactory;
 
         /// <summary>
         /// Gets the endpoint Uri for the Azure Cosmos DB service.
@@ -665,7 +660,7 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>201</term><description>Created - New database is created.</description>
         ///     </item>
         ///     <item>
-        ///         <term>200</term><description>Accepted - This means the database already exists.</description>
+        ///         <term>200</term><description>OK - This means the database already exists.</description>
         ///     </item>
         /// </list>
         /// </returns>
@@ -757,7 +752,7 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>201</term><description>Created - New database is created.</description>
         ///     </item>
         ///     <item>
-        ///         <term>200</term><description>Accepted - This means the database already exists.</description>
+        ///         <term>200</term><description>OK- This means the database already exists.</description>
         ///     </item>
         /// </list>
         /// </returns>

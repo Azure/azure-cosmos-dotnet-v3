@@ -44,7 +44,7 @@ namespace CosmosCTL
             }
         }
 
-        public Task RunAsync(
+        public async Task RunAsync(
             CTLConfig config,
             CosmosClient cosmosClient,
             ILogger logger,
@@ -52,68 +52,94 @@ namespace CosmosCTL
             string loggingContextIdentifier,
             CancellationToken cancellationToken)
         {
-            return Task.WhenAll(
-                QueryScenario.ExecuteQueryAndGatherResultsAsync(
-                    config, 
-                    cosmosClient, 
-                    logger, 
-                    metrics, 
-                    loggingContextIdentifier, 
-                    cancellationToken, 
-                    queryText: "select * from c", 
-                    queryName: "Star",
-                    expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments: 0),
-                QueryScenario.ExecuteQueryAndGatherResultsAsync(
-                    config, 
-                    cosmosClient, 
-                    logger, 
-                    metrics, 
-                    loggingContextIdentifier, 
-                    cancellationToken, 
-                    queryText: "select * from c order by c.id", 
-                    queryName: "OrderBy",
-                    expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0),
-                QueryScenario.ExecuteQueryAndGatherResultsAsync(
-                    config, 
-                    cosmosClient, 
-                    logger, 
-                    metrics, 
-                    loggingContextIdentifier, 
-                    cancellationToken, 
-                    queryText: "select count(1) from c", 
-                    queryName: "Aggregates",
-                    expectedResults: 1),
-                QueryScenario.ExecuteQueryWithContinuationAndGatherResultsAsync(
-                    config,
-                    cosmosClient,
-                    logger,
-                    metrics,
-                    loggingContextIdentifier,
-                    cancellationToken,
-                    queryText: "select * from c",
-                    queryName: "Star",
-                    expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0),
-                QueryScenario.ExecuteQueryWithContinuationAndGatherResultsAsync(
-                    config,
-                    cosmosClient,
-                    logger,
-                    metrics,
-                    loggingContextIdentifier,
-                    cancellationToken,
-                    queryText: "select * from c order by c.id",
-                    queryName: "OrderBy",
-                    expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0),
-                QueryScenario.ExecuteQueryWithContinuationAndGatherResultsAsync(
-                    config,
-                    cosmosClient,
-                    logger,
-                    metrics,
-                    loggingContextIdentifier,
-                    cancellationToken,
-                    queryText: "select count(1) from c",
-                    queryName: "Aggregates",
-                    expectedResults: 1)
-                );
+            try
+            {
+                SemaphoreSlim concurrencyControlSemaphore = new SemaphoreSlim(config.Concurrency);
+                await Task.WhenAll(
+                        QueryScenario.ExecuteQueryAndGatherResultsAsync(
+                            config,
+                            cosmosClient,
+                            logger,
+                            metrics,
+                            loggingContextIdentifier,
+                            cancellationToken,
+                            queryText: "select * from c",
+                            queryName: "Star",
+                            expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0,
+                            concurrencyControlSemaphore: concurrencyControlSemaphore),
+                        QueryScenario.ExecuteQueryAndGatherResultsAsync(
+                            config,
+                            cosmosClient,
+                            logger,
+                            metrics,
+                            loggingContextIdentifier,
+                            cancellationToken,
+                            queryText: "select * from c order by c.id",
+                            queryName: "OrderBy",
+                            expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0,
+                            concurrencyControlSemaphore: concurrencyControlSemaphore),
+                        QueryScenario.ExecuteQueryAndGatherResultsAsync(
+                            config,
+                            cosmosClient,
+                            logger,
+                            metrics,
+                            loggingContextIdentifier,
+                            cancellationToken,
+                            queryText: "select count(1) from c",
+                            queryName: "Aggregates",
+                            expectedResults: 1,
+                            concurrencyControlSemaphore: concurrencyControlSemaphore),
+                        QueryScenario.ExecuteQueryWithContinuationAndGatherResultsAsync(
+                            config,
+                            cosmosClient,
+                            logger,
+                            metrics,
+                            loggingContextIdentifier,
+                            cancellationToken,
+                            queryText: "select * from c",
+                            queryName: "Star",
+                            expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0,
+                            concurrencyControlSemaphore: concurrencyControlSemaphore),
+                        QueryScenario.ExecuteQueryWithContinuationAndGatherResultsAsync(
+                            config,
+                            cosmosClient,
+                            logger,
+                            metrics,
+                            loggingContextIdentifier,
+                            cancellationToken,
+                            queryText: "select * from c order by c.id",
+                            queryName: "OrderBy",
+                            expectedResults: config.PreCreatedDocuments > 0 ? this.initializationResult.InsertedDocuments : 0,
+                            concurrencyControlSemaphore: concurrencyControlSemaphore),
+                        QueryScenario.ExecuteQueryWithContinuationAndGatherResultsAsync(
+                            config,
+                            cosmosClient,
+                            logger,
+                            metrics,
+                            loggingContextIdentifier,
+                            cancellationToken,
+                            queryText: "select count(1) from c",
+                            queryName: "Aggregates",
+                            expectedResults: 1,
+                            concurrencyControlSemaphore: concurrencyControlSemaphore)
+                        );
+            }
+            catch (Exception ex)
+            {
+                Utils.LogError(logger, loggingContextIdentifier, ex);
+            }
+            finally
+            {
+                if (this.initializationResult.CreatedContainer)
+                {
+                    await cosmosClient.GetContainer(config.Database, config.Collection).DeleteContainerStreamAsync();
+                }
+
+                if (this.initializationResult.CreatedDatabase)
+                {
+                    await cosmosClient.GetDatabase(config.Database).DeleteStreamAsync();
+                }
+            }
         }
 
         /// <summary>
@@ -127,7 +153,8 @@ namespace CosmosCTL
             CancellationToken cancellationToken,
             string queryText,
             string queryName,
-            long expectedResults)
+            long expectedResults,
+            SemaphoreSlim concurrencyControlSemaphore)
         {
             Stopwatch stopWatch = Stopwatch.StartNew();
 
@@ -146,6 +173,7 @@ namespace CosmosCTL
                 List<string> allContinuations = new List<string>();
                 long documentTotal = 0;
                 string continuation;
+                await concurrencyControlSemaphore.WaitAsync();
                 FeedIterator<Dictionary<string, string>> query = container.GetItemQueryIterator<Dictionary<string, string>>(queryText);
                 try
                 {
@@ -177,7 +205,7 @@ namespace CosmosCTL
                             errorDetail.AppendLine($"Continuation: {c}");
                         }
 
-                        logger.LogError(errorDetail.ToString());
+                        Utils.LogError(logger, loggingContextIdentifier, errorDetail.ToString());
                     }
                 }
                 catch (Exception ex)
@@ -191,7 +219,11 @@ namespace CosmosCTL
                         errorDetail.AppendLine($"Continuation: {c}");
                     }
 
-                    logger.LogError(ex, errorDetail.ToString());
+                    Utils.LogError(logger, loggingContextIdentifier, ex, errorDetail.ToString());
+                }
+                finally
+                {
+                    concurrencyControlSemaphore.Release();
                 }
             }
 
@@ -209,7 +241,8 @@ namespace CosmosCTL
             CancellationToken cancellationToken,
             string queryText,
             string queryName,
-            long expectedResults)
+            long expectedResults,
+            SemaphoreSlim concurrencyControlSemaphore)
         {
             Stopwatch stopWatch = Stopwatch.StartNew();
 
@@ -226,6 +259,7 @@ namespace CosmosCTL
             {
                 long documentTotal = 0;
                 string continuation = null;
+                await concurrencyControlSemaphore.WaitAsync();
                 using FeedIterator<Dictionary<string, string>> query = container.GetItemQueryIterator<Dictionary<string, string>>(queryText);
                 try
                 {
@@ -244,8 +278,12 @@ namespace CosmosCTL
                         errorDetail.AppendLine($"{queryName} Query expected to read {expectedResults} but got {documentTotal}");
                         errorDetail.AppendLine($"Last continuation: {continuation}");
 
-                        logger.LogError(errorDetail.ToString());
+                        Utils.LogError(logger, loggingContextIdentifier, errorDetail.ToString());
                     }
+                }
+                catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                {
+                    //Logging 429s is not relevant
                 }
                 catch (Exception ex)
                 {
@@ -255,7 +293,11 @@ namespace CosmosCTL
                     errorDetail.AppendLine($"{queryName} Query failure while looping through query.");
                     errorDetail.AppendLine($"Last continuation: {continuation}");
 
-                    logger.LogError(ex, errorDetail.ToString());
+                    Utils.LogError(logger, loggingContextIdentifier, ex, errorDetail.ToString());
+                }
+                finally
+                {
+                    concurrencyControlSemaphore.Release();
                 }
             }
 
