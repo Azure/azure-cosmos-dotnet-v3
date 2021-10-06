@@ -4,7 +4,7 @@
 		<ClientOfficialVersion>3.21.0</ClientOfficialVersion>
 		<ClientPreviewVersion>3.21.0</ClientPreviewVersion>
 		<ClientPreviewSuffixVersion>preview</ClientPreviewSuffixVersion>
-		<DirectVersion>3.21.1</DirectVersion>
+		<DirectVersion>3.22.0</DirectVersion>
 		<EncryptionVersion>1.0.0-previewV16</EncryptionVersion>
 		<CustomEncryptionVersion>1.0.0-preview</CustomEncryptionVersion>
 		<HybridRowVersion>1.1.0-preview3</HybridRowVersion>
