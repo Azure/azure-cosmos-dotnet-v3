@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 throw new ArgumentNullException(nameof(uninitializedEnumerator));
             }
 
-            // We need to prime the page
+           // We need to prime the page
             if (!await uninitializedEnumerator.MoveNextAsync(trace))
             {
                 // No more documents, so just return an empty page
