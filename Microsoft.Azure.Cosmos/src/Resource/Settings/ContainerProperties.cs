@@ -246,7 +246,7 @@ namespace Microsoft.Azure.Cosmos
         public DateTime? LastModified { get; private set; }
 
         /// <summary>
-        /// Gets the client encryption policy information for storing items in a container from the Azure Cosmos service.
+        /// Gets or sets the client encryption policy information for storing items in a container from the Azure Cosmos service.
         /// </summary>
         /// <value>
         /// It is an optional property.
@@ -258,12 +258,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         [JsonIgnore]
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-            ClientEncryptionPolicy ClientEncryptionPolicy
+        public ClientEncryptionPolicy ClientEncryptionPolicy
         {
             get => this.clientEncryptionPolicyInternal;
 

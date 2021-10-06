@@ -144,7 +144,7 @@ namespace CosmosCTL
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Unhandled exception during execution");
+                Utils.LogError(logger, "Unhandled exception during execution", ex);
             }
         }
 
@@ -190,6 +190,7 @@ namespace CosmosCTL
                 WorkloadType.ChangeFeedProcessor => new ChangeFeedProcessorScenario(),
                 WorkloadType.ChangeFeedPull => new ChangeFeedPullScenario(),
                 WorkloadType.Query => new QueryScenario(),
+                WorkloadType.ReadMany => new ReadManyScenario(),
                 _ => throw new NotImplementedException($"No mapping for {workloadType}"),
             };
         }
