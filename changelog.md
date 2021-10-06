@@ -16,6 +16,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <a name="3.21.0-preview"/> [3.21.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.21.0-preview) - 2021-09-10
 
 #### Added
+- [#2753](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2753) CosmosClientBuilder: Adds overload for passing TokenCredential (Thanks to levimatheri)
+- [#2732](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2732) Diagnostics: Adds request summary
+- [#2746](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2746) Bulk: Adds validation to throw if ItemRequestOptions.Properties is set with bulk enabled.
+
+#### Fixed
+- [#2712](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2712) Serialized types:  Fixes public types(Database Properties, ContainerProperties, etc..) to be upgrade safe so new content is not lost on deserialize and serialize paths
+- [#2739](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2739) Bulk: Fixes item response to include SessionToken and ActivityId
+- [#2764](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2764) ChangeFeedProcessor: Fixes log to remove expected 404 scenarios during lease release
+
+### <a name="3.21.0-preview"/> [3.21.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.21.0-preview) - 2021-09-10
+
+#### Added
 - [#2577](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2577) ResponseMessage : Adds setter for Diagnostics
 - [#2613](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2613) Change Feed Processor: Adds notification APIs
 
