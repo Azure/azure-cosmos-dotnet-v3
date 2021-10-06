@@ -96,7 +96,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator,
             ITrace trace)
         {
-            Console.WriteLine("MoveNextAsync_Initialize_FromBeginningAsync");
             this.cancellationToken.ThrowIfCancellationRequested();
 
             if (uninitializedEnumerator == null)
@@ -104,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 throw new ArgumentNullException(nameof(uninitializedEnumerator));
             }
 
-           // We need to prime the page
+            // We need to prime the page
             if (!await uninitializedEnumerator.MoveNextAsync(trace))
             {
                 // No more documents, so just return an empty page
@@ -123,10 +122,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             if (uninitializedEnumerator.Current.Failed)
             {
-                Console.WriteLine("uninitializedEnumerator.Current.Failed " + uninitializedEnumerator.Current.Exception);
                 if (IsSplitException(uninitializedEnumerator.Current.Exception))
                 {
-                    Console.WriteLine("Split Exception happened..");
                     return await this.MoveNextAsync_InitializeAsync_HandleSplitAsync(uninitializedEnumerator, token: null, trace);
                 }
 
@@ -188,8 +185,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             OrderByContinuationToken token,
             ITrace trace)
         {
-            Console.WriteLine("MoveNextAsync_Initialize_FilterAsync");
-
             this.cancellationToken.ThrowIfCancellationRequested();
 
             if (uninitializedEnumerator == null)
@@ -328,8 +323,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             {
                 // On a merge, the 410/1002 results in a single parent
                 // We maintain the current enumerator's range and let the RequestInvokerHandler logic kick in
-
-                Console.WriteLine("OrderByCrossPartitionQueryPipelineStage 1 : " + uninitializedEnumerator.QueryPaginationOptions?.PageSizeLimit);
                 OrderByQueryPartitionRangePageAsyncEnumerator childPaginator = new OrderByQueryPartitionRangePageAsyncEnumerator(
                     this.documentContainer,
                     uninitializedEnumerator.SqlQuerySpec,
@@ -346,8 +339,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 foreach (FeedRangeInternal childRange in childRanges)
                 {
                     this.cancellationToken.ThrowIfCancellationRequested();
-
-                    Console.WriteLine("OrderByCrossPartitionQueryPipelineStage 2 : " + uninitializedEnumerator.QueryPaginationOptions?.PageSizeLimit);
 
                     OrderByQueryPartitionRangePageAsyncEnumerator childPaginator = new OrderByQueryPartitionRangePageAsyncEnumerator(
                         this.documentContainer,
@@ -541,7 +532,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             if (this.uninitializedEnumeratorsAndTokens.Count != 0)
             {
-                Console.WriteLine("OrderByCrossPartitionQueryPipelineStage : this.uninitializedEnumeratorsAndTokens.Count:" + this.uninitializedEnumeratorsAndTokens.Count);
                 return this.MoveNextAsync_InitializeAsync(trace);
             }
 
@@ -624,7 +614,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: TrueFilter),
                     sqlQuerySpec.Parameters);
 
-                Console.WriteLine("OrderByCrossPartitionQueryPipelineStage 3 : " + queryPaginationOptions?.PageSizeLimit);
                 enumeratorsAndTokens = targetRanges
                     .Select(range => (new OrderByQueryPartitionRangePageAsyncEnumerator(
                         documentContainer,
@@ -635,8 +624,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         TrueFilter,
                         cancellationToken), (OrderByContinuationToken)null))
                     .ToList();
-
-                enumeratorsAndTokens.ForEach(enumerator => Console.WriteLine("OrderByCrossPartitionQueryPipelineStage remoteEnumerator PageSizeLimit 1: " + enumerator.Item1?.QueryPaginationOptions?.PageSizeLimit));
             }
             else
             {
@@ -687,8 +674,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: filter),
                         sqlQuerySpec.Parameters);
 
-                    Console.WriteLine("OrderByCrossPartitionQueryPipelineStage 4 : " + queryPaginationOptions?.PageSizeLimit);
-
                     foreach (KeyValuePair<FeedRangeEpk, OrderByContinuationToken> kvp in tokenMapping)
                     {
                         FeedRangeEpk range = kvp.Key;
@@ -701,7 +686,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                             queryPaginationOptions,
                             filter,
                             cancellationToken);
-                        Console.WriteLine("OrderByCrossPartitionQueryPipelineStage remoteEnumerator PageSizeLimit 2 : " + remoteEnumerator?.QueryPaginationOptions?.PageSizeLimit);
 
                         enumeratorsAndTokens.Add((remoteEnumerator, token));
                     }

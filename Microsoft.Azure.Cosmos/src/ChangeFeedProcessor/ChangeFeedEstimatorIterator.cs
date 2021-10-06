@@ -137,7 +137,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     }
 
                     this.currentPage = 0;
-                    Console.WriteLine("ChangeFeedEstimatorIterator ReadNextAsync MaxItemCount : " + this.changeFeedEstimatorRequestOptions.MaxItemCount);
                     if (this.changeFeedEstimatorRequestOptions.MaxItemCount.HasValue)
                     {
                         this.pageSize = this.changeFeedEstimatorRequestOptions.MaxItemCount.Value;
