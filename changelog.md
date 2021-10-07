@@ -13,6 +13,22 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.22.0-preview"/> [3.22.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.22.0-preview) - 2021-10-07
+
+#### Added
+- [#2753](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2753) CosmosClientBuilder: Adds overload for passing TokenCredential (Thanks [@levimatheri](https://github.com/levimatheri))
+- [#2732](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2732) Diagnostics: Adds request summary
+- [#2746](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2746) Bulk: Adds validation to throw if ItemRequestOptions.Properties is set with bulk enabled.
+- [#2777](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2777) RetryWith(449): Adds improved 449 retry logic to be more aggressive on retries
+
+#### Fixed
+- [#2776](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2776) Query: Fixes a bug where max page size is not being honored after the first 2 pages. Introduced in 3.17.0 [2144](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2144)
+- [#2712](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2712) Serialized types:  Fixes public types(Database Properties, ContainerProperties, etc..) to be upgrade safe so new content is not lost on deserialize and serialize paths
+- [#2739](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2739) Bulk: Fixes item response to include SessionToken and ActivityId
+- [#2764](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2764) ChangeFeedProcessor: Fixes log to remove expected 404 scenarios during lease release
+- [#2777](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2777) InvalidOperationException: Fixes a race condition multiple threads try to modify exception header causing a InvalidOperationException
+- [#2777](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2777) Diagnostics: Fix issue causing CPU usage to be NaN intermittently. Introduced in 3.21.0 PR [2687](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2687)
+
 ### <a name="3.21.0-preview"/> [3.21.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.21.0-preview) - 2021-09-10
 
 #### Added
