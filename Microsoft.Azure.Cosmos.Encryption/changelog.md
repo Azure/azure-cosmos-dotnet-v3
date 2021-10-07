@@ -3,6 +3,13 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="1.0.0-previewV17"/> [1.0.0-previewV17](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV17) - 2021-10-07
+
+#### Added 
+- [#2633](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2633) Adds basic diagnostics information regarding encryption / decryption operation.
+- [#2634](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2634) Adds support for PatchItem in Transactional Batch.
+- [#2572](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2572) Adds ReadMany API support.
+
 ### <a name="1.0.0-previewV16"/> [1.0.0-previewV16](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV16) - 2021-08-30
 
 #### Fixes 
