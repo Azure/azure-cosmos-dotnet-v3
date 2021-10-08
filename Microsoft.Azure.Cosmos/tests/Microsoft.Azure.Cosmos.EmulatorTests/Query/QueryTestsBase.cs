@@ -487,7 +487,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 {
                     foreach ((Container container, IReadOnlyList<CosmosObject> insertedDocuments) in collectionsAndDocuments)
                     {
-                        Task queryTask = Task.Run(() => query(container, insertedDocuments, testArgs));
+                        Container localContainer = cosmosClient.GetContainer(container.Database.Id, container.Id);
+
+                        Task queryTask = Task.Run(() => query(localContainer, insertedDocuments, testArgs));
                         queryTasks.Add(queryTask);
                     }
                 }
