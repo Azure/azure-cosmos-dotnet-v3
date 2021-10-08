@@ -24,6 +24,9 @@
     [TestClass]
     public sealed class OrderByQueryTests : QueryTestsBase
     {
+        IList<double> rusWithSameIterator = new List<double>();
+        IList<double> rusWithNewIterator = new List<double>();
+
         [TestMethod]
         public async Task TestQueryCrossPartitionTopOrderByDifferentDimensionAsync()
         {
@@ -1415,8 +1418,20 @@
         }
 
         [TestMethod]
-        public async Task TestQueryCrossPartitionRequestChargesAsync()
+        public async Task TestQueryCrossPartitionAsync()
         {
+            await this.TestQueryCrossPartitionRequestChargesAndMaxCountHelperAsync(this.TestSimpleQueryCrossPartitionHelper);
+
+            await this.TestQueryCrossPartitionRequestChargesAndMaxCountHelperAsync(this.TestSimpleQueryWithNewIteratorCrossPartitionHelper);
+
+            Assert.IsTrue(this.rusWithNewIterator.SequenceEqual(this.rusWithSameIterator), 
+                "new Iterator list : " + String.Join(",", this.rusWithNewIterator) + " and same iterator list : " + String.Join(",", this.rusWithSameIterator));
+        }
+
+        private async Task TestQueryCrossPartitionRequestChargesAndMaxCountHelperAsync(Query<OrderByRequestChargeArgs> query)
+        {
+            IList<double> rUs = new List<double>();
+
             string[] documents = new[]
             {
                 @"{""id"":""documentId1"",""key"":""A""}",
@@ -1435,7 +1450,7 @@
                 ConnectionModes.Direct,
                 CollectionTypes.MultiPartition,
                 documents,
-                this.TestQueryCrossPartitionRequestChargesHelper,
+                query,
                 new OrderByRequestChargeArgs
                 {
                     Query = "SELECT r.id FROM r WHERE r.prop = 'A' ORDER BY r.prop DESC",
@@ -1447,7 +1462,7 @@
                 ConnectionModes.Direct,
                 CollectionTypes.MultiPartition,
                 documents,
-                this.TestQueryCrossPartitionRequestChargesHelper,
+                query,
                 new OrderByRequestChargeArgs
                 {
                     Query = "SELECT r.id FROM r ORDER BY r.prop DESC",
@@ -1459,15 +1474,27 @@
                 ConnectionModes.Direct,
                 CollectionTypes.MultiPartition,
                 documents,
-                this.TestQueryCrossPartitionRequestChargesHelper,
+                query,
                 new OrderByRequestChargeArgs
                 {
                     Query = "SELECT r.id FROM r ORDER BY r.prop DESC OFFSET 10 LIMIT 1",
                 },
                 "/key");
+
+            //order by id
+            await this.CreateIngestQueryDeleteAsync<OrderByRequestChargeArgs>(
+               ConnectionModes.Direct,
+               CollectionTypes.MultiPartition,
+               documents,
+               query,
+               new OrderByRequestChargeArgs
+               {
+                   Query = "SELECT * FROM r ORDER BY r.id",
+               },
+               "/key");
         }
 
-        private async Task TestQueryCrossPartitionRequestChargesHelper(
+        private async Task TestSimpleQueryCrossPartitionHelper(
             Container container,
             IReadOnlyList<CosmosObject> documents,
             OrderByRequestChargeArgs args)
@@ -1481,83 +1508,22 @@
                 new QueryRequestOptions()
                 {
                     MaxItemCount = 1,
+                    MaxBufferedItemCount = 0,
                     MaxConcurrency = 1,
                 }))
             {
+                Assert.IsTrue(query.Count <= 1);
                 totalRUs += query.RequestCharge;
             }
 
             double expectedRequestCharge = base.DirectRequestChargeHandler.StopTracking();
+
             Assert.AreEqual(expectedRequestCharge, totalRUs, 0.01);
+
+            this.rusWithSameIterator.Add(totalRUs);
         }
 
-
-        [TestMethod]
-        public async Task TestQueryCrossPartitionItemCountAsync()
-        {
-            string[] documents = new[]
-            {
-                @"{""id"":""documentId1"",""key"":""A""}",
-                @"{""id"":""documentId2"",""key"":""A"",""prop"":3}",
-                @"{""id"":""documentId3"",""key"":""A""}",
-                @"{""id"":""documentId4"",""key"":5}",
-                @"{""id"":""documentId5"",""key"":5,""prop"":2}",
-                @"{""id"":""documentId6"",""key"":5}",
-                @"{""id"":""documentId7"",""key"":2}",
-                @"{""id"":""documentId8"",""key"":2,""prop"":1}",
-                @"{""id"":""documentId9"",""key"":2}",
-            };
-
-            // Matches no documents
-            await this.CreateIngestQueryDeleteAsync<OrderByRequestChargeArgs>(
-                ConnectionModes.Direct,
-                CollectionTypes.MultiPartition,
-                documents,
-                this.TestQueryCrossPartitionOrderByMaxItemCountHelper,
-                new OrderByRequestChargeArgs
-                {
-                    Query = "SELECT r.id FROM r WHERE r.prop = 'A' ORDER BY r.prop DESC",
-                },
-                "/key");
-
-            // Matches some documents
-            await this.CreateIngestQueryDeleteAsync<OrderByRequestChargeArgs>(
-                ConnectionModes.Direct,
-                CollectionTypes.MultiPartition,
-                documents,
-                this.TestQueryCrossPartitionOrderByMaxItemCountHelper,
-                new OrderByRequestChargeArgs
-                {
-                    Query = "SELECT r.id FROM r ORDER BY r.prop DESC",
-                },
-                "/key");
-
-            // Matches some documents, skipped with OFFSET LIMIT
-            await this.CreateIngestQueryDeleteAsync<OrderByRequestChargeArgs>(
-                ConnectionModes.Direct,
-                CollectionTypes.MultiPartition,
-                documents,
-                this.TestQueryCrossPartitionOrderByMaxItemCountHelper,
-                new OrderByRequestChargeArgs
-                {
-                    Query = "SELECT r.id FROM r ORDER BY r.prop DESC OFFSET 10 LIMIT 1",
-                },
-                "/key");
-
-            //order by id
-            await this.CreateIngestQueryDeleteAsync<OrderByRequestChargeArgs>(
-               ConnectionModes.Direct,
-               CollectionTypes.MultiPartition,
-               documents,
-               this.TestQueryCrossPartitionOrderByMaxItemCountHelper,
-               new OrderByRequestChargeArgs
-               {
-                   Query = "SELECT * FROM r ORDER BY r.id",
-               },
-               "/key");
-        }
-
-        private async Task TestQueryCrossPartitionOrderByMaxItemCountHelper(
+        private async Task TestSimpleQueryWithNewIteratorCrossPartitionHelper(
           Container container,
           IReadOnlyList<CosmosObject> documents,
           OrderByRequestChargeArgs args)
@@ -1581,9 +1547,9 @@
 
             double expectedRequestCharge = base.DirectRequestChargeHandler.StopTracking();
 
-            Console.WriteLine("expectedRequestCharge: " + expectedRequestCharge);
-
             Assert.AreEqual(expectedRequestCharge, totalRUs, 0.01);
+
+            this.rusWithNewIterator.Add(totalRUs);
         }
 
     }
