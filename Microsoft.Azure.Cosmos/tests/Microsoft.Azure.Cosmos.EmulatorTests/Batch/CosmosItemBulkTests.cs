@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private Database database;
 
         [TestInitialize]
+        [TestCategory("Batch")]
         public async Task TestInitialize()
         {
             CosmosClientOptions clientOptions = new CosmosClientOptions

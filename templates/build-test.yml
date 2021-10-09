@@ -5,10 +5,10 @@ parameters:
   Arguments: ''
   VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
   OS: 'Windows'
-  EmulaterPipeline1Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory=Query" --verbosity normal '
-  EmulaterPipeline2Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=Query" --verbosity normal '
-  EmulaterPipeline1CategoryListName: ' Query '
-  EmulaterPipeline2CategoryListName: ' Non Query '
+  EmulaterPipeline1Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & (TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch)" --verbosity normal '
+  EmulaterPipeline2Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch" --verbosity normal '
+  EmulaterPipeline1CategoryListName: ' Query, ReadFeed, Batch '
+  EmulaterPipeline2CategoryListName: ' Others '
 
 jobs:
 - job:

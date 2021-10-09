@@ -17,10 +17,10 @@
     using Newtonsoft.Json.Linq;
 
     [TestClass]
+    [TestCategory("Query")]
     public sealed class AggregateCrossPartitionQueryTests : QueryTestsBase
     {
         [TestMethod]
-        [TestCategory("Query")]
         public async Task TestAggregateFunctionsAsync()
         {
             AggregateTestArgs args = new AggregateTestArgs(
