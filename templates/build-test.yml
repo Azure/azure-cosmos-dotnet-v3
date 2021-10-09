@@ -5,6 +5,10 @@ parameters:
   Arguments: ''
   VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
   OS: 'Windows'
+  EmulaterPipeline1Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory=Query" --verbosity normal '
+  EmulaterPipeline2Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=Query" --verbosity normal '
+  EmulaterPipeline1CategoryListName: ' Query '
+  EmulaterPipeline2CategoryListName: ' Non Query '
 
 jobs:
 - job:
@@ -65,7 +69,7 @@ jobs:
       testRunTitle: Microsoft.Azure.Cosmos.PerformanceTests
 
 - job:
-  displayName: EmulatorTests ${{ parameters.BuildConfiguration }} (Non-Query)
+  displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulaterPipeline1CategoryListName }}
   timeoutInMinutes: 120
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
@@ -83,13 +87,13 @@ jobs:
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
-      arguments: ${{ parameters.Arguments }} --filter "TestCategory!=Query" --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
+      arguments: ${{ parameters.EmulaterPipeline1Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
 
 - job:
-  displayName: EmulatorTests ${{ parameters.BuildConfiguration }} (Query)
+  displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulaterPipeline2CategoryListName }}
   timeoutInMinutes: 120
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
@@ -107,7 +111,7 @@ jobs:
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
-      arguments: ${{ parameters.Arguments }} --filter "TestCategory==Query" --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
+      arguments: ${{ parameters.EmulaterPipeline2Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
