@@ -13,13 +13,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json.Linq;
 
     [TestClass]
+    [TestCategory("Batch")]
     public class CosmosItemBulkTests
     {
         private Container container;
         private Database database;
 
         [TestInitialize]
-        [TestCategory("Batch")]
         public async Task TestInitialize()
         {
             CosmosClientOptions clientOptions = new CosmosClientOptions
