@@ -40,6 +40,7 @@ using (FeedIterator<dynamic> feedIterator = await container.GetItemQueryIterator
 
 - [Get Started APP](https://docs.microsoft.com/azure/cosmos-db/sql-api-get-started)
 - [GitHub samples](https://github.com/Azure/azure-cosmos-dotnet-v3/tree/master/Microsoft.Azure.Cosmos.Samples)
+- [SDK Best practices](https://docs.microsoft.com/en-us/azure/cosmos-db/sql/best-practice-dotnet)
 - [MultiMaster samples](https://github.com/markjbrown/azure-cosmosdb-dotnet/tree/master/samples/MultiMaster)
 - [Resource Model of Azure Cosmos DB Service](https://docs.microsoft.com/azure/cosmos-db/sql-api-resources)
 - [Cosmos DB Resource URI](https://docs.microsoft.com/rest/api/documentdb/documentdb-resource-uri-syntax-for-rest)
