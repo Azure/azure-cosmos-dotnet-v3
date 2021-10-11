@@ -14,6 +14,11 @@ jobs:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
 
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@3
+    displayName: 'BinSkim'
+    inputs:
+      arguments: 'analyze  $(Build.SourcesDirectory)\Microsoft.* --recurse --verbose'
+
   #Analyze source code for type of content and target types to help determine which tools to run
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-autoapplicability.AutoApplicability@1
     displayName: 'AutoApplicability'
@@ -56,12 +61,6 @@ jobs:
     inputs:
       alertWarningLevel: Medium
       failOnAlert: true
-
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@3
-    displayName: 'BinSkim'
-    inputs:
-      arguments: 'analyze  $(Build.SourcesDirectory)\Microsoft.* --recurse --verbose'
-
 
   # Publish Analysis Results (position after all tools ran)
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-publishsecurityanalysislogs.PublishSecurityAnalysisLogs@2
