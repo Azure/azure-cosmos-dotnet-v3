@@ -67,9 +67,9 @@ jobs:
       arguments: --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }} --no-restore -c Release --framework netcoreapp3.1 --allCategories=GateBenchmark -- -j Medium  -m  --BaselineValidation
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.PerformanceTests
-# Emulator tests are divided into 2 categories, So that they can run in Parallel and overall feedback time for a PR can be reduced to some extent.
+
 - job:
-  displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline1CategoryListName }}
+  displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline1CategoryListName }} # Emulator tests are divided into 2 categories, So that they can run in Parallel and overall feedback time for a PR can be reduced to some extent.
   timeoutInMinutes: 120
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
