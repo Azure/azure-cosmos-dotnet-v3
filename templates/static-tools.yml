@@ -59,7 +59,8 @@ jobs:
 
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@3
     displayName: 'BinSkim'
-    arguments: 'analyze  $(Build.SourcesDirectory)\Microsoft.*.dll --recurse --verbose'
+    inputs:
+      arguments: 'analyze  $(Build.SourcesDirectory)\Microsoft.Azure.Devices.*.dll --recurse --verbose'
 
 
   # Publish Analysis Results (position after all tools ran)
