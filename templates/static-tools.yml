@@ -17,7 +17,7 @@ jobs:
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@3
     displayName: 'BinSkim'
     inputs:
-      arguments: 'analyze  $(Build.SourcesDirectory)\Microsoft.* --recurse --verbose'
+      arguments: 'analyze  $(Build.SourcesDirectory)\*\Microsoft.*.dll --recurse --verbose'
 
   #Analyze source code for type of content and target types to help determine which tools to run
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-autoapplicability.AutoApplicability@1
