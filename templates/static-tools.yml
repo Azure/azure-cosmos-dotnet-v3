@@ -59,17 +59,8 @@ jobs:
 
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@3
     displayName: 'BinSkim'
-    inputs:
-      toolVersion:        Latest
-      InputType:          Basic
-      Function:           analyze
-      AnalyzeTarget:      $(Build.ArtifactStagingDirectory)\*.dll;$(Build.ArtifactStagingDirectory)\*.exe
-      AnalyzeConfigPath:  default
-      AnalyzeRecurse:     true
-      AnalyzeVerbose:     false
-      AnalyzeHashes:      false
-      AnalyzeStatistics:  false
-      AnalyzeEnvironment: false
+    arguments: 'analyze  $(Build.SourcesDirectory)\Microsoft.*.dll --recurse --verbose'
+
 
   # Publish Analysis Results (position after all tools ran)
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-publishsecurityanalysislogs.PublishSecurityAnalysisLogs@2
