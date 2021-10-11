@@ -69,7 +69,7 @@ jobs:
       testRunTitle: Microsoft.Azure.Cosmos.PerformanceTests
 
 - job:
-  displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline1CategoryListName }} # Emulator tests are divided into 2 categories, So that they can run in Parallel and overall feedback time for a PR can be reduced to some extent.
+  displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline1CategoryListName }}
   timeoutInMinutes: 120
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
