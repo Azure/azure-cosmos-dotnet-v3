@@ -467,12 +467,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceCritical("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Unable to refresh database account from any location. Exception: {0}", ex.ToString());
-
                 if (this.cancellationTokenSource.IsCancellationRequested && (ex is OperationCanceledException || ex is ObjectDisposedException))
                 {
                     return;
                 }
+                
+                DefaultTrace.TraceCritical("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Unable to refresh database account from any location. Exception: {0}", ex.ToString());
             }
 
             // Call itself to create a loop to continuously do background refresh every 5 minutes
