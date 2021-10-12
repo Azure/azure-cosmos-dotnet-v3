@@ -14,6 +14,20 @@ jobs:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
 
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos PREVIEW
+    inputs: 
+      command: build  
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos.sln 
+      arguments: -p:Optimize=true -p:IsPreview=true
+      versioningScheme: OFF
+
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@3
+    displayName: 'BinSkim'
+    inputs:
+      arguments: 'analyze  $(Build.SourcesDirectory)\Microsoft.*.dll --recurse --verbose'
+
   #Analyze source code for type of content and target types to help determine which tools to run
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-autoapplicability.AutoApplicability@1
     displayName: 'AutoApplicability'
@@ -46,11 +60,6 @@ jobs:
     continueOnError: true # signature refresh failing resulting in tasks failures
     inputs:
       EnableServices: true
-
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@3
-    displayName: 'BinSkim'
-    inputs:
-      arguments: 'analyze  $(Build.SourcesDirectory)\Microsoft.*.dll --recurse --verbose'
 
   # Run checks for recently discovered vulnerabilities which are not yet incorporated to another tool
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-vulnerabilityassessment.VulnerabilityAssessment@0
