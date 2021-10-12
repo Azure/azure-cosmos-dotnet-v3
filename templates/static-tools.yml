@@ -29,7 +29,7 @@ jobs:
         toolVersion:        Latest
         InputType:          Basic
         Function:           analyze
-        AnalyzeTarget:      $(Build.ArtifactStagingDirectory)\*.dll;$(Build.ArtifactStagingDirectory)\*.exe
+        AnalyzeTarget:      $(Build.SourcesDirectory)\*Microsoft.*.dll
         AnalyzeConfigPath:  default
         AnalyzeRecurse:     true
         AnalyzeVerbose:     false
