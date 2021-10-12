@@ -18,10 +18,9 @@ jobs:
     displayName: Build Microsoft.Azure.Cosmos PREVIEW
     inputs: 
       command: build
-      configuration: Release
       nugetConfigPath: NuGet.config
       projects: Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj
-      arguments: -p:Optimize=true -p:IsPreview=true
+      arguments: '-p:Optimize=true -p:IsPreview=true --configuration Release'
       versioningScheme: OFF
 
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@3
