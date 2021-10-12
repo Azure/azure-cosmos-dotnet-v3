@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json;
 
     [TestClass]
+    [TestCategory("Batch")]
     public class BatchSinglePartitionKeyTests : BatchTestBase
     {
         [ClassInitialize]
