@@ -18,6 +18,7 @@ jobs:
     displayName: Build Microsoft.Azure.Cosmos PREVIEW
     inputs: 
       command: build
+      configuration: Release
       nugetConfigPath: NuGet.config
       projects: Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj
       arguments: -p:Optimize=true -p:IsPreview=true
@@ -29,10 +30,10 @@ jobs:
         toolVersion:        Latest
         InputType:          Basic
         Function:           analyze
-        AnalyzeTarget:      $(Build.SourcesDirectory)\*Microsoft.*.dll
+        AnalyzeTarget:      $(Build.SourcesDirectory)\Microsoft.Azure.Cosmos\src\bin\Release\netstandard2.0\Microsoft.Azure.Cosmos.Client.dll
         AnalyzeConfigPath:  default
         AnalyzeRecurse:     true
-        AnalyzeVerbose:     false
+        AnalyzeVerbose:     true
         AnalyzeHashes:      false
         AnalyzeStatistics:  false
         AnalyzeEnvironment: false
