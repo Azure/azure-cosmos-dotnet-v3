@@ -17,16 +17,25 @@ jobs:
   - task: DotNetCoreCLI@2
     displayName: Build Microsoft.Azure.Cosmos PREVIEW
     inputs: 
-      command: build  
+      command: build
       nugetConfigPath: NuGet.config
-      projects: Microsoft.Azure.Cosmos.sln 
+      projects: Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj
       arguments: -p:Optimize=true -p:IsPreview=true
       versioningScheme: OFF
 
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@3
     displayName: 'BinSkim'
     inputs:
-      arguments: 'analyze  $(Build.SourcesDirectory)\Microsoft.*.dll --recurse --verbose'
+        toolVersion:        Latest
+        InputType:          Basic
+        Function:           analyze
+        AnalyzeTarget:      $(Build.ArtifactStagingDirectory)\*.dll;$(Build.ArtifactStagingDirectory)\*.exe
+        AnalyzeConfigPath:  default
+        AnalyzeRecurse:     true
+        AnalyzeVerbose:     false
+        AnalyzeHashes:      false
+        AnalyzeStatistics:  false
+        AnalyzeEnvironment: false
 
   #Analyze source code for type of content and target types to help determine which tools to run
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-autoapplicability.AutoApplicability@1
