@@ -10,6 +10,7 @@
     using Newtonsoft.Json;
 
     [TestClass]
+    [TestCategory("Query")]
     public sealed class SkipTakeQueryTests : QueryTestsBase
     {
         [TestMethod]
