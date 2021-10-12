@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     using Newtonsoft.Json;
 
     [SDK.EmulatorTests.TestClass]
+    [TestCategory("ChangeFeed")]
     public class ChangeFeedIteratorCoreTests : BaseCosmosClientHelper
     {
         private static readonly string PartitionKey = "/pk";
