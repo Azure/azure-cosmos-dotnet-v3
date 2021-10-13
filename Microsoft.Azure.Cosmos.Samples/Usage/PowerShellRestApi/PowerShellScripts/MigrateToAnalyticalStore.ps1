@@ -29,7 +29,7 @@ param(
 
     [Parameter(Mandatory = $False, Position = 6, ValueFromPipeline = $false)]
     [int]
-    $PollingIntervalInSeconds = 300 
+    $PollingIntervalInSeconds = 60 
 )
 
 Add-Type -AssemblyName System.Web
