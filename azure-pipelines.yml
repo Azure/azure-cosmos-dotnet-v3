@@ -1,15 +1,10 @@
 # A pipeline with no CI trigger
-trigger:
-  branches:
-    include:
-    - master
-    - releases/*
+trigger: none
 
 pr:
   branches:
     include:
-    - master
-    - releases/*
+     - '*'
   paths:
     include:
     - /*
