@@ -4,7 +4,8 @@ trigger: none
 pr:
   branches:
     include:
-     - '*'
+    - master
+    - releases/*
   paths:
     include:
     - '*'
