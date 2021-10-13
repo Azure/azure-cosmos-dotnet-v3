@@ -7,7 +7,7 @@ pr:
      - '*'
   paths:
     include:
-    - /*
+    - '*'
 
 variables:
   DebugArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
