@@ -27,6 +27,8 @@ param(
     [int]
     $NewAnalyticalTTL = -1,
 
+    # The progress on the backend is updated every 60 seconds.
+    # PollingIntervalInSeconds is how often we want to fetch this value from the backend (any less than 60 is redundant).
     [Parameter(Mandatory = $False, Position = 6, ValueFromPipeline = $false)]
     [int]
     $PollingIntervalInSeconds = 60 
