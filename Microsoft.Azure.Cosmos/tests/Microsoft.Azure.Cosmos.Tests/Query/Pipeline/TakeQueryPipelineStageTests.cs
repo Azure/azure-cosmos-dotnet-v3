@@ -10,6 +10,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using PageList = System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<Microsoft.Azure.Cosmos.CosmosElements.CosmosElement>>;
 
@@ -98,7 +99,7 @@
             IQueryPipelineStage takeQueryPipelineStage = tryCreateSkipQueryPipelineStage.Result;
 
             List<CosmosElement> elements = new List<CosmosElement>();
-            await foreach (TryCatch<QueryPage> page in new EnumerableStage(takeQueryPipelineStage))
+            await foreach (TryCatch<QueryPage> page in new EnumerableStage(takeQueryPipelineStage, NoOpTrace.Singleton))
             {
                 page.ThrowIfFailed();
 

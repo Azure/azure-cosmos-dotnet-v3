@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 {
+    using System;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
@@ -11,8 +12,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
 
-    internal interface IQueryPipelineStage : IAsyncEnumerator<TryCatch<QueryPage>>
+    internal interface IQueryPipelineStage : IAsyncDisposable
     {
+        TryCatch<QueryPage> Current { get; }
+
         void SetCancellationToken(CancellationToken cancellationToken);
 
         ValueTask<bool> MoveNextAsync(ITrace trace);
