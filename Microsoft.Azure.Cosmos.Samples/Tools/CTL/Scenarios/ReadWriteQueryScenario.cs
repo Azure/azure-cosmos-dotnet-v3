@@ -241,52 +241,18 @@ namespace CosmosCTL
             TimeSpan latency,
             CosmosDiagnostics cosmosDiagnostics)
         {
-            if (latency.TotalMilliseconds <= diagnosticsThresholdDuration)
+            if (latency.TotalMilliseconds > diagnosticsThresholdDuration)
             {
                 logger.LogInformation(operationName + " request took more than latency threshold {0}, diagnostics: {1}", diagnosticsThresholdDuration, cosmosDiagnostics.ToString());
+                return;
             }
 
             CosmosTraceDiagnostics traceDiagnostics = (CosmosTraceDiagnostics)cosmosDiagnostics;
             if (traceDiagnostics.IsGoneExceptionHit())
             {
                 logger.LogInformation(operationName + " request contains 410(GoneExceptions), latencyInMS:{0}; diagnostics:{1}", latency.TotalMilliseconds, cosmosDiagnostics.ToString());
+                return;
             }
-            
-        }
-
-        private bool ContainsGoneException(ITrace trace)
-        {
-            if(trace == null)
-            {
-                return false;
-            }
-
-            if (trace.Data.Count > 0)
-            {
-                foreach(KeyValuePair<string, object> item in trace.Data)
-                {
-                    if(item.Value is ClientSideRequestStatisticsTraceDatum data)
-                    {
-                        if(data.StoreResponseStatisticsList.Count > 1)
-                        {
-                            return true;
-                        }
-                    }
-                }
-            }
-
-            if (trace.Children.Count > 0)
-            {
-                foreach(ITrace child in trace.Children)
-                {
-                    if (this.ContainsGoneException(child))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
         }
 
         private Task<ItemResponse<Dictionary<string, string>>> CreateReadOperation(
