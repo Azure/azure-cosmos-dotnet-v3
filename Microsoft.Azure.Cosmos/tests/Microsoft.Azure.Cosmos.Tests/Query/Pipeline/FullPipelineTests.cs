@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             string query = "SELECT * FROM c ORDER BY c._ts";
             int pageSize = 10;
-            IQueryPipelineStage pipelineStage = CreatePipeline(mergeTest.DocumentContainer, query, pageSize);
+            IQueryPipelineStage pipelineStage = await CreatePipelineAsync(mergeTest.DocumentContainer, query, pageSize);
 
             List<CosmosElement> elements = new List<CosmosElement>();
             int iteration = 0;
@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             }
 
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(documents);
-            IQueryPipelineStage pipelineStage = CreatePipeline(documentContainer, "SELECT * FROM c", pageSize: 10);
+            IQueryPipelineStage pipelineStage = await CreatePipelineAsync(documentContainer, "SELECT * FROM c", pageSize: 10);
 
             Trace rootTrace;
             int numTraces = 1;
@@ -281,7 +281,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static async Task<List<CosmosElement>> DrainWithoutStateAsync(string query, IDocumentContainer documentContainer, int pageSize = 10)
         {
-            IQueryPipelineStage pipelineStage = CreatePipeline(documentContainer, query, pageSize);
+            IQueryPipelineStage pipelineStage = await CreatePipelineAsync(documentContainer, query, pageSize);
 
             List<CosmosElement> elements = new List<CosmosElement>();
             while (await pipelineStage.MoveNextAsync(NoOpTrace.Singleton))
@@ -303,7 +303,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             List<CosmosElement> elements = new List<CosmosElement>();
             do
             {
-                pipelineStage = CreatePipeline(documentContainer, query, pageSize, state);
+                pipelineStage = await CreatePipelineAsync(documentContainer, query, pageSize, state);
 
                 if (!await pipelineStage.MoveNextAsync(NoOpTrace.Singleton))
                 {
@@ -364,13 +364,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             return documentContainer;
         }
 
-        private static IQueryPipelineStage CreatePipeline(IDocumentContainer documentContainer, string query, int pageSize = 10, CosmosElement state = null)
+        private static async Task<IQueryPipelineStage> CreatePipelineAsync(
+            IDocumentContainer documentContainer,
+            string query,
+            int pageSize = 10,
+            CosmosElement state = null)
         {
+            IReadOnlyList<FeedRangeEpk> feedRanges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
+
             TryCatch<IQueryPipelineStage> tryCreatePipeline = PipelineFactory.MonadicCreate(
                 ExecutionEnvironment.Compute,
                 documentContainer,
                 new SqlQuerySpec(query),
-                documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default).Result,
+                feedRanges,
                 partitionKey: null,
                 GetQueryPlan(query),
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: pageSize),
