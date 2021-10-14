@@ -16,7 +16,6 @@ namespace CosmosCTL
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
-    using Microsoft.Azure.Documents;
     using Microsoft.Extensions.Logging;
 
     internal class ReadWriteQueryScenario : ICTLScenario
@@ -147,7 +146,7 @@ namespace CosmosCTL
             for (long i = 0; ShouldContinue(stopwatch, i, config); i++)
             {
                 await concurrencyControlSemaphore.WaitAsync(cancellationToken);
-                long index = (long)i % 100;
+                long index = i % 100;
                 if (index < readWriteQueryPercentage.ReadPercentage)
                 {
                     operations.Add(CTLOperationHandler<ItemResponse<Dictionary<string, string>>>.PerformOperationAsync(
