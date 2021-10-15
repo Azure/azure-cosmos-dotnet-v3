@@ -1476,11 +1476,7 @@ namespace Microsoft.Azure.Cosmos
                          dce: ex,
                          trace: trace);
                 }
-                catch (Exception e)
-                {
-                    DefaultTrace.TraceWarning("initializeTask failed {0}", e.ToString());
-                    childTrace.AddDatum("initializeTask failed", e.ToString());
-                }
+                
             }
         }
 
