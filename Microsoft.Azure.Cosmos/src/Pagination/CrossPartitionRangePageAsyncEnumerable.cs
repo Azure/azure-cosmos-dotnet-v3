@@ -7,7 +7,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System;
     using System.Collections.Generic;
     using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class CrossPartitionRangePageAsyncEnumerable<TPage, TState> : IAsyncEnumerable<TryCatch<CrossFeedRangePage<TPage, TState>>>
         where TPage : Page<TState>
@@ -18,12 +20,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
         private readonly IComparer<PartitionRangePageAsyncEnumerator<TPage, TState>> comparer;
         private readonly IFeedRangeProvider feedRangeProvider;
         private readonly int maxConcurrency;
+        private readonly ITrace trace;
 
         public CrossPartitionRangePageAsyncEnumerable(
             IFeedRangeProvider feedRangeProvider,
             CreatePartitionRangePageAsyncEnumerator<TPage, TState> createPartitionRangeEnumerator,
             IComparer<PartitionRangePageAsyncEnumerator<TPage, TState>> comparer,
             int maxConcurrency,
+            ITrace trace,
             CrossFeedRangeState<TState> state = default)
         {
             this.feedRangeProvider = feedRangeProvider ?? throw new ArgumentNullException(nameof(comparer));
@@ -31,19 +35,22 @@ namespace Microsoft.Azure.Cosmos.Pagination
             this.comparer = comparer ?? throw new ArgumentNullException(nameof(comparer));
             this.state = state;
             this.maxConcurrency = maxConcurrency < 0 ? throw new ArgumentOutOfRangeException(nameof(maxConcurrency)) : maxConcurrency;
+            this.trace = trace ?? throw new ArgumentNullException(nameof(trace));
         }
 
         public IAsyncEnumerator<TryCatch<CrossFeedRangePage<TPage, TState>>> GetAsyncEnumerator(CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            return new CrossPartitionRangePageAsyncEnumerator<TPage, TState>(
-                this.feedRangeProvider,
-                this.createPartitionRangeEnumerator,
-                this.comparer,
-                this.maxConcurrency,
-                cancellationToken,
-                this.state);
+            return new TracingAsyncEnumerator<TryCatch<CrossFeedRangePage<TPage, TState>>>(
+                new CrossPartitionRangePageAsyncEnumerator<TPage, TState>(
+                    this.feedRangeProvider,
+                    this.createPartitionRangeEnumerator,
+                    this.comparer,
+                    this.maxConcurrency,
+                    cancellationToken,
+                    this.state),
+                this.trace);
         }
     }
 }

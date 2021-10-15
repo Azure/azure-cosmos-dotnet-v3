@@ -47,14 +47,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                     trace: NoOpTrace.Singleton,
                     cancellationToken: cancellationToken).Result;
                 Assert.AreEqual(1, ranges.Count);
-                return new OrderByQueryPartitionRangePageAsyncEnumerator(
-                    queryDataSource: documentContainer,
-                    sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
-                    feedRangeState: new FeedRangeState<QueryState>(ranges[0], state),
-                    partitionKey: null,
-                    queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
-                    filter: "filter",
-                    cancellationToken: cancellationToken);
+                return new TracingAsyncEnumerator<TryCatch<OrderByQueryPage>>(
+                    new OrderByQueryPartitionRangePageAsyncEnumerator(
+                        queryDataSource: documentContainer,
+                        sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
+                        feedRangeState: new FeedRangeState<QueryState>(ranges[0], state),
+                        partitionKey: null,
+                        queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                        filter: "filter",
+                        cancellationToken: cancellationToken),
+                    NoOpTrace.Singleton);
             }
         }
     }
