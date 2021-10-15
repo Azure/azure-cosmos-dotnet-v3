@@ -11,6 +11,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -58,7 +59,7 @@
             IQueryPipelineStage aggregateQueryPipelineStage = tryCreateSkipQueryPipelineStage.Result;
 
             List<CosmosElement> elements = new List<CosmosElement>();
-            await foreach (TryCatch<QueryPage> page in new EnumerableStage(aggregateQueryPipelineStage))
+            await foreach (TryCatch<QueryPage> page in new EnumerableStage(aggregateQueryPipelineStage, NoOpTrace.Singleton))
             {
                 page.ThrowIfFailed();
 
