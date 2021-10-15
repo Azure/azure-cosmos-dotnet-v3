@@ -225,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             IQueryPipelineStage pipelineStage = await CreatePipelineAsync(documentContainer, "SELECT * FROM c", pageSize: 10);
 
             Trace rootTrace;
-            int numTraces = 1;
+            int numTraces = (await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, default)).Count;
             using (rootTrace = Trace.GetRootTrace("Cross Partition Query"))
             {
                 while (await pipelineStage.MoveNextAsync(rootTrace))
@@ -236,10 +236,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     numTraces++;
                 }
             }
-
-            string traceString = TraceWriter.TraceToText(rootTrace);
-
-            Console.WriteLine(traceString);
 
             Assert.AreEqual(numTraces, rootTrace.Children.Count);
         }
