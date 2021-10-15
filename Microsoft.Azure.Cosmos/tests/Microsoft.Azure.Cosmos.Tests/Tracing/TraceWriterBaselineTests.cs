@@ -628,7 +628,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 IQueryPipelineStage pipelineStage = CreatePipeline(documentContainer, "SELECT * FROM c", pageSize: 10);
 
                 TraceForBaselineTesting rootTrace;
-                int numChildren = 1; // One extra since we need to read one past the last user page to get the null continuation.
+                int numChildren = (await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, default)).Count; // One extra since we need to read one past the last user page to get the null continuation.
                 using (rootTrace = TraceForBaselineTesting.GetRootTrace())
                 {
                     while (await pipelineStage.MoveNextAsync(rootTrace))

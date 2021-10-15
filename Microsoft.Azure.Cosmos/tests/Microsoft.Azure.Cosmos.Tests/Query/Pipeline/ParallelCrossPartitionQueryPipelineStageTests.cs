@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             IQueryPipelineStage queryPipelineStage = await CreatePipelineStateAsync(inMemoryCollection, continuationToken: null);
             List<CosmosElement> documents = new List<CosmosElement>();
             Random random = new Random();
-            while (await queryPipelineStage.MoveNextAsync())
+            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
                 TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
                 tryGetPage.ThrowIfFailed();
