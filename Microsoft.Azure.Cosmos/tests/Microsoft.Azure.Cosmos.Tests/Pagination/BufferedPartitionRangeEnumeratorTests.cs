@@ -10,6 +10,7 @@
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tests.Query.Pipeline;
 
     [TestClass]
     public sealed class BufferedPartitionPartitionRangeEnumeratorTests

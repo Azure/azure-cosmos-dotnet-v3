@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Cosmos.Query.Core.Pipeline.Pagination;
     using Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tests.Query.Pipeline;
     using Pagination;
     using VisualStudio.TestTools.UnitTesting;
 
