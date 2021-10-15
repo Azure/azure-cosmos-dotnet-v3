@@ -2260,7 +2260,7 @@
     IQueryPipelineStage pipelineStage = CreatePipeline(documentContainer, "SELECT * FROM c", pageSize: 10);
 
     TraceForBaselineTesting rootTrace;
-    int numChildren = 1; // One extra since we need to read one past the last user page to get the null continuation.
+    int numChildren = (await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, default)).Count; // One extra since we need to read one past the last user page to get the null continuation.
     using (rootTrace = TraceForBaselineTesting.GetRootTrace())
     {
         while (await pipelineStage.MoveNextAsync(rootTrace))
@@ -2296,10 +2296,19 @@
     │   └── [1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   └── [1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── [3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── [3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   └── [3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   └── [5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── [5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -2311,6 +2320,12 @@
     │   └── [7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   └── [7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   └── [9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── [9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -2321,6 +2336,12 @@
     │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── [BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   └── [BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   └── [DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── [DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -2601,6 +2622,43 @@
       "duration in milliseconds": 0,
       "children": [
         {
+          "name": "[1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
+          },
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Query Transport",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
+              },
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MoveNextAsync",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
+      },
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "children": [
+        {
           "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "caller info": {
@@ -2639,6 +2697,80 @@
       "children": [
         {
           "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
+          },
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Query Transport",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
+              },
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MoveNextAsync",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
+      },
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "children": [
+        {
+          "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
+          },
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Query Transport",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
+              },
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MoveNextAsync",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
+      },
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "children": [
+        {
+          "name": "[5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "caller info": {
             "member": "MemberName",
@@ -2786,6 +2918,80 @@
       "duration in milliseconds": 0,
       "children": [
         {
+          "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
+          },
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Query Transport",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
+              },
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MoveNextAsync",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
+      },
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "children": [
+        {
+          "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
+          },
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Query Transport",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
+              },
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MoveNextAsync",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
+      },
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "children": [
+        {
           "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "caller info": {
@@ -2898,6 +3104,80 @@
       "children": [
         {
           "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
+          },
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Query Transport",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
+              },
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MoveNextAsync",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
+      },
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "children": [
+        {
+          "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
+          },
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Query Transport",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
+              },
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MoveNextAsync",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
+      },
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "children": [
+        {
+          "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "caller info": {
             "member": "MemberName",

@@ -516,11 +516,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         //// In more mathematical terms
         ////  1) <x, y> always comes before <z, y> where x < z
         ////  2) <i, j> always come before <i, k> where j < k
-        public ValueTask<bool> MoveNextAsync()
-        {
-            return this.MoveNextAsync(NoOpTrace.Singleton);
-        }
-
         public ValueTask<bool> MoveNextAsync(ITrace trace)
         {
             this.cancellationToken.ThrowIfCancellationRequested();

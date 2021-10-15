@@ -38,11 +38,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             return default;
         }
 
-        public ValueTask<bool> MoveNextAsync()
-        {
-            return this.MoveNextAsync(NoOpTrace.Singleton);
-        }
-
         public async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
             if (trace == null)
