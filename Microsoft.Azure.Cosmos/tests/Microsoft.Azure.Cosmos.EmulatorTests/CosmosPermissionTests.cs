@@ -372,25 +372,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => cosmosClient.GetContainer("test", "test").ReadItemAsync<dynamic>("test", new PartitionKey("test")));
             Assert.AreEqual(HttpStatusCode.Unauthorized, exception.StatusCode);
         }
+
         [TestMethod]
         public async Task EnsureUnauthorized_ThrowsCosmosClientException_ReadAccountAsync()
         {
-           string authKey = ConfigurationManager.AppSettings["MasterKey"];
-             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+
+            // Take the key and change some middle character
             authKey = authKey.Replace("m", "M");
             CosmosClient  cosmosClient = new CosmosClient(endpoint, authKey);
 
-            try
-            {
-                CosmosException exception1 = await Assert.ThrowsExceptionAsync<CosmosException>(() => cosmosClient.ReadAccountAsync());
-                Assert.AreEqual(HttpStatusCode.Unauthorized, exception1.StatusCode);
-            }
-            catch (Exception ex)
-            {
+            CosmosException exception1 = await Assert.ThrowsExceptionAsync<CosmosException>(() => cosmosClient.ReadAccountAsync());
+            Assert.AreEqual(HttpStatusCode.Unauthorized, exception1.StatusCode);
 
-                string exx = ex.Message;
-            }
-            
         }
 
         [TestMethod]

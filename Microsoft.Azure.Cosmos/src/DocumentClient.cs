@@ -1465,8 +1465,22 @@ namespace Microsoft.Azure.Cosmos
                     initTask = this.initializeTask;
                 }
 
-                await initTask;
-                this.isSuccessfullyInitialized = true;
+                try
+                {
+                    await initTask;
+                    this.isSuccessfullyInitialized = true;
+                }
+                catch (DocumentClientException ex)
+                {
+                    throw Resource.CosmosExceptions.CosmosExceptionFactory.Create(
+                         dce: ex,
+                         trace: trace);
+                }
+                catch (Exception e)
+                {
+                    DefaultTrace.TraceWarning("initializeTask failed {0}", e.ToString());
+                    childTrace.AddDatum("initializeTask failed", e.ToString());
+                }
             }
         }
 
