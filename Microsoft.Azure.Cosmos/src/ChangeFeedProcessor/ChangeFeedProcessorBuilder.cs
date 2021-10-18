@@ -145,6 +145,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="maxItemCount">Maximum amount of items to be returned in a Change Feed request.</param>
         /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/>.</returns>
+        /// <remarks>This is just a hint to the server which can return less or more items per page. If operations in the container are performed through stored procedures or transactional batch, <see href="https://docs.microsoft.com/azure/cosmos-db/stored-procedures-triggers-udfs#transactions">transaction scope</see> is preserved when reading items from the Change Feed. As a result, the number of items received could be higher than the specified value so that the items changed by the same transaction are returned as part of one atomic batch.</remarks>
         public ChangeFeedProcessorBuilder WithMaxItems(int maxItemCount)
         {
             if (maxItemCount <= 0)
