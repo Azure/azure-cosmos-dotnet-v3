@@ -240,6 +240,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
         public void VerifyDocumentClientExceptionWithNullHeader()
         {
             string errorMessage = "Test Exception!";
@@ -251,9 +252,6 @@ namespace Microsoft.Azure.Cosmos
 
             string headerValue = "Test" + Guid.NewGuid();
             dce.Headers.Add(headerValue, null);
-
-            ResponseMessage responseMessage = dce.ToCosmosResponseMessage(null);
-            Assert.IsNull(responseMessage.Headers.Get(headerValue));
         }
 
         [TestMethod]

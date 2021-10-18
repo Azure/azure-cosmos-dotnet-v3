@@ -24,11 +24,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
         public TryCatch<QueryPage> Current => this.emptyAsyncEnumerator.Current;
 
-        public ValueTask DisposeAsync() => this.emptyAsyncEnumerator.DisposeAsync();
+        public ValueTask DisposeAsync()
+        {
+            return this.emptyAsyncEnumerator.DisposeAsync();
+        }
 
-        public ValueTask<bool> MoveNextAsync() => this.emptyAsyncEnumerator.MoveNextAsync();
-
-        public ValueTask<bool> MoveNextAsync(ITrace trace) => this.emptyAsyncEnumerator.MoveNextAsync(trace);
+        public ValueTask<bool> MoveNextAsync(ITrace trace)
+        {
+            return this.emptyAsyncEnumerator.MoveNextAsync(trace);
+        }
 
         public void SetCancellationToken(CancellationToken cancellationToken)
         {
