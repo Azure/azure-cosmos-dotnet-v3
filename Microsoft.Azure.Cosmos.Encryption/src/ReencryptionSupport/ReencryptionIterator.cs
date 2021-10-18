@@ -28,37 +28,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private FeedIterator feedIterator;
 
-        private delegate bool CheckIfWritesHaveStopped();
-
         private ChangeFeedRequestOptions changeFeedRequestOptions;
 
         /// <summary>
-        /// Gets continuation Token
-        /// </summary>
-        public string ContinuationToken { get; private set; }
-
-        /// <summary>
-        /// Gets a value indicating whether has More Results.
-        /// </summary>
-        public bool HasMoreResults { get; private set; }
-
-        /// <summary>
-        /// EncryptNextAsync.
-        /// </summary>
-        /// <param name="cancellationToken"> cancellationTOken </param>
-        /// <returns> Response Message </returns>
-        public async Task<ReencryptionResponseMessage> EncryptNextAsync(
-            CancellationToken cancellationToken = default)
-        {
-            if (!this.checkIfWritesHaveStoppedCb() && this.isFFChangeFeedSupported == false)
-            {
-                throw new NotSupportedException("Reencryption currently supported only on container with no ongoing changes. To perform reencryption please make sure there is is no data being written to the container. ");
-            }
-
-            return await this.EncryptNextCoreAsync(cancellationToken);
-        }
-
-        /// <summary>
+        /// Initializes a new instance of the <see cref="ReencryptionIterator"/> class.
         /// Get Reencryption Feed Iterator.
         /// </summary>
         /// <param name="sourceContainer"> Source container. </param>
@@ -87,6 +60,51 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.ContinuationToken = continuationToken;
             this.checkIfWritesHaveStoppedCb = new CheckIfWritesHaveStopped(checkIfWritesHaveStopped);
             this.isFFChangeFeedSupported = isFFChangeFeedSupported;
+        }
+
+        private delegate bool CheckIfWritesHaveStopped();
+
+        /// <summary>
+        /// Gets continuation Token.
+        /// </summary>
+        public string ContinuationToken { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether has More Results.
+        /// </summary>
+        public bool HasMoreResults { get; private set; }
+
+        /// <summary>
+        /// EncryptNextAsync.
+        /// </summary>
+        /// <param name="cancellationToken"> cancellationTOken. </param>
+        /// <returns> Response Message. </returns>
+        public async Task<ReencryptionResponseMessage> EncryptNextAsync(
+            CancellationToken cancellationToken = default)
+        {
+            if (!this.checkIfWritesHaveStoppedCb() && this.isFFChangeFeedSupported == false)
+            {
+                throw new NotSupportedException("Reencryption currently supported only on container with no ongoing changes. To perform reencryption please make sure there is is no data being written to the container. ");
+            }
+
+            return await this.EncryptNextCoreAsync(cancellationToken);
+        }
+
+        private static string BuildModifiedContinuationToken(string continuationToken, string fullFidelityStartLsn)
+        {
+            if (!string.IsNullOrEmpty(continuationToken) && !string.IsNullOrEmpty(fullFidelityStartLsn))
+            {
+                JObject jContinuationToken = new JObject
+                {
+                    { "continuationToken", continuationToken },
+                    { "fullFidelityStartLsn", fullFidelityStartLsn },
+                };
+                return jContinuationToken.ToString();
+            }
+            else
+            {
+                throw new ArgumentNullException("Failed to create continuation token. ");
+            }
         }
 
         private async Task<ReencryptionResponseMessage> EncryptNextCoreAsync(
@@ -347,23 +365,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ResponseMessage response = await iterator.ReadNextAsync();
 
             return this.GetLsnFromContinuationString(response.ContinuationToken);
-        }
-
-        private static string BuildModifiedContinuationToken(string continuationToken, string fullFidelityStartLsn)
-        {
-            if (!string.IsNullOrEmpty(continuationToken) && !string.IsNullOrEmpty(fullFidelityStartLsn))
-            {
-                JObject jContinuationToken = new JObject
-                {
-                    { "continuationToken", continuationToken },
-                    { "fullFidelityStartLsn", fullFidelityStartLsn },
-                };
-                return jContinuationToken.ToString();
-            }
-            else
-            {
-                throw new ArgumentNullException("Failed to create continuation token. ");
-            }
         }
 
         private async Task<(string, string)> ParseContinuationTokenAsync(string continuationToken)
