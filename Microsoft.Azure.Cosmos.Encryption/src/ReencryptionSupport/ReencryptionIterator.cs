@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     public sealed class ReencryptionIterator
     {
-        private const int PageSize = 100;
+        private const int PageSize = 1000;
 
         private readonly Container destinationContainer;
         private readonly Container sourceContainer;
@@ -145,6 +145,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = response.ContinuationToken;
             if (response.StatusCode == HttpStatusCode.NotModified)
             {
+                if (this.checkIfWritesHaveStoppedCb() && !this.isFFChangeFeedSupported)
+                {
+                    this.StoppedWrites();
+                }
+
                 return (response, bulkOperationResponse, continuationToken);
             }
             else
