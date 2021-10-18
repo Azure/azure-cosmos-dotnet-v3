@@ -4,17 +4,14 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System.Collections.Generic;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Path that needs encryption and the associated settings within <see cref="ClientEncryptionPolicy"/>.
     /// </summary>
-#if PREVIEW
-    public 
-#else
-    internal
-#endif
-        sealed class ClientEncryptionIncludedPath
+    public sealed class ClientEncryptionIncludedPath
     {
         /// <summary>
         /// Gets or sets the path to be encrypted. Must be a top level path, eg. /salary
@@ -39,5 +36,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonProperty(PropertyName = "encryptionAlgorithm")]
         public string EncryptionAlgorithm { get; set; }
+
+        /// <summary>
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+        /// </summary>
+        [JsonExtensionData]
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
     }
 }

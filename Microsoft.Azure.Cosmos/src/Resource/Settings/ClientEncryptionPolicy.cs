@@ -9,16 +9,12 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.Linq;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Client encryption policy.
     /// </summary>
-#if PREVIEW
-    public 
-#else
-    internal
-#endif
-        sealed class ClientEncryptionPolicy
+    public sealed class ClientEncryptionPolicy
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientEncryptionPolicy"/> class.
@@ -50,6 +46,13 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonProperty(PropertyName = "policyFormatVersion")]
         public int PolicyFormatVersion { get; private set; }
+
+        /// <summary>
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+        /// </summary>
+        [JsonExtensionData]
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
 
         /// <summary>
         /// Ensures that partition key paths are not specified in the client encryption policy for encryption.

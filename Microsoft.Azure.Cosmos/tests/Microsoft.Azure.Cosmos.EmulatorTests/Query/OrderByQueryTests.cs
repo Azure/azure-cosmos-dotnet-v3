@@ -22,6 +22,7 @@
     using Newtonsoft.Json;
 
     [TestClass]
+    [TestCategory("Query")]
     public sealed class OrderByQueryTests : QueryTestsBase
     {
         [TestMethod]
@@ -648,7 +649,7 @@
             };
 
             await this.CreateIngestQueryDeleteAsync(
-                ConnectionModes.Direct,
+                ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestMultiOrderByQueriesHelper,
@@ -1091,7 +1092,7 @@
             }
 
             await this.CreateIngestQueryDeleteAsync(
-                ConnectionModes.Direct,
+                ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.MultiPartition,
                 inputDocuments,
                 ImplementationAsync,
@@ -1159,7 +1160,7 @@
             OrderByTypes all = primitives | nonPrimitives | OrderByTypes.Undefined;
 
             await this.CreateIngestQueryDeleteAsync(
-                ConnectionModes.Direct,
+                ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestMixedTypeOrderByHelper,
@@ -1488,6 +1489,101 @@
             }
 
             double expectedRequestCharge = base.DirectRequestChargeHandler.StopTracking();
+            Assert.AreEqual(expectedRequestCharge, totalRUs, 0.01);
+        }
+
+
+        [TestMethod]
+        public async Task TestQueryCrossPartitionItemCountAsync()
+        {
+            string[] documents = new[]
+            {
+                @"{""id"":""documentId1"",""key"":""A""}",
+                @"{""id"":""documentId2"",""key"":""A"",""prop"":3}",
+                @"{""id"":""documentId3"",""key"":""A""}",
+                @"{""id"":""documentId4"",""key"":5}",
+                @"{""id"":""documentId5"",""key"":5,""prop"":2}",
+                @"{""id"":""documentId6"",""key"":5}",
+                @"{""id"":""documentId7"",""key"":2}",
+                @"{""id"":""documentId8"",""key"":2,""prop"":1}",
+                @"{""id"":""documentId9"",""key"":2}",
+            };
+
+            // Matches no documents
+            await this.CreateIngestQueryDeleteAsync<OrderByRequestChargeArgs>(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                documents,
+                this.TestQueryCrossPartitionOrderByMaxItemCountHelper,
+                new OrderByRequestChargeArgs
+                {
+                    Query = "SELECT r.id FROM r WHERE r.prop = 'A' ORDER BY r.prop DESC",
+                },
+                "/key");
+
+            // Matches some documents
+            await this.CreateIngestQueryDeleteAsync<OrderByRequestChargeArgs>(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                documents,
+                this.TestQueryCrossPartitionOrderByMaxItemCountHelper,
+                new OrderByRequestChargeArgs
+                {
+                    Query = "SELECT r.id FROM r ORDER BY r.prop DESC",
+                },
+                "/key");
+
+            // Matches some documents, skipped with OFFSET LIMIT
+            await this.CreateIngestQueryDeleteAsync<OrderByRequestChargeArgs>(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                documents,
+                this.TestQueryCrossPartitionOrderByMaxItemCountHelper,
+                new OrderByRequestChargeArgs
+                {
+                    Query = "SELECT r.id FROM r ORDER BY r.prop DESC OFFSET 10 LIMIT 1",
+                },
+                "/key");
+
+            //order by id
+            await this.CreateIngestQueryDeleteAsync<OrderByRequestChargeArgs>(
+               ConnectionModes.Direct,
+               CollectionTypes.MultiPartition,
+               documents,
+               this.TestQueryCrossPartitionOrderByMaxItemCountHelper,
+               new OrderByRequestChargeArgs
+               {
+                   Query = "SELECT * FROM r ORDER BY r.id",
+               },
+               "/key");
+        }
+
+        private async Task TestQueryCrossPartitionOrderByMaxItemCountHelper(
+          Container container,
+          IReadOnlyList<CosmosObject> documents,
+          OrderByRequestChargeArgs args)
+        {
+            base.DirectRequestChargeHandler.StartTracking();
+
+            double totalRUs = 0;
+            await foreach (FeedResponse<CosmosElement> query in QueryTestsBase.RunSimpleQueryWithNewIteratorAsync<CosmosElement>(
+            container,
+            args.Query,
+            new QueryRequestOptions()
+            {
+                MaxItemCount = 1,
+                MaxConcurrency = 1,
+            }))
+            {
+                Assert.IsTrue(query.Count <= 1);
+
+                totalRUs += query.RequestCharge;
+            }
+
+            double expectedRequestCharge = base.DirectRequestChargeHandler.StopTracking();
+
+            Console.WriteLine("expectedRequestCharge: " + expectedRequestCharge);
+
             Assert.AreEqual(expectedRequestCharge, totalRUs, 0.01);
         }
 

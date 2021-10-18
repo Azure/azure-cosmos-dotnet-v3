@@ -9,7 +9,6 @@ namespace CosmosBenchmark
     using System.Linq;
     using System.Runtime;
     using CommandLine;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
 
@@ -96,6 +95,9 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Disable core SDK logging")]
         public bool DisableCoreSdkLogging { get; set; }
 
+        [Option(Required = false, HelpText = "Enable Telemetry")]
+        public bool EnableTelemetry { get; set; }
+
         [Option(Required = false, HelpText = "Endpoint to publish results to")]
         public string ResultsEndpoint { get; set; }
 
@@ -158,22 +160,28 @@ namespace CosmosBenchmark
             return options;
         }
 
-        internal CosmosClient CreateCosmosClient(string accountKey)
+        internal Microsoft.Azure.Cosmos.CosmosClient CreateCosmosClient(string accountKey)
         {
-            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            Microsoft.Azure.Cosmos.CosmosClientOptions clientOptions = new Microsoft.Azure.Cosmos.CosmosClientOptions()
             {
                 ApplicationName = BenchmarkConfig.UserAgentSuffix,
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
+                EnableClientTelemetry = this.EnableTelemetry
             };
+
+            if(this.EnableTelemetry)
+            {
+                Environment.SetEnvironmentVariable(Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
+            }
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
             {
                 clientOptions.ConsistencyLevel = (Microsoft.Azure.Cosmos.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Cosmos.ConsistencyLevel), this.ConsistencyLevel, ignoreCase: true);
             }
 
-            return new CosmosClient(
+            return new Microsoft.Azure.Cosmos.CosmosClient(
                         this.EndPoint,
                         accountKey,
                         clientOptions);

@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos
         ///    {
         ///         Automatic = false,
         ///         IndexingMode = IndexingMode.Lazy,
-        ///    };
+        ///    }
         /// };
         ///
         /// ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(
@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>201</term><description>Created - New database is created.</description>
         ///     </item>
         ///     <item>
-        ///         <term>200</term><description>Accepted - This means the database already exists.</description>
+        ///         <term>200</term><description>OK - This means the database already exists.</description>
         ///     </item>
         /// </list>
         /// </returns>
@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos
         ///    {
         ///         Automatic = false,
         ///         IndexingMode = IndexingMode.Lazy,
-        ///    };
+        ///    }
         /// };
         ///
         /// ContainerResponse response = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
@@ -412,7 +412,7 @@ namespace Microsoft.Azure.Cosmos
         ///    {
         ///         Automatic = false,
         ///         IndexingMode = IndexingMode.Lazy,
-        ///    };
+        ///    }
         /// };
         ///
         /// ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(containerProperties);
@@ -471,7 +471,7 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>201</term><description>Created - New database is created.</description>
         ///     </item>
         ///     <item>
-        ///         <term>200</term><description>Accepted - This means the database already exists.</description>
+        ///         <term>200</term><description>OK - This means the database already exists.</description>
         ///     </item>
         /// </list>
         /// </returns>
@@ -488,7 +488,7 @@ namespace Microsoft.Azure.Cosmos
         ///    {
         ///         Automatic = false,
         ///         IndexingMode = IndexingMode.Lazy,
-        ///    };
+        ///    }
         /// };
         ///
         /// ContainerResponse response = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerProperties);
@@ -988,7 +988,6 @@ namespace Microsoft.Azure.Cosmos
             string name,
             string partitionKeyPath);
 
-#if PREVIEW
         /// <summary>
         /// Returns a reference to a client encryption key object.
         /// This method is not meant to be invoked directly. Please see https://aka.ms/CosmosClientEncryption in order to use client-side encryption.
@@ -1030,6 +1029,5 @@ namespace Microsoft.Azure.Cosmos
             ClientEncryptionKeyProperties clientEncryptionKeyProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
-#endif
     }
 }

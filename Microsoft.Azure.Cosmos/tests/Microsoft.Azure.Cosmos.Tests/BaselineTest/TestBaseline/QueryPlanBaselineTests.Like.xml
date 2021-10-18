@@ -260,7 +260,7 @@
         </QueryInfo>
         <QueryRanges>
           <Range>
-            <Range>[[],"Infinity")</Range>
+            <Range>[["a%"],["a%"]]</Range>
           </Range>
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>

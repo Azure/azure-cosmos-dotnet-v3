@@ -4,10 +4,12 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Spatial index specification
@@ -54,15 +56,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 return this.spatialTypesInternal;
             }
-            internal set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException();
-                }
-
-                this.spatialTypesInternal = value;
-            }
+            internal set => this.spatialTypesInternal = value ?? throw new ArgumentNullException();
         }
 
         /// <summary>
@@ -73,5 +67,12 @@ namespace Microsoft.Azure.Cosmos
         {
             get; set;
         }
+
+        /// <summary>
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+        /// </summary>
+        [JsonExtensionData]
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
     }
 }

@@ -637,7 +637,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (AggregateException exception)
                 {
-                    var dce = exception.InnerException as DocumentClientException;
+                    var dce = exception.InnerException as CosmosException;
                     if (dce != null)
                     {
                         Assert.AreEqual(dce.StatusCode, HttpStatusCode.BadRequest);

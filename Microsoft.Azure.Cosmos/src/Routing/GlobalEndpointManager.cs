@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Specialized;
     using System.Linq;
     using System.Net;
+    using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -161,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 if (this.NonRetriableException != null)
                 {
-                    throw this.NonRetriableException;
+                    ExceptionDispatchInfo.Capture(this.NonRetriableException).Throw();
                 }
 
                 // Start 2 additional tasks to try to get the account information
@@ -183,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                     if (this.NonRetriableException != null)
                     {
-                        throw this.NonRetriableException;
+                        ExceptionDispatchInfo.Capture(this.NonRetriableException).Throw();
                     }
 
                     tasksToWaitOn.Remove(completedTask);
@@ -196,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 if (this.TransientExceptions.Count == 1)
                 {
-                    throw this.TransientExceptions[0];
+                    ExceptionDispatchInfo.Capture(this.TransientExceptions[0]).Throw();
                 }
 
                 throw new AggregateException(this.TransientExceptions);
@@ -466,12 +467,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceCritical("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Unable to refresh database account from any location. Exception: {0}", ex.ToString());
-
-                if (this.cancellationTokenSource.IsCancellationRequested && (ex is TaskCanceledException || ex is ObjectDisposedException))
+                if (this.cancellationTokenSource.IsCancellationRequested && (ex is OperationCanceledException || ex is ObjectDisposedException))
                 {
                     return;
                 }
+                
+                DefaultTrace.TraceCritical("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Unable to refresh database account from any location. Exception: {0}", ex.ToString());
             }
 
             // Call itself to create a loop to continuously do background refresh every 5 minutes
@@ -523,21 +524,9 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             try
             {
-#nullable disable // Needed because AsyncCache does not have nullable enabled
-                AccountProperties accountProperties = await this.databaseAccountCache.GetAsync(
-                    key: string.Empty,
-                    obsoleteValue: null,
-                    singleValueInitFunc: () => GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
-                        this.defaultEndpoint,
-                        this.connectionPolicy.PreferredLocations,
-                        this.GetDatabaseAccountAsync,
-                        this.cancellationTokenSource.Token),
-                    cancellationToken: this.cancellationTokenSource.Token,
-                    forceRefresh: true);
-
                 this.LastBackgroundRefreshUtc = DateTime.UtcNow;
-                this.locationCache.OnDatabaseAccountRead(accountProperties);
-#nullable enable
+                this.locationCache.OnDatabaseAccountRead(await this.GetDatabaseAccountAsync(true));
+
             }
             finally
             {
@@ -546,6 +535,22 @@ namespace Microsoft.Azure.Cosmos.Routing
                     this.isAccountRefreshInProgress = false;
                 }
             }
+        }
+
+        internal async Task<AccountProperties> GetDatabaseAccountAsync(bool forceRefresh = false)
+        {
+#nullable disable  // Needed because AsyncCache does not have nullable enabled
+            return await this.databaseAccountCache.GetAsync(
+                              key: string.Empty,
+                              obsoleteValue: null,
+                              singleValueInitFunc: () => GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
+                                  this.defaultEndpoint,
+                                  this.connectionPolicy.PreferredLocations,
+                                  this.GetDatabaseAccountAsync,
+                                  this.cancellationTokenSource.Token),
+                              cancellationToken: this.cancellationTokenSource.Token,
+                              forceRefresh: forceRefresh);
+#nullable enable
         }
 
         /// <summary>

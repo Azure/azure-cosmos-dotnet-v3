@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos
 
         // creator of TransportClient is responsible for disposing it.
         private IStoreClientFactory storeClientFactory;
-        private CosmosHttpClient httpClient;
+        internal CosmosHttpClient httpClient { get; private set; }
 
         // Flag that indicates whether store client factory must be disposed whenever client is disposed.
         // Setting this flag to false will result in store client factory not being disposed when client is disposed.
@@ -1346,12 +1346,21 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal async Task<DocumentServiceResponse> ProcessRequestAsync(
+        internal Task<DocumentServiceResponse> ProcessRequestAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
         {
-            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
+            return this.ProcessRequestAsync(request, retryPolicyInstance, NoOpTrace.Singleton, cancellationToken);
+        }
+
+        internal async Task<DocumentServiceResponse> ProcessRequestAsync(
+            DocumentServiceRequest request,
+            IDocumentClientRetryPolicy retryPolicyInstance,
+            ITrace trace,
+            CancellationToken cancellationToken)
+        {
+            await this.EnsureValidClientAsync(trace);
 
             retryPolicyInstance?.OnBeforeSendRequest(request);
 
@@ -1433,6 +1442,12 @@ namespace Microsoft.Azure.Cosmos
                     this.isSuccessfullyInitialized = true;
                     return;
                 }
+                catch (DocumentClientException ex)
+                {
+                    throw Resource.CosmosExceptions.CosmosExceptionFactory.Create(
+                         dce: ex,
+                         trace: trace);
+                }
                 catch (Exception e)
                 {
                     DefaultTrace.TraceWarning("initializeTask failed {0}", e.ToString());
@@ -1450,8 +1465,18 @@ namespace Microsoft.Azure.Cosmos
                     initTask = this.initializeTask;
                 }
 
-                await initTask;
-                this.isSuccessfullyInitialized = true;
+                try
+                {
+                    await initTask;
+                    this.isSuccessfullyInitialized = true;
+                }
+                catch (DocumentClientException ex)
+                {
+                    throw Resource.CosmosExceptions.CosmosExceptionFactory.Create(
+                         dce: ex,
+                         trace: trace);
+                }
+                
             }
         }
 
@@ -6509,7 +6534,6 @@ namespace Microsoft.Azure.Cosmos
                     this.rntbdPortPoolBindAttempts,
                     receiveHangDetectionTimeSeconds: this.rntbdReceiveHangDetectionTimeSeconds,
                     sendHangDetectionTimeSeconds: this.rntbdSendHangDetectionTimeSeconds,
-                    enableCpuMonitor: this.enableCpuMonitor,
                     retryWithConfiguration: this.ConnectionPolicy.RetryOptions?.GetRetryWithConfiguration(),
                     enableTcpConnectionEndpointRediscovery: this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery,
                     addressResolver: this.AddressResolver,

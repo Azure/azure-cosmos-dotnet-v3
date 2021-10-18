@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents a document container in the Azure Cosmos DB service. A container is a named logical container for documents.
@@ -76,6 +77,13 @@ namespace Microsoft.Azure.Cosmos
 
         [JsonProperty(PropertyName = "clientEncryptionPolicy", NullValueHandling = NullValueHandling.Ignore)]
         private ClientEncryptionPolicy clientEncryptionPolicyInternal;
+
+        /// <summary>
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+        /// </summary>
+        [JsonExtensionData]
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
 
         private IReadOnlyList<IReadOnlyList<string>> partitionKeyPathTokens;
         private string id;
@@ -238,7 +246,7 @@ namespace Microsoft.Azure.Cosmos
         public DateTime? LastModified { get; private set; }
 
         /// <summary>
-        /// Gets the client encryption policy information for storing items in a container from the Azure Cosmos service.
+        /// Gets or sets the client encryption policy information for storing items in a container from the Azure Cosmos service.
         /// </summary>
         /// <value>
         /// It is an optional property.
@@ -250,12 +258,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         [JsonIgnore]
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-            ClientEncryptionPolicy ClientEncryptionPolicy
+        public ClientEncryptionPolicy ClientEncryptionPolicy
         {
             get => this.clientEncryptionPolicyInternal;
 

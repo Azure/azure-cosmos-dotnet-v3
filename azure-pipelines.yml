@@ -8,7 +8,7 @@ pr:
     - releases/*
   paths:
     include:
-    - /*
+    - '*'
 
 variables:
   DebugArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
@@ -35,6 +35,12 @@ jobs:
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
 
+- template:  templates/build-samples.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage: $(VmImage)
+
 - template:  templates/build-test.yml
   parameters:
     BuildConfiguration: Release
@@ -48,6 +54,12 @@ jobs:
     VmImage:  $(VmImage)
 
 - template:  templates/build-preview.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage:  $(VmImage)
+
+- template:  templates/build-benchmark.yml
   parameters:
     BuildConfiguration: Release
     Arguments: $(ReleaseArguments)

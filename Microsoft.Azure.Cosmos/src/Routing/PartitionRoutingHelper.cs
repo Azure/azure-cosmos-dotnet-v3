@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             bool isContinuationExpected,
             bool hasLogicalPartitionKey,
             bool allowDCount,
+            bool allowNonValueAggregates,
             PartitionKeyDefinition partitionKeyDefinition,
             QueryPartitionProvider queryPartitionProvider,
             string clientApiVersion,
@@ -57,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 partitionKeyDefinition: partitionKeyDefinition,
                 requireFormattableOrderByQuery: VersionUtility.IsLaterThan(clientApiVersion, HttpConstants.VersionDates.v2016_11_14),
                 isContinuationExpected: isContinuationExpected,
-                allowNonValueAggregateQuery: false,
+                allowNonValueAggregateQuery: allowNonValueAggregates,
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
                 allowDCount: allowDCount);
             if (!tryGetPartitionQueryExecutionInfo.Succeeded)
@@ -80,7 +81,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 if (!enableCrossPartitionQuery)
                 {
-                    throw new BadRequestException(RMResources.CrossPartitionQueryDisabled);
+                    BadRequestException exception = new BadRequestException(RMResources.CrossPartitionQueryDisabled);
+                    exception.Error.AdditionalErrorInfo = JsonConvert.SerializeObject(queryExecutionInfo);
+                    throw exception;
                 }
                 else
                 {
@@ -97,11 +100,15 @@ namespace Microsoft.Azure.Cosmos.Routing
                     {
                         if (!IsSupportedPartitionedQueryExecutionInfo(queryExecutionInfo, clientApiVersion))
                         {
-                            throw new BadRequestException(RMResources.UnsupportedCrossPartitionQuery);
+                            BadRequestException exception = new BadRequestException(RMResources.UnsupportedCrossPartitionQuery);
+                            exception.Error.AdditionalErrorInfo = JsonConvert.SerializeObject(queryExecutionInfo);
+                            throw exception;
                         }
                         else if (queryExecutionInfo.QueryInfo.HasAggregates && !IsAggregateSupportedApiVersion(clientApiVersion))
                         {
-                            throw new BadRequestException(RMResources.UnsupportedCrossPartitionQueryWithAggregate);
+                            BadRequestException exception = new BadRequestException(RMResources.UnsupportedCrossPartitionQueryWithAggregate);
+                            exception.Error.AdditionalErrorInfo = JsonConvert.SerializeObject(queryExecutionInfo);
+                            throw exception;
                         }
                         else
                         {
@@ -157,8 +164,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                     DocumentClientException exception = new DocumentClientException(
                         RMResources.UnsupportedCrossPartitionQuery,
                         HttpStatusCode.BadRequest,
-                        SubStatusCodes.Unknown);
+                        SubStatusCodes.CrossPartitionQueryNotServable);
 
+                    exception.Error.AdditionalErrorInfo = JsonConvert.SerializeObject(queryExecutionInfo);
                     throw exception;
                 }
             }

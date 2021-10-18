@@ -151,7 +151,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             RetryOptions retryOptions = null,
             ApiType apiType = ApiType.None,
             EventHandler<ReceivedResponseEventArgs> recievedResponseEventHandler = null,
-            bool useMultipleWriteLocations = false)
+            bool useMultipleWriteLocations = false,
+            bool enableClientTelemetry = false)
         {
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
 
