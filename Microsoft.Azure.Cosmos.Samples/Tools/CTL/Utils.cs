@@ -8,6 +8,7 @@ namespace CosmosCTL
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -69,11 +70,7 @@ namespace CosmosCTL
                         }
                         else
                         {
-                            AggregateException innerExceptions = task.Exception.Flatten();
-                            if (innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is CosmosException) is CosmosException cosmosException)
-                            {
-                                logger.LogError(cosmosException, "Failure pre-populating container {0}", container.Id);
-                            }
+                            Utils.LogError(logger, $"Pre-populating {container.Id}", task.Exception);
 
                             Interlocked.Increment(ref failures);
                         }
@@ -156,6 +153,36 @@ namespace CosmosCTL
             }
 
             return result;
+        }
+
+        public static void LogError(
+            ILogger logger,
+            string context,
+            Exception ex,
+            string extraDetails = null)
+        {
+            if (ex is AggregateException aggregateException)
+            {
+                AggregateException innerExceptions = aggregateException.Flatten();
+                ex = innerExceptions.InnerExceptions.FirstOrDefault();
+            }
+            
+            if (ex is CosmosException cosmosException && cosmosException.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                // Not consider throttles as errors
+            }
+            else
+            {
+                logger.LogError(ex, $"[ERROR][{context}]{extraDetails ?? string.Empty}");
+            }
+        }
+
+        public static void LogError(
+            ILogger logger,
+            string context,
+            string error)
+        {
+            logger.LogError($"[ERROR][{context}]{error}");
         }
 
         public struct InitializationResult

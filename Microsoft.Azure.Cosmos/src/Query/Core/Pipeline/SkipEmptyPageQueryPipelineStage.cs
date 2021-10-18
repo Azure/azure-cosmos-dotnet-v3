@@ -35,11 +35,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
         public ValueTask DisposeAsync() => this.inputStage.DisposeAsync();
 
-        public ValueTask<bool> MoveNextAsync()
-        {
-            return this.MoveNextAsync(NoOpTrace.Singleton);
-        }
-
         public async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
             this.cancellationToken.ThrowIfCancellationRequested();
@@ -106,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 this.cumulativeResponseLengthInBytes += sourcePage.ResponseLengthInBytes;
                 this.cumulativeAdditionalHeaders = sourcePage.AdditionalHeaders;
 
-                return await this.MoveNextAsync();
+                return await this.MoveNextAsync(trace);
             }
 
             QueryPage cumulativeQueryPage;

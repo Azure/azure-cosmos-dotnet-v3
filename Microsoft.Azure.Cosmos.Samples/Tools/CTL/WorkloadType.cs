@@ -9,6 +9,7 @@ namespace CosmosCTL
         ReadWriteQuery,
         ChangeFeedProcessor,
         ChangeFeedPull,
-        Query
+        Query,
+        ReadMany
     }
 }

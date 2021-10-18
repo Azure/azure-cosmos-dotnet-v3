@@ -9,6 +9,7 @@
     using Newtonsoft.Json;
 
     [TestClass]
+    [TestCategory("Query")]
     public sealed class DistinctQueryTests : QueryTestsBase
     {
         [TestMethod]

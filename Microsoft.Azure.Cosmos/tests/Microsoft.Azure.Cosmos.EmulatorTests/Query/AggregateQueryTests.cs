@@ -17,6 +17,7 @@
     using Newtonsoft.Json.Linq;
 
     [TestClass]
+    [TestCategory("Query")]
     public sealed class AggregateCrossPartitionQueryTests : QueryTestsBase
     {
         [TestMethod]
