@@ -52,9 +52,12 @@ namespace Microsoft.Azure.Cosmos
     public class ChangeFeedProcessorBuilder
     {
         public ChangeFeedProcessor Build();
+        public ChangeFeedProcessorBuilder WithErrorNotification(Container.ChangeFeedMonitorErrorDelegate errorDelegate);
         public ChangeFeedProcessorBuilder WithInstanceName(string instanceName);
+        public ChangeFeedProcessorBuilder WithLeaseAcquireNotification(Container.ChangeFeedMonitorLeaseAcquireDelegate acquireDelegate);
         public ChangeFeedProcessorBuilder WithLeaseConfiguration(Nullable<TimeSpan> acquireInterval=default(Nullable<TimeSpan>), Nullable<TimeSpan> expirationInterval=default(Nullable<TimeSpan>), Nullable<TimeSpan> renewInterval=default(Nullable<TimeSpan>));
         public ChangeFeedProcessorBuilder WithLeaseContainer(Container leaseContainer);
+        public ChangeFeedProcessorBuilder WithLeaseReleaseNotification(Container.ChangeFeedMonitorLeaseReleaseDelegate releaseDelegate);
         public ChangeFeedProcessorBuilder WithMaxItems(int maxItemCount);
         public ChangeFeedProcessorBuilder WithPollInterval(TimeSpan pollInterval);
         public ChangeFeedProcessorBuilder WithStartTime(DateTime startTime);
@@ -241,6 +244,9 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ResponseMessage> UpsertItemStreamAsync(Stream streamPayload, PartitionKey partitionKey, ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public delegate Task ChangeFeedHandlerWithManualCheckpoint<T>(ChangeFeedProcessorContext context, IReadOnlyCollection<T> changes, Func<Task> checkpointAsync, CancellationToken cancellationToken);
         public delegate Task ChangeFeedHandler<T>(ChangeFeedProcessorContext context, IReadOnlyCollection<T> changes, CancellationToken cancellationToken);
+        public delegate Task ChangeFeedMonitorErrorDelegate(string leaseToken, Exception exception);
+        public delegate Task ChangeFeedMonitorLeaseAcquireDelegate(string leaseToken);
+        public delegate Task ChangeFeedMonitorLeaseReleaseDelegate(string leaseToken);
         public delegate Task ChangeFeedStreamHandler(ChangeFeedProcessorContext context, Stream changes, CancellationToken cancellationToken);
         public delegate Task ChangeFeedStreamHandlerWithManualCheckpoint(ChangeFeedProcessorContext context, Stream changes, Func<Task> checkpointAsync, CancellationToken cancellationToken);
         public delegate Task ChangesEstimationHandler(long estimatedPendingChanges, CancellationToken cancellationToken);
