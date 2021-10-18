@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         return (response, bulkOperationResponse, continuationToken);
                     }
 
-                    // read out all the changes in the page. Breaking in between can lead to problems if we switch if there are multiple
+                    // read out all the changes in the page. Breaking in between can lead to problems if we switch, when there are multiple
                     // changes with same LSN due to, say a batch operation and we would end up missing it in Full Fidelity.
                     // For an LSN all changes corresponding to it will be returned in the same page.
                     if (currentDrainedLSN >= fullFidelityStartLSN)
