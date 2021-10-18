@@ -162,14 +162,6 @@ namespace Microsoft.Azure.Cosmos
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
-
-        public delegate Task ChangeFeedMonitorErrorDelegate(
-            string leaseToken,
-            Exception exception);
-
-        public delegate Task ChangeFeedMonitorLeaseAcquireDelegate(string leaseToken);
-
-        public delegate Task ChangeFeedMonitorLeaseReleaseDelegate(string leaseToken);
 #endif
 
         public abstract class TryExecuteQueryResult

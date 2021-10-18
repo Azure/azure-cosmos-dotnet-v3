@@ -7,11 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-#if PREVIEW
     using static Microsoft.Azure.Cosmos.Container;
-#else
-    using static Microsoft.Azure.Cosmos.ContainerInternal;
-#endif
 
     /// <summary>
     /// Provides a flexible way to create an instance of <see cref="ChangeFeedProcessor"/> with custom set of parameters.
@@ -220,12 +216,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="errorDelegate">A delegate to receive notifications for change feed processor related errors.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        ChangeFeedProcessorBuilder WithErrorNotification(ChangeFeedMonitorErrorDelegate errorDelegate)
+        public ChangeFeedProcessorBuilder WithErrorNotification(ChangeFeedMonitorErrorDelegate errorDelegate)
         {
             if (errorDelegate == null)
             {
@@ -241,12 +232,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="acquireDelegate">A delegate to receive notifications when a change feed processor acquires a lease.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        ChangeFeedProcessorBuilder WithLeaseAcquireNotification(ChangeFeedMonitorLeaseAcquireDelegate acquireDelegate)
+        public ChangeFeedProcessorBuilder WithLeaseAcquireNotification(ChangeFeedMonitorLeaseAcquireDelegate acquireDelegate)
         {
             if (acquireDelegate == null)
             {
@@ -262,12 +248,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="releaseDelegate">A delegate to receive notifications when a change feed processor releases a lease.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        ChangeFeedProcessorBuilder WithLeaseReleaseNotification(ChangeFeedMonitorLeaseReleaseDelegate releaseDelegate)
+        public ChangeFeedProcessorBuilder WithLeaseReleaseNotification(ChangeFeedMonitorLeaseReleaseDelegate releaseDelegate)
         {
             if (releaseDelegate == null)
             {
