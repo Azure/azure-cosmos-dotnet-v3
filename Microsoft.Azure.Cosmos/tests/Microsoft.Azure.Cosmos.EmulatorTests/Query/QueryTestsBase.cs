@@ -836,6 +836,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             {
                 while (resultSetIterator.HasMoreResults)
                 {
+                    Console.WriteLine("");
+                    Console.WriteLine("getting result");
                     FeedResponse<T> response = await resultSetIterator.ReadNextAsync();
                     yield return response;
                 }
@@ -857,6 +859,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 {
                     while (resultSetIterator.HasMoreResults)
                     {
+                        Console.WriteLine("");
+                        Console.WriteLine("getting result");
+
                         FeedResponse<T> response = await resultSetIterator.ReadNextAsync();
 
                         continuationToken = response.ContinuationToken;

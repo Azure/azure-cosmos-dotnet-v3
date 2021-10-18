@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 
         protected override Task<TryCatch<QueryPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
         {
+            Console.WriteLine("QueryPartitionRangePageAsyncEnumerator GetNextPageAsync");
             if (trace == null)
             {
                 throw new ArgumentNullException(nameof(trace));

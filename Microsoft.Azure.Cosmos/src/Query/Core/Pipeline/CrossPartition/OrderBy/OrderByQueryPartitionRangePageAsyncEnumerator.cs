@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -53,6 +55,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         protected override async Task<TryCatch<OrderByQueryPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
         {
+            Console.WriteLine(" OrderByQueryPartitionRangePageAsyncEnumerator GetNextPageAsync...." + this.FeedRangeState.FeedRange.ToJsonString());
+
             this.StartOfPageState = this.FeedRangeState.State;
             await this.bufferedEnumerator.MoveNextAsync(trace);
             return this.bufferedEnumerator.Current;
@@ -93,6 +97,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             protected override async Task<TryCatch<OrderByQueryPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
             {
+                Console.WriteLine(" OrderByQueryPartitionRangePageAsyncEnumerator InnerEnumerator GetNextPageAsync (n/w call)...." + this.FeedRangeState.FeedRange.ToJsonString());
                 // Unfortunately we need to keep both the epk range and partition key for queries
                 // Since the continuation token format uses epk range even though we only need the partition key to route the request.
                 FeedRangeInternal feedRange = this.PartitionKey.HasValue ? new FeedRangePartitionKey(this.PartitionKey.Value) : this.FeedRangeState.FeedRange;
@@ -109,6 +114,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     return TryCatch<OrderByQueryPage>.FromException(monadicQueryPage.Exception);
                 }
                 QueryPage queryPage = monadicQueryPage.Result;
+
+                Console.WriteLine("fetched documents counts : " +
+                    queryPage.Documents.Count);
+
                 return TryCatch<OrderByQueryPage>.FromResult(new OrderByQueryPage(queryPage));
             }
         }

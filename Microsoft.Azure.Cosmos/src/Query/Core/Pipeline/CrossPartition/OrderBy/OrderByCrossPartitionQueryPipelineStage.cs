@@ -97,6 +97,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             ITrace trace)
         {
             this.cancellationToken.ThrowIfCancellationRequested();
+            Console.WriteLine("MoveNextAsync_Initialize_FromBeginningAsync");
 
             if (uninitializedEnumerator == null)
             {
@@ -124,6 +125,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             {
                 if (IsSplitException(uninitializedEnumerator.Current.Exception))
                 {
+                    Console.WriteLine("Split Happened.....");
                     return await this.MoveNextAsync_InitializeAsync_HandleSplitAsync(uninitializedEnumerator, token: null, trace);
                 }
 
@@ -185,6 +187,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             OrderByContinuationToken token,
             ITrace trace)
         {
+            Console.WriteLine("MoveNextAsync_Initialize_FilterAsync");
             this.cancellationToken.ThrowIfCancellationRequested();
 
             if (uninitializedEnumerator == null)
@@ -295,7 +298,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 uninitializedEnumerator.FeedRangeState.FeedRange,
                 trace,
                 this.cancellationToken);
-
+            
+            childRanges.ToList().ForEach(x => Console.WriteLine("childRanges ==> " + x.ToJsonString()));
             if (childRanges.Count <= 1)
             {
                 // We optimistically assumed that the cache is not stale.
@@ -358,13 +362,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         private async ValueTask<bool> MoveNextAsync_InitializeAsync(ITrace trace)
         {
+            Console.WriteLine("MoveNextAsync_InitializeAsync " + this.uninitializedEnumeratorsAndTokens.Count);
             this.cancellationToken.ThrowIfCancellationRequested();
 
+           // this.uninitializedEnumeratorsAndTokens.Select(value => value.enumerator).ToList().ForEach(enumerator => Console.WriteLine("==>" + enumerator.FeedRangeState.FeedRange.ToJsonString()));
+            
             await ParallelPrefetch.PrefetchInParallelAsync(
                 this.uninitializedEnumeratorsAndTokens.Select(value => value.enumerator),
                 this.maxConcurrency,
                 trace,
                 this.cancellationToken);
+
             (OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator, OrderByContinuationToken token) = this.uninitializedEnumeratorsAndTokens.Dequeue();
             bool movedNext = token is null
                 ? await this.MoveNextAsync_Initialize_FromBeginningAsync(uninitializedEnumerator, trace)
@@ -374,6 +382,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         private ValueTask<bool> MoveNextAsync_DrainPageAsync(ITrace trace)
         {
+            Console.WriteLine("MoveNextAsync_DrainPageAsync this.enumerators.Count ==> " + this.enumerators.Count);
             this.cancellationToken.ThrowIfCancellationRequested();
 
             if (trace == null)
@@ -440,6 +449,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
                 this.enumerators.Enqueue(currentEnumerator);
             }
+
+            results.ToList().ForEach(x => Console.WriteLine("MoveNextAsync_DrainPageAsync results count ==> " + x.OrderByItems.Count));
 
             // It is possible that we emit multiple documents with the same rid due to JOIN queries.
             // This means it is not enough to serialize the rid that we left on to resume the query.
@@ -607,6 +618,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
 
             List<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)> enumeratorsAndTokens;
+
+            Console.WriteLine("Continuation is " + continuationToken);
             if (continuationToken == null)
             {
                 // Start off all the partition key ranges with null continuation
@@ -692,6 +705,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 }
             }
 
+            Console.WriteLine("enumeratorsAndTokens Count:" + enumeratorsAndTokens.Count);
+
             OrderByCrossPartitionQueryPipelineStage stage = new OrderByCrossPartitionQueryPipelineStage(
                 documentContainer,
                 orderByColumns.Select(column => column.SortOrder).ToList(),
@@ -722,7 +737,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             {
                 throw new ArgumentNullException(nameof(continuationToken));
             }
-
+            Console.WriteLine("MonadicGetOrderByContinuationTokenMapping");
             TryCatch<List<OrderByContinuationToken>> monadicExtractContinuationTokens = MonadicExtractOrderByTokens(continuationToken, numOrderByItems);
             if (monadicExtractContinuationTokens.Failed)
             {

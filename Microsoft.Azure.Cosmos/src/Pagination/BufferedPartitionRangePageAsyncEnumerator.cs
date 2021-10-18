@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class BufferedPartitionRangePageAsyncEnumerator<TPage, TState> : PartitionRangePageAsyncEnumerator<TPage, TState>, IPrefetcher
@@ -27,6 +28,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         protected override async Task<TryCatch<TPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
         {
+            Console.WriteLine(" BufferedPartitionRangePageAsyncEnumerator GetNextPageAsync..." + this.FeedRangeState.FeedRange.ToJsonString());
             if (trace == null)
             {
                 throw new ArgumentNullException(nameof(trace));
@@ -37,6 +39,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
             // Serve from the buffered page first.
             TryCatch<TPage> returnValue = this.bufferedPage.Value;
             this.bufferedPage = null;
+
+//            Console.WriteLine(" BufferedPartitionRangePageAsyncEnumerator return value.. " + (returnValue.Result as OrderByQueryPage).Page.Documents.Count);
             return returnValue;
         }
 

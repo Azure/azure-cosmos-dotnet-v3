@@ -41,6 +41,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
+            Console.WriteLine(" PartitionRangePageAsyncEnumerator MoveNextAsync..." + this.FeedRangeState.FeedRange.ToJsonString());
             if (trace == null)
             {
                 throw new ArgumentNullException(nameof(trace));
@@ -58,6 +59,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 {
                     this.FeedRangeState = new FeedRangeState<TState>(this.FeedRangeState.FeedRange, this.Current.Result.State);
                     this.HasStarted = true;
+                }
+                else
+                {
+                    Console.WriteLine(this.Current.Exception.StackTrace);
                 }
 
                 return true;

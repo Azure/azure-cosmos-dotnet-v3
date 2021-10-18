@@ -37,9 +37,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
             {
                 throw new ArgumentException(nameof(feedRanges));
             }
-
             List<FeedRangeEpk> mergedFeedRanges = MergeRangesWherePossible(feedRanges);
             List<(FeedRangeEpk, PartitionedToken)> splitRangesAndTokens = SplitRangesBasedOffContinuationToken(mergedFeedRanges, tokens);
+            splitRangesAndTokens.ForEach(token => Console.WriteLine("PartitionMapper ==>  range : " + token.Item1?.ToJsonString() + ", partition token : " + token.Item2?.ToString()));
+
             FeedRangeEpk targetFeedRange = GetTargetFeedRange(tokens);
             return MonadicConstructPartitionMapping(
                 splitRangesAndTokens,

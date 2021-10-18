@@ -163,6 +163,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.queryPipelineStage.SetCancellationToken(cancellationToken);
                 if (!await this.queryPipelineStage.MoveNextAsync(trace))
                 {
+                    Console.WriteLine("End of Page");
                     this.hasMoreResults = false;
                     return QueryResponse.CreateSuccess(
                         result: EmptyPage,
