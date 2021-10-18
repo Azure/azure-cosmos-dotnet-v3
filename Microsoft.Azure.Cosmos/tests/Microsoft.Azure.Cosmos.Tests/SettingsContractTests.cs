@@ -740,7 +740,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "PartitionKeyPath",
                 "PartitionKeyDefinitionVersion",
                 "ConflictResolutionPolicy",
-                "ClientEncryptionPolicy",
                 "PartitionKeyPaths");
 #endif
 
