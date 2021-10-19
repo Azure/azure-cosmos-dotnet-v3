@@ -54,34 +54,6 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.ChangeFeedProcessorUserException;System.Exception;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:True": {
-      "Subclasses": {},
-      "Members": {
-        "Microsoft.Azure.Cosmos.ChangeFeedProcessorContext ChangeFeedProcessorContext": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorContext ChangeFeedProcessorContext;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.ChangeFeedProcessorContext get_ChangeFeedProcessorContext();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Microsoft.Azure.Cosmos.ChangeFeedProcessorContext get_ChangeFeedProcessorContext()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorContext get_ChangeFeedProcessorContext();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void .ctor(System.Exception, Microsoft.Azure.Cosmos.ChangeFeedProcessorContext)": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "[Void .ctor(System.Exception, Microsoft.Azure.Cosmos.ChangeFeedProcessorContext), Void .ctor(System.Exception, Microsoft.Azure.Cosmos.ChangeFeedProcessorContext)]"
-        },
-        "Void GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        }
-      },
-      "NestedTypes": {}
-    },
     "Microsoft.Azure.Cosmos.Container;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
