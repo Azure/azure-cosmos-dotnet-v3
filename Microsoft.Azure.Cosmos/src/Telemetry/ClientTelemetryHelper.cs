@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
 
             StringBuilder regionsContacted = new StringBuilder();
-            foreach ((_, Uri uri) in regionList)
+            foreach ((string name, _) in regionList)
             {
                 if (regionsContacted.Length > 0)
                 {
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 }
 
-                regionsContacted.Append(uri);
+                regionsContacted.Append(name);
             }
 
             return regionsContacted.ToString();
