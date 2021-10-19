@@ -13,6 +13,7 @@
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle;
 
     [TestClass]
+    [TestCategory("Query")]
     public sealed class PopulateIndexMetricsTest : QueryTestsBase
     {
         [TestMethod]

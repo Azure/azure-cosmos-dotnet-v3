@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -68,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             IQueryPipelineStage groupByQueryPipelineStage = tryCreateGroupByStage.Result;
 
             List<CosmosElement> elements = new List<CosmosElement>();
-            await foreach (TryCatch<QueryPage> page in new EnumerableStage(groupByQueryPipelineStage))
+            await foreach (TryCatch<QueryPage> page in new EnumerableStage(groupByQueryPipelineStage, NoOpTrace.Singleton))
             {
                 page.ThrowIfFailed();
 

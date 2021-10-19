@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
+    [TestCategory("Batch")]
     public class BatchAsyncContainerExecutorTests
     {
         private readonly static CosmosSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();

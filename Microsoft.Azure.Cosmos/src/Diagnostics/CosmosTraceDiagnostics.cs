@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     internal sealed class CosmosTraceDiagnostics : CosmosDiagnostics
     {
@@ -49,6 +50,43 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             ITrace rootTrace = this.Value;
             this.WalkTraceTreeForRegionsContated(rootTrace, regionsContacted);
             return regionsContacted.ToList();
+        }
+
+        internal bool IsGoneExceptionHit()
+        {
+            return this.WalkTraceTreeForGoneException(this.Value);
+        }
+
+        private bool WalkTraceTreeForGoneException(ITrace currentTrace)
+        {
+            if (currentTrace == null)
+            {
+                return false;
+            }
+
+            foreach (object datums in currentTrace.Data.Values)
+            {
+                if (datums is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                {
+                    foreach (StoreResponseStatistics responseStatistics in clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList)
+                    {
+                        if (responseStatistics.StoreResult != null && responseStatistics.StoreResult.StatusCode == Documents.StatusCodes.Gone)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            foreach (ITrace childTrace in currentTrace.Children)
+            {
+                if (this.WalkTraceTreeForGoneException(childTrace))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void WalkTraceTreeForRegionsContated(ITrace currentTrace, HashSet<(string, Uri)> regionsContacted)

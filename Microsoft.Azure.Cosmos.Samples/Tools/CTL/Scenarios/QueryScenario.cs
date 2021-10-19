@@ -126,7 +126,7 @@ namespace CosmosCTL
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failure during Query scenario");
+                Utils.LogError(logger, loggingContextIdentifier, ex);
             }
             finally
             {
@@ -205,12 +205,8 @@ namespace CosmosCTL
                             errorDetail.AppendLine($"Continuation: {c}");
                         }
 
-                        logger.LogError(errorDetail.ToString());
+                        Utils.LogError(logger, loggingContextIdentifier, errorDetail.ToString());
                     }
-                }
-                catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-                {
-                    //Logging 429s is not relevant
                 }
                 catch (Exception ex)
                 {
@@ -223,7 +219,7 @@ namespace CosmosCTL
                         errorDetail.AppendLine($"Continuation: {c}");
                     }
 
-                    logger.LogError(ex, errorDetail.ToString());
+                    Utils.LogError(logger, loggingContextIdentifier, ex, errorDetail.ToString());
                 }
                 finally
                 {
@@ -282,7 +278,7 @@ namespace CosmosCTL
                         errorDetail.AppendLine($"{queryName} Query expected to read {expectedResults} but got {documentTotal}");
                         errorDetail.AppendLine($"Last continuation: {continuation}");
 
-                        logger.LogError(errorDetail.ToString());
+                        Utils.LogError(logger, loggingContextIdentifier, errorDetail.ToString());
                     }
                 }
                 catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
@@ -297,7 +293,7 @@ namespace CosmosCTL
                     errorDetail.AppendLine($"{queryName} Query failure while looping through query.");
                     errorDetail.AppendLine($"Last continuation: {continuation}");
 
-                    logger.LogError(ex, errorDetail.ToString());
+                    Utils.LogError(logger, loggingContextIdentifier, ex, errorDetail.ToString());
                 }
                 finally
                 {

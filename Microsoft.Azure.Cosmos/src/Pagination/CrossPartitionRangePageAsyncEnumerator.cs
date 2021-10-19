@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     /// <summary>
     /// Coordinates draining pages from multiple <see cref="PartitionRangePageAsyncEnumerator{TPage, TState}"/>, while maintaining a global sort order and handling repartitioning (splits, merge).
     /// </summary>
-    internal sealed class CrossPartitionRangePageAsyncEnumerator<TPage, TState> : IAsyncEnumerator<TryCatch<CrossFeedRangePage<TPage, TState>>>
+    internal sealed class CrossPartitionRangePageAsyncEnumerator<TPage, TState> : ITracingAsyncEnumerator<TryCatch<CrossFeedRangePage<TPage, TState>>>
         where TPage : Page<TState>
         where TState : State
     {
@@ -97,11 +97,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
         public TryCatch<CrossFeedRangePage<TPage, TState>> Current { get; private set; }
 
         public FeedRangeInternal CurrentRange { get; private set; }
-
-        public ValueTask<bool> MoveNextAsync()
-        {
-            return this.MoveNextAsync(NoOpTrace.Singleton);
-        }
 
         public async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
