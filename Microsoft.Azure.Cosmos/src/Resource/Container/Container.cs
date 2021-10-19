@@ -784,38 +784,6 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyList<PatchOperation> patchOperations,
             PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Patches an item in the Azure Cosmos service as an asynchronous operation.
-        /// </summary>
-        /// <remarks>
-        /// The item's partition key value is immutable. 
-        /// To change an item's partition key value you must delete the original item and insert a new item.
-        /// The patch operation stream consists of patch operations that are atomic and are executed sequentially.
-        /// By default, resource body will be returned as part of the response. User can request no content by setting <see cref="ItemRequestOptions.EnableContentResponseOnWrite"/> flag to false.
-        /// </remarks>
-        /// <param name="id">The Cosmos item id</param>
-        /// <param name="partitionKey">The partition key for the item.</param>
-        /// <param name="patchOperationsStream">Represents a stream containing the list of operations to be sequentially applied to the referred Cosmos item.</param>
-        /// <param name="requestOptions">(Optional) The options for the item request.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which wraps a <see cref="Stream"/> containing the patched resource record.
-        /// </returns>
-        /// <remarks>
-        /// https://aka.ms/cosmosdb-dot-net-exceptions#stream-api
-        /// This is to increase performance and prevent the overhead of throwing exceptions. 
-        /// Check the HTTP status code on the response to check if the operation failed.
-        /// </remarks>
-        /// <example>
-        /// <see cref="Container.PatchItemAsync"/>
-        /// </example>
-        public abstract Task<ResponseMessage> PatchItemStreamAsync(
-            string id,
-            PartitionKey partitionKey,
-            Stream streamPayload,
-            ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default);
 #endif
 
         /// <summary>
