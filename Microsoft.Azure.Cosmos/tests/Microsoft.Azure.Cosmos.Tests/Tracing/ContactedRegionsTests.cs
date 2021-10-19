@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Text;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -64,5 +65,36 @@
 
             return datum;
         }
+
+        [TestMethod]
+        public void ContactedRegionsWithNameForClientTelemetryTest()
+        {
+            CosmosDiagnostics diagnostics = new CosmosTraceDiagnostics(this.CreateTestTraceTree());
+
+            string regionsContacted  = ClientTelemetryHelper.GetContactedRegions(diagnostics);            
+            Assert.IsNotNull(regionsContacted);
+            Assert.AreEqual("Central US,Central India,East US 2,France Central", regionsContacted);
+            
+        }
+
+        [TestMethod]
+        public void ContactedRegionWithNameForClientTelemetryTest()
+        {
+            Trace trace;
+            using (trace = Trace.GetRootTrace("Root Trace", TraceComponent.Unknown, TraceLevel.Info))
+            {
+                using (ITrace firstLevel = trace.StartChild("First level Node", TraceComponent.Unknown, TraceLevel.Info))
+                {
+                    firstLevel.AddDatum("Client Side Request Stats", this.GetDatumObject(Regions.FranceCentral));
+                }
+            }
+           
+            CosmosDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
+
+            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(diagnostics);
+            Assert.IsNotNull(regionsContacted);
+            Assert.AreEqual("France Central", regionsContacted);
+        }
+
     }
 }
