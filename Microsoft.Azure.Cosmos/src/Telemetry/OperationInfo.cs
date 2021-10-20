@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     internal sealed class OperationInfo
     {
         [JsonProperty(PropertyName = "regionsContacted")]
-        private string RegionsContacted { get; }
+        internal string RegionsContacted { get; }
 
         [JsonProperty(PropertyName = "greaterThan1Kb")]
         internal bool? GreaterThan1Kb { get; set; }

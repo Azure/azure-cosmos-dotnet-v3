@@ -66,7 +66,10 @@ namespace Microsoft.Azure.Cosmos
             DocumentServiceResponse response;
             try
             {
+                request.RequestContext.RegionName = this.endpointManager.GetLocation(request.RequestContext.LocationEndpointToRoute);
+
                 Uri physicalAddress = GatewayStoreClient.IsFeedRequest(request.OperationType) ? this.GetFeedUri(request) : this.GetEntityUri(request);
+
                 response = await this.gatewayStoreClient.InvokeAsync(request, request.ResourceType, physicalAddress, cancellationToken);
             }
             catch (DocumentClientException exception)

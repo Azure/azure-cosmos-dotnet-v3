@@ -19,6 +19,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private static readonly IReadOnlyList<StoreResponseStatistics> EmptyStoreResponseStatistics = new List<StoreResponseStatistics>();
         private static readonly IReadOnlyList<HttpResponseStatistics> EmptyHttpResponseStatistics = new List<HttpResponseStatistics>();
 
+        internal static readonly string HttpRequestRegionNameProperty = "regionName";
+
         private readonly object requestEndTimeLock = new object();
         private readonly Dictionary<string, AddressResolutionStatistics> endpointToAddressResolutionStats;
         private readonly List<StoreResponseStatistics> storeResponseStatistics;
@@ -218,6 +220,15 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
             lock (this.httpResponseStatistics)
             {
+                Uri locationEndpoint = request.RequestUri;
+                object regionName = null;
+
+                request.Properties?.TryGetValue(HttpRequestRegionNameProperty, out regionName);
+
+                if (locationEndpoint != null && regionName != null)
+                {
+                    this.RegionsContacted.Add((regionName.ToString(), locationEndpoint));
+                }
                 this.shallowCopyOfHttpResponseStatistics = null;
                 this.httpResponseStatistics.Add(new HttpResponseStatistics(requestStartTimeUtc,
                                                                            requestEndTimeUtc,

@@ -630,6 +630,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(2, telemetryInfo.SystemInfo.Count, $"System Information Count doesn't Match; {JsonConvert.SerializeObject(telemetryInfo.SystemInfo)}");
 
                 Assert.IsNotNull(telemetryInfo.GlobalDatabaseAccountName, "GlobalDatabaseAccountName is null");
+                Assert.IsNotNull(telemetryInfo.ApplicationRegion, "ApplicationRegion is null");
                 Assert.IsNotNull(telemetryInfo.DateTimeUtc, "Timestamp is null");
                 Assert.AreEqual(2, telemetryInfo.PreferredRegions.Count);
                 Assert.AreEqual("region1", telemetryInfo.PreferredRegions[0]);
@@ -650,6 +651,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(operation.Operation, "Operation Type is null");
                 Assert.IsNotNull(operation.Resource, "Resource Type is null");
                 Assert.IsNotNull(operation.StatusCode, "StatusCode is null");
+                Assert.IsNotNull(operation.RegionsContacted, "RegionsContacted is null");
+                Assert.AreNotEqual(string.Empty, operation.RegionsContacted, "RegionsContacted is Empty");
                 Assert.AreEqual(expectedConsistencyLevel?.ToString(), operation.Consistency, $"Consistency is not {expectedConsistencyLevel}");
 
                 Assert.IsNotNull(operation.MetricInfo, "MetricInfo is null");
