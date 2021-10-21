@@ -397,6 +397,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         Math.Ceiling(optimalPageSize / (double)targetRanges.Count) * CosmosQueryExecutionContextFactory.PageSizeFactorForTop,
                         optimalPageSize);
                 }
+
+                optimalPageSize = 200;
             }
 
             Debug.Assert(
