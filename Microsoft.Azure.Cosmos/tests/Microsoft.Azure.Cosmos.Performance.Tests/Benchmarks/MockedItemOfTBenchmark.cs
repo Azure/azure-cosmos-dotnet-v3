@@ -172,10 +172,5 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
             }
         }
-
-        /*public async Task QuerySinglePageCrossPartition()
-        {
-
-        }*/
     }
 }

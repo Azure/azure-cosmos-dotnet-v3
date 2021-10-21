@@ -27,7 +27,5 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public Task QuerySinglePageSinglePartition();
 
         public Task QueryMultiplePageSinglePartition();
-/*
-        public Task QuerySinglePageCrossPartition();*/
     }
 }

@@ -122,12 +122,5 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             await this.CurrentBenchmark.QueryMultiplePageSinglePartition();
         }
-
-/*        [Benchmark]
-        [BenchmarkCategory("QuerySinglePageCrossBenchmark")]
-        public async Task QuerySinglePageCrossPartition()
-        {
-            await this.CurrentBenchmark.QuerySinglePageCrossPartition();
-        }*/
     }
 }

@@ -188,10 +188,5 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-/*        public async Task QuerySinglePageCrossPartition()
-        {
-
-        }*/
-
     }
 }
