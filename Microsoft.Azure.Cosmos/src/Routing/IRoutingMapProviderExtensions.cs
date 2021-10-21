@@ -152,6 +152,7 @@ namespace Microsoft.Azure.Cosmos
                 targetRanges.AddRange(overlappingRanges);
             }
 
+            trace.AddDatum("SortedRangeCountVsTargetRangeCount", $"SortedRangesCount: {sortedRanges.Count()} TargetRangesCount: {targetRanges.Count}");
             return targetRanges;
         }
     }
