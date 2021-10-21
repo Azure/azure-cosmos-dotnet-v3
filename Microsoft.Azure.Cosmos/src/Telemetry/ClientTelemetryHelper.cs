@@ -52,12 +52,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (azMetadata == null)
             {
-                if (httpClient == null)
-                {
-                    DefaultTrace.TraceError("httpClient is not available. So not able to fetch VM Metadata information");
-                    return null;
-                }
-
                 DefaultTrace.TraceVerbose("Getting VM Metadata Information for Telemetry.");
                 try
                 {

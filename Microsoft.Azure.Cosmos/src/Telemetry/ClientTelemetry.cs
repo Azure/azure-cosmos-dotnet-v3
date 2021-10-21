@@ -284,12 +284,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return;
             }
 
-            if (this.httpClient == null)
-            {
-                DefaultTrace.TraceError("Telemetry is enabled but httpClient is not available");
-                return;
-            }
-             
             try
             {
                 DefaultTrace.TraceInformation("Sending Telemetry Data to " + endpointUrl.AbsoluteUri);
