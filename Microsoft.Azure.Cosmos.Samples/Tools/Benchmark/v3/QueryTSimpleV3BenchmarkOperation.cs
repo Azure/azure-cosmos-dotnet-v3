@@ -11,48 +11,50 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class QueryTSinglePkV3BenchmarkOperation : IBenchmarkOperation
+    internal abstract class QueryTSimpleV3BenchmarkOperation : IBenchmarkOperation
     {
         private readonly Container container;
-        private readonly string partitionKeyPath;
         private readonly Dictionary<string, object> sampleJObject;
 
-        private readonly string databsaeName;
+        private readonly string databaseName;
         private readonly string containerName;
 
-        private readonly string executionItemPartitionKey;
-        private readonly string executionItemId;
         private bool initialized = false;
 
-        public QueryTSinglePkV3BenchmarkOperation(
+        protected readonly string partitionKeyPath;
+
+        public abstract string ExecutionItemPartitionKey { get; }
+        public abstract QueryDefinition QueryDefinition { get; }
+        public abstract QueryRequestOptions QueryRequestOptions { get; }
+        public abstract IDictionary<string, string> ObjectProperties { get; }
+
+        public QueryTSimpleV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
             string containerName,
             string partitionKeyPath,
             string sampleJson)
         {
-            this.databsaeName = dbName;
+            this.databaseName = dbName;
             this.containerName = containerName;
 
-            this.container = cosmosClient.GetContainer(this.databsaeName, this.containerName);
+            this.container = cosmosClient.GetContainer(this.databaseName, this.containerName);
             this.partitionKeyPath = partitionKeyPath.Replace("/", "");
 
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
-            this.executionItemPartitionKey = Guid.NewGuid().ToString();
-            this.executionItemId = Guid.NewGuid().ToString();
-            this.sampleJObject["id"] = this.executionItemId;
-            this.sampleJObject[this.partitionKeyPath] = this.executionItemPartitionKey;
+
+            foreach (KeyValuePair<string, string> kvPair in this.ObjectProperties)
+            {
+                this.sampleJObject[kvPair.Key] = kvPair.Value;
+            }
         }
 
         public async Task<OperationResult> ExecuteOnceAsync()
         {
             FeedIterator<Dictionary<string, object>> feedIterator = this.container.GetItemQueryIterator<Dictionary<string, object>>(
-                        queryDefinition: new QueryDefinition("select * from T where T.id = @id").WithParameter("@id", this.executionItemId),
+                        queryDefinition: this.QueryDefinition,
                         continuationToken: null,
-                        requestOptions: new QueryRequestOptions() 
-                        { 
-                            PartitionKey = new PartitionKey(this.executionItemPartitionKey) 
-                        });
+                        requestOptions: this.QueryRequestOptions);
 
             double totalCharge = 0;
             CosmosDiagnostics lastDiagnostics = null;
@@ -79,7 +81,7 @@ namespace CosmosBenchmark
 
             return new OperationResult()
             {
-                DatabseName = databsaeName,
+                DatabseName = databaseName,
                 ContainerName = containerName,
                 RuCharges = totalCharge,
                 CosmosDiagnostics = lastDiagnostics,
@@ -98,7 +100,7 @@ namespace CosmosBenchmark
             {
                 using ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
                         inputStream,
-                        new Microsoft.Azure.Cosmos.PartitionKey(this.executionItemPartitionKey));
+                        new Microsoft.Azure.Cosmos.PartitionKey(this.ExecutionItemPartitionKey));
 
                 System.Buffers.ArrayPool<byte>.Shared.Return(inputStream.GetBuffer());
 

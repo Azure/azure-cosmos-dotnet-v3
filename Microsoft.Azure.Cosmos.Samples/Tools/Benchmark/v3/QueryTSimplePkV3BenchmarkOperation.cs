@@ -8,11 +8,11 @@ namespace CosmosBenchmark
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos;
 
-    internal class QueryTSimpleCrossPkV3BenchmarkOperation : QueryTSimpleV3BenchmarkOperation
+    internal class QueryTSimplePkV3BenchmarkOperation : QueryTSimpleV3BenchmarkOperation
     {
         private readonly string executionItemId = Guid.NewGuid().ToString();
 
-        public QueryTSimpleCrossPkV3BenchmarkOperation(
+        public QueryTSimplePkV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
             string containerName,
@@ -26,7 +26,10 @@ namespace CosmosBenchmark
         public override QueryDefinition QueryDefinition => new QueryDefinition("select * from T where T.id = @id")
                                                 .WithParameter("@id", this.executionItemId);
 
-        public override QueryRequestOptions QueryRequestOptions => null;
+        public override QueryRequestOptions QueryRequestOptions => new QueryRequestOptions()
+        {
+            PartitionKey = new PartitionKey(this.executionItemId)
+        };
 
         public override IDictionary<string, string> ObjectProperties => new Dictionary<string, string>()
         {
