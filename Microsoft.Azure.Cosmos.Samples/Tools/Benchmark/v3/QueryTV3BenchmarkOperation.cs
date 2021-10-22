@@ -11,26 +11,29 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal abstract class QueryTSimpleV3BenchmarkOperation : IBenchmarkOperation
+    internal abstract class QueryTV3BenchmarkOperation : IBenchmarkOperation
     {
-        private readonly Container container;
-        private readonly Dictionary<string, object> sampleJObject;
+        protected readonly Container container;
+        protected readonly Dictionary<string, object> sampleJObject;
 
         private readonly string databaseName;
         private readonly string containerName;
 
-        private bool initialized = false;
+        protected bool initialized = false;
 
         protected readonly string partitionKeyPath;
 
         protected readonly string executionItemPartitionKey = Guid.NewGuid().ToString();
         protected readonly string executionItemId = Guid.NewGuid().ToString();
 
+        protected int numOfItemsCreated = 1;
+
         public abstract QueryDefinition QueryDefinition { get; }
         public abstract QueryRequestOptions QueryRequestOptions { get; }
         public abstract IDictionary<string, string> ObjectProperties { get; }
 
-        public QueryTSimpleV3BenchmarkOperation(
+        
+        public QueryTV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
             string containerName,
@@ -45,9 +48,12 @@ namespace CosmosBenchmark
 
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
 
-            foreach (KeyValuePair<string, string> kvPair in this.ObjectProperties)
+            if(this.ObjectProperties != null)
             {
-                this.sampleJObject[kvPair.Key] = kvPair.Value;
+                foreach (KeyValuePair<string, string> kvPair in this.ObjectProperties)
+                {
+                    this.sampleJObject[kvPair.Key] = kvPair.Value;
+                }
             }
         }
 
@@ -91,7 +97,7 @@ namespace CosmosBenchmark
             };
         }
 
-        public async Task PrepareAsync()
+        public virtual async Task PrepareAsync()
         {
             if (this.initialized)
             {
