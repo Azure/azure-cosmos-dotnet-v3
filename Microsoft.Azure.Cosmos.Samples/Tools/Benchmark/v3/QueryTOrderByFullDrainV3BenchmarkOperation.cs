@@ -42,14 +42,14 @@ namespace CosmosBenchmark
             {
                 this.sampleJObject["id"] = Guid.NewGuid().ToString();
 
-                string partitioValue = Guid.NewGuid().ToString();
-                this.sampleJObject[this.partitionKeyPath] = partitioValue;
+                string partitionValue = Guid.NewGuid().ToString();
+                this.sampleJObject[this.partitionKeyPath] = partitionValue;
 
                 using (MemoryStream inputStream = JsonHelper.ToStream(this.sampleJObject))
                 {
                     using ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
                             inputStream,
-                            new Microsoft.Azure.Cosmos.PartitionKey(partitioValue));
+                            new Microsoft.Azure.Cosmos.PartitionKey(partitionValue));
 
                     System.Buffers.ArrayPool<byte>.Shared.Return(inputStream.GetBuffer());
 

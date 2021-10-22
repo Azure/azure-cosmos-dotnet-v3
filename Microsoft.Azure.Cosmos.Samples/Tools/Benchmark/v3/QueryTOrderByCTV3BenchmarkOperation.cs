@@ -11,7 +11,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal abstract class QueryTV3BenchmarkOperation : IBenchmarkOperation
+    internal class QueryTOrderByCTV3BenchmarkOperation : IBenchmarkOperation
     {
         protected readonly Container container;
         protected readonly Dictionary<string, object> sampleJObject;
@@ -26,12 +26,7 @@ namespace CosmosBenchmark
         protected readonly string executionItemPartitionKey = Guid.NewGuid().ToString();
         protected readonly string executionItemId = Guid.NewGuid().ToString();
 
-        public abstract QueryDefinition QueryDefinition { get; }
-        public abstract QueryRequestOptions QueryRequestOptions { get; }
-        public abstract IDictionary<string, string> ObjectProperties { get; }
-
-        
-        public QueryTV3BenchmarkOperation(
+        public QueryTOrderByCTV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
             string containerName,
@@ -45,30 +40,28 @@ namespace CosmosBenchmark
             this.partitionKeyPath = partitionKeyPath.Replace("/", "");
 
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
-
-            if(this.ObjectProperties != null)
-            {
-                foreach (KeyValuePair<string, string> kvPair in this.ObjectProperties)
-                {
-                    this.sampleJObject[kvPair.Key] = kvPair.Value;
-                }
-            }
         }
 
-        public async Task<OperationResult> ExecuteOnceAsync()
+        public virtual async Task<OperationResult> ExecuteOnceAsync()
         {
-            FeedIterator<Dictionary<string, object>> feedIterator = this.container.GetItemQueryIterator<Dictionary<string, object>>(
-                        queryDefinition: this.QueryDefinition,
-                        continuationToken: null,
-                        requestOptions: this.QueryRequestOptions);
-
+            string continuationToken = null;
             double totalCharge = 0;
             CosmosDiagnostics lastDiagnostics = null;
-            while (feedIterator.HasMoreResults)
+
+            do
             {
+                FeedIterator<Dictionary<string, object>> feedIterator = this.container.GetItemQueryIterator<Dictionary<string, object>>(
+                    queryDefinition: new QueryDefinition("select * from T ORDER BY T.id"),
+                    continuationToken: continuationToken,
+                    requestOptions: new QueryRequestOptions()
+                    {
+                        MaxItemCount = 1
+                    });
+
                 FeedResponse<Dictionary<string, object>> feedResponse = await feedIterator.ReadNextAsync();
                 totalCharge += feedResponse.Headers.RequestCharge;
                 lastDiagnostics = feedResponse.Diagnostics;
+                continuationToken = feedResponse.ContinuationToken;
 
                 if (feedResponse.StatusCode != HttpStatusCode.OK)
                 {
@@ -83,7 +76,13 @@ namespace CosmosBenchmark
                         throw new Exception("Null item was returned");
                     }
                 }
-            }
+
+                if(!feedIterator.HasMoreResults)
+                {
+                    break;
+                }
+            } while (true);
+
 
             return new OperationResult()
             {
@@ -101,18 +100,25 @@ namespace CosmosBenchmark
             {
                 return;
             }
-
-            using (MemoryStream inputStream = JsonHelper.ToStream(this.sampleJObject))
+            for (int itemCount = 0; itemCount < 3; itemCount++)
             {
-                using ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
-                        inputStream,
-                        new Microsoft.Azure.Cosmos.PartitionKey(this.executionItemPartitionKey));
+                this.sampleJObject["id"] = Guid.NewGuid().ToString();
 
-                System.Buffers.ArrayPool<byte>.Shared.Return(inputStream.GetBuffer());
+                string partitionValue = Guid.NewGuid().ToString();
+                this.sampleJObject[this.partitionKeyPath] = partitionValue;
 
-                if (itemResponse.StatusCode != HttpStatusCode.Created)
+                using (MemoryStream inputStream = JsonHelper.ToStream(this.sampleJObject))
                 {
-                    throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
+                    using ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
+                            inputStream,
+                            new Microsoft.Azure.Cosmos.PartitionKey(partitionValue));
+
+                    System.Buffers.ArrayPool<byte>.Shared.Return(inputStream.GetBuffer());
+
+                    if (itemResponse.StatusCode != HttpStatusCode.Created)
+                    {
+                        throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
+                    }
                 }
             }
 
@@ -120,3 +126,32 @@ namespace CosmosBenchmark
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
