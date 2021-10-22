@@ -23,7 +23,9 @@ namespace CosmosBenchmark
 
         protected readonly string partitionKeyPath;
 
-        public abstract string ExecutionItemPartitionKey { get; }
+        protected readonly string executionItemPartitionKey = Guid.NewGuid().ToString();
+        protected readonly string executionItemId = Guid.NewGuid().ToString();
+
         public abstract QueryDefinition QueryDefinition { get; }
         public abstract QueryRequestOptions QueryRequestOptions { get; }
         public abstract IDictionary<string, string> ObjectProperties { get; }
@@ -51,8 +53,6 @@ namespace CosmosBenchmark
 
         public async Task<OperationResult> ExecuteOnceAsync()
         {
-            Console.WriteLine(this.QueryDefinition.QueryText);
-            Console.WriteLine(this.QueryRequestOptions.PartitionKey.Value);
             FeedIterator<Dictionary<string, object>> feedIterator = this.container.GetItemQueryIterator<Dictionary<string, object>>(
                         queryDefinition: this.QueryDefinition,
                         continuationToken: null,
@@ -98,14 +98,11 @@ namespace CosmosBenchmark
                 return;
             }
 
-            Console.WriteLine("id : " + this.sampleJObject["id"]);
-            Console.WriteLine("this.partitionKeyPath : " + this.sampleJObject[this.partitionKeyPath]);
-            
             using (MemoryStream inputStream = JsonHelper.ToStream(this.sampleJObject))
             {
                 using ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
                         inputStream,
-                        new Microsoft.Azure.Cosmos.PartitionKey(this.ExecutionItemPartitionKey));
+                        new Microsoft.Azure.Cosmos.PartitionKey(this.executionItemPartitionKey));
 
                 System.Buffers.ArrayPool<byte>.Shared.Return(inputStream.GetBuffer());
 

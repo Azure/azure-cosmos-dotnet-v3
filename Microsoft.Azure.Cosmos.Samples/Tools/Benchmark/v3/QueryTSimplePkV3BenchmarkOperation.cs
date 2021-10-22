@@ -10,18 +10,14 @@ namespace CosmosBenchmark
 
     internal class QueryTSimplePkV3BenchmarkOperation : QueryTSimpleV3BenchmarkOperation
     {
-        private readonly string executionItemId = Guid.NewGuid().ToString();
-
         public QueryTSimplePkV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
             string containerName,
             string partitionKeyPath,
-            string sampleJson) : base(cosmosClient, dbName, containerName, partitionKeyPath, sampleJson) 
+            string sampleJson) : base(cosmosClient, dbName, containerName, partitionKeyPath, sampleJson)
         {
         }
-
-        public override string ExecutionItemPartitionKey => Guid.NewGuid().ToString();
 
         public override QueryDefinition QueryDefinition => new QueryDefinition("select * from T where T.id = @id")
                                                 .WithParameter("@id", this.executionItemId);
@@ -34,7 +30,7 @@ namespace CosmosBenchmark
         public override IDictionary<string, string> ObjectProperties => new Dictionary<string, string>()
         {
             {"id", this.executionItemId},
-            {this.partitionKeyPath, this.ExecutionItemPartitionKey}
+            {this.partitionKeyPath, this.executionItemPartitionKey}
         };
 
     }
