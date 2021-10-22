@@ -51,6 +51,8 @@ namespace CosmosBenchmark
 
         public async Task<OperationResult> ExecuteOnceAsync()
         {
+            Console.WriteLine(this.QueryDefinition.QueryText);
+            Console.WriteLine(this.QueryRequestOptions.PartitionKey.Value);
             FeedIterator<Dictionary<string, object>> feedIterator = this.container.GetItemQueryIterator<Dictionary<string, object>>(
                         queryDefinition: this.QueryDefinition,
                         continuationToken: null,
@@ -96,6 +98,9 @@ namespace CosmosBenchmark
                 return;
             }
 
+            Console.WriteLine("id : " + this.sampleJObject["id"]);
+            Console.WriteLine("this.partitionKeyPath : " + this.sampleJObject[this.partitionKeyPath]);
+            
             using (MemoryStream inputStream = JsonHelper.ToStream(this.sampleJObject))
             {
                 using ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
