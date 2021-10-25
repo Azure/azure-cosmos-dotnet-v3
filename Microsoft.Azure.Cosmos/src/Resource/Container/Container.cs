@@ -1417,6 +1417,77 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken);
 
         /// <summary>
+        /// Delegate to notify errors during change feed operations.
+        /// </summary>
+        /// <param name="leaseToken">A unique identifier for the lease.</param>
+        /// <param name="exception">The exception that happened.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the notification.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// (string leaseToken, Exception exception) =>
+        /// {
+        ///     if (exception is ChangeFeedProcessorUserException userException)
+        ///     {
+        ///         Console.WriteLine($"Current instance's delegate had an unhandled when processing lease {leaseToken}.");
+        ///         Console.WriteLine($"Diagnostics {userException.ExceptionContext.Diagnostics}");
+        ///         Console.WriteLine($"Headers {userException.ExceptionContext.Headers}");
+        ///         Console.WriteLine(userException.ToString());
+        ///     }
+        ///     else 
+        ///     {
+        ///         Console.WriteLine($"Current instance faced an exception when processing lease {leaseToken}.");
+        ///         Console.WriteLine(exception.ToString());
+        ///     }
+        ///     
+        ///     return Task.CompletedTask;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public delegate Task ChangeFeedMonitorErrorDelegate(
+            string leaseToken,
+            Exception exception);
+
+        /// <summary>
+        /// Delegate to notify events of leases being acquired by a change feed processor.
+        /// </summary>
+        /// <param name="leaseToken">A unique identifier for the lease.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the notification.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// (string leaseToken) =>
+        /// {
+        ///     Console.WriteLine($"Current instance released lease {leaseToken} and stopped processing it.");
+        ///     
+        ///     return Task.CompletedTask;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public delegate Task ChangeFeedMonitorLeaseAcquireDelegate(string leaseToken);
+
+        /// <summary>
+        /// Delegate to notify events of leases being releases by a change feed processor.
+        /// </summary>
+        /// <param name="leaseToken">A unique identifier for the lease.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the notification.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// (string leaseToken) =>
+        /// {
+        ///     Console.WriteLine($"Current instance acquired lease {leaseToken} and will start processing it.");
+        ///     
+        ///     return Task.CompletedTask;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public delegate Task ChangeFeedMonitorLeaseReleaseDelegate(string leaseToken);
+
+        /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.
         /// </summary>
         /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
@@ -1589,76 +1660,6 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 
-        /// <summary>
-        /// Delegate to notify errors during change feed operations.
-        /// </summary>
-        /// <param name="leaseToken">A unique identifier for the lease.</param>
-        /// <param name="exception">The exception that happened.</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the notification.</returns>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// (string leaseToken, Exception exception) =>
-        /// {
-        ///     if (exception is ChangeFeedProcessorUserException userException)
-        ///     {
-        ///         Console.WriteLine($"Current instance's delegate had an unhandled when processing lease {leaseToken}.");
-        ///         Console.WriteLine($"Diagnostics {userException.ExceptionContext.Diagnostics}");
-        ///         Console.WriteLine($"Headers {userException.ExceptionContext.Headers}");
-        ///         Console.WriteLine(userException.ToString());
-        ///     }
-        ///     else 
-        ///     {
-        ///         Console.WriteLine($"Current instance faced an exception when processing lease {leaseToken}.");
-        ///         Console.WriteLine(exception.ToString());
-        ///     }
-        ///     
-        ///     return Task.CompletedTask;
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        public delegate Task ChangeFeedMonitorErrorDelegate(
-            string leaseToken,
-            Exception exception);
-
-        /// <summary>
-        /// Delegate to notify events of leases being acquired by a change feed processor.
-        /// </summary>
-        /// <param name="leaseToken">A unique identifier for the lease.</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the notification.</returns>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// (string leaseToken) =>
-        /// {
-        ///     Console.WriteLine($"Current instance released lease {leaseToken} and stopped processing it.");
-        ///     
-        ///     return Task.CompletedTask;
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        public delegate Task ChangeFeedMonitorLeaseAcquireDelegate(string leaseToken);
-
-        /// <summary>
-        /// Delegate to notify events of leases being releases by a change feed processor.
-        /// </summary>
-        /// <param name="leaseToken">A unique identifier for the lease.</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the notification.</returns>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// (string leaseToken) =>
-        /// {
-        ///     Console.WriteLine($"Current instance acquired lease {leaseToken} and will start processing it.");
-        ///     
-        ///     return Task.CompletedTask;
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        public delegate Task ChangeFeedMonitorLeaseReleaseDelegate(string leaseToken);
 #endif
     }
 }
