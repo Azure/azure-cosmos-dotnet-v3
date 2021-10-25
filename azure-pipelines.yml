@@ -17,8 +17,50 @@ variables:
 
 
 jobs:
+- template:  templates/static-tools.yml
+  parameters:
+    BuildConfiguration: Release
+    VmImage: $(VmImage)
+    
+
+#- template:  templates/build-test.yml
+#  parameters:
+#    BuildConfiguration: Debug
+#    Arguments: $(DebugArguments)
+#    VmImage: $(VmImage)
+
+- template:  templates/build-ctl.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage: $(VmImage)
+
+- template:  templates/build-samples.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage: $(VmImage)
+
 - template:  templates/build-test.yml
   parameters:
     BuildConfiguration: Release
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
+
+- template:  templates/build-internal.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage:  $(VmImage)
+
+- template:  templates/build-preview.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage:  $(VmImage)
+
+- template:  templates/build-benchmark.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage:  $(VmImage)
