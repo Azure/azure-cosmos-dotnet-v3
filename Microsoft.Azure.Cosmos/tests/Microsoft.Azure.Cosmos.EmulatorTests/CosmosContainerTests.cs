@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -497,7 +496,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
 
-            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
+            Documents.PartitionKeyDefinition partitionKeyDefinition = new Documents.PartitionKeyDefinition();
             partitionKeyDefinition.Paths.Add(partitionKeyPath);
 
             ContainerProperties settings = new ContainerProperties(containerName, partitionKeyDefinition);
@@ -526,7 +525,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 UpdateRequestMessage = requestMessage =>
                 {
-                    if (requestMessage.ResourceType == ResourceType.Collection)
+                    if (requestMessage.ResourceType == Documents.ResourceType.Collection)
                     {
                         count++;
                         Assert.IsNotNull(requestMessage.Properties);
@@ -646,7 +645,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Creating existing container with partition key having value for SystemKey
             //https://github.com/Azure/azure-cosmos-dotnet-v3/issues/623
             string v2ContainerName = "V2Container";
-            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
+            Documents.PartitionKeyDefinition partitionKeyDefinition = new Documents.PartitionKeyDefinition();
             partitionKeyDefinition.Paths.Add("/test");
             partitionKeyDefinition.IsSystemKey = false;
             ContainerProperties containerPropertiesWithSystemKey = new ContainerProperties()
@@ -806,7 +805,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
 
-            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
+            Documents.PartitionKeyDefinition partitionKeyDefinition = new Documents.PartitionKeyDefinition();
             partitionKeyDefinition.Paths.Add(partitionKeyPath);
 
             ContainerProperties settings = new ContainerProperties(containerName, partitionKeyDefinition);
@@ -826,7 +825,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string containerName = Guid.NewGuid().ToString();
 
-            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
+            Documents.PartitionKeyDefinition partitionKeyDefinition = new Documents.PartitionKeyDefinition();
             partitionKeyDefinition.Paths.Add("/users");
             partitionKeyDefinition.Paths.Add("/test");
 
@@ -1110,7 +1109,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerProperties setting = new ContainerProperties()
             {
                 Id = containerName,
-                PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
+                PartitionKey = new Documents.PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = Documents.PartitionKind.Hash },
                 DefaultTimeToLive = timeToLiveInSeconds,
             };
 
@@ -1276,7 +1275,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerProperties setting = new ContainerProperties()
             {
                 Id = containerName,
-                PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
+                PartitionKey = new Documents.PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = Documents.PartitionKind.Hash },
                 TimeToLivePropertyPath = "/creationDate",
             };
 
@@ -1328,7 +1327,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ContainerCreationFailsWithUnknownClientEncryptionKey()
         {
-            ClientEncryptionIncludedPath unknownKeyConfigured = new ClientEncryptionIncludedPath()
+            ClientEncryptionIncludedPath unknownKeyConfigured = new Cosmos.ClientEncryptionIncludedPath()
             {
                 Path = "/",
                 ClientEncryptionKeyId = "unknownKey",
@@ -1336,8 +1335,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
 
-            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath> { unknownKeyConfigured };
-            ClientEncryptionPolicy clientEncryptionPolicyId = new ClientEncryptionPolicy(paths);
+            Collection<Cosmos.ClientEncryptionIncludedPath> paths = new Collection<Cosmos.ClientEncryptionIncludedPath> { unknownKeyConfigured };
+            Cosmos.ClientEncryptionPolicy clientEncryptionPolicyId = new Cosmos.ClientEncryptionPolicy(paths);
 
             ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyId };
 
@@ -1383,7 +1382,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerProperties setting = new ContainerProperties()
             {
                 Id = containerName,
-                PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
+                PartitionKey = new Documents.PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = Documents.PartitionKind.Hash },
                 ClientEncryptionPolicy = new ClientEncryptionPolicy(paths)
             };
 
@@ -1457,7 +1456,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ContainerProperties setting = new ContainerProperties()
                 {
                     Id = containerName,
-                    PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
+                    PartitionKey = new Documents.PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = Documents.PartitionKind.Hash },
                     ClientEncryptionPolicy = new ClientEncryptionPolicy(paths)
                 };
 
@@ -1493,7 +1492,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ContainerProperties setting = new ContainerProperties()
                 {
                     Id = containerName,
-                    PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
+                    PartitionKey = new Documents.PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = Documents.PartitionKind.Hash },
                     ClientEncryptionPolicy = new ClientEncryptionPolicy(pathsList)                    
                 };
 
@@ -1520,7 +1519,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ContainerProperties setting = new ContainerProperties()
                 {
                     Id = containerName,
-                    PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
+                    PartitionKey = new Documents.PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = Documents.PartitionKind.Hash },
                     ClientEncryptionPolicy = new ClientEncryptionPolicy(pathsToEncryptWithPartitionKey)
                 };
 
