@@ -47,6 +47,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
         /// </remarks>
         public List<FeedRangeArchivalPartition> GetArchivalRanges(
             string splitPartitionKeyRangeId,
+            FeedRangeInternal originalSplitRange,
             List<PartitionKeyRange> overlappingRanges,
             CancellationToken cancellationToken,
             ITrace trace)
@@ -61,13 +62,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 return null;
             }
 
-            List<List<int>> splitLineage = BuildSplitLinesges(overlappingRanges);
+            List<(List<int> lineage, PartitionKeyRange leafRange)> splitLineage = BuildSplitLineages(overlappingRanges);
 
-            int closetCommonParentId = FindClosestCommonParentRangeId(splitLineage);
+            int closestCommonParentId = FindClosestCommonParentRangeId(splitLineage);
 
             // The condition 'all overlapping have same parent' is not true.
             // TODO: FFCF: add logic to support 'forest' rather that just single tree of splits.
-            if (closetCommonParentId == -1)
+            if (closestCommonParentId == -1)
             {
                 throw new NotSupportedException("Multiple partition splits are not supported.");
             }
@@ -75,14 +76,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             int splitPKRangeId = int.Parse(splitPartitionKeyRangeId);
 
             // TODO: FFCF: Debug only or keep validation for retail?
-            if (splitPKRangeId != closetCommonParentId)
+            if (splitPKRangeId != closestCommonParentId)
             {
                 throw new ArgumentException(
-                    $"The value of {nameof(splitPKRangeId)}={splitPKRangeId} is not closest common parent of {nameof(overlappingRanges)}->{closetCommonParentId}.");
+                    $"The value of {nameof(splitPKRangeId)}={splitPKRangeId} is not closest common parent of {nameof(overlappingRanges)}->{closestCommonParentId}.");
             }
 
             // Build split graph starting from found common parent.
-            SplitGraphNode splitGraph = this.BuildSplitGraphForCommonParent(splitLineage, closetCommonParentId);
+            SplitGraph splitGraph = this.BuildSplitGraphForCommonParent(splitLineage, closestCommonParentId);
 
             FeedRangeArchivalPartition archivalRange = new FeedRangeArchivalPartition(splitPartitionKeyRangeId, splitGraph);
 
@@ -90,43 +91,45 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
         }
 
         /// <summary>
-        /// Returns list of lists like this:
+        /// Returns list of lists for each leaf partition like this:
         /// [
-        ///     from leaf partition 1: [ parent3, parent1, parent2, leaf ],
-        ///     from leaf partition 2: [ parent2, parent1, leaf ],
+        ///     for leaf partition 1: [ parent3, parent2, parent1, leaf ],
+        ///     for leaf partition 2: [ parent2, parent1, leaf ],
         ///     ...
         /// ]
         /// </summary>
-        private static List<List<int>> BuildSplitLinesges(List<PartitionKeyRange> overlappingRanges)
+        private static List<(List<int> lineage, PartitionKeyRange leafRange)> BuildSplitLineages(
+            List<PartitionKeyRange> overlappingRanges)
         {
-            List<List<int>> lineagesByLeafRange = new List<List<int>>();
-            foreach (PartitionKeyRange pkRange in overlappingRanges)
+            List<(List<int> lineage, PartitionKeyRange leafRange)> lineagesByLeafRange = new List<(List<int> lineage, PartitionKeyRange leafRange)>();
+
+            foreach (PartitionKeyRange leafPkRange in overlappingRanges)
             {
                 List<int> lineage = new List<int>();
-                foreach (string parentId in pkRange.Parents)
+                foreach (string parentId in leafPkRange.Parents)
                 {
                     lineage.Add(int.Parse(parentId));
                 }
 
-                lineage.Add(int.Parse(pkRange.Id));
+                lineage.Add(int.Parse(leafPkRange.Id));
 
-                lineagesByLeafRange.Add(lineage);
+                lineagesByLeafRange.Add((lineage, leafPkRange));
             }
 
             return lineagesByLeafRange;
         }
 
-        private static int FindClosestCommonParentRangeId(List<List<int>> parentIdsByRange)
+        private static int FindClosestCommonParentRangeId(List<(List<int> lineage, PartitionKeyRange leafRange)> lineageAndRanges)
         {
             int lastCommonParentId = -1;
             for (int indexWithinChain = 0; true; ++indexWithinChain)
             {
                 int currentCommonParentId = -1;
 
-                bool areSameOnCurrentLevel = parentIdsByRange.Count > 0;
-                foreach (List<int> chain in parentIdsByRange)
+                bool areSameOnCurrentLevel = lineageAndRanges.Count > 0;
+                foreach ((List<int> lineage, PartitionKeyRange leafRange) in lineageAndRanges)
                 {
-                    if (indexWithinChain >= chain.Count || (currentCommonParentId != -1 && chain[indexWithinChain] != currentCommonParentId))
+                    if (indexWithinChain >= lineage.Count || (currentCommonParentId != -1 && lineage[indexWithinChain] != currentCommonParentId))
                     {
                         areSameOnCurrentLevel = false;
                         break;
@@ -134,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 
                     if (currentCommonParentId == -1)
                     {
-                        currentCommonParentId = chain[indexWithinChain];
+                        currentCommonParentId = lineage[indexWithinChain];
                     }
                 }
 
@@ -149,14 +152,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             return lastCommonParentId;
         }
 
-        private SplitGraphNode BuildSplitGraphForCommonParent(List<List<int>> splitLineages, int closestCommonParentId)
+        private SplitGraph BuildSplitGraphForCommonParent(
+            List<(List<int> lineage, PartitionKeyRange leafRange)> splitLineages, int closestCommonParentId)
         {
             // Go from right to left until hit common parent and build the list. If hit node met before, stop and bind to that.
 
             Dictionary<int, SplitGraphNode> mapRangeIdToNode = new Dictionary<int, SplitGraphNode>();
             SplitGraphNode root = null;
 
-            foreach (List<int> lineage in splitLineages)
+            foreach ((List<int> lineage, PartitionKeyRange leafRange) in splitLineages)
             {
                 SplitGraphNode head = null;
                 bool headHasParent = true;
@@ -202,7 +206,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 }
             }
 
-            return root;
+            Dictionary<int, PartitionKeyRange> leafRanges = new Dictionary<int, PartitionKeyRange>();
+            foreach ((List<int> lineage, PartitionKeyRange leafRange) in splitLineages)
+            {
+                if (lineage.Count > 0)
+                {
+                    leafRanges.Add(lineage[lineage.Count - 1], leafRange);
+                }
+            }
+
+            return new SplitGraph(root, leafRanges);
         }
     }
 
@@ -226,5 +239,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             child.HasParent = true;
             this.children.Add(child.PartitionKeyRangeId, child);
         }
+    }
+
+    internal class SplitGraph
+    {
+        public SplitGraph(SplitGraphNode rootNode, Dictionary<int, PartitionKeyRange> leafRanges)
+        {
+            this.Root = rootNode;
+            this.LeafRanges = leafRanges;
+        }
+
+        public SplitGraphNode Root { get; }
+
+        public Dictionary<int, PartitionKeyRange> LeafRanges { get; }
     }
 }

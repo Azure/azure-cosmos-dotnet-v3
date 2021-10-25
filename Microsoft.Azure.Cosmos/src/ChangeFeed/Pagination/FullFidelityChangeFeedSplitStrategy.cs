@@ -8,25 +8,28 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
     using CosmosPagination = Microsoft.Azure.Cosmos.Pagination;
 
     internal class FullFidelityChangeFeedSplitStrategy : CosmosPagination.DefaultSplitStrategy<ChangeFeedPage, ChangeFeedState>
     {
-        private readonly CosmosClientContext clientContext;
+        private readonly IChangeFeedDataSource dataSource;
+        private readonly ChangeFeedPaginationOptions paginationOptions;
+        private readonly CancellationToken cancellationToken;
 
         public FullFidelityChangeFeedSplitStrategy(
             CosmosPagination.IFeedRangeProvider feedRangeProvider,
-            CosmosPagination.CreatePartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> partitionRangeEnumeratorCreator,
-            CosmosClientContext clientContext)
-            : base(feedRangeProvider, partitionRangeEnumeratorCreator)
+            IChangeFeedDataSource dataSource,
+            ChangeFeedPaginationOptions paginationOptions,
+            CancellationToken cancellationToken)
+            : base(
+                  feedRangeProvider,
+                  ChangeFeedPartitionRangePageAsyncEnumerator.MakeCreateFunction(dataSource, paginationOptions, cancellationToken))
         {
-            if (feedRangeProvider == null) throw new ArgumentNullException(nameof(feedRangeProvider));
-            if (partitionRangeEnumeratorCreator == null) throw new ArgumentNullException(nameof(partitionRangeEnumeratorCreator));
-            if (clientContext == null) throw new ArgumentNullException(nameof(clientContext));
-
-            this.clientContext = clientContext;
+            this.dataSource = dataSource ?? throw new ArgumentNullException(nameof(dataSource));
+            this.paginationOptions = paginationOptions ?? throw new ArgumentNullException(nameof(paginationOptions));
+            this.cancellationToken = cancellationToken;
         }
 
         public override async Task HandleSplitAsync(
@@ -35,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            // For 'start from now' we don't need to over back in time and get changes from archival partiton(s).
+            // For 'start from now' we don't need to go back in time to get changes from archival partiton(s).
             if (currentEnumerator.FeedRangeState.State == ChangeFeedState.Now())
             {
                 await base.HandleSplitAsync(currentEnumerator, enumerators, trace, cancellationToken);
@@ -47,51 +50,77 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 trace,
                 cancellationToken);
 
-            //CosmosPagination.PartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> archivalPaginator =
-            //    this.partitionRangeEnumeratorCreator(new CosmosPagination.FeedRangeState<ChangeFeedState>(
-            //        archivalRange,
-            //        currentEnumerator.FeedRangeState.State));
-            //enumerators.Enqueue(archivalPaginator);
+            if (archivalRanges == null || archivalRanges.Count == 0)
+            {
+                await base.HandleSplitAsync(currentEnumerator, enumerators, trace, cancellationToken);
+                return;
+            }
 
-            // TODO: this needs to be done after archival partition is drained.
-            // Continue handle split for child partitions. Default strategy knows how to do that.
-            await base.HandleSplitAsync(currentEnumerator, enumerators, trace, cancellationToken);
+            if (currentEnumerator is ChangeFeedArchivalRangePageAsyncEnumerator existingArchivalEnumerator)
+            {
+                // Check that archival range is drained -- ArchivalEnumerator would throw Gone Exception.
+                if (existingArchivalEnumerator.IsDrained)
+                {
+                    SplitGraph splitGraph = existingArchivalEnumerator.ArchivalRange.SplitGraph;
 
-            //ContainerProperties containerProperties = await this.clientContext.GetCachedContainerPropertiesAsync(
-            //    this.containerUri,
-            //    trace,
-            //    cancellationToken);
+                    foreach (SplitGraphNode childNode in splitGraph.Root.Children)
+                    {
+                        if (childNode.Children.Count == 0)
+                        {
+                            // TODO: check other states validated in default strategy.
+                            PartitionKeyRange childPkRange = splitGraph.LeafRanges[childNode.PartitionKeyRangeId];
+                            FeedRangeInternal childRange = new FeedRangeEpk(
+                                new Documents.Routing.Range<string>(
+                                    min: childPkRange.MinInclusive,
+                                    max: childPkRange.MaxExclusive,
+                                    isMinInclusive: true,
+                                    isMaxInclusive: false));
 
-            //////this.clientContext.Client.
+                            CosmosPagination.PartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> childPaginator =
+                                this.partitionRangeEnumeratorCreator(
+                                    new CosmosPagination.FeedRangeState<ChangeFeedState>(childRange, currentEnumerator.FeedRangeState.State));
 
-            //IRoutingMapProvider routingMapProvider = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
+                            enumerators.Enqueue(childPaginator);
+                        }
+                        else
+                        {
+                            // We need to drain the child who got split as wells. Example:
+                            // 1 -> 2
+                            //   -> 3(1) -> 4(1) -- this means that 3 used to have archival store for 1 and 4 has archival store for 3.
+                            //           -> 5(3)
+                            // At this point we are finishing 1 and are at child corresponding to 3(1).
+                            FeedRangeArchivalPartition archivalChild = new FeedRangeArchivalPartition(
+                                splitGraph.Root.PartitionKeyRangeId.ToString(),
+                                new SplitGraph(childNode, splitGraph.LeafRanges));
 
-            //List<Range<string>> ranges = await this.feedRangeProvider.GetEffectiveRangesAsync(
-            //    routingMapProvider, collectionResourceId, partitionKeyDefinition, trace);
+                            ChangeFeedArchivalRangePageAsyncEnumerator archivalEnumerator = new ChangeFeedArchivalRangePageAsyncEnumerator(
+                                this.dataSource,
+                                archivalChild,
+                                currentEnumerator.FeedRangeState,
+                                this.paginationOptions,
+                                cancellationToken);
 
-            //return await this.GetTargetPartitionKeyRangesAsync(
-            //    resourceLink,
-            //    collectionResourceId,
-            //    ranges,
-            //    forceRefresh,
-            //    childTrace);
+                            enumerators.Enqueue(archivalEnumerator);
+                        }
+                    }
+                }
+                else
+                {
+                    // TODO: FFCF: implement.
+                    throw new NotImplementedException("TODO: add support for split of partition that owns archival one.");
+                }
+            }
+            else
+            {
+                ChangeFeedArchivalRangePageAsyncEnumerator archivalEnumerator = new ChangeFeedArchivalRangePageAsyncEnumerator(
+                    this.dataSource,
+                    archivalRanges[0],
+                    currentEnumerator.FeedRangeState,
+                    this.paginationOptions,
+                    cancellationToken);
 
-            //List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
-            //    this.container.LinkUri,
-            //    await this.container.GetCachedRIDAsync(forceRefresh: false, trace, cancellationToken: cancellationToken),
-            //    containerProperties.PartitionKey,
-            //    feedRange,
-            //    forceRefresh: false,
-            //    trace);
-            //return TryCatch<List<FeedRangeEpk>>.FromResult(
-            //    overlappingRanges.Select(range => new FeedRangeEpk(
-            //        new Documents.Routing.Range<string>(
-            //            min: range.MinInclusive,
-            //            max: range.MaxExclusive,
-            //            isMinInclusive: true,
-            //            isMaxInclusive: false))).ToList());
-
-            //// Check how many parent partitions. If 1 partition -- go to archival rerefence.
+                enumerators.Enqueue(archivalEnumerator);
+            }
         }
     }
 }

@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tracing;
 
-    internal sealed class ChangeFeedPartitionRangePageAsyncEnumerator : PartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState>
+    internal class ChangeFeedPartitionRangePageAsyncEnumerator : PartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState>
     {
         private readonly IChangeFeedDataSource changeFeedDataSource;
         private readonly ChangeFeedPaginationOptions changeFeedPaginationOptions;
@@ -36,5 +36,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             this.changeFeedPaginationOptions,
             trace,
             cancellationToken);
+
+        internal static CreatePartitionRangePageAsyncEnumerator<Pagination.ChangeFeedPage, ChangeFeedState> MakeCreateFunction(
+            IChangeFeedDataSource changeFeedDataSource,
+            ChangeFeedPaginationOptions paginationOptions,
+            CancellationToken cancellationToken) => (FeedRangeState<ChangeFeedState> feedRangeState) =>
+                new ChangeFeedPartitionRangePageAsyncEnumerator(
+                    changeFeedDataSource,
+                    feedRangeState,
+                    paginationOptions,
+                    cancellationToken);
     }
 }

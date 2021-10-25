@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
     using System.Net;
@@ -131,44 +132,51 @@ namespace Microsoft.Azure.Cosmos.Pagination
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            try
+            using (ITrace refreshTrace = trace.StartChild("MonadicGetArchivalRangesAsync", TraceComponent.ChangeFeed, TraceLevel.Info))
             {
-                // TODO: do we need to refresh provider?
-                IRoutingMapProvider routingMap = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(trace);
-                string containerRid = await this.container.GetCachedRIDAsync(forceRefresh: false, trace, cancellationToken);
-                PartitionKeyDefinition pkDefinition = await this.container.GetPartitionKeyDefinitionAsync(cancellationToken);
-                IEnumerable<string> splitPKRangeIds = await feedRange.GetPartitionKeyRangesAsync(
-                    routingMap,
-                    containerRid,
-                    pkDefinition,
-                    cancellationToken,
-                    trace);
-
-                int splitPKRangeCount = splitPKRangeIds.Count();
-                if (splitPKRangeCount == 0)
+                try
                 {
-                    throw new ArgumentException(nameof(feedRange));
+                    // TODO: FFCF: do we need to refresh provider?
+                    IRoutingMapProvider routingMap = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(trace);
+                    string containerRid = await this.container.GetCachedRIDAsync(forceRefresh: false, trace, cancellationToken);
+                    PartitionKeyDefinition pkDefinition = await this.container.GetPartitionKeyDefinitionAsync(cancellationToken);
+                    IEnumerable<string> splitPKRangeIds = await feedRange.GetPartitionKeyRangesAsync(
+                        routingMap,
+                        containerRid,
+                        pkDefinition,
+                        cancellationToken,
+                        trace);
+
+                    int splitPKRangeCount = splitPKRangeIds.Count();
+                    if (splitPKRangeCount == 0)
+                    {
+                        throw new ArgumentException(nameof(feedRange));
+                    }
+                    else if (splitPKRangeCount != 1)
+                    {
+                        // TODO: FFCF: implement multiple splits.
+                        // This is a corner case, for real split (not simulated one) there would be only split partition.
+                        // For simulated splits, we can handle using regular way insentitive to archival store.
+                        return TryCatch<List<FeedRangeArchivalPartition>>.FromResult(null);
+                    }
+
+                    Debug.Assert(splitPKRangeCount != 1, $"splitPKRangeCount is {splitPKRangeCount}, expected: 1.");
+
+                    string pkRangeId = splitPKRangeIds.First();
+
+                    // Get active PK ranges overlapping with the split range.
+                    List<PartitionKeyRange> overlappingRanges = await this.GetOverlappingRangesAsync(feedRange, trace, cancellationToken);
+
+                    ArchivalPartitionHelper helper = new ArchivalPartitionHelper();
+                    List<FeedRangeArchivalPartition> archivalRanges = helper.GetArchivalRanges(
+                        pkRangeId, feedRange, overlappingRanges, cancellationToken, trace);
+
+                    return TryCatch<List<FeedRangeArchivalPartition>>.FromException(new NotImplementedException());
                 }
-                else if (splitPKRangeCount != 1)
+                catch (Exception ex)
                 {
-                    // TODO: FFCF: implement multiple splits.
-                    // This is a corner case, for real split (not dimulated one) there would be only split partition.
-                    return TryCatch<List<FeedRangeArchivalPartition>>.FromResult(null);
+                    return TryCatch<List<FeedRangeArchivalPartition>>.FromException(ex);
                 }
-
-                string pkRangeId = splitPKRangeIds.First();
-
-                // Get active PK ranges overlapping with the split range.
-                List<PartitionKeyRange> overlappingRanges = await this.GetOverlappingRangesAsync(feedRange, trace, cancellationToken);
-
-                ArchivalPartitionHelper helper = new ArchivalPartitionHelper();
-                List<FeedRangeArchivalPartition> archivalRanges = helper.GetArchivalRanges(pkRangeId, overlappingRanges, cancellationToken, trace);
-
-                return TryCatch<List<FeedRangeArchivalPartition>>.FromException(new NotImplementedException());
-            }
-            catch (Exception ex)
-            {
-                return TryCatch<List<FeedRangeArchivalPartition>>.FromException(ex);
             }
         }
 

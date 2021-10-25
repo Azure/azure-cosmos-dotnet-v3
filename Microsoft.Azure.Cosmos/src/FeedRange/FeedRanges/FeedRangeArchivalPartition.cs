@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal class FeedRangeArchivalPartition : FeedRangeInternal
     {
-        public FeedRangeArchivalPartition(string dataPKRangeId, SplitGraphNode splitGraph)
+        public FeedRangeArchivalPartition(string dataPKRangeId, SplitGraph splitGraph)
         {
             this.DataRangeId = dataPKRangeId;
             this.SplitGraph = splitGraph;
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
             get { throw new NotImplementedException(); }
         }
 
-        public SplitGraphNode SplitGraph { get; }
+        public SplitGraph SplitGraph { get; }
 
         internal override Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
             IRoutingMapProvider routingMapProvider,
@@ -64,22 +64,15 @@ namespace Microsoft.Azure.Cosmos
             visitor.Visit(this);
         }
 
-        internal override void Accept<TInput>(IFeedRangeVisitor<TInput> visitor, TInput input)
-        {
+        internal override void Accept<TInput>(IFeedRangeVisitor<TInput> visitor, TInput input) =>
             throw new NotSupportedException();
-        }
 
-        internal override TOutput Accept<TInput, TOutput>(IFeedRangeVisitor<TInput, TOutput> visitor, TInput input)
-        {
+        internal override TOutput Accept<TInput, TOutput>(IFeedRangeVisitor<TInput, TOutput> visitor, TInput input) =>
             throw new NotSupportedException();
-        }
 
         internal override Task<TResult> AcceptAsync<TResult>(
             IFeedRangeAsyncVisitor<TResult> visitor,
-            CancellationToken cancellationToken = default)
-        {
-            throw new NotSupportedException();
-        }
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
         internal override Task<TResult> AcceptAsync<TResult, TArg>(
            IFeedRangeAsyncVisitor<TResult, TArg> visitor,
@@ -88,9 +81,6 @@ namespace Microsoft.Azure.Cosmos
 
         public override string ToString() => this.RoutingPartitionKeyRangeId;
 
-        internal override TResult Accept<TResult>(IFeedRangeTransformer<TResult> transformer)
-        {
-            throw new NotSupportedException();
-        }
+        internal override TResult Accept<TResult>(IFeedRangeTransformer<TResult> transformer) => throw new NotSupportedException();
     }
 }

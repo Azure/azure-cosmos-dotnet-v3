@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
+    using System.Threading;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Documents;
     using ChangeFeedPagination = Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
@@ -23,11 +24,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         internal override CosmosPagination.ISplitStrategy<ChangeFeedPagination.ChangeFeedPage, ChangeFeedPagination.ChangeFeedState>
             CreateSplitStrategy(
                 CosmosPagination.IFeedRangeProvider feedRangeProvider,
-                CosmosPagination.CreatePartitionRangePageAsyncEnumerator<
-                    ChangeFeedPagination.ChangeFeedPage, ChangeFeedPagination.ChangeFeedState> partitionRangeEnumeratorCreator,
-                CosmosClientContext clientContext)
+                ChangeFeedPagination.IChangeFeedDataSource dataSource,
+                ChangeFeedPagination.ChangeFeedPaginationOptions paginationOptions,
+                CancellationToken cancellationToken)
         {
-            return new FullFidelityChangeFeedSplitStrategy(feedRangeProvider, partitionRangeEnumeratorCreator, clientContext);
+            return new FullFidelityChangeFeedSplitStrategy(
+                feedRangeProvider,
+                dataSource,
+                paginationOptions,
+                cancellationToken);
         }
     }
 }

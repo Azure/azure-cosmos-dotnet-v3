@@ -4,7 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System.Threading;
     using Microsoft.Azure.Cosmos.ChangeFeed;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.Pagination;
     using ChangeFeedPage = Microsoft.Azure.Cosmos.ChangeFeed.Pagination.ChangeFeedPage;
     using ChangeFeedState = Microsoft.Azure.Cosmos.ChangeFeed.Pagination.ChangeFeedState;
@@ -27,8 +29,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract ISplitStrategy<ChangeFeedPage, ChangeFeedState> CreateSplitStrategy(
             IFeedRangeProvider feedRangeProvider,
-            CreatePartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> partitionRangeEnumeratorCreator,
-            CosmosClientContext clientContext);
+            IChangeFeedDataSource dataSource,
+            ChangeFeedPaginationOptions paginationOptions,
+            CancellationToken cancellationToken);
 
         /// <summary>
         /// Creates a <see cref="ChangeFeedMode"/> to receive incremental item changes.
