@@ -137,19 +137,17 @@ namespace Microsoft.Azure.Cosmos.Routing
             await Task.WhenAll(tasks);
         }
 
-        public async Task UpdateAsync(
-            ServerKey serverKey,
-            CancellationToken cancellationToken)
+        public Task UpdateAsync(
+           ServerKey serverKey,
+           CancellationToken cancellationToken)
         {
-            List<Task> tasks = new List<Task>();
-
             foreach (KeyValuePair<Uri, EndpointCache> addressCache in this.addressCacheByEndpoint)
             {
                 // since we don't know which address cache contains the pkRanges mapped to this node, we do a tryRemove on all AddressCaches of all regions
-                tasks.Add(addressCache.Value.AddressCache.TryRemoveAddressesAsync(serverKey, cancellationToken));
+                addressCache.Value.AddressCache.TryRemoveAddresses(serverKey);
             }
 
-            await Task.WhenAll(tasks);
+            return Task.CompletedTask;
         }
 
         /// <summary>
