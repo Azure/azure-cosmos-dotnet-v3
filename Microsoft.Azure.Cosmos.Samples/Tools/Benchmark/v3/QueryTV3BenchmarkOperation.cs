@@ -26,7 +26,9 @@ namespace CosmosBenchmark
         public abstract QueryDefinition QueryDefinition { get; }
         public abstract QueryRequestOptions QueryRequestOptions { get; }
 
-        protected bool isSinglePartitioned = true;
+        // Configurations
+        public bool IsCrossPartitioned = false;
+        public bool IsPaginationEnabled = false;
 
         protected string executionItemId = null;
         protected string executionPartitionKey = null;
@@ -54,6 +56,11 @@ namespace CosmosBenchmark
         /// <exception cref="Exception"></exception>
         public async Task<OperationResult> ExecuteOnceAsync()
         {
+            if(this.IsPaginationEnabled)
+            {
+                return await this.ExecuteOnceAsyncWithPagination();
+            }
+
             FeedIterator<Dictionary<string, object>> feedIterator = this.container.GetItemQueryIterator<Dictionary<string, object>>(
                         queryDefinition: this.QueryDefinition,
                         continuationToken: null,
@@ -64,12 +71,14 @@ namespace CosmosBenchmark
             while (feedIterator.HasMoreResults)
             {
                 FeedResponse<Dictionary<string, object>> feedResponse = await feedIterator.ReadNextAsync();
+
                 totalCharge += feedResponse.Headers.RequestCharge;
                 lastDiagnostics = feedResponse.Diagnostics;
 
                 if (feedResponse.StatusCode != HttpStatusCode.OK)
                 {
-                    throw new Exception($"QuerySinglePkStreamV3BenchmarkOperation failed with {feedResponse.StatusCode}");
+                    throw new Exception($"QueryTV3BenchmarkOperation failed with {feedResponse?.StatusCode} " +
+                        $"where pagination : {this.IsPaginationEnabled} and cross partition : {this.IsCrossPartitioned}");
                 }
 
                 foreach (Dictionary<string, object> item in feedResponse)
@@ -81,6 +90,60 @@ namespace CosmosBenchmark
                     }
                 }
             }
+
+            return new OperationResult()
+            {
+                DatabseName = databaseName,
+                ContainerName = containerName,
+                RuCharges = totalCharge,
+                CosmosDiagnostics = lastDiagnostics,
+                LazyDiagnostics = () => lastDiagnostics?.ToString(),
+            };
+        }
+
+        public virtual async Task<OperationResult> ExecuteOnceAsyncWithPagination()
+        {
+            string continuationToken = null;
+            double totalCharge = 0;
+            CosmosDiagnostics lastDiagnostics = null;
+
+            do
+            {
+                FeedIterator<Dictionary<string, object>> feedIterator = 
+                    this.container.GetItemQueryIterator<Dictionary<string, object>>(
+                        queryDefinition: this.QueryDefinition,
+                        continuationToken: continuationToken,
+                        requestOptions: this.QueryRequestOptions);
+
+                FeedResponse<Dictionary<string, object>> feedResponse = await feedIterator.ReadNextAsync();
+
+                if (feedResponse == null || feedResponse.StatusCode != HttpStatusCode.OK)
+                {
+                    throw new Exception($"QueryTV3BenchmarkOperation failed with {feedResponse?.StatusCode} " +
+                        $"where pagination : {this.IsPaginationEnabled} and cross partition : {this.IsCrossPartitioned}");
+                }
+
+                foreach (Dictionary<string, object> item in feedResponse)
+                {
+                    // No-op check that forces any lazy logic to be executed
+                    if (item == null)
+                    {
+                        throw new Exception("Null item was returned");
+                    }
+                }
+
+                totalCharge += feedResponse.Headers.RequestCharge;
+                lastDiagnostics = feedResponse.Diagnostics;
+
+                continuationToken = feedResponse.ContinuationToken;
+
+                if (!feedIterator.HasMoreResults)
+                {
+                    break;
+                }
+
+            } while (true);
+
 
             return new OperationResult()
             {
@@ -109,8 +172,8 @@ namespace CosmosBenchmark
                 string objectId = Guid.NewGuid().ToString();
 
                 // If single partitioned 
-                if (!this.isSinglePartitioned || // Multi Partitioned
-                    (this.isSinglePartitioned //Single Partitioned but partitionValue are not generated yet
+                if (this.IsCrossPartitioned || // Multi Partitioned
+                    (!this.IsCrossPartitioned //Single Partitioned but partitionValue are not generated yet
                         && this.executionPartitionKey == null))
                 {
                     this.executionItemId = objectId;

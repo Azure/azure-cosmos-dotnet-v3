@@ -4,26 +4,19 @@
 
 namespace CosmosBenchmark
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Net;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class QueryTOrderByFullDrainV3BenchmarkOperation : QueryTV3BenchmarkOperation
+    internal class QueryTSinglePkOrderByWithPaginationV3BenchmarkOperation : QueryTV3BenchmarkOperation
     {
-
-        public QueryTOrderByFullDrainV3BenchmarkOperation(
+        public QueryTSinglePkOrderByWithPaginationV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
             string containerName,
             string partitionKeyPath,
-            string sampleJson) : base(cosmosClient, dbName, containerName, partitionKeyPath, sampleJson) 
+            string sampleJson) : base(cosmosClient, dbName, containerName, partitionKeyPath, sampleJson)
         {
+            this.IsPaginationEnabled = true;
         }
-
-        public override bool IsCrossPartitioned => false;
 
         public override QueryDefinition QueryDefinition => new QueryDefinition("select * from T ORDER BY T.id");
 
@@ -32,5 +25,35 @@ namespace CosmosBenchmark
             MaxItemCount = 1,
             PartitionKey = new PartitionKey(this.executionPartitionKey)
         };
+
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

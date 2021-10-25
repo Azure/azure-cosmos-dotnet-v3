@@ -4,20 +4,18 @@
 
 namespace CosmosBenchmark
 {
-    using System;
-    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos;
 
     internal class QueryTCrossPkV3BenchmarkOperation : QueryTV3BenchmarkOperation
     {
-
         public QueryTCrossPkV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
             string containerName,
             string partitionKeyPath,
-            string sampleJson) : base(cosmosClient, dbName, containerName, partitionKeyPath, sampleJson) 
+            string sampleJson) : base(cosmosClient, dbName, containerName, partitionKeyPath, sampleJson)
         {
+            this.IsCrossPartitioned = true;
         }
 
         public override QueryDefinition QueryDefinition => new QueryDefinition("select * from T where T.id = @id")

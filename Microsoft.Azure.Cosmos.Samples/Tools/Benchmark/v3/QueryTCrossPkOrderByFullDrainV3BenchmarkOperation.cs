@@ -6,24 +6,24 @@ namespace CosmosBenchmark
 {
     using Microsoft.Azure.Cosmos;
 
-    internal class QueryTSinglePkV3BenchmarkOperation : QueryTV3BenchmarkOperation
+    internal class QueryTCrossPkOrderByFullDrainV3BenchmarkOperation : QueryTV3BenchmarkOperation
     {
-        public QueryTSinglePkV3BenchmarkOperation(
+
+        public QueryTCrossPkOrderByFullDrainV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
             string containerName,
             string partitionKeyPath,
             string sampleJson) : base(cosmosClient, dbName, containerName, partitionKeyPath, sampleJson)
         {
+            this.IsCrossPartitioned = true;
         }
 
-        public override QueryDefinition QueryDefinition => new QueryDefinition("select * from T where T.id = @id")
-                                                .WithParameter("@id", this.executionItemId);
+        public override QueryDefinition QueryDefinition => new QueryDefinition("select * from T ORDER BY T.id");
 
         public override QueryRequestOptions QueryRequestOptions => new QueryRequestOptions()
         {
-            PartitionKey = new PartitionKey(this.executionPartitionKey)
+            MaxItemCount = 1
         };
-
     }
 }
