@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Net.Http;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using HdrHistogram;
@@ -13,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 
-    internal class ClientTelemetryHelper
+    internal static class ClientTelemetryHelper
     {
         internal static AzureVMMetadata azMetadata = null;
 
@@ -167,6 +168,35 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             DefaultTrace.TraceInformation("Aggregating operation information to list done");
 
             return payloadWithMetricInformation;
+        }
+
+        /// <summary>
+        /// Get comma separated list of regions contacted from the diagnostic
+        /// </summary>
+        /// <param name="cosmosDiagnostics"></param>
+        /// <returns>Comma separated region list</returns>
+        internal static string GetContactedRegions(CosmosDiagnostics cosmosDiagnostics)
+        {
+            IReadOnlyList<(string regionName, Uri uri)> regionList = cosmosDiagnostics.GetContactedRegions();
+
+            if (regionList.Count == 1)
+            {
+                return regionList[0].regionName;
+            }
+
+            StringBuilder regionsContacted = new StringBuilder();
+            foreach ((string name, _) in regionList)
+            {
+                if (regionsContacted.Length > 0)
+                {
+                    regionsContacted.Append(",");
+
+                }
+
+                regionsContacted.Append(name);
+            }
+
+            return regionsContacted.ToString();
         }
 
     }

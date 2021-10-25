@@ -455,6 +455,47 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task VerifyPatchItemStreamOperation()
+        {
+            ResponseMessage response = null;
+            ItemRequestOptions requestOptions = null;
+            Mock<Stream> mockPayload = new Mock<Stream>();
+            HttpStatusCode httpStatusCode = HttpStatusCode.OK;
+            int testHandlerHitCount = 0;
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
+                Assert.IsTrue(request.RequestUri.OriginalString.StartsWith(@"dbs/testdb/colls/testcontainer/docs/cdbBinaryIdRequest"));
+                Assert.AreEqual(Cosmos.PartitionKey.Null.ToJsonString(), request.Headers.PartitionKey);
+                Assert.AreEqual(ResourceType.Document, request.ResourceType);
+                Assert.AreEqual(OperationType.Patch, request.OperationType);
+                Assert.AreEqual(mockPayload.Object, request.Content);
+                Assert.AreEqual(requestOptions, request.RequestOptions);
+                testHandlerHitCount++;
+                response = new ResponseMessage(httpStatusCode, request, errorMessage: null)
+                {
+                    Content = request.Content
+                };
+                return Task.FromResult(response);
+            });
+
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
+                (builder) => builder.AddCustomHandlers(testHandler));
+
+            Container container = client.GetDatabase("testdb")
+                                        .GetContainer("testcontainer");
+
+            ContainerInternal containerInternal = (ContainerInternal)container;
+            ResponseMessage responseMessage = await containerInternal.PatchItemStreamAsync(
+                id: "cdbBinaryIdRequest",
+                partitionKey: Cosmos.PartitionKey.Null,
+                streamPayload: mockPayload.Object,
+                requestOptions: requestOptions);
+            Assert.IsNotNull(responseMessage);
+            Assert.AreEqual(httpStatusCode, responseMessage.StatusCode);
+            Assert.AreEqual(1, testHandlerHitCount, "The operation did not make it to the handler");
+        }
+
+        [TestMethod]
         public async Task TestNestedPartitionKeyValueFromStreamAsync()
         {
             ContainerInternal originalContainer = (ContainerInternal)MockCosmosUtil.CreateMockCosmosClient().GetContainer("TestDb", "Test");
