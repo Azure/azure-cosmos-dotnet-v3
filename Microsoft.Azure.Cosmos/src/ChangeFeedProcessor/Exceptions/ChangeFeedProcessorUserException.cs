@@ -12,12 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     [Serializable]
 
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    class ChangeFeedProcessorUserException : Exception
+    public class ChangeFeedProcessorUserException : Exception
     {
         private static readonly string DefaultMessage = "Exception has been thrown by the change feed processor delegate.";
 
