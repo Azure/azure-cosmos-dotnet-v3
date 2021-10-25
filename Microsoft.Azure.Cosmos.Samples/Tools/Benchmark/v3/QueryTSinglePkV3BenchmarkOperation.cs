@@ -24,13 +24,7 @@ namespace CosmosBenchmark
 
         public override QueryRequestOptions QueryRequestOptions => new QueryRequestOptions()
         {
-            PartitionKey = new PartitionKey(this.executionItemId)
-        };
-
-        public override IDictionary<string, string> ObjectProperties => new Dictionary<string, string>()
-        {
-            {"id", this.executionItemId},
-            {this.partitionKeyPath, this.executionItemPartitionKey}
+            PartitionKey = new PartitionKey(this.executionPartitionKey)
         };
 
     }

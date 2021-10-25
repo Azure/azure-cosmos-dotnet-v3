@@ -23,44 +23,14 @@ namespace CosmosBenchmark
         {
         }
 
+        public override bool IsCrossPartitioned => false;
+
         public override QueryDefinition QueryDefinition => new QueryDefinition("select * from T ORDER BY T.id");
 
         public override QueryRequestOptions QueryRequestOptions => new QueryRequestOptions()
         {
-            MaxItemCount = 1
+            MaxItemCount = 1,
+            PartitionKey = new PartitionKey(this.executionPartitionKey)
         };
-
-        public override IDictionary<string, string> ObjectProperties => null;
-
-        public override async Task PrepareAsync()
-        {
-            if (this.initialized)
-            {
-                return;
-            }
-            for(int itemCount = 0; itemCount < 3; itemCount++)
-            {
-                this.sampleJObject["id"] = Guid.NewGuid().ToString();
-
-                string partitionValue = Guid.NewGuid().ToString();
-                this.sampleJObject[this.partitionKeyPath] = partitionValue;
-
-                using (MemoryStream inputStream = JsonHelper.ToStream(this.sampleJObject))
-                {
-                    using ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
-                            inputStream,
-                            new Microsoft.Azure.Cosmos.PartitionKey(partitionValue));
-
-                    System.Buffers.ArrayPool<byte>.Shared.Return(inputStream.GetBuffer());
-
-                    if (itemResponse.StatusCode != HttpStatusCode.Created)
-                    {
-                        throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
-                    }
-                }
-            }
-
-            this.initialized = true;
-        }
     }
 }

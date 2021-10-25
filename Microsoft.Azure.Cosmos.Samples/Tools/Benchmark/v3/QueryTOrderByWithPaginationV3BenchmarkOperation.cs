@@ -11,7 +11,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class QueryTOrderByCTV3BenchmarkOperation : IBenchmarkOperation
+    internal class QueryTOrderByWithPaginationV3BenchmarkOperation : QueryTV3BenchmarkOperation
     {
         protected readonly Container container;
         protected readonly Dictionary<string, object> sampleJObject;
@@ -26,7 +26,7 @@ namespace CosmosBenchmark
         protected readonly string executionItemPartitionKey = Guid.NewGuid().ToString();
         protected readonly string executionItemId = Guid.NewGuid().ToString();
 
-        public QueryTOrderByCTV3BenchmarkOperation(
+        public QueryTOrderByWithPaginationV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
             string containerName,
@@ -92,37 +92,6 @@ namespace CosmosBenchmark
                 CosmosDiagnostics = lastDiagnostics,
                 LazyDiagnostics = () => lastDiagnostics?.ToString(),
             };
-        }
-
-        public virtual async Task PrepareAsync()
-        {
-            if (this.initialized)
-            {
-                return;
-            }
-            for (int itemCount = 0; itemCount < 3; itemCount++)
-            {
-                this.sampleJObject["id"] = Guid.NewGuid().ToString();
-
-                string partitionValue = Guid.NewGuid().ToString();
-                this.sampleJObject[this.partitionKeyPath] = partitionValue;
-
-                using (MemoryStream inputStream = JsonHelper.ToStream(this.sampleJObject))
-                {
-                    using ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
-                            inputStream,
-                            new Microsoft.Azure.Cosmos.PartitionKey(partitionValue));
-
-                    System.Buffers.ArrayPool<byte>.Shared.Return(inputStream.GetBuffer());
-
-                    if (itemResponse.StatusCode != HttpStatusCode.Created)
-                    {
-                        throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
-                    }
-                }
-            }
-
-            this.initialized = true;
         }
     }
 }

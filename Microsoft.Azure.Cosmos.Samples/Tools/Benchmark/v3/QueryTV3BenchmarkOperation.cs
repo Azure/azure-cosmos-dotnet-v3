@@ -23,14 +23,14 @@ namespace CosmosBenchmark
 
         protected readonly string partitionKeyPath;
 
-        protected readonly string executionItemPartitionKey = Guid.NewGuid().ToString();
-        protected readonly string executionItemId = Guid.NewGuid().ToString();
-
         public abstract QueryDefinition QueryDefinition { get; }
         public abstract QueryRequestOptions QueryRequestOptions { get; }
-        public abstract IDictionary<string, string> ObjectProperties { get; }
 
-        
+        protected bool isSinglePartitioned = true;
+
+        protected string executionItemId = null;
+        protected string executionPartitionKey = null;
+
         public QueryTV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
@@ -45,16 +45,13 @@ namespace CosmosBenchmark
             this.partitionKeyPath = partitionKeyPath.Replace("/", "");
 
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
-
-            if(this.ObjectProperties != null)
-            {
-                foreach (KeyValuePair<string, string> kvPair in this.ObjectProperties)
-                {
-                    this.sampleJObject[kvPair.Key] = kvPair.Value;
-                }
-            }
         }
 
+        /// <summary>
+        /// Generic implementation run any with 10 records inserted in prepareAsync() function
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         public async Task<OperationResult> ExecuteOnceAsync()
         {
             FeedIterator<Dictionary<string, object>> feedIterator = this.container.GetItemQueryIterator<Dictionary<string, object>>(
@@ -95,6 +92,11 @@ namespace CosmosBenchmark
             };
         }
 
+        /// <summary>
+        /// Inserting 10 items which will be queried
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         public virtual async Task PrepareAsync()
         {
             if (this.initialized)
@@ -102,17 +104,34 @@ namespace CosmosBenchmark
                 return;
             }
 
-            using (MemoryStream inputStream = JsonHelper.ToStream(this.sampleJObject))
+            for (int itemCount = 0; itemCount < 10; itemCount++)
             {
-                using ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
-                        inputStream,
-                        new Microsoft.Azure.Cosmos.PartitionKey(this.executionItemPartitionKey));
+                string objectId = Guid.NewGuid().ToString();
 
-                System.Buffers.ArrayPool<byte>.Shared.Return(inputStream.GetBuffer());
-
-                if (itemResponse.StatusCode != HttpStatusCode.Created)
+                // If single partitioned 
+                if (!this.isSinglePartitioned || // Multi Partitioned
+                    (this.isSinglePartitioned //Single Partitioned but partitionValue are not generated yet
+                        && this.executionPartitionKey == null))
                 {
-                    throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
+                    this.executionItemId = objectId;
+                    this.executionPartitionKey = Guid.NewGuid().ToString();
+                }
+
+                this.sampleJObject["id"] = objectId;
+                this.sampleJObject[this.partitionKeyPath] = this.executionPartitionKey;
+
+                using (MemoryStream inputStream = JsonHelper.ToStream(this.sampleJObject))
+                {
+                    using ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
+                            inputStream,
+                            new Microsoft.Azure.Cosmos.PartitionKey(this.executionPartitionKey));
+
+                    System.Buffers.ArrayPool<byte>.Shared.Return(inputStream.GetBuffer());
+
+                    if (itemResponse.StatusCode != HttpStatusCode.Created)
+                    {
+                        throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
+                    }
                 }
             }
 
