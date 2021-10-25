@@ -29,6 +29,7 @@ namespace CosmosBenchmark
         // Configurations
         public bool IsCrossPartitioned = false;
         public bool IsPaginationEnabled = false;
+        public bool IsQueryStream = false;
 
         protected string executionItemId = null;
         protected string executionPartitionKey = null;
@@ -56,7 +57,17 @@ namespace CosmosBenchmark
         /// <exception cref="Exception"></exception>
         public async Task<OperationResult> ExecuteOnceAsync()
         {
-            if(this.IsPaginationEnabled)
+            if (this.IsQueryStream)
+            {
+                return await this.ExecuteOnceAsyncWithStreams();
+            }
+
+            return await this.ExecuteOnceAsyncDefault();
+        }
+
+        private async Task<OperationResult> ExecuteOnceAsyncDefault()
+        {
+            if (this.IsPaginationEnabled)
             {
                 return await this.ExecuteOnceAsyncWithPagination();
             }
@@ -101,7 +112,7 @@ namespace CosmosBenchmark
             };
         }
 
-        public virtual async Task<OperationResult> ExecuteOnceAsyncWithPagination()
+        private async Task<OperationResult> ExecuteOnceAsyncWithPagination()
         {
             string continuationToken = null;
             double totalCharge = 0;
@@ -154,6 +165,102 @@ namespace CosmosBenchmark
                 LazyDiagnostics = () => lastDiagnostics?.ToString(),
             };
         }
+
+        private async Task<OperationResult> ExecuteOnceAsyncWithStreams()
+        {
+            if (this.IsPaginationEnabled)
+            {
+                return await this.ExecuteOnceAsyncWithStreamsAndPagination();
+            }
+
+            FeedIterator feedIterator = this.container.GetItemQueryStreamIterator(
+            queryDefinition: this.QueryDefinition,
+            continuationToken: null,
+            requestOptions: this.QueryRequestOptions);
+
+            double totalCharge = 0;
+            CosmosDiagnostics lastDiagnostics = null;
+            while (feedIterator.HasMoreResults)
+            {
+                using (ResponseMessage feedResponse = await feedIterator.ReadNextAsync())
+                {
+                    totalCharge += feedResponse.Headers.RequestCharge;
+                    lastDiagnostics = feedResponse.Diagnostics;
+
+                    if (feedResponse.StatusCode != HttpStatusCode.OK)
+                    {
+                        throw new Exception($"QueryTV3BenchmarkOperation failed with {feedResponse.StatusCode}");
+                    }
+
+                    // Access the stream to catch any lazy logic
+                    using Stream stream = feedResponse.Content;
+                }
+            }
+
+            return new OperationResult()
+            {
+                DatabseName = databaseName,
+                ContainerName = containerName,
+                RuCharges = totalCharge,
+                CosmosDiagnostics = lastDiagnostics,
+                LazyDiagnostics = () => lastDiagnostics?.ToString(),
+            };
+        }
+
+        private async Task<OperationResult> ExecuteOnceAsyncWithStreamsAndPagination()
+        {
+            string continuationToken = null;
+            double totalCharge = 0;
+            CosmosDiagnostics lastDiagnostics = null;
+
+            do
+            {
+                FeedIterator feedIterator =
+                    this.container.GetItemQueryStreamIterator (
+                        queryDefinition: this.QueryDefinition,
+                        continuationToken: continuationToken,
+                        requestOptions: this.QueryRequestOptions);
+
+                Microsoft.Azure.Documents.Client.FeedResponse feedResponse = await feedIterator.ReadNextAsync();
+
+                if (feedResponse == null || feedResponse.StatusCode != HttpStatusCode.OK)
+                {
+                    throw new Exception($"QueryTV3BenchmarkOperation failed with {feedResponse?.StatusCode} " +
+                        $"where pagination : {this.IsPaginationEnabled} and cross partition : {this.IsCrossPartitioned}");
+                }
+
+                foreach (Dictionary<string, object> item in feedResponse)
+                {
+                    // No-op check that forces any lazy logic to be executed
+                    if (item == null)
+                    {
+                        throw new Exception("Null item was returned");
+                    }
+                }
+
+                totalCharge += feedResponse.Headers.RequestCharge;
+                lastDiagnostics = feedResponse.Diagnostics;
+
+                continuationToken = feedResponse.ContinuationToken;
+
+                if (!feedIterator.HasMoreResults)
+                {
+                    break;
+                }
+
+            } while (true);
+
+
+            return new OperationResult()
+            {
+                DatabseName = databaseName,
+                ContainerName = containerName,
+                RuCharges = totalCharge,
+                CosmosDiagnostics = lastDiagnostics,
+                LazyDiagnostics = () => lastDiagnostics?.ToString(),
+            };
+        }
+
 
         /// <summary>
         /// Inserting 10 items which will be queried
