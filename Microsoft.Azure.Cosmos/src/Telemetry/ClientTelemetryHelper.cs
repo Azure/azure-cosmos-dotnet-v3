@@ -75,6 +75,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         cancellationToken: new CancellationToken()); // Do not want to cancel the whole process if this call fails
 
                     azMetadata = await ClientTelemetryOptions.ProcessResponseAsync(httpResponseMessage);
+
                 }
                 catch (Exception ex)
                 {

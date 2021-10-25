@@ -65,13 +65,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             DefaultTrace.TraceInformation("Initiating telemetry with background task.");
 
-            ClientTelemetry clientTelemetry = new ClientTelemetry(
-                documentClient: documentClient,
-                userAgent: userAgent,
-                connectionMode: connectionMode,
-                authorizationTokenProvider: authorizationTokenProvider,
-                diagnosticsHelper: diagnosticsHelper,
-                preferredRegions: preferredRegions);
+            ClientTelemetry clientTelemetry = new ClientTelemetry(documentClient,
+            userAgent,
+            connectionMode,
+            authorizationTokenProvider,
+            diagnosticsHelper,
+            preferredRegions);
 
             clientTelemetry.StartObserverTask();
 
