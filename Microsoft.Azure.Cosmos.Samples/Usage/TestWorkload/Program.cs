@@ -35,8 +35,9 @@
             public string ContainerName { get; set; }
 
             public bool ShouldRecreateContainerOnStart { get; set; }
-            public int ContainerThroughput { get; set; }
-            public bool IsContainerAutoScale { get; set; }
+            public int ThroughputToProvision { get; set; }
+            public bool IsSharedThroughput { get; set; }
+            public bool IsAutoScale { get; set; }
             public bool ShouldContainerIndexAllProperties { get; set; }
 
             public int ItemsToCreate { get; set; }
@@ -51,6 +52,7 @@
             public int PreSerializedItemCount { get; set; }
             public int MaxRuntimeInSeconds { get; set; }
             public int NumWorkers { get; set; }
+            public bool IsGatewayMode { get; set; }
             public bool AllowBulkExecution { get; set; }
             public bool OmitContentInWriteResponse { get; set; }
             public bool ShouldDeleteContainerOnFinish { get; set; }
@@ -277,7 +279,7 @@
             Container container = client.GetDatabase(configuration.DatabaseName).GetContainer(configuration.ContainerName);
             if (configuration.ShouldRecreateContainerOnStart)
             {
-                container = await Program.RecreateContainerAsync(client, configuration.DatabaseName, configuration.ContainerName, configuration.ShouldContainerIndexAllProperties, configuration.ContainerThroughput, configuration.IsContainerAutoScale);
+                container = await Program.RecreateContainerAsync(client, configuration.DatabaseName, configuration.ContainerName, configuration.ShouldContainerIndexAllProperties, configuration.ThroughputToProvision, configuration.IsSharedThroughput, configuration.IsAutoScale);
                 await Task.Delay(5000);
             }
 
@@ -300,7 +302,7 @@
         {
             return new CosmosClient(endpoint, authKey, new CosmosClientOptions()
             {
-                ConnectionMode = ConnectionMode.Direct,
+                ConnectionMode = configuration.IsGatewayMode ? ConnectionMode.Gateway : ConnectionMode.Direct,
                 AllowBulkExecution = configuration.AllowBulkExecution,
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 PortReuseMode = PortReuseMode.ReuseUnicastPort
@@ -327,14 +329,45 @@
             string containerName,
             bool shouldIndexAllProperties,
             int throughputToProvision,
-            bool isContainerAutoScale)
+            bool isSharedThroughput,
+            bool isAutoScale)
         {
-            Database database = await client.CreateDatabaseIfNotExistsAsync(databaseName);
+            ThroughputProperties throughputProperties = isAutoScale
+                ? ThroughputProperties.CreateAutoscaleThroughput(throughputToProvision)
+                : ThroughputProperties.CreateManualThroughput(throughputToProvision);
+            (string desiredThroughputType, int desiredThroughputValue) = GetThroughputTypeAndValue(throughputProperties);
+
+            Database database = await client.CreateDatabaseIfNotExistsAsync(databaseName, isSharedThroughput ? throughputProperties : null);
+            ThroughputProperties existingDatabaseThroughput = await database.ReadThroughputAsync(null);
+
+            if(isSharedThroughput && existingDatabaseThroughput != null)
+            {
+                (string existingThroughputType, int existingThroughputValue) = GetThroughputTypeAndValue(existingDatabaseThroughput);
+                if (existingThroughputType == desiredThroughputType)
+                {
+                    if (existingThroughputValue != desiredThroughputValue)
+                    {
+                        Console.WriteLine($"Setting database {existingThroughputType} throughput to ${desiredThroughputValue}");
+                        await database.ReplaceThroughputAsync(throughputProperties);
+                    }
+                }
+                else
+                {
+                    throw new Exception($"Cannot set desired database throughput; existing {existingThroughputType} throughput is {existingThroughputValue}.");
+                }
+            }
 
             Console.WriteLine("Deleting old container if it exists.");
             await Program.CleanupContainerAsync(database.GetContainer(containerName));
 
-            Console.WriteLine($"Creating a {throughputToProvision} RU/s {(isContainerAutoScale ? "auto-scale" : "manual throughput")} container...");
+            if (!isSharedThroughput)
+            {
+                Console.WriteLine($"Creating container with {desiredThroughputType} throughput {desiredThroughputValue}...");
+            }
+            else
+            {
+                Console.WriteLine("Creating container");
+            }
 
             ContainerBuilder containerBuilder = database.DefineContainer(containerName, "/pk");
 
@@ -351,11 +384,14 @@
                 .Attach();
             }
 
-            ThroughputProperties throughputProperties = isContainerAutoScale 
-                ? ThroughputProperties.CreateAutoscaleThroughput(throughputToProvision) 
-                : ThroughputProperties.CreateManualThroughput(throughputToProvision);
+            return await containerBuilder.CreateAsync(isSharedThroughput ? null : throughputProperties);
+        }
 
-            return await containerBuilder.CreateAsync(throughputProperties);
+        private static (string, int) GetThroughputTypeAndValue(ThroughputProperties throughputProperties)
+        {
+            string type = throughputProperties.AutoscaleMaxThroughput.HasValue ? "auto-scale" : "manual";
+            int value = throughputProperties.AutoscaleMaxThroughput ?? throughputProperties.Throughput.Value;
+            return (type, value);
         }
 
         private class MyDocument
