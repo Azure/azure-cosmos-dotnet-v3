@@ -839,7 +839,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="itemRequestOptions"> Original ItemRequestOptions.</param>
         /// <returns> ItemRequestOptions.</returns>
-        private static ItemRequestOptions GetClonedItemRequestOptions(ItemRequestOptions itemRequestOptions)
+        private static ItemRequestOptions EncryptionContainerGetClonedItemRequestOptions(ItemRequestOptions itemRequestOptions)
         {
             ItemRequestOptions clonedRequestOptions = itemRequestOptions != null ? (ItemRequestOptions)itemRequestOptions.ShallowCopy() : new ItemRequestOptions();
 
@@ -870,7 +870,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cancellationToken);
 
             // Clone the request options since we modify it to set AddRequestHeaders to add additional headers.
-            ItemRequestOptions clonedRequestOptions = GetClonedItemRequestOptions(requestOptions);
+            ItemRequestOptions clonedRequestOptions = EncryptionContainerGetClonedItemRequestOptions(requestOptions);
 
             encryptionSettings.SetRequestHeaders(clonedRequestOptions);
 
@@ -909,7 +909,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             // Clone the request options since we modify it to set AddRequestHeaders to add additional headers.
-            ItemRequestOptions clonedRequestOptions = GetClonedItemRequestOptions(requestOptions);
+            ItemRequestOptions clonedRequestOptions = EncryptionContainerGetClonedItemRequestOptions(requestOptions);
 
             encryptionSettings.SetRequestHeaders(clonedRequestOptions);
 
@@ -965,7 +965,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions clonedRequestOptions = requestOptions;
 
             // Clone the request options since we modify it to set AddRequestHeaders to add additional headers.
-            clonedRequestOptions = GetClonedItemRequestOptions(requestOptions);
+            clonedRequestOptions = EncryptionContainerGetClonedItemRequestOptions(requestOptions);
 
             encryptionSettings.SetRequestHeaders(clonedRequestOptions);
 
@@ -1019,7 +1019,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions clonedRequestOptions = requestOptions;
 
             // Clone the request options since we modify it to set AddRequestHeaders to add additional headers.
-            clonedRequestOptions = GetClonedItemRequestOptions(requestOptions);
+            clonedRequestOptions = EncryptionContainerGetClonedItemRequestOptions(requestOptions);
 
             encryptionSettings.SetRequestHeaders(clonedRequestOptions);
 
