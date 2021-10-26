@@ -1283,6 +1283,49 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
+        public Task<ResponseMessage> PatchItemStreamAsync(
+            string id,
+            PartitionKey partitionKey,
+            Stream streamPayload,
+            ITrace trace,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            if (partitionKey == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKey));
+            }
+
+            if (id == null)
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (streamPayload == null)
+            {
+                throw new ArgumentNullException(nameof(streamPayload));
+            }
+
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            return this.ProcessItemStreamAsync(
+                partitionKey: partitionKey,
+                itemId: id,
+                streamPayload: streamPayload,
+                operationType: OperationType.Patch,
+                requestOptions: requestOptions,
+                trace: trace,
+                cancellationToken: cancellationToken);
+        }
+
         private ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderPrivate(
             string processorName,
             ChangeFeedObserverFactory observerFactory)
