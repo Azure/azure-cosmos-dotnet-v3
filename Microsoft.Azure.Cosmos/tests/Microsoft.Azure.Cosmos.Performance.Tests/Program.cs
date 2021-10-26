@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 SortedDictionary<string, double> operationToAllocatedMemory = new SortedDictionary<string, double>();
 
                 // Run the test 3 times and average the results to help reduce any random variance in the results
-                for(int i = 0; i < 3; i++)
+                for(int i = 0; i < 2; i++)
                 {
                     IEnumerable<Summary> summaries = BenchmarkSwitcher
                         .FromAssembly(typeof(Program).Assembly)
