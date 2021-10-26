@@ -351,19 +351,20 @@
             {
                 if (Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Escape)
                 {
-                    // this cancels out the reencryption tasks if you want to exit and restart later.
                     cancellationToken.Cancel();
                     return;
                 }
 
                 // fetch and display the progress every 3 seconds.
                 await Task.Delay(3000);
-                await GetMigrationProgressPercentageAsync(sourceContainer, targetContainer);
+                await GetMigrationProgressPercentageAsync(sourceContainer, targetContainer, cancellationToken.Token);
             }
         }
 
-        private static async Task<float> GetMigrationProgressPercentageAsync(Container sourceContainer, Container targetContainer)
+        private static async Task<float> GetMigrationProgressPercentageAsync(Container sourceContainer, Container targetContainer, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             ContainerRequestOptions containerRequestOptions = new ContainerRequestOptions { PopulateQuotaInfo = true };
             ContainerResponse result = await sourceContainer.ReadContainerAsync(containerRequestOptions);
             string usage = result.Headers["x-ms-resource-usage"];
