@@ -18,6 +18,5 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public const string IncorrectContainerRidSubStatus = "1024";
         public const string SubStatusHeader = "x-ms-substatus";
         public const int SupportedClientEncryptionPolicyFormatVersion = 1;
-        public const bool IsFFChangeFeedSupported = false;
     }
 }
