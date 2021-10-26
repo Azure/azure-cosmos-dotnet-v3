@@ -6,15 +6,16 @@ namespace CosmosBenchmark
 {
     using Microsoft.Azure.Cosmos;
 
-    internal class QueryTSinglePkOrderByWithPaginationV3BenchmarkOperation : QueryTV3BenchmarkOperation
+    internal class QueryStreamSinglePkOrderByWithPaginationV3BenchmarkOperation : QueryTV3BenchmarkOperation
     {
-        public QueryTSinglePkOrderByWithPaginationV3BenchmarkOperation(
+        public QueryStreamSinglePkOrderByWithPaginationV3BenchmarkOperation (
             CosmosClient cosmosClient,
             string dbName,
             string containerName,
             string partitionKeyPath,
             string sampleJson) : base(cosmosClient, dbName, containerName, partitionKeyPath, sampleJson)
         {
+            this.IsQueryStream = true;
             this.IsPaginationEnabled = true;
         }
 

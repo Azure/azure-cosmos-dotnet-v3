@@ -6,15 +6,16 @@ namespace CosmosBenchmark
 {
     using Microsoft.Azure.Cosmos;
 
-    internal class QueryTCrossPkV3BenchmarkOperation : QueryTV3BenchmarkOperation
+    internal class QueryStreamCrossPkV3BenchmarkOperation : QueryTV3BenchmarkOperation
     {
-        public QueryTCrossPkV3BenchmarkOperation(
+        public QueryStreamCrossPkV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
             string containerName,
             string partitionKeyPath,
             string sampleJson) : base(cosmosClient, dbName, containerName, partitionKeyPath, sampleJson)
         {
+            this.IsQueryStream = true;
             this.IsCrossPartitioned = true;
         }
 

@@ -6,16 +6,17 @@ namespace CosmosBenchmark
 {
     using Microsoft.Azure.Cosmos;
 
-    internal class QueryTSinglePkOrderByFullDrainV3BenchmarkOperation : QueryTV3BenchmarkOperation
+    internal class QueryStreamSinglePkOrderByFullDrainV3BenchmarkOperation : QueryTV3BenchmarkOperation
     {
 
-        public QueryTSinglePkOrderByFullDrainV3BenchmarkOperation(
+        public QueryStreamSinglePkOrderByFullDrainV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
             string containerName,
             string partitionKeyPath,
             string sampleJson) : base(cosmosClient, dbName, containerName, partitionKeyPath, sampleJson)
         {
+            this.IsQueryStream = true;
         }
 
         public override QueryDefinition QueryDefinition => new QueryDefinition("select * from T ORDER BY T.id");
