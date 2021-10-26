@@ -40,8 +40,8 @@
     // should be created with the new policy before you use it in this sample/driver code.
     //
     // Note:
-    // IsFFChangeFeedSupported(in Constants.cs file) value has been set to false. Full Fidelity change feed is in Preview mode and requires it to be enabled. This allows for reencryption
-    // to carried on, when the source container is still receiving writes when reencryption is being carried.This can be set to true when the feature is available or is enabled on the
+    // IsFFChangeFeedSupported(in Constants.cs file) value has been set to false. Full Fidelity change feed is in Preview mode and has to be enabled on an account to use the feature. This allows for reencryption
+    // to carried on, when the source container is still receiving writes.This can be set to true when the feature is available or is enabled on the
     // database account. If the feature is not enabled, please make sure the source container is not receiving any writes before you carry out the reencryption activity.
     // ----------------------------------------------------------------------------------------------------------
 
