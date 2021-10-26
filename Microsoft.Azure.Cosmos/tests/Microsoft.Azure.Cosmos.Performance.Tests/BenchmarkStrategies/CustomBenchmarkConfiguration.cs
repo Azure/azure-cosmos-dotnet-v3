@@ -21,15 +21,15 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.BenchmarkStrategies
 
         public CustomBenchmarkConfiguration(CosmosDBConfiguration configuration)
         {
-            this.Add(JitOptimizationsValidator.DontFailOnError);
-            this.Add(DefaultConfig.Instance.GetLoggers().ToArray());
-            this.Add(StatisticColumn.P90);
-            this.Add(StatisticColumn.P95);
-            this.Add(StatisticColumn.P100);
-            this.Add(StatisticColumn.OperationsPerSecond);
-            this.Add(MarkdownExporter.Default);
-            this.Add(CsvExporter.Default);
-            this.Add(DefaultConfig.Instance.GetColumnProviders().ToArray());
+            this.AddValidator(JitOptimizationsValidator.DontFailOnError);
+            this.AddLogger(DefaultConfig.Instance.GetLoggers().ToArray());
+            this.AddColumn(StatisticColumn.P90);
+            this.AddColumn(StatisticColumn.P95);
+            this.AddColumn(StatisticColumn.P100);
+            this.AddColumn(StatisticColumn.OperationsPerSecond);
+            this.AddExporter(MarkdownExporter.Default);
+            this.AddExporter(CsvExporter.Default);
+            this.AddColumnProvider(DefaultConfig.Instance.GetColumnProviders().ToArray());
             this.ArtifactsPath = CustomBenchmarkConfiguration.GetReportPath(configuration);
         }
     }
