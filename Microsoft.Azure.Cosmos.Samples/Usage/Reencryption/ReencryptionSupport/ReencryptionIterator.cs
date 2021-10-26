@@ -2,13 +2,14 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Encryption
+namespace Cosmos.Samples.Reencryption
 {
     using System;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     /// <summary>
@@ -25,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private readonly ReencryptionBulkOperationBuilder reencryptionBulkOperationBuilder;
         private readonly CheckIfWritesHaveStopped checkIfWritesHaveStoppedCb;
         private readonly bool isFFChangeFeedSupported;
+        private readonly ReencryptionJsonSerializer reencryptionJsonSerializer;
 
         private FeedIterator feedIterator;
 
@@ -52,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             this.sourceContainer = sourceContainer ?? throw new ArgumentNullException(nameof(sourceContainer));
             this.destinationContainer = destinationContainer ?? throw new ArgumentNullException(nameof(destinationContainer));
-            this.partitionKey = string.IsNullOrEmpty(partitionKey) ? throw new ArgumentNullException(nameof(partitionKey)) : partitionKey.Substring(1);
+            this.partitionKey = string.IsNullOrEmpty(partitionKey) ? throw new ArgumentNullException(nameof(partitionKey)) : partitionKey[1..];
             this.feedRange = sourceFeedRange;
             this.changeFeedRequestOptions = changeFeedRequestOptions;
             this.reencryptionBulkOperationBuilder = new ReencryptionBulkOperationBuilder(destinationContainer, partitionKey);
@@ -60,6 +62,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.ContinuationToken = continuationToken;
             this.checkIfWritesHaveStoppedCb = new CheckIfWritesHaveStopped(checkIfWritesHaveStopped);
             this.isFFChangeFeedSupported = isFFChangeFeedSupported;
+            this.reencryptionJsonSerializer = new ReencryptionJsonSerializer(
+                new JsonSerializerSettings()
+                {
+                    DateParseHandling = DateParseHandling.None,
+                });
         }
 
         private delegate bool CheckIfWritesHaveStopped();
@@ -160,7 +167,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string currentDrainedLSNString = null;
             ReencryptionBulkOperationResponse<JObject> bulkOperationResponse = null;
             ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken: cancellationToken);
-            string continuationToken = response.ContinuationToken;
+            string continuationToken = response.ContinuationToken;           
+
             if (response.StatusCode == HttpStatusCode.NotModified)
             {
                 if (this.checkIfWritesHaveStoppedCb() && !this.isFFChangeFeedSupported)
@@ -174,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 if (response.IsSuccessStatusCode && response.Content != null)
                 {
-                    JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(response.Content);
+                    JObject contentJObj = this.reencryptionJsonSerializer.FromStream<JObject>(response.Content);
                     if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
                     {
                         throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents. ");
@@ -188,11 +196,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             continue;
                         }
 
-                        currentDrainedLSNString = document.GetValue("_lsn").ToString();
+                        currentDrainedLSNString = document.GetValue(Constants.LsnPropertyName).ToString();
                         currentDrainedLSN = long.Parse(currentDrainedLSNString);
                         fullFidelityStartLSN = long.Parse(fullFidelityStartLSNString);
 
-                        document.Remove("_lsn");
+                        document.Remove(Constants.LsnPropertyName);
                         bulkOperations.Tasks.Add(this.destinationContainer.UpsertItemAsync(
                             item: document,
                             new PartitionKey(document.GetValue(this.partitionKey).ToString()),
@@ -251,8 +259,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         CosmosException ex = (CosmosException)failedOperation.Item2;
                         if (ex.StatusCode == HttpStatusCode.NotFound)
                         {
-                            JObject metadata = failedOperation.Item1.GetValue("_metadata").ToObject<JObject>();
-                            string operationType = metadata.GetValue("operationType").ToString();
+                            JObject metadata = failedOperation.Item1.GetValue(Constants.MetadataPropertyName).ToObject<JObject>();
+                            string operationType = metadata.GetValue(Constants.OperationTypePropertyName).ToString();
                             if (!operationType.Equals("delete"))
                             {
                                 response = new ResponseMessage(
