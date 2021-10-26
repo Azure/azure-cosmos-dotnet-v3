@@ -7,11 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Monitoring
     using System;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-#if PREVIEW
     using static Microsoft.Azure.Cosmos.Container;
-#else
-    using static Microsoft.Azure.Cosmos.ContainerInternal;
-#endif
 
     /// <summary>
     /// A monitor which uses the default trace
