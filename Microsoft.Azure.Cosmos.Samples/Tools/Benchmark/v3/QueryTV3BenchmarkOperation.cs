@@ -221,21 +221,12 @@ namespace CosmosBenchmark
                         continuationToken: continuationToken,
                         requestOptions: this.QueryRequestOptions);
 
-                Microsoft.Azure.Documents.Client.FeedResponse feedResponse = await feedIterator.ReadNextAsync();
+               ResponseMessage feedResponse = await feedIterator.ReadNextAsync();
 
                 if (feedResponse == null || feedResponse.StatusCode != HttpStatusCode.OK)
                 {
                     throw new Exception($"QueryTV3BenchmarkOperation failed with {feedResponse?.StatusCode} " +
                         $"where pagination : {this.IsPaginationEnabled} and cross partition : {this.IsCrossPartitioned}");
-                }
-
-                foreach (Dictionary<string, object> item in feedResponse)
-                {
-                    // No-op check that forces any lazy logic to be executed
-                    if (item == null)
-                    {
-                        throw new Exception("Null item was returned");
-                    }
                 }
 
                 totalCharge += feedResponse.Headers.RequestCharge;
