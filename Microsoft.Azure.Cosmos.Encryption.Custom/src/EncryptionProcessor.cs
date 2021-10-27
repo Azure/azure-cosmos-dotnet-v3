@@ -510,6 +510,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             // UTF-8 encoding.
             SqlVarCharSerializer sqlVarCharSerializer = new SqlVarCharSerializer(size: -1, codePageCharacterEncoding: 65001);
 
+            JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
+            {
+                DateParseHandling = DateParseHandling.None,
+            };
+
             switch (typeMarker)
             {
                 case TypeMarker.Boolean:
@@ -525,10 +530,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     jObject.Add(key, sqlVarCharSerializer.Deserialize(serializedBytes));
                     break;
                 case TypeMarker.Array:
-                    jObject.Add(key, JsonConvert.DeserializeObject<JArray>(sqlVarCharSerializer.Deserialize(serializedBytes)));
+                    jObject.Add(key, JsonConvert.DeserializeObject<JArray>(sqlVarCharSerializer.Deserialize(serializedBytes), jsonSerializerSettings));
                     break;
                 case TypeMarker.Object:
-                    jObject.Add(key, JsonConvert.DeserializeObject<JObject>(sqlVarCharSerializer.Deserialize(serializedBytes)));
+                    jObject.Add(key, JsonConvert.DeserializeObject<JObject>(sqlVarCharSerializer.Deserialize(serializedBytes), jsonSerializerSettings));
                     break;
                 default:
                     Debug.Fail(string.Format("Unexpected type marker {0}", typeMarker));
