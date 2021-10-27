@@ -119,7 +119,7 @@ namespace Cosmos.Samples.Reencryption
         }
 
         /// <summary>
-        /// Builds an array of list of documents and  hashes them by the document id.
+        /// Builds a dictionary of list of documents and  hashes them by the document id.
         /// If a document has multiple changes then a list of changes(chain) is made corresponding to that id
         /// which serves as a key.
         /// </summary>

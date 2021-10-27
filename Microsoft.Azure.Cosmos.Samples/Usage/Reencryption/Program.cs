@@ -242,7 +242,6 @@
             }
         }
 
-
         private static async Task ExecuteReencrytionAsync(Container sourceContainer, FeedRange feedRange = null,CancellationToken cancellationToken = default)
         {
             string continuationToken = null;
@@ -363,24 +362,26 @@
 
                 // fetch and display the progress every 3 seconds.
                 await Task.Delay(3000);
-                await GetMigrationProgressPercentageAsync(sourceContainer, targetContainer, cancellationToken.Token);
+                await GetReencryptionProgressPercentageAsync(sourceContainer, targetContainer, cancellationToken.Token);
             }
         }
 
-        private static async Task<float> GetMigrationProgressPercentageAsync(Container sourceContainer, Container targetContainer, CancellationToken cancellationToken)
+        private static async Task<float> GetReencryptionProgressPercentageAsync(Container sourceContainer, Container targetContainer, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             ContainerRequestOptions containerRequestOptions = new ContainerRequestOptions { PopulateQuotaInfo = true };
             ContainerResponse result = await sourceContainer.ReadContainerAsync(containerRequestOptions);
             string usage = result.Headers["x-ms-resource-usage"];
-            string[] quotas = usage.Split(';');
-            long sourceContainerTotalDocCount = long.Parse(quotas.GetValue(5).ToString().Split('=').GetValue(1).ToString());
+            int index = usage.IndexOf("documentsCount");
+            string[] quotas = usage.Remove(0, index).Split(';');
+            long sourceContainerTotalDocCount = long.Parse(quotas.GetValue(0).ToString().Split('=').GetValue(1).ToString());
 
             result = await targetContainer.ReadContainerAsync(containerRequestOptions);
             usage = result.Headers["x-ms-resource-usage"];
-            quotas = usage.Split(';');
-            long destinationContainerTotalDocCount = long.Parse(quotas.GetValue(5).ToString().Split('=').GetValue(1).ToString());
+            index = usage.IndexOf("documentsCount");
+            quotas = usage.Remove(0, index).Split(';');
+            long destinationContainerTotalDocCount = long.Parse(quotas.GetValue(0).ToString().Split('=').GetValue(1).ToString());
 
             float progress = 100 * (float)((double)destinationContainerTotalDocCount / (double)sourceContainerTotalDocCount);
             if (progress > 100)
