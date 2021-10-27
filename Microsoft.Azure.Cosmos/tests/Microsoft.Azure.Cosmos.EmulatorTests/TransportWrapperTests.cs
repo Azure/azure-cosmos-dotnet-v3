@@ -169,6 +169,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         usingLocalLSN: true,
                         activityId: Guid.NewGuid().ToString(),
                         backendRequestDurationInMs: "0",
+                        retryAfterInMs: "42",
                         transportRequestStats: new TransportRequestStats()),
                     DateTime.MinValue,
                     DateTime.MaxValue);
