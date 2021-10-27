@@ -100,8 +100,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 {
                     // Update the value if it is greater than 2% difference.
                     // This reduces the noise and make it easier to see which values actually changed
-                    double percentChanged = diff/ currentResult.Value*100;
-
+                    double percentChanged = (currentResult.Value - baselineResult)/ baselineResult * 100;
                     updatedBaseline.Add(currentResult.Key, currentResult.Value + " (" + Math.Round(percentChanged, 2) + "%)");
                 }
                 else
