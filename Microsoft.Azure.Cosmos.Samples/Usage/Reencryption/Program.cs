@@ -35,13 +35,13 @@
     //
     // DstContainer - Destination container(should be created in advance), with new encryption policy set. This container will now house the reencrypted data.
     //
-    // If you wish to change the data encryption key then you can use the same policy but want to change the keys for each of the policy paths.
+    // If you wish to change the data encryption key then, you can use the same policy, but you have to change the keys for each of the policy paths.
     // The new keys should be created prior its usage in the policy. The destination container
     // should be created with the new policy before you use it in this sample/driver code.
     //
     // Note:
     // IsFFChangeFeedSupported(in Constants.cs file) value has been set to false. Full Fidelity change feed is in Preview mode and has to be enabled on an account to use the feature. This allows for reencryption
-    // to carried on, when the source container is still receiving writes.This can be set to true when the feature is available or is enabled on the
+    // to be carried out, when the source container is still receiving writes.This can be set to true when the feature is available or is enabled on the
     // database account. If the feature is not enabled, please make sure the source container is not receiving any writes before you carry out the reencryption activity.
     // ----------------------------------------------------------------------------------------------------------
 
@@ -186,7 +186,6 @@
             return new ClientCertificateCredential(tenantId, clientId, Program.GetCertificate(clientCertThumbprint));
         }
 
-
         private static async Task CreateAndRunReencryptionTasks(CosmosClient client)
         {
             Container sourceContainer = client.GetContainer(SrcDatabase, SrcContainer);
@@ -305,10 +304,17 @@
             string continuationToken = null,
             CancellationToken cancellationToken = default)
         {
+            // make sure the containers are conigured with the throughput depending on how many requests you want to send to the Azure Cosmos DB service.
+            ChangeFeedRequestOptions changeFeedRequestOptions = new ChangeFeedRequestOptions
+            {
+                PageSizeHint = 100,
+            };
+
             ReencryptionIterator iterator = await sourceContainer.GetReencryptionIteratorAsync(
                 DstContainer,
                 client,
                 CheckAndSetWritesAsStopped,
+                changeFeedRequestOptions,
                 sourceFeedRange: feedRange,
                 continuationToken: continuationToken);
 
