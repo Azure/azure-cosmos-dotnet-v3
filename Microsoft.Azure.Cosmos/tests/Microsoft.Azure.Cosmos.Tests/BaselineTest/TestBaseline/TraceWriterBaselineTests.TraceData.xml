@@ -250,6 +250,7 @@
                     usingLocalLSN: true,
                     activityId: Guid.Empty.ToString(),
                     backendRequestDurationInMs: "4.2",
+                    retryAfterInMs: "42",
                     transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                 ResourceType.Document,
                 OperationType.Query,
@@ -374,6 +375,7 @@
             "IsValid": true,
             "StorePhysicalAddress": "http://storephysicaladdress.com/",
             "RequestCharge": 3.14,
+            "RetryAfterInMs": "42",
             "BELatencyInMs": "4.2",
             "transportRequestTimeline": {
               "requestTimeline": [
@@ -457,6 +459,7 @@
                     sessionToken: default,
                     usingLocalLSN: default,
                     activityId: default,
+                    retryAfterInMs: default,
                     backendRequestDurationInMs: default,
                      transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                 resourceType: default,
@@ -570,6 +573,7 @@
             "IsValid": false,
             "StorePhysicalAddress": null,
             "RequestCharge": 0,
+            "RetryAfterInMs": null,
             "BELatencyInMs": null,
             "transportRequestTimeline": {
               "requestTimeline": [
