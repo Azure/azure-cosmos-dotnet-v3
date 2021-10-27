@@ -76,37 +76,39 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             Dictionary<string, double> baselineBenchmarkResults = JsonConvert.DeserializeObject<Dictionary<string, double>>(baselineJson);
 
             List<string> failures = new List<string>();
-            SortedDictionary<string, double> updatedBaseline = new SortedDictionary<string, double>();
+            SortedDictionary<string, string> updatedBaseline = new SortedDictionary<string, string>();
             foreach (KeyValuePair<string, double> currentResult in operationToMemoryAllocated)
             {
                 if(!baselineBenchmarkResults.TryGetValue(
                     currentResult.Key, 
                     out double baselineResult))
                 {
-                    updatedBaseline.Add(currentResult.Key, currentResult.Value);
+                    updatedBaseline.Add(currentResult.Key, currentResult.Value.ToString());
                     continue;
                 }
 
-                // Add 10% buffer to avoid minor variation between test runs
+                // Add 25% buffer to avoid minor variation between test runs
                 double diff = Math.Abs(currentResult.Value - baselineResult);
-                double maxAllowedDiff = baselineResult * .10;
+                double maxAllowedDiff = baselineResult * .25;
                 double minDiffToUpdatebaseLine = baselineResult * .02;
                 if (diff > maxAllowedDiff)
                 {
-                    updatedBaseline.Add(currentResult.Key, currentResult.Value);
+                    updatedBaseline.Add(currentResult.Key, currentResult.Value.ToString());
                     failures.Add($"{currentResult.Key}: {currentResult.Value}");
                 }
                 else if(diff > minDiffToUpdatebaseLine)
                 {
                     // Update the value if it is greater than 2% difference.
                     // This reduces the noise and make it easier to see which values actually changed
-                    updatedBaseline.Add(currentResult.Key, currentResult.Value);
+                    double percentChanged = diff/ currentResult.Value*100;
+
+                    updatedBaseline.Add(currentResult.Key, currentResult.Value + " (" + Math.Round(percentChanged, 2) + "%)");
                 }
                 else
                 {
                     // Use the baseline if the value didn't change by more than 2% to avoid updating values unnecessarily
                     // This makes it easier to see which values actually need to be updated.
-                    updatedBaseline.Add(currentResult.Key, baselineResult);
+                    updatedBaseline.Add(currentResult.Key, baselineResult.ToString());
                 }
             }
 
