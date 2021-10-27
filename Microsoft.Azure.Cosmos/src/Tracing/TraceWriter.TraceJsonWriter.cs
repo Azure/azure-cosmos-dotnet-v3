@@ -438,6 +438,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName(nameof(storeResult.RequestCharge));
                 this.jsonWriter.WriteNumber64Value(storeResult.RequestCharge);
 
+                this.jsonWriter.WriteFieldName(nameof(storeResult.RetryAfterInMs));
+                this.WriteStringValueOrNull(storeResult.RetryAfterInMs);
+
                 this.jsonWriter.WriteFieldName("BELatencyInMs");
                 this.WriteStringValueOrNull(storeResult.BackendRequestDurationInMs);
 
