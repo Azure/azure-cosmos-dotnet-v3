@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     }
 
     [Config(typeof(SdkBenchmarkConfiguration))]
-    [SimpleJob(launchCount: 1, warmupCount: 1, targetCount: 1)]
     public class MockedItemBenchmark : IItemBenchmark
     {
         public static readonly IItemBenchmark[] IterParameters = new IItemBenchmark[]
