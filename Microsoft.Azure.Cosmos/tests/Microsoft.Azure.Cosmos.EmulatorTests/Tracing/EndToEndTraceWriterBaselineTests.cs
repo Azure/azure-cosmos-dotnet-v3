@@ -666,7 +666,7 @@
                 {
                     trace = ((CosmosTraceDiagnostics)ce.Diagnostics).Value;
                 }
-                endLineNumber = GetLineNumber();
+                  endLineNumber = GetLineNumber();
 
                 inputs.Add(new Input("Point Operation with Request Timeout", trace, startLineNumber, endLineNumber));
             }
@@ -801,6 +801,42 @@
                     Assert.IsTrue(nextLength < currLength * 2,
                         $"The diagnostic string is growing faster than linear. Length: {currLength}, Next Length: {nextLength}");
                 }
+            }
+            //----------------------------------------------------------------
+
+            //----------------------------------------------------------------
+            //  Point Operation With Service Unavailable Exception
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                ItemRequestOptions requestOptions = new ItemRequestOptions();
+
+                Guid exceptionActivityId = Guid.NewGuid();
+                string ServiceUnavailableExceptionDescription = "ServiceUnavailableExceptionDescription" + Guid.NewGuid();
+                Container containerWithTransportException = TransportClientHelper.GetContainerWithItemServiceUnavailableException(
+                    database.Id,
+                    container.Id,
+                    exceptionActivityId,
+                    ServiceUnavailableExceptionDescription);
+
+                //Checking point operation diagnostics on typed operations
+                ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+
+                ITrace trace = null;
+                try
+                {
+                    ItemResponse<ToDoActivity> createResponse = await containerWithTransportException.CreateItemAsync<ToDoActivity>(
+                      item: testItem,
+                      requestOptions: requestOptions);
+                    Assert.Fail("Should have thrown a request timeout exception");
+                }
+                catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+                {
+                    trace = ((CosmosTraceDiagnostics)ce.Diagnostics).Value;                    
+                }
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("Point Operation with Request Timeout", trace, startLineNumber, endLineNumber));
             }
             //----------------------------------------------------------------
 
