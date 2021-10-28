@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             MakeTest(
                 responses: new List<TestFeedResponse>
                 {
-                    new TestFeedResponse(Enumerable.Repeat(1, 10), "1", 200, "a"),
+                    new TestFeedResponse(pages: Enumerable.Repeat(1, 10), continuationToken: "1", requestCharge: 200, indexMetrics: "a"),
                 },
                 expected: new List<(int FixedPageSize, IReadOnlyList<TestFeedResponse> ExpectedResponses)>
                 {
@@ -30,22 +30,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     ExpectedResponses: new List<TestFeedResponse>
                     { 
                         new TestFeedResponse(
-                            Enumerable.Repeat(1, 5),
-                            new FixedPageQueryIterator<int>.ContinuationState(token: null, skip: 5).ToString(),
-                            200,
-                            "a\r\n"),
+                            pages: Enumerable.Repeat(1, 5),
+                            continuationToken: new FixedPageQueryIterator<int>.ContinuationState(token: null, skip: 5).ToString(),
+                            requestCharge: 200,
+                            indexMetrics: "a\r\n"),
                         new TestFeedResponse(
-                            Enumerable.Repeat(1, 5),
-                            null,
-                            0,
-                            "a\r\n")
+                            pages: Enumerable.Repeat(1, 5),
+                            continuationToken: null,
+                            requestCharge: 0,
+                            indexMetrics: "a\r\n")
                     })
                 }),
             MakeTest(
                 responses: new List<TestFeedResponse>
                 {
-                    new TestFeedResponse(Enumerable.Repeat(1, 5), "1", 200, "a"),
-                    new TestFeedResponse(Enumerable.Repeat(2, 5), null, 200, "b"),
+                    new TestFeedResponse(pages: Enumerable.Repeat(1, 5), continuationToken: "1", requestCharge: 200, indexMetrics: "a"),
+                    new TestFeedResponse(pages: Enumerable.Repeat(2, 5), continuationToken: null, requestCharge: 200, indexMetrics: "b"),
                 },
                 expected: new List<(int FixedPageSize, IReadOnlyList<TestFeedResponse> ExpectedResponses)>
                 {
@@ -53,18 +53,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     ExpectedResponses: new List<TestFeedResponse>
                     {
                         new TestFeedResponse(
-                            Enumerable.Repeat(1, 5).Concat(Enumerable.Repeat(2, 5)),
-                            null,
-                            400,
-                            "a\r\nb\r\n")
+                            pages: Enumerable.Repeat(1, 5).Concat(Enumerable.Repeat(2, 5)),
+                            continuationToken: null,
+                            requestCharge: 400,
+                            indexMetrics: "a\r\nb\r\n")
                     })
                 }),
             MakeTest(
                 responses: new List<TestFeedResponse>
                 {
-                    new TestFeedResponse(Enumerable.Repeat(1, 5), "1", 200, "a"),
-                    new TestFeedResponse(Enumerable.Repeat(2, 3), "2", 100, "b"),
-                    new TestFeedResponse(Enumerable.Repeat(3, 3), null, 150, "c"),
+                    new TestFeedResponse(pages: Enumerable.Repeat(1, 5), continuationToken: "1", requestCharge: 200, indexMetrics: "a"),
+                    new TestFeedResponse(pages: Enumerable.Repeat(2, 3), continuationToken: "2", requestCharge: 100, indexMetrics: "b"),
+                    new TestFeedResponse(pages: Enumerable.Repeat(3, 3), continuationToken: null, requestCharge: 150, indexMetrics: "c"),
                 },
                 expected: new List<(int FixedPageSize, IReadOnlyList<TestFeedResponse> ExpectedResponses)>
                 {
@@ -72,21 +72,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     ExpectedResponses: new List<TestFeedResponse>
                     {
                         new TestFeedResponse(
-                            Enumerable
+                            pages: Enumerable
                                 .Repeat(1, 5)
                                 .Concat(Enumerable.Repeat(2, 3))
                                 .Concat(Enumerable.Repeat(3, 2)),
-                            new FixedPageQueryIterator<int>.ContinuationState(token: "2", skip: 2).ToString(),
-                            450,
-                            "a\r\nb\r\nc\r\n"),
-                        new TestFeedResponse(Enumerable.Repeat(3, 1), null, 0, "c\r\n")
+                            continuationToken: new FixedPageQueryIterator<int>.ContinuationState(token: "2", skip: 2).ToString(),
+                            requestCharge: 450,
+                            indexMetrics: "a\r\nb\r\nc\r\n"),
+                        new TestFeedResponse(pages: Enumerable.Repeat(3, 1), continuationToken: null, requestCharge: 0, indexMetrics: "c\r\n")
                     })
                 }),
             MakeTest(
                 responses: new List<TestFeedResponse>
                 {
-                    new TestFeedResponse(Enumerable.Repeat(1, 5), "1", 200, "a"),
-                    new TestFeedResponse(Enumerable.Repeat(2, 3), null, 100, "b")
+                    new TestFeedResponse(pages: Enumerable.Repeat(1, 5), continuationToken: "1", requestCharge: 200, indexMetrics: "a"),
+                    new TestFeedResponse(pages: Enumerable.Repeat(2, 3), continuationToken: null, requestCharge: 100, indexMetrics: "b")
                 },
                 expected: new List<(int FixedPageSize, IReadOnlyList<TestFeedResponse> ExpectedResponses)>
                 {
@@ -94,12 +94,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     ExpectedResponses: new List<TestFeedResponse>
                     {
                         new TestFeedResponse(
-                            Enumerable
+                            pages: Enumerable
                                 .Repeat(1, 5)
                                 .Concat(Enumerable.Repeat(2, 3)),
-                            null,
-                            300,
-                            "a\r\nb\r\n")
+                            continuationToken: null,
+                            requestCharge: 300,
+                            indexMetrics: "a\r\nb\r\n")
                     })
                 })
         };
@@ -223,12 +223,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             private readonly double requestCharge;
 
             public TestFeedResponse(
-                IEnumerable<int> page,
+                IEnumerable<int> pages,
                 string continuationToken,
                 double requestCharge,
                 string indexMetrics)
             {
-                this.Page = page.ToList() ?? throw new ArgumentNullException(nameof(page));
+                this.Page = pages.ToList() ?? throw new ArgumentNullException(nameof(pages));
                 this.ContinuationToken = continuationToken;
                 this.requestCharge = requestCharge;
                 this.IndexMetrics = indexMetrics;
