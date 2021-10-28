@@ -13,6 +13,12 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.22.1-preview"/> [3.22.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.22.1-preview) - 2021-10-28
+### <a name="3.22.1"/> [3.22.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.22.1) - 2021-10-28
+
+#### Fixed
+- [#2827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2827) Query: Fixes a memory leak when on Windows x64 using ServiceInterop. Introduced in 3.22.0 [2777](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2777)
+
 ### <a name="3.22.0"/> [3.22.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.22.0) - 2021-10-18
 
 #### Added
