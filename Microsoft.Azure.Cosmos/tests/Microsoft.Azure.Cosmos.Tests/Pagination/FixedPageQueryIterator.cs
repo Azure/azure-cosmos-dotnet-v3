@@ -70,13 +70,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             ResponseAccumulator accumulator = ResponseAccumulator.Create();
             int skipCount = this.state.SkipCount;
-            FeedResponse<T> feedResponse = this.state.CachedResponse ??
+            string continuationToken = this.state.ContinuationToken;
+            FeedResponse <T> feedResponse = this.state.CachedResponse ??
                 (this.feedIterator.HasMoreResults ? await this.feedIterator.ReadNextAsync() : null);
 
             while (skipCount > 0 && feedResponse != null && feedResponse.Count < skipCount)
             {
                 accumulator.Add(feedResponse.RequestCharge, feedResponse.IndexMetrics);
                 skipCount -= feedResponse.Count;
+                continuationToken = feedResponse.ContinuationToken;
                 feedResponse = this.feedIterator.HasMoreResults ? await this.feedIterator.ReadNextAsync() : null;
             }
 
@@ -84,11 +86,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             if (feedResponse != null)
             {
                 Debug.Assert(feedResponse.Count >= skipCount);
-                accumulator.Add(feedResponse.Skip(skipCount).Take(this.fixedPageSize));
+                accumulator.Add(feedResponse.Skip(skipCount).Take(this.fixedPageSize), feedResponse.RequestCharge, feedResponse.IndexMetrics);
                 taken = skipCount + accumulator.Resource.Count;
             }
 
-            string continuationToken = feedResponse?.ContinuationToken;
             while (this.fixedPageSize - accumulator.Resource.Count > 0 && this.feedIterator.HasMoreResults)
             {
                 continuationToken = feedResponse?.ContinuationToken;
@@ -244,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
         }
 
-        private readonly struct ContinuationState
+        internal readonly struct ContinuationState
         {
             [JsonConstructor]
             public ContinuationState(string token, int skip)
