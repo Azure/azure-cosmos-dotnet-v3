@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             ResponseAccumulator accumulator = ResponseAccumulator.Create();
             int skipCount = this.state.SkipCount;
-            string continuationToken = this.state.ContinuationToken;
+            string continuationToken = this.state.ContinuationToken; // always hold on to the _previous_ continuation token
             FeedResponse <T> feedResponse = this.state.CachedResponse ??
                 (this.feedIterator.HasMoreResults ? await this.feedIterator.ReadNextAsync() : null);
 
@@ -100,7 +100,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             bool hasMoreResults = (accumulator.Resource.Count == this.fixedPageSize) && (this.feedIterator.HasMoreResults || feedResponse.Count > taken);
             this.state = hasMoreResults ?
-                new ContinuationState(token: continuationToken, skip: taken, hasMoreResults: true, cachedResponse: feedResponse) :
+                new ContinuationState(
+                    token: continuationToken,
+                    skip: taken,
+                    hasMoreResults: true,
+                    cachedResponse: new FixedPageQueryFeedResponse(
+                        resource: feedResponse.Resource.ToList(),
+                        requestCharge: 0, // we already accounted for the request charge in the response that we are about to return
+                        continuationToken: feedResponse.ContinuationToken,
+                        indexMetrics: feedResponse.IndexMetrics,
+                        headers: feedResponse.Headers,
+                        statusCode: feedResponse.StatusCode,
+                        diagnostics: feedResponse.Diagnostics)) :
                 Done;
 
             return accumulator.Resource.Count == 0 ?
@@ -265,8 +276,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 this.SkipCount = skip;
             }
 
+            [JsonProperty(PropertyName = "Token")]
             public string ContinuationToken { get; }
 
+            [JsonProperty(PropertyName = "Skip")]
             public int SkipCount { get; }
 
             [JsonIgnore]
