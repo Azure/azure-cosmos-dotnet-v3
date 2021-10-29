@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError($"Exception while getting account information in client telemetry : {ex.Message}");
+                DefaultTrace.TraceError("Exception while getting account information in client telemetry : {0}", ex.Message);
             }
 
             return null;
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
                 catch (Exception ex)
                 {
-                    DefaultTrace.TraceError($"Exception in LoadAzureVmMetaDataAsync() {ex.Message}" );
+                    DefaultTrace.TraceError("Exception in LoadAzureVmMetaDataAsync() {0}", ex.Message);
                 }
             }
 
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return (null, null);
             }
 
-            DefaultTrace.TraceInformation("System Usage recorded by telemetry is : " + systemUsageHistory);
+            DefaultTrace.TraceInformation("System Usage recorded by telemetry is : {0}", systemUsageHistory);
 
             foreach (SystemUsageLoad systemUsage in systemUsageHistory.Values)
             {
