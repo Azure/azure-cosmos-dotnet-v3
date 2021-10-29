@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Exception while getting account information in client telemetry : " + ex.Message);
+                DefaultTrace.TraceError($"Exception while getting account information in client telemetry : {ex.Message}");
             }
 
             return null;
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
                 catch (Exception ex)
                 {
-                    DefaultTrace.TraceError("Exception in LoadAzureVmMetaDataAsync() " + ex.Message);
+                    DefaultTrace.TraceError($"Exception in LoadAzureVmMetaDataAsync() {ex.Message}" );
                 }
             }
 

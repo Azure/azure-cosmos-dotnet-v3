@@ -66,11 +66,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             DefaultTrace.TraceInformation("Initiating telemetry with background task.");
 
             ClientTelemetry clientTelemetry = new ClientTelemetry(documentClient,
-            userAgent,
-            connectionMode,
-            authorizationTokenProvider,
-            diagnosticsHelper,
-            preferredRegions);
+                userAgent,
+                connectionMode,
+                authorizationTokenProvider,
+                diagnosticsHelper,
+                preferredRegions);
 
             clientTelemetry.StartObserverTask();
 
@@ -116,7 +116,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>Async Task</returns>
         private async Task EnrichAndSendAsync()
         {
-            DefaultTrace.TraceInformation("Telemetry Job Started with Observing window : " + observingWindow);
+            DefaultTrace.TraceInformation($"Telemetry Job Started with Observing window : {observingWindow}");
+
             try
             {
                 while (!this.cancellationTokenSource.IsCancellationRequested)
@@ -145,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     if (this.cancellationTokenSource.IsCancellationRequested)
                     {
                         DefaultTrace.TraceInformation("Observer Task Cancelled.");
-                        return;
+                        break;
                     }
 
                     this.RecordSystemUtilization();
@@ -162,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Exception in EnrichAndSendAsync() : " + ex.Message);
+                DefaultTrace.TraceError($"Exception in EnrichAndSendAsync() : {ex.Message}");
             }
 
             DefaultTrace.TraceInformation("Telemetry Job Stopped.");
@@ -232,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : " + requestChargeToRecord + "  Exception : " + ex.Message);
+                DefaultTrace.TraceError($"Request Charge Recording Failed by Telemetry. Request Charge Value : {requestChargeToRecord}  Exception : {ex.Message} ");
             }
         }
 
@@ -265,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("System Usage Recording Error : " + ex.Message);
+                DefaultTrace.TraceError($"System Usage Recording Error : {ex.Message}");
             }
         }
 
@@ -285,7 +286,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             try
             {
-                DefaultTrace.TraceInformation("Sending Telemetry Data to " + endpointUrl.AbsoluteUri);
+                DefaultTrace.TraceInformation($"Sending Telemetry Data to {endpointUrl.AbsoluteUri}");
 
                 string json = JsonConvert.SerializeObject(this.clientTelemetryInfo, ClientTelemetryOptions.JsonSerializerSettings);
 
@@ -328,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    DefaultTrace.TraceError("Juno API response not successful. Status Code : " + response.StatusCode + ", Message : " + response.ReasonPhrase);
+                    DefaultTrace.TraceError($"Juno API response not successful. Status Code : {response.StatusCode},  Message : {response.ReasonPhrase}");
                 } 
                 else
                 {
@@ -338,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Exception while sending telemetry data : " + ex.Message);
+                DefaultTrace.TraceError($"Exception while sending telemetry data : {ex.Message}");
             }
             finally
             {

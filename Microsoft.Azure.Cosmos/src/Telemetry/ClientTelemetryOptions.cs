@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     clientTelemetryEndpoint = new Uri(uriProp);
                 }
 
-                DefaultTrace.TraceInformation("Telemetry Endpoint URL is  " + uriProp);
+                DefaultTrace.TraceInformation($"Telemetry Endpoint URL is  {uriProp}");
             }
             return clientTelemetryEndpoint;
         }
