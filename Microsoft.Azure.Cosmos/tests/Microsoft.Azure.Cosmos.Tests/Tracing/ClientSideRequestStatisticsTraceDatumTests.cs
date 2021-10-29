@@ -36,6 +36,7 @@
             usingLocalLSN: true,
             activityId: Guid.Empty.ToString(),
             backendRequestDurationInMs: "4.2",
+            retryAfterInMs: "42",
             transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats());
 
         /// <summary>

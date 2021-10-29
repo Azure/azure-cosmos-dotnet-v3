@@ -1169,9 +1169,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
             catch(CosmosException ex)
             {
-                Assert.IsNotNull(ex);
-                // Github issue tracking fix: https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2714
-                // Assert.AreEqual("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. ", ex.Message);
+                Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
 
             // the previous failure would have updated the policy in the cache.
@@ -1275,10 +1273,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 if (ex.SubStatusCode != 1024)
                 {
-                    Assert.Fail("Query should have failed. ");
+                    Assert.Fail("Query should have failed with 1024 SubStatusCode. ");
                 }
 
-                Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. "));
+                Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
 
             // previous failure would have updated the policy in the cache.
@@ -1407,10 +1405,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             containerProperties = new ContainerProperties(encryptionContainerToDelete.Id, "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
 
             ContainerResponse containerResponse = await mainDatabase.CreateContainerAsync(containerProperties, 400);
-            //encryptionContainerToDelete = containerResponse;
-
+            
             TestDoc testDoc = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
 
+            // retry should be a success.
             await MdeEncryptionTests.VerifyItemByReadAsync(otherEncryptionContainer, testDoc);
 
             // create new container in other client.
@@ -1704,7 +1702,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task EncryptionPatchItem()
         {
             TestDoc docPostPatching = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
