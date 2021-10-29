@@ -304,6 +304,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void VerifyAccountEndpointIsSet()
+        {
+            CosmosClient cosmosClient = new CosmosClientBuilder(
+                AccountEndpoint, new Mock<TokenCredential>().Object).Build();
+            Assert.IsNotNull(cosmosClient.Endpoint);
+        }
+
+        [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ThrowOnNullConnectionString()
         {
