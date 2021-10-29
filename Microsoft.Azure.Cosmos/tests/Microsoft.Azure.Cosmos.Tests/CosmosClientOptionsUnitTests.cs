@@ -295,7 +295,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(ArgumentNullException))]
         public void VerifyAuthorizationTokenProviderIsSet()
         {
             CosmosClient cosmosClient = new CosmosClientBuilder(
