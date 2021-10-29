@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
                 // Add 25% buffer to avoid minor variation between test runs
                 double diff = Math.Abs(currentResult.Value - baselineResult);
-                double maxAllowedDiff = baselineResult * .25;
+                double maxAllowedDiff = baselineResult * .05;
                 double minDiffToUpdatebaseLine = baselineResult * .02;
                 if (diff > maxAllowedDiff)
                 {
