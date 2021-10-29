@@ -111,6 +111,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 throw new ArgumentNullException(nameof(CosmosClientBuilder.accountEndpoint));
             }
 
+            this.accountEndpoint = accountEndpoint;
             this.tokenCredential = tokenCredential ?? throw new ArgumentNullException(nameof(CosmosClientBuilder.tokenCredential));
         }
 
