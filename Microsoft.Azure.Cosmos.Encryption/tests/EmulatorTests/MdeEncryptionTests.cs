@@ -1704,7 +1704,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task EncryptionPatchItem()
         {
             TestDoc docPostPatching = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
