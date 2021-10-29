@@ -87,20 +87,21 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     continue;
                 }
 
-                // Add 25% buffer to avoid minor variation between test runs
+                // Add 5% buffer to avoid minor variation between test runs
                 double diff = Math.Abs(currentResult.Value - baselineResult);
                 double maxAllowedDiff = baselineResult * .05;
                 double minDiffToUpdatebaseLine = baselineResult * .02;
+
+                double percentChanged = (currentResult.Value - baselineResult) / baselineResult * 100;
                 if (diff > maxAllowedDiff)
                 {
                     updatedBaseline.Add(currentResult.Key, currentResult.Value.ToString());
-                    failures.Add($"{currentResult.Key}: {currentResult.Value}");
+                    failures.Add($"{currentResult.Key}: {currentResult.Value} ({Math.Round(percentChanged, 2)}%)");
                 }
                 else if(diff > minDiffToUpdatebaseLine)
                 {
                     // Update the value if it is greater than 2% difference.
                     // This reduces the noise and make it easier to see which values actually changed
-                    double percentChanged = (currentResult.Value - baselineResult)/ baselineResult * 100;
                     updatedBaseline.Add(currentResult.Key, currentResult.Value + " (" + Math.Round(percentChanged, 2) + "%)");
                 }
                 else
