@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        public async Task QuerySinglePageSinglePartition()
+        public async Task QuerySinglePartitionOnePage()
         {
             using FeedIterator streamIterator = this.benchmarkHelper.TestContainer.GetItemQueryStreamIterator(
                 "select * from T",
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        public async Task QueryMultiplePageSinglePartition()
+        public async Task QuerySinglePartitionMultiplePages()
         {
             using FeedIterator streamIterator = this.benchmarkHelper.TestContainer.GetItemQueryStreamIterator(
               "select * from T",
@@ -180,7 +180,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 ResponseMessage response = await streamIterator.ReadNextAsync();
 
-                CosmosJsonDotNetSerializer serialize = new CosmosJsonDotNetSerializer();
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
                     throw new Exception();

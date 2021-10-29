@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        public async Task QuerySinglePageSinglePartition()
+        public async Task QuerySinglePartitionOnePage()
         {
             using FeedIterator<ToDoActivity> resultIterator = this.BenchmarkHelper.TestContainer.GetItemQueryIterator<ToDoActivity>(
                 "select * from T",
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        public async Task QueryMultiplePageSinglePartition()
+        public async Task QuerySinglePartitionMultiplePages()
         {
             using FeedIterator<ToDoActivity> resultIterator = this.BenchmarkHelper.TestContainer.GetItemQueryIterator<ToDoActivity>(
                 "select * from T",

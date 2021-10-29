@@ -111,16 +111,16 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         [Benchmark]
         [BenchmarkCategory("GateBenchmark")]
-        public async Task QuerySinglePageSinglePartition()
+        public async Task QuerySinglePartitionOnePage()
         {
-            await this.CurrentBenchmark.QuerySinglePageSinglePartition();
+            await this.CurrentBenchmark.QuerySinglePartitionOnePage();
         }
 
         [Benchmark]
         [BenchmarkCategory("GateBenchmark")]
-        public async Task QueryMultiplePageSinglePartition()
+        public async Task QuerySinglePartitionMultiplePages()
         {
-            await this.CurrentBenchmark.QueryMultiplePageSinglePartition();
+            await this.CurrentBenchmark.QuerySinglePartitionMultiplePages();
         }
     }
 }
