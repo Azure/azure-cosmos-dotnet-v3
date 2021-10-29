@@ -3,6 +3,12 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="1.0.0-previewV18"/> [1.0.0-previewV18](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV18) - 2021-10-29
+
+#### Fixes 
+- [#2835](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2835) Adds fix to add encryption header for patch operation.
+- [#2727](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2727) Fixes JSON property name of ClientEncryptionKeyProperties to match backend.
+
 ### <a name="1.0.0-previewV17"/> [1.0.0-previewV17](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV17) - 2021-10-07
 
 #### Added 

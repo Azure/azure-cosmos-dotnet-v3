@@ -572,31 +572,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(patchOperations));
             }
 
-            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                obsoleteEncryptionSettings: null,
-                cancellationToken: cancellationToken);
+            ResponseMessage responseMessage = await this.PatchItemHelperAsync(
+                    id,
+                    partitionKey,
+                    patchOperations,
+                    requestOptions,
+                    cancellationToken);
 
-            EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
-            List<PatchOperation> encryptedPatchOperations = await this.EncryptPatchOperationsAsync(
-                patchOperations,
-                encryptionSettings,
-                encryptionDiagnosticsContext,
-                cancellationToken);
-
-            ResponseMessage responseMessage = await this.container.PatchItemStreamAsync(
-                id,
-                partitionKey,
-                encryptedPatchOperations,
-                requestOptions,
-                cancellationToken);
-
-            responseMessage.Content = await EncryptionProcessor.DecryptAsync(
-                responseMessage.Content,
-                encryptionSettings,
-                encryptionDiagnosticsContext,
-                cancellationToken);
-
-            encryptionDiagnosticsContext.AddEncryptionDiagnosticsToResponseMessage(responseMessage);
             return responseMessage;
         }
 
@@ -1113,6 +1095,53 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     cancellationToken,
                     isRetry: true);
             }
+
+            responseMessage.Content = await EncryptionProcessor.DecryptAsync(
+                responseMessage.Content,
+                encryptionSettings,
+                encryptionDiagnosticsContext,
+                cancellationToken);
+
+            encryptionDiagnosticsContext.AddEncryptionDiagnosticsToResponseMessage(responseMessage);
+            return responseMessage;
+        }
+
+        private async Task<ResponseMessage> PatchItemHelperAsync(
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            PatchItemRequestOptions requestOptions,
+            CancellationToken cancellationToken)
+        {
+            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                obsoleteEncryptionSettings: null,
+                cancellationToken: cancellationToken);
+
+            PatchItemRequestOptions clonedRequestOptions;
+            if (requestOptions != null)
+            {
+                clonedRequestOptions = (PatchItemRequestOptions)requestOptions.ShallowCopy();
+            }
+            else
+            {
+                clonedRequestOptions = new PatchItemRequestOptions();
+            }
+
+            encryptionSettings.SetRequestHeaders(clonedRequestOptions);
+
+            EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
+            List<PatchOperation> encryptedPatchOperations = await this.EncryptPatchOperationsAsync(
+                patchOperations,
+                encryptionSettings,
+                encryptionDiagnosticsContext,
+                cancellationToken);
+
+            ResponseMessage responseMessage = await this.container.PatchItemStreamAsync(
+                id,
+                partitionKey,
+                encryptedPatchOperations,
+                clonedRequestOptions,
+                cancellationToken);
 
             responseMessage.Content = await EncryptionProcessor.DecryptAsync(
                 responseMessage.Content,
