@@ -11,7 +11,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Path that needs encryption and the associated settings within <see cref="ClientEncryptionPolicy"/>.
     /// </summary>
-    public sealed class ClientEncryptionIncludedPath
+#if PREVIEW
+    public 
+#else
+    internal
+#endif
+        sealed class ClientEncryptionIncludedPath
     {
         /// <summary>
         /// Gets or sets the path to be encrypted. Must be a top level path, eg. /salary
