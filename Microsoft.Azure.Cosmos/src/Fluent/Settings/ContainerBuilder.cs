@@ -91,7 +91,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Defines the ClientEncryptionPolicy for Azure Cosmos container
         /// </summary>
         /// <returns>An instance of <see cref="ClientEncryptionPolicyDefinition"/>.</returns>
-        public ClientEncryptionPolicyDefinition WithClientEncryptionPolicy()
+#if PREVIEW
+        public 
+#else
+        internal
+#endif
+            ClientEncryptionPolicyDefinition WithClientEncryptionPolicy()
         {
             return new ClientEncryptionPolicyDefinition(
                 this,
