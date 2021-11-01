@@ -14,7 +14,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary> 
     /// Details of an encryption key for use with the Azure Cosmos DB service.
     /// </summary>
-    public class ClientEncryptionKeyProperties : IEquatable<ClientEncryptionKeyProperties>
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+        class ClientEncryptionKeyProperties : IEquatable<ClientEncryptionKeyProperties>
     {
         /// <summary>
         /// Initializes a new instance of <see cref="ClientEncryptionKeyProperties"/>.
