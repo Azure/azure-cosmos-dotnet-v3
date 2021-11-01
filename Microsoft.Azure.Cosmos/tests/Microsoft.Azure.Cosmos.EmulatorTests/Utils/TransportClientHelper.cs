@@ -138,14 +138,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             if (request.ResourceType == ResourceType.Document)
             {
-                //ServiceUnavailableException serviceUnavailableException = new ServiceUnavailableException(
-                //    // errorCode: HttpStatusCode.ServiceUnavailable,
-                //    innerException: null,
-                //    activityId: activityId,
-                //    requestUri: physicalAddress,
-                //    sourceDescription: transportExceptionSourceDescription,
-                //    userPayload: true,
-                //    payloadSent: false);
                 TransportException transportException = new TransportException(
                     errorCode: TransportErrorCode.RequestTimeout,
                     innerException: null,
