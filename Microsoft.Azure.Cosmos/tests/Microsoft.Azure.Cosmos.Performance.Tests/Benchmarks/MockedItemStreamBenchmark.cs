@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 if ((int)response.StatusCode > 300 || response.Content == null)
                 {
-                    throw new Exception();
+                    throw new Exception($"Failed with status code {response.StatusCode}");
                 }
             }
         }
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 if ((int)response.StatusCode > 300 || response.Content == null)
                 {
-                    throw new Exception();
+                    throw new Exception($"Failed with status code {response.StatusCode}");
                 }
             }
         }
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
                 {
-                    throw new Exception();
+                    throw new Exception($"Failed with status code {response.StatusCode}");
                 }
             }
         }
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
                 {
-                    throw new Exception();
+                    throw new Exception($"Failed with status code {response.StatusCode}");
                 }
             }
         }
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 string diagnostics = response.Diagnostics.ToString();
                 if (string.IsNullOrEmpty(diagnostics))
                 {
-                    throw new Exception();
+                    throw new Exception($"Failed with status code {response.StatusCode}");
                 }
             }
         }
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
                 {
-                    throw new Exception();
+                    throw new Exception($"Failed with status code {response.StatusCode}");
                 }
             }
         }
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
-                    throw new Exception();
+                    throw new Exception($"Failed with status code {response.StatusCode}");
                 }
             }
         }
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
                 {
-                    throw new Exception();
+                    throw new Exception($"Failed with status code {response.StatusCode}");
                 }
             }
         }
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 ResponseMessage response = await streamIterator.ReadNextAsync();
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
-                    throw new Exception();
+                    throw new Exception($"Failed with status code {response.StatusCode}");
                 }
             }
         }
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 ResponseMessage response = await streamIterator.ReadNextAsync();
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
-                    throw new Exception();
+                    throw new Exception($"Failed with status code {response.StatusCode}");
                 }
             }
         }
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
-                    throw new Exception();
+                    throw new Exception($"Failed with status code {response.StatusCode}");
                 }
             }
         }

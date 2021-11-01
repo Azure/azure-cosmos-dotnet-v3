@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
-                throw new Exception();
+                throw new Exception($"Failed with status code {response.StatusCode}");
             }
 
             this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
-                throw new Exception();
+                throw new Exception($"Failed with status code {response.StatusCode}");
             }
 
             this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReadItemAsync<ToDoActivity>(
                     MockedItemBenchmarkHelper.NonExistingItemId,
                     MockedItemBenchmarkHelper.ExistingPartitionId);
-                throw new Exception();
+                throw new Exception($"Failed with status code {response.StatusCode}");
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
-                throw new Exception();
+                throw new Exception($"Failed with status code {response.StatusCode}");
             }
 
             this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
-                throw new Exception();
+                throw new Exception($"Failed with status code {response.StatusCode}");
             }
 
             this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
-                throw new Exception();
+                throw new Exception($"Failed with status code {response.StatusCode}");
             }
 
             this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 FeedResponse<ToDoActivity> response = await resultIterator.ReadNextAsync();
                 if (response.StatusCode != HttpStatusCode.OK || response.Resource.Count() == 0)
                 {
-                    throw new Exception();
+                    throw new Exception($"Failed with status code {response.StatusCode}");
                 }
 
                 this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 FeedResponse<ToDoActivity> response = await resultIterator.ReadNextAsync();
                 if (response.StatusCode != HttpStatusCode.OK || response.Resource.Count() == 0)
                 {
-                    throw new Exception();
+                    throw new Exception($"Failed with status code {response.StatusCode}");
                 }
 
                 this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
-                    throw new Exception();
+                    throw new Exception($"Failed with status code {response.StatusCode}");
                 }
 
                 this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
