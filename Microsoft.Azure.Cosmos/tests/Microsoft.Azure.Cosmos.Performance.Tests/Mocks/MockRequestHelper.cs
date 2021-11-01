@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using System.IO;
     using System.Linq;
     using System.Runtime.Serialization.Formatters.Binary;
+    using System.Text;
     using Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -74,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 }
 
                 return new DocumentServiceResponse(
-                    Stream.Null,
+                    new MemoryStream(Encoding.ASCII.GetBytes("{\"Errors\":[\"Resource Not Found.Learn more: https:\\/\\/ aka.ms\\/ cosmosdb - tsg - not - found\"]}")),
                     headers,
                     System.Net.HttpStatusCode.NotFound
                 );
@@ -92,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 }
 
                 return new DocumentServiceResponse(
-                    Stream.Null,
+                    new MemoryStream(Encoding.ASCII.GetBytes("{\"Errors\":[\"Resource Not Found.Learn more: https:\\/\\/ aka.ms\\/ cosmosdb - tsg - not - found\"]}")),
                     headers,
                     System.Net.HttpStatusCode.NotFound
                 );
@@ -208,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
                 return new StoreResponse()
                 {
-                    ResponseBody = Stream.Null,
+                    ResponseBody = new MemoryStream(Encoding.ASCII.GetBytes("{\"Errors\":[\"Resource Not Found.Learn more: https:\\/\\/ aka.ms\\/ cosmosdb - tsg - not - found\"]}")),
                     Status = (int)System.Net.HttpStatusCode.NotFound,
                     Headers = headers,
                 };
@@ -228,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
                 return new StoreResponse()
                 {
-                    ResponseBody = Stream.Null,
+                    ResponseBody = new MemoryStream(Encoding.ASCII.GetBytes("{\"Errors\":[\"Resource Not Found.Learn more: https:\\/\\/ aka.ms\\/ cosmosdb - tsg - not - found\"]}")),
                     Status = (int)System.Net.HttpStatusCode.NotFound,
                     Headers = headers,
                 };
