@@ -265,7 +265,7 @@ namespace CosmosBenchmark
                 return;
             }
 
-            for (int itemCount = 0; itemCount < 10; itemCount++)
+            for (int itemCount = 0; itemCount < 100; itemCount++)
             {
                 string objectId = Guid.NewGuid().ToString();
 
