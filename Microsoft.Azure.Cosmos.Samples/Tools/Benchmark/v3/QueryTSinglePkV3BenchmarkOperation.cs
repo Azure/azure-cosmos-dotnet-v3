@@ -29,6 +29,6 @@ namespace CosmosBenchmark
 
         public override bool IsPaginationEnabled => false;
 
-        public override bool IsQueryStream => false
+        public override bool IsQueryStream => false;
     }
 }
