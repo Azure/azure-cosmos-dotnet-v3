@@ -38,15 +38,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         [JsonProperty(PropertyName = "acceleratedNetworking")]
         private bool? AcceleratedNetworking { get; set; }
 
-        [JsonProperty(PropertyName = "systemInfo")]
-        internal List<SystemInfo> SystemInfo { get; set; }
-
-        [JsonProperty(PropertyName = "cacheRefreshInfo")]
-        private List<OperationInfo> CacheRefreshInfo { get; set; }
-
-        [JsonProperty(PropertyName = "operationInfo")]
-        internal List<OperationInfo> OperationInfo { get; set; }
-        
         /// <summary>
         /// Preferred Region set by the client
         /// </summary>
@@ -55,6 +46,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         [JsonProperty(PropertyName = "aggregationIntervalInSec")]
         internal int AggregationIntervalInSec { get; }
+
+        [JsonProperty(PropertyName = "systemInfo")]
+        internal List<SystemInfo> SystemInfo { get; set; }
+
+        [JsonProperty(PropertyName = "cacheRefreshInfo")]
+        private List<OperationInfo> CacheRefreshInfo { get; set; }
+
+        [JsonProperty(PropertyName = "operationInfo")]
+        internal List<OperationInfo> OperationInfo { get; set; }
 
         [JsonIgnore]
         private readonly ConnectionMode ConnectionModeEnum;
