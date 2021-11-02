@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         internal static readonly BatchResponsePayloadWriter batchResponsePayloadWriter;
         internal static int pagenumber;
 
-        internal static readonly MemoryStream notFoundStream = new MemoryStream(Encoding.ASCII.GetBytes("{\"Errors\":[\"Resource Not Found.Learn more: https:\\/\\/ aka.ms\\/ cosmosdb - tsg - not - found\"]}"));
+        internal static readonly byte[] notFoundPayload = Encoding.ASCII.GetBytes("{\"Errors\":[\"Resource Not Found.Learn more: https:\\/\\/ aka.ms\\/ cosmosdb - tsg - not - found\"]}");
 
 
         static MockRequestHelper()
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 }
 
                 return new DocumentServiceResponse(
-                    MockRequestHelper.notFoundStream,
+                    new MemoryStream(MockRequestHelper.notFoundPayload),
                     headers,
                     System.Net.HttpStatusCode.NotFound
                 );
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 }
 
                 return new DocumentServiceResponse(
-                    MockRequestHelper.notFoundStream,
+                    new MemoryStream(MockRequestHelper.notFoundPayload),
                     headers,
                     System.Net.HttpStatusCode.NotFound
                 );
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
                 return new StoreResponse()
                 {
-                    ResponseBody = MockRequestHelper.notFoundStream,
+                    ResponseBody = new MemoryStream(MockRequestHelper.notFoundPayload, 0, MockRequestHelper.notFoundPayload.Length, writable: false, publiclyVisible: true),
                     Status = (int)System.Net.HttpStatusCode.NotFound,
                     Headers = headers,
                 };
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
                 return new StoreResponse()
                 {
-                    ResponseBody = MockRequestHelper.notFoundStream,
+                    ResponseBody = new MemoryStream(MockRequestHelper.notFoundPayload, 0, MockRequestHelper.notFoundPayload.Length, writable: false, publiclyVisible: true),
                     Status = (int)System.Net.HttpStatusCode.NotFound,
                     Headers = headers,
                 };
