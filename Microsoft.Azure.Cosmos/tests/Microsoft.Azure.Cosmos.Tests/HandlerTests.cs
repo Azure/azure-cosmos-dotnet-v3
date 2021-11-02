@@ -52,13 +52,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void HandlerOrderIfTelemetryIsEnabled()
         {
-
-#if PREVIEW
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "true");
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
-#else
-            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(enableTelemetry: true);
-#endif
+
             Type[] types = new Type[]
             {
                 typeof(RequestInvokerHandler),
@@ -76,10 +72,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
             Assert.IsNull(handler);
 
-#if PREVIEW
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, null);
-#endif   
-
         }
 
         [TestMethod]
