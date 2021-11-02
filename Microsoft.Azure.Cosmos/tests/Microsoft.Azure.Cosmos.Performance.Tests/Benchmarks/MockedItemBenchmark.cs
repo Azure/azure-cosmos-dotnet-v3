@@ -54,6 +54,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         private IItemBenchmark CurrentBenchmark => MockedItemBenchmark.IterParameters[(int)this.Type];
 
         [Benchmark]
+        [GcForce, GcServer]
         [BenchmarkCategory("GateBenchmark")]
         public async Task CreateItem()
         {
@@ -61,6 +62,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         }
 
         [Benchmark]
+        [GcForce, GcServer]
         [BenchmarkCategory("GateBenchmark")]
         public async Task DeleteItemExists()
         {
@@ -68,6 +70,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         }
 
         [Benchmark]
+        [GcForce, GcServer]
         [BenchmarkCategory("GateBenchmark")]
         public async Task DeleteItemNotExists()
         {
@@ -75,6 +78,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         }
 
         [Benchmark]
+        [GcForce, GcServer]
         [BenchmarkCategory("GateBenchmark")]
         public async Task ReadFeed()
         {
@@ -82,6 +86,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         }
 
         [Benchmark]
+        [GcForce, GcServer]
         [BenchmarkCategory("GateBenchmark")]
         public async Task ReadItemExists()
         {
@@ -89,6 +94,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         }
 
         [Benchmark]
+        [GcForce, GcServer]
         [BenchmarkCategory("GateBenchmark")]
         public async Task ReadItemNotExists()
         {
@@ -96,6 +102,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         }
 
         [Benchmark]
+        [GcForce, GcServer]
         [BenchmarkCategory("GateBenchmark")]
         public async Task UpdateItem()
         {
@@ -103,6 +110,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         }
 
         [Benchmark]
+        [GcForce, GcServer]
         [BenchmarkCategory("GateBenchmark")]
         public async Task UpsertItem()
         {
@@ -110,6 +118,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         }
 
         [Benchmark]
+        [GcForce, GcServer]
         [BenchmarkCategory("GateBenchmark")]
         public async Task QuerySinglePage()
         {
