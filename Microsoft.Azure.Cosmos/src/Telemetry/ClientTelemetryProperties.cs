@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal IReadOnlyList<string> PreferredRegions { get; set; }
 
         [JsonProperty(PropertyName = "aggregationIntervalInSec")]
-        internal int AggregationIntervalInSec { get; }
+        internal int AggregationIntervalInSec { get; set; }
 
         [JsonProperty(PropertyName = "systemInfo")]
         internal List<SystemInfo> SystemInfo { get; set; }
