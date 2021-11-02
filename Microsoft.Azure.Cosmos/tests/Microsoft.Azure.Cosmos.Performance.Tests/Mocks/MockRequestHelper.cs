@@ -23,6 +23,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         internal static readonly BatchResponsePayloadWriter batchResponsePayloadWriter;
         internal static int pagenumber;
 
+        internal static readonly MemoryStream notFoundStream = new MemoryStream(Encoding.ASCII.GetBytes("{\"Errors\":[\"Resource Not Found.Learn more: https:\\/\\/ aka.ms\\/ cosmosdb - tsg - not - found\"]}"));
+
+
         static MockRequestHelper()
         {
             MemoryStream ms = new MemoryStream();
@@ -75,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 }
 
                 return new DocumentServiceResponse(
-                    new MemoryStream(Encoding.ASCII.GetBytes("{\"Errors\":[\"Resource Not Found.Learn more: https:\\/\\/ aka.ms\\/ cosmosdb - tsg - not - found\"]}")),
+                    MockRequestHelper.notFoundStream,
                     headers,
                     System.Net.HttpStatusCode.NotFound
                 );
@@ -93,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 }
 
                 return new DocumentServiceResponse(
-                    new MemoryStream(Encoding.ASCII.GetBytes("{\"Errors\":[\"Resource Not Found.Learn more: https:\\/\\/ aka.ms\\/ cosmosdb - tsg - not - found\"]}")),
+                    MockRequestHelper.notFoundStream,
                     headers,
                     System.Net.HttpStatusCode.NotFound
                 );
@@ -209,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
                 return new StoreResponse()
                 {
-                    ResponseBody = new MemoryStream(Encoding.ASCII.GetBytes("{\"Errors\":[\"Resource Not Found.Learn more: https:\\/\\/ aka.ms\\/ cosmosdb - tsg - not - found\"]}")),
+                    ResponseBody = MockRequestHelper.notFoundStream,
                     Status = (int)System.Net.HttpStatusCode.NotFound,
                     Headers = headers,
                 };
@@ -229,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
                 return new StoreResponse()
                 {
-                    ResponseBody = new MemoryStream(Encoding.ASCII.GetBytes("{\"Errors\":[\"Resource Not Found.Learn more: https:\\/\\/ aka.ms\\/ cosmosdb - tsg - not - found\"]}")),
+                    ResponseBody = MockRequestHelper.notFoundStream,
                     Status = (int)System.Net.HttpStatusCode.NotFound,
                     Headers = headers,
                 };
