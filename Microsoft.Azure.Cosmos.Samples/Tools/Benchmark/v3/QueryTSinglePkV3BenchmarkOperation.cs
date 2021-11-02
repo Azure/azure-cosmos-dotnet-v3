@@ -25,5 +25,10 @@ namespace CosmosBenchmark
             PartitionKey = new PartitionKey(this.executionPartitionKey)
         };
 
+        public override bool IsCrossPartitioned => false;
+
+        public override bool IsPaginationEnabled => false;
+
+        public override bool IsQueryStream => false
     }
 }

@@ -15,8 +15,6 @@ namespace CosmosBenchmark
             string partitionKeyPath,
             string sampleJson) : base(cosmosClient, dbName, containerName, partitionKeyPath, sampleJson)
         {
-            this.IsQueryStream = true;
-            this.IsPaginationEnabled = true;
         }
 
         public override QueryDefinition QueryDefinition => new QueryDefinition("select * from T ORDER BY T.id");
@@ -27,5 +25,10 @@ namespace CosmosBenchmark
             PartitionKey = new PartitionKey(this.executionPartitionKey)
         };
 
+        public override bool IsCrossPartitioned => false;
+
+        public override bool IsPaginationEnabled => true;
+
+        public override bool IsQueryStream => true;
     }
 }

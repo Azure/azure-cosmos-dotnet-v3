@@ -8,7 +8,6 @@ namespace CosmosBenchmark
 
     internal class QueryStreamCrossPkOrderByFullDrainV3BenchmarkOperation : QueryTV3BenchmarkOperation
     {
-
         public QueryStreamCrossPkOrderByFullDrainV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
@@ -16,8 +15,6 @@ namespace CosmosBenchmark
             string partitionKeyPath,
             string sampleJson) : base(cosmosClient, dbName, containerName, partitionKeyPath, sampleJson)
         {
-            this.IsQueryStream = true;
-            this.IsCrossPartitioned = true;
         }
 
         public override QueryDefinition QueryDefinition => new QueryDefinition("select * from T ORDER BY T.id");
@@ -26,5 +23,11 @@ namespace CosmosBenchmark
         {
             MaxItemCount = 1
         };
+
+        public override bool IsCrossPartitioned => true;
+
+        public override bool IsPaginationEnabled => false;
+
+        public override bool IsQueryStream => true;
     }
 }

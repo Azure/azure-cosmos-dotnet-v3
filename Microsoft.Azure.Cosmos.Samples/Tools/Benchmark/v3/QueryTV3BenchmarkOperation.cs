@@ -27,9 +27,9 @@ namespace CosmosBenchmark
         public abstract QueryRequestOptions QueryRequestOptions { get; }
 
         // Configurations
-        public bool IsCrossPartitioned = false;
-        public bool IsPaginationEnabled = false;
-        public bool IsQueryStream = false;
+        public abstract bool IsCrossPartitioned { get; }
+        public abstract bool IsPaginationEnabled { get; }
+        public abstract bool IsQueryStream { get; }
 
         protected string executionItemId = null;
         protected string executionPartitionKey = null;

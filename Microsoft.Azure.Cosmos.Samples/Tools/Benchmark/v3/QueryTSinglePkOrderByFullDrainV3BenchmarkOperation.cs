@@ -8,7 +8,6 @@ namespace CosmosBenchmark
 
     internal class QueryTSinglePkOrderByFullDrainV3BenchmarkOperation : QueryTV3BenchmarkOperation
     {
-
         public QueryTSinglePkOrderByFullDrainV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
@@ -25,5 +24,11 @@ namespace CosmosBenchmark
             MaxItemCount = 1,
             PartitionKey = new PartitionKey(this.executionPartitionKey)
         };
+
+        public override bool IsCrossPartitioned => false;
+
+        public override bool IsPaginationEnabled => false;
+
+        public override bool IsQueryStream => false;
     }
 }
