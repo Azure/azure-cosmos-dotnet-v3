@@ -47,6 +47,12 @@ jobs:
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
 
+- template:  templates/build-performance-test.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage: $(VmImage)
+
 - template:  templates/build-internal.yml
   parameters:
     BuildConfiguration: Release
