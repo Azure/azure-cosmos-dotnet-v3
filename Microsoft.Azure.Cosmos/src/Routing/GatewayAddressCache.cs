@@ -571,7 +571,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                        addressInfo.PhysicalUri);
 
                     HashSet<PartitionKeyRangeIdentity> pkRangeIdSet = this.serverPartitionAddressToPkRangeIdMap.GetOrAdd(
-                        new ServerKey(new Uri(addressInfo.PhysicalUri)), new HashSet<PartitionKeyRangeIdentity>());
+                        new ServerKey(new Uri(addressInfo.PhysicalUri)),
+                        (_) => new HashSet<PartitionKeyRangeIdentity>());
                     lock (pkRangeIdSet)
                     {
                         pkRangeIdSet.Add(partitionKeyRangeIdentity);
