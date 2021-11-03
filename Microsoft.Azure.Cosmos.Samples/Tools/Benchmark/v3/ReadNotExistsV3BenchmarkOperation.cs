@@ -11,13 +11,13 @@ namespace CosmosBenchmark
 
     internal class ReadNotExistsV3BenchmarkOperation : IBenchmarkOperation
     {
-        private readonly Container container;
+        protected readonly Container container;
 
-        private readonly string databsaeName;
-        private readonly string containerName;
+        protected readonly string databsaeName;
+        protected readonly string containerName;
 
-        private string nextExecutionItemPartitionKey;
-        private string nextExecutionItemId;
+        protected string nextExecutionItemPartitionKey;
+        protected string nextExecutionItemId;
 
         public ReadNotExistsV3BenchmarkOperation(
             CosmosClient cosmosClient,
@@ -32,7 +32,7 @@ namespace CosmosBenchmark
             this.container = cosmosClient.GetContainer(this.databsaeName, this.containerName);
         }
 
-        public async Task<OperationResult> ExecuteOnceAsync()
+        public virtual async Task<OperationResult> ExecuteOnceAsync()
         {
             using (ResponseMessage itemResponse = await this.container.ReadItemStreamAsync(
                         this.nextExecutionItemId,
@@ -45,8 +45,8 @@ namespace CosmosBenchmark
 
                 return new OperationResult()
                 {
-                    DatabseName = databsaeName,
-                    ContainerName = containerName,
+                    DatabseName = this.databsaeName,
+                    ContainerName = this.containerName,
                     RuCharges = itemResponse.Headers.RequestCharge,
                     CosmosDiagnostics = itemResponse.Diagnostics,
                     LazyDiagnostics = () => itemResponse.Diagnostics.ToString(),
