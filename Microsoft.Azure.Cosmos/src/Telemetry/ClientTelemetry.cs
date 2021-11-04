@@ -94,7 +94,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 processId: System.Diagnostics.Process.GetCurrentProcess().ProcessName, 
                 userAgent: userAgent, 
                 connectionMode: connectionMode,
-                preferredRegions: preferredRegions);
+                preferredRegions: preferredRegions,
+                aggregationIntervalInSec: (int)observingWindow.TotalSeconds);
 
             this.httpClient = documentClient.httpClient;
             this.cancellationTokenSource = new CancellationTokenSource();
