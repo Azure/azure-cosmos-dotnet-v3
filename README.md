@@ -4,6 +4,8 @@
 
 This client library enables client applications to connect to Azure Cosmos via the SQL API. Azure Cosmos is a globally distributed, multi-model database service. For more information, refer to https://azure.microsoft.com/services/cosmos-db/.
 
+> :warning: The .NET V4 SDK for Azure Cosmos DB is currently in public preview. This preview version is provided without a service-level agreement, and we don't recommend it for production workloads. Certain features might not be supported or might have constrained capabilities.
+
 ## Getting started
 
 ### Install the package
