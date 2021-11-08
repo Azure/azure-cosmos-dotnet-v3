@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
         private readonly IQueryPipelineStage inputStage;
         private double cumulativeRequestCharge;
         private long cumulativeResponseLengthInBytes;
-        private ImmutableDictionary<string, string> cumulativeAdditionalHeaders;
+        private IReadOnlyDictionary<string, string> cumulativeAdditionalHeaders;
         private CancellationToken cancellationToken;
         private bool returnedFinalStats;
 
