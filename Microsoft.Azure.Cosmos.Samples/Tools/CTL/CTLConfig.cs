@@ -44,6 +44,9 @@ namespace CosmosCTL
         [Option("ctl_throughput", Required = false, HelpText = "Provisioned throughput to use")]
         public int Throughput { get; set; } = 100000;
 
+        [Option("ctl_db_throughput", Required = false, HelpText = "Provisioned throughput to use for databases")]
+        public int DatabaseThroughput { get; set; } = 0;
+
         [Option("ctl_read_write_query_pct", Required = false, HelpText = "Distribution of read, writes, and queries")]
         public string ReadWriteQueryPercentage { get; set; } = "90,9,1";
 

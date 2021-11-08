@@ -137,9 +137,17 @@ namespace CosmosCTL
             }
             catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
             {
-                DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(config.Database);
+                if (config.DatabaseThroughput > 0)
+                {
+                    await cosmosClient.CreateDatabaseAsync(config.Database, config.DatabaseThroughput);
+                }
+                else
+                {
+                    await cosmosClient.CreateDatabaseAsync(config.Database);
+                }
+
                 result.CreatedDatabase = true;
-                database = databaseResponse.Database;
+                database = cosmosClient.GetDatabase(config.Database);
             }
 
             Container container;
@@ -157,6 +165,7 @@ namespace CosmosCTL
                 {
                     await database.CreateContainerAsync(config.Collection, $"/{config.CollectionPartitionKey}");
                 }
+
                 result.CreatedContainer = true;
             }
 
