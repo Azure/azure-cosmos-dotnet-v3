@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Cosmos.Samples.Reencryption
+namespace Cosmos.Samples.ReEncryption
 {
     using System;
     using System.Collections.Generic;
@@ -13,19 +13,19 @@ namespace Cosmos.Samples.Reencryption
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
-    internal class ReencryptionBulkOperationBuilder
+    internal class ReEncryptionBulkOperationBuilder
     {
         private readonly Container container;
         private readonly string partitionKey;
-        private readonly ReencryptionJsonSerializer reencryptionJsonSerializer;
+        private readonly ReEncryptionJsonSerializer reEncryptionJsonSerializer;
 
-        public ReencryptionBulkOperationBuilder(
+        public ReEncryptionBulkOperationBuilder(
             Container container,
             string partitionKey)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.partitionKey = string.IsNullOrEmpty(partitionKey) ? throw new ArgumentNullException(nameof(partitionKey)) : partitionKey[1..];
-            this.reencryptionJsonSerializer = new ReencryptionJsonSerializer(
+            this.reEncryptionJsonSerializer = new ReEncryptionJsonSerializer(
                 new JsonSerializerSettings()
                 {
                     DateParseHandling = DateParseHandling.None,
@@ -37,8 +37,8 @@ namespace Cosmos.Samples.Reencryption
         /// </summary>
         /// <param name="response"> Response containing documents read from changefeed. </param>
         /// <param name="cancellationToken"> cancellation token. </param>
-        /// <returns> ReencryptionBulkOperationResponse. </returns>
-        public async Task<ReencryptionBulkOperationResponse<JObject>> ExecuteAsync(ResponseMessage response, CancellationToken cancellationToken)
+        /// <returns> ReEncryptionBulkOperationResponse. </returns>
+        public async Task<ReEncryptionBulkOperationResponse<JObject>> ExecuteAsync(ResponseMessage response, CancellationToken cancellationToken)
         {
             Dictionary<string, List<JObject>> changeFeedChangesBatcher = this.PopulateChangeFeedChanges(response);
 
@@ -47,12 +47,12 @@ namespace Cosmos.Samples.Reencryption
                 throw new InvalidOperationException("PopulateChangeFeedChanges returned empty list of changes. ");
             }
 
-            ReencryptionBulkOperationResponse<JObject> bulkOperationResponse = null;
+            ReEncryptionBulkOperationResponse<JObject> bulkOperationResponse = null;
             List<JObject> bulkOperationList = this.GetChangesForBulkOperations(changeFeedChangesBatcher);
 
             if (bulkOperationList.Count > 0)
             {
-                ReencryptionBulkOperations<JObject> bulkOperations = new ReencryptionBulkOperations<JObject>(bulkOperationList.Count);
+                ReEncryptionBulkOperations<JObject> bulkOperations = new ReEncryptionBulkOperations<JObject>(bulkOperationList.Count);
 
                 foreach (JObject document in bulkOperationList)
                 {
@@ -73,7 +73,7 @@ namespace Cosmos.Samples.Reencryption
                         bulkOperations.Tasks.Add(this.container.DeleteItemAsync<JObject>(
                            id,
                            new PartitionKey(pkvalue),
-                           cancellationToken: cancellationToken).CaptureReencryptionOperationResponseAsync(document));
+                           cancellationToken: cancellationToken).CaptureReEncryptionOperationResponseAsync(document));
                     }
                     else
                     {
@@ -82,7 +82,7 @@ namespace Cosmos.Samples.Reencryption
                         bulkOperations.Tasks.Add(this.container.UpsertItemAsync(
                            item: document,
                            new PartitionKey(document.GetValue(this.partitionKey).ToString()),
-                           cancellationToken: cancellationToken).CaptureReencryptionOperationResponseAsync(document));
+                           cancellationToken: cancellationToken).CaptureReEncryptionOperationResponseAsync(document));
                     }
                 }
 
@@ -127,7 +127,7 @@ namespace Cosmos.Samples.Reencryption
         /// <returns> HashTable/Array of list hashed/key by document Id. </returns>
         private Dictionary<string, List<JObject>> PopulateChangeFeedChanges(ResponseMessage response)
         {
-            JObject contentJObj = this.reencryptionJsonSerializer.FromStream<JObject>(response.Content);
+            JObject contentJObj = this.reEncryptionJsonSerializer.FromStream<JObject>(response.Content);
             if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
             {
                 throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents. ");

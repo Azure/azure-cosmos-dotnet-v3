@@ -2,14 +2,14 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Cosmos.Samples.Reencryption
+namespace Cosmos.Samples.ReEncryption
 {
     using System;
     using System.IO;
     using System.Text;
     using Newtonsoft.Json;
 
-    internal sealed class ReencryptionJsonSerializer
+    internal sealed class ReEncryptionJsonSerializer
     {
         private static readonly Encoding DefaultEncoding = new UTF8Encoding(
             encoderShouldEmitUTF8Identifier: false,
@@ -20,7 +20,7 @@ namespace Cosmos.Samples.Reencryption
         /// <summary>
         /// Create a serializer that uses the JSON.net serializer
         /// </summary>
-        internal ReencryptionJsonSerializer(JsonSerializerSettings jsonSerializerSettings = null)
+        internal ReEncryptionJsonSerializer(JsonSerializerSettings jsonSerializerSettings = null)
         {
             this.serializerSettings = jsonSerializerSettings;
         }
@@ -60,7 +60,7 @@ namespace Cosmos.Samples.Reencryption
         public MemoryStream ToStream<T>(T input)
         {
             MemoryStream streamPayload = new MemoryStream();
-            using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: ReencryptionJsonSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+            using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: ReEncryptionJsonSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
             using (JsonWriter writer = new JsonTextWriter(streamWriter))
             {
                 writer.Formatting = Newtonsoft.Json.Formatting.None;

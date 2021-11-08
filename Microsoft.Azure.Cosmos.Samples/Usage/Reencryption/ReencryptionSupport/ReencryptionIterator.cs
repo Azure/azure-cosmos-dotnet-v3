@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Cosmos.Samples.Reencryption
+namespace Cosmos.Samples.ReEncryption
 {
     using System;
     using System.Net;
@@ -15,37 +15,37 @@ namespace Cosmos.Samples.Reencryption
     /// <summary>
     /// Reencrypts the data read from change feed.
     /// </summary>
-    public sealed class ReencryptionIterator
+    public sealed class ReEncryptionIterator
     {
         private const int PageSize = 1000;
 
         private readonly Container destinationContainer;
         private readonly Container sourceContainer;
-        private readonly string partitionKey;
+        private readonly string partitionKeyPath;
         private readonly FeedRange feedRange;
-        private readonly ReencryptionBulkOperationBuilder reencryptionBulkOperationBuilder;
+        private readonly ReEncryptionBulkOperationBuilder reEncryptionBulkOperationBuilder;
         private readonly CheckIfWritesHaveStopped checkIfWritesHaveStoppedCb;
         private readonly bool isFFChangeFeedSupported;
-        private readonly ReencryptionJsonSerializer reencryptionJsonSerializer;
+        private readonly ReEncryptionJsonSerializer reEncryptionJsonSerializer;
 
         private FeedIterator feedIterator;
 
         private ChangeFeedRequestOptions changeFeedRequestOptions;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ReencryptionIterator"/> class.
-        /// Get Reencryption Feed Iterator.
+        /// Initializes a new instance of the <see cref="ReEncryptionIterator"/> class.
+        /// Get ReEncryption Feed Iterator.
         /// </summary>
         /// <param name="sourceContainer"> Source container. </param>
         /// <param name="destinationContainer"> Destination container. </param>
-        /// <param name="partitionKey"> Partition Key. </param>
+        /// <param name="partitionKeyPath"> Partition key path. </param>
         /// <param name="sourceFeedRange"> Feed range. </param>
         /// <param name="continuationToken"> Continuation token. </param>
         /// <param name="checkIfWritesHaveStopped"> Callback to invoked to check if writes have stopped. </param>
-        internal ReencryptionIterator(
+        internal ReEncryptionIterator(
             Container sourceContainer,
             Container destinationContainer,
-            string partitionKey,
+            string partitionKeyPath,
             FeedRange sourceFeedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions,
             string continuationToken,
@@ -54,15 +54,15 @@ namespace Cosmos.Samples.Reencryption
         {
             this.sourceContainer = sourceContainer ?? throw new ArgumentNullException(nameof(sourceContainer));
             this.destinationContainer = destinationContainer ?? throw new ArgumentNullException(nameof(destinationContainer));
-            this.partitionKey = string.IsNullOrEmpty(partitionKey) ? throw new ArgumentNullException(nameof(partitionKey)) : partitionKey[1..];
+            this.partitionKeyPath = string.IsNullOrEmpty(partitionKeyPath) ? throw new ArgumentNullException(nameof(partitionKeyPath)) : partitionKeyPath[1..];
             this.feedRange = sourceFeedRange;
             this.changeFeedRequestOptions = changeFeedRequestOptions;
-            this.reencryptionBulkOperationBuilder = new ReencryptionBulkOperationBuilder(destinationContainer, partitionKey);
+            this.reEncryptionBulkOperationBuilder = new ReEncryptionBulkOperationBuilder(destinationContainer, partitionKeyPath);
             this.HasMoreResults = true;
             this.ContinuationToken = continuationToken;
             this.checkIfWritesHaveStoppedCb = new CheckIfWritesHaveStopped(checkIfWritesHaveStopped);
             this.isFFChangeFeedSupported = isFFChangeFeedSupported;
-            this.reencryptionJsonSerializer = new ReencryptionJsonSerializer(
+            this.reEncryptionJsonSerializer = new ReEncryptionJsonSerializer(
                 new JsonSerializerSettings()
                 {
                     DateParseHandling = DateParseHandling.None,
@@ -86,12 +86,12 @@ namespace Cosmos.Samples.Reencryption
         /// </summary>
         /// <param name="cancellationToken"> cancellationTOken. </param>
         /// <returns> Response Message. </returns>
-        public async Task<ReencryptionResponseMessage> EncryptNextAsync(
+        public async Task<ReEncryptionResponseMessage> EncryptNextAsync(
             CancellationToken cancellationToken = default)
         {
             if (!this.checkIfWritesHaveStoppedCb() && this.isFFChangeFeedSupported == false)
             {
-                throw new NotSupportedException("Reencryption currently supported only on container with no ongoing changes. To perform reencryption please make sure there is is no data being written to the container. ");
+                throw new NotSupportedException("ReEncryption currently supported only on container with no ongoing changes. To perform reEncryption please make sure there is is no data being written to the container. ");
             }
 
             return await this.EncryptNextCoreAsync(cancellationToken);
@@ -114,7 +114,7 @@ namespace Cosmos.Samples.Reencryption
             }
         }
 
-        private async Task<ReencryptionResponseMessage> EncryptNextCoreAsync(
+        private async Task<ReEncryptionResponseMessage> EncryptNextCoreAsync(
             CancellationToken cancellationToken)
         {
             (string continuationToken, string fullFidelityStartLsn) = await this.ParseContinuationTokenAsync(this.ContinuationToken);
@@ -136,16 +136,16 @@ namespace Cosmos.Samples.Reencryption
             this.feedIterator = this.SetChangeFeedIterator(continuationToken, isFullSyncRequired);
 
             ResponseMessage responseMessage = null;
-            ReencryptionBulkOperationResponse<JObject> reencryptionBulkOperationResponse = null;
+            ReEncryptionBulkOperationResponse<JObject> reEncryptionBulkOperationResponse = null;
             if (isFullSyncRequired)
             {
-                (responseMessage, reencryptionBulkOperationResponse, continuationToken) = await this.InitiateFullSyncAsync(
+                (responseMessage, reEncryptionBulkOperationResponse, continuationToken) = await this.InitiateFullSyncAsync(
                     fullFidelityStartLsn,
                     cancellationToken);
             }
             else if (this.isFFChangeFeedSupported)
             {
-                 (responseMessage, reencryptionBulkOperationResponse, continuationToken) = await this.GetAndReencryptFFChangesAsync(cancellationToken);
+                 (responseMessage, reEncryptionBulkOperationResponse, continuationToken) = await this.GetAndReencryptFFChangesAsync(cancellationToken);
             }
 
             if (responseMessage.StatusCode == HttpStatusCode.OK || responseMessage.StatusCode == HttpStatusCode.NotModified)
@@ -155,17 +155,17 @@ namespace Cosmos.Samples.Reencryption
                     fullFidelityStartLsn);
             }
 
-            return new ReencryptionResponseMessage(responseMessage, this.ContinuationToken, reencryptionBulkOperationResponse);
+            return new ReEncryptionResponseMessage(responseMessage, this.ContinuationToken, reEncryptionBulkOperationResponse);
         }
 
-        private async Task<(ResponseMessage, ReencryptionBulkOperationResponse<JObject>, string)> InitiateFullSyncAsync(
+        private async Task<(ResponseMessage, ReEncryptionBulkOperationResponse<JObject>, string)> InitiateFullSyncAsync(
             string fullFidelityStartLSNString,
             CancellationToken cancellationToken)
         {
             long currentDrainedLSN = 0;
             long fullFidelityStartLSN = 0;
             string currentDrainedLSNString = null;
-            ReencryptionBulkOperationResponse<JObject> bulkOperationResponse = null;
+            ReEncryptionBulkOperationResponse<JObject> bulkOperationResponse = null;
             ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken: cancellationToken);
             string continuationToken = response.ContinuationToken;           
 
@@ -182,13 +182,13 @@ namespace Cosmos.Samples.Reencryption
             {
                 if (response.IsSuccessStatusCode && response.Content != null)
                 {
-                    JObject contentJObj = this.reencryptionJsonSerializer.FromStream<JObject>(response.Content);
+                    JObject contentJObj = this.reEncryptionJsonSerializer.FromStream<JObject>(response.Content);
                     if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
                     {
                         throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents. ");
                     }
 
-                    ReencryptionBulkOperations<JObject> bulkOperations = new ReencryptionBulkOperations<JObject>(documents.Count);
+                    ReEncryptionBulkOperations<JObject> bulkOperations = new ReEncryptionBulkOperations<JObject>(documents.Count);
                     foreach (JToken value in documents)
                     {
                         if (value is not JObject document)
@@ -203,8 +203,8 @@ namespace Cosmos.Samples.Reencryption
                         document.Remove(Constants.LsnPropertyName);
                         bulkOperations.Tasks.Add(this.destinationContainer.UpsertItemAsync(
                             item: document,
-                            new PartitionKey(document.GetValue(this.partitionKey).ToString()),
-                            cancellationToken: default).CaptureReencryptionOperationResponseAsync(document));
+                            new PartitionKey(document.GetValue(this.partitionKeyPath).ToString()),
+                            cancellationToken: default).CaptureReEncryptionOperationResponseAsync(document));
                     }
 
                     bulkOperationResponse = await bulkOperations.ExecuteAsync();
@@ -214,7 +214,7 @@ namespace Cosmos.Samples.Reencryption
                         response = new ResponseMessage(
                             (HttpStatusCode)207, // MultiStatus
                             response.RequestMessage,
-                            "Reencryption Operation failed. Please go through ReencryptionBulkOperationResponse for details regarding failed operations. ");
+                            "ReEncryption Operation failed. Please go through ReEncryptionBulkOperationResponse for details regarding failed operations. ");
                         return (response, bulkOperationResponse, continuationToken);
                     }
 
@@ -233,10 +233,10 @@ namespace Cosmos.Samples.Reencryption
             return (response, bulkOperationResponse, continuationToken);
         }
 
-        private async Task<(ResponseMessage, ReencryptionBulkOperationResponse<JObject>, string)> GetAndReencryptFFChangesAsync(
+        private async Task<(ResponseMessage, ReEncryptionBulkOperationResponse<JObject>, string)> GetAndReencryptFFChangesAsync(
             CancellationToken cancellationToken)
         {
-            ReencryptionBulkOperationResponse<JObject> bulkOperationResponse = null;
+            ReEncryptionBulkOperationResponse<JObject> bulkOperationResponse = null;
             ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken);
             if (response.StatusCode == HttpStatusCode.NotModified)
             {
@@ -250,7 +250,7 @@ namespace Cosmos.Samples.Reencryption
 
             if (response.IsSuccessStatusCode && response.Content != null)
             {
-                bulkOperationResponse = await this.reencryptionBulkOperationBuilder.ExecuteAsync(response, cancellationToken);
+                bulkOperationResponse = await this.reEncryptionBulkOperationBuilder.ExecuteAsync(response, cancellationToken);
 
                 if (bulkOperationResponse.FailedDocuments.Count > 0)
                 {
@@ -266,7 +266,7 @@ namespace Cosmos.Samples.Reencryption
                                 response = new ResponseMessage(
                                     (HttpStatusCode)207, // MultiStatus
                                     response.RequestMessage,
-                                    "Reencryption Operation failed. Please go through ReencryptionBulkOperationResponse for details regarding failed operations. ");
+                                    "ReEncryption Operation failed. Please go through ReEncryptionBulkOperationResponse for details regarding failed operations. ");
                                 return (response, bulkOperationResponse, response.ContinuationToken);
                             }
                         }
@@ -275,7 +275,7 @@ namespace Cosmos.Samples.Reencryption
                             response = new ResponseMessage(
                                 HttpStatusCode.InternalServerError,
                                 response.RequestMessage,
-                                "Reencryption Operation failed. Please go through ReencryptionBulkOperationResponse for details regarding failed operations. ");
+                                "ReEncryption Operation failed. Please go through ReEncryptionBulkOperationResponse for details regarding failed operations. ");
                             return (response, bulkOperationResponse, response.ContinuationToken);
                         }
                     }

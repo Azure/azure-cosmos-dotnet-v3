@@ -2,16 +2,16 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Cosmos.Samples.Reencryption
+namespace Cosmos.Samples.ReEncryption
 {
     using System;
     using System.Collections.Generic;
 
     /// <summary>
-    /// Reencryption Bulk Operation Response.
+    /// ReEncryption Bulk Operation Response.
     /// </summary>
     /// <typeparam name="T">  Type </typeparam>
-    public sealed class ReencryptionBulkOperationResponse<T>
+    public sealed class ReEncryptionBulkOperationResponse<T>
     {
         /// <summary>
         /// Gets total operation time.

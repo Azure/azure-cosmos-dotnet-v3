@@ -2,29 +2,29 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Cosmos.Samples.Reencryption
+namespace Cosmos.Samples.ReEncryption
 {
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using System.Threading.Tasks;
 
-    internal class ReencryptionBulkOperations<T>
+    internal class ReEncryptionBulkOperations<T>
     {
-        internal List<Task<ReencryptionOperationResponse<T>>> Tasks { get; }
+        internal List<Task<ReEncryptionOperationResponse<T>>> Tasks { get; }
 
         private readonly Stopwatch stopwatch = Stopwatch.StartNew();
 
-        public ReencryptionBulkOperations(int operationCount)
+        public ReEncryptionBulkOperations(int operationCount)
         {
-            this.Tasks = new List<Task<ReencryptionOperationResponse<T>>>(operationCount);
+            this.Tasks = new List<Task<ReEncryptionOperationResponse<T>>>(operationCount);
         }
 
-        public async Task<ReencryptionBulkOperationResponse<T>> ExecuteAsync()
+        public async Task<ReEncryptionBulkOperationResponse<T>> ExecuteAsync()
         {
             await Task.WhenAll(this.Tasks);
             this.stopwatch.Stop();
-            return new ReencryptionBulkOperationResponse<T>()
+            return new ReEncryptionBulkOperationResponse<T>()
             {
                 TotalTimeTaken = this.stopwatch.Elapsed,
                 TotalRequestUnitsConsumed = this.Tasks.Sum(task => task.Result.RequestUnitsConsumed),

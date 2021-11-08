@@ -2,38 +2,38 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Cosmos.Samples.Reencryption
+namespace Cosmos.Samples.ReEncryption
 {
     using System.Net;
     using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json.Linq;
 
     /// <summary>
-    /// Reencryption Response Message.
+    /// ReEncryption Response Message.
     /// </summary>
-    public sealed class ReencryptionResponseMessage : ResponseMessage
+    public sealed class ReEncryptionResponseMessage : ResponseMessage
     {
         private readonly ResponseMessage responseMessage;
 
-        private readonly string reencryptionContinuationToken;
+        private readonly string reEncryptionContinuationToken;
 
         /// <summary>
-        /// Gets reencryption Bulk operation response.
+        /// Gets reEncryption Bulk operation response.
         /// </summary>
-        public ReencryptionBulkOperationResponse<JObject> ReencryptionBulkOperationResponse { get; }
+        public ReEncryptionBulkOperationResponse<JObject> ReEncryptionBulkOperationResponse { get; }
 
-        internal ReencryptionResponseMessage(
+        internal ReEncryptionResponseMessage(
             ResponseMessage responseMessage,
-            string reencryptionContinuationToken,
-            ReencryptionBulkOperationResponse<JObject> reencryptionBulkOperationResponse)
+            string reEncryptionContinuationToken,
+            ReEncryptionBulkOperationResponse<JObject> reEncryptionBulkOperationResponse)
         {
             this.responseMessage = responseMessage;
-            this.reencryptionContinuationToken = reencryptionContinuationToken;
-            this.ReencryptionBulkOperationResponse = reencryptionBulkOperationResponse;
+            this.reEncryptionContinuationToken = reEncryptionContinuationToken;
+            this.ReEncryptionBulkOperationResponse = reEncryptionBulkOperationResponse;
         }
 
         /// <inheritdoc/>
-        public override string ContinuationToken => this.reencryptionContinuationToken;
+        public override string ContinuationToken => this.reEncryptionContinuationToken;
 
         /// <inheritdoc/>
         public override CosmosDiagnostics Diagnostics => this.responseMessage.Diagnostics;

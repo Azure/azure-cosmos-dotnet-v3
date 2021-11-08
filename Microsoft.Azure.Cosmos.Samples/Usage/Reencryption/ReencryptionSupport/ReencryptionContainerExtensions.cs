@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Cosmos.Samples.Reencryption
+namespace Cosmos.Samples.ReEncryption
 {
     using System;
     using System.Threading;
@@ -12,11 +12,11 @@ namespace Cosmos.Samples.Reencryption
     /// <summary>
     /// This class provides extension methods for <see cref="Container"/>.
     /// </summary>
-    public static class ReencryptionContainerExtension
+    public static class ReEncryptionContainerExtension
     {
         /// <summary>
         /// Gets an iterator for reencrypting the data.
-        /// The source container should have no data changes during reencryption operation or should have changefeed full fidelity enabled .
+        /// The source container should have no data changes during reEncryption operation or should have changefeed full fidelity enabled .
         /// </summary>
         /// <param name="container"> Source container object. </param>
         /// <param name="destinationContainerName"> Destination Container configured with new policy or key. </param>
@@ -25,8 +25,8 @@ namespace Cosmos.Samples.Reencryption
         /// <param name="sourceFeedRange"> (Optional) The range to start from. </param>
         /// <param name="continuationToken"> (Optional) continuationToken: The continuation to resume from. </param>
         /// <param name="cancellationToken"> (Optional) System.Threading.CancellationToken representing request cancellation. </param>
-        /// <returns> Returns a Reencryption Iterator. </returns>
-        public static async Task<ReencryptionIterator> GetReencryptionIteratorAsync(
+        /// <returns> Returns a ReEncryption Iterator. </returns>
+        public static async Task<ReEncryptionIterator> GetReEncryptionIteratorAsync(
             this Container container,
             string destinationContainerName,
             CosmosClient encryptionCosmosClient,
@@ -48,7 +48,7 @@ namespace Cosmos.Samples.Reencryption
 
             if (!encryptionCosmosClient.ClientOptions.AllowBulkExecution)
             {
-                throw new NotSupportedException("GetReencryptionIteratorAsync requires client to be enabled with Bulk Execution. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                throw new NotSupportedException("GetReEncryptionIteratorAsync requires client to be enabled with Bulk Execution. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
 
             Container destContainer = encryptionCosmosClient.GetContainer(container.Database.Id, destinationContainerName);
@@ -56,10 +56,10 @@ namespace Cosmos.Samples.Reencryption
 
             if (containerProperties.ChangeFeedPolicy.FullFidelityRetention == TimeSpan.Zero && Constants.IsFFChangeFeedSupported)
             {
-                throw new NotSupportedException("GetReencryptionIteratorAsync requires container to be enabled with FullFidelity ChangeFeedPolicy. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                throw new NotSupportedException("GetReEncryptionIteratorAsync requires container to be enabled with FullFidelity ChangeFeedPolicy. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
 
-            ReencryptionIterator reencryptionIterator = new ReencryptionIterator(
+            ReEncryptionIterator reEncryptionIterator = new ReEncryptionIterator(
                 container,
                 destContainer,
                 containerProperties.PartitionKeyPath,
@@ -69,7 +69,7 @@ namespace Cosmos.Samples.Reencryption
                 checkIfWritesHaveStoppedCb,
                 isFFChangeFeedSupported: Constants.IsFFChangeFeedSupported);
 
-            return reencryptionIterator;
+            return reEncryptionIterator;
         }
     }
 }

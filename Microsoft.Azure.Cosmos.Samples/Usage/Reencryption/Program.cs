@@ -1,4 +1,4 @@
-﻿namespace Cosmos.Samples.Reencryption
+﻿namespace Cosmos.Samples.ReEncryption
 {
     using System;
     using System.Security.Cryptography.X509Certificates;
@@ -12,26 +12,24 @@
     using System.Collections.Generic;
     using System.Net;
     using System.Threading;
+    using System.IO;
 
     // ----------------------------------------------------------------------------------------------------------
     // Prerequisites - 
-    // 
-    // 1. An Azure Cosmos account - 
-    //    https://docs.microsoft.com/en-us/azure/cosmos-db/create-cosmosdb-resources-portal
     //
-    // 2. Microsoft.Azure.Cosmos.Encryption NuGet package - 
+    // 1. Microsoft.Azure.Cosmos.Encryption NuGet package - 
     //    https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/ 
     // ----------------------------------------------------------------------------------------------------------
-    // Sample/Driver - demonstrates, how reencryption of encrypted data in the Cosmos DB can be carried out using Always Encrypted CosmosDB SDK Client-Side encryption.
+    // Sample/Driver - demonstrates, how reEncryption of encrypted data in the Cosmos DB can be carried out using Always Encrypted CosmosDB SDK Client-Side encryption.
     // This can be used to change/rotate Data Encryption Keys or change the Client Encryption Policy.
     // The sample creates seperate tasks for each of the feed range, and saves the continuation token if the task is interrupted in between
-    // or if the user decides to stop the reencryption and decides to continue it later.
-    // The user gets the option to use an existing continuationToken/bookmark from the last saved checkpoint which was saved earlier in a file. If the reencryption activity is
+    // or if the user decides to stop the reEncryption and decides to continue it later.
+    // The user gets the option to use an existing continuationToken/bookmark from the last saved checkpoint which was saved earlier in a file. If the reEncryption activity is
     // finished the user can discard the file.
     //
     // SrcDatabase - database containing the containers that needs to be reencrypted with new data encryption key or if a change in encryption policy is required.
     //
-    // SrcContainer - Container Id which requires a reencryption of data or change in encryption policy(you might want to add additional paths to be encrypted etc.).
+    // SrcContainer - Container Id which requires a reEncryption of data or change in encryption policy(you might want to add additional paths to be encrypted etc.).
     //
     // DstContainer - Destination container(should be created in advance), with new encryption policy set. This container will now house the reencrypted data.
     //
@@ -40,19 +38,19 @@
     // should be created with the new policy before you use it in this sample/driver code.
     //
     // Note:
-    // IsFFChangeFeedSupported(in Constants.cs file) value has been set to false. Full Fidelity change feed is in Preview mode and has to be enabled on an account to use the feature. This allows for reencryption
-    // to be carried out, when the source container is still receiving writes.This can be set to true when the feature is available or is enabled on the
-    // database account. If the feature is not enabled, please make sure the source container is not receiving any writes before you carry out the reencryption activity.
+    // IsFFChangeFeedSupported(in Constants.cs file) value has been set to false. Full Fidelity change feed is in Preview mode and has to be enabled on an account to use the feature. This allows for reEncryption
+    // to be carried out, when the source container is still receiving writes.This can be set to true when the feature is available and is enabled on the
+    // database account. If the feature is not enabled, please make sure the source container is not receiving any writes before you carry out the reEncryption activity.
     // ----------------------------------------------------------------------------------------------------------
 
     public class Program
     {
-        private static string SrcDatabase = null;
-        private static string SrcContainer = null;
-        private static string DstContainer = null;
-        private static readonly string ContinuationTokenFile = "continuationTokenFile.txt";
+        private static string SourceDatabase = null;
+        private static string SourceContainer = null;
+        private static string DestinationContainer = null;
+        private static readonly int PageHintSize = 100; 
+        private static readonly string ContinuationTokenFile = "continuationTokenFile";
         private static CosmosClient client = null;
-        private static string MasterKeyUrl = null;
 
         // <Main>
         public static async Task Main(string[] _)
@@ -66,30 +64,23 @@
                     .AddJsonFile("appSettings.json")
                     .Build();
 
-                // Get the Akv Master Key Path.
-                MasterKeyUrl = configuration["MasterKeyUrl"];
-                if (string.IsNullOrEmpty(MasterKeyUrl))
-                {
-                    throw new ArgumentNullException("Please specify a valid Azure Key Path in the appSettings.json");
-                }
-
                 // Get the Source Database name. 
-                SrcDatabase = configuration["SrcDatabase"];
-                if (string.IsNullOrEmpty(SrcDatabase))
+                SourceDatabase = configuration["SourceDatabase"];
+                if (string.IsNullOrEmpty(SourceDatabase))
                 {
                     throw new ArgumentNullException("Please specify a valid database name. ");
                 }
 
                 // Get the Source Container name.
-                SrcContainer = configuration["SrcContainer"];
-                if (string.IsNullOrEmpty(SrcContainer))
+                SourceContainer = configuration["SourceContainer"];
+                if (string.IsNullOrEmpty(SourceContainer))
                 {
                     throw new ArgumentNullException("Please specify a valid container name. ");
                 }
 
                 // Get the Destination Container name.
-                DstContainer = configuration["DstContainer"];
-                if (string.IsNullOrEmpty(DstContainer))
+                DestinationContainer = configuration["DestinationContainer"];
+                if (string.IsNullOrEmpty(DestinationContainer))
                 {
                     throw new ArgumentNullException("Please specify a valid container name. ");
                 }
@@ -100,11 +91,11 @@
 
                 Program.client = Program.CreateClientInstance(configuration, azureKeyVaultKeyStoreProvider);
 
-                await Program.CreateAndRunReencryptionTasks(client);
+                await Program.CreateAndRunReEncryptionTasks(client);
             }
-            catch (CosmosException cre)
+            catch (CosmosException cosmosException)
             {
-                Console.WriteLine(cre.ToString());
+                Console.WriteLine(cosmosException.ToString());
             }
             catch (Exception e)
             {
@@ -113,7 +104,7 @@
             }
             finally
             {
-                Console.WriteLine("End of demo, press any key to exit.");
+                Console.WriteLine("ReEncryption activity has been stopped successfully.");
                 Console.ReadKey();
             }
         }
@@ -186,38 +177,38 @@
             return new ClientCertificateCredential(tenantId, clientId, Program.GetCertificate(clientCertThumbprint));
         }
 
-        private static async Task CreateAndRunReencryptionTasks(CosmosClient client)
+        private static async Task CreateAndRunReEncryptionTasks(CosmosClient client)
         {
-            Container sourceContainer = client.GetContainer(SrcDatabase, SrcContainer);
-            Container targetContainer = client.GetContainer(SrcDatabase, DstContainer);
+            Container sourceContainer = client.GetContainer(SourceDatabase, SourceContainer);
+            Container targetContainer = client.GetContainer(SourceDatabase, DestinationContainer);
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
             // get the feed ranges
             IReadOnlyList<FeedRange> ranges = await sourceContainer.GetFeedRangesAsync();
 
-            // create a reencryption task for each feed range.
-            List<Task> reencryptionTasks = new List<Task>();
+            // create a reEncryption task for each feed range.
+            List<Task> reEncryptionTasks = new List<Task>();
 
             foreach (FeedRange feedRange in ranges)
             {
-                Console.WriteLine("Creating task for reencryption, tapping into feedrange: {0}", feedRange.ToString());
-                reencryptionTasks.Add(ExecuteReencrytionAsync(sourceContainer, feedRange, cancellationTokenSource.Token));
+                Console.WriteLine("Creating task for reEncryption, tapping into feedrange: {0}", feedRange.ToString());
+                reEncryptionTasks.Add(ExecuteReEncrytionAsync(sourceContainer, feedRange, cancellationTokenSource.Token));
             }
 
-            Console.WriteLine("\n Reencryption Progress. Press esc key to exit. \n");
-            await CheckReencryptionProgressOrCancelReencryptionTasksAsync(sourceContainer, targetContainer, cancellationTokenSource);
+            Console.WriteLine("\n ReEncryption in progress. Press esc key to exit. \n");
+            await CheckReEncryptionProgressOrCancelReEncryptionTasksAsync(sourceContainer, targetContainer, cancellationTokenSource);
 
             try
             {
-                await Task.WhenAll(reencryptionTasks);
+                await Task.WhenAll(reEncryptionTasks);
             }
             catch (OperationCanceledException)
             {
-                Console.WriteLine("Reencryption operation was cancelled.");
+                Console.WriteLine("ReEncryption operation was cancelled.");
             }
             finally
             {
-                Console.WriteLine("\n If the reencryption task is complete,do you want to delete the continuation token file.(y/n) \n");                
+                Console.WriteLine("\n If the reEncryption task is complete,do you want to delete the continuation token file.(y/n) \n");                
                 while (true)
                 {
                     string ans = Console.ReadLine();
@@ -225,7 +216,7 @@
                     {
                         foreach (FeedRange feedRange in ranges)
                         {
-                            System.IO.File.Delete(@ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id);
+                            File.Delete(@ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id);
                         }
                         break;
                     }
@@ -242,50 +233,43 @@
             }
         }
 
-        private static async Task ExecuteReencrytionAsync(Container sourceContainer, FeedRange feedRange = null,CancellationToken cancellationToken = default)
+        private static async Task ExecuteReEncrytionAsync(Container sourceContainer, FeedRange feedRange,CancellationToken cancellationToken = default)
         {
             string continuationToken = null;
 
-            try
-            {
-                bool checkifContTokenFile = System.IO.File.Exists(@ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id);
+            bool doesContinuationTokenFileExist = File.Exists(@ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id);
 
-                if (checkifContTokenFile)
+            if (doesContinuationTokenFileExist)
+            {
+                Console.WriteLine("\n ContinuationToken/Bookmark file found for this container and feedrange. Do you want to use it.(y/n) \n");
+                while (true)
                 {
-                    Console.WriteLine("\n ContinuationToken/Bookmark file found for this container and feedrange. Do you want to use it.(y/n) \n");
-                    while (true)
+                    string input = Console.ReadLine();
+                    if (input != null && input == "y")
                     {
-                        string ans = Console.ReadLine();
-                        if (ans != null && ans == "y")
-                        {
-                            continuationToken = System.IO.File.ReadAllText(@ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id);
-                            break;
-                        }
-                        else if (ans != null && ans == "n")
-                        {
-                            break;
-                        }
-                        else
-                        {
-                            Console.Write("\n Only y or n Allowed \n");
-                        }
+                        continuationToken = File.ReadAllText(@ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id);
+                        break;
+                    }
+                    else if (input != null && input == "n")
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        Console.Write("\n Only y or n Allowed \n");
                     }
                 }
             }
-            catch(Exception)
-            {
-                Console.WriteLine("No continuation token file found for this feedrange:", @"continuationTokenFile.txt" + feedRange.ToString());
-            }
 
-            if(string.IsNullOrEmpty(continuationToken))
+            if (string.IsNullOrEmpty(continuationToken))
             {
                 continuationToken = null;
             }
 
-            ReencryptionResponseMessage responseMessage;
+            ReEncryptionResponseMessage responseMessage;
             do
             {
-                responseMessage = await ReencryptionHelperAsync(sourceContainer, feedRange, continuationToken, cancellationToken);
+                responseMessage = await ReEncryptNextAsync(sourceContainer, feedRange, continuationToken, cancellationToken);
 
                 if (responseMessage != null)
                 {
@@ -293,31 +277,29 @@
                 }
 
             } while (responseMessage != null);
-
-            return;
         }
 
-        private static async Task<ReencryptionResponseMessage> ReencryptionHelperAsync(
+        private static async Task<ReEncryptionResponseMessage> ReEncryptNextAsync(
             Container sourceContainer,
             FeedRange feedRange = null,
             string continuationToken = null,
             CancellationToken cancellationToken = default)
         {
-            // make sure the containers are conigured with the throughput depending on how many requests you want to send to the Azure Cosmos DB service.
+            // make sure the containers are configured with the throughput depending on how many requests you want to send to the Azure Cosmos DB service.
             ChangeFeedRequestOptions changeFeedRequestOptions = new ChangeFeedRequestOptions
             {
-                PageSizeHint = 100,
+                PageSizeHint = PageHintSize,
             };
 
-            ReencryptionIterator iterator = await sourceContainer.GetReencryptionIteratorAsync(
-                DstContainer,
+            ReEncryptionIterator iterator = await sourceContainer.GetReEncryptionIteratorAsync(
+                DestinationContainer,
                 client,
                 CheckAndSetWritesAsStopped,
                 changeFeedRequestOptions,
                 sourceFeedRange: feedRange,
                 continuationToken: continuationToken);
 
-            ReencryptionResponseMessage responseMessage = null;
+            ReEncryptionResponseMessage responseMessage = null;
 
             while (iterator.HasMoreResults)
             {
@@ -327,7 +309,7 @@
                     break;
                 }
 
-                System.IO.File.WriteAllText(@ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id, responseMessage.ContinuationToken);
+                File.WriteAllText(@ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id, responseMessage.ContinuationToken);
             }
 
             if (iterator.HasMoreResults == false)
@@ -340,17 +322,11 @@
 
         private static bool CheckAndSetWritesAsStopped()
         {
-            // return true, indicating the writes on the source container have stopped.
-            if (Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Escape)
-            {
-                return true;
-            }
-
-            // set this to false only if Full Fidelity change feed is enabled on your account.
+            //Note: If you have enabled FullFidelity on your account and have active writes, you can perhaps poll to check if writes on the source container has stopped and return true.
             return true;
         }
 
-        private static async Task CheckReencryptionProgressOrCancelReencryptionTasksAsync(Container sourceContainer, Container targetContainer, CancellationTokenSource cancellationToken)
+        private static async Task CheckReEncryptionProgressOrCancelReEncryptionTasksAsync(Container sourceContainer, Container targetContainer, CancellationTokenSource cancellationToken)
         {
             while (true)
             {
@@ -362,11 +338,11 @@
 
                 // fetch and display the progress every 3 seconds.
                 await Task.Delay(3000);
-                await GetReencryptionProgressPercentageAsync(sourceContainer, targetContainer, cancellationToken.Token);
+                await GetReEncryptionProgressPercentageAsync(sourceContainer, targetContainer, cancellationToken.Token);
             }
         }
 
-        private static async Task<float> GetReencryptionProgressPercentageAsync(Container sourceContainer, Container targetContainer, CancellationToken cancellationToken)
+        private static async Task<float> GetReEncryptionProgressPercentageAsync(Container sourceContainer, Container targetContainer, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -391,18 +367,18 @@
 
             if (destinationContainerTotalDocCount <= sourceContainerTotalDocCount)
             {
-                ShowReencryptionProgressBar((int)destinationContainerTotalDocCount, (int)sourceContainerTotalDocCount, (int)progress);
+                ShowReEncryptionProgressBar((int)destinationContainerTotalDocCount, (int)sourceContainerTotalDocCount, (int)progress);
             }
             else
             {
                 destinationContainerTotalDocCount = sourceContainerTotalDocCount - (destinationContainerTotalDocCount - sourceContainerTotalDocCount);
-                ShowReencryptionProgressBar((int)destinationContainerTotalDocCount, (int)sourceContainerTotalDocCount, (int)progress);
+                ShowReEncryptionProgressBar((int)destinationContainerTotalDocCount, (int)sourceContainerTotalDocCount, (int)progress);
             }
-            
+
             return progress;
         }
 
-        private static void ShowReencryptionProgressBar(int progress, int total, int progressCurrent)
+        private static void ShowReEncryptionProgressBar(int progress, int total, int progressCurrent)
         {
             int progressBar = 40;
 

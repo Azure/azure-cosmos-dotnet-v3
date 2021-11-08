@@ -47,7 +47,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Geospatial", "Geospatial\Ge
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SystemTextJson", "SystemTextJson\SystemTextJson.csproj", "{C0C25501-9C49-4B6F-BB7D-40E4FB47CE7B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reencryption", "Reencryption\Reencryption.csproj", "{AD6DEC94-EF8E-4C42-8A99-B98E101F933D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReEncryption", "Reencryption\ReEncryption.csproj", "{AD6DEC94-EF8E-4C42-8A99-B98E101F933D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

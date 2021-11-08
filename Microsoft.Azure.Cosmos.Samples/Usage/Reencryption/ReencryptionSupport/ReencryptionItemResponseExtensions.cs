@@ -2,16 +2,16 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Cosmos.Samples.Reencryption
+namespace Cosmos.Samples.ReEncryption
 {
     using System;
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal static class ReencryptionItemResponseExtensions
+    internal static class ReEncryptionItemResponseExtensions
     {
-        internal static Task<ReencryptionOperationResponse<T>> CaptureReencryptionOperationResponseAsync<T>(
+        internal static Task<ReEncryptionOperationResponse<T>> CaptureReEncryptionOperationResponseAsync<T>(
             this Task<ItemResponse<T>> task,
             T item)
         {
@@ -19,7 +19,7 @@ namespace Cosmos.Samples.Reencryption
             {
                 if (itemResponse.IsCompleted && itemResponse.Exception == null)
                 {
-                    return new ReencryptionOperationResponse<T>()
+                    return new ReEncryptionOperationResponse<T>()
                     {
                         Item = item,
                         IsSuccessful = true,
@@ -33,7 +33,7 @@ namespace Cosmos.Samples.Reencryption
                     .InnerExceptions
                     .FirstOrDefault(innerEx => innerEx is CosmosException) is CosmosException cosmosException)
                 {
-                    return new ReencryptionOperationResponse<T>()
+                    return new ReEncryptionOperationResponse<T>()
                     {
                         Item = item,
                         RequestUnitsConsumed = cosmosException.RequestCharge,
@@ -42,7 +42,7 @@ namespace Cosmos.Samples.Reencryption
                     };
                 }
 
-                return new ReencryptionOperationResponse<T>()
+                return new ReEncryptionOperationResponse<T>()
                 {
                     Item = item,
                     IsSuccessful = false,

@@ -2,11 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Cosmos.Samples.Reencryption
+namespace Cosmos.Samples.ReEncryption
 {
     using System;
 
-    internal class ReencryptionOperationResponse<T>
+    internal class ReEncryptionOperationResponse<T>
     {
         public T Item { get; set; }
 
