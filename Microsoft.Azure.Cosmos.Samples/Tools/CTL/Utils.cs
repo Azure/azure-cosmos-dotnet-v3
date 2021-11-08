@@ -134,7 +134,7 @@ namespace CosmosCTL
             {
                 database = await cosmosClient.GetDatabase(config.Database).ReadAsync();
             }
-            catch (CosmosException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
+            catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
             {
                 DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(config.Database);
                 result.CreatedDatabase = true;
@@ -146,7 +146,7 @@ namespace CosmosCTL
             {
                 container = await database.GetContainer(config.Collection).ReadContainerAsync();
             }
-            catch (CosmosException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
+            catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
             {
                 if (config.Throughput > 0)
                 {
