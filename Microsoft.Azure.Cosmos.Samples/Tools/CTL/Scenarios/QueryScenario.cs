@@ -191,7 +191,7 @@ namespace CosmosCTL
                             query = container.GetItemQueryIterator<Dictionary<string, string>>(queryText, continuation);
                         }
 
-                        Utils.LogDiagnsotics(
+                        Utils.LogDiagnostics(
                             logger: logger,
                             operationName: queryName,
                             timerContextLatency: response.Diagnostics.GetClientElapsedTime(),
@@ -276,7 +276,7 @@ namespace CosmosCTL
                         documentTotal += response.Count;
                         continuation = response.ContinuationToken;
 
-                        Utils.LogDiagnsotics(
+                        Utils.LogDiagnostics(
                             logger: logger,
                             operationName: queryName,
                             timerContextLatency: response.Diagnostics.GetClientElapsedTime(),

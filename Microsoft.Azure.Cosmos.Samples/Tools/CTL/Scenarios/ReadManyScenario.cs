@@ -89,10 +89,10 @@ namespace CosmosCTL
                         using (TimerContext timerContext = metrics.Measure.Timer.Time(readLatencyTimer))
                         {
                             response = await container.ReadManyItemsAsync<Dictionary<string, string>>(this.idAndPkPairs);
-                            Utils.LogDiagnsotics(
+                            Utils.LogDiagnostics(
                                 logger: logger,
                                 operationName: nameof(ReadManyScenario),
-                                timerContextLatency: stopWatch.Elapsed,
+                                timerContextLatency: timerContext.Elapsed,
                                 config: config,
                                 cosmosDiagnostics: response.Diagnostics);
                         }
