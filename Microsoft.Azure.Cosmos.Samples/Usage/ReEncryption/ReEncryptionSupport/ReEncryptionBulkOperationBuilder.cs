@@ -21,10 +21,10 @@ namespace Cosmos.Samples.ReEncryption
 
         public ReEncryptionBulkOperationBuilder(
             Container container,
-            string partitionKey)
+            string partitionKeyPath)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
-            this.partitionKey = string.IsNullOrEmpty(partitionKey) ? throw new ArgumentNullException(nameof(partitionKey)) : partitionKey[1..];
+            this.partitionKey = string.IsNullOrEmpty(partitionKeyPath) ? throw new ArgumentNullException(nameof(partitionKeyPath)) : partitionKeyPath[1..];
             this.reEncryptionJsonSerializer = new ReEncryptionJsonSerializer(
                 new JsonSerializerSettings()
                 {
