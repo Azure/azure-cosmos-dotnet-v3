@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// AddressCache implementation for client SDK. Supports cross region address routing based on
     /// avaialbility and preference list.
     /// </summary>
-    internal sealed class GlobalAddressResolver : IAddressResolver
+    internal sealed class GlobalAddressResolver : IAddressResolver, IDisposable
     {
         private const int MaxBackupReadRegions = 3;
 
@@ -137,19 +137,17 @@ namespace Microsoft.Azure.Cosmos.Routing
             await Task.WhenAll(tasks);
         }
 
-        public async Task UpdateAsync(
-            ServerKey serverKey,
-            CancellationToken cancellationToken)
+        public Task UpdateAsync(
+           ServerKey serverKey,
+           CancellationToken cancellationToken)
         {
-            List<Task> tasks = new List<Task>();
-
             foreach (KeyValuePair<Uri, EndpointCache> addressCache in this.addressCacheByEndpoint)
             {
                 // since we don't know which address cache contains the pkRanges mapped to this node, we do a tryRemove on all AddressCaches of all regions
-                tasks.Add(addressCache.Value.AddressCache.TryRemoveAddressesAsync(serverKey, cancellationToken));
+                addressCache.Value.AddressCache.TryRemoveAddresses(serverKey);
             }
 
-            await Task.WhenAll(tasks);
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -161,6 +159,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             Uri endpoint = this.endpointManager.ResolveServiceEndpoint(request);
 
             return this.GetOrAddEndpoint(endpoint).AddressResolver;
+        }
+
+        public void Dispose()
+        {
+            foreach (EndpointCache endpointCache in this.addressCacheByEndpoint.Values)
+            {
+                endpointCache.AddressCache.Dispose();
+            }
         }
 
         private EndpointCache GetOrAddEndpoint(Uri endpoint)
