@@ -163,7 +163,7 @@ namespace CosmosCTL
                             metrics.Measure.Counter.Increment(readFailureMeter);
                             Utils.LogError(logger, loggingContextIdentifier, ex, "Failure during read operation");
                         },
-                        logDiagnostics: (ItemResponse<Dictionary<string, string>> response, TimeSpan latency) => Utils.LogDiagnsotics(
+                        logDiagnostics: (ItemResponse<Dictionary<string, string>> response, TimeSpan latency) => Utils.LogDiagnostics(
                             logger: logger,
                             operationName: "Read",
                             timerContextLatency: latency,
@@ -190,7 +190,7 @@ namespace CosmosCTL
                             metrics.Measure.Counter.Increment(writeFailureMeter);
                             Utils.LogError(logger, loggingContextIdentifier, ex, "Failure during write operation");
                         },
-                        logDiagnostics: (ItemResponse<Dictionary<string, string>> response, TimeSpan latency) => Utils.LogDiagnsotics(
+                        logDiagnostics: (ItemResponse<Dictionary<string, string>> response, TimeSpan latency) => Utils.LogDiagnostics(
                             logger: logger,
                             operationName: "Write",
                             timerContextLatency: latency,
@@ -216,7 +216,7 @@ namespace CosmosCTL
                             metrics.Measure.Counter.Increment(queryFailureMeter);
                             Utils.LogError(logger, loggingContextIdentifier, ex, "Failure during query operation");
                         },
-                        logDiagnostics: (FeedResponse<Dictionary<string, string>> response, TimeSpan latency) => Utils.LogDiagnsotics(
+                        logDiagnostics: (FeedResponse<Dictionary<string, string>> response, TimeSpan latency) => Utils.LogDiagnostics(
                             logger: logger,
                             operationName: "Query",
                             timerContextLatency: latency,

@@ -135,11 +135,12 @@ namespace CosmosCTL
             {
                 database = await cosmosClient.GetDatabase(config.Database).ReadAsync();
             }
-            catch (CosmosException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
+            catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
             {
-                DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(config.Database, config.Throughput);
+                await cosmosClient.CreateDatabaseAsync(config.Database, config.DatabaseThroughput);
+
                 result.CreatedDatabase = true;
-                database = databaseResponse.Database;
+                database = cosmosClient.GetDatabase(config.Database);
             }
 
             Container container;
@@ -147,16 +148,24 @@ namespace CosmosCTL
             {
                 container = await database.GetContainer(config.Collection).ReadContainerAsync();
             }
-            catch (CosmosException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
+            catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
             {
-                await database.CreateContainerAsync(config.Collection, $"/{config.CollectionPartitionKey}");
+                if (config.Throughput > 0)
+                {
+                    await database.CreateContainerAsync(config.Collection, $"/{config.CollectionPartitionKey}", config.Throughput);
+                }
+                else
+                {
+                    await database.CreateContainerAsync(config.Collection, $"/{config.CollectionPartitionKey}");
+                }
+
                 result.CreatedContainer = true;
             }
 
             return result;
         }
 
-        public static void LogDiagnsotics(
+        public static void LogDiagnostics(
             ILogger logger,
             string operationName,
             TimeSpan timerContextLatency,
