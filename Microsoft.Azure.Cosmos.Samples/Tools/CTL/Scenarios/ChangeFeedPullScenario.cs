@@ -6,15 +6,15 @@ namespace CosmosCTL
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Net;
-    using System.Diagnostics;
     using App.Metrics;
-    using Microsoft.Azure.Cosmos;
-    using Microsoft.Extensions.Logging;
     using App.Metrics.Gauge;
     using App.Metrics.Timer;
+    using Microsoft.Azure.Cosmos;
+    using Microsoft.Extensions.Logging;
 
     internal class ChangeFeedPullScenario : ICTLScenario
     {
@@ -55,7 +55,6 @@ namespace CosmosCTL
         {
             Stopwatch stopWatch = Stopwatch.StartNew();
 
-            long diagnosticsThresholdDuration = (long)config.DiagnosticsThresholdDurationAsTimespan.TotalMilliseconds;
             GaugeOptions documentGauge= new GaugeOptions { Name = "#Documents received", Context = loggingContextIdentifier };
 
             TimerOptions readLatencyTimer = new TimerOptions

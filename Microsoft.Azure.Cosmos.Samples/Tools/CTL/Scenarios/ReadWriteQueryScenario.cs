@@ -13,9 +13,6 @@ namespace CosmosCTL
     using App.Metrics.Counter;
     using App.Metrics.Timer;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Extensions.Logging;
 
     internal class ReadWriteQueryScenario : ICTLScenario
@@ -141,7 +138,6 @@ namespace CosmosCTL
             SemaphoreSlim concurrencyControlSemaphore = new SemaphoreSlim(config.Concurrency);
             Stopwatch stopwatch = Stopwatch.StartNew();
             int writeRange = readWriteQueryPercentage.ReadPercentage + readWriteQueryPercentage.WritePercentage;
-            long diagnosticsThresholdDuration = (long)config.DiagnosticsThresholdDurationAsTimespan.TotalMilliseconds;
             List<Task> operations = new List<Task>();
             for (long i = 0; ShouldContinue(stopwatch, i, config); i++)
             {
@@ -168,11 +164,11 @@ namespace CosmosCTL
                             Utils.LogError(logger, loggingContextIdentifier, ex, "Failure during read operation");
                         },
                         logDiagnostics: (ItemResponse<Dictionary<string, string>> response, TimeSpan latency) => Utils.LogDiagnsotics(
-                                logger: logger,
-                                operationName: "Read",
-                                timerContextLatency: latency,
-                                config: config,
-                                cosmosDiagnostics: response.Diagnostics)));
+                            logger: logger,
+                            operationName: "Read",
+                            timerContextLatency: latency,
+                            config: config,
+                            cosmosDiagnostics: response.Diagnostics)));
                 }
                 else if (index < writeRange)
                 {
@@ -195,11 +191,11 @@ namespace CosmosCTL
                             Utils.LogError(logger, loggingContextIdentifier, ex, "Failure during write operation");
                         },
                         logDiagnostics: (ItemResponse<Dictionary<string, string>> response, TimeSpan latency) => Utils.LogDiagnsotics(
-                                logger: logger,
-                                operationName: "Write",
-                                timerContextLatency: latency,
-                                config: config,
-                                cosmosDiagnostics: response.Diagnostics)));
+                            logger: logger,
+                            operationName: "Write",
+                            timerContextLatency: latency,
+                            config: config,
+                            cosmosDiagnostics: response.Diagnostics)));
 
                 }
                 else
@@ -221,11 +217,11 @@ namespace CosmosCTL
                             Utils.LogError(logger, loggingContextIdentifier, ex, "Failure during query operation");
                         },
                         logDiagnostics: (FeedResponse<Dictionary<string, string>> response, TimeSpan latency) => Utils.LogDiagnsotics(
-                                logger: logger,
-                                operationName: "Query",
-                                timerContextLatency: latency,
-                                config: config,
-                                cosmosDiagnostics: response.Diagnostics)));
+                            logger: logger,
+                            operationName: "Query",
+                            timerContextLatency: latency,
+                            config: config,
+                            cosmosDiagnostics: response.Diagnostics)));
                 }
             }
 
