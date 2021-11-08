@@ -7,10 +7,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.BenchmarkStrategies
     using System;
     using System.Collections.Generic;
     using BenchmarkDotNet.Configs;
-    using BenchmarkDotNet.Horology;
     using BenchmarkDotNet.Jobs;
     using BenchmarkDotNet.Toolchains;
     using BenchmarkDotNet.Toolchains.CsProj;
+    using Perfolizer.Horology;
 
     /// <summary>
     /// Attribute to run the benchmark on Throughput mode.
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.BenchmarkStrategies
                     throw new ArgumentOutOfRangeException("selectedFramework", "Not implementad BenchmarkFrameworks value.");
                 }
 
-                var job = Job.Default.With(toolchain).WithGcServer(true);
+                Job job = Job.Default.WithToolchain(toolchain).WithGcServer(true);
 
                 if (invocationCount >= 0)
                 {
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.BenchmarkStrategies
                 jobs.Add(job);
             }
 
-            this.Config = ManualConfig.CreateEmpty().With(jobs.ToArray());
+            this.Config = ManualConfig.CreateEmpty().AddJob(jobs.ToArray());
         }
 
         /// <inheritdoc/>

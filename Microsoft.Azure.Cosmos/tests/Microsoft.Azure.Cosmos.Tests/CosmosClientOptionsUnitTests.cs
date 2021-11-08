@@ -295,12 +295,19 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(ArgumentNullException))]
         public void VerifyAuthorizationTokenProviderIsSet()
         {
             CosmosClient cosmosClient = new CosmosClientBuilder(
                 AccountEndpoint, new Mock<TokenCredential>().Object).Build();
             Assert.IsNotNull(cosmosClient.AuthorizationTokenProvider);
+        }
+
+        [TestMethod]
+        public void VerifyAccountEndpointIsSet()
+        {
+            CosmosClient cosmosClient = new CosmosClientBuilder(
+                AccountEndpoint, new Mock<TokenCredential>().Object).Build();
+            Assert.IsNotNull(cosmosClient.Endpoint);
         }
 
         [TestMethod]

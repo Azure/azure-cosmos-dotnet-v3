@@ -190,6 +190,13 @@ namespace CosmosCTL
                             query.Dispose();
                             query = container.GetItemQueryIterator<Dictionary<string, string>>(queryText, continuation);
                         }
+
+                        Utils.LogDiagnsotics(
+                            logger: logger,
+                            operationName: queryName,
+                            timerContextLatency: response.Diagnostics.GetClientElapsedTime(),
+                            config: config,
+                            cosmosDiagnostics: response.Diagnostics);
                     }
 
                     query.Dispose();
@@ -268,6 +275,13 @@ namespace CosmosCTL
                         FeedResponse<Dictionary<string, string>> response = await query.ReadNextAsync();
                         documentTotal += response.Count;
                         continuation = response.ContinuationToken;
+
+                        Utils.LogDiagnsotics(
+                            logger: logger,
+                            operationName: queryName,
+                            timerContextLatency: response.Diagnostics.GetClientElapsedTime(),
+                            config: config,
+                            cosmosDiagnostics: response.Diagnostics);
                     }
 
                     metrics.Measure.Gauge.SetValue(documentGauge, documentTotal);

@@ -82,11 +82,12 @@ namespace CosmosBenchmark
         }
 
         /// <summary>
-        /// Run samples for Order By queries.
+        /// Executing benchmarks for V2/V3 cosmosdb SDK.
         /// </summary>
         /// <returns>a Task object.</returns>
         private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config)
         {
+            // V3 SDK client initialization
             using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key))
             {
                 Microsoft.Azure.Cosmos.Database database = cosmosClient.GetDatabase(config.Database);
@@ -119,6 +120,8 @@ namespace CosmosBenchmark
 
                 // TBD: 2 clients SxS some overhead
                 RunSummary runSummary;
+
+                // V2 SDK client initialization
                 using (Microsoft.Azure.Documents.Client.DocumentClient documentClient = config.CreateDocumentClient(config.Key))
                 {
                     Func<IBenchmarkOperation> benchmarkOperationFactory = this.GetBenchmarkFactory(
@@ -268,7 +271,7 @@ namespace CosmosBenchmark
         }
 
         /// <summary>
-        /// Create a partitioned container.
+        /// Get or Create a partitioned container and display cost of running this test.
         /// </summary>
         /// <returns>The created container.</returns>
         private static async Task<ContainerResponse> CreatePartitionedContainerAsync(BenchmarkConfig options, CosmosClient cosmosClient)

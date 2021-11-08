@@ -6,9 +6,10 @@ namespace CosmosBenchmark
 {
     using Microsoft.Azure.Cosmos;
 
-    internal class QueryTSinglePkV3BenchmarkOperation : QueryTV3BenchmarkOperation
+    internal class QueryStreamSinglePkOrderByFullDrainV3BenchmarkOperation : QueryTV3BenchmarkOperation
     {
-        public QueryTSinglePkV3BenchmarkOperation(
+
+        public QueryStreamSinglePkOrderByFullDrainV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
             string containerName,
@@ -17,11 +18,11 @@ namespace CosmosBenchmark
         {
         }
 
-        public override QueryDefinition QueryDefinition => new QueryDefinition("select * from T where T.id = @id")
-                                                .WithParameter("@id", this.executionItemId);
+        public override QueryDefinition QueryDefinition => new QueryDefinition("select * from T ORDER BY T.id");
 
         public override QueryRequestOptions QueryRequestOptions => new QueryRequestOptions()
         {
+            MaxItemCount = 1,
             PartitionKey = new PartitionKey(this.executionPartitionKey)
         };
 
@@ -29,6 +30,6 @@ namespace CosmosBenchmark
 
         public override bool IsPaginationEnabled => false;
 
-        public override bool IsQueryStream => false;
+        public override bool IsQueryStream => true;
     }
 }

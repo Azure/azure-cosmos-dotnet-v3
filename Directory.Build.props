@@ -4,9 +4,9 @@
 		<ClientOfficialVersion>3.22.0</ClientOfficialVersion>
 		<ClientPreviewVersion>3.22.1</ClientPreviewVersion>
 		<ClientPreviewSuffixVersion>preview</ClientPreviewSuffixVersion>
-		<DirectVersion>3.22.0</DirectVersion>
-		<EncryptionVersion>1.0.0-previewV17</EncryptionVersion>
-		<CustomEncryptionVersion>1.0.0-preview</CustomEncryptionVersion>
+		<DirectVersion>3.23.1</DirectVersion>
+		<EncryptionVersion>1.0.0-previewV18</EncryptionVersion>
+		<CustomEncryptionVersion>1.0.0-preview02</CustomEncryptionVersion>
 		<HybridRowVersion>1.1.0-preview3</HybridRowVersion>
 		<LangVersion>9.0</LangVersion>
 		<AboveDirBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</AboveDirBuildProps>

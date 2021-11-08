@@ -12,6 +12,7 @@ namespace CosmosCTL
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Extensions.Logging;
 
     internal static class Utils
@@ -160,6 +161,27 @@ namespace CosmosCTL
             }
 
             return result;
+        }
+
+        public static void LogDiagnsotics(
+            ILogger logger,
+            string operationName,
+            TimeSpan timerContextLatency,
+            CTLConfig config,
+            CosmosDiagnostics cosmosDiagnostics)
+        {
+
+            if (timerContextLatency > config.DiagnosticsThresholdDurationAsTimespan)
+            {
+                logger.LogInformation($"{operationName}; LatencyInMs:{timerContextLatency.TotalMilliseconds}; request took more than latency threshold {config.DiagnosticsThresholdDuration}, diagnostics: {cosmosDiagnostics}");
+            }
+
+            CosmosTraceDiagnostics traceDiagnostics = (CosmosTraceDiagnostics)cosmosDiagnostics;
+            if (traceDiagnostics.IsGoneExceptionHit())
+            {
+                logger.LogInformation($"{operationName}; LatencyInMs:{timerContextLatency.TotalMilliseconds}; request contains 410(GoneExceptions), diagnostics:{cosmosDiagnostics}");
+                return;
+            }
         }
 
         public static void LogError(
