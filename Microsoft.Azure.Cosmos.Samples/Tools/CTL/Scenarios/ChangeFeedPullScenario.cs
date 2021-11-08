@@ -87,11 +87,12 @@ namespace CosmosCTL
                             using (TimerContext timerContext = metrics.Measure.Timer.Time(readLatencyTimer))
                             {
                                 response = await changeFeedPull.ReadNextAsync();
-                                long latency = (long)timerContext.Elapsed.TotalMilliseconds;
-                                if (latency > diagnosticsThresholdDuration)
-                                {
-                                    logger.LogInformation("Change Feed request took more than latency threshold {0}, diagnostics: {1}", config.DiagnosticsThresholdDuration, response.Diagnostics.ToString());
-                                }
+                                Utils.LogDiagnsotics(
+                                    logger: logger,
+                                    operationName: nameof(ChangeFeedPullScenario),
+                                    timerContextLatency: timerContext.Elapsed,
+                                    config: config,
+                                    cosmosDiagnostics: response.Diagnostics);
                             }
 
                             documentTotal += response.Count;

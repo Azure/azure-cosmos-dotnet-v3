@@ -156,7 +156,8 @@ namespace CosmosCTL
                             partitionKeyAttributeName: config.CollectionPartitionKey,
                             containers: initializationResult.Containers,
                             createdDocumentsPerContainer: this.createdDocuments)),
-                        onSuccess: () => {
+                        onSuccess: () =>
+                        {
                             concurrencyControlSemaphore.Release();
                             metrics.Measure.Counter.Increment(readSuccessMeter);
                         },
@@ -166,12 +167,12 @@ namespace CosmosCTL
                             metrics.Measure.Counter.Increment(readFailureMeter);
                             Utils.LogError(logger, loggingContextIdentifier, ex, "Failure during read operation");
                         },
-                        logDiagnostics: (ItemResponse<Dictionary<string, string>> response, TimeSpan latency) => this.LogDiagnostics(
-                            operationName: "Read",
-                            logger: logger,
-                            diagnosticsThresholdDuration: diagnosticsThresholdDuration,
-                            latency: latency,
-                            cosmosDiagnostics: response.Diagnostics)));
+                        logDiagnostics: (ItemResponse<Dictionary<string, string>> response, TimeSpan latency) => Utils.LogDiagnsotics(
+                                logger: logger,
+                                operationName: "Read",
+                                timerContextLatency: latency,
+                                config: config,
+                                cosmosDiagnostics: response.Diagnostics)));
                 }
                 else if (index < writeRange)
                 {
@@ -193,12 +194,12 @@ namespace CosmosCTL
                             metrics.Measure.Counter.Increment(writeFailureMeter);
                             Utils.LogError(logger, loggingContextIdentifier, ex, "Failure during write operation");
                         },
-                        logDiagnostics: (ItemResponse<Dictionary<string, string>> response, TimeSpan latency) => this.LogDiagnostics(
-                            operationName: "Create",
-                            logger: logger,
-                            diagnosticsThresholdDuration: diagnosticsThresholdDuration,
-                            latency: latency,
-                            cosmosDiagnostics: response.Diagnostics)));
+                        logDiagnostics: (ItemResponse<Dictionary<string, string>> response, TimeSpan latency) => Utils.LogDiagnsotics(
+                                logger: logger,
+                                operationName: "Write",
+                                timerContextLatency: latency,
+                                config: config,
+                                cosmosDiagnostics: response.Diagnostics)));
 
                 }
                 else
@@ -219,12 +220,12 @@ namespace CosmosCTL
                             metrics.Measure.Counter.Increment(queryFailureMeter);
                             Utils.LogError(logger, loggingContextIdentifier, ex, "Failure during query operation");
                         },
-                        logDiagnostics: (FeedResponse<Dictionary<string, string>> response, TimeSpan latency) => this.LogDiagnostics(
-                            operationName: "Query",
-                            logger: logger,
-                            diagnosticsThresholdDuration: diagnosticsThresholdDuration,
-                            latency: latency,
-                            cosmosDiagnostics: response.Diagnostics)));
+                        logDiagnostics: (FeedResponse<Dictionary<string, string>> response, TimeSpan latency) => Utils.LogDiagnsotics(
+                                logger: logger,
+                                operationName: "Query",
+                                timerContextLatency: latency,
+                                config: config,
+                                cosmosDiagnostics: response.Diagnostics)));
                 }
             }
 
@@ -232,27 +233,6 @@ namespace CosmosCTL
             stopwatch.Stop();
             logger.LogInformation("[{0}] operations performed in [{1}] seconds.",
                 operations.Count, stopwatch.Elapsed.TotalSeconds);
-        }
-
-        private void LogDiagnostics(
-            string operationName,
-            ILogger logger,
-            long diagnosticsThresholdDuration,
-            TimeSpan latency,
-            CosmosDiagnostics cosmosDiagnostics)
-        {
-            if (latency.TotalMilliseconds > diagnosticsThresholdDuration)
-            {
-                logger.LogInformation(operationName + " request took more than latency threshold {0}, diagnostics: {1}", diagnosticsThresholdDuration, cosmosDiagnostics.ToString());
-                return;
-            }
-
-            CosmosTraceDiagnostics traceDiagnostics = (CosmosTraceDiagnostics)cosmosDiagnostics;
-            if (traceDiagnostics.IsGoneExceptionHit())
-            {
-                logger.LogInformation(operationName + " request contains 410(GoneExceptions), latencyInMS:{0}; diagnostics:{1}", latency.TotalMilliseconds, cosmosDiagnostics.ToString());
-                return;
-            }
         }
 
         private Task<ItemResponse<Dictionary<string, string>>> CreateReadOperation(
