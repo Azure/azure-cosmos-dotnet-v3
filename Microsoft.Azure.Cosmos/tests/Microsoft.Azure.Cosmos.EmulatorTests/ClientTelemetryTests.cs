@@ -634,7 +634,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(2, telemetryInfo.PreferredRegions.Count);
                 Assert.AreEqual("region1", telemetryInfo.PreferredRegions[0]);
                 Assert.AreEqual("region2", telemetryInfo.PreferredRegions[1]);
-
+                Assert.AreEqual(1, telemetryInfo.AggregationIntervalInSec);
             }
 
             IDictionary<string, long> actualOperationRecordCountMap = new Dictionary<string, long>();
