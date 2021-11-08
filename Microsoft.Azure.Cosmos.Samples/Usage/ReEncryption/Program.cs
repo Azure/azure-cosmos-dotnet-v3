@@ -381,8 +381,6 @@
         {
             int progressBar = 40;
 
-            Console.CursorLeft = 0;
-            Console.CursorLeft = progressBar + 1;
             Console.CursorLeft = 1;
 
             double percentageCompletion = Convert.ToDouble(progress) / total;
