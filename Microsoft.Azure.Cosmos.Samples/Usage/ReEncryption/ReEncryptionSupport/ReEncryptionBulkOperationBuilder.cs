@@ -60,15 +60,15 @@ namespace Cosmos.Samples.ReEncryption
                     string operationType = metadata.GetValue("operationType").ToString();
                     if (operationType.Equals("delete"))
                     {
-                        JObject preimage = metadata.GetValue(Constants.PreviousImagePropertyName).ToObject<JObject>();
+                        JObject previousImage = metadata.GetValue(Constants.PreviousImagePropertyName).ToObject<JObject>();
 
-                        if (preimage == null)
+                        if (previousImage == null)
                         {
                             throw new InvalidOperationException("Missing previous image for document with delete operation type. ");
                         }
 
-                        string id = preimage.GetValue("id").ToString();
-                        string pkvalue = preimage.GetValue(this.partitionKey).ToString();
+                        string id = previousImage.GetValue("id").ToString();
+                        string pkvalue = previousImage.GetValue(this.partitionKey).ToString();
 
                         bulkOperations.Tasks.Add(this.container.DeleteItemAsync<JObject>(
                            id,
@@ -156,19 +156,19 @@ namespace Cosmos.Samples.ReEncryption
                 string operationType = metadata.GetValue(Constants.OperationTypePropertyName).ToString();
                 if (operationType.Equals("delete"))
                 {
-                    JObject preimage = metadata.GetValue(Constants.PreviousImagePropertyName).ToObject<JObject>();
-                    if (preimage == null)
+                    JObject previousImage = metadata.GetValue(Constants.PreviousImagePropertyName).ToObject<JObject>();
+                    if (previousImage == null)
                     {
                         throw new InvalidOperationException();
                     }
 
-                    string id = preimage.GetValue(Constants.DocumentIdPropertyName).ToString();
+                    string id = previousImage.GetValue(Constants.DocumentIdPropertyName).ToString();
 
                     if (changeFeedChangesBatcher.ContainsKey(id))
                     {
-                        List<JObject> operationToadd = changeFeedChangesBatcher[id];
-                        operationToadd.Add(document);
-                        changeFeedChangesBatcher[id] = operationToadd;
+                        List<JObject> operationToAdd = changeFeedChangesBatcher[id];
+                        operationToAdd.Add(document);
+                        changeFeedChangesBatcher[id] = operationToAdd;
                     }
                     else
                     {
@@ -185,9 +185,9 @@ namespace Cosmos.Samples.ReEncryption
                     string id = document.GetValue(Constants.DocumentIdPropertyName).ToString();
                     if (changeFeedChangesBatcher.ContainsKey(id))
                     {
-                        List<JObject> operationToadd = changeFeedChangesBatcher[id];
-                        operationToadd.Add(document);
-                        changeFeedChangesBatcher[id] = operationToadd;
+                        List<JObject> operationToAdd = changeFeedChangesBatcher[id];
+                        operationToAdd.Add(document);
+                        changeFeedChangesBatcher[id] = operationToAdd;
                     }
                     else
                     {
