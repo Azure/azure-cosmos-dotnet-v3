@@ -303,13 +303,12 @@
 
             while (iterator.HasMoreResults)
             {
-                responseMessage = await iterator.EncryptNextAsync(cancellationToken);                
+                responseMessage = await iterator.EncryptNextAsync(cancellationToken);
+                File.WriteAllText(@ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id, responseMessage.ContinuationToken);
                 if (responseMessage.StatusCode == HttpStatusCode.NotModified)
                 {
                     break;
-                }
-
-                File.WriteAllText(@ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id, responseMessage.ContinuationToken);
+                }                
             }
 
             if (iterator.HasMoreResults == false)
