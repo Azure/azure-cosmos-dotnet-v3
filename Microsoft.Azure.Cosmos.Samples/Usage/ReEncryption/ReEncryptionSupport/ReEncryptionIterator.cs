@@ -210,7 +210,6 @@ namespace Cosmos.Samples.ReEncryption
                     bulkOperationResponse = await bulkOperations.ExecuteAsync();
                     if (bulkOperationResponse.FailedDocuments.Count > 0)
                     {
-                        // just send one of the failure response.
                         response = new ResponseMessage(
                             (HttpStatusCode)207, // MultiStatus
                             response.RequestMessage,
