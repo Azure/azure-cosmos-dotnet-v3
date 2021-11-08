@@ -13,9 +13,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class EncryptionSettingForProperty
     {
-        public string ClientEncryptionKeyId { get; }
-
-        public EncryptionType EncryptionType { get; }
+        private static readonly SemaphoreSlim EncryptionKeyCacheSemaphore = new SemaphoreSlim(1, 1);
 
         private readonly string databaseRid;
 
@@ -33,6 +31,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.databaseRid = string.IsNullOrEmpty(databaseRid) ? throw new ArgumentNullException(nameof(databaseRid)) : databaseRid;
         }
 
+        public string ClientEncryptionKeyId { get; }
+
+        public EncryptionType EncryptionType { get; }
+
         public async Task<AeadAes256CbcHmac256EncryptionAlgorithm> BuildEncryptionAlgorithmForSettingAsync(CancellationToken cancellationToken)
         {
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await this.encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
@@ -47,10 +49,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 // we pull out the Encrypted Data Encryption Key and build the Protected Data Encryption key
                 // Here a request is sent out to unwrap using the Master Key configured via the Key Encryption Key.
-                protectedDataEncryptionKey = this.BuildProtectedDataEncryptionKey(
+                protectedDataEncryptionKey = await this.BuildProtectedDataEncryptionKeyAsync(
                     clientEncryptionKeyProperties,
                     this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProvider,
-                    this.ClientEncryptionKeyId);
+                    this.ClientEncryptionKeyId,
+                    cancellationToken);
             }
             catch (RequestFailedException ex)
             {
@@ -67,10 +70,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         shouldForceRefresh: true);
 
                     // just bail out if this fails.
-                    protectedDataEncryptionKey = this.BuildProtectedDataEncryptionKey(
+                    protectedDataEncryptionKey = await this.BuildProtectedDataEncryptionKeyAsync(
                         clientEncryptionKeyProperties,
                         this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProvider,
-                        this.ClientEncryptionKeyId);
+                        this.ClientEncryptionKeyId,
+                        cancellationToken);
                 }
                 else
                 {
@@ -85,22 +89,35 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return aeadAes256CbcHmac256EncryptionAlgorithm;
         }
 
-        private ProtectedDataEncryptionKey BuildProtectedDataEncryptionKey(
+        private async Task<ProtectedDataEncryptionKey> BuildProtectedDataEncryptionKeyAsync(
             ClientEncryptionKeyProperties clientEncryptionKeyProperties,
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
-            string keyId)
+            string keyId,
+            CancellationToken cancellationToken)
         {
-            KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
-               clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
-               clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
-               encryptionKeyStoreProvider);
+            if (await EncryptionKeyCacheSemaphore.WaitAsync(-1, cancellationToken))
+            {
+                try
+                {
+                    KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
+                        clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
+                        clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
+                        encryptionKeyStoreProvider);
 
-            ProtectedDataEncryptionKey protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
-                   keyId,
-                   keyEncryptionKey,
-                   clientEncryptionKeyProperties.WrappedDataEncryptionKey);
+                    ProtectedDataEncryptionKey protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
+                        keyId,
+                        keyEncryptionKey,
+                        clientEncryptionKeyProperties.WrappedDataEncryptionKey);
 
-            return protectedDataEncryptionKey;
+                    return protectedDataEncryptionKey;
+                }
+                finally
+                {
+                    EncryptionKeyCacheSemaphore.Release(1);
+                }
+            }
+
+            throw new InvalidOperationException("Failed to build ProtectedDataEncryptionKey. ");
         }
     }
 }

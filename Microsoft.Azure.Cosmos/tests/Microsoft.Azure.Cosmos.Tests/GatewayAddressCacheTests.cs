@@ -26,12 +26,12 @@ namespace Microsoft.Azure.Cosmos
     public class GatewayAddressCacheTests
     {
         private const string DatabaseAccountApiEndpoint = "https://endpoint.azure.com";
-        private Mock<ICosmosAuthorizationTokenProvider> mockTokenProvider;
-        private Mock<IServiceConfigurationReader> mockServiceConfigReader;
-        private int targetReplicaSetSize = 4;
-        private PartitionKeyRangeIdentity testPartitionKeyRangeIdentity;
-        private ServiceIdentity serviceIdentity;
-        private Uri serviceName;
+        private readonly Mock<ICosmosAuthorizationTokenProvider> mockTokenProvider;
+        private readonly Mock<IServiceConfigurationReader> mockServiceConfigReader;
+        private readonly int targetReplicaSetSize = 4;
+        private readonly PartitionKeyRangeIdentity testPartitionKeyRangeIdentity;
+        private readonly ServiceIdentity serviceIdentity;
+        private readonly Uri serviceName;
 
         public GatewayAddressCacheTests()
         {
@@ -96,25 +96,25 @@ namespace Microsoft.Azure.Cosmos
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2,
                 enableTcpConnectionEndpointRediscovery: true);
 
-            PartitionAddressInformation addresses = cache.TryGetAddressesAsync(
+            PartitionAddressInformation addresses = await cache.TryGetAddressesAsync(
              DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid),
              this.testPartitionKeyRangeIdentity,
              this.serviceIdentity,
              false,
-             CancellationToken.None).Result;
+             CancellationToken.None);
 
             Assert.IsNotNull(addresses.AllAddresses.Select(address => address.PhysicalUri == "https://blabla.com"));
 
             // call updateAddress
-            await cache.TryRemoveAddressesAsync(new Documents.Rntbd.ServerKey(new Uri("https://blabla.com")), CancellationToken.None);
+            cache.TryRemoveAddresses(new Documents.Rntbd.ServerKey(new Uri("https://blabla.com")));
 
             // check if the addresss is updated
-            addresses = cache.TryGetAddressesAsync(
+            addresses = await cache.TryGetAddressesAsync(
              DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid),
              this.testPartitionKeyRangeIdentity,
              this.serviceIdentity,
              false,
-             CancellationToken.None).Result;
+             CancellationToken.None);
 
             Assert.IsNotNull(addresses.AllAddresses.Select(address => address.PhysicalUri == "https://blabla5.com"));
         }
@@ -292,7 +292,7 @@ namespace Microsoft.Azure.Cosmos
 
         public class TestSynchronizationContext : SynchronizationContext
         {
-            private object locker = new object();
+            private readonly object locker = new object();
             public override void Post(SendOrPostCallback d, object state)
             {
                 lock (this.locker)
