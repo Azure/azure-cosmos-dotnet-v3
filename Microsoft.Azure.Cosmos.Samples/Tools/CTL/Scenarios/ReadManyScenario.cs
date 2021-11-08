@@ -92,7 +92,7 @@ namespace CosmosCTL
                             Utils.LogDiagnostics(
                                 logger: logger,
                                 operationName: nameof(ReadManyScenario),
-                                timerContextLatency: stopWatch.Elapsed,
+                                timerContextLatency: timerContext.Elapsed,
                                 config: config,
                                 cosmosDiagnostics: response.Diagnostics);
                         }

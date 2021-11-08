@@ -137,14 +137,7 @@ namespace CosmosCTL
             }
             catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
             {
-                if (config.DatabaseThroughput > 0)
-                {
-                    await cosmosClient.CreateDatabaseAsync(config.Database, config.DatabaseThroughput);
-                }
-                else
-                {
-                    await cosmosClient.CreateDatabaseAsync(config.Database);
-                }
+                await cosmosClient.CreateDatabaseAsync(config.Database, config.DatabaseThroughput);
 
                 result.CreatedDatabase = true;
                 database = cosmosClient.GetDatabase(config.Database);
