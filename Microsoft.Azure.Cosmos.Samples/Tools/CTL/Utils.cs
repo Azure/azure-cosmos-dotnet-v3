@@ -163,7 +163,7 @@ namespace CosmosCTL
             return result;
         }
 
-        public static void LogDiagnsotics(
+        public static void LogDiagnostics(
             ILogger logger,
             string operationName,
             TimeSpan timerContextLatency,

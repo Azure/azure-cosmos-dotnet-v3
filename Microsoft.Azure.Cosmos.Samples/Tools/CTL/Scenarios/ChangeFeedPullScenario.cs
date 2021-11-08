@@ -86,7 +86,7 @@ namespace CosmosCTL
                             using (TimerContext timerContext = metrics.Measure.Timer.Time(readLatencyTimer))
                             {
                                 response = await changeFeedPull.ReadNextAsync();
-                                Utils.LogDiagnsotics(
+                                Utils.LogDiagnostics(
                                     logger: logger,
                                     operationName: nameof(ChangeFeedPullScenario),
                                     timerContextLatency: timerContext.Elapsed,
