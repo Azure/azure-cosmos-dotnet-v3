@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
 
     internal sealed class QueryPage : Page<QueryState>
     {
-        private readonly Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo = new Lazy<CosmosQueryExecutionInfo>();
+        private readonly Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfoLazyObject = new Lazy<CosmosQueryExecutionInfo>();
         public static readonly ImmutableHashSet<string> BannedHeaders = new HashSet<string>()
         {
             Microsoft.Azure.Documents.HttpConstants.HttpHeaders.Continuation,
@@ -35,7 +35,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
         {
             this.Documents = documents ?? throw new ArgumentNullException(nameof(documents));
             this.ResponseLengthInBytes = responseLengthInBytes < 0 ? throw new ArgumentOutOfRangeException(nameof(responseLengthInBytes)) : responseLengthInBytes;
-            this.cosmosQueryExecutionInfo = new Lazy<CosmosQueryExecutionInfo>(() => JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(cosmosQueryExecutionInfo));
+            this.CosmosQueryExecutionInfo = cosmosQueryExecutionInfo;
+            this.cosmosQueryExecutionInfoLazyObject = new Lazy<CosmosQueryExecutionInfo>(() => JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(cosmosQueryExecutionInfo));
             this.DisallowContinuationTokenMessage = disallowContinuationTokenMessage;
         }
 
@@ -43,7 +44,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
 
         public long ResponseLengthInBytes { get; }
 
-        public CosmosQueryExecutionInfo CosmosQueryExecutionInfo => this.cosmosQueryExecutionInfo.Value;
+        public string CosmosQueryExecutionInfo { get; }
+
+        public CosmosQueryExecutionInfo CosmosQueryExecutionInfoObject => this.cosmosQueryExecutionInfoLazyObject.Value;
 
         public string DisallowContinuationTokenMessage { get; }
 
