@@ -11,34 +11,31 @@ namespace Cosmos.Samples.ReEncryption
 
     internal static class ReEncryptionItemResponseExtensions
     {
-        internal static Task<ReEncryptionOperationResponse<T>> CaptureReEncryptionOperationResponseAsync<T>(
+        internal static async Task<ReEncryptionOperationResponse<T>> CaptureReEncryptionOperationResponseAsync<T>(
             this Task<ItemResponse<T>> task,
             T item)
         {
-            return task.ContinueWith(itemResponse =>
+            try
             {
-                if (itemResponse.IsCompleted && itemResponse.Exception == null)
+                await task;
+                return new ReEncryptionOperationResponse<T>()
                 {
-                    return new ReEncryptionOperationResponse<T>()
-                    {
-                        Item = item,
-                        IsSuccessful = true,
-                        RequestUnitsConsumed = task.Result.RequestCharge,
-                    };
-                }
+                    Item = item,
+                    IsSuccessful = true,
+                    RequestUnitsConsumed = task.Result.RequestCharge
+                };
 
-                AggregateException innerExceptions = itemResponse.Exception.Flatten();
-
-                if (innerExceptions
-                    .InnerExceptions
-                    .FirstOrDefault(innerEx => innerEx is CosmosException) is CosmosException cosmosException)
+            }
+            catch(Exception ex)
+            {
+                if (ex is CosmosException cosmosException)
                 {
                     return new ReEncryptionOperationResponse<T>()
                     {
                         Item = item,
                         RequestUnitsConsumed = cosmosException.RequestCharge,
                         IsSuccessful = false,
-                        CosmosException = cosmosException,
+                        CosmosException = cosmosException
                     };
                 }
 
@@ -46,9 +43,9 @@ namespace Cosmos.Samples.ReEncryption
                 {
                     Item = item,
                     IsSuccessful = false,
-                    CosmosException = innerExceptions.InnerExceptions.FirstOrDefault(),
+                    CosmosException = ex
                 };
-            });
+            }
         }
     }
 }

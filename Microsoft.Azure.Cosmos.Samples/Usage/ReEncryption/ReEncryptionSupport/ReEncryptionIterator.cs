@@ -91,7 +91,7 @@ namespace Cosmos.Samples.ReEncryption
         {
             if (!this.checkIfWritesHaveStoppedCb() && this.isFFChangeFeedSupported == false)
             {
-                throw new NotSupportedException("ReEncryption currently supported only on container with no ongoing changes. To perform reEncryption please make sure there is is no data being written to the container. ");
+                throw new NotSupportedException("ReEncryption currently supported only on container with no ongoing changes. To perform reEncryption please make sure there is no data being written to the container. ");
             }
 
             return await this.EncryptNextCoreAsync(cancellationToken);
