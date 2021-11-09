@@ -11,13 +11,8 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Batch Patch request options
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
 
-    class TransactionalBatchPatchItemRequestOptions : TransactionalBatchItemRequestOptions
+    public class TransactionalBatchPatchItemRequestOptions : TransactionalBatchItemRequestOptions
     {
         /// <summary>
         /// Gets or sets condition to be checked before the patch operations in the Azure Cosmos DB service.
