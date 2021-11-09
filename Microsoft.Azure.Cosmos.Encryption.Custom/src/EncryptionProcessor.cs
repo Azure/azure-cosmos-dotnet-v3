@@ -21,11 +21,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// </summary>
     internal static class EncryptionProcessor
     {
-        internal static readonly CosmosJsonDotNetSerializer BaseSerializer = new CosmosJsonDotNetSerializer(
-            new JsonSerializerSettings()
-            {
-                DateParseHandling = DateParseHandling.None,
-            });
+        private static readonly SqlSerializerFactory SqlSerializerFactory = new SqlSerializerFactory();
+
+        // UTF-8 encoding.
+        private static readonly SqlVarCharSerializer SqlVarCharSerializer = new SqlVarCharSerializer(size: -1, codePageCharacterEncoding: 65001);
+
+        private static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings()
+        {
+            DateParseHandling = DateParseHandling.None,
+        };
+
+        internal static readonly CosmosJsonDotNetSerializer BaseSerializer = new CosmosJsonDotNetSerializer(JsonSerializerSettings);
 
         /// <remarks>
         /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.
@@ -469,11 +475,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         private static (TypeMarker, byte[]) Serialize(JToken propertyValue)
         {
-            SqlSerializerFactory sqlSerializerFactory = new SqlSerializerFactory();
-
-            // UTF-8 encoding.
-            SqlVarCharSerializer sqlVarCharSerializer = new SqlVarCharSerializer(size: -1, codePageCharacterEncoding: 65001);
-
             switch (propertyValue.Type)
             {
                 case JTokenType.Undefined:
@@ -483,17 +484,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     Debug.Assert(false, "Null type should have been handled by caller");
                     return (TypeMarker.Null, null);
                 case JTokenType.Boolean:
-                    return (TypeMarker.Boolean, sqlSerializerFactory.GetDefaultSerializer<bool>().Serialize(propertyValue.ToObject<bool>()));
+                    return (TypeMarker.Boolean, SqlSerializerFactory.GetDefaultSerializer<bool>().Serialize(propertyValue.ToObject<bool>()));
                 case JTokenType.Float:
-                    return (TypeMarker.Double, sqlSerializerFactory.GetDefaultSerializer<double>().Serialize(propertyValue.ToObject<double>()));
+                    return (TypeMarker.Double, SqlSerializerFactory.GetDefaultSerializer<double>().Serialize(propertyValue.ToObject<double>()));
                 case JTokenType.Integer:
-                    return (TypeMarker.Long, sqlSerializerFactory.GetDefaultSerializer<long>().Serialize(propertyValue.ToObject<long>()));
+                    return (TypeMarker.Long, SqlSerializerFactory.GetDefaultSerializer<long>().Serialize(propertyValue.ToObject<long>()));
                 case JTokenType.String:
-                    return (TypeMarker.String, sqlVarCharSerializer.Serialize(propertyValue.ToObject<string>()));
+                    return (TypeMarker.String, SqlVarCharSerializer.Serialize(propertyValue.ToObject<string>()));
                 case JTokenType.Array:
-                    return (TypeMarker.Array, sqlVarCharSerializer.Serialize(propertyValue.ToString()));
+                    return (TypeMarker.Array, SqlVarCharSerializer.Serialize(propertyValue.ToString()));
                 case JTokenType.Object:
-                    return (TypeMarker.Object, sqlVarCharSerializer.Serialize(propertyValue.ToString()));
+                    return (TypeMarker.Object, SqlVarCharSerializer.Serialize(propertyValue.ToString()));
                 default:
                     throw new InvalidOperationException($" Invalid or Unsupported Data Type Passed : {propertyValue.Type}");
             }
@@ -505,30 +506,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             JObject jObject,
             string key)
         {
-            SqlSerializerFactory sqlSerializerFactory = new SqlSerializerFactory();
-
-            // UTF-8 encoding.
-            SqlVarCharSerializer sqlVarCharSerializer = new SqlVarCharSerializer(size: -1, codePageCharacterEncoding: 65001);
-
             switch (typeMarker)
             {
                 case TypeMarker.Boolean:
-                    jObject.Add(key, sqlSerializerFactory.GetDefaultSerializer<bool>().Deserialize(serializedBytes));
+                    jObject.Add(key, SqlSerializerFactory.GetDefaultSerializer<bool>().Deserialize(serializedBytes));
                     break;
                 case TypeMarker.Double:
-                    jObject.Add(key, sqlSerializerFactory.GetDefaultSerializer<double>().Deserialize(serializedBytes));
+                    jObject.Add(key, SqlSerializerFactory.GetDefaultSerializer<double>().Deserialize(serializedBytes));
                     break;
                 case TypeMarker.Long:
-                    jObject.Add(key, sqlSerializerFactory.GetDefaultSerializer<long>().Deserialize(serializedBytes));
+                    jObject.Add(key, SqlSerializerFactory.GetDefaultSerializer<long>().Deserialize(serializedBytes));
                     break;
                 case TypeMarker.String:
-                    jObject.Add(key, sqlVarCharSerializer.Deserialize(serializedBytes));
+                    jObject.Add(key, SqlVarCharSerializer.Deserialize(serializedBytes));
                     break;
                 case TypeMarker.Array:
-                    jObject.Add(key, JsonConvert.DeserializeObject<JArray>(sqlVarCharSerializer.Deserialize(serializedBytes)));
+                    jObject.Add(key, JsonConvert.DeserializeObject<JArray>(SqlVarCharSerializer.Deserialize(serializedBytes), JsonSerializerSettings));
                     break;
                 case TypeMarker.Object:
-                    jObject.Add(key, JsonConvert.DeserializeObject<JObject>(sqlVarCharSerializer.Deserialize(serializedBytes)));
+                    jObject.Add(key, JsonConvert.DeserializeObject<JObject>(SqlVarCharSerializer.Deserialize(serializedBytes), JsonSerializerSettings));
                     break;
                 default:
                     Debug.Fail(string.Format("Unexpected type marker {0}", typeMarker));

@@ -6,9 +6,9 @@ namespace CosmosBenchmark
 {
     using Microsoft.Azure.Cosmos;
 
-    internal class QueryTSinglePkV3BenchmarkOperation : QueryTV3BenchmarkOperation
+    internal class QueryTCrossPkV3BenchmarkOperation : QueryTV3BenchmarkOperation
     {
-        public QueryTSinglePkV3BenchmarkOperation(
+        public QueryTCrossPkV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
             string containerName,
@@ -20,12 +20,9 @@ namespace CosmosBenchmark
         public override QueryDefinition QueryDefinition => new QueryDefinition("select * from T where T.id = @id")
                                                 .WithParameter("@id", this.executionItemId);
 
-        public override QueryRequestOptions QueryRequestOptions => new QueryRequestOptions()
-        {
-            PartitionKey = new PartitionKey(this.executionPartitionKey)
-        };
+        public override QueryRequestOptions QueryRequestOptions => null;
 
-        public override bool IsCrossPartitioned => false;
+        public override bool IsCrossPartitioned => true;
 
         public override bool IsPaginationEnabled => false;
 

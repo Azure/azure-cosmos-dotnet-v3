@@ -449,7 +449,12 @@ namespace Microsoft.Azure.Cosmos
         /// a custom container that modifies the response. For example the client encryption
         /// uses this to decrypt responses before returning to the caller.
         /// </remarks>
-        public virtual CosmosResponseFactory ResponseFactory => this.ClientContext.ResponseFactory;
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        virtual CosmosResponseFactory ResponseFactory => this.ClientContext.ResponseFactory;
 
         /// <summary>
         /// Gets the endpoint Uri for the Azure Cosmos DB service.
