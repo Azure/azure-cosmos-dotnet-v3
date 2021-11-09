@@ -285,12 +285,10 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (cosmosResponseMessage)
                 {
-                    if (
-                        cosmosResponseMessage.Headers.QueryMetricsText != null &&
-                        BackendMetricsParser.TryParse(cosmosResponseMessage.Headers.QueryMetricsText, out BackendMetrics backendMetrics))
+                    if (cosmosResponseMessage.Headers.QueryMetricsText != null)
                     {
                         QueryMetricsTraceDatum datum = new QueryMetricsTraceDatum(
-                            new QueryMetrics(backendMetrics, IndexUtilizationInfo.Empty, ClientSideMetrics.Empty));
+                            new QueryMetrics(cosmosResponseMessage.Headers.QueryMetricsText, IndexUtilizationInfo.Empty, ClientSideMetrics.Empty));
                         trace.AddDatum("Query Metrics", datum);
                     }
 

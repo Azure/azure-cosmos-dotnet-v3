@@ -24,16 +24,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// QueryMetrics that with all members having default (but not null) members.
         /// </summary>
         public static readonly QueryMetrics Empty = new QueryMetrics(
-            backendMetrics: BackendMetrics.Empty,
+            deliminatedString: string.Empty,
             indexUtilizationInfo: IndexUtilizationInfo.Empty,
             clientSideMetrics: ClientSideMetrics.Empty);
 
         public QueryMetrics(
-            BackendMetrics backendMetrics,
+            string deliminatedString,
             IndexUtilizationInfo indexUtilizationInfo,
             ClientSideMetrics clientSideMetrics)
         {
-            this.BackendMetrics = backendMetrics ?? throw new ArgumentNullException(nameof(backendMetrics));
+            this.BackendMetrics = deliminatedString.Equals(string.Empty)
+                ? BackendMetrics.Empty
+                : BackendMetricsParser.TryParse(deliminatedString, out BackendMetrics backendMetrics) ? backendMetrics : BackendMetrics.Empty;
+
             this.IndexUtilizationInfo = indexUtilizationInfo ?? throw new ArgumentNullException(nameof(indexUtilizationInfo));
             this.ClientSideMetrics = clientSideMetrics ?? throw new ArgumentNullException(nameof(clientSideMetrics));
         }
@@ -126,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             public static QueryMetrics ToQueryMetrics(Accumulator accumulator)
             {
                 return new QueryMetrics(
-                    BackendMetrics.Accumulator.ToBackendMetrics(accumulator.BackendMetricsAccumulator),
+                    BackendMetrics.Accumulator.ToBackendMetrics(accumulator.BackendMetricsAccumulator).ToString(),
                     IndexUtilizationInfo.Accumulator.ToIndexUtilizationInfo(accumulator.IndexUtilizationInfoAccumulator),
                     ClientSideMetrics.Accumulator.ToClientSideMetrics(accumulator.ClientSideMetricsAccumulator));
             }
