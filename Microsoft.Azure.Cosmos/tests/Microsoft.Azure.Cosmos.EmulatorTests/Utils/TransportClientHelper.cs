@@ -37,6 +37,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     transportExceptionSourceDescription));
         }
 
+        internal static Container GetContainerWithItemServiceUnavailableException(
+            string databaseId,
+            string containerId,
+            Guid activityId,
+            string serviceUnavailableExceptionSourceDescription)
+        {
+            return GetContainerWithIntercepter(
+                databaseId,
+                containerId,
+                (uri, resourceOperation, request) => TransportClientHelper.ThrowServiceUnavailableExceptionOnItemOperation(
+                    uri,
+                    resourceOperation,
+                    request,
+                    activityId,
+                    serviceUnavailableExceptionSourceDescription));
+        }
+
         internal static Container GetContainerWithIntercepter(
             string databaseId,
             string containerId,
@@ -108,6 +125,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     payloadSent: false);
 
                 throw Documents.Rntbd.TransportExceptions.GetRequestTimeoutException(physicalAddress, Guid.NewGuid(),
+                    transportException);
+            }
+        }
+
+        public static void ThrowServiceUnavailableExceptionOnItemOperation(
+                Uri physicalAddress,
+                ResourceOperation resourceOperation,
+                DocumentServiceRequest request,
+                Guid activityId,
+                string transportExceptionSourceDescription)
+        {
+            if (request.ResourceType == ResourceType.Document)
+            {
+                TransportException transportException = new TransportException(
+                    errorCode: TransportErrorCode.RequestTimeout,
+                    innerException: null,
+                    activityId: activityId,
+                    requestUri: physicalAddress,
+                    sourceDescription: transportExceptionSourceDescription,
+                    userPayload: true,
+                    payloadSent: false);
+
+                throw Documents.Rntbd.TransportExceptions.GetServiceUnavailableException(physicalAddress, Guid.NewGuid(),
                     transportException);
             }
         }
