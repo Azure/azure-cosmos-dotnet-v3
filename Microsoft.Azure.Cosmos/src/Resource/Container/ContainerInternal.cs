@@ -158,20 +158,6 @@ namespace Microsoft.Azure.Cosmos
             FeedRange feedRange,
             CancellationToken cancellationToken = default);
 
-        public abstract Task<ResponseMessage> PatchItemStreamAsync(
-            string id,
-            PartitionKey partitionKey,
-            IReadOnlyList<PatchOperation> patchOperations,
-            PatchItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default);
-
-        public abstract Task<ItemResponse<T>> PatchItemAsync<T>(
-            string id,
-            PartitionKey partitionKey,
-            IReadOnlyList<PatchOperation> patchOperations,
-            PatchItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default);
-
         public abstract FeedIterator GetItemQueryStreamIterator(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
