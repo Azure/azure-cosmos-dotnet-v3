@@ -35,10 +35,27 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             IndexUtilizationInfo indexUtilizationInfo,
             ClientSideMetrics clientSideMetrics)
         {
-            this.backendMetrics = new Lazy<BackendMetrics>(() => deliminatedString.Equals(string.Empty)
-                ? BackendMetrics.Empty
-                : BackendMetricsParser.TryParse(deliminatedString, out BackendMetrics backendMetrics) ? backendMetrics : BackendMetrics.Empty);
+            this.backendMetrics = new Lazy<BackendMetrics>(() =>
+            {
+                if (!deliminatedString.Equals(string.Empty) && 
+                        BackendMetricsParser.TryParse(deliminatedString, out BackendMetrics backendMetrics))
+                {
+                    return backendMetrics;
+                }
+                return BackendMetrics.Empty;
+
+            });
             
+            this.IndexUtilizationInfo = indexUtilizationInfo ?? throw new ArgumentNullException(nameof(indexUtilizationInfo));
+            this.ClientSideMetrics = clientSideMetrics ?? throw new ArgumentNullException(nameof(clientSideMetrics));
+        }
+
+        public QueryMetrics(
+                BackendMetrics backendMetrics,
+                IndexUtilizationInfo indexUtilizationInfo,
+                ClientSideMetrics clientSideMetrics)
+        {
+            this.backendMetrics = new Lazy<BackendMetrics>(() => backendMetrics);
             this.IndexUtilizationInfo = indexUtilizationInfo ?? throw new ArgumentNullException(nameof(indexUtilizationInfo));
             this.ClientSideMetrics = clientSideMetrics ?? throw new ArgumentNullException(nameof(clientSideMetrics));
         }
@@ -131,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             public static QueryMetrics ToQueryMetrics(Accumulator accumulator)
             {
                 return new QueryMetrics(
-                    BackendMetrics.Accumulator.ToBackendMetrics(accumulator.BackendMetricsAccumulator).ToString(),
+                    BackendMetrics.Accumulator.ToBackendMetrics(accumulator.BackendMetricsAccumulator),
                     IndexUtilizationInfo.Accumulator.ToIndexUtilizationInfo(accumulator.IndexUtilizationInfoAccumulator),
                     ClientSideMetrics.Accumulator.ToClientSideMetrics(accumulator.ClientSideMetricsAccumulator));
             }

@@ -25,9 +25,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             // on performance changes
             List<string> argsList = args != null ? new List<string>(args) : new List<string>();
             bool validateBaseline = argsList.Remove("--BaselineValidation");
-            argsList.Add("--allCategories=QueryGateBenchmark"); 
-            argsList.Add("-j"); 
-            argsList.Add("Medium"); 
             string[] updatedArgs = argsList.ToArray();
 
             if (validateBaseline)

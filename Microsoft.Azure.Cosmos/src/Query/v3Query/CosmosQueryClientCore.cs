@@ -317,16 +317,6 @@ namespace Microsoft.Azure.Cosmos
                         resourceType,
                         requestOptions.CosmosSerializationFormatOptions);
 
-                  /*  CosmosQueryExecutionInfo cosmosQueryExecutionInfo;
-                    if ()
-                    {
-                        cosmosQueryExecutionInfo = JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(queryExecutionInfoString);
-                    }
-                    else
-                    {
-                        cosmosQueryExecutionInfo = default;
-                    }*/
-
                     QueryState queryState;
                     if (cosmosResponseMessage.Headers.ContinuationToken != null)
                     {
@@ -346,14 +336,22 @@ namespace Microsoft.Azure.Cosmos
                         }
                     }
 
-                    cosmosResponseMessage.Headers.TryGetValue(QueryExecutionInfoHeader, out string queryExecutionInfoString);
+                    Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfoLazyObject;
+                    if (cosmosResponseMessage.Headers.TryGetValue(QueryExecutionInfoHeader, out string queryExecutionInfoString))
+                    {
+                        cosmosQueryExecutionInfoLazyObject = new Lazy<CosmosQueryExecutionInfo>(() => JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(queryExecutionInfoString));
+                    } 
+                    else
+                    {
+                        cosmosQueryExecutionInfoLazyObject = new Lazy<CosmosQueryExecutionInfo>(() => default);
+                    }
 
                     QueryPage response = new QueryPage(
                         documents,
                         cosmosResponseMessage.Headers.RequestCharge,
                         cosmosResponseMessage.Headers.ActivityId,
                         responseLengthBytes,
-                        queryExecutionInfoString,
+                        cosmosQueryExecutionInfoLazyObject,
                         disallowContinuationTokenMessage: null,
                         additionalHeaders,
                         queryState);

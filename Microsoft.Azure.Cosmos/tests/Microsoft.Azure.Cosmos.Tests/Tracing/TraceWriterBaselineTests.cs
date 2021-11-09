@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
     public sealed class TraceWriterBaselineTests : BaselineTests<TraceWriterBaselineTests.Input, TraceWriterBaselineTests.Output>
     {
         private static readonly QueryMetrics MockQueryMetrics = new QueryMetrics(
-            BackendMetricsTests.MockBackendMetrics.ToString(),
+            BackendMetricsTests.MockBackendMetrics,
             IndexUtilizationInfoTests.MockIndexUtilizationInfo,
             ClientSideMetricsTests.MockClientSideMetrics);
 
@@ -316,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 {
                     QueryMetricsTraceDatum datum = new QueryMetricsTraceDatum(
                         new QueryMetrics(
-                            BackendMetricsTests.MockBackendMetrics.ToString(),
+                            BackendMetricsTests.MockBackendMetrics,
                             IndexUtilizationInfoTests.MockIndexUtilizationInfo,
                             ClientSideMetricsTests.MockClientSideMetrics));
                     rootTrace.AddDatum("Query Metrics", datum);

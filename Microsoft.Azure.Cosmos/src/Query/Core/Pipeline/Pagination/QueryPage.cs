@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
 
     internal sealed class QueryPage : Page<QueryState>
     {
-        private readonly Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfoLazyObject = new Lazy<CosmosQueryExecutionInfo>();
         public static readonly ImmutableHashSet<string> BannedHeaders = new HashSet<string>()
         {
             Microsoft.Azure.Documents.HttpConstants.HttpHeaders.Continuation,
@@ -27,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
             double requestCharge,
             string activityId,
             long responseLengthInBytes,
-            string cosmosQueryExecutionInfo,
+            Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo,
             string disallowContinuationTokenMessage,
             IReadOnlyDictionary<string, string> additionalHeaders,
             QueryState state)
@@ -36,7 +35,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
             this.Documents = documents ?? throw new ArgumentNullException(nameof(documents));
             this.ResponseLengthInBytes = responseLengthInBytes < 0 ? throw new ArgumentOutOfRangeException(nameof(responseLengthInBytes)) : responseLengthInBytes;
             this.CosmosQueryExecutionInfo = cosmosQueryExecutionInfo;
-            this.cosmosQueryExecutionInfoLazyObject = new Lazy<CosmosQueryExecutionInfo>(() => JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(cosmosQueryExecutionInfo));
             this.DisallowContinuationTokenMessage = disallowContinuationTokenMessage;
         }
 
@@ -44,9 +42,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
 
         public long ResponseLengthInBytes { get; }
 
-        public string CosmosQueryExecutionInfo { get; }
+        public Lazy<CosmosQueryExecutionInfo> CosmosQueryExecutionInfo { get; }
 
-        public CosmosQueryExecutionInfo CosmosQueryExecutionInfoObject => this.cosmosQueryExecutionInfoLazyObject.Value;
+        public CosmosQueryExecutionInfo CosmosQueryExecutionInfoObject => this.CosmosQueryExecutionInfo.Value;
 
         public string DisallowContinuationTokenMessage { get; }
 

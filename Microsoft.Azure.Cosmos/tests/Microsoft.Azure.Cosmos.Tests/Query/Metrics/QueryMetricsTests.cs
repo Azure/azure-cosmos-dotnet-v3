@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
     public class QueryMetricsTests
     {
         private static readonly QueryMetrics MockQueryMetrics = new QueryMetrics(
-            BackendMetricsTests.MockBackendMetrics.ToString(),
+            BackendMetricsTests.MockBackendMetrics,
             IndexUtilizationInfoTests.MockIndexUtilizationInfo,
             ClientSideMetricsTests.MockClientSideMetrics);
 
