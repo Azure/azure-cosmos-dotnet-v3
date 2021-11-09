@@ -15,6 +15,8 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
     internal sealed class CosmosTraceDiagnostics : CosmosDiagnostics
     {
+        private readonly HashSet<(string, Uri)> RegionsContacted = new HashSet<(string, Uri)>();
+
         public CosmosTraceDiagnostics(ITrace trace)
         {
             if (trace == null)
@@ -46,10 +48,9 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override IReadOnlyList<(string regionName, Uri uri)> GetContactedRegions()
         {
-            HashSet<(string, Uri)> regionsContacted = new HashSet<(string, Uri)>();
             ITrace rootTrace = this.Value;
-            this.WalkTraceTreeForRegionsContated(rootTrace, regionsContacted);
-            return regionsContacted.ToList();
+            this.WalkTraceTreeForRegionsContated(rootTrace);
+            return this.RegionsContacted.ToList();
         }
 
         internal bool IsGoneExceptionHit()
@@ -89,20 +90,20 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return false;
         }
 
-        private void WalkTraceTreeForRegionsContated(ITrace currentTrace, HashSet<(string, Uri)> regionsContacted)
+        private void WalkTraceTreeForRegionsContated(ITrace currentTrace)
         {
             foreach (object datums in currentTrace.Data.Values)
             {
                 if (datums is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
                 {
-                    regionsContacted.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
+                    this.RegionsContacted.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
                     return;
                 }
             }
 
             foreach (ITrace childTrace in currentTrace.Children)
             {
-                this.WalkTraceTreeForRegionsContated(childTrace, regionsContacted);
+                this.WalkTraceTreeForRegionsContated(childTrace);
             }
         }
 
