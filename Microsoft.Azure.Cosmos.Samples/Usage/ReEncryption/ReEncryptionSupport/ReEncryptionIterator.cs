@@ -260,6 +260,8 @@ namespace Cosmos.Samples.ReEncryption
                         {
                             JObject metadata = failedOperation.Item1.GetValue(Constants.MetadataPropertyName).ToObject<JObject>();
                             string operationType = metadata.GetValue(Constants.OperationTypePropertyName).ToString();
+                            // since we pick up only the last change in set of changes for a document, if the last operation is delete we end up with NotFound, so we ignore it.
+                            // return the failure for rest of the operation types.
                             if (!operationType.Equals("delete"))
                             {
                                 response = new ResponseMessage(
