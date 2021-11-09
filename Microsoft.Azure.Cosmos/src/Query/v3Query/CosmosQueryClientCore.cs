@@ -288,7 +288,9 @@ namespace Microsoft.Azure.Cosmos
                     if (cosmosResponseMessage.Headers.QueryMetricsText != null)
                     {
                         QueryMetricsTraceDatum datum = new QueryMetricsTraceDatum(
-                            new QueryMetrics(cosmosResponseMessage.Headers.QueryMetricsText, IndexUtilizationInfo.Empty, ClientSideMetrics.Empty));
+                            new QueryMetrics(cosmosResponseMessage.Headers.QueryMetricsText, 
+                            IndexUtilizationInfo.Empty, 
+                            ClientSideMetrics.Empty));
                         trace.AddDatum("Query Metrics", datum);
                     }
 
@@ -315,15 +317,15 @@ namespace Microsoft.Azure.Cosmos
                         resourceType,
                         requestOptions.CosmosSerializationFormatOptions);
 
-                    CosmosQueryExecutionInfo cosmosQueryExecutionInfo;
-                    if (cosmosResponseMessage.Headers.TryGetValue(QueryExecutionInfoHeader, out string queryExecutionInfoString))
+                  /*  CosmosQueryExecutionInfo cosmosQueryExecutionInfo;
+                    if ()
                     {
                         cosmosQueryExecutionInfo = JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(queryExecutionInfoString);
                     }
                     else
                     {
                         cosmosQueryExecutionInfo = default;
-                    }
+                    }*/
 
                     QueryState queryState;
                     if (cosmosResponseMessage.Headers.ContinuationToken != null)
@@ -344,12 +346,14 @@ namespace Microsoft.Azure.Cosmos
                         }
                     }
 
+                    cosmosResponseMessage.Headers.TryGetValue(QueryExecutionInfoHeader, out string queryExecutionInfoString);
+
                     QueryPage response = new QueryPage(
                         documents,
                         cosmosResponseMessage.Headers.RequestCharge,
                         cosmosResponseMessage.Headers.ActivityId,
                         responseLengthBytes,
-                        cosmosQueryExecutionInfo,
+                        queryExecutionInfoString,
                         disallowContinuationTokenMessage: null,
                         additionalHeaders,
                         queryState);

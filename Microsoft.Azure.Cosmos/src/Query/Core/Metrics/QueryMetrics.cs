@@ -20,6 +20,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 #endif
     sealed class QueryMetrics
     {
+        private readonly Lazy<BackendMetrics> backendMetrics = new Lazy<BackendMetrics>();
+
         /// <summary>
         /// QueryMetrics that with all members having default (but not null) members.
         /// </summary>
@@ -33,15 +35,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             IndexUtilizationInfo indexUtilizationInfo,
             ClientSideMetrics clientSideMetrics)
         {
-            this.BackendMetrics = deliminatedString.Equals(string.Empty)
+            this.backendMetrics = new Lazy<BackendMetrics>(() => deliminatedString.Equals(string.Empty)
                 ? BackendMetrics.Empty
-                : BackendMetricsParser.TryParse(deliminatedString, out BackendMetrics backendMetrics) ? backendMetrics : BackendMetrics.Empty;
-
+                : BackendMetricsParser.TryParse(deliminatedString, out BackendMetrics backendMetrics) ? backendMetrics : BackendMetrics.Empty);
+            
             this.IndexUtilizationInfo = indexUtilizationInfo ?? throw new ArgumentNullException(nameof(indexUtilizationInfo));
             this.ClientSideMetrics = clientSideMetrics ?? throw new ArgumentNullException(nameof(clientSideMetrics));
         }
 
-        public BackendMetrics BackendMetrics { get; }
+        public BackendMetrics BackendMetrics => this.backendMetrics.Value;
 
         public IndexUtilizationInfo IndexUtilizationInfo { get; }
 
