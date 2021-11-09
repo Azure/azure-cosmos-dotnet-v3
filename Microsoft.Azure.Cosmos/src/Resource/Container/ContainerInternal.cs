@@ -145,20 +145,6 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
-            
-        public abstract Task<ResponseMessage> PatchItemStreamAsync(
-            string id,
-            PartitionKey partitionKey,
-            IReadOnlyList<PatchOperation> patchOperations,
-            PatchItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default);
-
-        public abstract Task<ItemResponse<T>> PatchItemAsync<T>(
-            string id,
-            PartitionKey partitionKey,
-            IReadOnlyList<PatchOperation> patchOperations,
-            PatchItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default);
 
 #if !INTERNAL
         public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
