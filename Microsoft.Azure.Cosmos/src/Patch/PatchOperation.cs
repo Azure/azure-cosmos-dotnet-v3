@@ -11,12 +11,8 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Details of Patch operation that is to be applied to the referred Cosmos item.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-        abstract class PatchOperation
+
+    public abstract class PatchOperation
     {
         /// <summary>
         /// Patch operation type.
