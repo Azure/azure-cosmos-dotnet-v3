@@ -15,16 +15,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal string DateTimeUtc { get; set; }
 
         [JsonProperty(PropertyName = "clientId")]
-        private string ClientId { get; }
+        internal string ClientId { get; }
 
         [JsonProperty(PropertyName = "processId")]
-        private string ProcessId { get; }
+        internal string ProcessId { get; }
 
         [JsonProperty(PropertyName = "userAgent")]
-        private string UserAgent { get; }
+        internal string UserAgent { get; }
 
         [JsonProperty(PropertyName = "connectionMode")]
-        private string ConnectionMode { get; }
+        internal string ConnectionMode { get; }
 
         [JsonProperty(PropertyName = "globalDatabaseAccountName")]
         internal string GlobalDatabaseAccountName { get; set; }
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal string HostEnvInfo { get; set; }
 
         [JsonProperty(PropertyName = "acceleratedNetworking")]
-        private bool? AcceleratedNetworking { get; set; }
+        internal bool? AcceleratedNetworking { get; set; }
 
         /// <summary>
         /// Preferred Region set by the client
