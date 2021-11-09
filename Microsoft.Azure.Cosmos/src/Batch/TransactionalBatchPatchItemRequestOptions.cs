@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Batch Patch request options
     /// </summary>
-
     public class TransactionalBatchPatchItemRequestOptions : TransactionalBatchItemRequestOptions
     {
         /// <summary>
