@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 #endif
     sealed class QueryMetrics
     {
-        private readonly Lazy<BackendMetrics> backendMetrics = new Lazy<BackendMetrics>();
+        private readonly Lazy<BackendMetrics> backendMetrics;
 
         /// <summary>
         /// QueryMetrics that with all members having default (but not null) members.

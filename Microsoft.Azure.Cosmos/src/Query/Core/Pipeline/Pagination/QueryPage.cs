@@ -44,8 +44,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
 
         public Lazy<CosmosQueryExecutionInfo> CosmosQueryExecutionInfo { get; }
 
-        public CosmosQueryExecutionInfo CosmosQueryExecutionInfoObject => this.CosmosQueryExecutionInfo.Value;
-
         public string DisallowContinuationTokenMessage { get; }
 
         protected override ImmutableHashSet<string> DerivedClassBannedHeaders => QueryPage.BannedHeaders;

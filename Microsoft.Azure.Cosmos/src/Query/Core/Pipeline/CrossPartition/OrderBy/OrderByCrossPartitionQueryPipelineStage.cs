@@ -1110,7 +1110,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 ResourceId rid = ResourceId.Parse(orderByResult.Rid);
                 int ridOrderCompare = continuationRid.Document.CompareTo(rid.Document);
 
-                CosmosQueryExecutionInfo cosmosQueryExecutionInfo = orderByQueryPage.Page.CosmosQueryExecutionInfoObject;
+                CosmosQueryExecutionInfo cosmosQueryExecutionInfo = orderByQueryPage.Page.CosmosQueryExecutionInfo.Value;
                 if ((cosmosQueryExecutionInfo == null) || cosmosQueryExecutionInfo.ReverseRidEnabled)
                 {
                     // If reverse rid is enabled on the backend then fallback to the old way of doing it.

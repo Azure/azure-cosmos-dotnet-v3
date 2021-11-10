@@ -336,14 +336,18 @@ namespace Microsoft.Azure.Cosmos
                         }
                     }
 
-                    Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfoLazyObject;
+                    Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo;
                     if (cosmosResponseMessage.Headers.TryGetValue(QueryExecutionInfoHeader, out string queryExecutionInfoString))
                     {
-                        cosmosQueryExecutionInfoLazyObject = new Lazy<CosmosQueryExecutionInfo>(() => JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(queryExecutionInfoString));
+                        cosmosQueryExecutionInfo = 
+                            new Lazy<CosmosQueryExecutionInfo>(
+                                () => JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(queryExecutionInfoString));
                     } 
                     else
                     {
-                        cosmosQueryExecutionInfoLazyObject = new Lazy<CosmosQueryExecutionInfo>(() => default);
+                        cosmosQueryExecutionInfo = 
+                            new Lazy<CosmosQueryExecutionInfo>(
+                                () => default);
                     }
 
                     QueryPage response = new QueryPage(
@@ -351,7 +355,7 @@ namespace Microsoft.Azure.Cosmos
                         cosmosResponseMessage.Headers.RequestCharge,
                         cosmosResponseMessage.Headers.ActivityId,
                         responseLengthBytes,
-                        cosmosQueryExecutionInfoLazyObject,
+                        cosmosQueryExecutionInfo,
                         disallowContinuationTokenMessage: null,
                         additionalHeaders,
                         queryState);
