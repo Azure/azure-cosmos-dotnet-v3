@@ -336,18 +336,12 @@ namespace Microsoft.Azure.Cosmos
                         }
                     }
 
-                    Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo;
+                    Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo = default;
                     if (cosmosResponseMessage.Headers.TryGetValue(QueryExecutionInfoHeader, out string queryExecutionInfoString))
                     {
                         cosmosQueryExecutionInfo = 
                             new Lazy<CosmosQueryExecutionInfo>(
                                 () => JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(queryExecutionInfoString));
-                    } 
-                    else
-                    {
-                        cosmosQueryExecutionInfo = 
-                            new Lazy<CosmosQueryExecutionInfo>(
-                                () => default);
                     }
 
                     QueryPage response = new QueryPage(

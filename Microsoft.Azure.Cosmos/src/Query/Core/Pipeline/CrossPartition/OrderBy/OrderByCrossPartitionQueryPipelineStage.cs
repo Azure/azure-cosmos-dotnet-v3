@@ -1110,8 +1110,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 ResourceId rid = ResourceId.Parse(orderByResult.Rid);
                 int ridOrderCompare = continuationRid.Document.CompareTo(rid.Document);
 
-                CosmosQueryExecutionInfo cosmosQueryExecutionInfo = orderByQueryPage.Page.CosmosQueryExecutionInfo.Value;
-                if ((cosmosQueryExecutionInfo == null) || cosmosQueryExecutionInfo.ReverseRidEnabled)
+                Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo = orderByQueryPage.Page.CosmosQueryExecutionInfo;
+                if ((cosmosQueryExecutionInfo == null) || cosmosQueryExecutionInfo.Value.ReverseRidEnabled)
                 {
                     // If reverse rid is enabled on the backend then fallback to the old way of doing it.
                     if (sortOrders[0] == SortOrder.Descending)
@@ -1122,7 +1122,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 else
                 {
                     // Go by the whatever order the index wants
-                    if (cosmosQueryExecutionInfo.ReverseIndexScan)
+                    if (cosmosQueryExecutionInfo.Value.ReverseIndexScan)
                     {
                         ridOrderCompare = -ridOrderCompare;
                     }
