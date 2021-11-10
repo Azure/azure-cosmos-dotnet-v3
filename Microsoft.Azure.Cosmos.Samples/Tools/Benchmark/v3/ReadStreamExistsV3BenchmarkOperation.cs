@@ -13,15 +13,15 @@ namespace CosmosBenchmark
 
     internal class ReadStreamExistsV3BenchmarkOperation : IBenchmarkOperation
     {
-        private readonly Container container;
+        protected readonly Container container;
         private readonly string partitionKeyPath;
         private readonly Dictionary<string, object> sampleJObject;
 
-        private readonly string databsaeName;
-        private readonly string containerName;
+        protected readonly string databsaeName;
+        protected readonly string containerName;
 
-        private string nextExecutionItemPartitionKey;
-        private string nextExecutionItemId;
+        protected string nextExecutionItemPartitionKey;
+        protected string nextExecutionItemId;
 
         public ReadStreamExistsV3BenchmarkOperation(
             CosmosClient cosmosClient,
@@ -39,7 +39,7 @@ namespace CosmosBenchmark
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
         }
 
-        public async Task<OperationResult> ExecuteOnceAsync()
+        public async virtual Task<OperationResult> ExecuteOnceAsync()
         {
             using (ResponseMessage itemResponse = await this.container.ReadItemStreamAsync(
                         this.nextExecutionItemId,

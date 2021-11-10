@@ -7,7 +7,7 @@
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class ReadStreamExistsGetContactedRegionsV3BenchmarkOperation : ReadNotExistsV3BenchmarkOperation
+    internal class ReadStreamExistsGetContactedRegionsV3BenchmarkOperation : ReadStreamExistsV3BenchmarkOperation
     {
         public ReadStreamExistsGetContactedRegionsV3BenchmarkOperation(
             CosmosClient cosmosClient,
