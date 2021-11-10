@@ -7,9 +7,9 @@
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class ReadStreamExistsV3GetContactedRegionsBenchmarkOperation : ReadNotExistsV3BenchmarkOperation
+    internal class ReadStreamExistsGetContactedRegionsV3BenchmarkOperation : ReadNotExistsV3BenchmarkOperation
     {
-        public ReadStreamExistsV3GetContactedRegionsBenchmarkOperation(
+        public ReadStreamExistsGetContactedRegionsV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
             string containerName,
@@ -29,7 +29,7 @@
                     throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
                 }
 
-                string contactedRegions = ReadStreamExistsV3GetContactedRegionsBenchmarkOperation.GetContactedRegions(itemResponse.Diagnostics);;
+                string contactedRegions = ReadStreamExistsGetContactedRegionsV3BenchmarkOperation.GetContactedRegions(itemResponse.Diagnostics);;
                 if (string.IsNullOrWhiteSpace(contactedRegions))
                 {
                     throw new Exception($"ReadItem succesful but no regions contacted {itemResponse.Diagnostics}");
