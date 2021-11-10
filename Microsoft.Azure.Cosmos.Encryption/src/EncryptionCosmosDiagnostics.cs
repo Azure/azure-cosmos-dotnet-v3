@@ -39,6 +39,29 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return this.coreDiagnostics.GetContactedRegions();
         }
 
+        public override TimeSpan GetClientElapsedTime()
+        {
+            TimeSpan clientElapsedTime = this.coreDiagnostics.GetClientElapsedTime();
+
+            int durationInMilliseconds = 0;
+            if (this.encryptContent != null)
+            {
+                durationInMilliseconds = this.encryptContent.Value<int>(Constants.DiagnosticsDuration);
+            }
+
+            if (this.decryptContent != null)
+            {
+                durationInMilliseconds += this.decryptContent.Value<int>(Constants.DiagnosticsDuration);
+            }
+
+            if (durationInMilliseconds > 0)
+            {
+                clientElapsedTime = clientElapsedTime.Add(TimeSpan.FromMilliseconds(durationInMilliseconds));
+            }
+
+            return clientElapsedTime;
+        }
+
         public override string ToString()
         {
             StringBuilder stringBuilder = new StringBuilder();

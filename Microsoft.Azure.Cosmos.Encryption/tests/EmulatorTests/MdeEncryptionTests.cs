@@ -696,7 +696,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 .ExecuteAsync();
 
             Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
-            VerifyDiagnostics(batchResponse.Diagnostics, encryptOperation: false, expectedPropertiesDecryptedCount: 0);
+            VerifyDiagnostics(batchResponse.Diagnostics, expectedPropertiesEncryptedCount: 0, expectedPropertiesDecryptedCount: 0);
 
             TransactionalBatchOperationResult<TestDoc> doc1 = batchResponse.GetOperationResultAtIndex<TestDoc>(0);
             VerifyExpectedDocResponse(doc1ToCreate, doc1.Resource);
@@ -2564,8 +2564,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         private static void VerifyDiagnostics(
-            CosmosDiagnostics diagnostics, 
-            bool encryptOperation = true, 
+            CosmosDiagnostics diagnostics,
+            bool encryptOperation = true,
             bool decryptOperation = true,
             int expectedPropertiesEncryptedCount = 12,
             int expectedPropertiesDecryptedCount = 12)
@@ -2600,6 +2600,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     int propertiesDecrypted = decryptOperationDiagnostics.Value<int>(Constants.DiagnosticsPropertiesDecryptedCount);
                     Assert.IsTrue(propertiesDecrypted >= expectedPropertiesDecryptedCount);
                 }
+            }
+
+            if (encryptOperation || decryptOperation)
+            {
+                TimeSpan duration = ((EncryptionCosmosDiagnostics)diagnostics).GetClientElapsedTime();
+                Assert.IsTrue(duration.TotalMilliseconds > coreDiagnostics.Value<int>("duration in milliseconds"));
             }
         }
 
