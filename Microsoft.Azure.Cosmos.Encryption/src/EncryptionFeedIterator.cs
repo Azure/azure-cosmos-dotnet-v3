@@ -35,20 +35,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
 
+            EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
+
             // check for Bad Request and Wrong RID intended and update the cached RID and Client Encryption Policy.
-            await this.encryptionContainer.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, cancellationToken);
+            await this.encryptionContainer.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, encryptionDiagnosticsContext, cancellationToken);
 
             if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
             {
-                EncryptionDiagnosticsContext decryptDiagnostics = new EncryptionDiagnosticsContext();
-
                 Stream decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                     responseMessage.Content,
                     encryptionSettings,
-                    decryptDiagnostics,
+                    encryptionDiagnosticsContext,
                     cancellationToken);
 
-                decryptDiagnostics.AddEncryptionDiagnosticsToResponseMessage(responseMessage);
+                encryptionDiagnosticsContext.AddEncryptionDiagnosticsToResponseMessage(responseMessage);
 
                 return new DecryptedResponseMessage(responseMessage, decryptedContent);
             }

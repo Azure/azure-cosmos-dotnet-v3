@@ -738,10 +738,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="responseMessage"> Response message to validate. </param>
         /// <param name="encryptionSettings"> Current cached encryption settings to refresh if required. </param>
+        /// <param name="encryptionDiagnosticsContext"> Encryption specific diagnostics. </param>
         /// <param name="cancellationToken"> Cancellation token. </param>
         internal async Task ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(
             ResponseMessage responseMessage,
             EncryptionSettings encryptionSettings,
+            EncryptionDiagnosticsContext encryptionDiagnosticsContext,
             CancellationToken cancellationToken)
         {
             if (responseMessage.StatusCode == HttpStatusCode.BadRequest &&
@@ -752,12 +754,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
                    obsoleteEncryptionSettings: encryptionSettings,
                    cancellationToken: cancellationToken);
 
-                throw new CosmosException(
+                if (encryptionDiagnosticsContext == null)
+                {
+                    throw new ArgumentNullException(nameof(encryptionDiagnosticsContext));
+                }
+
+                EncryptionCosmosDiagnostics encryptionDiagnostics = new EncryptionCosmosDiagnostics(
+                    responseMessage.Diagnostics,
+                    encryptionDiagnosticsContext.EncryptContent,
+                    encryptionDiagnosticsContext.DecryptContent);
+
+                throw new EncryptionCosmosException(
                    "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Retrying may fix the issue. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + responseMessage.ErrorMessage,
                    HttpStatusCode.BadRequest,
                    int.Parse(Constants.IncorrectContainerRidSubStatus),
                    responseMessage.Headers.ActivityId,
-                   responseMessage.Headers.RequestCharge);
+                   responseMessage.Headers.RequestCharge,
+                   encryptionDiagnostics);
             }
         }
 
@@ -880,7 +893,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, cancellationToken);
+            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, encryptionDiagnosticsContext, cancellationToken);
 
             responseMessage.Content = await EncryptionProcessor.DecryptAsync(
                 responseMessage.Content,
@@ -919,9 +932,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, cancellationToken);
-
             EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
+
+            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, encryptionDiagnosticsContext, cancellationToken);
+
             responseMessage.Content = await EncryptionProcessor.DecryptAsync(
                 responseMessage.Content,
                 encryptionSettings,
@@ -976,7 +990,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, cancellationToken);
+            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, encryptionDiagnosticsContext, cancellationToken);
 
             responseMessage.Content = await EncryptionProcessor.DecryptAsync(
                 responseMessage.Content,
@@ -1029,7 +1043,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, cancellationToken);
+            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, encryptionDiagnosticsContext, cancellationToken);
 
             responseMessage.Content = await EncryptionProcessor.DecryptAsync(
                 responseMessage.Content,
@@ -1078,7 +1092,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, cancellationToken);
+            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, encryptionDiagnosticsContext, cancellationToken);
 
             responseMessage.Content = await EncryptionProcessor.DecryptAsync(
                 responseMessage.Content,
@@ -1140,19 +1154,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, cancellationToken);
+            EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
+
+            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, encryptionDiagnosticsContext, cancellationToken);
 
             if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
             {
-                EncryptionDiagnosticsContext decryptDiagnostics = new EncryptionDiagnosticsContext();
-
                 Stream decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                     responseMessage.Content,
                     encryptionSettings,
-                    decryptDiagnostics,
+                    encryptionDiagnosticsContext,
                     cancellationToken);
 
-                decryptDiagnostics.AddEncryptionDiagnosticsToResponseMessage(responseMessage);
+                encryptionDiagnosticsContext.AddEncryptionDiagnosticsToResponseMessage(responseMessage);
                 return new DecryptedResponseMessage(responseMessage, decryptedContent);
             }
 

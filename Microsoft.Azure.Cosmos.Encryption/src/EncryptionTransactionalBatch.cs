@@ -202,12 +202,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     obsoleteEncryptionSettings: encryptionSettings,
                     cancellationToken: cancellationToken);
 
-                throw new CosmosException(
+                // no access to the encryption diagnostics. Just pass empty encryption diagnostics for now.
+                EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
+                EncryptionCosmosDiagnostics encryptionDiagnostics = new EncryptionCosmosDiagnostics(
+                    response.Diagnostics,
+                    encryptionDiagnosticsContext.EncryptContent,
+                    encryptionDiagnosticsContext.DecryptContent);
+
+                throw new EncryptionCosmosException(
                     "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Retrying may fix the issue. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + response.ErrorMessage,
                     HttpStatusCode.BadRequest,
                     int.Parse(Constants.IncorrectContainerRidSubStatus),
                     response.Headers.ActivityId,
-                    response.Headers.RequestCharge);
+                    response.Headers.RequestCharge,
+                    encryptionDiagnostics);
             }
 
             return await this.DecryptTransactionalBatchResponseAsync(
