@@ -97,12 +97,16 @@ namespace Microsoft.Azure.Cosmos
         internal ISessionContainer SessionContainer { get; set; }
 
         /// <summary>
-        /// Get or set the preferred geo-replicated region to be used for Azure Cosmos DB service interaction.
+        /// Gets or sets the location where the application is running. This will influence the SDK's choice for the Azure Cosmos DB service interaction.
         /// </summary>
         /// <remarks>
-        /// When this property is specified, the SDK prefers the region to perform operations. Also SDK auto-selects 
-        /// fallback geo-replicated regions for high availability. 
-        /// When this property is not specified, the SDK uses the write region as the preferred region for all operations.
+        /// When the specified region is available, the SDK will prefer it to perform operations. When the region specified is not available,
+        /// the SDK auto-selects fallback regions based on proximity from the given region. When
+        /// this property is not specified at all, the SDK uses the write region
+        /// as the preferred region for all operations. See also 
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-sdk-availability">Diagnose
+        /// and troubleshoot the availability of Cosmos SDKs</seealso> for more details.
+        /// This configuration is an alternative to <see cref="ApplicationPreferredRegions"/>, either one can be set but not both.
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability#high-availability-with-cosmos-db-in-the-event-of-regional-outages">High availability on regional outages</seealso>
@@ -114,6 +118,8 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// When this property is specified, the SDK will use the region list in the provided order to define the endpoint failover order.
         /// This configuration is an alternative to <see cref="ApplicationRegion"/>, either one can be set but not both.
+        /// See also <seealso href="https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-sdk-availability">Diagnose
+        /// and troubleshoot the availability of Cosmos SDKs</seealso> for more details.
         /// </remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability#high-availability-with-cosmos-db-in-the-event-of-regional-outages">High availability on regional outages</seealso>
         public IReadOnlyList<string> ApplicationPreferredRegions { get; set; }
@@ -483,9 +489,9 @@ namespace Microsoft.Azure.Cosmos
         /// Does not apply if <see cref="ConnectionMode.Gateway"/> is used.
         /// </remarks>
         /// <value>
-        /// The default value is false
+        /// The default value is true
         /// </value>
-        public bool EnableTcpConnectionEndpointRediscovery { get; set; } = false;
+        public bool EnableTcpConnectionEndpointRediscovery { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a delegate to use to obtain an HttpClient instance to be used for HTTPS communication.

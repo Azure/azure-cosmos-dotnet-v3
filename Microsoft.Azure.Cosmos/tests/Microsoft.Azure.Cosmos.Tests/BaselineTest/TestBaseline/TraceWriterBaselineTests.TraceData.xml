@@ -36,6 +36,7 @@
         )
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -100,6 +101,7 @@
         )
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -180,6 +182,7 @@
         )
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -247,6 +250,7 @@
                     usingLocalLSN: true,
                     activityId: Guid.Empty.ToString(),
                     backendRequestDurationInMs: "4.2",
+                    retryAfterInMs: "42",
                     transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                 ResourceType.Document,
                 OperationType.Query,
@@ -304,6 +308,12 @@
         )
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {
+    "DirectCalls": {
+      "(0, 0)": 1
+    },
+    "RegionsContacted": 2
+  },
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -365,6 +375,7 @@
             "IsValid": true,
             "StorePhysicalAddress": "http://storephysicaladdress.com/",
             "RequestCharge": 3.14,
+            "RetryAfterInMs": "42",
             "BELatencyInMs": "4.2",
             "transportRequestTimeline": {
               "requestTimeline": [
@@ -448,6 +459,7 @@
                     sessionToken: default,
                     usingLocalLSN: default,
                     activityId: default,
+                    retryAfterInMs: default,
                     backendRequestDurationInMs: default,
                      transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                 resourceType: default,
@@ -501,6 +513,12 @@
         )
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {
+    "DirectCalls": {
+      "(0, 0)": 1
+    },
+    "RegionsContacted": 1
+  },
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -555,6 +573,7 @@
             "IsValid": false,
             "StorePhysicalAddress": null,
             "RequestCharge": 0,
+            "RetryAfterInMs": null,
             "BELatencyInMs": null,
             "transportRequestTimeline": {
               "requestTimeline": [
@@ -669,6 +688,12 @@
         )
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {
+    "GatewayCalls": {
+      "(200, 0)": 1,
+      "(0, 0)": 1
+    }
+  },
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -714,7 +739,7 @@
   </Result>
   <Result>
     <Input>
-      <Description>CPU History</Description>
+      <Description>System Info</Description>
       <Setup><![CDATA[
     TraceForBaselineTesting rootTrace;
     using (rootTrace = TraceForBaselineTesting.GetRootTrace())
@@ -736,7 +761,7 @@
                             9000),
                     }),
                 monitoringInterval: TimeSpan.MaxValue));
-        rootTrace.AddDatum("CPU History", datum);
+        rootTrace.AddDatum("System Info", datum);
     }
 ]]></Setup>
     </Input>
@@ -744,11 +769,12 @@
       <Text><![CDATA[.
 └── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         (
-            [CPU History]
+            [System Info]
             {"systemHistory":[{"dateUtc":"0001-01-01T00:00:00.0000000","cpu":42.000,"memory":1000.000,"threadInfo":{"isThreadStarving":"no info"}},{"dateUtc":"0001-01-01T00:00:00.0000000","cpu":23.000,"memory":9000.000,"threadInfo":{"isThreadStarving":"no info"}}]}
         )
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -759,8 +785,25 @@
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
-    "CPU History": {
-      "CPU History": "{\"systemHistory\":[{\"dateUtc\":\"0001-01-01T00:00:00.0000000\",\"cpu\":42.000,\"memory\":1000.000,\"threadInfo\":{\"isThreadStarving\":\"no info\"}},{\"dateUtc\":\"0001-01-01T00:00:00.0000000\",\"cpu\":23.000,\"memory\":9000.000,\"threadInfo\":{\"isThreadStarving\":\"no info\"}}]}"
+    "System Info": {
+      "systemHistory": [
+        {
+          "dateUtc": "0001-01-01T00:00:00",
+          "cpu": 42.0,
+          "memory": 1000.0,
+          "threadInfo": {
+            "isThreadStarving": "no info"
+          }
+        },
+        {
+          "dateUtc": "0001-01-01T00:00:00",
+          "cpu": 23.0,
+          "memory": 9000.0,
+          "threadInfo": {
+            "isThreadStarving": "no info"
+          }
+        }
+      ]
     }
   }
 }]]></Json>

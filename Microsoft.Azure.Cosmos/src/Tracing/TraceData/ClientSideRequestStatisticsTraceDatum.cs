@@ -267,12 +267,14 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         public void UpdateSystemUsage()
         {
+#if !INTERNAL
             if (this.systemUsageHistory == null ||
                 this.systemUsageHistory.Values.Count == 0 ||
                 this.systemUsageHistory.LastTimestamp + DiagnosticsHandlerHelper.DiagnosticsRefreshInterval < DateTime.UtcNow)
             {
                 this.systemUsageHistory = DiagnosticsHandlerHelper.Instance.GetDiagnosticsSystemHistory();
             }
+#endif
         }
 
         internal override void Accept(ITraceDatumVisitor traceDatumVisitor)

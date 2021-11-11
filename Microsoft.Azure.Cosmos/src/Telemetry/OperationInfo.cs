@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private string RegionsContacted { get; }
 
         [JsonProperty(PropertyName = "greaterThan1Kb")]
-        private bool? GreaterThan1Kb { get; }
+        internal bool? GreaterThan1Kb { get; set; }
 
         [JsonProperty(PropertyName = "databaseName")]
         private string DatabaseName { get; }
@@ -36,9 +36,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         [JsonProperty(PropertyName = "statusCode")]
         public int? StatusCode { get; }
 
-        [JsonProperty(PropertyName = "responseSizeInBytes")]
-        public long? ResponseSizeInBytes { get; }
-
         [JsonProperty(PropertyName = "metricInfo")]
         internal MetricInfo MetricInfo { get; set; }
 
@@ -49,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         internal OperationInfo(string regionsContacted, 
             long? responseSizeInBytes,            
-            Cosmos.ConsistencyLevel? consistency, 
+            string consistency, 
             string databaseName, 
             string containerName, 
             OperationType? operation, 
@@ -57,12 +54,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             int? statusCode)
         {
             this.RegionsContacted = regionsContacted;
-            this.ResponseSizeInBytes = responseSizeInBytes;
             if (responseSizeInBytes != null)
             {
                 this.GreaterThan1Kb = responseSizeInBytes > ClientTelemetryOptions.OneKbToBytes;
             }
-            this.Consistency = OperationInfo.GetConsistencyString(consistency);
+            this.Consistency = consistency;
             this.DatabaseName = databaseName;
             this.ContainerName = containerName;
             this.Operation = operation?.ToOperationTypeString();
@@ -77,8 +73,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string operation, 
             string resource, 
             string consistency, 
-            int? statusCode, 
-            long? responseSizeInBytes, 
+            int? statusCode,
             MetricInfo metricInfo)
         {
             this.RegionsContacted = regionsContacted;
@@ -89,26 +84,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.Resource = resource;
             this.Consistency = consistency;
             this.StatusCode = statusCode;
-            this.ResponseSizeInBytes = responseSizeInBytes;
             this.MetricInfo = metricInfo;
-        }
-
-        private static string GetConsistencyString(Cosmos.ConsistencyLevel? consistency)
-        {
-            if (consistency == null)
-            {
-                return null;
-            }
-
-            return consistency switch
-            {
-                Cosmos.ConsistencyLevel.Strong => "STRONG",
-                Cosmos.ConsistencyLevel.Session => "SESSION",
-                Cosmos.ConsistencyLevel.Eventual => "EVENTUAL",
-                Cosmos.ConsistencyLevel.ConsistentPrefix => "CONSISTENTPREFIX",
-                Cosmos.ConsistencyLevel.BoundedStaleness => "BOUNDEDSTALENESS",
-                _ => consistency.ToString().ToUpper(),
-            };
         }
 
         public OperationInfo Copy()
@@ -121,7 +97,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.Resource,
             this.Consistency,
             this.StatusCode,
-            this.ResponseSizeInBytes, 
             null);
         }
 
@@ -142,14 +117,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public override bool Equals(object obj)
         {
             bool isequal = obj is OperationInfo payload &&
-                   this.RegionsContacted != null && payload.RegionsContacted != null && this.RegionsContacted.Equals(payload.RegionsContacted) &&
-                   this.GreaterThan1Kb != null && payload.GreaterThan1Kb != null && this.GreaterThan1Kb.Equals(payload.GreaterThan1Kb) &&
-                   this.Consistency != null && payload.Consistency != null && this.Consistency.Equals(payload.Consistency) &&
-                   this.DatabaseName != null && payload.DatabaseName != null && this.DatabaseName.Equals(payload.DatabaseName) &&
-                   this.ContainerName != null && payload.ContainerName != null && this.ContainerName.Equals(payload.ContainerName) &&
-                   this.Operation != null && payload.Operation != null && this.Operation.Equals(payload.Operation) &&
-                   this.Resource != null && payload.Resource != null && this.Resource.Equals(payload.Resource) &&
-                   this.StatusCode != null && payload.StatusCode != null && this.StatusCode.Equals(payload.StatusCode);
+                   ((this.RegionsContacted == null && payload.RegionsContacted == null) || (this.RegionsContacted != null && payload.RegionsContacted != null && this.RegionsContacted.Equals(payload.RegionsContacted))) &&
+                   ((this.GreaterThan1Kb == null && payload.GreaterThan1Kb == null ) || (this.GreaterThan1Kb != null && payload.GreaterThan1Kb != null && this.GreaterThan1Kb.Equals(payload.GreaterThan1Kb))) &&
+                   ((this.Consistency == null && payload.Consistency == null) || (this.Consistency != null && payload.Consistency != null && this.Consistency.Equals(payload.Consistency))) &&
+                   ((this.DatabaseName == null && payload.DatabaseName == null) || (this.DatabaseName != null && payload.DatabaseName != null && this.DatabaseName.Equals(payload.DatabaseName))) &&
+                   ((this.ContainerName == null && payload.ContainerName == null) || (this.ContainerName != null && payload.ContainerName != null && this.ContainerName.Equals(payload.ContainerName))) &&
+                   ((this.Operation == null && payload.Operation == null) || (this.Operation != null && payload.Operation != null && this.Operation.Equals(payload.Operation))) &&
+                   ((this.Resource == null && payload.Resource == null) || (this.Resource != null && payload.Resource != null && this.Resource.Equals(payload.Resource))) &&
+                   ((this.StatusCode == null && payload.StatusCode == null) || (this.StatusCode != null && payload.StatusCode != null && this.StatusCode.Equals(payload.StatusCode)));
 
             return isequal;
         }

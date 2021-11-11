@@ -15,7 +15,6 @@ namespace CosmosBenchmark
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json.Linq;
 
     /// <summary>
@@ -83,11 +82,12 @@ namespace CosmosBenchmark
         }
 
         /// <summary>
-        /// Run samples for Order By queries.
+        /// Executing benchmarks for V2/V3 cosmosdb SDK.
         /// </summary>
         /// <returns>a Task object.</returns>
         private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config)
         {
+            // V3 SDK client initialization
             using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key))
             {
                 Microsoft.Azure.Cosmos.Database database = cosmosClient.GetDatabase(config.Database);
@@ -120,7 +120,9 @@ namespace CosmosBenchmark
 
                 // TBD: 2 clients SxS some overhead
                 RunSummary runSummary;
-                using (DocumentClient documentClient = config.CreateDocumentClient(config.Key))
+
+                // V2 SDK client initialization
+                using (Microsoft.Azure.Documents.Client.DocumentClient documentClient = config.CreateDocumentClient(config.Key))
                 {
                     Func<IBenchmarkOperation> benchmarkOperationFactory = this.GetBenchmarkFactory(
                         config,
@@ -209,7 +211,7 @@ namespace CosmosBenchmark
             BenchmarkConfig config,
             string partitionKeyPath,
             CosmosClient cosmosClient,
-            DocumentClient documentClient)
+            Microsoft.Azure.Documents.Client.DocumentClient documentClient)
         {
             string sampleItem = File.ReadAllText(config.ItemTemplateFile);
 
@@ -241,7 +243,7 @@ namespace CosmosBenchmark
             }
             else if (benchmarkTypeName.Name.EndsWith("V2BenchmarkOperation"))
             {
-                ci = benchmarkTypeName.GetConstructor(new Type[] { typeof(DocumentClient), typeof(string), typeof(string), typeof(string), typeof(string) });
+                ci = benchmarkTypeName.GetConstructor(new Type[] { typeof(Microsoft.Azure.Documents.Client.DocumentClient), typeof(string), typeof(string), typeof(string), typeof(string) });
                 ctorArguments = new object[]
                     {
                         documentClient,
@@ -269,7 +271,7 @@ namespace CosmosBenchmark
         }
 
         /// <summary>
-        /// Create a partitioned container.
+        /// Get or Create a partitioned container and display cost of running this test.
         /// </summary>
         /// <returns>The created container.</returns>
         private static async Task<ContainerResponse> CreatePartitionedContainerAsync(BenchmarkConfig options, CosmosClient cosmosClient)

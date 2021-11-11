@@ -20,7 +20,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             public static void WriteTrace(
                 IJsonWriter writer,
-                ITrace trace)
+                ITrace trace,
+                bool isRootTrace)
             {
                 if (writer == null)
                 {
@@ -33,6 +34,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 }
 
                 writer.WriteObjectStart();
+
+                if (isRootTrace)
+                {
+                    writer.WriteFieldName("Summary");
+                    SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
+                    summaryDiagnostics.WriteSummaryDiagnostics(writer);
+                }
 
                 writer.WriteFieldName("name");
                 writer.WriteStringValue(trace.Name);
@@ -90,7 +98,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                     foreach (ITrace child in trace.Children)
                     {
-                        WriteTrace(writer, child);
+                        WriteTrace(writer, 
+                            child, 
+                            isRootTrace: false);
                     }
 
                     writer.WriteArrayEnd();
@@ -352,12 +362,15 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             public void Visit(CpuHistoryTraceDatum cpuHistoryTraceDatum)
             {
-                this.jsonWriter.WriteObjectStart();
-
-                this.jsonWriter.WriteFieldName("CPU History");
-                this.jsonWriter.WriteStringValue(cpuHistoryTraceDatum.Value.ToString());
-
-                this.jsonWriter.WriteObjectEnd();
+                if (this.jsonWriter is IJsonTextWriterExtensions jsonTextWriter)
+                {
+                    jsonTextWriter.WriteRawJsonValue(Encoding.UTF8.GetBytes(cpuHistoryTraceDatum.Value.ToString()),
+                                                     isFieldName: false);
+                }
+                else
+                {
+                    throw new NotImplementedException("Writing Raw Json directly to the buffer is currently only supported for text and not for binary, hybridrow");
+                }
             }
 
             public void Visit(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
@@ -424,6 +437,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.RequestCharge));
                 this.jsonWriter.WriteNumber64Value(storeResult.RequestCharge);
+
+                this.jsonWriter.WriteFieldName(nameof(storeResult.RetryAfterInMs));
+                this.WriteStringValueOrNull(storeResult.RetryAfterInMs);
 
                 this.jsonWriter.WriteFieldName("BELatencyInMs");
                 this.WriteStringValueOrNull(storeResult.BackendRequestDurationInMs);

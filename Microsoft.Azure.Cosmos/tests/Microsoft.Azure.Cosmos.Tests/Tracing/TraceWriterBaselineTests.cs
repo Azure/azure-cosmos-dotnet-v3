@@ -381,6 +381,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 usingLocalLSN: true,
                                 activityId: Guid.Empty.ToString(),
                                 backendRequestDurationInMs: "4.2",
+                                retryAfterInMs: "42",
                                 transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                             ResourceType.Document,
                             OperationType.Query,
@@ -431,6 +432,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 sessionToken: default,
                                 usingLocalLSN: default,
                                 activityId: default,
+                                retryAfterInMs: default,
                                 backendRequestDurationInMs: default,
                                  transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                             resourceType: default,
@@ -508,11 +510,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                         9000),
                                 }),
                             monitoringInterval: TimeSpan.MaxValue));
-                    rootTrace.AddDatum("CPU History", datum);
+                    rootTrace.AddDatum("System Info", datum);
                 }
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("CPU History", rootTrace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("System Info", rootTrace, startLineNumber, endLineNumber));
             }
             //----------------------------------------------------------------
 
@@ -628,7 +630,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 IQueryPipelineStage pipelineStage = CreatePipeline(documentContainer, "SELECT * FROM c", pageSize: 10);
 
                 TraceForBaselineTesting rootTrace;
-                int numChildren = 1; // One extra since we need to read one past the last user page to get the null continuation.
+                int numChildren = (await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, default)).Count; // One extra since we need to read one past the last user page to get the null continuation.
                 using (rootTrace = TraceForBaselineTesting.GetRootTrace())
                 {
                     while (await pipelineStage.MoveNextAsync(rootTrace))

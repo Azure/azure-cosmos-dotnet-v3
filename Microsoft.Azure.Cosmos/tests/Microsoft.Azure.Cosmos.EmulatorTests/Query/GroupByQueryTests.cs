@@ -11,6 +11,7 @@
     using Newtonsoft.Json.Linq;
 
     [TestClass]
+    [TestCategory("Query")]
     public sealed class GroupByQueryTests : QueryTestsBase
     {
         [TestMethod]

@@ -9,7 +9,6 @@ namespace CosmosBenchmark
     using System.Linq;
     using System.Runtime;
     using CommandLine;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
 
@@ -99,6 +98,12 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Enable Telemetry")]
         public bool EnableTelemetry { get; set; }
 
+        [Option(Required = false, HelpText = "Telemetry Schedule in Seconds")]
+        public int  TelemetryScheduleInSec { get; set; }
+
+        [Option(Required = false, HelpText = "Telemetry Endpoint")]
+        public string TelemetryEndpoint { get; set; }
+
         [Option(Required = false, HelpText = "Endpoint to publish results to")]
         public string ResultsEndpoint { get; set; }
 
@@ -161,25 +166,43 @@ namespace CosmosBenchmark
             return options;
         }
 
-        internal CosmosClient CreateCosmosClient(string accountKey)
+        internal Microsoft.Azure.Cosmos.CosmosClient CreateCosmosClient(string accountKey)
         {
-            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            Microsoft.Azure.Cosmos.CosmosClientOptions clientOptions = new Microsoft.Azure.Cosmos.CosmosClientOptions()
             {
                 ApplicationName = BenchmarkConfig.UserAgentSuffix,
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
-                MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
-#if ProjectRef
-                EnableClientTelemetry = this.EnableTelemetry
-#endif
+                MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint
             };
+
+            if (this.EnableTelemetry)
+            {
+                Environment.SetEnvironmentVariable(
+                    Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, 
+                    "true");
+
+                if (this.TelemetryScheduleInSec > 0)
+                {
+                    Environment.SetEnvironmentVariable(
+                        Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, 
+                        Convert.ToString(this.TelemetryScheduleInSec));
+                }
+
+                if (!string.IsNullOrEmpty(this.TelemetryEndpoint))
+                {
+                    Environment.SetEnvironmentVariable(
+                        Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, 
+                        this.TelemetryEndpoint);
+                }
+            }
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
             {
                 clientOptions.ConsistencyLevel = (Microsoft.Azure.Cosmos.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Cosmos.ConsistencyLevel), this.ConsistencyLevel, ignoreCase: true);
             }
 
-            return new CosmosClient(
+            return new Microsoft.Azure.Cosmos.CosmosClient(
                         this.EndPoint,
                         accountKey,
                         clientOptions);

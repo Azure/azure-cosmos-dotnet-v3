@@ -1208,7 +1208,11 @@ namespace Microsoft.Azure.Cosmos
                 this.storeClientFactory = null;
             }
 
-            this.AddressResolver = null;
+            if (this.AddressResolver != null)
+            {
+                this.AddressResolver.Dispose();
+                this.AddressResolver = null;
+            }
 
             if (this.httpClient != null)
             {
@@ -1442,6 +1446,12 @@ namespace Microsoft.Azure.Cosmos
                     this.isSuccessfullyInitialized = true;
                     return;
                 }
+                catch (DocumentClientException ex)
+                {
+                    throw Resource.CosmosExceptions.CosmosExceptionFactory.Create(
+                         dce: ex,
+                         trace: trace);
+                }
                 catch (Exception e)
                 {
                     DefaultTrace.TraceWarning("initializeTask failed {0}", e.ToString());
@@ -1459,8 +1469,18 @@ namespace Microsoft.Azure.Cosmos
                     initTask = this.initializeTask;
                 }
 
-                await initTask;
-                this.isSuccessfullyInitialized = true;
+                try
+                {
+                    await initTask;
+                    this.isSuccessfullyInitialized = true;
+                }
+                catch (DocumentClientException ex)
+                {
+                    throw Resource.CosmosExceptions.CosmosExceptionFactory.Create(
+                         dce: ex,
+                         trace: trace);
+                }
+                
             }
         }
 

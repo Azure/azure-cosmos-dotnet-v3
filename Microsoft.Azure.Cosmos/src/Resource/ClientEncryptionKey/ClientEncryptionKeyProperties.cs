@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary> 
     /// Details of an encryption key for use with the Azure Cosmos DB service.
@@ -61,6 +62,7 @@ namespace Microsoft.Azure.Cosmos
                 this.WrappedDataEncryptionKey = new byte[source.WrappedDataEncryptionKey.Length];
                 source.WrappedDataEncryptionKey.CopyTo(this.WrappedDataEncryptionKey, index: 0);
             }
+            this.AdditionalProperties = source.AdditionalProperties;
         }
 
         /// <summary>
@@ -81,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Encryption algorithm that will be used along with this client encryption key to encrypt/decrypt data.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.EncryptionAlgorithmId, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = Constants.Properties.EncryptionAlgorithm, NullValueHandling = NullValueHandling.Ignore)]
         public string EncryptionAlgorithm { get; internal set; }
 
         /// <summary>
@@ -149,6 +151,13 @@ namespace Microsoft.Azure.Cosmos
         internal string ResourceId { get; set; }
 
         /// <summary>
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+        /// </summary>
+        [JsonExtensionData]
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+
+        /// <summary>
         /// Compares this instance of client encryption key properties to another object.
         /// </summary>
         /// <param name="obj">Object to compare with.</param>
@@ -170,6 +179,7 @@ namespace Microsoft.Azure.Cosmos
                    this.EncryptionAlgorithm == other.EncryptionAlgorithm &&
                    ClientEncryptionKeyProperties.Equals(this.WrappedDataEncryptionKey, other.WrappedDataEncryptionKey) &&
                    EqualityComparer<EncryptionKeyWrapMetadata>.Default.Equals(this.EncryptionKeyWrapMetadata, other.EncryptionKeyWrapMetadata) &&
+                   this.AdditionalProperties.EqualsTo(other.AdditionalProperties) &&
                    this.CreatedTime == other.CreatedTime &&
                    this.ETag == other.ETag &&
                    this.LastModified == other.LastModified &&

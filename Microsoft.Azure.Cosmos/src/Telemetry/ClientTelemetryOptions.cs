@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
-    internal class ClientTelemetryOptions
+    internal static class ClientTelemetryOptions
     {
         // ConversionFactor used in Histogram calculation to maintain precision or to collect data in desired unit
         internal const double HistogramPrecisionFactor = 100;
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     clientTelemetryEndpoint = new Uri(uriProp);
                 }
 
-                DefaultTrace.TraceInformation("Telemetry Endpoint URL is  " + uriProp);
+                DefaultTrace.TraceInformation("Telemetry Endpoint URL is  {0}", uriProp);
             }
             return clientTelemetryEndpoint;
         }

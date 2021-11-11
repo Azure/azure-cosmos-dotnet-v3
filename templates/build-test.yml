@@ -5,6 +5,10 @@ parameters:
   Arguments: ''
   VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
   OS: 'Windows'
+  EmulatorPipeline1Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & (TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed)" --verbosity normal '
+  EmulatorPipeline2Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed" --verbosity normal '
+  EmulatorPipeline1CategoryListName: ' Query, ChangeFeed, ReadFeed, Batch ' # Divided in 2 categories to run them in parallel and reduce the PR feedback time
+  EmulatorPipeline2CategoryListName: ' Others '
 
 jobs:
 - job:
@@ -60,12 +64,12 @@ jobs:
     inputs:
       command: run
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Performance.Tests/*.csproj'
-      arguments: --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }} --no-restore -c Release --framework netcoreapp3.1 --allCategories=GateBenchmark -- -j Medium  -m  --BaselineValidation
+      arguments: --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }} --no-restore -c Release --framework netcoreapp3.1 --allCategories=GateBenchmark -- -j Short  -m  --BaselineValidation
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.PerformanceTests
 
 - job:
-  displayName: EmulatorTests ${{ parameters.BuildConfiguration }}
+  displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline1CategoryListName }}
   timeoutInMinutes: 120
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
@@ -83,7 +87,31 @@ jobs:
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
-      arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
+      arguments: ${{ parameters.EmulatorPipeline1Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
+      nugetConfigPath: NuGet.config
+      publishTestResults: true
+      testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
+
+- job:
+  displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline2CategoryListName }}
+  timeoutInMinutes: 120
+  condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
+  pool:
+    vmImage: ${{ parameters.VmImage }}
+
+  steps:
+  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
+  - template:  emulator-setup.yml
+
+  - task: DotNetCoreCLI@2
+    displayName: Microsoft.Azure.Cosmos.EmulatorTests
+    condition: succeeded()
+    inputs:
+      command: test
+      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
+      arguments: ${{ parameters.EmulatorPipeline2Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
@@ -111,3 +139,27 @@ jobs:
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.Encryption.EmulatorTests
+
+- job:
+  displayName: Encryption.Custom EmulatorTests ${{ parameters.BuildConfiguration }}
+  timeoutInMinutes: 90
+  condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
+  pool:
+    vmImage: ${{ parameters.VmImage }}
+
+  steps:
+  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
+  - template:  emulator-setup.yml
+
+  - task: DotNetCoreCLI@2
+    displayName: Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
+    condition: succeeded()
+    inputs:
+      command: test
+      projects: 'Microsoft.Azure.Cosmos.Encryption.Custom/tests/EmulatorTests/*.csproj'
+      arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
+      nugetConfigPath: NuGet.config
+      publishTestResults: true
+      testRunTitle: Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests

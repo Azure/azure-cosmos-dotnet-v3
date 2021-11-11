@@ -477,7 +477,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int gatewayConnectionLimit = 1;
 
             IReadOnlyList<string> excludeConnections = GetActiveConnections();
-            CosmosClient cosmosClient = new CosmosClient(
+            using (CosmosClient cosmosClient = new CosmosClient(
                 ConfigurationManager.AppSettings["GatewayEndpoint"],
                 ConfigurationManager.AppSettings["MasterKey"],
                 new CosmosClientOptions
@@ -487,35 +487,36 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     ConnectionMode = ConnectionMode.Gateway,
                     ConnectionProtocol = Protocol.Https
                 }
-            );
-
-            CosmosHttpClient cosmosHttpClient = cosmosClient.DocumentClient.httpClient;
-            HttpClientHandler httpClientHandler = (HttpClientHandler)cosmosHttpClient.HttpMessageHandler;
-            Assert.AreEqual(gatewayConnectionLimit, httpClientHandler.MaxConnectionsPerServer);
-
-            Cosmos.Database database = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
-            Container container = await database.CreateContainerAsync(
-                "TestConnections",
-                "/pk",
-                throughput: 20000);
-
-            List<Task> creates = new List<Task>();
-            for (int i = 0; i < 100; i++)
+            ))
             {
-                creates.Add(container.CreateItemAsync<dynamic>(new { id = Guid.NewGuid().ToString(), pk = Guid.NewGuid().ToString() }));
+                CosmosHttpClient cosmosHttpClient = cosmosClient.DocumentClient.httpClient;
+                HttpClientHandler httpClientHandler = (HttpClientHandler)cosmosHttpClient.HttpMessageHandler;
+                Assert.AreEqual(gatewayConnectionLimit, httpClientHandler.MaxConnectionsPerServer);
+
+                Cosmos.Database database = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+                Container container = await database.CreateContainerAsync(
+                    "TestConnections",
+                    "/pk",
+                    throughput: 20000);
+
+                List<Task> creates = new List<Task>();
+                for (int i = 0; i < 100; i++)
+                {
+                    creates.Add(container.CreateItemAsync<dynamic>(new { id = Guid.NewGuid().ToString(), pk = Guid.NewGuid().ToString() }));
+                }
+
+                await Task.WhenAll(creates);
+
+                // Clean up the database and container
+                await database.DeleteAsync();
             }
 
-            await Task.WhenAll(creates);
 
-            // Verify the handler still exists after client warm up
-            //Assert.AreEqual(gatewayConnectionLimit, httpClientHandler.MaxConnectionsPerServer);
             IReadOnlyList<string> afterConnections = GetActiveConnections();
 
-            // Clean up the database and container
-            await database.DeleteAsync();
-
             int connectionDiff = afterConnections.Count - excludeConnections.Count;
-            Assert.IsTrue(connectionDiff <= gatewayConnectionLimit, $"Connection before : {excludeConnections.Count}, after {afterConnections.Count}");
+            Assert.IsTrue(connectionDiff <= gatewayConnectionLimit, $"Connection before : {excludeConnections.Count}, after {afterConnections.Count};" +
+                $"Before connections: {JsonConvert.SerializeObject(excludeConnections)}; After connections: {JsonConvert.SerializeObject(afterConnections)}");
         }
 
         public static IReadOnlyList<string> GetActiveConnections()
@@ -523,14 +524,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string testPid = Process.GetCurrentProcess().Id.ToString();
             using (Process p = new Process())
             {
-                ProcessStartInfo ps = new ProcessStartInfo();
-                ps.Arguments = "-a -n -o";
-                ps.FileName = "netstat.exe";
-                ps.UseShellExecute = false;
-                ps.WindowStyle = ProcessWindowStyle.Hidden;
-                ps.RedirectStandardInput = true;
-                ps.RedirectStandardOutput = true;
-                ps.RedirectStandardError = true;
+                ProcessStartInfo ps = new ProcessStartInfo
+                {
+                    Arguments = "-a -n -o",
+                    FileName = "netstat.exe",
+                    UseShellExecute = false,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
 
                 p.StartInfo = ps;
                 p.Start();

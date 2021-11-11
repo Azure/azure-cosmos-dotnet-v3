@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             if (systemUsageHistory != null)
             {
                 request.Trace.AddDatum(
-                    "CPU Load History",
+                    "System Info",
                     new CpuHistoryTraceDatum(systemUsageHistory));
             }
 

@@ -36,6 +36,7 @@
             usingLocalLSN: true,
             activityId: Guid.Empty.ToString(),
             backendRequestDurationInMs: "4.2",
+            retryAfterInMs: "42",
             transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats());
 
         /// <summary>
@@ -43,7 +44,7 @@
         /// threads. It's even possible that there are background threads referencing the same instance.
         /// </summary>
         [TestMethod]
-        [Timeout(5000)]
+        [Timeout(20000)]
         public async Task ConcurrentUpdateEndpointToAddressResolutionStatisticsTests()
         {
             await this.ConcurrentUpdateTestHelper<KeyValuePair<string, ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics>>(
@@ -52,7 +53,7 @@
         }
 
         [TestMethod]
-        [Timeout(5000)]
+        [Timeout(20000)]
         public async Task ConcurrentUpdateHttpResponseStatisticsListTests()
         {
             await this.ConcurrentUpdateTestHelper<ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics>(
@@ -61,7 +62,7 @@
         }
 
         [TestMethod]
-        [Timeout(5000)]
+        [Timeout(20000)]
         public async Task ConcurrentUpdateStoreResponseStatisticsListTests()
         {
             await this.ConcurrentUpdateTestHelper<ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics>(
