@@ -178,11 +178,18 @@ namespace CosmosBenchmark
 
             if (this.EnableTelemetry)
             {
-                Environment.SetEnvironmentVariable(Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "true");
-                Environment.SetEnvironmentVariable(Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, this.TelemetryScheduleInSec ?? "600");
+                Environment.SetEnvironmentVariable(
+                    Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, 
+                    "true");
+                Environment.SetEnvironmentVariable(
+                    Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, 
+                    this.TelemetryScheduleInSec ?? "600");
+
                 if (!string.IsNullOrEmpty(this.TelemetryEndpoint))
                 {
-                    Environment.SetEnvironmentVariable(Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, this.TelemetryEndpoint);
+                    Environment.SetEnvironmentVariable(
+                        Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, 
+                        this.TelemetryEndpoint);
                 }
             }
 
