@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         {
             this.backendMetrics = new Lazy<BackendMetrics>(() =>
             {
-                if (!deliminatedString.Equals(string.Empty) && 
+                if (!String.IsNullOrWhiteSpace(deliminatedString) && 
                         BackendMetricsParser.TryParse(deliminatedString, out BackendMetrics backendMetrics))
                 {
                     return backendMetrics;
