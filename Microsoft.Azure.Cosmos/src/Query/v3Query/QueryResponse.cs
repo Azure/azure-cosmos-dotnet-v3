@@ -57,6 +57,18 @@ namespace Microsoft.Azure.Cosmos
             this.ResponseLengthBytes = responseLengthBytes;
             this.memoryStream = memoryStream;
             this.CosmosSerializationOptions = serializationOptions;
+
+            if (responseHeaders.IndexUtilizationText != null)
+            {
+                this.IndexUtilizationText = new Lazy<string>(() =>
+                {
+                    IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseHeaders.IndexUtilizationText);
+                    StringBuilder stringBuilder = new StringBuilder();
+                    IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
+                    indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);
+                    return stringBuilder.ToString();
+                });
+            }            
         }
 
         public int Count { get; }
@@ -66,6 +78,10 @@ namespace Microsoft.Azure.Cosmos
         internal virtual IReadOnlyList<CosmosElement> CosmosElements { get; }
 
         internal virtual CosmosQueryResponseMessageHeaders QueryHeaders => (CosmosQueryResponseMessageHeaders)this.Headers;
+
+        private Lazy<string> IndexUtilizationText { get; }
+
+        public override string IndexMetrics => this.IndexUtilizationText?.Value;
 
         /// <summary>
         /// Gets the response length in bytes
@@ -182,14 +198,17 @@ namespace Microsoft.Azure.Cosmos
                 cosmosArray: cosmosElements,
                 serializerCore: serializerCore);
 
-            this.IndexUtilizationText = new Lazy<string>(() =>
+            if (responseMessageHeaders.IndexUtilizationText != null)
             {
-                IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText);
-                StringBuilder stringBuilder = new StringBuilder();
-                IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
-                indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);
-                return stringBuilder.ToString();
-            });
+                this.IndexUtilizationText = new Lazy<string>(() =>
+                {
+                    IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText);
+                    StringBuilder stringBuilder = new StringBuilder();
+                    IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
+                    indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);
+                    return stringBuilder.ToString();
+                });
+            }            
         }
 
         public override string ContinuationToken => this.Headers.ContinuationToken;
@@ -208,7 +227,7 @@ namespace Microsoft.Azure.Cosmos
 
         private Lazy<string> IndexUtilizationText { get; }
 
-        public override string IndexMetrics => this.IndexUtilizationText.Value;
+        public override string IndexMetrics => this.IndexUtilizationText?.Value;
 
         public override IEnumerator<T> GetEnumerator()
         {

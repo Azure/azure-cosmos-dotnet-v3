@@ -128,6 +128,16 @@ namespace Microsoft.Azure.Cosmos
         public virtual string ContinuationToken => this.Headers?.ContinuationToken;
 
         /// <summary>
+        /// Gets the Index Metrics in the current <see cref="ResponseMessage"/> to be used for debugging purposes. 
+        /// It's applicable to query response only. Other feed response will return null for this field.
+        /// This result is only available if QueryRequestOptions.PopulateIndexMetrics is set to true.
+        /// </summary>
+        /// <value>
+        /// The index utilization metrics.
+        /// </value>
+        public virtual string IndexMetrics { get; }
+
+        /// <summary>
         /// Gets the original request message
         /// </summary>
         public virtual RequestMessage RequestMessage { get; internal set; }
