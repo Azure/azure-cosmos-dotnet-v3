@@ -58,17 +58,20 @@ namespace Microsoft.Azure.Cosmos
             this.memoryStream = memoryStream;
             this.CosmosSerializationOptions = serializationOptions;
 
-            if (responseHeaders.IndexUtilizationText != null)
+            if (responseHeaders != null)
             {
-                this.IndexUtilizationText = new Lazy<string>(() =>
+                if (responseHeaders.IndexUtilizationText != null)
                 {
-                    IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseHeaders.IndexUtilizationText);
-                    StringBuilder stringBuilder = new StringBuilder();
-                    IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
-                    indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);
-                    return stringBuilder.ToString();
-                });
-            }            
+                    this.IndexUtilizationText = new Lazy<string>(() =>
+                    {
+                        IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseHeaders.IndexUtilizationText);
+                        StringBuilder stringBuilder = new StringBuilder();
+                        IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
+                        indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);
+                        return stringBuilder.ToString();
+                    });
+                }
+            }
         }
 
         public int Count { get; }
@@ -198,17 +201,20 @@ namespace Microsoft.Azure.Cosmos
                 cosmosArray: cosmosElements,
                 serializerCore: serializerCore);
 
-            if (responseMessageHeaders.IndexUtilizationText != null)
+            if (responseMessageHeaders != null)
             {
-                this.IndexUtilizationText = new Lazy<string>(() =>
+                if (responseMessageHeaders.IndexUtilizationText != null)
                 {
-                    IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText);
-                    StringBuilder stringBuilder = new StringBuilder();
-                    IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
-                    indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);
-                    return stringBuilder.ToString();
-                });
-            }            
+                    this.IndexUtilizationText = new Lazy<string>(() =>
+                    {
+                        IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText);
+                        StringBuilder stringBuilder = new StringBuilder();
+                        IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
+                        indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);
+                        return stringBuilder.ToString();
+                    });
+                }
+            }         
         }
 
         public override string ContinuationToken => this.Headers.ContinuationToken;
