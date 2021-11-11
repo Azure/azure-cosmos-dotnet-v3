@@ -56,6 +56,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         [JsonProperty(PropertyName = "operationInfo")]
         internal List<OperationInfo> OperationInfo { get; set; }
 
+        [JsonProperty(PropertyName = "miscellaneous")]
+        internal string miscellaneous { get; set; }
+
         [JsonIgnore]
         private readonly ConnectionMode ConnectionModeEnum;
 
