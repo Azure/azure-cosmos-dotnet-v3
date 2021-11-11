@@ -99,7 +99,7 @@ namespace CosmosBenchmark
         public bool EnableTelemetry { get; set; }
 
         [Option(Required = false, HelpText = "Telemetry Schedule in Seconds")]
-        public string TelemetryScheduleInSec { get; set; }
+        public int  TelemetryScheduleInSec { get; set; }
 
         [Option(Required = false, HelpText = "Telemetry Endpoint")]
         public string TelemetryEndpoint { get; set; }
@@ -181,9 +181,13 @@ namespace CosmosBenchmark
                 Environment.SetEnvironmentVariable(
                     Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, 
                     "true");
-                Environment.SetEnvironmentVariable(
-                    Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, 
-                    this.TelemetryScheduleInSec ?? "600");
+
+                if (this.TelemetryScheduleInSec > 0)
+                {
+                    Environment.SetEnvironmentVariable(
+                        Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, 
+                        Convert.ToString(this.TelemetryScheduleInSec));
+                }
 
                 if (!string.IsNullOrEmpty(this.TelemetryEndpoint))
                 {
