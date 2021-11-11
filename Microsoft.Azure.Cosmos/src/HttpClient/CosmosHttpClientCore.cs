@@ -156,6 +156,9 @@ namespace Microsoft.Azure.Cosmos
             httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version,
                 HttpConstants.Versions.CurrentVersion);
 
+            httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.SDKSupportedCapabilities,
+                SDKSupportedCapabilitiesHelpers.GetSDKSupportedCapabilities().ToString());
+
             httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Accept, RuntimeConstants.MediaTypes.Json);
 
             return new CosmosHttpClientCore(
