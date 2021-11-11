@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System.Net.Http;
     using System.Text;
     using Microsoft.Azure.Cosmos.Handler;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 
@@ -121,6 +122,62 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         public void RecordRequest(DocumentServiceRequest request)
         {
+        }
+
+        private List<(PartitionAddressInformation existing, PartitionAddressInformation newInfo)> partitionAddressInformationRefreshes = null;
+
+        public void RecordAddressCachRefreshContent(
+            PartitionAddressInformation existingInfo,
+            PartitionAddressInformation newInfo)
+        {
+            lock (this.partitionAddressInformationRefreshes)
+            {
+                if (this.partitionAddressInformationRefreshes == null)
+                {
+                    this.partitionAddressInformationRefreshes = new List<(PartitionAddressInformation existing, PartitionAddressInformation newInfo)>();
+                }
+
+                this.partitionAddressInformationRefreshes.Add((existingInfo, newInfo));
+            }
+        }
+
+        public void WriteAddressCachRefreshContent(IJsonWriter jsonWriter)
+        {
+            lock (this.partitionAddressInformationRefreshes)
+            {
+                if (this.partitionAddressInformationRefreshes == null 
+                     || this.partitionAddressInformationRefreshes.Count == 0)
+                {
+                    return;
+                }
+
+                jsonWriter.WriteFieldName("PartitionRefresh");
+                jsonWriter.WriteArrayStart();
+                foreach ((PartitionAddressInformation existing, PartitionAddressInformation newInfo) in this.partitionAddressInformationRefreshes)
+                {
+                    jsonWriter.WriteObjectStart();
+                    jsonWriter.WriteFieldName("Original");
+                    jsonWriter.WriteArrayStart();
+                    foreach (AddressInformation addressInformation in existing.AllAddresses)
+                    {
+                        jsonWriter.WriteStringValue(addressInformation.PhysicalUri);
+                    }
+                    
+                    jsonWriter.WriteArrayEnd();
+
+                    jsonWriter.WriteFieldName("New");
+                    jsonWriter.WriteArrayStart();
+                    foreach (AddressInformation addressInformation in newInfo.AllAddresses)
+                    {
+                        jsonWriter.WriteStringValue(addressInformation.PhysicalUri);
+                    }
+                    jsonWriter.WriteArrayEnd();
+                    jsonWriter.WriteObjectEnd();
+
+                }
+
+                jsonWriter.WriteArrayEnd();
+            }
         }
 
         public void RecordResponse(

@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     /// <summary>
     /// This is a thread safe AsyncCache that allows refreshing values in the background.
@@ -68,7 +69,8 @@ namespace Microsoft.Azure.Cosmos
         public async Task<TValue> GetAsync(
            TKey key,
            Func<Task<TValue>> singleValueInitFunc,
-           bool forceRefresh)
+           bool forceRefresh,
+           Action<TValue, TValue> callBackOnForceRefresh)
         {
             if (this.values.TryGetValue(key, out AsyncLazyWithRefreshTask<TValue> initialLazyValue))
             {
@@ -79,7 +81,8 @@ namespace Microsoft.Azure.Cosmos
 
                 return await initialLazyValue.CreateAndWaitForBackgroundRefreshTaskAsync(
                     singleValueInitFunc,
-                    () => this.TryRemove(key));
+                    () => this.TryRemove(key),
+                    callBackOnForceRefresh);
             }
 
             // The AsyncLazyWithRefreshTask is lazy and won't create the task until GetValue is called.
@@ -194,22 +197,30 @@ namespace Microsoft.Azure.Cosmos
 
             public async Task<T> CreateAndWaitForBackgroundRefreshTaskAsync(
                 Func<Task<T>> createRefreshTask,
-                Action callbackOnRefreshFailure)
+                Action callbackOnRefreshFailure,
+                Action<T, T> callBackOnForceRefresh)
             {
                 this.cancellationToken.ThrowIfCancellationRequested();
-
+                
                 // The original task is still being created. Just return the original task.
                 Task<T> valueSnapshot = this.value;
-                if (AsyncLazyWithRefreshTask<T>.IsTaskRunning(valueSnapshot))
+                T originalValue = default;
+                if (valueSnapshot != null && AsyncLazyWithRefreshTask<T>.IsTaskRunning(valueSnapshot))
                 {
                     return await valueSnapshot;
+                }
+                else if (valueSnapshot != null)
+                {
+                    originalValue = await valueSnapshot;
                 }
 
                 // Use a local reference to avoid it being updated between the check and the await
                 Task<T> refresh = this.refreshInProgress;
-                if (AsyncLazyWithRefreshTask<T>.IsTaskRunning(refresh))
+                if (refresh != null && AsyncLazyWithRefreshTask<T>.IsTaskRunning(refresh))
                 {
-                    return await refresh;
+                    T result = await refresh;
+                    callBackOnForceRefresh?.Invoke(originalValue, result);
+                    return result;
                 }
 
                 bool createdTask = false;
@@ -230,7 +241,9 @@ namespace Microsoft.Azure.Cosmos
                 // Await outside the lock to prevent lock contention
                 if (!createdTask)
                 {
-                    return await refresh;
+                    T result = await refresh;
+                    callBackOnForceRefresh?.Invoke(originalValue, result);
+                    return result;
                 }
 
                 // It's possible multiple callers entered the method at the same time. The lock above ensures
@@ -244,6 +257,7 @@ namespace Microsoft.Azure.Cosmos
                         this.value = Task.FromResult(itemResult);
                     }
 
+                    callBackOnForceRefresh?.Invoke(originalValue, itemResult);
                     return itemResult;
                 }
                 catch (Exception e)
