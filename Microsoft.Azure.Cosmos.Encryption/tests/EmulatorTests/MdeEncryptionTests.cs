@@ -2579,12 +2579,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             JObject encryptionDiagnostics = diagnosticsObject.Value<JObject>(Constants.DiagnosticsEncryptionDiagnostics);
             Assert.IsNotNull(encryptionDiagnostics);
 
+            long durationInMilliseconds = 0;
             if (encryptOperation)
             {
                 JObject encryptOperationDiagnostics = encryptionDiagnostics.Value<JObject>(Constants.DiagnosticsEncryptOperation);
                 Assert.IsNotNull(encryptOperationDiagnostics);
                 Assert.IsNotNull(encryptOperationDiagnostics.GetValue(Constants.DiagnosticsStartTime));
-                Assert.IsNotNull(encryptOperationDiagnostics.GetValue(Constants.DiagnosticsDuration));
+                durationInMilliseconds = (long)encryptOperationDiagnostics.GetValue(Constants.DiagnosticsDuration);
+                Assert.IsNotNull(durationInMilliseconds);
                 int propertiesEncrypted = encryptOperationDiagnostics.Value<int>(Constants.DiagnosticsPropertiesEncryptedCount);
                 Assert.AreEqual(expectedPropertiesEncryptedCount, propertiesEncrypted);
             }
@@ -2594,7 +2596,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 JObject decryptOperationDiagnostics = encryptionDiagnostics.Value<JObject>(Constants.DiagnosticsDecryptOperation);
                 Assert.IsNotNull(decryptOperationDiagnostics);
                 Assert.IsNotNull(decryptOperationDiagnostics.GetValue(Constants.DiagnosticsStartTime));
-                Assert.IsNotNull(decryptOperationDiagnostics.GetValue(Constants.DiagnosticsDuration));
+                durationInMilliseconds += (long)decryptOperationDiagnostics.GetValue(Constants.DiagnosticsDuration);
                 if (expectedPropertiesDecryptedCount > 0)
                 {
                     int propertiesDecrypted = decryptOperationDiagnostics.Value<int>(Constants.DiagnosticsPropertiesDecryptedCount);
@@ -2605,7 +2607,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             if (encryptOperation || decryptOperation)
             {
                 TimeSpan duration = ((EncryptionCosmosDiagnostics)diagnostics).GetClientElapsedTime();
-                Assert.IsTrue(duration.TotalMilliseconds > coreDiagnostics.Value<int>("duration in milliseconds"));
+                Assert.AreEqual(Math.Round(duration.TotalMilliseconds), coreDiagnostics.Value<long>("duration in milliseconds") + durationInMilliseconds);
             }
         }
 

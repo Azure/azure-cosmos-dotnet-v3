@@ -300,7 +300,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionCosmosDiagnostics encryptionDiagnostics = new EncryptionCosmosDiagnostics(
                 response.Diagnostics,
                 encryptContent: this.encryptionDiagnosticsContext.EncryptContent,
-                decryptContent: this.encryptionDiagnosticsContext.DecryptContent);
+                decryptContent: this.encryptionDiagnosticsContext.DecryptContent,
+                this.encryptionDiagnosticsContext.TotalDurationInMilliseconds);
 
             return new EncryptionTransactionalBatchResponse(
                 decryptedTransactionalBatchOperationResults,

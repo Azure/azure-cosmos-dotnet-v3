@@ -18,7 +18,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             this.EncryptContent = new JObject();
             this.DecryptContent = new JObject();
+            this.TotalDurationInMilliseconds = 0;
         }
+
+        // time taken for encryption + decryption
+        public long TotalDurationInMilliseconds { get; private set; }
 
         public JObject EncryptContent { get; }
 
@@ -50,6 +54,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public void End(int? propertiesCount = null)
         {
             this.stopwatch.Stop();
+            this.TotalDurationInMilliseconds += this.stopwatch.ElapsedMilliseconds;
 
             if (this.isDecryptionOperation)
             {
@@ -77,7 +82,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionCosmosDiagnostics encryptionDiagnostics = new EncryptionCosmosDiagnostics(
                 responseMessage.Diagnostics,
                 this.EncryptContent,
-                this.DecryptContent);
+                this.DecryptContent,
+                this.TotalDurationInMilliseconds);
 
             responseMessage.Diagnostics = encryptionDiagnostics;
         }
