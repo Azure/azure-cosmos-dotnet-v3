@@ -20,8 +20,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 #endif
     sealed class QueryMetrics
     {
-        private readonly Lazy<BackendMetrics> backendMetrics;
-
         /// <summary>
         /// QueryMetrics that with all members having default (but not null) members.
         /// </summary>
@@ -35,17 +33,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             IndexUtilizationInfo indexUtilizationInfo,
             ClientSideMetrics clientSideMetrics)
         {
-            this.backendMetrics = new Lazy<BackendMetrics>(() =>
-            {
-                if (!String.IsNullOrWhiteSpace(deliminatedString) && 
-                        BackendMetricsParser.TryParse(deliminatedString, out BackendMetrics backendMetrics))
-                {
-                    return backendMetrics;
-                }
-                return BackendMetrics.Empty;
+            this.BackendMetrics = !String.IsNullOrWhiteSpace(deliminatedString) &&
+                    BackendMetricsParser.TryParse(deliminatedString, out BackendMetrics backendMetrics)
+                ? backendMetrics
+                : BackendMetrics.Empty;
 
-            });
-            
             this.IndexUtilizationInfo = indexUtilizationInfo ?? throw new ArgumentNullException(nameof(indexUtilizationInfo));
             this.ClientSideMetrics = clientSideMetrics ?? throw new ArgumentNullException(nameof(clientSideMetrics));
         }
@@ -55,12 +47,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 IndexUtilizationInfo indexUtilizationInfo,
                 ClientSideMetrics clientSideMetrics)
         {
-            this.backendMetrics = new Lazy<BackendMetrics>(() => backendMetrics);
+            this.BackendMetrics = backendMetrics;
             this.IndexUtilizationInfo = indexUtilizationInfo ?? throw new ArgumentNullException(nameof(indexUtilizationInfo));
             this.ClientSideMetrics = clientSideMetrics ?? throw new ArgumentNullException(nameof(clientSideMetrics));
         }
 
-        public BackendMetrics BackendMetrics => this.backendMetrics.Value;
+        public BackendMetrics BackendMetrics { get; }
 
         public IndexUtilizationInfo IndexUtilizationInfo { get; }
 

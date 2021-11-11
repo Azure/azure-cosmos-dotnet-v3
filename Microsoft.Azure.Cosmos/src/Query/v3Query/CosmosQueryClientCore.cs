@@ -288,9 +288,10 @@ namespace Microsoft.Azure.Cosmos
                     if (cosmosResponseMessage.Headers.QueryMetricsText != null)
                     {
                         QueryMetricsTraceDatum datum = new QueryMetricsTraceDatum(
-                            new QueryMetrics(cosmosResponseMessage.Headers.QueryMetricsText, 
-                            IndexUtilizationInfo.Empty, 
-                            ClientSideMetrics.Empty));
+                            new Lazy<QueryMetrics>(() => new QueryMetrics(
+                                cosmosResponseMessage.Headers.QueryMetricsText, 
+                                IndexUtilizationInfo.Empty, 
+                                ClientSideMetrics.Empty)));
                         trace.AddDatum("Query Metrics", datum);
                     }
 
