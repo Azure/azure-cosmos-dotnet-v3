@@ -948,7 +948,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private static void SetKeepAliveSocketOptions(Socket clientSocket)
         {
-
+            Console.WriteLine("Code is here");
             //SocketOptionName.TcpKeepAliveInterval
             clientSocket.SetSocketOption(SocketOptionLevel.Tcp,
                                         (SocketOptionName)17,
