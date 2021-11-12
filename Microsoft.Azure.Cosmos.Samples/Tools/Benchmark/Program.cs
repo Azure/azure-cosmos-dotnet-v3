@@ -90,26 +90,22 @@ namespace CosmosBenchmark
         {
             List<Family> families = new List<Family>();
 
-            int c = 1;
-            while (c > 0)
+ 
+            // SQL
+            using (FeedIterator<Family> setIterator = container.GetItemQueryIterator<Family>(requestOptions: new QueryRequestOptions { MaxItemCount = 1 }))
             {
-                // SQL
-                using (FeedIterator<Family> setIterator = container.GetItemQueryIterator<Family>(requestOptions: new QueryRequestOptions { MaxItemCount = 1 }))
+                while (setIterator.HasMoreResults)
                 {
-                    while (setIterator.HasMoreResults)
+                    int count = 0;
+                    foreach (Family item in await setIterator.ReadNextAsync())
                     {
-                        int count = 0;
-                        foreach (Family item in await setIterator.ReadNextAsync())
-                        {
-                            await Task.Delay(40000);
-                            Assert("Should only return 1 result at a time.", count <= 1);
-                            families.Add(item);
-                        }
+                        await Task.Delay(40000);
+                        Assert("Should only return 1 result at a time.", count <= 1);
+                        families.Add(item);
                     }
                 }
-
-                c--;
             }
+
 
             Assert("Expected two families", families.ToList().Count == 2);
         }
