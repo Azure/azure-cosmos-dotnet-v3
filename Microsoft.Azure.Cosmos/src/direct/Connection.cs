@@ -942,7 +942,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
             else
             {
-                //Connection.SetKeepAliveSocketOptions(clientSocket);
+                Connection.SetKeepAliveSocketOptions(clientSocket);
             }
 #endif  // !NETSTANDARD15 && !NETSTANDARD16
         }
