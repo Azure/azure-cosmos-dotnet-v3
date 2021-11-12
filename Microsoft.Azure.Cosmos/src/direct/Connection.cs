@@ -920,7 +920,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private static void EnableTcpKeepAlive(Socket clientSocket)
         {
-            clientSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+            //clientSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
 
 #if !NETSTANDARD15 && !NETSTANDARD16
             // This code should use RuntimeInformation.IsOSPlatform(OSPlatform.Windows),
@@ -960,6 +960,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                                             30);
                 Console.WriteLine("Dummy socket check passed");
             }
+
             //SocketOptionName.TcpKeepAliveInterval
             clientSocket.SetSocketOption(SocketOptionLevel.Tcp,
                                         (SocketOptionName)17,
@@ -969,7 +970,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             clientSocket.SetSocketOption(SocketOptionLevel.Tcp,
                                         (SocketOptionName)3,
                                         30);
-           
+
+            Console.WriteLine(clientSocket.GetSocketOption(SocketOptionLevel.Tcp, (SocketOptionName)3));   
         }
 
         private static byte[] GetWindowsKeepAliveConfiguration()
