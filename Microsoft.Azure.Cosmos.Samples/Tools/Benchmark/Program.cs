@@ -100,6 +100,7 @@ namespace CosmosBenchmark
                     foreach (Family item in await setIterator.ReadNextAsync())
                     {
                         await Task.Delay(40000);
+                        Console.WriteLine(item.ToString());
                         Assert("Should only return 1 result at a time.", count <= 1);
                         families.Add(item);
                     }
