@@ -952,8 +952,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             Console.WriteLine("Code is here");
 
 
-            SocketOptionName value1 = Enum.Parse(SocketOptionName, "TcpKeepAliveInterval");
-            SocketOptionName value2 = Enum.Parse(SocketOptionName, "TcpKeepAliveTime");
+            SocketOptionName value1 = Enum.Parse(typeof(SocketOptionName), "TcpKeepAliveInterval");
+            SocketOptionName value2 = Enum.Parse(typeof(SocketOptionName), "TcpKeepAliveTime");
 
             using (Socket dummySocket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             {
