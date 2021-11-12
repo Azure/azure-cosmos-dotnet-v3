@@ -113,6 +113,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             Debug.Assert(serverUri.PathAndQuery.Equals("/"), serverUri.AbsoluteUri,
                 "The server URI must not specify a path and query");
             this.serverUri = serverUri;
+            Console.WriteLine(serverUri.ToString());
             this.hostNameCertificateOverride = hostNameCertificateOverride;
             this.BufferProvider = new BufferProvider();
 
