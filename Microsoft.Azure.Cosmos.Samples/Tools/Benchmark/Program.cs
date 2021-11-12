@@ -6,302 +6,265 @@ namespace CosmosBenchmark
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.IO;
     using System.Linq;
-    using System.Net;
-    using System.Net.Http;
-    using System.Reflection;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Documents.Client;
-    using Newtonsoft.Json.Linq;
+    using Microsoft.Extensions.Configuration;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// This sample demonstrates how to achieve high performance writes using Azure Comsos DB.
     /// </summary>
     public sealed class Program
     {
-        /// <summary>
-        /// Main method for the sample.
-        /// </summary>
-        /// <param name="args">command line arguments.</param>
+        private static readonly string CosmosDatabaseId = "samples";
+        private static readonly string containerId = "query-samples";
+
+        private static Database cosmosDatabase = null;
+
+        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
+        // <Main>
         public static async Task Main(string[] args)
         {
             try
             {
-                BenchmarkConfig config = BenchmarkConfig.From(args);
-                await Program.AddAzureInfoToRunSummary();
-                
-                ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
+                IConfigurationRoot configuration = new ConfigurationBuilder()
+                    .AddJsonFile("appSettings.json")
+                    .Build();
 
-                if (config.EnableLatencyPercentiles)
+                string endpoint = configuration["EndPointUrl"];
+                if (string.IsNullOrEmpty(endpoint))
                 {
-                    TelemetrySpan.IncludePercentile = true;
-                    TelemetrySpan.ResetLatencyHistogram(config.ItemCount);
+                    throw new ArgumentNullException("Please specify a valid endpoint in the appSettings.json");
                 }
 
-                config.Print();
+                string authKey = configuration["AuthorizationKey"];
+                if (string.IsNullOrEmpty(authKey) || string.Equals(authKey, "Super secret key"))
+                {
+                    throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
+                }
 
-                Program program = new Program();
-
-                RunSummary runSummary = await program.ExecuteAsync(config);
+                //Read the Cosmos endpointUrl and authorisationKeys from configuration
+                //These values are available from the Azure Management Portal on the Cosmos Account Blade under "Keys"
+                //NB > Keep these values in a safe & secure location. Together they provide Administrative access to your Cosmos account
+                using (CosmosClient client = new CosmosClient(endpoint, authKey))
+                {
+                    await Program.RunDemoAsync(client);
+                }
+            }
+            catch (CosmosException cre)
+            {
+                Console.WriteLine(cre.ToString());
+            }
+            catch (Exception e)
+            {
+                Exception baseException = e.GetBaseException();
+                Console.WriteLine("Error: {0}, Message: {1}", e.Message, baseException.Message);
             }
             finally
             {
-                Console.WriteLine($"{nameof(CosmosBenchmark)} completed successfully.");
-                if (Debugger.IsAttached)
-                {
-                    Console.WriteLine("Press any key to exit...");
-                    Console.ReadLine();
-                }
+                Console.WriteLine("End of demo, press any key to exit.");
+                Console.ReadKey();
             }
         }
+        // </Main>
 
-        private static async Task AddAzureInfoToRunSummary()
+        // <RunDemoAsync>
+        private static async Task RunDemoAsync(CosmosClient client)
         {
-            using HttpClient httpClient = new HttpClient();
-            using HttpRequestMessage httpRequest = new HttpRequestMessage(
-                HttpMethod.Get,
-                "http://169.254.169.254/metadata/instance?api-version=2020-06-01");
-            httpRequest.Headers.Add("Metadata", "true");
+            cosmosDatabase = await client.CreateDatabaseIfNotExistsAsync(CosmosDatabaseId);
+            Container container = await Program.GetOrCreateContainerAsync(cosmosDatabase, containerId);
 
-            try
-            {
-                using HttpResponseMessage httpResponseMessage = await httpClient.SendAsync(httpRequest);
-                string jsonVmInfo = await httpResponseMessage.Content.ReadAsStringAsync();
-                JObject jObject = JObject.Parse(jsonVmInfo);
-                RunSummary.AzureVmInfo = jObject;
-                RunSummary.Location = jObject["compute"]["location"].ToString();
-                Console.WriteLine($"Azure VM Location:{RunSummary.Location}");
-            }
-            catch(Exception e)
-            {
-                Console.WriteLine("Failed to get Azure VM info:" + e.ToString());
-            }
+            await Program.CreateItems(container);
+
+            await Program.ItemFeed(container);
+
+            // Uncomment to Cleanup
+            //await cosmosDatabase.DeleteAsync();
         }
+        // </RunDemoAsync>
 
-        /// <summary>
-        /// Run samples for Order By queries.
-        /// </summary>
-        /// <returns>a Task object.</returns>
-        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config)
+        // <ItemFeed>
+        private static async Task ItemFeed(Container container)
         {
-            using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key))
+            List<Family> families = new List<Family>();
+
+            // SQL
+            using (FeedIterator<Family> setIterator = container.GetItemQueryIterator<Family>(requestOptions: new QueryRequestOptions { MaxItemCount = 1 }))
             {
-                Microsoft.Azure.Cosmos.Database database = cosmosClient.GetDatabase(config.Database);
-                if (config.CleanupOnStart)
+                while (setIterator.HasMoreResults)
                 {
-                    await database.DeleteStreamAsync();
-                }
-
-                ContainerResponse containerResponse = await Program.CreatePartitionedContainerAsync(config, cosmosClient);
-                Container container = containerResponse;
-
-                int? currentContainerThroughput = await container.ReadThroughputAsync();
-
-                if (!currentContainerThroughput.HasValue)
-                {
-                    // Container throughput is not configured. It is shared database throughput
-                    ThroughputResponse throughputResponse = await database.ReadThroughputAsync(requestOptions: null);
-                    throw new InvalidOperationException($"Using database {config.Database} with {throughputResponse.Resource.Throughput} RU/s. " +
-                        $"Container {config.Container} must have a configured throughput.");
-                }
-
-                Console.WriteLine($"Using container {config.Container} with {currentContainerThroughput} RU/s");
-                int taskCount = config.GetTaskCount(currentContainerThroughput.Value);
-
-                Console.WriteLine("Starting Inserts with {0} tasks", taskCount);
-                Console.WriteLine();
-
-                string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
-                int opsPerTask = config.ItemCount / taskCount;
-
-                // TBD: 2 clients SxS some overhead
-                RunSummary runSummary;
-                using (DocumentClient documentClient = config.CreateDocumentClient(config.Key))
-                {
-                    Func<IBenchmarkOperation> benchmarkOperationFactory = this.GetBenchmarkFactory(
-                        config,
-                        partitionKeyPath,
-                        cosmosClient,
-                        documentClient);
-
-                    if (config.DisableCoreSdkLogging)
+                    int count = 0;
+                    foreach (Family item in await setIterator.ReadNextAsync())
                     {
-                        // Do it after client initialization (HACK)
-                        Program.ClearCoreSdkListeners();
+                        await Task.Delay(40000);
+                        Assert("Should only return 1 result at a time.", count <= 1);
+                        families.Add(item);
                     }
-
-                    IExecutionStrategy execution = IExecutionStrategy.StartNew(config, benchmarkOperationFactory);
-                    runSummary = await execution.ExecuteAsync(taskCount, opsPerTask, config.TraceFailures, 0.01);
                 }
-
-                if (config.CleanupOnFinish)
-                {
-                    Console.WriteLine($"Deleting Database {config.Database}");
-                    await database.DeleteStreamAsync();
-                }
-
-                runSummary.WorkloadType = config.WorkloadType;
-                runSummary.id = $"{DateTime.UtcNow:yyyy-MM-dd:HH-mm}-{config.CommitId}";
-                runSummary.Commit = config.CommitId;
-                runSummary.CommitDate = config.CommitDate;
-                runSummary.CommitTime = config.CommitTime;
-
-                runSummary.Date = DateTime.UtcNow.ToString("yyyy-MM-dd");
-                runSummary.Time = DateTime.UtcNow.ToString("HH-mm");
-                runSummary.BranchName = config.BranchName;
-                runSummary.TotalOps = config.ItemCount;
-                runSummary.Concurrency = taskCount;
-                runSummary.Database = config.Database;
-                runSummary.Container = config.Container;
-                runSummary.AccountName = config.EndPoint;
-                runSummary.pk = config.ResultsPartitionKeyValue;
-                runSummary.MaxTcpConnectionsPerEndpoint = config.MaxTcpConnectionsPerEndpoint;
-                runSummary.MaxRequestsPerTcpConnection = config.MaxRequestsPerTcpConnection;
-
-                string consistencyLevel = config.ConsistencyLevel;
-                if (string.IsNullOrWhiteSpace(consistencyLevel))
-                {
-                    AccountProperties accountProperties = await cosmosClient.ReadAccountAsync();
-                    consistencyLevel = accountProperties.Consistency.DefaultConsistencyLevel.ToString();
-                }
-                runSummary.ConsistencyLevel = consistencyLevel;
-
-
-                if (config.PublishResults)
-                {
-                    runSummary.Diagnostics = CosmosDiagnosticsLogger.GetDiagnostics();
-                    await this.PublishResults(
-                        config, 
-                        runSummary, 
-                        cosmosClient);
-                }
-
-                return runSummary;
             }
+
+            Assert("Expected two families", families.ToList().Count == 2);
         }
+        // </ItemFeed>
 
-        private async Task PublishResults(
-            BenchmarkConfig config, 
-            RunSummary runSummary, 
-            CosmosClient benchmarkClient)
-        {
-            if (string.IsNullOrEmpty(config.ResultsEndpoint))
-            {
-                Container resultContainer = benchmarkClient.GetContainer(
-                    databaseId: config.ResultsDatabase ?? config.Database,
-                    containerId: config.ResultsContainer);
+        // <ItemStreamFeed>
 
-                await resultContainer.CreateItemAsync(runSummary, new PartitionKey(runSummary.pk));
-            }
-            else
-            {
-                using CosmosClient cosmosClient = new CosmosClient(config.ResultsEndpoint, config.ResultsKey);
-                Container resultContainer = cosmosClient.GetContainer(config.ResultsDatabase, config.ResultsContainer);
-                await resultContainer.CreateItemAsync(runSummary, new PartitionKey(runSummary.pk));
-            }
-        }
-
-        private Func<IBenchmarkOperation> GetBenchmarkFactory(
-            BenchmarkConfig config,
-            string partitionKeyPath,
-            CosmosClient cosmosClient,
-            DocumentClient documentClient)
-        {
-            string sampleItem = File.ReadAllText(config.ItemTemplateFile);
-
-            Type[] availableBenchmarks = Program.AvailableBenchmarks();
-            IEnumerable<Type> res = availableBenchmarks
-                .Where(e => e.Name.Equals(config.WorkloadType, StringComparison.OrdinalIgnoreCase) || e.Name.Equals(config.WorkloadType + "BenchmarkOperation", StringComparison.OrdinalIgnoreCase));
-
-            if (res.Count() != 1)
-            {
-                throw new NotImplementedException($"Unsupported workload type {config.WorkloadType}. Available ones are " +
-                    string.Join(", \r\n", availableBenchmarks.Select(e => e.Name)));
-            }
-
-            ConstructorInfo ci = null;
-            object[] ctorArguments = null;
-            Type benchmarkTypeName = res.Single();
-
-            if (benchmarkTypeName.Name.EndsWith("V3BenchmarkOperation"))
-            {
-                ci = benchmarkTypeName.GetConstructor(new Type[] { typeof(CosmosClient), typeof(string), typeof(string), typeof(string), typeof(string) });
-                ctorArguments = new object[]
-                    {
-                        cosmosClient,
-                        config.Database,
-                        config.Container,
-                        partitionKeyPath,
-                        sampleItem
-                    };
-            }
-            else if (benchmarkTypeName.Name.EndsWith("V2BenchmarkOperation"))
-            {
-                ci = benchmarkTypeName.GetConstructor(new Type[] { typeof(DocumentClient), typeof(string), typeof(string), typeof(string), typeof(string) });
-                ctorArguments = new object[]
-                    {
-                        documentClient,
-                        config.Database,
-                        config.Container,
-                        partitionKeyPath,
-                        sampleItem
-                    };
-            }
-
-            if (ci == null)
-            {
-                throw new NotImplementedException($"Unsupported CTOR for workload type {config.WorkloadType} ");
-            }
-
-            return () => (IBenchmarkOperation)ci.Invoke(ctorArguments);
-        }
-
-        private static Type[] AvailableBenchmarks()
-        {
-            Type benchmarkType = typeof(IBenchmarkOperation);
-            return typeof(Program).Assembly.GetTypes()
-                .Where(p => benchmarkType.IsAssignableFrom(p))
-                .ToArray();
-        }
 
         /// <summary>
-        /// Create a partitioned container.
+        /// Creates the items used in this Sample
         /// </summary>
-        /// <returns>The created container.</returns>
-        private static async Task<ContainerResponse> CreatePartitionedContainerAsync(BenchmarkConfig options, CosmosClient cosmosClient)
+        /// <param name="container">The selfLink property for the CosmosContainer where items will be created.</param>
+        /// <returns>None</returns>
+        // <CreateItems>
+        private static async Task CreateItems(Container container)
         {
-            Microsoft.Azure.Cosmos.Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(options.Database);
-
-            Container container = database.GetContainer(options.Container);
-
-            try
+            Family AndersonFamily = new Family
             {
-                return await container.ReadContainerAsync();
-            }
-            catch(CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            { 
-                // Show user cost of running this test
-                double estimatedCostPerMonth = 0.06 * options.Throughput;
-                double estimatedCostPerHour = estimatedCostPerMonth / (24 * 30);
-                Console.WriteLine($"The container will cost an estimated ${Math.Round(estimatedCostPerHour, 2)} per hour (${Math.Round(estimatedCostPerMonth, 2)} per month)");
-                Console.WriteLine("Press enter to continue ...");
-                Console.ReadLine();
+                Id = "AndersonFamily",
+                LastName = "Anderson",
+                Parents = new Parent[]
+                {
+                    new Parent { FirstName = "Thomas" },
+                    new Parent { FirstName = "Mary Kay"}
+                },
+                Children = new Child[]
+                {
+                    new Child
+                    {
+                        FirstName = "Henriette Thaulow",
+                        Gender = "female",
+                        Grade = 5,
+                        Pets = new []
+                        {
+                            new Pet { GivenName = "Fluffy" }
+                        }
+                    }
+                },
+                Address = new Address { State = "WA", County = "King", City = "Seattle" },
+                IsRegistered = true,
+                RegistrationDate = DateTime.UtcNow.AddDays(-1)
+            };
 
-                string partitionKeyPath = options.PartitionKeyPath;
-                return await database.CreateContainerAsync(options.Container, partitionKeyPath, options.Throughput);
+            await container.UpsertItemAsync<Family>(AndersonFamily, new PartitionKey(AndersonFamily.PartitionKey));
+
+            Family WakefieldFamily = new Family
+            {
+                Id = "WakefieldFamily",
+                LastName = "Wakefield",
+                Parents = new[] {
+                    new Parent { FamilyName= "Wakefield", FirstName= "Robin" },
+                    new Parent { FamilyName= "Miller", FirstName= "Ben" }
+                },
+                Children = new Child[] {
+                    new Child
+                    {
+                        FamilyName= "Merriam",
+                        FirstName= "Jesse",
+                        Gender= "female",
+                        Grade= 8,
+                        Pets= new Pet[] {
+                            new Pet { GivenName= "Goofy" },
+                            new Pet { GivenName= "Shadow" }
+                        }
+                    },
+                    new Child
+                    {
+                        FirstName= "Lisa",
+                        Gender= "female",
+                        Grade= 1
+                    }
+                },
+                Address = new Address { State = "NY", County = "Manhattan", City = "NY" },
+                IsRegistered = false,
+                RegistrationDate = DateTime.UtcNow.AddDays(-30)
+            };
+
+            await container.UpsertItemAsync<Family>(WakefieldFamily, new PartitionKey(WakefieldFamily.PartitionKey));
+        }
+        // </CreateItems>
+
+        /// <summary>
+        /// Get a DocuemntContainer by id, or create a new one if one with the id provided doesn't exist.
+        /// </summary>
+        /// <param name="id">The id of the CosmosContainer to search for, or create.</param>
+        /// <returns>The matched, or created, CosmosContainer object</returns>
+        // <GetOrCreateContainerAsync>
+        private static async Task<Container> GetOrCreateContainerAsync(Database database, string containerId)
+        {
+            ContainerProperties containerProperties = new ContainerProperties(id: containerId, partitionKeyPath: "/LastName");
+
+            return await database.CreateContainerIfNotExistsAsync(
+                containerProperties: containerProperties,
+                throughput: 400);
+        }
+        // </GetOrCreateContainerAsync>
+
+        private static void Assert(string message, bool condition)
+        {
+            if (!condition)
+            {
+                throw new ApplicationException(message);
             }
         }
 
-        private static void ClearCoreSdkListeners()
+        private static void AssertSequenceEqual(string message, List<Family> list1, List<Family> list2)
         {
-            Type defaultTrace = Type.GetType("Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace,Microsoft.Azure.Cosmos.Client");
-            TraceSource traceSource = (TraceSource)defaultTrace.GetProperty("TraceSource").GetValue(null);
-            traceSource.Switch.Level = SourceLevels.All;
-            traceSource.Listeners.Clear();
+            if (!string.Join(",", list1.Select(family => family.Id).ToArray()).Equals(
+                string.Join(",", list1.Select(family => family.Id).ToArray())))
+            {
+                throw new ApplicationException(message);
+            }
+        }
+
+        internal sealed class Parent
+        {
+            public string FamilyName { get; set; }
+            public string FirstName { get; set; }
+        }
+
+        internal sealed class Child
+        {
+            public string FamilyName { get; set; }
+            public string FirstName { get; set; }
+            public string Gender { get; set; }
+            public int Grade { get; set; }
+            public Pet[] Pets { get; set; }
+        }
+
+        internal sealed class Pet
+        {
+            public string GivenName { get; set; }
+        }
+
+        internal sealed class Address
+        {
+            public string State { get; set; }
+            public string County { get; set; }
+            public string City { get; set; }
+        }
+
+        internal sealed class Family
+        {
+            [JsonProperty(PropertyName = "id")]
+            public string Id { get; set; }
+
+            public string LastName { get; set; }
+
+            public Parent[] Parents { get; set; }
+
+            public Child[] Children { get; set; }
+
+            public Address Address { get; set; }
+
+            public bool IsRegistered { get; set; }
+
+            public DateTime RegistrationDate { get; set; }
+
+            public string PartitionKey => this.LastName;
+
+            public static string PartitionKeyPath => "/LastName";
         }
     }
 }
