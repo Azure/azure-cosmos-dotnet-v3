@@ -90,7 +90,7 @@ namespace CosmosBenchmark
         {
             List<Family> families = new List<Family>();
 
-            int c = 50000;
+            int c = 1;
             while (c > 0)
             {
                 // SQL
@@ -101,7 +101,7 @@ namespace CosmosBenchmark
                         int count = 0;
                         foreach (Family item in await setIterator.ReadNextAsync())
                         {
-                            //await Task.Delay(40000);
+                            await Task.Delay(40000);
                             Assert("Should only return 1 result at a time.", count <= 1);
                             families.Add(item);
                         }
