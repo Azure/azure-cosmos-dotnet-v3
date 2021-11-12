@@ -950,6 +950,16 @@ namespace Microsoft.Azure.Documents.Rntbd
         private static void SetKeepAliveSocketOptions(Socket clientSocket)
         {
             Console.WriteLine("Code is here");
+            using (Socket dummySocket = new Socket(SocketType.Stream, ProtocolType.Tcp))
+            {
+                dummySocket.SetSocketOption(SocketOptionLevel.Tcp,
+                       (SocketOptionName)17,
+                       1);
+                dummySocket.SetSocketOption(SocketOptionLevel.Tcp,
+                                            (SocketOptionName)3,
+                                            30);
+                Console.WriteLine("Dummy socket check passed");
+            }
             //SocketOptionName.TcpKeepAliveInterval
             clientSocket.SetSocketOption(SocketOptionLevel.Tcp,
                                         (SocketOptionName)17,
