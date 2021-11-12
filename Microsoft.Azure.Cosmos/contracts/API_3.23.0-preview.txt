@@ -41,7 +41,14 @@ namespace Microsoft.Azure.Cosmos
     }
     public abstract class ChangeFeedMode
     {
+        public static ChangeFeedMode FullFidelity { get; }
         public static ChangeFeedMode Incremental { get; }
+    }
+    public sealed class ChangeFeedPolicy
+    {
+        public ChangeFeedPolicy();
+        public static TimeSpan FullFidelityNoRetention { get; }
+        public TimeSpan FullFidelityRetention { get; set; }
     }
     public abstract class ChangeFeedProcessor
     {
@@ -76,6 +83,13 @@ namespace Microsoft.Azure.Cosmos
         public string InstanceName { get; }
         public string LeaseToken { get; }
     }
+    public class ChangeFeedProcessorUserException : Exception
+    {
+        public ChangeFeedProcessorUserException(Exception originalException, ChangeFeedProcessorContext context);
+        protected ChangeFeedProcessorUserException(SerializationInfo info, StreamingContext context);
+        public ChangeFeedProcessorContext ChangeFeedProcessorContext { get; }
+        public override void GetObjectData(SerializationInfo info, StreamingContext context);
+    }
     public sealed class ChangeFeedRequestOptions : RequestOptions
     {
         public ChangeFeedRequestOptions();
@@ -92,6 +106,56 @@ namespace Microsoft.Azure.Cosmos
         public static ChangeFeedStartFrom Now(FeedRange feedRange);
         public static ChangeFeedStartFrom Time(DateTime dateTimeUtc);
         public static ChangeFeedStartFrom Time(DateTime dateTimeUtc, FeedRange feedRange);
+    }
+    public sealed class ClientEncryptionIncludedPath
+    {
+        public ClientEncryptionIncludedPath();
+        public string ClientEncryptionKeyId { get; set; }
+        public string EncryptionAlgorithm { get; set; }
+        public string EncryptionType { get; set; }
+        public string Path { get; set; }
+    }
+    public abstract class ClientEncryptionKey
+    {
+        protected ClientEncryptionKey();
+        public abstract string Id { get; }
+        public abstract Task<ClientEncryptionKeyResponse> ReadAsync(RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ClientEncryptionKeyResponse> ReplaceAsync(ClientEncryptionKeyProperties clientEncryptionKeyProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+    }
+    public class ClientEncryptionKeyProperties : IEquatable<ClientEncryptionKeyProperties>
+    {
+        protected ClientEncryptionKeyProperties();
+        public ClientEncryptionKeyProperties(string id, string encryptionAlgorithm, byte[] wrappedDataEncryptionKey, EncryptionKeyWrapMetadata encryptionKeyWrapMetadata);
+        public Nullable<DateTime> CreatedTime { get; }
+        public string EncryptionAlgorithm { get; }
+        public EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata { get; }
+        public string ETag { get; }
+        public string Id { get; }
+        public Nullable<DateTime> LastModified { get; }
+        public virtual string SelfLink { get; }
+        public byte[] WrappedDataEncryptionKey { get; }
+        public bool Equals(ClientEncryptionKeyProperties other);
+        public override bool Equals(object obj);
+        public override int GetHashCode();
+    }
+    public class ClientEncryptionKeyResponse : Response<ClientEncryptionKeyProperties>
+    {
+        protected ClientEncryptionKeyResponse();
+        public override string ActivityId { get; }
+        public virtual ClientEncryptionKey ClientEncryptionKey { get; }
+        public override CosmosDiagnostics Diagnostics { get; }
+        public override string ETag { get; }
+        public override Headers Headers { get; }
+        public override double RequestCharge { get; }
+        public override ClientEncryptionKeyProperties Resource { get; }
+        public override HttpStatusCode StatusCode { get; }
+        public static implicit operator ClientEncryptionKey (ClientEncryptionKeyResponse response);
+    }
+    public sealed class ClientEncryptionPolicy
+    {
+        public ClientEncryptionPolicy(IEnumerable<ClientEncryptionIncludedPath> includedPaths);
+        public IEnumerable<ClientEncryptionIncludedPath> IncludedPaths { get; }
+        public int PolicyFormatVersion { get; }
     }
     public sealed class CompositePath
     {
@@ -172,10 +236,15 @@ namespace Microsoft.Azure.Cosmos
         public abstract FeedIterator GetChangeFeedStreamIterator(ChangeFeedStartFrom changeFeedStartFrom, ChangeFeedMode changeFeedMode, ChangeFeedRequestOptions changeFeedRequestOptions=null);
         public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken=default(CancellationToken));
         public abstract IOrderedQueryable<T> GetItemLinqQueryable<T>(bool allowSynchronousQueryExecution=false, string continuationToken=null, QueryRequestOptions requestOptions=null, CosmosLinqSerializerOptions linqSerializerOptions=null);
+        public abstract FeedIterator<T> GetItemQueryIterator<T>(FeedRange feedRange, QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
         public abstract FeedIterator<T> GetItemQueryIterator<T>(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
         public abstract FeedIterator<T> GetItemQueryIterator<T>(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract FeedIterator GetItemQueryStreamIterator(FeedRange feedRange, QueryDefinition queryDefinition, string continuationToken, QueryRequestOptions requestOptions=null);
         public abstract FeedIterator GetItemQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
         public abstract FeedIterator GetItemQueryStreamIterator(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(FeedRange feedRange, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ItemResponse<T>> PatchItemAsync<T>(string id, PartitionKey partitionKey, IReadOnlyList<PatchOperation> patchOperations, PatchItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> PatchItemStreamAsync(string id, PartitionKey partitionKey, IReadOnlyList<PatchOperation> patchOperations, PatchItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ContainerResponse> ReadContainerAsync(ContainerRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ResponseMessage> ReadContainerStreamAsync(ContainerRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ItemResponse<T>> ReadItemAsync<T>(string id, PartitionKey partitionKey, ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
@@ -205,8 +274,11 @@ namespace Microsoft.Azure.Cosmos
     public class ContainerProperties
     {
         public ContainerProperties();
+        public ContainerProperties(string id, IReadOnlyList<string> partitionKeyPaths);
         public ContainerProperties(string id, string partitionKeyPath);
         public Nullable<int> AnalyticalStoreTimeToLiveInSeconds { get; set; }
+        public ChangeFeedPolicy ChangeFeedPolicy { get; set; }
+        public ClientEncryptionPolicy ClientEncryptionPolicy { get; set; }
         public ConflictResolutionPolicy ConflictResolutionPolicy { get; set; }
         public Nullable<int> DefaultTimeToLive { get; set; }
         public string ETag { get; }
@@ -216,6 +288,7 @@ namespace Microsoft.Azure.Cosmos
         public Nullable<DateTime> LastModified { get; }
         public Nullable<PartitionKeyDefinitionVersion> PartitionKeyDefinitionVersion { get; set; }
         public string PartitionKeyPath { get; set; }
+        public IReadOnlyList<string> PartitionKeyPaths { get; set; }
         public string SelfLink { get; }
         public string TimeToLivePropertyPath { get; set; }
         public UniqueKeyPolicy UniqueKeyPolicy { get; set; }
@@ -246,6 +319,7 @@ namespace Microsoft.Azure.Cosmos
         public CosmosClient(string accountEndpoint, string authKeyOrResourceToken, CosmosClientOptions clientOptions=null);
         public virtual CosmosClientOptions ClientOptions { get; }
         public virtual Uri Endpoint { get; }
+        public virtual CosmosResponseFactory ResponseFactory { get; }
         public static Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint, TokenCredential tokenCredential, IReadOnlyList<ValueTuple<string, string>> containers, CosmosClientOptions cosmosClientOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public static Task<CosmosClient> CreateAndInitializeAsync(string connectionString, IReadOnlyList<ValueTuple<string, string>> containers, CosmosClientOptions cosmosClientOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public static Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint, string authKeyOrResourceToken, IReadOnlyList<ValueTuple<string, string>> containers, CosmosClientOptions cosmosClientOptions=null, CancellationToken cancellationToken=default(CancellationToken));
@@ -337,6 +411,13 @@ namespace Microsoft.Azure.Cosmos
         CamelCase = 1,
         Default = 0,
     }
+    public abstract class CosmosResponseFactory
+    {
+        protected CosmosResponseFactory();
+        public abstract FeedResponse<T> CreateItemFeedResponse<T>(ResponseMessage responseMessage);
+        public abstract ItemResponse<T> CreateItemResponse<T>(ResponseMessage responseMessage);
+        public abstract StoredProcedureExecuteResponse<T> CreateStoredProcedureExecuteResponse<T>(ResponseMessage responseMessage);
+    }
     public sealed class CosmosSerializationOptions
     {
         public CosmosSerializationOptions();
@@ -355,6 +436,7 @@ namespace Microsoft.Azure.Cosmos
         protected Database();
         public abstract CosmosClient Client { get; }
         public abstract string Id { get; }
+        public abstract Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(ClientEncryptionKeyProperties clientEncryptionKeyProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ContainerResponse> CreateContainerAsync(ContainerProperties containerProperties, ThroughputProperties throughputProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ContainerResponse> CreateContainerAsync(ContainerProperties containerProperties, Nullable<int> throughput=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ContainerResponse> CreateContainerAsync(string id, string partitionKeyPath, Nullable<int> throughput=default(Nullable<int>), RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
@@ -367,6 +449,8 @@ namespace Microsoft.Azure.Cosmos
         public abstract ContainerBuilder DefineContainer(string name, string partitionKeyPath);
         public abstract Task<DatabaseResponse> DeleteAsync(RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ResponseMessage> DeleteStreamAsync(RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract ClientEncryptionKey GetClientEncryptionKey(string id);
+        public abstract FeedIterator<ClientEncryptionKeyProperties> GetClientEncryptionKeyQueryIterator(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
         public abstract Container GetContainer(string id);
         public abstract FeedIterator<T> GetContainerQueryIterator<T>(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
         public abstract FeedIterator<T> GetContainerQueryIterator<T>(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
@@ -413,6 +497,22 @@ namespace Microsoft.Azure.Cosmos
         Point = 2,
         Polygon = 4,
         String = 1,
+    }
+    public class DedicatedGatewayRequestOptions
+    {
+        public DedicatedGatewayRequestOptions();
+        public Nullable<TimeSpan> MaxIntegratedCacheStaleness { get; set; }
+    }
+    public class EncryptionKeyWrapMetadata : IEquatable<EncryptionKeyWrapMetadata>
+    {
+        public EncryptionKeyWrapMetadata(EncryptionKeyWrapMetadata source);
+        public EncryptionKeyWrapMetadata(string type, string name, string value);
+        public string Name { get; }
+        public string Type { get; }
+        public string Value { get; }
+        public bool Equals(EncryptionKeyWrapMetadata other);
+        public override bool Equals(object obj);
+        public override int GetHashCode();
     }
     public sealed class ExcludedPath
     {
@@ -526,6 +626,7 @@ namespace Microsoft.Azure.Cosmos
     {
         public ItemRequestOptions();
         public Nullable<ConsistencyLevel> ConsistencyLevel { get; set; }
+        public DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
         public Nullable<bool> EnableContentResponseOnWrite { get; set; }
         public Nullable<IndexingDirective> IndexingDirective { get; set; }
         public IEnumerable<string> PostTriggers { get; set; }
@@ -567,10 +668,46 @@ namespace Microsoft.Azure.Cosmos
         public static bool operator !=(PartitionKey left, PartitionKey right);
         public override string ToString();
     }
+    public sealed class PartitionKeyBuilder
+    {
+        public PartitionKeyBuilder();
+        public PartitionKeyBuilder Add(bool val);
+        public PartitionKeyBuilder Add(double val);
+        public PartitionKeyBuilder Add(string val);
+        public PartitionKeyBuilder AddNoneType();
+        public PartitionKeyBuilder AddNullValue();
+        public PartitionKey Build();
+    }
     public enum PartitionKeyDefinitionVersion
     {
         V1 = 1,
         V2 = 2,
+    }
+    public sealed class PatchItemRequestOptions : ItemRequestOptions
+    {
+        public PatchItemRequestOptions();
+        public string FilterPredicate { get; set; }
+    }
+    public abstract class PatchOperation
+    {
+        protected PatchOperation();
+        public abstract PatchOperationType OperationType { get; }
+        public abstract string Path { get; }
+        public static PatchOperation Add<T>(string path, T value);
+        public static PatchOperation Increment(string path, double value);
+        public static PatchOperation Increment(string path, long value);
+        public static PatchOperation Remove(string path);
+        public static PatchOperation Replace<T>(string path, T value);
+        public static PatchOperation Set<T>(string path, T value);
+        public virtual bool TrySerializeValueParameter(CosmosSerializer cosmosSerializer, out Stream valueParam);
+    }
+    public enum PatchOperationType
+    {
+        Add = 0,
+        Increment = 4,
+        Remove = 1,
+        Replace = 2,
+        Set = 3,
     }
     public abstract class Permission
     {
@@ -628,6 +765,7 @@ namespace Microsoft.Azure.Cosmos
     {
         public QueryRequestOptions();
         public Nullable<ConsistencyLevel> ConsistencyLevel { get; set; }
+        public DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
         public Nullable<bool> EnableLowPrecisionOrderBy { get; set; }
         public Nullable<bool> EnableScanInQuery { get; set; }
         public Nullable<int> MaxBufferedItemCount { get; set; }
@@ -732,9 +870,11 @@ namespace Microsoft.Azure.Cosmos
     public class RequestOptions
     {
         public RequestOptions();
+        public Action<Headers> AddRequestHeaders { get; set; }
         public string IfMatchEtag { get; set; }
         public string IfNoneMatchEtag { get; set; }
         public IReadOnlyDictionary<string, object> Properties { get; set; }
+        public RequestOptions ShallowCopy();
     }
     public class ResponseMessage : IDisposable
     {
@@ -742,7 +882,7 @@ namespace Microsoft.Azure.Cosmos
         public ResponseMessage(HttpStatusCode statusCode, RequestMessage requestMessage=null, string errorMessage=null);
         public virtual Stream Content { get; set; }
         public virtual string ContinuationToken { get; }
-        public virtual CosmosDiagnostics Diagnostics { get; }
+        public virtual CosmosDiagnostics Diagnostics { get; set; }
         public virtual string ErrorMessage { get; }
         public virtual Headers Headers { get; }
         public virtual bool IsSuccessStatusCode { get; }
@@ -810,6 +950,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract TransactionalBatch DeleteItem(string id, TransactionalBatchItemRequestOptions requestOptions=null);
         public abstract Task<TransactionalBatchResponse> ExecuteAsync(TransactionalBatchRequestOptions requestOptions, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<TransactionalBatchResponse> ExecuteAsync(CancellationToken cancellationToken=default(CancellationToken));
+        public abstract TransactionalBatch PatchItem(string id, IReadOnlyList<PatchOperation> patchOperations, TransactionalBatchPatchItemRequestOptions requestOptions=null);
         public abstract TransactionalBatch ReadItem(string id, TransactionalBatchItemRequestOptions requestOptions=null);
         public abstract TransactionalBatch ReplaceItemStream(string id, Stream streamPayload, TransactionalBatchItemRequestOptions requestOptions=null);
         public abstract TransactionalBatch ReplaceItem<T>(string id, T item, TransactionalBatchItemRequestOptions requestOptions=null);
@@ -835,6 +976,11 @@ namespace Microsoft.Azure.Cosmos
     {
         protected TransactionalBatchOperationResult();
         public virtual T Resource { get; set; }
+    }
+    public class TransactionalBatchPatchItemRequestOptions : TransactionalBatchItemRequestOptions
+    {
+        public TransactionalBatchPatchItemRequestOptions();
+        public string FilterPredicate { get; set; }
     }
     public class TransactionalBatchRequestOptions : RequestOptions
     {
@@ -909,6 +1055,15 @@ namespace Microsoft.Azure.Cosmos
 }
 namespace Microsoft.Azure.Cosmos.Fluent
 {
+    public class ChangeFeedPolicyDefinition
+    {
+        public ContainerBuilder Attach();
+    }
+    public sealed class ClientEncryptionPolicyDefinition
+    {
+        public ContainerBuilder Attach();
+        public ClientEncryptionPolicyDefinition WithIncludedPath(ClientEncryptionIncludedPath path);
+    }
     public class CompositeIndexDefinition<T>
     {
         public T Attach();
@@ -930,6 +1085,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public Task<ContainerResponse> CreateAsync(Nullable<int> throughput=default(Nullable<int>), CancellationToken cancellationToken=default(CancellationToken));
         public Task<ContainerResponse> CreateIfNotExistsAsync(ThroughputProperties throughputProperties, CancellationToken cancellationToken=default(CancellationToken));
         public Task<ContainerResponse> CreateIfNotExistsAsync(Nullable<int> throughput=default(Nullable<int>), CancellationToken cancellationToken=default(CancellationToken));
+        public ChangeFeedPolicyDefinition WithChangeFeedPolicy(TimeSpan retention);
+        public ClientEncryptionPolicyDefinition WithClientEncryptionPolicy();
         public ConflictResolutionDefinition WithConflictResolution();
         public UniqueKeyDefinition WithUniqueKey();
     }
@@ -1030,6 +1187,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         public static Task<Response<float>> SumAsync(this IQueryable<float> source, CancellationToken cancellationToken=default(CancellationToken));
         public static FeedIterator<T> ToFeedIterator<T>(this IQueryable<T> query);
         public static QueryDefinition ToQueryDefinition<T>(this IQueryable<T> query);
+        public static QueryDefinition ToQueryDefinition<T>(this IQueryable<T> query, IDictionary<object, string> namedParameters);
         public static FeedIterator ToStreamIterator<T>(this IQueryable<T> query);
     }
 }

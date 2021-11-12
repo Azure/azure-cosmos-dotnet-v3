@@ -13,10 +13,11 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### <a name="3.23.0"/> [3.23.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.23.0) - 2021-11-10
-### <a name="3.23.0-preview"/> [3.23.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.23.0-preview) - 2021-11-10
+### <a name="3.23.0"/> [3.23.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.23.0) - 2021-11-12
+### <a name="3.23.0-preview"/> [3.23.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.23.0-preview) - 2021-11-12
 
 #### Added
+- [#2868](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2868) Patch: Adds support for patch operations
 - [#2822](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2822) Availability: Adds non-blocking async lazy cache to improve upgrade and scaling scenarios
 - [#2807](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2807) ChangeFeedProcessor: Adds ChangeFeedProcessorUserException for detailed error notification
 - [#2818](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2818) Diagnostics: Adds retry after time to diagnostics
@@ -28,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#2793](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2793) Query: Fixes missing diagnostic from query pipeline. Introduced in 3.17.0 PR [#2097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2097)
 - [#2818](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2818) Diagnostics: Fixes memory calculations in diagnostics
 - [#2818](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2818) Availability: Fixes blocking call on broken connection exception
-
+- [#2861](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2861) Performance: Fixes query performance by avoiding ImmutableDictionary. Introduced in 3.17.0 PR [#2144](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2144)
 
 ### <a name="3.22.1-preview"/> [3.22.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.22.1-preview) - 2021-10-28
 ### <a name="3.22.1"/> [3.22.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.22.1) - 2021-10-28
