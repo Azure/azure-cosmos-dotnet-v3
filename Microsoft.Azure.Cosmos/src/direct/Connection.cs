@@ -973,11 +973,11 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             //SocketOptionName.TcpKeepAliveTime
             clientSocket.SetSocketOption(SocketOptionLevel.Tcp,
-                                        value2,
+                                        (SocketOptionName)3,
                                         30);
 
             Console.WriteLine(value1.ToString());
-            Console.WriteLine(value2.ToString());
+            Console.WriteLine(((SocketOptionName)3).ToString());
         }
 
         private static byte[] GetWindowsKeepAliveConfiguration()
