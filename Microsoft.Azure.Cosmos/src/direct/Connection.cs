@@ -939,7 +939,26 @@ namespace Microsoft.Azure.Documents.Rntbd
                     // Ignore the exception.
                 }
             }
+            else
+            {
+                Connection.SetKeepAliveSocketOptions(clientSocket);
+            }
 #endif  // !NETSTANDARD15 && !NETSTANDARD16
+        }
+
+        private static void SetKeepAliveSocketOptions(Socket clientSocket)
+        {
+
+            //SocketOptionName.TcpKeepAliveInterval
+            clientSocket.SetSocketOption(SocketOptionLevel.Tcp,
+                                        (SocketOptionName)17,
+                                        1);
+
+            //SocketOptionName.TcpKeepAliveTime
+            clientSocket.SetSocketOption(SocketOptionLevel.Tcp,
+                                        (SocketOptionName)3,
+                                        30);
+           
         }
 
         private static byte[] GetWindowsKeepAliveConfiguration()
