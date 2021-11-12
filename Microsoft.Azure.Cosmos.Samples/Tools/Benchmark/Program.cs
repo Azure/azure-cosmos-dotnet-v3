@@ -90,7 +90,7 @@ namespace CosmosBenchmark
         {
             List<Family> families = new List<Family>();
 
-            int c = 1000;
+            int c = 50000;
             while (c > 0)
             {
                 // SQL
