@@ -29,27 +29,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             clientSideMetrics: ClientSideMetrics.Empty);
 
         public QueryMetrics(
-            string deliminatedString,
-            IndexUtilizationInfo indexUtilizationInfo,
-            ClientSideMetrics clientSideMetrics)
+        BackendMetrics backendMetrics,
+        IndexUtilizationInfo indexUtilizationInfo,
+        ClientSideMetrics clientSideMetrics)
         {
-            this.BackendMetrics = !String.IsNullOrWhiteSpace(deliminatedString) &&
-                    BackendMetricsParser.TryParse(deliminatedString, out BackendMetrics backendMetrics)
-                ? backendMetrics
-                : BackendMetrics.Empty;
-
+            this.BackendMetrics = backendMetrics ?? throw new ArgumentNullException(nameof(indexUtilizationInfo));
             this.IndexUtilizationInfo = indexUtilizationInfo ?? throw new ArgumentNullException(nameof(indexUtilizationInfo));
             this.ClientSideMetrics = clientSideMetrics ?? throw new ArgumentNullException(nameof(clientSideMetrics));
         }
 
         public QueryMetrics(
-                BackendMetrics backendMetrics,
-                IndexUtilizationInfo indexUtilizationInfo,
-                ClientSideMetrics clientSideMetrics)
+            string deliminatedString,
+            IndexUtilizationInfo indexUtilizationInfo,
+            ClientSideMetrics clientSideMetrics)
+            : this(!String.IsNullOrWhiteSpace(deliminatedString) &&
+                    BackendMetricsParser.TryParse(deliminatedString, out BackendMetrics backendMetrics)
+                ? backendMetrics
+                : BackendMetrics.Empty, indexUtilizationInfo, clientSideMetrics)
         {
-            this.BackendMetrics = backendMetrics;
-            this.IndexUtilizationInfo = indexUtilizationInfo ?? throw new ArgumentNullException(nameof(indexUtilizationInfo));
-            this.ClientSideMetrics = clientSideMetrics ?? throw new ArgumentNullException(nameof(clientSideMetrics));
         }
 
         public BackendMetrics BackendMetrics { get; }
