@@ -90,8 +90,8 @@ namespace CosmosBenchmark
         {
             List<Family> families = new List<Family>();
 
-            int count = 100;
-            while (count--)
+            int count = 1000;
+            while (count > 0)
             {
                 // SQL
                 using (FeedIterator<Family> setIterator = container.GetItemQueryIterator<Family>(requestOptions: new QueryRequestOptions { MaxItemCount = 1 }))
@@ -107,6 +107,8 @@ namespace CosmosBenchmark
                         }
                     }
                 }
+
+                count--;
             }
 
             Assert("Expected two families", families.ToList().Count == 2);
