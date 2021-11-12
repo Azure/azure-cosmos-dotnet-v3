@@ -920,7 +920,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private static void EnableTcpKeepAlive(Socket clientSocket)
         {
-            //clientSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+            clientSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
 
 #if !NETSTANDARD15 && !NETSTANDARD16
             // This code should use RuntimeInformation.IsOSPlatform(OSPlatform.Windows),
@@ -950,28 +950,34 @@ namespace Microsoft.Azure.Documents.Rntbd
         private static void SetKeepAliveSocketOptions(Socket clientSocket)
         {
             Console.WriteLine("Code is here");
+
+
+            SocketOptionName value1 = Enum.Parse(SocketOptionName, "TcpKeepAliveInterval");
+            SocketOptionName value2 = Enum.Parse(SocketOptionName, "TcpKeepAliveTime");
+
             using (Socket dummySocket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             {
                 dummySocket.SetSocketOption(SocketOptionLevel.Tcp,
-                       (SocketOptionName)17,
+                       value1,
                        1);
                 dummySocket.SetSocketOption(SocketOptionLevel.Tcp,
-                                            (SocketOptionName)3,
+                                            value2,
                                             30);
                 Console.WriteLine("Dummy socket check passed");
             }
 
             //SocketOptionName.TcpKeepAliveInterval
             clientSocket.SetSocketOption(SocketOptionLevel.Tcp,
-                                        (SocketOptionName)17,
+                                        value1,
                                         1);
 
             //SocketOptionName.TcpKeepAliveTime
             clientSocket.SetSocketOption(SocketOptionLevel.Tcp,
-                                        (SocketOptionName)3,
+                                        value2,
                                         30);
 
-            Console.WriteLine(clientSocket.GetSocketOption(SocketOptionLevel.Tcp, (SocketOptionName)3));   
+            Console.WriteLine(value1);
+            Console.WriteLine(value2);
         }
 
         private static byte[] GetWindowsKeepAliveConfiguration()
