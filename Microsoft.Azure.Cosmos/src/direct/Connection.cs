@@ -764,6 +764,8 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             await tcpClient.ConnectAsync(resolvedAddress, serverUri.Port);
 
+            Connection.EnableTcpKeepAlive(tcpClient.Client);
+
             return tcpClient;
         }
 
@@ -951,7 +953,6 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             Console.WriteLine("Code is here");
 
-
             SocketOptionName value1 = (SocketOptionName)Enum.Parse(typeof(SocketOptionName), "TcpKeepAliveInterval");
             SocketOptionName value2 = (SocketOptionName)Enum.Parse(typeof(SocketOptionName), "TcpKeepAliveTime");
 
@@ -968,7 +969,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             //SocketOptionName.TcpKeepAliveInterval
             clientSocket.SetSocketOption(SocketOptionLevel.Tcp,
-                                        value1,
+                                        (SocketOptionName)17,
                                         1);
 
             //SocketOptionName.TcpKeepAliveTime
