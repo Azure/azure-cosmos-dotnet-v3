@@ -37,6 +37,10 @@ namespace Microsoft.Azure.Documents.Rntbd
             new Lazy<byte[]>(Connection.GetWindowsKeepAliveConfiguration,
                 LazyThreadSafetyMode.ExecutionAndPublication);
 
+        private static readonly Lazy<bool> isKeepAliveCustomizationSupported =
+            new Lazy<bool>(Connection.IsKeepAliveCustomizationSupported,
+                LazyThreadSafetyMode.ExecutionAndPublication);
+
         private static readonly byte[] healthCheckBuffer = new byte[1];
         private static readonly TimeSpan recentReceiveWindow = TimeSpan.FromSeconds(1.0);
 
@@ -764,8 +768,6 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             await tcpClient.ConnectAsync(resolvedAddress, serverUri.Port);
 
-            Connection.EnableTcpKeepAlive(tcpClient.Client);
-
             return tcpClient;
         }
 
@@ -951,34 +953,42 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private static void SetKeepAliveSocketOptions(Socket clientSocket)
         {
-            Console.WriteLine("Code is here");
-
-            SocketOptionName value1 = (SocketOptionName)Enum.Parse(typeof(SocketOptionName), "TcpKeepAliveInterval");
-            SocketOptionName value2 = (SocketOptionName)Enum.Parse(typeof(SocketOptionName), "TcpKeepAliveTime");
-
-            using (Socket dummySocket = new Socket(SocketType.Stream, ProtocolType.Tcp))
+            if (Connection.isKeepAliveCustomizationSupported.Value)
             {
-                dummySocket.SetSocketOption(SocketOptionLevel.Tcp,
-                       value1,
-                       1);
-                dummySocket.SetSocketOption(SocketOptionLevel.Tcp,
-                                            value2,
+                Console.WriteLine("Code is here");
+
+                //SocketOptionName.TcpKeepAliveInterval
+                clientSocket.SetSocketOption(SocketOptionLevel.Tcp,
+                                            (SocketOptionName)17,
+                                            1);
+
+                //SocketOptionName.TcpKeepAliveTime
+                clientSocket.SetSocketOption(SocketOptionLevel.Tcp,
+                                            (SocketOptionName)3,
                                             30);
-                Console.WriteLine("Dummy socket check passed");
             }
+        }
 
-            //SocketOptionName.TcpKeepAliveInterval
-            clientSocket.SetSocketOption(SocketOptionLevel.Tcp,
-                                        (SocketOptionName)17,
-                                        1);
-
-            //SocketOptionName.TcpKeepAliveTime
-            clientSocket.SetSocketOption(SocketOptionLevel.Tcp,
-                                        (SocketOptionName)3,
-                                        30);
-
-            Console.WriteLine(value1.ToString());
-            Console.WriteLine(((SocketOptionName)3).ToString());
+        private static bool IsKeepAliveCustomizationSupported()
+        {
+            // Check to see if the SetSocketOptionsMethod does not throw
+            try
+            {
+                using (Socket dummySocket = new Socket(SocketType.Stream, ProtocolType.Tcp))
+                {
+                    dummySocket.SetSocketOption(SocketOptionLevel.Tcp,
+                           (SocketOptionName)17,
+                           1);
+                    dummySocket.SetSocketOption(SocketOptionLevel.Tcp,
+                                                (SocketOptionName)3,
+                                                30);
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private static byte[] GetWindowsKeepAliveConfiguration()
