@@ -965,7 +965,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 //SocketOptionName.TcpKeepAliveTime
                 clientSocket.SetSocketOption(SocketOptionLevel.Tcp,
                                             (SocketOptionName)3,
-                                            3);
+                                            30);
 
                 Console.WriteLine(clientSocket.GetSocketOption(SocketOptionLevel.Tcp, (SocketOptionName)17));
                 Console.WriteLine(clientSocket.GetSocketOption(SocketOptionLevel.Tcp, (SocketOptionName)3));
