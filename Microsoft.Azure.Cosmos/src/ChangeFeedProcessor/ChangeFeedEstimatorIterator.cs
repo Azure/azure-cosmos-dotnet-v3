@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private readonly ContainerInternal monitoredContainer;
         private readonly ContainerInternal leaseContainer;
         private readonly string processorName;
-        private readonly Func<DocumentServiceLease, string, bool, FeedIterator> monitoredContainerFeedCreator;
+        private readonly Func<DocumentServiceLease, string, bool, FeedIteratorInternal> monitoredContainerFeedCreator;
         private readonly ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions;
         private readonly AsyncLazy<TryCatch<IReadOnlyList<DocumentServiceLease>>> lazyLeaseDocuments;
         private DocumentServiceLeaseContainer documentServiceLeaseContainer;
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ContainerInternal monitoredContainer,
             ContainerInternal leaseContainer,
             DocumentServiceLeaseContainer documentServiceLeaseContainer,
-            Func<DocumentServiceLease, string, bool, FeedIterator> monitoredContainerFeedCreator,
+            Func<DocumentServiceLease, string, bool, FeedIteratorInternal> monitoredContainerFeedCreator,
             ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions)
             : this(
                   processorName: string.Empty,
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ContainerInternal leaseContainer,
             DocumentServiceLeaseContainer documentServiceLeaseContainer,
             ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions,
-            Func<DocumentServiceLease, string, bool, FeedIterator> monitoredContainerFeedCreator)
+            Func<DocumentServiceLease, string, bool, FeedIteratorInternal> monitoredContainerFeedCreator)
         {
             this.processorName = processorName ?? throw new ArgumentNullException(nameof(processorName));
             this.monitoredContainer = monitoredContainer ?? throw new ArgumentNullException(nameof(monitoredContainer));
@@ -267,14 +267,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             using (ITrace getRemainingWorkTrace = trace.StartChild($"Get Remaining Work {existingLease.Id}", TraceComponent.ChangeFeed, TraceLevel.Info))
             {
-                using FeedIterator iterator = this.monitoredContainerFeedCreator(
+                using FeedIteratorInternal iterator = this.monitoredContainerFeedCreator(
                 existingLease,
                 existingLease.ContinuationToken,
                 string.IsNullOrEmpty(existingLease.ContinuationToken));
 
                 try
                 {
-                    ResponseMessage response = await iterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
+                    ResponseMessage response = await iterator.ReadNextAsync(getRemainingWorkTrace, cancellationToken).ConfigureAwait(false);
                     if (response.StatusCode != HttpStatusCode.NotModified)
                     {
                         response.EnsureSuccessStatusCode();
