@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
 
             ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
-                Mock.Of<ContainerInternal>(),
+                ChangeFeedEstimatorIteratorTests.GetMockedContainer(),
                 Mock.Of<ContainerInternal>(),
                 mockContainer.Object,
                 feedCreator,
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
 
             ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
-                Mock.Of<ContainerInternal>(),
+                ChangeFeedEstimatorIteratorTests.GetMockedContainer(),
                 Mock.Of<ContainerInternal>(),
                 mockContainer.Object,
                 feedCreator,
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
 
             ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
-                Mock.Of<ContainerInternal>(),
+                ChangeFeedEstimatorIteratorTests.GetMockedContainer(),
                 Mock.Of<ContainerInternal>(),
                 mockContainer.Object,
                 feedCreator,
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
 
             ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
-                Mock.Of<ContainerInternal>(),
+                ChangeFeedEstimatorIteratorTests.GetMockedContainer(),
                 Mock.Of<ContainerInternal>(),
                 mockContainer.Object,
                 feedCreator,
@@ -234,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
 
             ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
-                Mock.Of<ContainerInternal>(),
+                ChangeFeedEstimatorIteratorTests.GetMockedContainer(),
                 Mock.Of<ContainerInternal>(),
                 mockContainer.Object,
                 feedCreator,
@@ -272,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
 
             ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
-                Mock.Of<ContainerInternal>(),
+                ChangeFeedEstimatorIteratorTests.GetMockedContainer(),
                 Mock.Of<ContainerInternal>(),
                 mockContainer.Object,
                 feedCreator,
@@ -310,7 +310,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
 
             ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
-                Mock.Of<ContainerInternal>(),
+                ChangeFeedEstimatorIteratorTests.GetMockedContainer(),
                 Mock.Of<ContainerInternal>(),
                 mockContainer.Object,
                 feedCreator,
@@ -334,6 +334,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock<CosmosClientContext> mockedContext = new Mock<CosmosClientContext>(MockBehavior.Strict);
             mockedContext.Setup(c => c.Client).Returns(MockCosmosUtil.CreateMockCosmosClient());
+            mockedContext.Setup(x => x.OperationHelperAsync<FeedResponse<ChangeFeedProcessorState>>(
+                It.Is<string>(str => str.Contains("Change Feed Estimator")),
+                It.IsAny<RequestOptions>(),
+                It.IsAny<Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>>(),
+                It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
+                It.IsAny<TraceLevel>()))
+               .Returns<string, RequestOptions, Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>, TraceComponent, TraceLevel>(
+                (operationName, requestOptions, func, comp, level) =>
+                {
+                    using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
+                    {
+                        return func(trace);
+                    }
+                });
 
             string databaseRid = Guid.NewGuid().ToString();
             Mock<DatabaseInternal> mockedMonitoredDatabase = new Mock<DatabaseInternal>(MockBehavior.Strict);
@@ -344,6 +358,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockedMonitoredContainer.Setup(c => c.GetCachedRIDAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(monitoredContainerRid);
             mockedMonitoredContainer.Setup(c => c.Database).Returns(mockedMonitoredDatabase.Object);
             mockedMonitoredContainer.Setup(c => c.ClientContext).Returns(mockedContext.Object);
+            
 
             Mock<FeedIterator> leaseFeedIterator = new Mock<FeedIterator>();
             leaseFeedIterator.Setup(i => i.HasMoreResults).Returns(false);
@@ -403,6 +418,31 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
 
             return message;
+        }
+
+        private static ContainerInternal GetMockedContainer()
+        {
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
+            mockClient.Setup(x => x.Endpoint).Returns(new Uri("http://localhost"));
+            Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>(MockBehavior.Strict);
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>(MockBehavior.Strict);
+            mockContext.Setup(x => x.Client).Returns(mockClient.Object);
+            containerMock.Setup(c => c.ClientContext).Returns(mockContext.Object);
+            mockContext.Setup(x => x.OperationHelperAsync<FeedResponse<ChangeFeedProcessorState>>(
+                It.Is<string>(str => str.Contains("Change Feed Estimator")),
+                It.IsAny<RequestOptions>(),
+                It.IsAny<Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>>(),
+                It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
+                It.IsAny<TraceLevel>()))
+               .Returns<string, RequestOptions, Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>, TraceComponent, TraceLevel>(
+                (operationName, requestOptions, func, comp, level) =>
+                {
+                    using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
+                    {
+                        return func(trace);
+                    }
+                });
+            return containerMock.Object;
         }
     }
 }
