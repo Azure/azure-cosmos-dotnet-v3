@@ -1223,6 +1223,11 @@
                 return; // skip test for read many as the queries are done in parallel
             }
 
+            if (trace.Name == "Change Feed Estimator Read Next Async")
+            {
+                return; // Change Feed Estimator issues parallel requests
+            }
+
             if (trace.Children.Count == 0)
             {
                 // Base case

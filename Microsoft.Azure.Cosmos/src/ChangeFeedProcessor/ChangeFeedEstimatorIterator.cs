@@ -265,41 +265,38 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            using (ITrace getRemainingWorkTrace = trace.StartChild($"Get Remaining Work {existingLease.Id}", TraceComponent.ChangeFeed, TraceLevel.Info))
-            {
-                using FeedIteratorInternal iterator = this.monitoredContainerFeedCreator(
+            using FeedIteratorInternal iterator = this.monitoredContainerFeedCreator(
                 existingLease,
                 existingLease.ContinuationToken,
                 string.IsNullOrEmpty(existingLease.ContinuationToken));
 
-                try
+            try
+            {
+                ResponseMessage response = await iterator.ReadNextAsync(trace, cancellationToken).ConfigureAwait(false);
+                if (response.StatusCode != HttpStatusCode.NotModified)
                 {
-                    ResponseMessage response = await iterator.ReadNextAsync(getRemainingWorkTrace, cancellationToken).ConfigureAwait(false);
-                    if (response.StatusCode != HttpStatusCode.NotModified)
-                    {
-                        response.EnsureSuccessStatusCode();
-                    }
-
-                    long parsedLSNFromSessionToken = ChangeFeedEstimatorIterator.TryConvertToNumber(ExtractLsnFromSessionToken(response.Headers.Session));
-                    IEnumerable<JObject> items = ChangeFeedEstimatorIterator.GetItemsFromResponse(response);
-                    long lastQueryLSN = items.Any()
-                        ? ChangeFeedEstimatorIterator.TryConvertToNumber(ChangeFeedEstimatorIterator.GetFirstItemLSN(items)) - 1
-                        : parsedLSNFromSessionToken;
-                    if (lastQueryLSN < 0)
-                    {
-                        return (new ChangeFeedProcessorState(existingLease.CurrentLeaseToken, 1, existingLease.Owner), response);
-                    }
-
-                    long leaseTokenRemainingWork = parsedLSNFromSessionToken - lastQueryLSN;
-                    long estimation = leaseTokenRemainingWork < 0 ? 0 : leaseTokenRemainingWork;
-                    return (new ChangeFeedProcessorState(existingLease.CurrentLeaseToken, estimation, existingLease.Owner), response);
+                    response.EnsureSuccessStatusCode();
                 }
-                catch (Exception clientException)
+
+                long parsedLSNFromSessionToken = ChangeFeedEstimatorIterator.TryConvertToNumber(ExtractLsnFromSessionToken(response.Headers.Session));
+                IEnumerable<JObject> items = ChangeFeedEstimatorIterator.GetItemsFromResponse(response);
+                long lastQueryLSN = items.Any()
+                    ? ChangeFeedEstimatorIterator.TryConvertToNumber(ChangeFeedEstimatorIterator.GetFirstItemLSN(items)) - 1
+                    : parsedLSNFromSessionToken;
+                if (lastQueryLSN < 0)
                 {
-                    Cosmos.Extensions.TraceException(clientException);
-                    DefaultTrace.TraceWarning("GetEstimateWork > exception: lease token '{0}'", existingLease.CurrentLeaseToken);
-                    throw;
+                    return (new ChangeFeedProcessorState(existingLease.CurrentLeaseToken, 1, existingLease.Owner), response);
                 }
+
+                long leaseTokenRemainingWork = parsedLSNFromSessionToken - lastQueryLSN;
+                long estimation = leaseTokenRemainingWork < 0 ? 0 : leaseTokenRemainingWork;
+                return (new ChangeFeedProcessorState(existingLease.CurrentLeaseToken, estimation, existingLease.Owner), response);
+            }
+            catch (Exception clientException)
+            {
+                Cosmos.Extensions.TraceException(clientException);
+                DefaultTrace.TraceWarning("GetEstimateWork > exception: lease token '{0}'", existingLease.CurrentLeaseToken);
+                throw;
             }
         }
 
