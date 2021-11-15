@@ -959,7 +959,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
                 //SocketOptionName.TcpKeepAliveInterval
                 clientSocket.SetSocketOption(SocketOptionLevel.Tcp,
-                                            (SocketOptionName)17,
+                                            (SocketOptionName)178,
                                             1);
 
                 //SocketOptionName.TcpKeepAliveTime
