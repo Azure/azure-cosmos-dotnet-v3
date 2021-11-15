@@ -503,7 +503,7 @@
 
             // We may want to track any operation's Diagnostics that took longer than some threshold
             if (context.Diagnostics.GetClientElapsedTime() > TimeSpan.FromSeconds(1))
-            { 
+            {
                 Console.WriteLine($"Change Feed request took longer than expected. Diagnostics:" + context.Diagnostics.ToString());
             }
 
