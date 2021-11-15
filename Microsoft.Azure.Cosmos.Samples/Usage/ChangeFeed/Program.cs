@@ -27,9 +27,13 @@
     //
     // 3. Listening for changes that happen since the container was created.
     //
-    // 4. Generate Estimator metrics to expose current Change Feed Processor progress
+    // 4. Generate Estimator metrics to expose current Change Feed Processor progress as a push notification
     //
-    // 5. Code migration template from existing Change Feed Processor library V2
+    // 5. Generate Estimator metrics to expose current Change Feed Processor progress on demand
+    //
+    // 6. Code migration template from existing Change Feed Processor library V2
+    //
+    // 7. Error handling and advanced logging
     //-----------------------------------------------------------------------------------------------------------
 
 
@@ -74,6 +78,8 @@
                     await Program.RunEstimatorPullChangeFeed("changefeed-estimator-detailed", client);
                     Console.WriteLine($"\n6. Code migration template from existing Change Feed Processor library V2.");
                     await Program.RunMigrationSample("changefeed-migration", client, configuration);
+                    Console.WriteLine($"\n7. Error handling and advanced logging.");
+                    await Program.RunWithNotifications("changefeed-logging", client);
                 }
             }
             finally
@@ -417,6 +423,74 @@
         }
 
         /// <summary>
+        /// Setup notification APIs for events.
+        /// </summary>
+        public static async Task RunWithNotifications(
+            string databaseId,
+            CosmosClient client)
+        {
+            await Program.InitializeAsync(databaseId, client);
+
+            Container leaseContainer = client.GetContainer(databaseId, Program.leasesContainer);
+            Container monitoredContainer = client.GetContainer(databaseId, Program.monitoredContainer);
+
+            ManualResetEventSlim manualResetEventSlim = new ManualResetEventSlim();
+            Container.ChangeFeedHandler<ToDoItem> handleChanges = (ChangeFeedProcessorContext context, IReadOnlyCollection<ToDoItem> changes, CancellationToken cancellationToken) =>
+            {
+                Console.WriteLine($"Started handling changes for lease {context.LeaseToken} but throwing an exception to bubble to notifications.");
+                manualResetEventSlim.Set();
+                throw new Exception("This is an unhandled exception from inside the delegate");
+            };
+
+            // <StartWithNotifications>
+            Container.ChangeFeedMonitorLeaseAcquireDelegate onLeaseAcquiredAsync = (string leaseToken) =>
+            {
+                Console.WriteLine($"Lease {leaseToken} is acquired and will start processing");
+                return Task.CompletedTask;
+            };
+
+            Container.ChangeFeedMonitorLeaseReleaseDelegate onLeaseReleaseAsync = (string leaseToken) =>
+            {
+                Console.WriteLine($"Lease {leaseToken} is released and processing is stopped");
+                return Task.CompletedTask;
+            };
+
+            Container.ChangeFeedMonitorErrorDelegate onErrorAsync = (string LeaseToken, Exception exception) =>
+            {
+                if (exception is ChangeFeedProcessorUserException userException)
+                {
+                    Console.WriteLine($"Lease {LeaseToken} processing failed with unhandled exception from user delegate {userException.InnerException}");
+                }
+                else
+                {
+                    Console.WriteLine($"Lease {LeaseToken} failed with {exception}");
+                }
+
+                return Task.CompletedTask;
+            };
+
+            ChangeFeedProcessor changeFeedProcessor = monitoredContainer
+                .GetChangeFeedProcessorBuilder<ToDoItem>("changeFeedNotifications", handleChanges)
+                    .WithLeaseAcquireNotification(onLeaseAcquiredAsync)
+                    .WithLeaseReleaseNotification(onLeaseReleaseAsync)
+                    .WithErrorNotification(onErrorAsync)
+                    .WithInstanceName("consoleHost")
+                    .WithLeaseContainer(leaseContainer)
+                    .Build();
+            // </StartWithNotifications>
+
+            Console.WriteLine($"Starting Change Feed Processor with logging enabled...");
+            await changeFeedProcessor.StartAsync();
+            Console.WriteLine("Change Feed Processor started.");
+            Console.WriteLine("Generating 10 items that will be picked up by the delegate...");
+            await Program.GenerateItems(10, client.GetContainer(databaseId, Program.monitoredContainer));
+            // Wait random time for the delegate to output all messages after initialization is done
+            manualResetEventSlim.Wait();
+            await Task.Delay(1000);
+            await changeFeedProcessor.StopAsync();
+        }
+
+        /// <summary>
         /// The delegate receives batches of changes as they are generated in the change feed and can process them.
         /// </summary>
         // <Delegate>
@@ -429,7 +503,7 @@
 
             // We may want to track any operation's Diagnostics that took longer than some threshold
             if (context.Diagnostics.GetClientElapsedTime() > TimeSpan.FromSeconds(1))
-            {
+            { 
                 Console.WriteLine($"Change Feed request took longer than expected. Diagnostics:" + context.Diagnostics.ToString());
             }
 
@@ -521,7 +595,7 @@
 
         public Task ProcessChangesAsync(IChangeFeedObserverContext context, IReadOnlyList<Microsoft.Azure.Documents.Document> docs, CancellationToken cancellationToken)
         {
-            foreach (var doc in docs)
+            foreach (Microsoft.Azure.Documents.Document doc in docs)
             {
                 Console.WriteLine($"\t[OLD Processor] Detected operation for item with id {doc.Id}, created at {doc.GetPropertyValue<DateTime>("creationTime")}.");
             }
