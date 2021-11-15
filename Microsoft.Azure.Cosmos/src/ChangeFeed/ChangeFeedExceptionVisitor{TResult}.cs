@@ -4,8 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
+    using Microsoft.Azure.Cosmos.Tracing;
+
     internal abstract class ChangeFeedExceptionVisitor<TResult>
     {
-        internal abstract TResult Visit(MalformedChangeFeedContinuationTokenException malformedChangeFeedContinuationTokenException);
+        internal abstract TResult Visit(MalformedChangeFeedContinuationTokenException malformedChangeFeedContinuationTokenException, ITrace trace);
     }
 }

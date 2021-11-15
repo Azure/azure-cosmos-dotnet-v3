@@ -39,21 +39,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 
         public TryCatch<QueryPage> Current { get; private set; }
 
-        public ValueTask DisposeAsync() => this.crossPartitionRangePageAsyncEnumerator.DisposeAsync();
+        public ValueTask DisposeAsync()
+        {
+            return this.crossPartitionRangePageAsyncEnumerator.DisposeAsync();
+        }
 
         // In order to maintain the continuation token for the user we must drain with a few constraints
         // 1) We fully drain from the left most partition before moving on to the next partition
         // 2) We drain only full pages from the document producer so we aren't left with a partial page
         //  otherwise we would need to add to the continuation token how many items to skip over on that page.
-        public ValueTask<bool> MoveNextAsync()
-        {
-            return this.MoveNextAsync(NoOpTrace.Singleton);
-        }
-
         public async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
-            this.cancellationToken.ThrowIfCancellationRequested();
-
             if (trace == null)
             {
                 throw new ArgumentNullException(nameof(trace));

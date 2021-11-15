@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         headers: response.Headers,
                         error: default,
                         innerException: default,
-                        trace: NoOpTrace.Singleton).ToCosmosResponseMessage(request);
+                        trace: request.Trace).ToCosmosResponseMessage(request);
                 }
 
                 return response;

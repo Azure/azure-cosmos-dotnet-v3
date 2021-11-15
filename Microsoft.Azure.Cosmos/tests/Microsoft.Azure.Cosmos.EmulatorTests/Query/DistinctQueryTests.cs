@@ -9,6 +9,7 @@
     using Newtonsoft.Json;
 
     [TestClass]
+    [TestCategory("Query")]
     public sealed class DistinctQueryTests : QueryTestsBase
     {
         [TestMethod]
@@ -302,7 +303,7 @@
             }
 
             await this.CreateIngestQueryDeleteAsync(
-                ConnectionModes.Direct,
+                ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.MultiPartition,
                 documents,
                 query,

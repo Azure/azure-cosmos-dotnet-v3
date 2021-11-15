@@ -31,11 +31,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
         public TryCatch<QueryPage> Current { get; private set; }
 
-        public ValueTask DisposeAsync() => this.currentQueryPipelineStage.DisposeAsync();
-
-        public ValueTask<bool> MoveNextAsync()
+        public ValueTask DisposeAsync()
         {
-            return this.MoveNextAsync(NoOpTrace.Singleton);
+            return this.currentQueryPipelineStage.DisposeAsync();
         }
 
         public async ValueTask<bool> MoveNextAsync(ITrace trace)
@@ -63,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     this.alreadyRetried = true;
                     await this.currentQueryPipelineStage.DisposeAsync();
                     this.currentQueryPipelineStage = this.queryPipelineStageFactory();
-                    return await this.MoveNextAsync();
+                    return await this.MoveNextAsync(trace);
                 }
             }
 

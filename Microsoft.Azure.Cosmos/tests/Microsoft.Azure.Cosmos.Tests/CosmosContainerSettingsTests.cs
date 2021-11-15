@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
+    using System.Text;
+    using System.Text.RegularExpressions;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -41,6 +43,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             ContainerProperties response = MockCosmosUtil.Serializer.FromStream<ContainerProperties>(basic);
             Assert.AreEqual(containerSettings.Id, response.Id);
             Assert.AreEqual(containerSettings.PartitionKeyPath, response.PartitionKeyPath);
+        }
+
+        [TestMethod]
+        public void ValidateClientEncryptionPolicyDeserialization()
+        {
+            Cosmos.ClientEncryptionPolicy policy = MockCosmosUtil.Serializer.FromStream<Cosmos.ClientEncryptionPolicy>(new MemoryStream(
+                Encoding.UTF8.GetBytes("{ 'policyFormatVersion': 2, 'newproperty': 'value'  }")));
+            Assert.AreEqual(2, policy.PolicyFormatVersion);
         }
 
         [TestMethod]
@@ -109,6 +119,50 @@ namespace Microsoft.Azure.Cosmos.Tests
             Documents.IndexingPolicy ip = dc.IndexingPolicy;
 
             CosmosContainerSettingsTests.AssertSerializedPayloads(containerSettings, dc);
+        }
+
+        [TestMethod]
+        public void ValidateIncludedPathSerialization()
+        {
+            ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey")
+            {
+                IndexingPolicy = new Cosmos.IndexingPolicy()
+            };
+
+            containerSettings.IndexingPolicy.IncludedPaths.Add(new Cosmos.IncludedPath()
+            {
+                Path = "/textprop/?",
+            });
+            containerSettings.IndexingPolicy.IncludedPaths.Add(new Cosmos.IncludedPath()
+            {
+                Path = "/listprop/?",
+                IsFullIndex = true,
+            });
+
+            using (Stream stream = MockCosmosUtil.Serializer.ToStream<ContainerProperties>(containerSettings))
+            {
+                StreamReader reader = new StreamReader(stream);
+                string content = reader.ReadToEnd();
+
+                Match match = Regex.Match(content, "\"includedPaths\":\\[(.+?)\\],\"excludedPaths\"");
+                Assert.IsTrue(match.Success, "IncludedPaths not found in serialized content");
+
+                // verify IncludedPath ignores null IsFullIndex
+                string includedPaths = match.Groups[1].Value;
+                string delimiter = "},{";
+                int position = includedPaths.IndexOf(delimiter);
+                string textPropIncludedPath = includedPaths.Substring(0, position + 1);
+                string listPropIncludedPath = includedPaths.Substring(position + delimiter.Length - 1);
+
+                Assert.AreEqual("{\"path\":\"/textprop/?\",\"indexes\":[]}", textPropIncludedPath);
+                Assert.AreEqual("{\"path\":\"/listprop/?\",\"indexes\":[],\"isFullIndex\":true}", listPropIncludedPath);
+
+                // verify deserialization
+                stream.Position = 0;
+                containerSettings = MockCosmosUtil.Serializer.FromStream<ContainerProperties>(stream);
+                Assert.IsNull(containerSettings.IndexingPolicy.IncludedPaths[0].IsFullIndex, "textprop IsFullIndex is not null");
+                Assert.IsTrue((bool)containerSettings.IndexingPolicy.IncludedPaths[1].IsFullIndex, "listprop IsFullIndex is not set to true");
+            }
         }
 
         private static string SerializeDocumentCollection(DocumentCollection collection)

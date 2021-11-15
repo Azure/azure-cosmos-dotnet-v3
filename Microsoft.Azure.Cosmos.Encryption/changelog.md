@@ -3,6 +3,44 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="1.0.0-previewV18"/> [1.0.0-previewV18](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV18) - 2021-10-29
+
+#### Fixes 
+- [#2835](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2835) Adds fix to add encryption header for patch operation.
+- [#2727](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2727) Fixes JSON property name of ClientEncryptionKeyProperties to match backend.
+
+### <a name="1.0.0-previewV17"/> [1.0.0-previewV17](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV17) - 2021-10-07
+
+#### Added 
+- [#2633](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2633) Adds basic diagnostics information regarding encryption / decryption operation.
+- [#2634](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2634) Adds support for PatchItem in Transactional Batch.
+- [#2572](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2572) Adds ReadMany API support.
+
+### <a name="1.0.0-previewV16"/> [1.0.0-previewV16](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV16) - 2021-08-30
+
+#### Fixes 
+- [#2581](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2581) Change Feed: Fixes change feed decryptableresponse to not throw exceptions on NotModified
+- [#2507](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2507) Query: Fixes issue when passing null parameter value in AddParameterAsync
+
+### <a name="1.0.0-previewV15"/> [1.0.0-previewV15](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV15) - 2021-05-18
+
+#### Added 
+- [#2475](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2475) Adds integration with latest CosmosDb Preview Package - 3.19.0-preview1 and check for Client Encryption Policy format version.
+- [#2449](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2449) Adds validation that partition key paths are not encrypted.
+- [#2452](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2452) Adds the implementation for new ChangeFeed APIs.
+- [#2448](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2448) Adds client encryption support for patch.
+- [#2453](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2453) Removes Plaintext encryption type support.
+
+#### Fixes 
+- [#2445](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2445) Fixes query support on encrypted parameters and fixes samples.
+- [#2403](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2403) Fixes issue with clients using incorrect/stale Encryption Policy or Encryption Keys from the cache.
+
+### <a name="1.0.0-previewV14"/> [1.0.0-previewV14](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV14) - 2021-04-28
+
+#### Added 
+- [#2433](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2433) Adds integration with latest CosmosDb Preview Package - 3.19.0-preview.
+- [#2372](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2372) Adds decryption support for ChangeFeed Processor.
+
 ### <a name="1.0.0-previewV13"/> [1.0.0-previewV13](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV13) - 2021-03-26
 
 #### Added 

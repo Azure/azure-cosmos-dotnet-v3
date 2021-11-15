@@ -28,10 +28,11 @@
     // 1.2 - Read a item by its Id
     // 1.3 - Read all items in a container
     // 1.4 - Query for items by a property other than Id
-    // 1.5 - Replace a item
-    // 1.6 - Patch a item
-    // 1.7 - Upsert a item
-    // 1.8 - Delete a item
+    // 1.5 - Read Many items using Id and PartitionKey values.
+    // 1.6 - Replace a item
+    // 1.7 - Patch a item
+    // 1.8 - Upsert a item
+    // 1.9 - Delete a item
     //
     // 2. Work with dynamic objects
     //
@@ -138,10 +139,11 @@
         /// 1.2 - Read a item by its Id
         /// 1.3 - Read all items in a Collection
         /// 1.4 - Query for items by a property other than Id
-        /// 1.5 - Replace a item
-        /// 1.6 - Patch a item
-        /// 1.7 - Upsert a item
-        /// 1.8 - Delete a item
+        /// 1.5 - Read Many items using Id and PartitionKey values.
+        /// 1.6 - Replace a item
+        /// 1.7 - Patch a item
+        /// 1.8 - Upsert a item
+        /// 1.9 - Delete a item
         /// </summary>
         // <RunBasicOperationsOnStronglyTypedObjects>
         private static async Task RunBasicOperationsOnStronglyTypedObjects()
@@ -153,6 +155,8 @@
             await Program.ReadAllItems();
 
             await Program.QueryItems();
+
+            await Program.ReadManyItems();
 
             await Program.ReplaceItemAsync(result);
 
@@ -417,15 +421,67 @@
         }
         // </QueryItems>
 
+        // <ReadManyItems>
+        private static async Task ReadManyItems()
+        {
+            //******************************************************************************************************************
+            // 1.5 - Read Many Items in a container using id and partitionkey values
+            //******************************************************************************************************************
+            Console.WriteLine("\n1.5 - ReadManyItems with Id and PartitionKey values");
+
+            // Create some items to be read back later
+            for (int i = 0; i < 5; i++)
+            {
+                SalesOrder salesOrder = GetSalesOrderSample($"SalesOrderForReadMany{i}");
+                await container.CreateItemAsync(salesOrder);
+            }
+
+            // Create item list with (id, pkvalue) tuples
+            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>
+            {
+                ("SalesOrderForReadMany1", new PartitionKey("Account1")),
+                ("SalesOrderForReadMany2", new PartitionKey("Account1")),
+                ("SalesOrderForReadMany4", new PartitionKey("Account1")),
+            };
+
+            Console.WriteLine("\nItems in read list:" + itemList.Count);
+            FeedResponse<SalesOrder> feedResponse = await container.ReadManyItemsAsync<SalesOrder>(
+                                                                        itemList);
+            Console.WriteLine("\nItems returned by read many api:" + feedResponse.Count);
+            foreach (SalesOrder salesOrder in feedResponse)
+            {
+                Console.WriteLine($"\nItem read: Id = {salesOrder.Id}, AccountNumber = {salesOrder.AccountNumber}");
+            }
+            Console.WriteLine("\nDiagnostics for ReadManyItems API: " + feedResponse.Diagnostics);
+
+            // ReadManyStreamApi
+            Console.WriteLine("\n1.5.2 - Using Stream API to get many items in container.");
+            using (ResponseMessage responseMessage = await container.ReadManyItemsStreamAsync(itemList))
+            {
+                if (responseMessage.IsSuccessStatusCode)
+                {
+                    dynamic streamResponse = FromStream<dynamic>(responseMessage.Content);
+                    List<SalesOrder> salesOrders = streamResponse.Documents.ToObject<List<SalesOrder>>();
+                    Console.WriteLine($"\n Items returned from Stream API: {salesOrders.Count}");
+                }
+                else
+                {
+                    Console.WriteLine($"\nReadMany items from stream failed. Status code: {responseMessage.StatusCode} Message: {responseMessage.ErrorMessage}");
+                }
+                Console.WriteLine("\nDiagnostics for ReadManyItemsStream API: " + responseMessage.Diagnostics);
+            }
+        }
+        // </ReadManyItems>
+
         // <ReplaceItemAsync>
         private static async Task ReplaceItemAsync(SalesOrder order)
         {
             //******************************************************************************************************************
-            // 1.5 - Replace a item
+            // 1.6 - Replace a item
             //
             // Just update a property on an existing item and issue a Replace command
             //******************************************************************************************************************
-            Console.WriteLine("\n1.5 - Replacing a item using its Id");
+            Console.WriteLine("\n1.6 - Replacing a item using its Id");
 
             order.ShippedDate = DateTime.UtcNow;
             ItemResponse<SalesOrder> response = await container.ReplaceItemAsync(
@@ -449,7 +505,7 @@
                     if (responseMessage.IsSuccessStatusCode)
                     {
                         SalesOrder streamResponse = FromStream<SalesOrder>(responseMessage.Content);
-                        Console.WriteLine($"\n1.5.2 - Item replace via stream {streamResponse.Id}");
+                        Console.WriteLine($"\n1.6.2 - Item replace via stream {streamResponse.Id}");
                     }
                     else
                     {
@@ -464,7 +520,7 @@
         private static async Task PatchItemAsync(SalesOrder order)
         {
             //******************************************************************************************************************
-            // 1.5 - Patch a item
+            // 1.7 - Patch a item
             //
             // Just update a property on an existing item and issue a Patch command
             //******************************************************************************************************************
@@ -517,7 +573,7 @@
         // <UpsertItemAsync>
         private static async Task UpsertItemAsync()
         {
-            Console.WriteLine("\n1.7 - Upserting a item");
+            Console.WriteLine("\n1.8 - Upserting a item");
 
             SalesOrder upsertOrder = GetSalesOrderSample("SalesOrder3");
             
@@ -556,7 +612,7 @@
                     if (responseMessage.IsSuccessStatusCode)
                     {
                         SalesOrder streamResponse = FromStream<SalesOrder>(responseMessage.Content);
-                        Console.WriteLine($"\n1.6.2 - Item upserted via stream {streamResponse.Id}");
+                        Console.WriteLine($"\n1.7.2 - Item upserted via stream {streamResponse.Id}");
                     }
                     else
                     {
@@ -570,7 +626,7 @@
         // <DeleteItemAsync>
         private static async Task DeleteItemAsync()
         {
-            Console.WriteLine("\n1.8 - Deleting a item");
+            Console.WriteLine("\n1.9 - Deleting a item");
             ItemResponse<SalesOrder> response = await container.DeleteItemAsync<SalesOrder>(
                 partitionKey: new PartitionKey("Account1"),
                 id: "SalesOrder3");

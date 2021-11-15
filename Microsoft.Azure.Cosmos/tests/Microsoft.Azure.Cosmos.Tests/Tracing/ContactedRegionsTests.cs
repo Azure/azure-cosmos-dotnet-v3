@@ -4,15 +4,17 @@
     using System.Collections.Generic;
     using System.Text;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class ContactedRegionsTests
     {
         [TestMethod]
-        public void ContactedRegionsTest()
+        public void ContactedRegionsWithNameTest()
         {
             CosmosDiagnostics diagnostics = new CosmosTraceDiagnostics(this.CreateTestTraceTree());
             IReadOnlyList<(string, Uri)> regionsContacted = diagnostics.GetContactedRegions();
@@ -54,14 +56,45 @@
         {
             ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
             Uri uri1 = new Uri("http://someUri1.com");
-            datum.RegionsContactedWithName.Add((regionName1, uri1));
+            datum.RegionsContacted.Add((regionName1, uri1));
             if (regionName2 != null)
             {
                 Uri uri2 = new Uri("http://someUri2.com");
-                datum.RegionsContactedWithName.Add((regionName2, uri2));
+                datum.RegionsContacted.Add((regionName2, uri2));
             }
 
             return datum;
         }
+
+        [TestMethod]
+        public void ContactedRegionsWithNameForClientTelemetryTest()
+        {
+            CosmosDiagnostics diagnostics = new CosmosTraceDiagnostics(this.CreateTestTraceTree());
+
+            string regionsContacted  = ClientTelemetryHelper.GetContactedRegions(diagnostics);            
+            Assert.IsNotNull(regionsContacted);
+            Assert.AreEqual("Central US,Central India,East US 2,France Central", regionsContacted);
+            
+        }
+
+        [TestMethod]
+        public void ContactedRegionWithNameForClientTelemetryTest()
+        {
+            Trace trace;
+            using (trace = Trace.GetRootTrace("Root Trace", TraceComponent.Unknown, TraceLevel.Info))
+            {
+                using (ITrace firstLevel = trace.StartChild("First level Node", TraceComponent.Unknown, TraceLevel.Info))
+                {
+                    firstLevel.AddDatum("Client Side Request Stats", this.GetDatumObject(Regions.FranceCentral));
+                }
+            }
+           
+            CosmosDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
+
+            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(diagnostics);
+            Assert.IsNotNull(regionsContacted);
+            Assert.AreEqual("France Central", regionsContacted);
+        }
+
     }
 }

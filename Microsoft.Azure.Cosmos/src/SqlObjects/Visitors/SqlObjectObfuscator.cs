@@ -184,6 +184,15 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 sqlJoinCollectionExpression.Right.Accept(this) as SqlCollectionExpression);
         }
 
+        public override SqlObject Visit(SqlLikeScalarExpression sqlLikeScalarExpression)
+        {
+            return SqlLikeScalarExpression.Create(
+                sqlLikeScalarExpression.Expression.Accept(this) as SqlScalarExpression,
+                sqlLikeScalarExpression.Pattern.Accept(this) as SqlScalarExpression,
+                sqlLikeScalarExpression.Not,
+                sqlLikeScalarExpression.EscapeSequence?.Accept(this) as SqlStringLiteral);
+        }
+
         public override SqlObject Visit(SqlLimitSpec sqlObject)
         {
             return SqlLimitSpec.Create(SqlNumberLiteral.Create(0));
@@ -450,7 +459,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             {
                 if (!this.obfuscatedStrings.TryGetValue(value, out obfuscatedString))
                 {
-                    int sequenceNumber = ++sequence;
+                    int sequenceNumber = ++sequence; 
                     obfuscatedString = value.Length < 10 ? $"{prefix}{sequence}" : $"{prefix}{sequence}__{value.Length}";
                     this.obfuscatedStrings.Add(value, obfuscatedString);
                 }

@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                     // due to the way the seed works.
                     // But we add the index just incase that property does not hold in the future.
                     UInt128 arrayItemSeed = HashSeeds.ArrayIndex + index;
-                    hash = MurmurHash3.Hash128(hash, arrayItem.Accept(this, arrayItemSeed));
+                    hash = MurmurHash3.Hash128(arrayItem.Accept(this, arrayItemSeed), hash);
                 }
 
                 return hash;
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 // This is consistent with equality comparison.
                 foreach (KeyValuePair<string, CosmosElement> kvp in cosmosObject)
                 {
-                    UInt128 nameHash = MurmurHash3.Hash128(kvp.Key, HashSeeds.PropertyName);
+                    UInt128 nameHash = MurmurHash3.Hash128(kvp.Key, MurmurHash3.Hash128(HashSeeds.String, HashSeeds.PropertyName));
                     UInt128 propertyHash = kvp.Value.Accept(this, nameHash);
 
                     //// xor is symmetric meaning that a ^ b = b ^ a

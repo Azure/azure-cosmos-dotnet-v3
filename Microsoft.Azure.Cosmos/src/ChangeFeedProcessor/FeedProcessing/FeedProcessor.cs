@@ -9,11 +9,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
     /// <summary>
     /// Provides an API to run continuous processing on a single processing unit of some resource.
-    /// Created by <see cref="FeedProcessorFactory{T}.Create"/> after some lease is acquired by the current host.
+    /// Created by <see cref="FeedProcessorFactory.Create"/> after some lease is acquired by the current host.
     /// Processing can perform the following tasks in a loop:
     ///   1. Read some data from the resource feed.
     ///   2. Handle possible problems with the read.
-    ///   3. Pass the obtained data to an observer by calling <see cref="ChangeFeedObserver{T}.ProcessChangesAsync"/> with the context <see cref="ChangeFeedObserverContext"/>.
+    ///   3. Pass the obtained data to an observer by calling <see cref="ChangeFeedObserver.ProcessChangesAsync"/> with the context <see cref="ChangeFeedProcessorContext"/>.
     /// </summary>
     internal abstract class FeedProcessor
     {

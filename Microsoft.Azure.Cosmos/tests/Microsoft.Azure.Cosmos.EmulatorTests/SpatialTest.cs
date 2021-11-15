@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         new IncludedPath()
                         {
                             Path = "/Location/?",
-                            Indexes = new Collection<Index>()
+                            Indexes = new Collection<Documents.Index>()
                             {
                                 new SpatialIndex(DataType.Point)
                             }
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         new IncludedPath()
                         {
                             Path = "/Location/?",
-                            Indexes = new Collection<Index>()
+                            Indexes = new Collection<Documents.Index>()
                             {
                                 new SpatialIndex(DataType.Point)
                             }

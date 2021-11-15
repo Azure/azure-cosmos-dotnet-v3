@@ -14,18 +14,16 @@
 └── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
     "line": 42
   },
   "start time": "12:00:00:000",
-  "duration in milliseconds": 0,
-  "data": {},
-  "children": []
+  "duration in milliseconds": 0
 }]]></Json>
     </Output>
   </Result>
@@ -77,9 +75,9 @@
         )
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -89,8 +87,7 @@
   "duration in milliseconds": 0,
   "data": {
     "QueryMetrics": "Retrieved Document Count                 :           2,000             \r\nRetrieved Document Size                  :       1,125,600 bytes       \r\nOutput Document Count                    :           2,000             \r\nOutput Document Size                     :       1,125,600 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :           33.67 milliseconds\r\n  Query Preparation Time                 :            0.19 milliseconds\r\n  Index Lookup Time                      :            0.36 milliseconds\r\n  Document Load Time                     :            9.58 milliseconds\r\n  Runtime Execution Times                :            0.12 milliseconds\r\n  Document Write Time                    :           18.10 milliseconds\r\n\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Utilized Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n"
-  },
-  "children": []
+  }
 }]]></Json>
     </Output>
   </Result>
@@ -113,9 +110,9 @@
     └── Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -123,21 +120,17 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
-  "data": {},
   "children": [
     {
       "name": "Child1",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
         "line": 42
       },
       "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {},
-      "children": []
+      "duration in milliseconds": 0
     }
   ]
 }]]></Json>
@@ -195,9 +188,9 @@
             )
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -205,12 +198,10 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
-  "data": {},
   "children": [
     {
       "name": "Child1",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -220,8 +211,7 @@
       "duration in milliseconds": 0,
       "data": {
         "QueryMetrics": "Retrieved Document Count                 :           2,000             \r\nRetrieved Document Size                  :       1,125,600 bytes       \r\nOutput Document Count                    :           2,000             \r\nOutput Document Size                     :       1,125,600 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :           33.67 milliseconds\r\n  Query Preparation Time                 :            0.19 milliseconds\r\n  Index Lookup Time                      :            0.36 milliseconds\r\n  Document Load Time                     :            9.58 milliseconds\r\n  Runtime Execution Times                :            0.12 milliseconds\r\n  Document Write Time                    :           18.10 milliseconds\r\n\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Utilized Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n"
-      },
-      "children": []
+      }
     }
   ]
 }]]></Json>
@@ -251,9 +241,9 @@
     └── Child2(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -261,35 +251,28 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
-  "data": {},
   "children": [
     {
       "name": "Child1",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
         "line": 42
       },
       "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {},
-      "children": []
+      "duration in milliseconds": 0
     },
     {
       "name": "Child2",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
         "line": 42
       },
       "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {},
-      "children": []
+      "duration in milliseconds": 0
     }
   ]
 }]]></Json>
@@ -385,9 +368,9 @@
             )
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -395,12 +378,10 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
-  "data": {},
   "children": [
     {
       "name": "Child1",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -410,13 +391,11 @@
       "duration in milliseconds": 0,
       "data": {
         "QueryMetrics": "Retrieved Document Count                 :           2,000             \r\nRetrieved Document Size                  :       1,125,600 bytes       \r\nOutput Document Count                    :           2,000             \r\nOutput Document Size                     :       1,125,600 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :           33.67 milliseconds\r\n  Query Preparation Time                 :            0.19 milliseconds\r\n  Index Lookup Time                      :            0.36 milliseconds\r\n  Document Load Time                     :            9.58 milliseconds\r\n  Runtime Execution Times                :            0.12 milliseconds\r\n  Document Write Time                    :           18.10 milliseconds\r\n\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Utilized Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n"
-      },
-      "children": []
+      }
     },
     {
       "name": "Child2",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -426,8 +405,7 @@
       "duration in milliseconds": 0,
       "data": {
         "QueryMetrics": "Retrieved Document Count                 :           2,000             \r\nRetrieved Document Size                  :       1,125,600 bytes       \r\nOutput Document Count                    :           2,000             \r\nOutput Document Size                     :       1,125,600 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :           33.67 milliseconds\r\n  Query Preparation Time                 :            0.19 milliseconds\r\n  Index Lookup Time                      :            0.36 milliseconds\r\n  Document Load Time                     :            9.58 milliseconds\r\n  Runtime Execution Times                :            0.12 milliseconds\r\n  Document Write Time                    :           18.10 milliseconds\r\n\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Utilized Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n"
-      },
-      "children": []
+      }
     }
   ]
 }]]></Json>
@@ -502,9 +480,9 @@
         └── Child2Child3(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -512,12 +490,10 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
-  "data": {},
   "children": [
     {
       "name": "Child1",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -525,42 +501,34 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "Child1Child1",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Unknown",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
             "line": 42
           },
           "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "data": {},
-          "children": []
+          "duration in milliseconds": 0
         },
         {
           "name": "Child1Child2",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Unknown",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
             "line": 42
           },
           "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "data": {},
-          "children": []
+          "duration in milliseconds": 0
         }
       ]
     },
     {
       "name": "Child2",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -568,49 +536,39 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "Child2Child1",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Unknown",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
             "line": 42
           },
           "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "data": {},
-          "children": []
+          "duration in milliseconds": 0
         },
         {
           "name": "Child2Child2",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Unknown",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
             "line": 42
           },
           "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "data": {},
-          "children": []
+          "duration in milliseconds": 0
         },
         {
           "name": "Child2Child3",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Unknown",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
             "line": 42
           },
           "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "data": {},
-          "children": []
+          "duration in milliseconds": 0
         }
       ]
     }

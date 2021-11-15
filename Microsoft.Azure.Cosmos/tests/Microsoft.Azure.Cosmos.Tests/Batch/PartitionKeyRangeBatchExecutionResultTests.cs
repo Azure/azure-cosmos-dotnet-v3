@@ -88,7 +88,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 method: HttpMethod.Get,
                 requestUri: "http://localhost",
                 requestSessionToken: null,
-                responseSessionToken: null);
+                responseSessionToken: null,
+                beLatencyInMs: "0.42");
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK)
             {
@@ -96,7 +97,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ETag = "1234",
                 SubStatusCode = SubStatusCodes.CompletingSplit,
                 RetryAfter = TimeSpan.FromSeconds(10),
-                RequestCharge = 4.3
+                RequestCharge = 4.3,
+                SessionToken = Guid.NewGuid().ToString(),
+                ActivityId = Guid.NewGuid().ToString(),
             };
 
             using (ITrace trace = Trace.GetRootTrace("testtrace"))
@@ -112,6 +115,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(result.RetryAfter, response.Headers.RetryAfter);
             Assert.AreEqual(result.StatusCode, response.StatusCode);
             Assert.AreEqual(result.RequestCharge, response.Headers.RequestCharge);
+            Assert.AreEqual(result.SessionToken, response.Headers.Session);
+            Assert.AreEqual(result.ActivityId, response.Headers.ActivityId);
             string diagnostics = response.Diagnostics.ToString();
             Assert.IsNotNull(diagnostics);
             Assert.IsTrue(diagnostics.Contains(pointOperationStatistics.ActivityId));

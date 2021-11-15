@@ -7,6 +7,7 @@
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <LangVersion>$(LangVersion)</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <None Include="KeyValue.json">
@@ -30,6 +31,13 @@
   <ItemGroup Condition=" '$(ProjectRef)' == 'True' ">
     <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
   </ItemGroup>
+
+  <PropertyGroup>
+	<SignAssembly>true</SignAssembly>
+	<DelaySign>true</DelaySign>
+	<AssemblyOriginatorKeyFile>..\..\..\testkey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+	
   <ItemGroup Condition=" '$(OSSProjectRef)' == 'True' ">
     <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
     <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" />

@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents a document container in the Azure Cosmos DB service. A container is a named logical container for documents.
@@ -25,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
     /// The partition key is the first level 'country' property in all the documents within this container.
     /// <code language="c#">
     /// <![CDATA[
-    ///     Container container = await client.GetDatabase("dbName").Containers.CreateAsync("MyCollection", "/country", 50000} );
+    ///     Container container = await client.GetDatabase("dbName").Containers.CreateAsync("MyCollection", "/country", 50000);
     ///     ContainerProperties containerProperties = container.Resource;
     /// ]]>
     /// </code>
@@ -76,6 +77,13 @@ namespace Microsoft.Azure.Cosmos
 
         [JsonProperty(PropertyName = "clientEncryptionPolicy", NullValueHandling = NullValueHandling.Ignore)]
         private ClientEncryptionPolicy clientEncryptionPolicyInternal;
+
+        /// <summary>
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+        /// </summary>
+        [JsonExtensionData]
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
 
         private IReadOnlyList<IReadOnlyList<string>> partitionKeyPathTokens;
         private string id;
@@ -689,6 +697,11 @@ namespace Microsoft.Azure.Cosmos
                 && this.indexingPolicyInternal.ExcludedPaths.Count == 0)
             {
                 this.indexingPolicyInternal.IncludedPaths.Add(new IncludedPath() { Path = IndexingPolicy.DefaultPath });
+            }
+
+            if (this.ClientEncryptionPolicy != null)
+            {
+                this.ClientEncryptionPolicy.ValidatePartitionKeyPathsAreNotEncrypted(this.PartitionKeyPathTokens);
             }
         }
     }

@@ -195,6 +195,18 @@ namespace Microsoft.Azure.Cosmos
             set => this.CosmosMessageHeaders.QueryMetrics = value;
         }
 
+        internal virtual string IndexUtilizationText
+        {
+            get => this.CosmosMessageHeaders.IndexUtilization;
+            set => this.CosmosMessageHeaders.IndexUtilization = value;
+        }
+
+        internal virtual string BackendRequestDurationMilliseconds
+        {
+            get => this.CosmosMessageHeaders.BackendRequestDurationMilliseconds;
+            set => this.CosmosMessageHeaders.BackendRequestDurationMilliseconds = value;
+        }
+
         /// <summary>
         /// Creates a new instance of <see cref="Headers"/>.
         /// </summary>

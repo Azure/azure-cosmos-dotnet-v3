@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Security.AccessControl;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -98,12 +97,16 @@ namespace Microsoft.Azure.Cosmos
         internal ISessionContainer SessionContainer { get; set; }
 
         /// <summary>
-        /// Get or set the preferred geo-replicated region to be used for Azure Cosmos DB service interaction.
+        /// Gets or sets the location where the application is running. This will influence the SDK's choice for the Azure Cosmos DB service interaction.
         /// </summary>
         /// <remarks>
-        /// When this property is specified, the SDK prefers the region to perform operations. Also SDK auto-selects 
-        /// fallback geo-replicated regions for high availability. 
-        /// When this property is not specified, the SDK uses the write region as the preferred region for all operations.
+        /// When the specified region is available, the SDK will prefer it to perform operations. When the region specified is not available,
+        /// the SDK auto-selects fallback regions based on proximity from the given region. When
+        /// this property is not specified at all, the SDK uses the write region
+        /// as the preferred region for all operations. See also 
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-sdk-availability">Diagnose
+        /// and troubleshoot the availability of Cosmos SDKs</seealso> for more details.
+        /// This configuration is an alternative to <see cref="ApplicationPreferredRegions"/>, either one can be set but not both.
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability#high-availability-with-cosmos-db-in-the-event-of-regional-outages">High availability on regional outages</seealso>
@@ -115,6 +118,8 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// When this property is specified, the SDK will use the region list in the provided order to define the endpoint failover order.
         /// This configuration is an alternative to <see cref="ApplicationRegion"/>, either one can be set but not both.
+        /// See also <seealso href="https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-sdk-availability">Diagnose
+        /// and troubleshoot the availability of Cosmos SDKs</seealso> for more details.
         /// </remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability#high-availability-with-cosmos-db-in-the-event-of-regional-outages">High availability on regional outages</seealso>
         public IReadOnlyList<string> ApplicationPreferredRegions { get; set; }
@@ -160,14 +165,9 @@ namespace Microsoft.Azure.Cosmos
         /// This avoids latency issues because the old token is used until the new token is retrieved.
         /// </summary>
         /// <remarks>
-        /// The recommended minimum value is 5 minutes. The default value is 25% of the token expire time.
+        /// The recommended minimum value is 5 minutes. The default value is 50% of the token expire time.
         /// </remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        TimeSpan? TokenCredentialBackgroundRefreshInterval { get; set; }
+        public TimeSpan? TokenCredentialBackgroundRefreshInterval { get; set; }
 
         /// <summary>
         /// Gets the handlers run before the process
@@ -489,9 +489,9 @@ namespace Microsoft.Azure.Cosmos
         /// Does not apply if <see cref="ConnectionMode.Gateway"/> is used.
         /// </remarks>
         /// <value>
-        /// The default value is false
+        /// The default value is true
         /// </value>
-        public bool EnableTcpConnectionEndpointRediscovery { get; set; } = false;
+        public bool EnableTcpConnectionEndpointRediscovery { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a delegate to use to obtain an HttpClient instance to be used for HTTPS communication.
@@ -526,6 +526,11 @@ namespace Microsoft.Azure.Cosmos
                 this.httpClientFactory = value;
             }
         }
+
+        /// <summary>
+        /// Enable partition key level failover
+        /// </summary>
+        internal bool EnablePartitionLevelFailover { get; set; } = false;
 
         /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
@@ -631,6 +636,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal bool? EnableCpuMonitor { get; set; }
 
+        /// <summary>
+        /// Flag to enable telemetry
+        /// </summary>
+        internal bool? EnableClientTelemetry { get; set; }
+
         internal void SetSerializerIfNotConfigured(CosmosSerializer serializer)
         {
             if (this.serializerInternal == null)
@@ -645,12 +655,10 @@ namespace Microsoft.Azure.Cosmos
             return cloneConfiguration;
         }
 
-        internal virtual ConnectionPolicy GetConnectionPolicy()
+        internal virtual ConnectionPolicy GetConnectionPolicy(int clientId)
         {
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
-            UserAgentContainer userAgent = new UserAgentContainer();
-            this.SetUserAgentFeatures(userAgent);
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -658,17 +666,23 @@ namespace Microsoft.Azure.Cosmos
                 RequestTimeout = this.RequestTimeout,
                 ConnectionMode = this.ConnectionMode,
                 ConnectionProtocol = this.ConnectionProtocol,
-                UserAgentContainer = userAgent,
+                UserAgentContainer = this.CreateUserAgentContainerWithFeatures(clientId),
                 UseMultipleWriteLocations = true,
                 IdleTcpConnectionTimeout = this.IdleTcpConnectionTimeout,
                 OpenTcpConnectionTimeout = this.OpenTcpConnectionTimeout,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
+                EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
-                HttpClientFactory = this.httpClientFactory,
+                HttpClientFactory = this.httpClientFactory
             };
+
+            if (this.EnableClientTelemetry.HasValue)
+            {
+                connectionPolicy.EnableClientTelemetry = this.EnableClientTelemetry.Value;
+            }
 
             if (this.ApplicationRegion != null)
             {
@@ -808,7 +822,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal void SetUserAgentFeatures(UserAgentContainer userAgent)
+        internal UserAgentContainer CreateUserAgentContainerWithFeatures(int clientId)
         {
             CosmosClientOptionsFeatures features = CosmosClientOptionsFeatures.NoFeatures;
             if (this.AllowBulkExecution)
@@ -821,19 +835,40 @@ namespace Microsoft.Azure.Cosmos
                 features |= CosmosClientOptionsFeatures.HttpClientFactory;
             }
 
+            string featureString = null;
             if (features != CosmosClientOptionsFeatures.NoFeatures)
             {
-                string featureString = Convert.ToString((int)features, 2).PadLeft(8, '0');
-                if (!string.IsNullOrEmpty(featureString))
-                {
-                    userAgent.SetFeatures(featureString);
-                }
+                featureString = Convert.ToString((int)features, 2).PadLeft(8, '0');
             }
 
-            if (!string.IsNullOrEmpty(this.ApplicationName))
+            string regionConfiguration = this.GetRegionConfiguration();
+
+            return new UserAgentContainer(
+                        clientId: clientId,
+                        features: featureString,
+                        regionConfiguration: regionConfiguration,
+                        suffix: this.ApplicationName);
+        }
+
+        /// <summary>
+        /// This generates a key that added to the user agent to make it 
+        /// possible to determine if the SDK has region failover enabled.
+        /// </summary>
+        /// <returns>Format Reg-{D (Disabled discovery)}-S(application region)|L(List of preferred regions)|N(None, user did not configure it)</returns>
+        private string GetRegionConfiguration()
+        {
+            string regionConfig = this.LimitToEndpoint ? "D" : string.Empty;
+            if (!string.IsNullOrEmpty(this.ApplicationRegion))
             {
-                userAgent.Suffix = this.ApplicationName;
+                return regionConfig + "S";
             }
+
+            if (this.ApplicationPreferredRegions != null)
+            {
+                return regionConfig + "L";
+            }
+
+            return regionConfig + "N";
         }
 
         /// <summary>

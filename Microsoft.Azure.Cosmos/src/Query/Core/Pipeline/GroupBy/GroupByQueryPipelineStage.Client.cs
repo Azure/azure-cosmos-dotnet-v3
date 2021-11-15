@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 
                 double requestCharge = 0.0;
                 long responseLengthInBytes = 0;
-                ImmutableDictionary<string, string> addtionalHeaders = null;
+                IReadOnlyDictionary<string, string> addtionalHeaders = null;
 
                 while (await this.inputStage.MoveNextAsync(trace))
                 {

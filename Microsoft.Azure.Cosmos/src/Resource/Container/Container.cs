@@ -328,13 +328,10 @@ namespace Microsoft.Azure.Cosmos
         ///         return;
         ///     }
         ///     
-        ///     using (Stream responseStream = await response.ReadBodyAsync())
+        ///     //Read or do other operations with the stream
+        ///     using (StreamReader streamReader = new StreamReader(response.Content))
         ///     {
-        ///         //Read or do other operations with the stream
-        ///         using (StreamReader streamReader = new StreamReader(responseStream))
-        ///         {
-        ///             string responseContentAsString = await streamReader.ReadToEndAsync();
-        ///         }
+        ///         string responseContentAsString = await streamReader.ReadToEndAsync();
         ///     }
         /// }
         /// ]]>
@@ -405,13 +402,10 @@ namespace Microsoft.Azure.Cosmos
         ///         return;
         ///     }
         ///     
-        ///     using(Stream stream = response.ReadBodyAsync())
+        ///     //Read or do other operations with the stream
+        ///     using (StreamReader streamReader = new StreamReader(response.Content))
         ///     {
-        ///         //Read or do other operations with the stream
-        ///         using (StreamReader streamReader = new StreamReader(stream))
-        ///         {
-        ///             string content =  streamReader.ReadToEndAsync();
-        ///         }
+        ///         string content = await streamReader.ReadToEndAsync();
         ///     }
         /// }
         /// 
@@ -488,13 +482,10 @@ namespace Microsoft.Azure.Cosmos
         ///         return;
         ///     }
         ///     
-        ///     using(Stream stream = response.ReadBodyAsync())
+        ///     //Read or do other operations with the stream
+        ///     using (StreamReader streamReader = new StreamReader(response.Content))
         ///     {
-        ///         //Read or do other operations with the stream
-        ///         using (StreamReader  streamReader = new StreamReader(stream))
-        ///         {
-        ///             string content =  streamReader.ReadToEndAsync();
-        ///         }
+        ///         string content = await streamReader.ReadToEndAsync();
         ///     }
         /// }
         /// ]]>
@@ -572,13 +563,10 @@ namespace Microsoft.Azure.Cosmos
         ///         return;
         ///     }
         ///     
-        ///     using(Stream stream = response.ReadBodyAsync())
+        ///     //Read or do other operations with the stream
+        ///     using (StreamReader streamReader = new StreamReader(response.Content))
         ///     {
-        ///         //Read or do other operations with the stream
-        ///         using (StreamReader streamReader = new StreamReader(stream))
-        ///         {
-        ///             string content =  streamReader.ReadToEndAsync();
-        ///         }
+        ///         string content = await streamReader.ReadToEndAsync();
         ///     }
         /// }
         /// ]]>
@@ -632,7 +620,77 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
-#if PREVIEW
+        /// <summary>
+        /// Reads multiple items from a container using Id and PartitionKey values.
+        /// </summary>
+        /// <param name="items">List of item.Id and <see cref="PartitionKey"/></param>
+        /// <param name="readManyRequestOptions">Request Options for ReadMany Operation</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which wraps a <see cref="Stream"/> containing the response.
+        /// </returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// IReadOnlyList<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>
+        /// {
+        ///     ("Id1", new PartitionKey("pkValue1")),
+        ///     ("Id2", new PartitionKey("pkValue2")),
+        ///     ("Id3", new PartitionKey("pkValue3"))
+        /// };
+        /// 
+        /// using (ResponseMessage responseMessage = await this.Container.ReadManyItemsStreamAsync(itemList))
+        /// {
+        ///     using (Stream stream = response.ReadBodyAsync())
+        ///     {
+        ///         //Read or do other operations with the stream
+        ///         using (StreamReader streamReader = new StreamReader(stream))
+        ///         {
+        ///             string content = streamReader.ReadToEndAsync();
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ResponseMessage> ReadManyItemsStreamAsync(
+            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
+            ReadManyRequestOptions readManyRequestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Reads multiple items from a container using Id and PartitionKey values.
+        /// </summary>
+        /// <param name="items">List of item.Id and <see cref="PartitionKey"/></param>
+        /// <param name="readManyRequestOptions">Request Options for ReadMany Operation</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="FeedResponse{T}"/> which wraps the typed items.
+        /// </returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// public class ToDoActivity{
+        ///     public string id {get; set;}
+        ///     public string status {get; set;}
+        /// }
+        /// 
+        /// IReadOnlyList<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>
+        /// {
+        ///     ("Id1", new PartitionKey("pkValue1")),
+        ///     ("Id2", new PartitionKey("pkValue2")),
+        ///     ("Id3", new PartitionKey("pkValue3"))
+        /// };
+        ///
+        /// FeedResponse<ToDoActivity> feedResponse = this.Container.ReadManyItemsAsync<ToDoActivity>(itemList);
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<FeedResponse<T>> ReadManyItemsAsync<T>(
+            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
+            ReadManyRequestOptions readManyRequestOptions = null,
+            CancellationToken cancellationToken = default);
+
         /// <summary>
         /// Patches an item in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
@@ -725,7 +783,6 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyList<PatchOperation> patchOperations,
             PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
-#endif
 
         /// <summary>
         /// Delete a item from the Azure Cosmos service as an asynchronous operation.
@@ -1113,7 +1170,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="changes">The changes that happened.</param>
         /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
-        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
         public delegate Task ChangesHandler<T>(
             IReadOnlyCollection<T> changes,
             CancellationToken cancellationToken);
@@ -1176,25 +1232,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A new instance of <see cref="TransactionalBatch"/>.</returns>
         public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
 
-#if INTERNAL
-        /// <summary>
-        /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.
-        /// Starts an asynchronous Cosmos DB background operation which deletes all items in the Container with the specified value. 
-        /// The asynchronous Cosmos DB background operation runs using a percentage of user RUs.
-        /// </summary>
-        /// <param name="partitionKey">The <see cref="PartitionKey"/> of the items to be deleted.</param>
-        /// <param name="requestOptions">(Optional) The options for the Partition Key Delete request.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/>.
-        /// </returns>
-        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
-               Cosmos.PartitionKey partitionKey,
-               RequestOptions requestOptions = null,
-               CancellationToken cancellationToken = default(CancellationToken));
-#endif
-
-#if PREVIEW
         /// <summary>
         /// Obtains a list of <see cref="FeedRange"/> that can be used to parallelize Feed operations.
         /// </summary>
@@ -1214,24 +1251,26 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangesAsync();
-        /// // Distribute feedRanges across multiple compute units and pass each one to a different iterator
-        ///
         /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
         /// {
         ///     PageSizeHint = 10,
         /// }
         /// 
         /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(
-        ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     ChangeFeedStartFrom.Beginning(),
         ///     ChangeFeedMode.Incremental,
         ///     options);
         ///
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     while (feedIterator.HasMoreResults)
+        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
         ///     {
-        ///         using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///         if (response.StatusCode == NotModified) 
+        ///         {
+        ///             // No new changes
+        ///             // Capture response.ContinuationToken and break or sleep for some time
+        ///         }
+        ///         else 
         ///         {
         ///             using (StreamReader sr = new StreamReader(response.Content))
         ///             using (JsonTextReader jtr = new JsonTextReader(sr))
@@ -1261,29 +1300,33 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangessAsync();
-        /// // Distribute feedRangess across multiple compute units and pass each one to a different iterator
-        ///
         /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
         /// {
         ///     PageSizeHint = 10,
         /// }
         /// 
         /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(
-        ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     ChangeFeedStartFrom.Beginning(),
         ///     ChangeFeedMode.Incremental,
         ///     options);
-        /// while (feedIterator.HasMoreResults)
-        /// {
+        ///     
         ///     while (feedIterator.HasMoreResults)
         ///     {
         ///         FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
-        ///         foreach (var item in response)
+        ///
+        ///         if (response.StatusCode == NotModified) 
         ///         {
-        ///             Console.WriteLine(item);
+        ///             // No new changes
+        ///             // Capture response.ContinuationToken and break or sleep for some time
+        ///         }
+        ///         else 
+        ///         {
+        ///             foreach (var item in response)
+        ///             {
+        ///                 Console.WriteLine(item);
+        ///             }
         ///         }
         ///     }
-        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -1293,6 +1336,214 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
+        /// <summary>
+        /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution.
+        /// </summary>
+        /// <param name="context">The context related to the changes.</param>
+        /// <param name="changes">The changes that happened.</param>
+        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
+        public delegate Task ChangeFeedHandler<T>(
+            ChangeFeedProcessorContext context,
+            IReadOnlyCollection<T> changes,
+            CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution with manual checkpoint.
+        /// </summary>
+        /// <param name="context">The context related to the changes.</param>
+        /// <param name="changes">The changes that happened.</param>
+        /// <param name="checkpointAsync">A task representing an asynchronous checkpoint on the progress of a lease.</param>
+        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// (ChangeFeedProcessorContext context, IReadOnlyCollection<T> changes, Func<Task> checkpointAsync, CancellationToken cancellationToken) =>
+        /// {
+        ///     // consume changes
+        ///     
+        ///     // On certain condition, we can checkpoint
+        ///     await checkpointAsync();
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public delegate Task ChangeFeedHandlerWithManualCheckpoint<T>(
+            ChangeFeedProcessorContext context,
+            IReadOnlyCollection<T> changes,
+            Func<Task> checkpointAsync,
+            CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution.
+        /// </summary>
+        /// <param name="context">The context related to the changes.</param>
+        /// <param name="changes">The changes that happened.</param>
+        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
+        public delegate Task ChangeFeedStreamHandler(
+            ChangeFeedProcessorContext context,
+            Stream changes,
+            CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution with manual checkpoint.
+        /// </summary>
+        /// <param name="context">The context related to the changes.</param>
+        /// <param name="changes">The changes that happened.</param>
+        /// <param name="checkpointAsync">A task representing an asynchronous checkpoint on the progress of a lease.</param>
+        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// (ChangeFeedProcessorContext context, Stream stream, Func<Task> checkpointAsync, CancellationToken cancellationToken) =>
+        /// {
+        ///     // consume stream
+        ///     
+        ///     // On certain condition, we can checkpoint
+        ///     await checkpointAsync();
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public delegate Task ChangeFeedStreamHandlerWithManualCheckpoint(
+            ChangeFeedProcessorContext context,
+            Stream changes,
+            Func<Task> checkpointAsync,
+            CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Delegate to notify errors during change feed operations.
+        /// </summary>
+        /// <param name="leaseToken">A unique identifier for the lease.</param>
+        /// <param name="exception">The exception that happened.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the notification.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// (string leaseToken, Exception exception) =>
+        /// {
+        ///     if (exception is ChangeFeedProcessorUserException userException)
+        ///     {
+        ///         Console.WriteLine($"Current instance's delegate had an unhandled when processing lease {leaseToken}.");
+        ///         Console.WriteLine($"Diagnostics {userException.ExceptionContext.Diagnostics}");
+        ///         Console.WriteLine($"Headers {userException.ExceptionContext.Headers}");
+        ///         Console.WriteLine(userException.ToString());
+        ///     }
+        ///     else 
+        ///     {
+        ///         Console.WriteLine($"Current instance faced an exception when processing lease {leaseToken}.");
+        ///         Console.WriteLine(exception.ToString());
+        ///     }
+        ///     
+        ///     return Task.CompletedTask;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public delegate Task ChangeFeedMonitorErrorDelegate(
+            string leaseToken,
+            Exception exception);
+
+        /// <summary>
+        /// Delegate to notify events of leases being acquired by a change feed processor.
+        /// </summary>
+        /// <param name="leaseToken">A unique identifier for the lease.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the notification.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// (string leaseToken) =>
+        /// {
+        ///     Console.WriteLine($"Current instance released lease {leaseToken} and stopped processing it.");
+        ///     
+        ///     return Task.CompletedTask;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public delegate Task ChangeFeedMonitorLeaseAcquireDelegate(string leaseToken);
+
+        /// <summary>
+        /// Delegate to notify events of leases being releases by a change feed processor.
+        /// </summary>
+        /// <param name="leaseToken">A unique identifier for the lease.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the notification.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// (string leaseToken) =>
+        /// {
+        ///     Console.WriteLine($"Current instance acquired lease {leaseToken} and will start processing it.");
+        ///     
+        ///     return Task.CompletedTask;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public delegate Task ChangeFeedMonitorLeaseReleaseDelegate(string leaseToken);
+
+        /// <summary>
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.
+        /// </summary>
+        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
+        /// <param name="onChangesDelegate">Delegate to receive changes.</param>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+            string processorName,
+            ChangeFeedHandler<T> onChangesDelegate);
+
+        /// <summary>
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing with manual checkpoint.
+        /// </summary>
+        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
+        /// <param name="onChangesDelegate">Delegate to receive changes.</param>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(
+            string processorName,
+            ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate);
+
+        /// <summary>
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.
+        /// </summary>
+        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
+        /// <param name="onChangesDelegate">Delegate to receive changes.</param>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
+            string processorName,
+            ChangeFeedStreamHandler onChangesDelegate);
+
+        /// <summary>
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing with manual checkpoint.
+        /// </summary>
+        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
+        /// <param name="onChangesDelegate">Delegate to receive changes.</param>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(
+            string processorName,
+            ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate);
+
+#if INTERNAL
+        /// <summary>
+        /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.
+        /// Starts an asynchronous Cosmos DB background operation which deletes all items in the Container with the specified value. 
+        /// The asynchronous Cosmos DB background operation runs using a percentage of user RUs.
+        /// </summary>
+        /// <param name="partitionKey">The <see cref="PartitionKey"/> of the items to be deleted.</param>
+        /// <param name="requestOptions">(Optional) The options for the Partition Key Delete request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/>.
+        /// </returns>
+        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+               Cosmos.PartitionKey partitionKey,
+               RequestOptions requestOptions = null,
+               CancellationToken cancellationToken = default(CancellationToken));
+#endif
+
+#if PREVIEW
         /// <summary>
         /// Gets the list of Partition Key Range identifiers for a <see cref="FeedRange"/>.
         /// </summary>
@@ -1406,6 +1657,7 @@ namespace Microsoft.Azure.Cosmos
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
+
 #endif
     }
 }

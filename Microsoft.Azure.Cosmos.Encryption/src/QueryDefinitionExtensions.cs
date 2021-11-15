@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Data.Encryption.Cryptography;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// This class provides extension methods for <see cref="QueryDefinition"/>.
@@ -65,9 +64,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(name));
             }
 
+            // if null use as-is
             if (value == null)
             {
-                throw new ArgumentNullException(nameof(value));
+                queryDefinition.WithParameter(name, value);
+                return queryDefinition;
             }
 
             QueryDefinition queryDefinitionwithEncryptedValues = queryDefinition;
@@ -75,44 +76,26 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (queryDefinition is EncryptionQueryDefinition encryptionQueryDefinition)
             {
                 EncryptionContainer encryptionContainer = (EncryptionContainer)encryptionQueryDefinition.Container;
-                Stream valueStream = encryptionContainer.CosmosSerializer.ToStream(value);
-
-                // not really required, but will have things setup for subsequent queries or operations on this Container if the Container was never init
-                // or if this was the first operation carried out on this container.
-                await encryptionContainer.EncryptionProcessor.InitEncryptionSettingsIfNotInitializedAsync(cancellationToken);
 
                 // get the path's encryption setting.
-                EncryptionSettings settings = await encryptionContainer.EncryptionProcessor.EncryptionSettings.GetEncryptionSettingForPropertyAsync(
-                    path.Substring(1),
-                    encryptionContainer.EncryptionProcessor,
-                    cancellationToken);
+                EncryptionSettings encryptionSettings = await encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
+                EncryptionSettingForProperty settingsForProperty = encryptionSettings.GetEncryptionSettingForProperty(path.Substring(1));
 
-                if (settings == null)
+                if (settingsForProperty == null)
                 {
                     // property not encrypted.
                     queryDefinitionwithEncryptedValues.WithParameter(name, value);
                     return queryDefinitionwithEncryptedValues;
                 }
 
-                if (settings.EncryptionType == EncryptionType.Randomized)
+                if (settingsForProperty.EncryptionType == EncryptionType.Randomized)
                 {
                     throw new ArgumentException($"Unsupported argument with Path: {path} for query. For executing queries on encrypted path requires the use of deterministic encryption type. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
                 }
 
-                JToken propertyValueToEncrypt = EncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);
-                (EncryptionProcessor.TypeMarker typeMarker, byte[] serializedData) = EncryptionProcessor.Serialize(propertyValueToEncrypt);
-
-                byte[] cipherText = settings.AeadAes256CbcHmac256EncryptionAlgorithm.Encrypt(serializedData);
-
-                if (cipherText == null)
-                {
-                    throw new InvalidOperationException($"{nameof(AddParameterAsync)} returned null cipherText from {nameof(settings.AeadAes256CbcHmac256EncryptionAlgorithm.Encrypt)}. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
-                }
-
-                byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
-                cipherTextWithTypeMarker[0] = (byte)typeMarker;
-                Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
-                queryDefinitionwithEncryptedValues.WithParameter(name, cipherTextWithTypeMarker);
+                Stream valueStream = encryptionContainer.CosmosSerializer.ToStream(value);
+                Stream encryptedValueStream = await EncryptionProcessor.EncryptValueStreamAsync(valueStream, settingsForProperty, cancellationToken);
+                queryDefinitionwithEncryptedValues.WithParameterStream(name, encryptedValueStream);
 
                 return queryDefinitionwithEncryptedValues;
             }
