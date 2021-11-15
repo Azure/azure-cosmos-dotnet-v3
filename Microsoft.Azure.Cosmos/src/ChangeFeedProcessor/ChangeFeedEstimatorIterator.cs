@@ -109,49 +109,50 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override bool HasMoreResults => this.hasMoreResults;
 
-        public override Task<FeedResponse<ChangeFeedProcessorState>> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override async Task<FeedResponse<ChangeFeedProcessorState>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            return this.ReadNextAsync(NoOpTrace.Singleton, cancellationToken);
+            return await this.monitoredContainer.ClientContext.OperationHelperAsync("Change Feed Estimator Read Next Async",
+                                requestOptions: null,
+                                task: (trace) => this.ReadNextAsync(trace, cancellationToken),
+                                traceComponent: TraceComponent.ChangeFeed,
+                                traceLevel: TraceLevel.Info);
         }
 
         public async Task<FeedResponse<ChangeFeedProcessorState>> ReadNextAsync(ITrace trace, CancellationToken cancellationToken)
         {
-            using (ITrace readNextTrace = trace.StartChild("Read Next Async", TraceComponent.ChangeFeed, TraceLevel.Info))
+            if (!this.lazyLeaseDocuments.ValueInitialized)
             {
-                if (!this.lazyLeaseDocuments.ValueInitialized)
+                await this.InitializeLeaseStoreAsync(trace, cancellationToken);
+                TryCatch<IReadOnlyList<DocumentServiceLease>> tryInitializeLeaseDocuments = await this.lazyLeaseDocuments
+                        .GetValueAsync(
+                            trace,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+                if (!tryInitializeLeaseDocuments.Succeeded)
                 {
-                    await this.InitializeLeaseStoreAsync(readNextTrace, cancellationToken);
-                    TryCatch<IReadOnlyList<DocumentServiceLease>> tryInitializeLeaseDocuments = await this.lazyLeaseDocuments
-                            .GetValueAsync(
-                                readNextTrace,
-                                cancellationToken)
-                            .ConfigureAwait(false);
-                    if (!tryInitializeLeaseDocuments.Succeeded)
+                    if (!(tryInitializeLeaseDocuments.Exception.InnerException is CosmosException cosmosException))
                     {
-                        if (!(tryInitializeLeaseDocuments.Exception.InnerException is CosmosException cosmosException))
-                        {
-                            throw new InvalidOperationException("Failed to convert to CosmosException.");
-                        }
-
-                        throw cosmosException;
+                        throw new InvalidOperationException("Failed to convert to CosmosException.");
                     }
 
-                    this.currentPage = 0;
-                    if (this.changeFeedEstimatorRequestOptions.MaxItemCount.HasValue)
-                    {
-                        this.pageSize = this.changeFeedEstimatorRequestOptions.MaxItemCount.Value;
-                        this.maxPage = (int)Math.Ceiling((double)this.lazyLeaseDocuments.Result.Result.Count / this.pageSize);
-                    }
-                    else
-                    {
-                        // Get all leases in a single request
-                        this.pageSize = this.lazyLeaseDocuments.Result.Result.Count;
-                        this.maxPage = 1;
-                    }
+                    throw cosmosException;
                 }
 
-                return await this.ReadNextInternalAsync(readNextTrace, cancellationToken);
+                this.currentPage = 0;
+                if (this.changeFeedEstimatorRequestOptions.MaxItemCount.HasValue)
+                {
+                    this.pageSize = this.changeFeedEstimatorRequestOptions.MaxItemCount.Value;
+                    this.maxPage = (int)Math.Ceiling((double)this.lazyLeaseDocuments.Result.Result.Count / this.pageSize);
+                }
+                else
+                {
+                    // Get all leases in a single request
+                    this.pageSize = this.lazyLeaseDocuments.Result.Result.Count;
+                    this.maxPage = 1;
+                }
             }
+
+            return await this.ReadNextInternalAsync(trace, cancellationToken);
         }
 
         private async Task<FeedResponse<ChangeFeedProcessorState>> ReadNextInternalAsync(
