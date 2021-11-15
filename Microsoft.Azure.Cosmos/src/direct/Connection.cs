@@ -970,7 +970,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 Console.WriteLine(clientSocket.GetSocketOption(SocketOptionLevel.Tcp, (SocketOptionName)17));
                 Console.WriteLine(clientSocket.GetSocketOption(SocketOptionLevel.Tcp, (SocketOptionName)3));
                 Console.WriteLine(clientSocket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive));
-                Console.WriteLine(clientSocket.RemoteEndPoint.ToString());
+                Console.WriteLine(clientSocket.RemoteEndPoint ?? "NULL");
             }
         }
 
