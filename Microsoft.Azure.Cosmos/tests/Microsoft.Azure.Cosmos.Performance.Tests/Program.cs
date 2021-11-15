@@ -25,9 +25,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             // on performance changes
             List<string> argsList = args != null ? new List<string>(args) : new List<string>();
             bool validateBaseline = argsList.Remove("--BaselineValidation");
-            argsList.Add("--allCategories=QueryGateBenchmark");
-            argsList.Add("-j");
-            argsList.Add("Medium");
             string[] updatedArgs = argsList.ToArray();
 
             if (validateBaseline)
@@ -39,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 {
                     IEnumerable<Summary> summaries = BenchmarkSwitcher
                         .FromAssembly(typeof(Program).Assembly)
-                        .Run(updatedArgs, new DebugInProcessConfig());
+                        .Run(updatedArgs);
 
                     if (!PerformanceValidation.TryUpdateAllocatedMemoryAverage(summaries, operationToAllocatedMemory))
                     {
@@ -52,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             else
             {
                 BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly)
-                    .Run(updatedArgs, new DebugInProcessConfig());
+                    .Run(updatedArgs);
             }
 
             return 0;

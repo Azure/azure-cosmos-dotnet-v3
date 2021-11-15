@@ -110,14 +110,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         }
 
         [Benchmark]
-        [BenchmarkCategory("QueryGateBenchmark")]
+        [BenchmarkCategory("GateBenchmark")]
         public async Task QuerySinglePartitionOnePage()
         {
             await this.CurrentBenchmark.QuerySinglePartitionOnePage();
         }
 
         [Benchmark]
-        [BenchmarkCategory("QueryGateBenchmark")]
+        [BenchmarkCategory("GateBenchmark")]
         public async Task QuerySinglePartitionMultiplePages()
         {
             await this.CurrentBenchmark.QuerySinglePartitionMultiplePages();
