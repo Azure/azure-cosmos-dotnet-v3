@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         IndexUtilizationInfo indexUtilizationInfo,
         ClientSideMetrics clientSideMetrics)
         {
-            this.BackendMetrics = backendMetrics ?? throw new ArgumentNullException(nameof(indexUtilizationInfo));
+            this.BackendMetrics = backendMetrics ?? throw new ArgumentNullException(nameof(backendMetrics));
             this.IndexUtilizationInfo = indexUtilizationInfo ?? throw new ArgumentNullException(nameof(indexUtilizationInfo));
             this.ClientSideMetrics = clientSideMetrics ?? throw new ArgumentNullException(nameof(clientSideMetrics));
         }
