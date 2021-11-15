@@ -19,7 +19,7 @@
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.5.0" />
     <PackageReference Include="MathNet.Numerics" Version="4.12.0" />
-    <PackageReference Include="Microsoft.Azure.DocumentDB.Core" Version="*" />
+    <PackageReference Include="Microsoft.Azure.DocumentDB.Core" Version="2.16.2" />
 	<PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />
 	<PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.2.0" />
 	<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
@@ -27,7 +27,7 @@
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
     <!-- Enabled easier integration into master -->
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="*" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.22.0" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' == 'True' ">
