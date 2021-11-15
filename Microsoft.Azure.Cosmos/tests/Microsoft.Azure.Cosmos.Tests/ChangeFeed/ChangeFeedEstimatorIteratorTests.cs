@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
@@ -32,14 +31,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 LeaseToken = pkRangeId
             }).ToList();
 
-            Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
-            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:1"));
+            Mock<FeedIteratorInternal> mockIterator = new Mock<FeedIteratorInternal>();
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:1"));
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
             List<string> requestedPKRanges = new List<string>();
 
-            FeedIterator feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
             {
                 requestedPKRanges.Add(lease.CurrentLeaseToken);
                 return mockIterator.Object;
@@ -74,18 +73,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 }
             };
 
-            Mock<FeedIterator> mockIteratorPKRange0 = new Mock<FeedIterator>();
-            mockIteratorPKRange0.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
+            Mock<FeedIteratorInternal> mockIteratorPKRange0 = new Mock<FeedIteratorInternal>();
+            mockIteratorPKRange0.Setup(i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:" + globalLsnPKRange0.ToString()));
 
-            Mock<FeedIterator> mockIteratorPKRange1 = new Mock<FeedIterator>();
-            mockIteratorPKRange1.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
+            Mock<FeedIteratorInternal> mockIteratorPKRange1 = new Mock<FeedIteratorInternal>();
+            mockIteratorPKRange1.Setup(i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "1:" + globalLsnPKRange1.ToString()));
 
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            FeedIterator feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
             {
                 if (lease.CurrentLeaseToken == "0")
                 {
@@ -132,18 +131,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 }
             };
 
-            Mock<FeedIterator> mockIteratorPKRange0 = new Mock<FeedIterator>();
-            mockIteratorPKRange0.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
+            Mock<FeedIteratorInternal> mockIteratorPKRange0 = new Mock<FeedIteratorInternal>();
+            mockIteratorPKRange0.Setup(i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(HttpStatusCode.OK, "0:" + globalLsnPKRange0.ToString(), processedLsnPKRange0.ToString()));
 
-            Mock<FeedIterator> mockIteratorPKRange1 = new Mock<FeedIterator>();
-            mockIteratorPKRange1.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
+            Mock<FeedIteratorInternal> mockIteratorPKRange1 = new Mock<FeedIteratorInternal>();
+            mockIteratorPKRange1.Setup(i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(HttpStatusCode.OK, "1:" + globalLsnPKRange1.ToString(), processedLsnPKRange1.ToString()));
 
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            FeedIterator feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
             {
                 if (lease.CurrentLeaseToken == "0")
                 {
@@ -189,12 +188,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 LeaseToken = pkRangeId
             }).ToList();
 
-            Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
-            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:1"));
+            Mock<FeedIteratorInternal> mockIterator = new Mock<FeedIteratorInternal>();
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:1"));
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            FeedIterator feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
             {
                 return mockIterator.Object;
             }
@@ -223,12 +222,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 LeaseToken = pkRangeId
             }).ToList();
 
-            Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
-            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:1"));
+            Mock<FeedIteratorInternal> mockIterator = new Mock<FeedIteratorInternal>();
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:1"));
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            FeedIterator feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
             {
                 return mockIterator.Object;
             }
@@ -261,12 +260,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 LeaseToken = pkRangeId
             }).ToList();
 
-            Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
-            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:1"));
+            Mock<FeedIteratorInternal> mockIterator = new Mock<FeedIteratorInternal>();
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:1"));
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            FeedIterator feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
             {
                 return mockIterator.Object;
             }
@@ -299,12 +298,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     Owner = instanceName
                 }
             };
-            Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
-            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:1"));
+            Mock<FeedIteratorInternal> mockIterator = new Mock<FeedIteratorInternal>();
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:1"));
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            FeedIterator feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
             {
                 return mockIterator.Object;
             }
@@ -327,9 +326,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public async Task ShouldInitializeDocumentLeaseContainer()
         {
-            static FeedIterator feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            static FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
             {
-                return Mock.Of<FeedIterator>();
+                return Mock.Of<FeedIteratorInternal>();
             }
 
             Mock<CosmosClientContext> mockedContext = new Mock<CosmosClientContext>(MockBehavior.Strict);
@@ -360,7 +359,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockedMonitoredContainer.Setup(c => c.ClientContext).Returns(mockedContext.Object);
             
 
-            Mock<FeedIterator> leaseFeedIterator = new Mock<FeedIterator>();
+            Mock<FeedIteratorInternal> leaseFeedIterator = new Mock<FeedIteratorInternal>();
             leaseFeedIterator.Setup(i => i.HasMoreResults).Returns(false);
 
             Mock<ContainerInternal>mockedLeaseContainer = new Mock<ContainerInternal>(MockBehavior.Strict);
