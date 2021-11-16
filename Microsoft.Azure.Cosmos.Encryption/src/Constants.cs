@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public const string DiagnosticsPropertiesDecryptedCount = "Properties Decrypted Count";
         public const string DiagnosticsStartTime = "Start time";
         public const string DocumentsResourcePropertyName = "Documents";
-
         public const string IncorrectContainerRidSubStatus = "1024";
 
         // TODO: Good to have constants available in the Cosmos SDK. Tracked via https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2431
@@ -24,7 +23,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public const string AllowCachedReadsHeader = "x-ms-cosmos-allow-cachedreads";
         public const string DatabaseRidHeader = "x-ms-cosmos-database-rid";
         public const string SubStatusHeader = "x-ms-substatus";
-
         public const int SupportedClientEncryptionPolicyFormatVersion = 1;
     }
 }
