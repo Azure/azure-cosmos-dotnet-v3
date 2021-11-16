@@ -9,13 +9,12 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
-    using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
@@ -318,6 +317,8 @@ namespace Microsoft.Azure.Cosmos
             Guid activityId = System.Diagnostics.Trace.CorrelationManager.ActivityId;
             Debug.Assert(activityId != Guid.Empty);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
+
+            requestMessage.Properties.Add(ClientSideRequestStatisticsTraceDatum.HttpRequestRegionNameProperty, request?.RequestContext?.RegionName);
 
             return requestMessage;
         }
