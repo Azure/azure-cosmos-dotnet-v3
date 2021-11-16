@@ -137,10 +137,10 @@
     using (rootTrace = TraceForBaselineTesting.GetRootTrace())
     {
         QueryMetricsTraceDatum datum = new QueryMetricsTraceDatum(
-            new QueryMetrics(
+            new Lazy<QueryMetrics>(() => new QueryMetrics(
                 BackendMetricsTests.MockBackendMetrics,
                 IndexUtilizationInfoTests.MockIndexUtilizationInfo,
-                ClientSideMetricsTests.MockClientSideMetrics));
+                ClientSideMetricsTests.MockClientSideMetrics)));
         rootTrace.AddDatum("Query Metrics", datum);
     }
 ]]></Setup>
