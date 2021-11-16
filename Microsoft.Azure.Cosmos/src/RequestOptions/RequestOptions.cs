@@ -36,10 +36,15 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public IReadOnlyDictionary<string, object> Properties { get; set; }
 
+#if PREVIEW
         /// <summary>
         /// Gets or sets a delegate which injects/appends a custom header in the request.
         /// </summary>
-        public Action<Headers> AddRequestHeaders { get; set; }
+        public 
+#else
+        internal        
+#endif
+        Action<Headers> AddRequestHeaders { get; set; }
 
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
@@ -88,11 +93,16 @@ namespace Microsoft.Azure.Cosmos
             this.AddRequestHeaders?.Invoke(request.Headers);
         }
 
+#if PREVIEW
         /// <summary>
         /// Clone RequestOptions.
         /// </summary>
         /// <returns> cloned RequestOptions. </returns>
-        public RequestOptions ShallowCopy()
+        public
+#else
+        internal
+#endif
+        RequestOptions ShallowCopy()
         {
             return this.MemberwiseClone() as RequestOptions;
         }

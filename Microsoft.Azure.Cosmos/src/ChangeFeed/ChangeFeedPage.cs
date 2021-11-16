@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.Immutable;
     using Microsoft.Azure.Cosmos.CosmosElements;
 
@@ -24,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             double requestCharge,
             string activityId,
             ChangeFeedCrossFeedRangeState state,
-            ImmutableDictionary<string, string> additionalHeaders)
+            IReadOnlyDictionary<string, string> additionalHeaders)
         {
             this.Documents = documents ?? throw new ArgumentOutOfRangeException(nameof(documents));
             this.NotModified = notModified;
@@ -44,13 +45,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public ChangeFeedCrossFeedRangeState State { get; }
 
-        public ImmutableDictionary<string, string> AdditionalHeaders { get; }
+        public IReadOnlyDictionary<string, string> AdditionalHeaders { get; }
 
         public static ChangeFeedPage CreateNotModifiedPage(
             double requestCharge, 
             string activityId, 
             ChangeFeedCrossFeedRangeState state,
-            ImmutableDictionary<string, string> additionalHeaders)
+            IReadOnlyDictionary<string, string> additionalHeaders)
         {
             return new ChangeFeedPage(CosmosArray.Empty, notModified: true, requestCharge, activityId, state, additionalHeaders);
         }
@@ -59,8 +60,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             CosmosArray documents, 
             double requestCharge,
             string activityId, 
-            ChangeFeedCrossFeedRangeState state, 
-            ImmutableDictionary<string, string> additionalHeaders)
+            ChangeFeedCrossFeedRangeState state,
+            IReadOnlyDictionary<string, string> additionalHeaders)
         {
             return new ChangeFeedPage(documents, notModified: false, requestCharge, activityId, state, additionalHeaders);
         }

@@ -15,16 +15,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal string DateTimeUtc { get; set; }
 
         [JsonProperty(PropertyName = "clientId")]
-        private string ClientId { get; }
+        internal string ClientId { get; }
 
         [JsonProperty(PropertyName = "processId")]
-        private string ProcessId { get; }
+        internal string ProcessId { get; }
 
         [JsonProperty(PropertyName = "userAgent")]
-        private string UserAgent { get; }
+        internal string UserAgent { get; }
 
         [JsonProperty(PropertyName = "connectionMode")]
-        private string ConnectionMode { get; }
+        internal string ConnectionMode { get; }
 
         [JsonProperty(PropertyName = "globalDatabaseAccountName")]
         internal string GlobalDatabaseAccountName { get; set; }
@@ -36,7 +36,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal string HostEnvInfo { get; set; }
 
         [JsonProperty(PropertyName = "acceleratedNetworking")]
-        private bool? AcceleratedNetworking { get; set; }
+        internal bool? AcceleratedNetworking { get; set; }
+
+        /// <summary>
+        /// Preferred Region set by the client
+        /// </summary>
+        [JsonProperty(PropertyName = "preferredRegions")]
+        internal IReadOnlyList<string> PreferredRegions { get; set; }
+
+        [JsonProperty(PropertyName = "aggregationIntervalInSec")]
+        internal int AggregationIntervalInSec { get; set; }
 
         [JsonProperty(PropertyName = "systemInfo")]
         internal List<SystemInfo> SystemInfo { get; set; }
@@ -46,13 +55,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         [JsonProperty(PropertyName = "operationInfo")]
         internal List<OperationInfo> OperationInfo { get; set; }
-        
-        /// <summary>
-        /// Preferred Region set by the client
-        /// </summary>
-        [JsonProperty(PropertyName = "preferredRegions")]
-        internal IReadOnlyList<string> PreferredRegions { get; set; }
-        
+
         [JsonIgnore]
         private readonly ConnectionMode ConnectionModeEnum;
 
@@ -60,7 +63,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                    string processId,
                                    string userAgent,
                                    ConnectionMode connectionMode,
-                                   IReadOnlyList<string> preferredRegions)
+                                   IReadOnlyList<string> preferredRegions,
+                                   int aggregationIntervalInSec)
         {
             this.ClientId = clientId;
             this.ProcessId = processId;
@@ -69,6 +73,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.ConnectionMode = ClientTelemetryProperties.GetConnectionModeString(connectionMode);
             this.SystemInfo = new List<SystemInfo>();
             this.PreferredRegions = preferredRegions;
+            this.AggregationIntervalInSec = aggregationIntervalInSec;
         }
 
         /// <summary>

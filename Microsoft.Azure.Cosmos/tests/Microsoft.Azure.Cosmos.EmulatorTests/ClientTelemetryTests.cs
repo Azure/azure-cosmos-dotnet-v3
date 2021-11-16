@@ -634,7 +634,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(2, telemetryInfo.PreferredRegions.Count);
                 Assert.AreEqual("region1", telemetryInfo.PreferredRegions[0]);
                 Assert.AreEqual("region2", telemetryInfo.PreferredRegions[1]);
-
+                Assert.AreEqual(1, telemetryInfo.AggregationIntervalInSec);
+                Assert.IsNull(telemetryInfo.AcceleratedNetworking);
+                Assert.IsNotNull(telemetryInfo.ClientId);
+                Assert.IsNotNull(telemetryInfo.ProcessId);
+                Assert.IsNotNull(telemetryInfo.UserAgent);
+                Assert.IsNotNull(telemetryInfo.ConnectionMode);
             }
 
             IDictionary<string, long> actualOperationRecordCountMap = new Dictionary<string, long>();
@@ -675,16 +680,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // Asserting If system information list is as expected
-            foreach (SystemInfo operation in actualSystemInformation)
+            foreach (SystemInfo systemInfo in actualSystemInformation)
             {
-                Assert.IsNotNull(operation.MetricInfo, "MetricInfo is null");
-                Assert.IsNotNull(operation.MetricInfo.MetricsName, "MetricsName is null");
-                Assert.IsNotNull(operation.MetricInfo.UnitName, "UnitName is null");
-                Assert.IsNotNull(operation.MetricInfo.Percentiles, "Percentiles is null");
-                Assert.IsTrue(operation.MetricInfo.Count > 0, "MetricInfo Count is not greater than 0");
-                Assert.IsTrue(operation.MetricInfo.Mean >= 0, "MetricInfo Mean is not greater than or equal to 0");
-                Assert.IsTrue(operation.MetricInfo.Max >= 0, "MetricInfo Max is not greater than or equal to 0");
-                Assert.IsTrue(operation.MetricInfo.Min >= 0, "MetricInfo Min is not greater than or equal to 0");
+                Assert.AreEqual("HostMachine", systemInfo.Resource);
+                Assert.IsNotNull(systemInfo.MetricInfo, "MetricInfo is null");
+                Assert.IsNotNull(systemInfo.MetricInfo.MetricsName, "MetricsName is null");
+                Assert.IsNotNull(systemInfo.MetricInfo.UnitName, "UnitName is null");
+                Assert.IsNotNull(systemInfo.MetricInfo.Percentiles, "Percentiles is null");
+                Assert.IsTrue(systemInfo.MetricInfo.Count > 0, "MetricInfo Count is not greater than 0");
+                Assert.IsTrue(systemInfo.MetricInfo.Mean >= 0, "MetricInfo Mean is not greater than or equal to 0");
+                Assert.IsTrue(systemInfo.MetricInfo.Max >= 0, "MetricInfo Max is not greater than or equal to 0");
+                Assert.IsTrue(systemInfo.MetricInfo.Min >= 0, "MetricInfo Min is not greater than or equal to 0");
             }
         }
 

@@ -40,10 +40,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
     [TestClass]
     public sealed class TraceWriterBaselineTests : BaselineTests<TraceWriterBaselineTests.Input, TraceWriterBaselineTests.Output>
     {
-        private static readonly QueryMetrics MockQueryMetrics = new QueryMetrics(
+        private static readonly Lazy<QueryMetrics> MockQueryMetrics = new Lazy<QueryMetrics>(() => new QueryMetrics(
             BackendMetricsTests.MockBackendMetrics,
             IndexUtilizationInfoTests.MockIndexUtilizationInfo,
-            ClientSideMetricsTests.MockClientSideMetrics);
+            ClientSideMetricsTests.MockClientSideMetrics));
 
         private static readonly Documents.PartitionKeyDefinition partitionKeyDefinition = new Documents.PartitionKeyDefinition()
         {
@@ -315,10 +315,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 using (rootTrace = TraceForBaselineTesting.GetRootTrace())
                 {
                     QueryMetricsTraceDatum datum = new QueryMetricsTraceDatum(
-                        new QueryMetrics(
+                        new Lazy<QueryMetrics>(() => new QueryMetrics(
                             BackendMetricsTests.MockBackendMetrics,
                             IndexUtilizationInfoTests.MockIndexUtilizationInfo,
-                            ClientSideMetricsTests.MockClientSideMetrics));
+                            ClientSideMetricsTests.MockClientSideMetrics)));
                     rootTrace.AddDatum("Query Metrics", datum);
                 }
                 endLineNumber = GetLineNumber();
@@ -381,6 +381,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 usingLocalLSN: true,
                                 activityId: Guid.Empty.ToString(),
                                 backendRequestDurationInMs: "4.2",
+                                retryAfterInMs: "42",
                                 transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                             ResourceType.Document,
                             OperationType.Query,
@@ -431,6 +432,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 sessionToken: default,
                                 usingLocalLSN: default,
                                 activityId: default,
+                                retryAfterInMs: default,
                                 backendRequestDurationInMs: default,
                                  transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                             resourceType: default,
