@@ -24,18 +24,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// QueryMetrics that with all members having default (but not null) members.
         /// </summary>
         public static readonly QueryMetrics Empty = new QueryMetrics(
-            backendMetrics: BackendMetrics.Empty,
+            deliminatedString: string.Empty,
             indexUtilizationInfo: IndexUtilizationInfo.Empty,
             clientSideMetrics: ClientSideMetrics.Empty);
 
         public QueryMetrics(
-            BackendMetrics backendMetrics,
-            IndexUtilizationInfo indexUtilizationInfo,
-            ClientSideMetrics clientSideMetrics)
+        BackendMetrics backendMetrics,
+        IndexUtilizationInfo indexUtilizationInfo,
+        ClientSideMetrics clientSideMetrics)
         {
             this.BackendMetrics = backendMetrics ?? throw new ArgumentNullException(nameof(backendMetrics));
             this.IndexUtilizationInfo = indexUtilizationInfo ?? throw new ArgumentNullException(nameof(indexUtilizationInfo));
             this.ClientSideMetrics = clientSideMetrics ?? throw new ArgumentNullException(nameof(clientSideMetrics));
+        }
+
+        public QueryMetrics(
+            string deliminatedString,
+            IndexUtilizationInfo indexUtilizationInfo,
+            ClientSideMetrics clientSideMetrics)
+            : this(!String.IsNullOrWhiteSpace(deliminatedString) &&
+                    BackendMetricsParser.TryParse(deliminatedString, out BackendMetrics backendMetrics)
+                ? backendMetrics
+                : BackendMetrics.Empty, indexUtilizationInfo, clientSideMetrics)
+        {
         }
 
         public BackendMetrics BackendMetrics { get; }

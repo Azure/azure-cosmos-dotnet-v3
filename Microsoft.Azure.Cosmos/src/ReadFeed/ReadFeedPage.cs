@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             double requestCharge,  
             string activityId, 
             ReadFeedCrossFeedRangeState? state,
-            ImmutableDictionary<string, string> additionalHeaders)
+            IReadOnlyDictionary<string, string> additionalHeaders)
         {
             this.Documents = documents ?? throw new ArgumentNullException(nameof(documents));
             this.RequestCharge = requestCharge < 0 ? throw new ArgumentOutOfRangeException(nameof(requestCharge)) : requestCharge;
@@ -41,6 +41,6 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
 
         public ReadFeedCrossFeedRangeState? State { get; }
 
-        public ImmutableDictionary<string, string> AdditionalHeaders { get; }
+        public IReadOnlyDictionary<string, string> AdditionalHeaders { get; }
     }
 }
