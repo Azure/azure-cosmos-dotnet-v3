@@ -2586,7 +2586,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 Assert.IsNotNull(encryptOperationDiagnostics);
                 Assert.IsNotNull(encryptOperationDiagnostics.GetValue(Constants.DiagnosticsStartTime));
                 durationInMilliseconds = (long)encryptOperationDiagnostics.GetValue(Constants.DiagnosticsDuration);
-                Assert.IsNotNull(durationInMilliseconds);
+                Assert.IsTrue(durationInMilliseconds > 0);
                 int propertiesEncrypted = encryptOperationDiagnostics.Value<int>(Constants.DiagnosticsPropertiesEncryptedCount);
                 Assert.AreEqual(expectedPropertiesEncryptedCount, propertiesEncrypted);
             }
