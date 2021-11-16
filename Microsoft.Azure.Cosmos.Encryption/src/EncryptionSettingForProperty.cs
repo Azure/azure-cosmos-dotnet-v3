@@ -35,6 +35,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public EncryptionType EncryptionType { get; }
 
+        /// <summary>
+        /// Builds AeadAes256CbcHmac256EncryptionAlgorithm object for the encryption setting.
+        /// </summary>
+        /// <param name="ifNoneMatchEtags">If-None-Match Etag associated with the request. </param>
+        /// <param name="shouldForceRefresh"> force refresh encryption cosmosclient cache. </param>
+        /// <param name="forceRefreshGatewayCache"> force refresh gateway cache. </param>
+        /// <param name="cancellationToken"> cacellation token. </param>
+        /// <returns>AeadAes256CbcHmac256EncryptionAlgorithm object to carry out encryption. </returns>
         public async Task<AeadAes256CbcHmac256EncryptionAlgorithm> BuildEncryptionAlgorithmForSettingAsync(
             string ifNoneMatchEtags,
             bool shouldForceRefresh,
