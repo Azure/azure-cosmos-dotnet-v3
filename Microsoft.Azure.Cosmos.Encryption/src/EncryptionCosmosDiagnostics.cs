@@ -16,13 +16,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private readonly CosmosDiagnostics coreDiagnostics;
         private readonly JObject encryptContent;
         private readonly JObject decryptContent;
-        private readonly long durationInMilliseconds;
+        private readonly TimeSpan processingDuration;
 
         public EncryptionCosmosDiagnostics(
             CosmosDiagnostics coreDiagnostics,
             JObject encryptContent,
             JObject decryptContent,
-            long durationInMilliseconds)
+            TimeSpan processingDuration)
         {
             this.coreDiagnostics = coreDiagnostics ?? throw new ArgumentNullException(nameof(coreDiagnostics));
             if (encryptContent?.Count > 0)
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 this.decryptContent = decryptContent;
             }
 
-            this.durationInMilliseconds = durationInMilliseconds;
+            this.processingDuration = processingDuration;
         }
 
         public override IReadOnlyList<(string regionName, Uri uri)> GetContactedRegions()
@@ -47,9 +47,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             TimeSpan clientElapsedTime = this.coreDiagnostics.GetClientElapsedTime();
 
-            if (this.durationInMilliseconds > 0)
+            if (this.processingDuration.Ticks > 0)
             {
-                clientElapsedTime = clientElapsedTime.Add(TimeSpan.FromMilliseconds(this.durationInMilliseconds));
+                clientElapsedTime += this.processingDuration;
             }
 
             return clientElapsedTime;

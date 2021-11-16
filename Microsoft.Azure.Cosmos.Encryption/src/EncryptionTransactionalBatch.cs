@@ -301,7 +301,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 response.Diagnostics,
                 encryptContent: this.encryptionDiagnosticsContext.EncryptContent,
                 decryptContent: this.encryptionDiagnosticsContext.DecryptContent,
-                this.encryptionDiagnosticsContext.TotalDurationInMilliseconds);
+                this.encryptionDiagnosticsContext.TotalProcessingDuration);
 
             return new EncryptionTransactionalBatchResponse(
                 decryptedTransactionalBatchOperationResults,

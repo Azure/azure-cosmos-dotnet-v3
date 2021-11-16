@@ -1794,11 +1794,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     {
                         Sensitive_ArrayIntFormat = 2,
                         Sensitive_ArrayDecimalFormat = 3.1m
-                    },
-                    new TestDoc.Sensitive_ArrayData
-                    {
-                        Sensitive_ArrayIntFormat = 3,
-                        Sensitive_ArrayDecimalFormat = 3.5m
                     }
                 }
             };
@@ -1810,7 +1805,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             patchOperations.Add(PatchOperation.Remove("/Sensitive_NestedObjectFormatL1/Sensitive_NestedObjectFormatL2"));
             patchOperations.Add(PatchOperation.Set("/Sensitive_NestedObjectFormatL1/Sensitive_ArrayFormatL1/0", docPostPatching.Sensitive_NestedObjectFormatL1.Sensitive_ArrayFormatL1[0]));
             patchOperations.Add(PatchOperation.Set("/Sensitive_NestedObjectFormatL1/Sensitive_ArrayFormatL1/1", docPostPatching.Sensitive_NestedObjectFormatL1.Sensitive_ArrayFormatL1[1]));
-            patchOperations.Add(PatchOperation.Add("/Sensitive_NestedObjectFormatL1/Sensitive_ArrayFormatL1/4", docPostPatching.Sensitive_NestedObjectFormatL1.Sensitive_ArrayFormatL1[4]));
             patchOperations.Add(PatchOperation.Replace("/Sensitive_NestedObjectFormatL1/Sensitive_DecimalFormatL1", docPostPatching.Sensitive_NestedObjectFormatL1.Sensitive_DecimalFormatL1));
 
             patchResponse = await MdeEncryptionTests.MdePatchItemAsync(
@@ -1819,8 +1813,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 docPostPatching,
                 HttpStatusCode.OK);
 
-            VerifyDiagnostics(patchResponse.Diagnostics, expectedPropertiesEncryptedCount: 7);
-
+            VerifyDiagnostics(patchResponse.Diagnostics, expectedPropertiesEncryptedCount: 6);
+            
             patchOperations.Add(PatchOperation.Increment("/Sensitive_IntFormat", 1));
             try
             {
@@ -2593,14 +2587,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             JObject encryptionDiagnostics = diagnosticsObject.Value<JObject>(Constants.DiagnosticsEncryptionDiagnostics);
             Assert.IsNotNull(encryptionDiagnostics);
 
-            long durationInMilliseconds = 0;
+            TimeSpan duration;
             if (encryptOperation)
             {
                 JObject encryptOperationDiagnostics = encryptionDiagnostics.Value<JObject>(Constants.DiagnosticsEncryptOperation);
                 Assert.IsNotNull(encryptOperationDiagnostics);
                 Assert.IsNotNull(encryptOperationDiagnostics.GetValue(Constants.DiagnosticsStartTime));
-                durationInMilliseconds = (long)encryptOperationDiagnostics.GetValue(Constants.DiagnosticsDuration);
-                Assert.IsTrue(durationInMilliseconds > 0);
+                duration = (TimeSpan)encryptOperationDiagnostics.GetValue(Constants.DiagnosticsDuration);
+                Assert.IsTrue(duration > TimeSpan.Zero);
                 int propertiesEncrypted = encryptOperationDiagnostics.Value<int>(Constants.DiagnosticsPropertiesEncryptedCount);
                 Assert.AreEqual(expectedPropertiesEncryptedCount, propertiesEncrypted);
             }
@@ -2610,18 +2604,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 JObject decryptOperationDiagnostics = encryptionDiagnostics.Value<JObject>(Constants.DiagnosticsDecryptOperation);
                 Assert.IsNotNull(decryptOperationDiagnostics);
                 Assert.IsNotNull(decryptOperationDiagnostics.GetValue(Constants.DiagnosticsStartTime));
-                durationInMilliseconds += (long)decryptOperationDiagnostics.GetValue(Constants.DiagnosticsDuration);
+                duration = (TimeSpan)decryptOperationDiagnostics.GetValue(Constants.DiagnosticsDuration);
+                Assert.IsTrue(duration > TimeSpan.Zero);
                 if (expectedPropertiesDecryptedCount > 0)
                 {
                     int propertiesDecrypted = decryptOperationDiagnostics.Value<int>(Constants.DiagnosticsPropertiesDecryptedCount);
                     Assert.IsTrue(propertiesDecrypted >= expectedPropertiesDecryptedCount);
                 }
-            }
-
-            if (encryptOperation || decryptOperation)
-            {
-                TimeSpan duration = ((EncryptionCosmosDiagnostics)diagnostics).GetClientElapsedTime();
-                Assert.AreEqual(Math.Round(duration.TotalMilliseconds), coreDiagnostics.Value<long>("duration in milliseconds") + durationInMilliseconds);
             }
         }
 
