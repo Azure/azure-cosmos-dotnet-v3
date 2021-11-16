@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Fixed
 - [#2827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2827) Query: Fixes a memory leak when on Windows x64 using ServiceInterop. Introduced in 3.22.0 [2777](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2777)
+- [#2827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2827) Availability: Adds keep alive to Linux systems for Direct mode connections to match the Windows keep alive interval
 
 ### <a name="3.22.0"/> [3.22.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.22.0) - 2021-10-18
 
@@ -43,7 +44,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#2753](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2753) CosmosClientBuilder: Adds overload for passing TokenCredential (Thanks [@levimatheri](https://github.com/levimatheri))
 - [#2732](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2732) Diagnostics: Adds request status code summary
 - [#2777](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2777) RetryWith(449): Adds improved 449 retry logic with randomized seed and faster retries.
-- [#2796](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2796) Availability: Adds keep alive to Linux systems for Direct mode connections to match the Windows keep alive interval
 - [#2787](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2787) ChangeFeedProcessor: Adds Notification APIs
 
 #### Fixed
