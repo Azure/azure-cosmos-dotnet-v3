@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Newtonsoft.Json;
 
     internal sealed class QueryPage : Page<QueryState>
     {
@@ -25,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
             double requestCharge,
             string activityId,
             long responseLengthInBytes,
-            CosmosQueryExecutionInfo cosmosQueryExecutionInfo,
+            Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo,
             string disallowContinuationTokenMessage,
             IReadOnlyDictionary<string, string> additionalHeaders,
             QueryState state)
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
 
         public long ResponseLengthInBytes { get; }
 
-        public CosmosQueryExecutionInfo CosmosQueryExecutionInfo { get; }
+        public Lazy<CosmosQueryExecutionInfo> CosmosQueryExecutionInfo { get; }
 
         public string DisallowContinuationTokenMessage { get; }
 
