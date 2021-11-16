@@ -55,8 +55,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     IndexingMode = IndexingMode.Consistent,
                     IncludedPaths = new Collection<IncludedPath> {
-                        new IncludedPath { Path = "/name/?", Indexes = new Collection<Index> { new HashIndex(DataType.String, 7) } },
-                        new IncludedPath { Path = "/address/?", Indexes = new Collection<Index> { new HashIndex(DataType.String, 7) } },
+                        new IncludedPath { Path = "/name/?", Indexes = new Collection<Cosmos.Index> { new HashIndex(DataType.String, 7) } },
+                        new IncludedPath { Path = "/address/?", Indexes = new Collection<Cosmos.Index> { new HashIndex(DataType.String, 7) } },
                     },
                     ExcludedPaths = new Collection<ExcludedPath> {
                         new ExcludedPath { Path = "/*" }
@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     IndexingMode = IndexingMode.Consistent,
                     IncludedPaths = new Collection<IncludedPath> {
-                        new IncludedPath { Path = "/name/?", Indexes = new Collection<Index> { new HashIndex(DataType.String, 7) } },
+                        new IncludedPath { Path = "/name/?", Indexes = new Collection<Cosmos.Index> { new HashIndex(DataType.String, 7) } },
                     },
                     ExcludedPaths = new Collection<ExcludedPath> {
                         new ExcludedPath { Path = "/*" }

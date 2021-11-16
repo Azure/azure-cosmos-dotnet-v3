@@ -89,12 +89,25 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             return totalCpuUsage;
         }
-        
-        protected override long GetSystemWideMemoryUsageCore()
-        {
-            procMemInfoFileParser.TryParseMemInfoFile(out var freeMemory, out var totalMemory);
 
-            return totalMemory - freeMemory;
+        /// <summary>
+        /// MemFree: This is the amount of unused physical memory(RAM).
+        /// MemAvailable: This is the estimated amount of physical memory(RAM) available for new programs. (from Linux 3.14)
+        /// </summary>
+        /// <returns></returns>
+        protected override long? GetSystemWideMemoryAvailabiltyCore()
+        {
+            if(!procMemInfoFileParser.TryParseMemInfoFile(out long? freeMemory, out long? availableMemory))
+            {
+                return null;
+            }
+
+            if(availableMemory != null)
+            {
+                return availableMemory;
+            }
+            // other wise use "free memeory" information
+            return freeMemory;
         }
         
         private class ProcStatFileParser
@@ -238,12 +251,12 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
 
             public bool TryParseMemInfoFile(
-                out long freeMemory,
-                out long totalMemory)
+                out long? freeMemory,
+                out long? availableMemory)
             {
-                freeMemory = -1;
-                totalMemory = -1;
-                
+                freeMemory = null;
+                availableMemory = null;
+
                 if (!this.TryReadProcMemInfo(this.reusableReader, out List<string> data))
                 {
                     DefaultTrace.TraceCritical("Not able to read memory information from /proc/meminfo");
@@ -260,16 +273,18 @@ namespace Microsoft.Azure.Documents.Rntbd
                         {
                             freeMemory = (long)parser.ParseNextUInt64();
                         }
-                        else if (dataLine.Contains("MemTotal"))
+                        else if (dataLine.Contains("MemAvailable"))
                         {
-                            totalMemory = (long)parser.ParseNextUInt64();
-                        }
-
-                        if (freeMemory >= 0 && totalMemory > 0)
-                        {
-                            break;
+                            availableMemory = (long)parser.ParseNextUInt64();
                         }
                     }
+
+                    //if either totalmemory information is not there or along with that free memeory information is not there then it should return false
+                    if(freeMemory == null && availableMemory == null)
+                    {
+                        throw new InvalidDataException("Free Memory and Available Memory information is not available.");
+                    }
+
                     return true;
                 }
                 catch (InvalidDataException dataException)
@@ -513,6 +528,11 @@ namespace Microsoft.Azure.Documents.Rntbd
             private readonly Decoder decoder;
 
             /// <summary>
+            /// The Encoding to use. Defaults to UTF8.
+            /// </summary>
+            private readonly Encoding encoding;
+
+            /// <summary>
             /// Initializes a new reusable reader.
             /// </summary>
             /// <param name="encoding">
@@ -525,7 +545,11 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 if (encoding == null)
                 {
-                    encoding = Encoding.UTF8;
+                    this.encoding = Encoding.UTF8;
+                }
+                else
+                {
+                    this.encoding = encoding;
                 }
 
                 this.builder = new StringBuilder();
@@ -575,31 +599,15 @@ namespace Microsoft.Azure.Documents.Rntbd
             public List<string> ReadMultipleLines(Stream source)
             {
                 List<string> output = new List<string>();
-                int bytesRead;
-                while ((bytesRead = source.Read(this.bytes, 0, this.bytes.Length)) != 0)
+                using (StreamReader reader = new StreamReader(source, this.encoding))
                 {
-                    int charCount = this.decoder.GetChars(this.bytes, 0, bytesRead, this.chars, 0);
-                    bool isLineBreakFound = false;
-                    for (int i = 0; i < charCount; i++)
+                    string line;
+                    while ((line = reader.ReadLine()) != null)
                     {
-                        if (isLineBreakFound = lineBreakChars.Contains(this.chars[i]))
-                        {
-                            output.Add(this.builder.Append(this.chars, 0, i).ToString());
-                            this.builder.Clear();
-
-                            break;
-                        }
-                    }
-
-                    if(!isLineBreakFound)
-                    {
-                        this.builder.Append(this.chars, this.builder.Length - 1, charCount);
+                        output.Add(line);
                     }
                 }
-
-
-                this.decoder.Reset();
-
+               
                 return output;
             }
         }

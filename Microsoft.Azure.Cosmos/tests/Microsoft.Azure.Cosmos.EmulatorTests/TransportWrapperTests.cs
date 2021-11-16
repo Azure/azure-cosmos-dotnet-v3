@@ -34,17 +34,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [DataRow(true)]
-        [DataRow(false)]
-        public async Task TransportExceptionValidationTest(bool injectCpuMonitor)
+        public async Task TransportExceptionValidationTest()
         {
             CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
                 builder =>
                 {
                     builder.WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
                         transportClient,
-                        TransportWrapperTests.ThrowTransportExceptionOnItemOperation,
-                        injectCpuMonitor));
+                        TransportWrapperTests.ThrowTransportExceptionOnItemOperation));
                 });
 
             Cosmos.Database database = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
@@ -57,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (CosmosException ce)
             {
-                this.ValidateTransportException(ce, injectCpuMonitor);
+                this.ValidateTransportException(ce);
             }
 
             try
@@ -68,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (CosmosException ce)
             {
-                this.ValidateTransportException(ce, injectCpuMonitor);
+                this.ValidateTransportException(ce);
             }
 
             using (ResponseMessage responseMessage = await container.CreateItemStreamAsync(
@@ -85,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }   
         }
 
-        private void ValidateTransportException(CosmosException cosmosException, bool cpuMonitorInjected)
+        private void ValidateTransportException(CosmosException cosmosException)
         {
             Assert.AreEqual(HttpStatusCode.ServiceUnavailable, cosmosException.StatusCode);
             string message = cosmosException.ToString();
@@ -93,32 +90,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string diagnostics = cosmosException.Diagnostics.ToString();
             Assert.IsNotNull(diagnostics);
             Assert.IsTrue(diagnostics.Contains("TransportException: A client transport error occurred: The connection failed"));
-            if (cpuMonitorInjected)
-            {
-                const string cpuHistoryPrefix = "CPU history: (";
-                int cpuHistoryIndex = diagnostics.IndexOf(cpuHistoryPrefix);
-                Assert.AreNotEqual(-1, cpuHistoryIndex);
-                int indexEndOfFirstCpuHistoryElement = diagnostics.IndexOf(
-                    ")",
-                    cpuHistoryIndex + cpuHistoryPrefix.Length);
-                Assert.AreNotEqual(-1, indexEndOfFirstCpuHistoryElement);
-
-                string firstCpuHistoryElement = diagnostics.Substring(
-                    cpuHistoryIndex + cpuHistoryPrefix.Length,
-                    indexEndOfFirstCpuHistoryElement - cpuHistoryIndex - cpuHistoryPrefix.Length);
-
-                string[] cpuHistoryElementFragments = firstCpuHistoryElement.Split(' ');
-                Assert.AreEqual(2, cpuHistoryElementFragments.Length);
-                Assert.IsTrue(
-                    DateTimeOffset.TryParse(cpuHistoryElementFragments[0], out DateTimeOffset snapshotTime));
-                Assert.IsTrue(snapshotTime > DateTimeOffset.UtcNow - TimeSpan.FromMinutes(2));
-                Assert.IsTrue(float.TryParse(cpuHistoryElementFragments[1], out float cpuPercentage));
-                Assert.IsTrue(cpuPercentage >= 0 && cpuPercentage <= 100);
-            }
-            else
-            {
-                Assert.IsTrue(diagnostics.Contains("CPU history: not available"));
-            }
         }
 
         private void ValidateTransportException(ResponseMessage responseMessage)
@@ -178,25 +149,30 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     innerException: transportException,
                     statusCode: System.Net.HttpStatusCode.Gone);
                 IClientSideRequestStatistics requestStatistics = request.RequestContext.ClientRequestStatistics;
-                requestStatistics.RecordResponse(request, new StoreResult(
-                    storeResponse: null,
-                    exception: documentClientException,
-                    partitionKeyRangeId: "PkRange",
-                    lsn: 42,
-                    quorumAckedLsn: 4242,
-                    requestCharge: 9000.42,
-                    currentReplicaSetSize: 3,
-                    currentWriteQuorum: 4,
-                    isValid: true,
-                    storePhysicalAddress: physicalAddress,
-                    globalCommittedLSN: 2,
-                    numberOfReadRegions: 1,
-                    itemLSN: 5,
-                    sessionToken: null,
-                    usingLocalLSN: true,
-                    activityId: Guid.NewGuid().ToString(),
-                    backendRequestDurationInMs: "0",
-                    transportRequestStats: new TransportRequestStats()));
+                requestStatistics.RecordResponse(
+                    request, 
+                    new StoreResult(
+                        storeResponse: null,
+                        exception: documentClientException,
+                        partitionKeyRangeId: "PkRange",
+                        lsn: 42,
+                        quorumAckedLsn: 4242,
+                        requestCharge: 9000.42,
+                        currentReplicaSetSize: 3,
+                        currentWriteQuorum: 4,
+                        isValid: true,
+                        storePhysicalAddress: physicalAddress,
+                        globalCommittedLSN: 2,
+                        numberOfReadRegions: 1,
+                        itemLSN: 5,
+                        sessionToken: null,
+                        usingLocalLSN: true,
+                        activityId: Guid.NewGuid().ToString(),
+                        backendRequestDurationInMs: "0",
+                        retryAfterInMs: "42",
+                        transportRequestStats: new TransportRequestStats()),
+                    DateTime.MinValue,
+                    DateTime.MaxValue);
 
                 throw Documents.Rntbd.TransportExceptions.GetServiceUnavailableException(physicalAddress, Guid.NewGuid(),
                     transportException);
@@ -212,32 +188,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             private readonly TransportClient baseClient;
             private readonly Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor;
-            private readonly CpuMonitor cpuMonitor;
             private const string emptyCpuLoadHistoryText = "empty";
 
             internal TransportClientWrapper(
                 TransportClient client,
-                Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor,
-                bool injectCpuMonitor = false)
+                Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor)
             {
                 Debug.Assert(client != null);
                 Debug.Assert(interceptor != null);
 
-                if (injectCpuMonitor)
-                {
-                    CpuMonitor.OverrideRefreshInterval(TimeSpan.FromMilliseconds(100));
-                    this.cpuMonitor = new CpuMonitor();
-                    this.cpuMonitor.Start();
-                    Stopwatch watch = Stopwatch.StartNew();
 
-                    // Artifically burning some CPU to generate CPU load history
-                    CpuLoadHistory cpuLoadHistory = null;
-                    while ((cpuLoadHistory = this.cpuMonitor.GetCpuLoad()) == null ||
-                        cpuLoadHistory.ToString() == emptyCpuLoadHistoryText)
-                    {
-                        Task.Delay(10).Wait();
-                    }
-                }
                 this.baseClient = client;
                 this.interceptor = interceptor;
             }
@@ -247,21 +207,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ResourceOperation resourceOperation,
                 DocumentServiceRequest request)
             {
-                try
-                {
-                    this.interceptor(physicalAddress, resourceOperation, request);
-                }
-                catch (DocumentClientException dce)
-                {
-                    if (this.cpuMonitor != null &&
-                        dce.InnerException != null &&
-                        dce.InnerException is TransportException te)
-                    {
-                        te.SetCpuLoad(this.cpuMonitor.GetCpuLoad());
-                    }
-
-                    throw;
-                }
+                this.interceptor(physicalAddress, resourceOperation, request);
 
                 StoreResponse response = await this.baseClient.InvokeStoreAsync(physicalAddress, resourceOperation, request);
                 return response;
@@ -269,12 +215,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             public override void Dispose()
             {
-                if (this.cpuMonitor != null)
-                {
-                    this.cpuMonitor.Stop();
-                    CpuMonitor.OverrideRefreshInterval(
-                        TimeSpan.FromSeconds(CpuMonitor.DefaultRefreshIntervalInSeconds));
-                }
                 base.Dispose();
             }
         }

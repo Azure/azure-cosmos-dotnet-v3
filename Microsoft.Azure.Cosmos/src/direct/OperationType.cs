@@ -124,6 +124,7 @@ namespace Microsoft.Azure.Documents
         GetAadGroups = -16,
         GetStorageAccountSas = -17,
         GetStorageServiceConfigurations = -18,
+        GetGraphDatabaseAccountConfiguration = -19,
 #endif
     }
 

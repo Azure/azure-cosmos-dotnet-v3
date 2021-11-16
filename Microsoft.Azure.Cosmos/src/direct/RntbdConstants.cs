@@ -447,6 +447,9 @@ namespace Microsoft.Azure.Documents
             CorrelatedActivityId = 0x00B0,
             IsThroughputCapRequest = 0x00B1,
             ChangeFeedWireFormatVersion = 0x00B2,
+            PopulateBYOKEncryptionProgress = 0x00B3,
+            UseUserBackgroundBudget = 0x00B4,
+            IncludePhysicalPartitionThroughputInfo = 0x00B5,
         }
 
         public sealed class Request : RntbdTokenStream<RequestIdentifiers>
@@ -613,6 +616,9 @@ namespace Microsoft.Azure.Documents
             public RntbdToken correlatedActivityId;
             public RntbdToken isThroughputCapRequest;
             public RntbdToken changeFeedWireFormatVersion;
+            public RntbdToken populateBYOKEncryptionProgress;
+            public RntbdToken useUserBackgroundBudget;
+            public RntbdToken includePhysicalPartitionThroughputInfo;
 
             public Request()
             {
@@ -778,6 +784,9 @@ namespace Microsoft.Azure.Documents
                 this.correlatedActivityId = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.CorrelatedActivityId);
                 this.isThroughputCapRequest = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.IsThroughputCapRequest);
                 this.changeFeedWireFormatVersion = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.ChangeFeedWireFormatVersion);
+                this.populateBYOKEncryptionProgress = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateBYOKEncryptionProgress);
+                this.useUserBackgroundBudget = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.UseUserBackgroundBudget);
+                this.includePhysicalPartitionThroughputInfo = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.IncludePhysicalPartitionThroughputInfo);
                 base.SetTokens(new RntbdToken[]
                 {
                     this.resourceId,
@@ -942,6 +951,9 @@ namespace Microsoft.Azure.Documents
                     this.correlatedActivityId,
                     this.isThroughputCapRequest,
                     this.changeFeedWireFormatVersion,
+                    this.populateBYOKEncryptionProgress,
+                    this.useUserBackgroundBudget,
+                    this.includePhysicalPartitionThroughputInfo,
                 });
             }
         }
@@ -1027,6 +1039,8 @@ namespace Microsoft.Azure.Documents
             CollectionUniqueKeysUnderReIndex = 0x0058,
             AnalyticalMigrationProgress = 0x0059,
             TotalAccountThroughput = 0x005A,
+            BYOKEncryptionProgress = 0x005B,
+            AppliedPolicyElementId = 0x005C
         }
 
         public sealed class Response : RntbdTokenStream<ResponseIdentifiers>
@@ -1103,6 +1117,8 @@ namespace Microsoft.Azure.Documents
             public RntbdToken collectionUniqueKeysUnderReIndex;
             public RntbdToken analyticalMigrationProgress;
             public RntbdToken totalAccountThroughput;
+            public RntbdToken byokEncryptionProgress;
+            public RntbdToken appliedPolicyElementId;
 
             public Response()
             {
@@ -1178,6 +1194,8 @@ namespace Microsoft.Azure.Documents
                 this.collectionUniqueKeysUnderReIndex = new RntbdToken(false, RntbdTokenTypes.String, (ushort)ResponseIdentifiers.CollectionUniqueKeysUnderReIndex);
                 this.analyticalMigrationProgress = new RntbdToken(false, RntbdTokenTypes.ULong, (ushort)ResponseIdentifiers.AnalyticalMigrationProgress);
                 this.totalAccountThroughput = new RntbdToken(false, RntbdTokenTypes.LongLong, (ushort)ResponseIdentifiers.TotalAccountThroughput);
+                this.byokEncryptionProgress = new RntbdToken(false, RntbdTokenTypes.Long, (ushort)ResponseIdentifiers.BYOKEncryptionProgress);
+                this.appliedPolicyElementId = new RntbdToken(false, RntbdTokenTypes.String, (ushort)ResponseIdentifiers.AppliedPolicyElementId);
 
                 base.SetTokens(new RntbdToken[]
                 {
@@ -1252,6 +1270,8 @@ namespace Microsoft.Azure.Documents
                     this.collectionUniqueKeysUnderReIndex,
                     this.analyticalMigrationProgress,
                     this.totalAccountThroughput,
+                    this.byokEncryptionProgress,
+                    this.appliedPolicyElementId
                 });
             }
         }

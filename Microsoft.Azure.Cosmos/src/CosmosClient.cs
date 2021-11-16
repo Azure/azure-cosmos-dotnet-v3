@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -101,6 +102,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal static int numberOfClientsCreated;
         internal DateTime? DisposedDateTimeUtc { get; private set; } = null;
+
+        internal ClientTelemetry Telemetry;
 
         static CosmosClient()
         {
@@ -662,7 +665,7 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>201</term><description>Created - New database is created.</description>
         ///     </item>
         ///     <item>
-        ///         <term>200</term><description>Accepted - This means the database already exists.</description>
+        ///         <term>200</term><description>OK - This means the database already exists.</description>
         ///     </item>
         /// </list>
         /// </returns>
@@ -754,7 +757,7 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>201</term><description>Created - New database is created.</description>
         ///     </item>
         ///     <item>
-        ///         <term>200</term><description>Accepted - This means the database already exists.</description>
+        ///         <term>200</term><description>OK- This means the database already exists.</description>
         ///     </item>
         /// </list>
         /// </returns>
@@ -1253,6 +1256,7 @@ namespace Microsoft.Azure.Cosmos
                 if (disposing)
                 {
                     this.ClientContext.Dispose();
+                    this.Telemetry?.Dispose();
                 }
 
                 this.isDisposed = true;

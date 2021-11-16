@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Documents
             bool enableReadRequestsFallback = false,
             bool useMultipleWriteLocations = false,
             bool detectClientConnectivityIssues = false,
+            bool disableRetryWithRetryPolicy = false,
             RetryWithConfiguration retryWithConfiguration = null)
         {
             this.transportClient = transportClient;
@@ -47,16 +48,17 @@ namespace Microsoft.Azure.Documents
             this.enableRequestDiagnostics = enableRequestDiagnostics;
 
             this.replicatedResourceClient = new ReplicatedResourceClient(
-                addressResolver,
-                sessionContainer,
-                protocol,
-                this.transportClient,
-                this.serviceConfigurationReader,
-                userTokenProvider,
-                enableReadRequestsFallback,
-                useMultipleWriteLocations,
-                detectClientConnectivityIssues,
-                retryWithConfiguration);
+                addressResolver: addressResolver,
+                sessionContainer: sessionContainer,
+                protocol: protocol,
+                transportClient: this.transportClient,
+                serviceConfigReader: this.serviceConfigurationReader,
+                authorizationTokenProvider: userTokenProvider,
+                enableReadRequestsFallback: enableReadRequestsFallback,
+                useMultipleWriteLocations: useMultipleWriteLocations,
+                detectClientConnectivityIssues: detectClientConnectivityIssues,
+                disableRetryWithRetryPolicy: disableRetryWithRetryPolicy,
+                retryWithConfiguration: retryWithConfiguration);
         }
 
         internal JsonSerializerSettings SerializerSettings { get; set; }
@@ -160,12 +162,11 @@ namespace Microsoft.Azure.Documents
 
         private long GetLSN(INameValueCollection headers)
         {
-            long result = -1;
             string value = headers[WFConstants.BackendHeaders.LSN];
 
             if (!string.IsNullOrEmpty(value))
             {
-                if (long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result))
+                if (long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out long result))
                 {
                     return result;
                 }
@@ -176,17 +177,12 @@ namespace Microsoft.Azure.Documents
 
         private void UpdateResponseHeader(DocumentServiceRequest request, INameValueCollection headers)
         {
-            string requestConsistencyLevel = request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel];
-
-            bool sessionConsistency =
-                this.serviceConfigurationReader.DefaultConsistencyLevel == ConsistencyLevel.Session ||
-                (!string.IsNullOrEmpty(requestConsistencyLevel)
-                    && string.Equals(requestConsistencyLevel, ConsistencyLevel.Session.ToString(), StringComparison.OrdinalIgnoreCase));
-
             long storeLSN = this.GetLSN(headers);
             if (storeLSN == -1)
+            {
                 return;
-
+            }
+                
             string version = request.Headers[HttpConstants.HttpHeaders.Version];
             version = string.IsNullOrEmpty(version) ? HttpConstants.Versions.CurrentVersion : version;
 

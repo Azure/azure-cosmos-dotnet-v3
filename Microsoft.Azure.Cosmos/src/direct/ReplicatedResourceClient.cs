@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Documents
         private readonly bool useMultipleWriteLocations;
         private readonly bool detectClientConnectivityIssues;
         private readonly RetryWithConfiguration retryWithConfiguration;
+        private readonly bool disableRetryWithRetryPolicy;
 
         private static readonly Lazy<bool> enableGlobalStrong = new Lazy<bool>(() => {
             bool isGlobalStrongEnabled = true;
@@ -66,6 +67,7 @@ namespace Microsoft.Azure.Documents
             bool enableReadRequestsFallback,
             bool useMultipleWriteLocations,
             bool detectClientConnectivityIssues,
+            bool disableRetryWithRetryPolicy,
             RetryWithConfiguration retryWithConfiguration = null)
         {
             this.addressResolver = addressResolver;
@@ -96,6 +98,7 @@ namespace Microsoft.Azure.Documents
             this.useMultipleWriteLocations = useMultipleWriteLocations;
             this.detectClientConnectivityIssues = detectClientConnectivityIssues;
             this.retryWithConfiguration = retryWithConfiguration;
+            this.disableRetryWithRetryPolicy = disableRetryWithRetryPolicy;
         }
 
         #region Test hooks
@@ -208,7 +211,7 @@ namespace Microsoft.Azure.Documents
                         prepareRequest: () => {
                             requestClone.RequestContext.ClientRequestStatistics?.RecordRequest(requestClone);
                             return requestClone;
-                            },
+                        },
                         policy: new GoneOnlyRequestRetryPolicy<StoreResponse>(
                             retryContext.TimeoutForInBackoffRetryPolicy), // backoffTime
                         cancellationToken: cancellationToken);
@@ -232,6 +235,7 @@ namespace Microsoft.Azure.Documents
                     return request;
                 },
                 policy: new GoneAndRetryWithRequestRetryPolicy<StoreResponse>(
+                    disableRetryWithPolicy: this.disableRetryWithRetryPolicy || request.DisableRetryWithPolicy,
                     waitTimeInSecondsOverride: retryTimeout,
                     minBackoffForRegionReroute: this.minBackoffForFallingBackToOtherRegions,
                     detectConnectivityIssues: this.detectClientConnectivityIssues,
@@ -337,14 +341,17 @@ namespace Microsoft.Azure.Documents
                 resourceType == ResourceType.RoleAssignment ||
                 resourceType == ResourceType.RoleDefinition ||
                 resourceType == ResourceType.AuthPolicyElement ||
+                resourceType == ResourceType.InteropUser ||
 #if !COSMOSCLIENT
                 resourceType == ResourceType.Topology ||
+                operationType == OperationType.GetStorageAuthToken ||
                 (resourceType == ResourceType.PartitionKeyRange && operationType != OperationType.GetSplitPoint
                     && operationType != OperationType.GetSplitPoints && operationType != OperationType.AbortSplit) ||
 #else
                 resourceType == ResourceType.PartitionKeyRange ||
 #endif
-                (resourceType == ResourceType.Collection && (operationType == OperationType.ReadFeed || operationType == OperationType.Query || operationType == OperationType.SqlQuery)))
+                (resourceType == ResourceType.Collection && (operationType == OperationType.ReadFeed || operationType == OperationType.Query || operationType == OperationType.SqlQuery))
+                )
             {
                 return true;
             }

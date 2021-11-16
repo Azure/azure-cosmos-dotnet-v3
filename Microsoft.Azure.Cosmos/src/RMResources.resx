@@ -138,6 +138,42 @@
   <data name="DeserializationError" xml:space="preserve">
     <value>Error occurred while deserializing content '{0}'.</value>
   </data>
+  <data name="EnableMultiRegionNotSupported" xml:space="preserve">
+    <value>Cannot add regions to this account type.</value>
+  </data>
+  <data name="EnableMultipleWriteLocationsNotSupported" xml:space="preserve">
+    <value>Cannot set EnableMultipleWriteLocations on this account type.</value>
+  </data>  
+  <data name="PitrNotSupported" xml:space="preserve">
+    <value>Pitr is not supported on this account type.</value>
+  </data>  
+  <data name="DisableKeyBasedMetadataWriteAccessNotSupported" xml:space="preserve">
+    <value>Cannot set DisableKeyBasedMetadataWriteAccess on this account type.</value>
+  </data>  
+  <data name="MaterializedViewsNotSupported" xml:space="preserve">
+    <value>MaterializedViews is not supported on this account type.</value>
+  </data>  
+  <data name="FullFidelityChangeFeedNotSupported" xml:space="preserve">
+    <value>Full Fidelity Change Feed is not supported on this account type.</value>
+  </data>
+  <data name="CassandraConnectorNotSupported" xml:space="preserve">
+    <value>CassandraConnector not supported for this account type.</value>
+  </data>
+  <data name="FreeTierNotSupported" xml:space="preserve">
+    <value>Free Tier is not supported on this account type.</value>
+  </data>
+  <data name="AnalyticalStoreNotSupported" xml:space="preserve">
+    <value>Analytical Storage is not supported on this account type.</value>
+  </data>
+  <data name="VirtualNetworkFilterNotSupported" xml:space="preserve">
+    <value>Cannot set VirtualNetworkFilter on this account type.</value>
+  </data>   
+  <data name="ServerlessNotSupported" xml:space="preserve">
+    <value>Serverless offer is not supported on this account type.</value>
+  </data>   
+  <data name="IpRangeFilterNotSupported" xml:space="preserve">
+    <value>Cannot set IpRangeFilter values on this account type.</value>
+  </data> 
   <data name="EndpointNotFound" xml:space="preserve">
     <value>Unable to retrieve address of endpoint '{0}' from the address '{1}'</value>
   </data>
@@ -147,14 +183,14 @@
   <data name="Forbidden" xml:space="preserve">
     <value>Request is blocked by your Cosmos DB account firewall settings. More info: https://aka.ms/cosmosdb-tsg-forbidden</value>
   </data>
-  <data name="ClientPublicIpInfo" xml:space="preserve">
-    <value>client IP {0} through public internet</value>
+  <data name="ForbiddenPublicIpv4" xml:space="preserve">
+    <value>Request originated from IP {0} through public internet. This is blocked by your Cosmos DB account firewall settings. More info: https://aka.ms/cosmosdb-tsg-forbidden</value>
   </data>
-  <data name="ClientVnetInfo" xml:space="preserve">
-    <value>client VNET through {0}</value>
+  <data name="ForbiddenServiceEndpoint" xml:space="preserve">
+    <value>Request originated from VNET through service endpoint. This is blocked by your Cosmos DB account firewall settings. More info: https://aka.ms/cosmosdb-tsg-forbidden</value>
   </data>
-  <data name="ForbiddenClientIpAddress" xml:space="preserve">
-    <value>Request originated from {0}. This is blocked by your Cosmos DB account firewall settings. More info: https://aka.ms/cosmosdb-tsg-forbidden</value>
+  <data name="ForbiddenPrivateEndpoint" xml:space="preserve">
+    <value>Request received through private endpoint. It is blocked because either your account does not have private endpoint configured, or it is not from the private endpoint that your account is configured with. More info: https://aka.ms/cosmosdb-tsg-forbidden</value>
   </data>
   <data name="Gone" xml:space="preserve">
     <value>The requested resource is no longer available at the server.</value>
@@ -205,7 +241,7 @@
     <value>The requested verb is not supported.</value>
   </data>
   <data name="MismatchToken" xml:space="preserve">
-    <value>The input authorization token can't serve the request. Please check that the expected payload is built as per the protocol, and check the key being used. Server used the following payload to sign: '{0}'</value>
+    <value>The input authorization token can't serve the request. The wrong key is being used or the expected payload is not built as per the protocol. For more info: https://aka.ms/cosmosdb-tsg-unauthorized. Server used the following payload to sign: '{0}'</value>
   </data>
   <data name="MissingAuthHeader" xml:space="preserve">
     <value>Required Header authorization is missing. Ensure a valid Authorization token is passed.</value>
@@ -443,6 +479,9 @@
   </data>
   <data name="ProvisionLimit" xml:space="preserve">
     <value>Reached the pre-approved storage limit for the database account. Please contact Azure support to increase this limit.</value>
+  </data>
+  <data name="GremlinV2ServiceDeleteNotSupported" xml:space="preserve">
+    <value>GraphAPICompute Service cannot be deleted.</value>
   </data>
   <data name="DatabaseAccountNotFound" xml:space="preserve">
     <value>Database Account {0} does not exist</value>
@@ -974,10 +1013,10 @@ If you would like to serve this query through continuation tokens, then please r
     <value>InvalidCORS rule. The origin '{0}' is an invalid origin. A valid rigin should not include a uri path.</value>
   </data>
   <data name="ClientUnavailable" xml:space="preserve">
-    <value>The request failed because the client was unable to establish connections to {0} endpoints across {1} regions. Please check for client resource starvation issues and verify connectivity between client and server.</value>
+    <value>The request failed because the client was unable to establish connections to {0} endpoints across {1} regions. Please check for client resource starvation issues and verify connectivity between client and server. More info: https://aka.ms/cosmosdb-tsg-service-unavailable</value>
   </data>
   <data name="ClientCpuOverload" xml:space="preserve">
-    <value>The request failed because the client was unable to establish connections to {0} endpoints across {1} regions. The client CPU was overloaded during the attempted request.</value>
+    <value>The request failed because the client was unable to establish connections to {0} endpoints across {1} regions. The client CPU was overloaded during the attempted request. More info: https://aka.ms/CosmosDB/sql/errors/net/high-cpu</value>
   </data>
   <data name="PartitionKeyAndEffectivePartitionKeyBothSpecified" xml:space="preserve">
     <value>Either PartitionKey or EffectivePartitionKey are expected.</value>
@@ -1126,10 +1165,22 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="UnsupportedAccessControlType" xml:space="preserve">
     <value>Resource tokens are not supported by the Dedicated Gateway endpoint. </value>
   </data>
+  <data name="UnsupportedAadAccessControlType" xml:space="preserve">
+    <value>AAD tokens are not supported by the Dedicated Gateway endpoint. </value>
+  </data>
   <data name="AadLocalAuthDisabled" xml:space="preserve">
     <value>Local Authorization is disabled. Use an AAD token to authorize all requests.</value>
   </data>
   <data name="InvalidTotalThroughputLimitUpdate" xml:space="preserve">
     <value>The potential total throughput of this operation exceeds the total throughput limit set for this account. Aborting request.</value>
+  </data>
+  <data name="ClientCpuThreadStarvation" xml:space="preserve">
+    <value>The request failed because the client was unable to establish connections to {0} endpoints across {1} regions. The client CPU has thread starvation.</value>
+  </data>
+  <data name="RbacMissingUserId" xml:space="preserve">
+    <value>Cannot authorize request since the [User ID] to authorize was not found.</value>
+  </data>
+  <data name="RbacMissingAction" xml:space="preserve">
+    <value>Cannot authorize request since the [Action] to authorize was not found.</value>
   </data>
 </root>

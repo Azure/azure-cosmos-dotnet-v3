@@ -14,6 +14,7 @@ namespace CosmosCTL
     using App.Metrics.Gauge;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Azure.Cosmos.Telemetry;
 
     public sealed class Program
     {
@@ -27,6 +28,9 @@ namespace CosmosCTL
             try
             {
                 CTLConfig config = CTLConfig.From(args);
+
+                SetEnvironmentVariables(config);
+              
                 if (config.OutputEventTraces)
                 {
                     EnableTraceSourcesToConsole();
@@ -49,6 +53,12 @@ namespace CosmosCTL
                         logger: logger);
 
                     logger.LogInformation("Initialization completed.");
+
+                    if(client.ClientOptions.EnableClientTelemetry.GetValueOrDefault()) {
+                        logger.LogInformation("Telemetry is enabled for CTL.");
+                    } else {
+                        logger.LogInformation("Telemetry is disabled for CTL.");
+                    }
 
                     List<Task> tasks = new List<Task>
                     {
@@ -134,8 +144,14 @@ namespace CosmosCTL
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Unhandled exception during execution");
+                Utils.LogError(logger, "Unhandled exception during execution", ex);
             }
+        }
+
+        private static void SetEnvironmentVariables(CTLConfig config)
+        {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, config.TelemetryEndpoint);
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, config.TelemetryScheduleInSeconds);
         }
 
         private static IMetricsRoot ConfigureReporting(
@@ -173,6 +189,8 @@ namespace CosmosCTL
                 WorkloadType.ReadWriteQuery => new ReadWriteQueryScenario(),
                 WorkloadType.ChangeFeedProcessor => new ChangeFeedProcessorScenario(),
                 WorkloadType.ChangeFeedPull => new ChangeFeedPullScenario(),
+                WorkloadType.Query => new QueryScenario(),
+                WorkloadType.ReadMany => new ReadManyScenario(),
                 _ => throw new NotImplementedException($"No mapping for {workloadType}"),
             };
         }

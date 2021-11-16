@@ -30,11 +30,18 @@ namespace Microsoft.Azure.Documents.Rntbd
     {
         private const int ResponseLengthByteLimit = int.MaxValue;
         private const SslProtocols TlsProtocols = SslProtocols.Tls12;
+        private const uint TcpKeepAliveIntervalSocketOptionEnumValue = 17;
+        private const uint TcpKeepAliveTimeSocketOptionEnumValue = 3;
+        private const uint SocketOptionTcpKeepAliveInterval = 1;
+        private const uint SocketOptionTcpKeepAliveTime = 30;
 
         private static readonly Lazy<ConcurrentPrng> rng =
             new Lazy<ConcurrentPrng>(LazyThreadSafetyMode.ExecutionAndPublication);
         private static readonly Lazy<byte[]> keepAliveConfiguration =
             new Lazy<byte[]>(Connection.GetWindowsKeepAliveConfiguration,
+                LazyThreadSafetyMode.ExecutionAndPublication);
+        private static readonly Lazy<bool> isKeepAliveCustomizationSupported =
+            new Lazy<bool>(Connection.IsKeepAliveCustomizationSupported,
                 LazyThreadSafetyMode.ExecutionAndPublication);
 
         private static readonly byte[] healthCheckBuffer = new byte[1];
@@ -939,7 +946,59 @@ namespace Microsoft.Azure.Documents.Rntbd
                     // Ignore the exception.
                 }
             }
-#endif  // !NETSTANDARD15 && !NETSTANDARD16
+            else
+            {
+                Connection.SetKeepAliveSocketOptions(clientSocket);
+            }
+#else
+            Connection.SetKeepAliveSocketOptions(clientSocket);
+#endif
+        }
+
+        private static void SetKeepAliveSocketOptions(Socket clientSocket)
+        {
+            if (Connection.isKeepAliveCustomizationSupported.Value)
+            {
+                //SocketOptionName.TcpKeepAliveInterval
+                clientSocket.SetSocketOption(SocketOptionLevel.Tcp, 
+                                            (SocketOptionName)TcpKeepAliveIntervalSocketOptionEnumValue, 
+                                            SocketOptionTcpKeepAliveInterval);
+
+                //SocketOptionName.TcpKeepAliveTime
+                clientSocket.SetSocketOption(SocketOptionLevel.Tcp, 
+                                            (SocketOptionName)TcpKeepAliveTimeSocketOptionEnumValue,
+                                            SocketOptionTcpKeepAliveTime);
+            }
+#if DEBUG
+            int tcpKeepAliveInterval = (int)clientSocket.GetSocketOption(SocketOptionLevel.Tcp,
+                                                                        (SocketOptionName)TcpKeepAliveIntervalSocketOptionEnumValue);
+            int tcpKeepAliveTime = (int)clientSocket.GetSocketOption(SocketOptionLevel.Tcp, 
+                                                                    (SocketOptionName)TcpKeepAliveTimeSocketOptionEnumValue);
+            Debug.Equals(tcpKeepAliveInterval, SocketOptionTcpKeepAliveInterval);
+            Debug.Equals(tcpKeepAliveTime, SocketOptionTcpKeepAliveTime);
+#endif
+        }
+
+        private static bool IsKeepAliveCustomizationSupported()
+        {
+            // Check to see if the SetSocketOptionsMethod does not throw
+            try
+            {
+                using (Socket dummySocket = new Socket(SocketType.Stream, ProtocolType.Tcp))
+                {
+                    dummySocket.SetSocketOption(SocketOptionLevel.Tcp,
+                           (SocketOptionName)TcpKeepAliveIntervalSocketOptionEnumValue,
+                           SocketOptionTcpKeepAliveInterval);
+                    dummySocket.SetSocketOption(SocketOptionLevel.Tcp,
+                                                (SocketOptionName)TcpKeepAliveTimeSocketOptionEnumValue,
+                                                SocketOptionTcpKeepAliveTime);
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private static byte[] GetWindowsKeepAliveConfiguration()

@@ -40,6 +40,7 @@
 		<RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
 		<NoWarn>NU5125</NoWarn>
 		<Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
+		<LangVersion>$(LangVersion)</LangVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -131,7 +132,7 @@
 		<PackageReference Include="Azure.Core" Version="1.3.0" />
 
 		<!--Direct Dependencies-->
-		<PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
+		<PackageReference Include="System.Configuration.ConfigurationManager" Version="4.7.0" />
 
 		<!--HybridRow Dependencies-->
 		<PackageReference Include="System.Memory" Version="4.5.4" />
@@ -172,7 +173,6 @@
     <DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
     <DefineConstants Condition=" '$(DelaySign)' == 'true' ">$(DefineConstants);DelaySignKeys</DefineConstants>
     <DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20</DefineConstants>
-    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
 </Project>

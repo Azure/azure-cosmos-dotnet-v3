@@ -190,11 +190,22 @@ namespace Microsoft.Azure.Documents
 
                             if (this.detectConnectivityIssues &&
                                 this.request.RequestContext.ClientRequestStatistics != null &&
-                                this.request.RequestContext.ClientRequestStatistics.IsCpuOverloaded)
+                                this.request.RequestContext.ClientRequestStatistics.IsCpuHigh.GetValueOrDefault(false))
                             {
                                 exceptionToThrow = new ServiceUnavailableException(
                                     string.Format(
                                         RMResources.ClientCpuOverload,
+                                        this.request.RequestContext.ClientRequestStatistics.FailedReplicas.Count,
+                                        this.request.RequestContext.ClientRequestStatistics.RegionsContacted.Count == 0 ?
+                                            1 : this.request.RequestContext.ClientRequestStatistics.RegionsContacted.Count));
+                            }
+                            if (this.detectConnectivityIssues &&
+                               this.request.RequestContext.ClientRequestStatistics != null &&
+                               this.request.RequestContext.ClientRequestStatistics.IsCpuThreadStarvation.GetValueOrDefault(false))
+                            {
+                                exceptionToThrow = new ServiceUnavailableException(
+                                    string.Format(
+                                        RMResources.ClientCpuThreadStarvation,
                                         this.request.RequestContext.ClientRequestStatistics.FailedReplicas.Count,
                                         this.request.RequestContext.ClientRequestStatistics.RegionsContacted.Count == 0 ?
                                             1 : this.request.RequestContext.ClientRequestStatistics.RegionsContacted.Count));

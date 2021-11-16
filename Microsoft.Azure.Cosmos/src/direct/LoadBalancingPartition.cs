@@ -170,7 +170,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                             while (this.openChannels.Count < targetChannels)
                             {
                                 Channel newChannel = new Channel(activityId, this.serverUri, this.channelProperties, this.localRegionRequest, this.concurrentOpeningChannelSlim);
-                                newChannel.Initialize();
                                 this.openChannels.Add(new LbChannelState(newChannel, this.channelProperties.MaxRequestsPerChannel));
                                 this.capacity += this.channelProperties.MaxRequestsPerChannel;
                             }

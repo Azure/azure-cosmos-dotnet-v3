@@ -3,14 +3,15 @@
     <IsTestProject>true</IsTestProject>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Platform>AnyCPU</Platform>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
+    <RootNamespace>Microsoft.Azure.Cosmos.Encryption.EmulatorTests</RootNamespace>
     <AssemblyName>Microsoft.Azure.Cosmos.Encryption.EmulatorTests</AssemblyName>
     <IsEmulatorTest>true</IsEmulatorTest>
     <EmulatorFlavor>master</EmulatorFlavor>
     <DisableCopyEmulator>True</DisableCopyEmulator>
+    <LangVersion>$(LangVersion)</LangVersion>
   </PropertyGroup>
   
   <ItemGroup>

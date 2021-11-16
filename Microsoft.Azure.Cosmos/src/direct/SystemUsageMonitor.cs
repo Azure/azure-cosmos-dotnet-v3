@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Documents.Rntbd
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
@@ -18,28 +17,36 @@ namespace Microsoft.Azure.Documents.Rntbd
 #if NETSTANDARD15 || NETSTANDARD16
     using Trace = Microsoft.Azure.Documents.Trace;
 #endif
-
-    internal sealed class SystemUsageMonitor : SystemUsageMonitorBase
+    internal sealed class SystemUsageMonitor : IDisposable
     {
-        private readonly int pollDelayInMilliSeconds;
+        private readonly SystemUtilizationReaderBase systemUtilizationReader = SystemUtilizationReaderBase.SingletonInstance;
+        private readonly IDictionary<string, SystemUsageRecorder> recorders = new Dictionary<string, SystemUsageRecorder>();
         private readonly Stopwatch watch = new Stopwatch();
-        private readonly IDictionary<string, CpuAndMemoryUsageRecorder> recorders = new Dictionary<string, CpuAndMemoryUsageRecorder>();
 
+        private int pollDelayInMilliSeconds;
         private CancellationTokenSource cancellation;
 
         private Task periodicTask { set; get; }
         private bool disposed { set; get; }
 
-        internal override int PollDelayInMs => pollDelayInMilliSeconds;
-        public override bool IsRunning() => (this.periodicTask.Status == TaskStatus.Running);
+        internal int PollDelayInMs => pollDelayInMilliSeconds;
+        public bool IsRunning() => (this.periodicTask.Status == TaskStatus.Running);
 
-        internal override bool TryGetBackgroundTaskException(out AggregateException aggregateException)
+        internal bool TryGetBackgroundTaskException(out AggregateException aggregateException)
         {
             aggregateException = this.periodicTask?.Exception;
             return aggregateException != null;
         }
 
-        internal SystemUsageMonitor(IReadOnlyList<CpuAndMemoryUsageRecorder> recorders) 
+        public static SystemUsageMonitor CreateAndStart(IReadOnlyList<SystemUsageRecorder> usageRecorders)
+        {
+            SystemUsageMonitor monitor = new SystemUsageMonitor(usageRecorders);
+            monitor.Start();
+
+            return monitor;
+        }
+
+        private SystemUsageMonitor(IReadOnlyList<SystemUsageRecorder> recorders)
         {
             if (recorders.Count == 0)
             {
@@ -47,7 +54,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
 
             int pollDelay = 0;
-            foreach (CpuAndMemoryUsageRecorder recorder in recorders)
+            foreach (SystemUsageRecorder recorder in recorders)
             {
                 this.recorders.Add(recorder.identifier, recorder);
                 pollDelay = this.GCD((int)recorder.refreshInterval.TotalMilliseconds, pollDelay);
@@ -69,7 +76,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.GCD(timeInterval2, timeInterval1 % timeInterval2);
         }
 
-        public override void Start()
+        private void Start()
         {
             this.ThrowIfDisposed();
             if (this.periodicTask != null)
@@ -106,7 +113,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// <summary>
         /// Stop the Monitoring
         /// </summary>
-        public override void Stop()
+        public void Stop()
         {
             this.ThrowIfDisposed();
 
@@ -134,7 +141,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             DefaultTrace.TraceInformation(nameof(SystemUsageMonitor) + " stopped");
         }
 
-        public override CpuAndMemoryUsageRecorder GetRecorder(string recorderKey)
+        public SystemUsageRecorder GetRecorder(string recorderKey)
         {
             this.ThrowIfDisposed();
 
@@ -143,13 +150,13 @@ namespace Microsoft.Azure.Documents.Rntbd
                 DefaultTrace.TraceError(nameof(SystemUsageMonitor) + " is not started");
                 throw new InvalidOperationException(nameof(SystemUsageMonitor) + " was not started");
             }
-            
-            return this.recorders.TryGetValue(recorderKey, out CpuAndMemoryUsageRecorder recorder) ? 
-                recorder : 
-                throw  new ArgumentException("Recorder Identifier not present i.e. " + recorderKey); 
+
+            return this.recorders.TryGetValue(recorderKey, out SystemUsageRecorder recorder) ?
+                recorder :
+                throw new ArgumentException("Recorder Identifier not present i.e. " + recorderKey);
         }
 
-        public override void Dispose()
+        public void Dispose()
         {
             this.ThrowIfDisposed();
             if (this.periodicTask != null)
@@ -168,7 +175,11 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
 
         }
-        
+
+        /// <summary>
+        /// Keep Running and keep record the System Usage.
+        /// </summary>
+        /// <param name="cancellationToken"></param>
         private void RefreshLoopAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
@@ -178,13 +189,28 @@ namespace Microsoft.Azure.Documents.Rntbd
                     this.watch.Start();
                 }
 
-                foreach(CpuAndMemoryUsageRecorder recorder in this.recorders.Values)
+                // reset value on each iteration
+                Nullable<SystemUsageLoad> usageData = null;
+
+                foreach (SystemUsageRecorder recorder in this.recorders.Values)
                 {
-                    recorder.RecordUsage(systemUtilizationReader, this.watch);
+                    if(recorder.IsEligibleForRecording(this.watch))
+                    {
+                        // Getting CPU and Memory Usage from utilization reader if its not there only first time, use this value for all the recorders
+                        if (usageData == null)
+                        {
+                            DateTime now = DateTime.UtcNow;
+                            usageData = new SystemUsageLoad(now, ThreadInformation.Get(), systemUtilizationReader.GetSystemWideCpuUsage(), systemUtilizationReader.GetSystemWideMemoryAvailabilty());
+                        }
+
+                        // record the above calculated usage if eligible
+                        recorder.RecordUsage(usageData.Value, this.watch);
+                    }
                 }
 
                 Task.Delay(this.pollDelayInMilliSeconds).Wait();
             }
         }
+
     }
 }

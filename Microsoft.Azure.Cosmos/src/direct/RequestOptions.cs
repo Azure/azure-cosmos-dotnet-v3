@@ -483,6 +483,19 @@ namespace Microsoft.Azure.Documents.Client
         internal bool PopulateAnalyticalMigrationProgress { get; set; }
 
         /// <summary>
+        ///  Gets or sets the <see cref="PopulateBYOKEncryptionProgress"/> for document collection read requests.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <see cref="PopulateBYOKEncryptionProgress"/> is used to enable/disable getting byok reencryption progress.
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// For usage, please refer to the example in <see cref="Microsoft.Azure.Documents.DocumentCollection.PopulateBYOKEncryptionProgress"/>.
+        /// </example>
+        internal bool PopulateBYOKEncryptionProgress { get; set; }
+
+        /// <summary>
         /// Gets or sets the Remote storage enablement
         /// To be used along with Collection creation operation
         /// </summary>
@@ -576,6 +589,11 @@ namespace Microsoft.Azure.Documents.Client
         /// Truncate the Collection
         /// </summary>
         internal bool CollectionTruncate { get; set; }
+
+        /// <summary>
+        /// Represents client-side encryption
+        /// </summary>
+        internal bool IsClientEncrypted { get; set; }
 
         /// <summary>
         /// Gets or sets shared offer throughput on a collection.

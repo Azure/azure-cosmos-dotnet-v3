@@ -450,6 +450,9 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.TruncateMergeLogRequest, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.AllowRequestWithoutInstanceId, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateAnalyticalMigrationProgress, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateByokEncryptionProgress, request);
+
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IncludePhysicalPartitionThroughputInfo, request);
 
             Stream clonedStream = null;
             if (request.Body != null)
@@ -581,6 +584,7 @@ namespace Microsoft.Azure.Documents
                     break;
 
                 case OperationType.ReadReplicaFromMasterPartition:
+                case OperationType.ReadReplicaFromServerPartition:
                     httpRequestMessage.RequestUri = physicalAddress;
                     httpRequestMessage.Method = HttpMethod.Get;
                     break;
@@ -730,6 +734,8 @@ namespace Microsoft.Azure.Documents
                     return HttpTransportClient.GetRoleAssignmentEntryUri(physicalAddress, request);
                 case ResourceType.AuthPolicyElement:
                     return HttpTransportClient.GetAuthPolicyElementEntryUri(physicalAddress, request);
+                case ResourceType.InteropUser:
+                    return HttpTransportClient.GetInteropUserEntryUri(physicalAddress, request);
                 case ResourceType.SystemDocument:
                     return HttpTransportClient.GetSystemDocumentEntryUri(physicalAddress, request);
                 case ResourceType.PartitionedSystemDocument:
@@ -941,6 +947,11 @@ namespace Microsoft.Azure.Documents
         private static Uri GetAuthPolicyElementEntryUri(Uri baseAddress, DocumentServiceRequest request)
         {
             return new Uri(baseAddress, PathsHelper.GeneratePath(ResourceType.AuthPolicyElement, request, isFeed: false));
+        }
+
+        private static Uri GetInteropUserEntryUri(Uri baseAddress, DocumentServiceRequest request)
+        {
+            return new Uri(baseAddress, PathsHelper.GeneratePath(ResourceType.InteropUser, request, isFeed: false));
         }
 
         private static Uri GetSystemDocumentFeedUri(Uri baseAddress, DocumentServiceRequest request)

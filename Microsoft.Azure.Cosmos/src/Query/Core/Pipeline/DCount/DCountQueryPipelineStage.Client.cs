@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
 
                 double requestCharge = 0;
                 long responseLengthBytes = 0;
-                ImmutableDictionary<string, string> additionalHeaders = null;
+                IReadOnlyDictionary<string, string> additionalHeaders = null;
                 while (await this.inputStage.MoveNextAsync(trace))
                 {
                     TryCatch<QueryPage> tryGetPageFromSource = this.inputStage.Current;

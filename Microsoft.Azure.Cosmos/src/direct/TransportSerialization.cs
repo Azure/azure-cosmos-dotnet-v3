@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             Guid activityId,
             BufferProvider bufferProvider,
             out int headerSize,
-            out int bodySize)
+            out int? bodySize)
         {
             RntbdConstants.RntbdOperationType operationType = GetRntbdOperationType(resourceOperation.operationType);
             RntbdConstants.RntbdResourceType resourceType = GetRntbdResourceType(resourceOperation.resourceType);
@@ -187,7 +187,10 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.RbacUserId, rntbdRequest.rbacUserId, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.RbacAction, rntbdRequest.rbacAction, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.RbacResource, rntbdRequest.rbacResource, rntbdRequest);
-            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.ChangeFeedWireFormatVersion, rntbdRequest.rbacResource, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.ChangeFeedWireFormatVersion, rntbdRequest.changeFeedWireFormatVersion, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.PopulateByokEncryptionProgress, rntbdRequest.populateBYOKEncryptionProgress, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.UseUserBackgroundBudget, rntbdRequest.useUserBackgroundBudget, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.IncludePhysicalPartitionThroughputInfo, rntbdRequest.includePhysicalPartitionThroughputInfo, rntbdRequest);
 
             // will be null in case of direct, which is fine - BE will use the value from the connection context message.
             // When this is used in Gateway, the header value will be populated with the proxied HTTP request's header, and
@@ -199,6 +202,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             int allocationLength = 0;
 
+            bodySize = null;
             int bodyLength = 0;
             CloneableStream clonedStream = null;
             if (request.CloneableBody != null)
@@ -256,11 +260,11 @@ namespace Microsoft.Azure.Documents.Rntbd
                     ArraySegment<byte> buffer = clonedStream.GetBuffer();
                     writer.Write((UInt32)bodyLength);
                     writer.Write(buffer);
+                    bodySize = sizeof(UInt32) + bodyLength;
                 }
             }
 
             headerSize = headerAndMetadataLength;
-            bodySize = sizeof(UInt32) + bodyLength;
 
             const int HeaderSizeWarningThreshold = 128 * 1024;
             const int BodySizeWarningThreshold = 16 * 1024 * 1024;
@@ -406,6 +410,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             responseHeaders.CollectionUniqueKeysUnderReIndex = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.collectionUniqueKeysUnderReIndex);
             responseHeaders.AnalyticalMigrationProgress = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.analyticalMigrationProgress);
             responseHeaders.TotalAccountThroughput = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.totalAccountThroughput);
+            responseHeaders.ByokEncryptionProgress = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.byokEncryptionProgress);
+            responseHeaders.AppliedPolicyElementId = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.appliedPolicyElementId);
 
             if (response.requestCharge.isPresent)
             {
@@ -471,6 +477,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                     case RntbdTokenTypes.String:
                     case RntbdTokenTypes.SmallString:
                         return BytesSerializer.GetStringFromBytes(token.value.valueBytes);
+                    case RntbdTokenTypes.Long:
+                        return token.value.valueLong.ToString(CultureInfo.InvariantCulture);
                     default:
                         throw new Exception($"Unsupported token type {token.GetTokenType()}");
                 }

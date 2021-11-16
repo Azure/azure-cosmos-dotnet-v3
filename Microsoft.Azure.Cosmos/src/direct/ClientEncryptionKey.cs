@@ -18,12 +18,25 @@ namespace Microsoft.Azure.Documents
 
         }
 
-        [JsonProperty(PropertyName = Constants.Properties.WrappedDataEncryptionKey)]
-        internal string WrappedDataEncryptionKey
+        [JsonProperty(PropertyName = Constants.Properties.EncryptionAlgorithm)]
+        internal string EncryptionAlgorithm
         {
             get
             {
-                return this.GetValue<string>(Constants.Properties.WrappedDataEncryptionKey);
+                return this.GetValue<string>(Constants.Properties.EncryptionAlgorithm);
+            }
+            set
+            {
+                base.SetValue(Constants.Properties.EncryptionAlgorithm, value);
+            }
+        }
+
+        [JsonProperty(PropertyName = Constants.Properties.WrappedDataEncryptionKey)]
+        internal byte[] WrappedDataEncryptionKey
+        {
+            get
+            {
+                return this.GetValue<byte[]>(Constants.Properties.WrappedDataEncryptionKey);
             }
             set
             {

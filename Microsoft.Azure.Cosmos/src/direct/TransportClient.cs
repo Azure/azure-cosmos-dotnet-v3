@@ -30,7 +30,6 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly TimerPool timerPool;
         private readonly TimerPool idleTimerPool;
         private readonly ChannelDictionary channelDictionary;
-        private readonly CpuMonitor cpuMonitor;
         private bool disposed = false;
 
         #region RNTBD Transition
@@ -91,14 +90,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                     this.idleTimerPool,
                     clientOptions.CallerId,
                     clientOptions.EnableChannelMultiplexing));
-
-            // CpuMonitor must be disabled inside compute gateway because it presents unnecessary overhead
-            // CpuMonitor is useful for customer applications that need help debugging timeouts
-            if (clientOptions.EnableCpuMonitor)
-            {
-                this.cpuMonitor = new CpuMonitor();
-                this.cpuMonitor.Start();
-            }
         }
 
         internal override Task<StoreResponse> InvokeStoreAsync(
@@ -171,11 +162,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                 // TransportException directly, don't allow TransportException
                 // to escape, and wrap it in an expected DocumentClientException
                 // instead. Tracked in backlog item 303368.
-                if (this.cpuMonitor != null)
-                {
-                    ex.SetCpuLoad(this.cpuMonitor.GetCpuLoad());
-                }
-
                 transportRequestStats.RecordState(TransportRequestStats.RequestStage.Failed);
                 transportResponseStatusCode = (int) ex.ErrorCode;
                 ex.RequestStartTime = requestStartTime;
@@ -247,12 +233,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.ThrowIfDisposed();
             this.disposed = true;
             this.channelDictionary.Dispose();
-
-            if (this.cpuMonitor != null)
-            {
-                this.cpuMonitor.Stop();
-                this.cpuMonitor.Dispose();
-            }
 
             if (this.idleTimerPool != null)
             {
@@ -385,11 +365,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.IdleTimeout = TimeSpan.FromSeconds(1800);
                 this.CallerId = RntbdConstants.CallerId.Anonymous;
                 this.EnableChannelMultiplexing = false;
-
-                // CPU monitoring is needed for troubleshooting of client-side timeouts as such it is enabled by default
-                // Ability to disable is exposed to internal clients
-                this.EnableCpuMonitor = true;
-
                 this.MaxConcurrentOpeningConnectionCount = ushort.MaxValue;
             }
 
@@ -400,7 +375,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             public TimeSpan ReceiveHangDetectionTime { get; set; }
             public TimeSpan SendHangDetectionTime { get; set; }
             public TimeSpan IdleTimeout { get; set; }
-            public bool EnableCpuMonitor { get; set; }
             public RntbdConstants.CallerId CallerId { get; set; }
             public bool EnableChannelMultiplexing { get; set; }
 
@@ -489,8 +463,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                 s.AppendLine(this.SendHangDetectionTime.ToString("c"));
                 s.Append("  IdleTimeout: ");
                 s.AppendLine(this.IdleTimeout.ToString("c"));
-                s.Append("  EnableCpuMonitor: ");
-                s.AppendLine(this.EnableCpuMonitor.ToString());
                 s.Append("  UserAgent: ");
                 s.Append(this.UserAgent.UserAgent);
                 s.Append(" Suffix: ");

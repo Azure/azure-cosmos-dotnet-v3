@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Documents
     /// </summary>
     internal interface IAddressEnumerator
     {
-        IEnumerable<TransportAddressUri> GetTransportAddresses(IReadOnlyList<TransportAddressUri> transportAddressUris);
+        IEnumerable<TransportAddressUri> GetTransportAddresses(IReadOnlyList<TransportAddressUri> transportAddressUris,
+                                                               HashSet<TransportAddressUri> failedReplicas);
     }
 }

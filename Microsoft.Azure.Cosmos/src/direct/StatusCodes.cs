@@ -80,6 +80,7 @@ namespace Microsoft.Azure.Documents
         ConfigurationPropertyNotFound = 1005,
         CollectionCreateInProgress = 1013,
         StoreNotReady = 1023,
+        AuthTokenNotFoundInCache = 1030,
 
         // 409: Conflict exception
         ConflictWithControlPlane = 1006,
@@ -108,9 +109,11 @@ namespace Microsoft.Azure.Documents
         MergeIsDisabled = 2012,
 		TombstoneRecordsNotFound = 2015, // Tombstone records were not found because they were purged.
         InvalidAccountStatus = 2016,
+        OfferValidationFailed = 2017,
 
         // 500: InternalServerError
         ConfigurationNameNotEmpty = 3001,
+        ConfigurationOperationCancelled = 3002,
 
         // 429: Request Rate Too Large
         PrepareTimeLimitExceeded = 3207,

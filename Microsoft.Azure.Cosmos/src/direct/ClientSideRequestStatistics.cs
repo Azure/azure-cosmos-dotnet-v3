@@ -3,6 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
+    using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Documents.Rntbd;
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -12,10 +14,15 @@ namespace Microsoft.Azure.Documents
 
     internal sealed class ClientSideRequestStatistics : IClientSideRequestStatistics
     {
+        private static readonly SystemUsageMonitor systemUsageMonitor;
+        private static readonly SystemUsageRecorder systemRecorder;
+        private static readonly TimeSpan SystemUsageRecordInterval = TimeSpan.FromSeconds(10);
+        private const string EnableCpuMonitorConfig = "CosmosDbEnableCpuMonitor";
         private const int MaxSupplementalRequestsForToString = 10;
+        private static bool enableCpuMonitorFlag;
 
         private DateTime requestStartTime;
-        private DateTime requestEndTime;
+        private DateTime? requestEndTime;
 
         private object lockObject = new object();
         private object requestEndTimeLock = new object();
@@ -24,54 +31,101 @@ namespace Microsoft.Azure.Documents
         private List<StoreResponseStatistics> supplementalResponseStatisticsList;
         private Dictionary<string, AddressResolutionStatistics> addressResolutionStatistics;
         private Lazy<List<HttpResponseStatistics>> httpResponseStatisticsList;
+        private SystemUsageHistory systemUsageHistory;
+
+        static ClientSideRequestStatistics()
+        {
+            ClientSideRequestStatistics.enableCpuMonitorFlag = true;
+#if !(NETSTANDARD15 || NETSTANDARD16)
+            string enableCpuMonitorString = System.Configuration.ConfigurationManager.AppSettings[ClientSideRequestStatistics.EnableCpuMonitorConfig];
+            if (!string.IsNullOrEmpty(enableCpuMonitorString))
+            {
+
+                if (!bool.TryParse(enableCpuMonitorString, out ClientSideRequestStatistics.enableCpuMonitorFlag))
+                {
+                    ClientSideRequestStatistics.enableCpuMonitorFlag = true;
+                }
+            }
+#endif
+
+            if (ClientSideRequestStatistics.enableCpuMonitorFlag)
+            {
+                // Have a history up to 1 minute with recording every 10 seconds
+                ClientSideRequestStatistics.systemRecorder = new SystemUsageRecorder(
+                    identifier: nameof(ClientSideRequestStatistics),
+                    historyLength: 6,
+                    refreshInterval: ClientSideRequestStatistics.SystemUsageRecordInterval);
+                
+                ClientSideRequestStatistics.systemUsageMonitor = SystemUsageMonitor.CreateAndStart(new List<SystemUsageRecorder>()
+                {
+                    ClientSideRequestStatistics.systemRecorder,
+                });
+            }
+        }
+
 
         public ClientSideRequestStatistics()
         {
             this.requestStartTime = DateTime.UtcNow;
-            this.requestEndTime = DateTime.UtcNow;
+            this.requestEndTime = null;
             this.responseStatisticsList = new List<StoreResponseStatistics>();
             this.supplementalResponseStatisticsList = new List<StoreResponseStatistics>();
             this.addressResolutionStatistics = new Dictionary<string, AddressResolutionStatistics>();
-            this.ContactedReplicas = new List<Uri>();
-            this.FailedReplicas = new HashSet<Uri>();
-            this.RegionsContacted = new HashSet<Uri>();
+            this.ContactedReplicas = new List<TransportAddressUri>();
+            this.FailedReplicas = new HashSet<TransportAddressUri>();
+            this.RegionsContacted = new HashSet<(string, Uri)>();
             this.httpResponseStatisticsList = new Lazy<List<HttpResponseStatistics>>();
         }
 
-        public List<Uri> ContactedReplicas { get; set; }
+        public List<TransportAddressUri> ContactedReplicas { get; set; }
 
-        public HashSet<Uri> FailedReplicas { get; private set; }
+        public HashSet<TransportAddressUri> FailedReplicas { get; private set; }
 
-        public HashSet<Uri> RegionsContacted { get; private set; }
+        public HashSet<(string, Uri)> RegionsContacted { get; private set; }
 
 
-        public TimeSpan RequestLatency
+        public TimeSpan? RequestLatency
         {
             get
             {
-                return requestEndTime - requestStartTime;
+                if (!requestEndTime.HasValue)
+                {
+                    return null;
+                }
+
+                return requestEndTime.Value - requestStartTime;
             }
         }
 
-        public bool IsCpuOverloaded
+        public bool? IsCpuHigh
         {
             get
             {
-                foreach (StoreResponseStatistics responseStatistics in this.responseStatisticsList)
-                {
-                    if (responseStatistics.StoreResult.IsClientCpuOverloaded)
-                    {
-                        return true;
-                    }
-                }
-                foreach (StoreResponseStatistics responseStatistics in this.supplementalResponseStatisticsList)
-                {
-                    if (responseStatistics.StoreResult.IsClientCpuOverloaded)
-                    {
-                        return true;
-                    }
-                }
-                return false;
+                return this.systemUsageHistory?.IsCpuHigh;
+            }
+        }
+
+        public bool? IsCpuThreadStarvation
+        {
+            get
+            {
+                return this.systemUsageHistory?.IsCpuThreadStarvation;
+            }
+        }
+
+        internal static void DisableCpuMonitor()
+        {
+            // CPU monitor is already disabled
+            if (!ClientSideRequestStatistics.enableCpuMonitorFlag)
+            {
+                return;
+            }
+
+            ClientSideRequestStatistics.enableCpuMonitorFlag = false;
+            if (ClientSideRequestStatistics.systemRecorder != null)
+            {
+                ClientSideRequestStatistics.systemUsageMonitor.Stop();
+                ClientSideRequestStatistics.systemUsageMonitor.Dispose();
             }
         }
 
@@ -79,23 +133,29 @@ namespace Microsoft.Azure.Documents
         {
         }
 
-        public void RecordResponse(DocumentServiceRequest request, StoreResult storeResult)
+        public void RecordResponse(
+            DocumentServiceRequest request,
+            StoreResult storeResult,
+            DateTime startTimeUtc,
+            DateTime endTimeUtc)
         {
-            DateTime responseTime = this.GetAndUpdateRequestEndTime();
+            this.UpdateRequestEndTime(endTimeUtc);
 
             StoreResponseStatistics responseStatistics;
-            responseStatistics.RequestResponseTime = responseTime;
+            responseStatistics.RequestStartTime = startTimeUtc;
+            responseStatistics.RequestResponseTime = endTimeUtc;
             responseStatistics.StoreResult = storeResult;
             responseStatistics.RequestOperationType = request.OperationType;
             responseStatistics.RequestResourceType = request.ResourceType;
 
             Uri locationEndpoint = request.RequestContext.LocationEndpointToRoute;
+            string regionName = request.RequestContext.RegionName ?? string.Empty;
 
             lock (this.lockObject)
             {
                 if (locationEndpoint != null)
                 {
-                    this.RegionsContacted.Add(locationEndpoint);
+                    this.RegionsContacted.Add((regionName, locationEndpoint));
                 }
 
                 if (responseStatistics.RequestOperationType == OperationType.Head || responseStatistics.RequestOperationType == OperationType.HeadFeed)
@@ -107,6 +167,15 @@ namespace Microsoft.Azure.Documents
                     this.responseStatisticsList.Add(responseStatistics);
                 }
             }
+        }
+
+        public void RecordException(
+            DocumentServiceRequest request,
+            Exception exception,
+            DateTime startTime,
+            DateTime endTimeUtc)
+        {
+            this.UpdateRequestEndTime(endTimeUtc);
         }
 
         public string RecordAddressResolutionStart(Uri targetEndpoint)
@@ -134,7 +203,8 @@ namespace Microsoft.Azure.Documents
                 return;
             }
 
-            DateTime responseTime = this.GetAndUpdateRequestEndTime();
+            DateTime responseTime = DateTime.UtcNow;
+            this.UpdateRequestEndTime(DateTime.UtcNow);
             lock (this.lockObject)
             {
                 if (!this.addressResolutionStatistics.ContainsKey(identifier))
@@ -151,9 +221,10 @@ namespace Microsoft.Azure.Documents
                                ResourceType resourceType,
                                DateTime requestStartTimeUtc)
         {
+            DateTime requestEndTimeUtc = DateTime.UtcNow;
+            this.UpdateRequestEndTime(requestEndTimeUtc);
             lock (this.httpResponseStatisticsList)
             {
-                DateTime requestEndTimeUtc = this.GetAndUpdateRequestEndTime();
                 this.httpResponseStatisticsList.Value.Add(new HttpResponseStatistics(requestStartTimeUtc,
                                                                            requestEndTimeUtc,
                                                                            request.RequestUri,
@@ -169,9 +240,10 @@ namespace Microsoft.Azure.Documents
                                        ResourceType resourceType,
                                        DateTime requestStartTimeUtc)
         {
+            DateTime requestEndTimeUtc = DateTime.UtcNow;
+            this.UpdateRequestEndTime(requestEndTimeUtc);
             lock (this.httpResponseStatisticsList)
             {
-                DateTime requestEndTimeUtc = this.GetAndUpdateRequestEndTime();
                 this.httpResponseStatisticsList.Value.Add(new HttpResponseStatistics(requestStartTimeUtc,
                                                                            requestEndTimeUtc,
                                                                            request.RequestUri,
@@ -182,18 +254,36 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        private DateTime GetAndUpdateRequestEndTime()
+        private void UpdateRequestEndTime(DateTime requestEndTimeUtc)
         {
-            DateTime requestEndTimeUtc = DateTime.UtcNow;
             lock (this.requestEndTimeLock)
             {
-                if (requestEndTimeUtc > this.requestEndTime)
+                if (!this.requestEndTime.HasValue || requestEndTimeUtc > this.requestEndTime)
                 {
+                    this.UpdateSystemUsageHistory();
                     this.requestEndTime = requestEndTimeUtc;
                 }
             }
+        }
 
-            return requestEndTimeUtc;
+        private void UpdateSystemUsageHistory()
+        {
+            // Only update the CPU history if it more than 10 seconds has passed since it was originally collected
+            if (ClientSideRequestStatistics.enableCpuMonitorFlag &&
+                ClientSideRequestStatistics.systemRecorder != null &&
+                (this.systemUsageHistory == null || this.systemUsageHistory.LastTimestamp + ClientSideRequestStatistics.SystemUsageRecordInterval < DateTime.UtcNow))
+            {
+                try
+                {
+                    this.systemUsageHistory = ClientSideRequestStatistics.systemRecorder.Data;
+                }
+                catch (Exception ex)
+                {
+                    DefaultTrace.TraceCritical(
+                        "System usage monitor failed with an unexpected exception: {0}",
+                        ex);
+                }
+            }
         }
 
         public override string ToString()
@@ -216,15 +306,42 @@ namespace Microsoft.Azure.Documents
             {
                 stringBuilder.AppendLine();
 
+                string endtime;
+                if (this.requestEndTime.HasValue)
+                {
+                    endtime = this.requestEndTime.Value.ToString("o", CultureInfo.InvariantCulture);
+                }
+                else
+                {
+                    endtime = $"No response recorded; Current Time: {DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}";
+                }
+
                 //first trace request start time, as well as total non-head/headfeed requests made.
                 stringBuilder.AppendFormat(
                    CultureInfo.InvariantCulture,
                    "RequestStartTime: {0}, RequestEndTime: {1},  Number of regions attempted:{2}",
                    this.requestStartTime.ToString("o", CultureInfo.InvariantCulture),
-                   this.requestEndTime.ToString("o", CultureInfo.InvariantCulture),
+                   endtime,
                    this.RegionsContacted.Count == 0 ? 1 : this.RegionsContacted.Count);
                 stringBuilder.AppendLine();
 
+                // This is needed for scenarios where the request was not sent
+                // so there is no response which triggers saving the system usage
+                if(this.systemUsageHistory == null)
+                {
+                    this.UpdateSystemUsageHistory();
+                }
+
+                if (this.systemUsageHistory != null &&
+                    this.systemUsageHistory.Values.Count > 0)
+                {
+                    this.systemUsageHistory.AppendJsonString(stringBuilder);
+                    stringBuilder.AppendLine();
+                }
+                else
+                {
+                    stringBuilder.AppendLine("System history not available.");
+                }
 
                 //take all responses here - this should be limited in number and each one contains relevant information.
                 foreach (StoreResponseStatistics item in this.responseStatisticsList)
@@ -278,6 +395,7 @@ namespace Microsoft.Azure.Documents
 
         private struct StoreResponseStatistics
         {
+            public DateTime RequestStartTime;
             public DateTime RequestResponseTime;
             public StoreResult StoreResult;
             public ResourceType RequestResourceType;
@@ -297,17 +415,21 @@ namespace Microsoft.Azure.Documents
                     throw new ArgumentNullException(nameof(stringBuilder));
                 }
 
-                stringBuilder.Append($"ResponseTime: {this.RequestResponseTime.ToString("o", CultureInfo.InvariantCulture)}, ");
+                stringBuilder.Append("RequestStart: ");
+                stringBuilder.Append(this.RequestStartTime.ToString("o", CultureInfo.InvariantCulture));
+                stringBuilder.Append("; ResponseTime: ");
+                stringBuilder.Append(this.RequestResponseTime.ToString("o", CultureInfo.InvariantCulture));
 
-                stringBuilder.Append("StoreResult: ");
+                stringBuilder.Append("; StoreResult: ");
                 if (this.StoreResult != null)
                 {
                     this.StoreResult.AppendToBuilder(stringBuilder);
                 }
 
+                stringBuilder.AppendLine();
                 stringBuilder.AppendFormat(
                     CultureInfo.InvariantCulture,
-                    ", ResourceType: {0}, OperationType: {1}",
+                    " ResourceType: {0}, OperationType: {1}",
                     this.RequestResourceType,
                     this.RequestOperationType);
             }

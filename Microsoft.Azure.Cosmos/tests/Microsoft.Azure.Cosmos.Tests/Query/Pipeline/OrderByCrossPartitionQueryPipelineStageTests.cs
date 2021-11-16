@@ -307,7 +307,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
 
             List<CosmosElement> documents = new List<CosmosElement>();
-            while (await queryPipelineStage.MoveNextAsync())
+            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
                 TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
                 if (tryGetQueryPage.Failed)
@@ -352,7 +352,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Assert.IsTrue(monadicCreate.Succeeded);
             IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
 
-            while (await queryPipelineStage.MoveNextAsync())
+            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
                 TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
                 if (tryGetQueryPage.Failed)
@@ -408,7 +408,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             IQueryPipelineStage queryPipelineStage = await CreatePipelineStateAsync(inMemoryCollection, continuationToken: null);
             List<CosmosElement> documents = new List<CosmosElement>();
             Random random = new Random();
-            while (await queryPipelineStage.MoveNextAsync())
+            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
                 TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
                 tryGetPage.ThrowIfFailed();
@@ -423,7 +423,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     {
                         // We need to drain out all the initial empty pages,
                         // since they are non resumable state.
-                        Assert.IsTrue(await queryPipelineStage.MoveNextAsync());
+                        Assert.IsTrue(await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton));
                         TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
                         if (tryGetQueryPage.Failed)
                         {

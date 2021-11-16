@@ -107,6 +107,41 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        public override bool Equals(object obj)
+        {
+            if (!(obj is UniqueKeyPolicy uniqueKeyPolicy))
+            {
+                return false;
+            }
+
+            if (this.UniqueKeys.Count != uniqueKeyPolicy.UniqueKeys.Count)
+            {
+                return false;
+            }
+
+            foreach (UniqueKey uniqueKey in this.uniqueKeys)
+            {
+                if (!uniqueKeyPolicy.UniqueKeys.Contains(uniqueKey))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public override int GetHashCode()
+        {
+            int hashcode = 0;
+
+            foreach (UniqueKey uniqueKey in this.uniqueKeys)
+            {
+                hashcode ^= uniqueKey.GetHashCode();
+            }
+
+            return hashcode;
+        }
+
         internal override void OnSave()
         {
             if (this.uniqueKeys != null)

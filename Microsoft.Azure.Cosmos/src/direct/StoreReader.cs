@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Documents
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
@@ -204,20 +205,23 @@ namespace Microsoft.Azure.Documents
             bool hasCancellationException = false;
             Exception cancellationException = null;
             Exception exceptionToThrow = null;
-            IEnumerator<TransportAddressUri> uriEnumerator = this.addressEnumerator.GetTransportAddresses(resolveApiResults).GetEnumerator();
+            IEnumerator<TransportAddressUri> uriEnumerator = this.addressEnumerator
+                                                            .GetTransportAddresses(resolveApiResults, 
+                                                                                   entity.RequestContext.ClientRequestStatistics.FailedReplicas)
+                                                            .GetEnumerator();
 
             // Loop until we have the read quorum number of valid responses or if we have read all the replicas
             while (replicasToRead > 0 && uriEnumerator.MoveNext())
             {
                 entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
-                Dictionary<Task<StoreResponse>, TransportAddressUri> readStoreTasks = new Dictionary<Task<StoreResponse>, TransportAddressUri>();
+                Dictionary<Task<(StoreResponse response, DateTime endTime)>, (TransportAddressUri, DateTime startTime)> readStoreTasks = new Dictionary<Task<(StoreResponse response, DateTime endTime)>, (TransportAddressUri, DateTime startTime)>();
 
                 do
                 {
                     readStoreTasks.Add(this.ReadFromStoreAsync(
                             physicalAddress: uriEnumerator.Current,
                             request: entity),
-                        uriEnumerator.Current);
+                        (uriEnumerator.Current, DateTime.UtcNow));
 
                     if (!forceReadAll && readStoreTasks.Count == replicasToRead)
                     {
@@ -231,15 +235,31 @@ namespace Microsoft.Azure.Documents
                 }
                 catch (Exception exception)
                 {
-                    //All task exceptions are visited below.
-                    DefaultTrace.TraceInformation("Exception {0} is thrown while doing readMany", exception);
                     exceptionToThrow = exception;
+
+                    //All task exceptions are visited below.
+                    if (exception is DocumentClientException dce && 
+                        (dce.StatusCode == HttpStatusCode.NotFound
+                            || dce.StatusCode == HttpStatusCode.Conflict
+                            || (int)dce.StatusCode == (int)StatusCodes.TooManyRequests))
+                    {
+                        // Only trace message for common scenarios to avoid the overhead of computing the stack trace.
+                        DefaultTrace.TraceInformation("StoreReader.ReadMultipleReplicasInternalAsync exception thrown: StatusCode: {0}; SubStatusCode:{1}; Exception.Message: {2}",
+                            dce.StatusCode,
+                            dce.Headers?.Get(WFConstants.BackendHeaders.SubStatus),
+                            dce.Message);
+                    }
+                    else
+                    {
+                        // Include the full exception for other scenarios for troubleshooting
+                        DefaultTrace.TraceInformation("StoreReader.ReadMultipleReplicasInternalAsync exception thrown: Exception: {0}", exception);
+                    }
                 }
 
-                foreach (KeyValuePair<Task<StoreResponse>, TransportAddressUri> readTaskValuePair in readStoreTasks)
+                foreach (KeyValuePair<Task<(StoreResponse response, DateTime endTime)>, (TransportAddressUri uri, DateTime startTime)> readTaskValuePair in readStoreTasks)
                 {
-                    Task<StoreResponse> readTask = readTaskValuePair.Key;
-                    StoreResponse storeResponse = readTask.Status == TaskStatus.RanToCompletion ? readTask.Result : null;
+                    Task<(StoreResponse response, DateTime endTime)> readTask = readTaskValuePair.Key;
+                    (StoreResponse storeResponse, DateTime endTime) = readTask.Status == TaskStatus.RanToCompletion ? readTask.Result : (null, DateTime.UtcNow);
                     Exception storeException = readTask.Exception?.InnerException;
 
                     // IsCanceled can be true with storeException being null if the async call
@@ -251,14 +271,14 @@ namespace Microsoft.Azure.Documents
                         continue;
                     }
 
-                    Uri targetUri = readTaskValuePair.Value.Uri;
+                    TransportAddressUri targetUri = readTaskValuePair.Value.uri;
 
                     StoreResult storeResult = StoreResult.CreateStoreResult(
                         storeResponse,
                         storeException, 
                         requiresValidLsn,
                         this.canUseLocalLSNBasedHeaders && readMode != ReadMode.Strong,
-                        targetUri);
+                        targetUri.Uri);
 
                     entity.RequestContext.RequestChargeTracker.AddCharge(storeResult.RequestCharge);
 
@@ -272,7 +292,11 @@ namespace Microsoft.Azure.Documents
                         entity.RequestContext.ClientRequestStatistics.FailedReplicas.Add(targetUri);
                     }
 
-                    entity.RequestContext.ClientRequestStatistics.RecordResponse(entity, storeResult);
+                    entity.RequestContext.ClientRequestStatistics.RecordResponse(
+                        entity,
+                        storeResult,
+                        readTaskValuePair.Value.startTime,
+                        endTime);
 
                     if (storeResult.IsValid)
                     {
@@ -357,29 +381,40 @@ namespace Microsoft.Azure.Documents
                 entity.Headers.Remove(HttpConstants.HttpHeaders.SessionToken);
             }
 
-            Exception storeTaskException = null;
-            StoreResponse storeResponse = null;
+            DateTime startTimeUtc = DateTime.UtcNow;
+            DateTime? endTimeUtc = null;
+            StoreResult storeResult;
             try
             {
                 this.UpdateContinuationTokenIfReadFeedOrQuery(entity);
-                storeResponse = await this.ReadFromStoreAsync(
+                (StoreResponse storeResponse, DateTime storeResponseEndTimeUtc) = await this.ReadFromStoreAsync(
                     primaryUri,
                     entity);
+
+                endTimeUtc = storeResponseEndTimeUtc;
+                storeResult = StoreResult.CreateStoreResult(
+                    storeResponse,
+                    null,
+                    requiresValidLsn,
+                    this.canUseLocalLSNBasedHeaders,
+                    primaryUri.Uri);
             }
             catch (Exception exception)
             {
-                storeTaskException = exception;
                 DefaultTrace.TraceInformation("Exception {0} is thrown while doing Read Primary", exception);
+                storeResult = StoreResult.CreateStoreResult(
+                    null,
+                    exception,
+                    requiresValidLsn,
+                    this.canUseLocalLSNBasedHeaders,
+                    primaryUri.Uri);
             }
 
-            StoreResult storeResult = StoreResult.CreateStoreResult(
-                storeResponse,
-                storeTaskException, requiresValidLsn,
-                this.canUseLocalLSNBasedHeaders,
-                primaryUri.Uri);
-
-
-            entity.RequestContext.ClientRequestStatistics.RecordResponse(entity, storeResult);
+            entity.RequestContext.ClientRequestStatistics.RecordResponse(
+                entity, 
+                storeResult,
+                startTimeUtc,
+                endTimeUtc ?? DateTime.UtcNow);
 
             entity.RequestContext.RequestChargeTracker.AddCharge(storeResult.RequestCharge);
 
@@ -391,7 +426,7 @@ namespace Microsoft.Azure.Documents
             return new ReadReplicaResult(false, new StoreResult[] { storeResult });
         }
 
-        private async Task<StoreResponse> ReadFromStoreAsync(
+        private async Task<(StoreResponse, DateTime endTime)> ReadFromStoreAsync(
             TransportAddressUri physicalAddress,
             DocumentServiceRequest request)
         {
@@ -410,19 +445,21 @@ namespace Microsoft.Azure.Documents
                 case OperationType.GetStorageAuthToken:
 #endif
                     {
-                        return await this.transportClient.InvokeResourceOperationAsync(
-                        physicalAddress,
-                        request);
+                        StoreResponse result = await this.transportClient.InvokeResourceOperationAsync(
+                            physicalAddress,
+                            request);
+                        return (result, DateTime.UtcNow);
                     }
 
                 case OperationType.ReadFeed:
                 case OperationType.Query:
                     {
                         QueryRequestPerformanceActivity activity = CustomTypeExtensions.StartActivity(request);
-                        return await StoreReader.CompleteActivity(this.transportClient.InvokeResourceOperationAsync(
+                        StoreResponse result = await StoreReader.CompleteActivity(this.transportClient.InvokeResourceOperationAsync(
                             physicalAddress,
                             request),
                             activity);
+                        return (result, DateTime.UtcNow);
                     }
                 default:
                     throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, "Unexpected operation type {0}", request.OperationType));

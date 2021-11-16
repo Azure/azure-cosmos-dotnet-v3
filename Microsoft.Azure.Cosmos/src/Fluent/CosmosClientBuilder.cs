@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using System.Collections.Generic;
     using System.Net;
     using System.Net.Http;
+    using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -20,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private readonly CosmosClientOptions clientOptions = new CosmosClientOptions();
         private readonly string accountEndpoint;
         private readonly string accountKey;
+        private readonly TokenCredential tokenCredential;
 
         /// <summary>
         /// Initialize a new CosmosConfiguration class that holds all the properties the CosmosClient requires.
@@ -85,6 +87,35 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Initializes a new <see cref="CosmosClientBuilder"/> with a <see cref="TokenCredential"/> instance.
+        /// </summary>
+        /// <param name="accountEndpoint">The Uri to the Cosmos Account. Example: https://{Cosmos Account Name}.documents.azure.com:443/ </param>
+        /// <param name="tokenCredential">An instance of <see cref="TokenCredential"/></param>
+        /// <example>
+        /// The example below creates a new <see cref="CosmosClientBuilder"/> using a <see cref="TokenCredential"/>.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+        ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
+        ///     tokenCredential: new DefaultAzureCredential());
+        /// CosmosClient client = cosmosClientBuilder.Build();
+        /// ]]>
+        /// </code>
+        /// </example>
+        public CosmosClientBuilder(
+            string accountEndpoint, 
+            TokenCredential tokenCredential)
+        {
+            if (string.IsNullOrEmpty(accountEndpoint))
+            {
+                throw new ArgumentNullException(nameof(CosmosClientBuilder.accountEndpoint));
+            }
+
+            this.accountEndpoint = accountEndpoint;
+            this.tokenCredential = tokenCredential ?? throw new ArgumentNullException(nameof(CosmosClientBuilder.tokenCredential));
+        }
+
+        /// <summary>
         /// A method to create the cosmos client
         /// </summary>
         /// <remarks>
@@ -94,7 +125,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public CosmosClient Build()
         {
             DefaultTrace.TraceInformation($"CosmosClientBuilder.Build with configuration: {this.clientOptions.GetSerializedConfiguration()}");
-            return new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions);
+            return this.tokenCredential == null ?
+                new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions) :
+                new CosmosClient(this.accountEndpoint, this.tokenCredential, this.clientOptions);
         }
 
         /// <summary>
@@ -518,6 +551,27 @@ namespace Microsoft.Azure.Cosmos.Fluent
         internal CosmosClientBuilder WithCpuMonitorDisabled()
         {
             this.clientOptions.EnableCpuMonitor = false;
+            return this;
+        }
+
+        /// <summary>
+        /// Disable Telemetry if enabled using environment properties
+        /// </summary>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        internal CosmosClientBuilder WithTelemetryDisabled()
+        {
+            this.clientOptions.EnableClientTelemetry = false;
+            return this;
+        }
+
+        /// <summary>
+        /// To enable Telemetry, set COSMOS.CLIENT_TELEMETRY_ENABLED environment property. 
+        /// This function is used by Test only.
+        /// </summary>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        internal CosmosClientBuilder WithTelemetryEnabled()
+        {
+            this.clientOptions.EnableClientTelemetry = true;
             return this;
         }
 

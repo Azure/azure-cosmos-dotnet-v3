@@ -41,6 +41,26 @@ namespace Microsoft.Azure.Documents
             string databaseName = string.Empty;
             string collectionName = string.Empty;
 
+            if (!string.IsNullOrEmpty(resourceUrl) && resourceUrl.Contains(Paths.OperationsPathSegment) &&
+                (resourceUrl.Contains(Paths.PartitionKeyDeletePathSegment) || resourceUrl.Contains(Paths.CollectionTruncatePathsegment)))
+            {
+                isFeed = false;
+                string resourceName = PathsHelper.GetCollectionPath(resourceUrl);
+
+                if(resourceName == null || resourceName.Length < 1)
+                {
+                    resourcePath = string.Empty;
+                    resourceIdOrFullName = string.Empty;
+                    isNameBased = false;
+                    return false;
+                }
+
+                resourceIdOrFullName = resourceName[0] == '/' ? resourceName.Substring(1) : resourceName; //ResourceName is expected in the format "dbs/dbname/colls/collname"
+                resourcePath = Paths.CollectionsPathSegment;
+                isNameBased = true;
+                return true;
+            }
+
             return PathsHelper.TryParsePathSegmentsWithDatabaseAndCollectionNames(resourceUrl, out isFeed, out resourcePath, out resourceIdOrFullName, out isNameBased, out databaseName, out collectionName, clientVersion, false);
         }
 
@@ -1374,6 +1394,8 @@ namespace Microsoft.Azure.Documents
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetFederationConfigurations;
                 case OperationType.GetDatabaseAccountConfigurations:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetDatabaseAccountConfigurations;
+                case OperationType.GetGraphDatabaseAccountConfiguration:
+                    return Paths.OperationsPathSegment + "/" + Paths.Operations_GetGraphDatabaseAccountConfiguration;
                 case OperationType.GetStorageServiceConfigurations:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetStorageServiceConfigurations;
                 case OperationType.GetStorageAccountKey:

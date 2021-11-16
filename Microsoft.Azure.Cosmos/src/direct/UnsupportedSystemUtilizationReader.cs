@@ -16,9 +16,9 @@ namespace Microsoft.Azure.Documents.Rntbd
             return Single.NaN;
         }
 
-        protected override long GetSystemWideMemoryUsageCore()
+        protected override long? GetSystemWideMemoryAvailabiltyCore()
         {
-            return -1;
+            return null;
         }
     }
 }

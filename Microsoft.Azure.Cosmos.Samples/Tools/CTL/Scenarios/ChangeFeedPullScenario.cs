@@ -6,23 +6,26 @@ namespace CosmosCTL
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Net;
-    using System.Diagnostics;
     using App.Metrics;
+    using App.Metrics.Gauge;
+    using App.Metrics.Timer;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
 
     internal class ChangeFeedPullScenario : ICTLScenario
     {
-        private InitializationResult initializationResult;
+        private Utils.InitializationResult initializationResult;
+
         public async Task InitializeAsync(
             CTLConfig config,
             CosmosClient cosmosClient,
             ILogger logger)
         {
-            this.initializationResult = await CreateDatabaseAndContainerAsync(config, cosmosClient);
+            this.initializationResult = await Utils.CreateDatabaseAndContainerAsync(config, cosmosClient);
 
             if (this.initializationResult.CreatedDatabase)
             {
@@ -37,7 +40,8 @@ namespace CosmosCTL
             if (config.PreCreatedDocuments > 0)
             {
                 logger.LogInformation("Pre-populating {0} documents", config.PreCreatedDocuments);
-                await Utils.PopulateDocumentsAsync(config, logger, new List<Container>() { cosmosClient.GetContainer(config.Database, config.Collection) });
+                IReadOnlyDictionary<string, IReadOnlyList<Dictionary<string, string>>> insertedDocuments = await Utils.PopulateDocumentsAsync(config, logger, new List<Container>() { cosmosClient.GetContainer(config.Database, config.Collection) });
+                this.initializationResult.InsertedDocuments = insertedDocuments[config.Collection].Count;
             }
         }
 
@@ -51,85 +55,87 @@ namespace CosmosCTL
         {
             Stopwatch stopWatch = Stopwatch.StartNew();
 
-            while (stopWatch.Elapsed <= config.RunningTimeDurationAsTimespan)
-            {
-                int documentTotal = 0;
-                string continuation = null;
-                Container container = cosmosClient.GetContainer(config.Database, config.Collection);
-                FeedIterator<Dictionary<string, string>> changeFeedPull = container.GetChangeFeedIterator<Dictionary<string, string>>
-                                                                                (ChangeFeedStartFrom.Beginning(), ChangeFeedMode.Incremental);
-                try
-                {
-                    while (changeFeedPull.HasMoreResults)
-                    {
-                        FeedResponse<Dictionary<string, string>> response = await changeFeedPull.ReadNextAsync();
-                        documentTotal += response.Count;
-                        continuation = response.ContinuationToken;
-                        if (response.StatusCode == HttpStatusCode.NotModified)
-                        {
-                            break;
-                        }
-                    }
+            GaugeOptions documentGauge= new GaugeOptions { Name = "#Documents received", Context = loggingContextIdentifier };
 
-                    if (config.PreCreatedDocuments == documentTotal)
-                    {
-                        logger.LogInformation($"Success: The number of new documents match the number of pre-created documents: {config.PreCreatedDocuments}");
-                    }
-                    else
-                    {
-                        logger.LogError($"The prepopulated documents and the new documents don't match.  Preconfigured Docs = {config.PreCreatedDocuments}, New Documents = {documentTotal}");
-                        logger.LogError(continuation);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Failure while looping through new documents");
-                }
-            }
-
-            stopWatch.Stop();
-        }
-        private static async Task<InitializationResult> CreateDatabaseAndContainerAsync(
-            CTLConfig config,
-            CosmosClient cosmosClient)
-        {
-            InitializationResult result = new InitializationResult()
+            TimerOptions readLatencyTimer = new TimerOptions
             {
-                CreatedDatabase = false,
-                CreatedContainer = false
+                Name = "Latency",
+                MeasurementUnit = Unit.Requests,
+                DurationUnit = TimeUnit.Milliseconds,
+                RateUnit = TimeUnit.Seconds,
+                Context = loggingContextIdentifier,
+                Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
             };
 
-            Database database;
+            Container container = cosmosClient.GetContainer(config.Database, config.Collection);
 
             try
             {
-                database = await cosmosClient.GetDatabase(config.Database).ReadAsync();
-            }
-            catch (CosmosException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
-            {
-                DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(config.Database, config.Throughput);
-                result.CreatedDatabase = true;
-                database = databaseResponse.Database;
-            }
+                while (stopWatch.Elapsed <= config.RunningTimeDurationAsTimespan)
+                {
+                    long documentTotal = 0;
+                    string continuation = null;
+                    using FeedIterator<Dictionary<string, string>> changeFeedPull
+                        = container.GetChangeFeedIterator<Dictionary<string, string>>(ChangeFeedStartFrom.Beginning(), ChangeFeedMode.Incremental);
 
-            Container container;
-            
-            try
-            {
-                container = await database.GetContainer(config.Collection).ReadContainerAsync();
-            }
-            catch (CosmosException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
-            {
-                await database.CreateContainerAsync(config.Collection, $"/{config.CollectionPartitionKey}");
-                result.CreatedContainer = true;
-            }
+                    try
+                    {
+                        while (changeFeedPull.HasMoreResults)
+                        {
+                            FeedResponse<Dictionary<string, string>> response;
+                            using (TimerContext timerContext = metrics.Measure.Timer.Time(readLatencyTimer))
+                            {
+                                response = await changeFeedPull.ReadNextAsync();
+                                Utils.LogDiagnostics(
+                                    logger: logger,
+                                    operationName: nameof(ChangeFeedPullScenario),
+                                    timerContextLatency: timerContext.Elapsed,
+                                    config: config,
+                                    cosmosDiagnostics: response.Diagnostics);
+                            }
 
-            return result;
-        }
-        private struct InitializationResult
-        {
-            public bool CreatedDatabase;
-            public bool CreatedContainer;
+                            documentTotal += response.Count;
+                            continuation = response.ContinuationToken;
+                            if (response.StatusCode == HttpStatusCode.NotModified)
+                            {
+                                break;
+                            }
+                        }
+
+                        metrics.Measure.Gauge.SetValue(documentGauge, documentTotal);
+
+                        if (config.PreCreatedDocuments > 0)
+                        {
+                            if (this.initializationResult.InsertedDocuments != documentTotal)
+                            {
+                                Utils.LogError(logger, loggingContextIdentifier, $"The prepopulated documents and the change feed documents don't match.  Preconfigured Docs = {this.initializationResult.InsertedDocuments}, Change feed Documents = {documentTotal}.{Environment.NewLine}{continuation}");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        metrics.Measure.Gauge.SetValue(documentGauge, documentTotal);
+                        Utils.LogError(logger, loggingContextIdentifier, ex);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Utils.LogError(logger, loggingContextIdentifier, ex);
+            }
+            finally
+            {
+                stopWatch.Stop();
+                if (this.initializationResult.CreatedContainer)
+                {
+                    await cosmosClient.GetContainer(config.Database, config.Collection).DeleteContainerStreamAsync();
+                }
+
+                if (this.initializationResult.CreatedDatabase)
+                {
+                    await cosmosClient.GetDatabase(config.Database).DeleteStreamAsync();
+                }
+            }
         }
     }
 }

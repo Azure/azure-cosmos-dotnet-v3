@@ -116,11 +116,12 @@ namespace Microsoft.Azure.Documents
                             }
 
                             DefaultTrace.TraceWarning(
-                                "QuorumSelected: Could not converge on the LSN {0} GlobalCommittedLSN {3} after primary read barrier with read quorum {1} for strong read, Responses: {2}",
+                                "QuorumSelected: Could not converge on the LSN {0} GlobalCommittedLSN {3} ReadMode {4} after primary read barrier with read quorum {1} for strong read, Responses: {2}",
                                 secondaryQuorumReadResult.SelectedLsn, 
                                 readQuorumValue,
                                 String.Join(";", secondaryQuorumReadResult.StoreResponses),
-                                secondaryQuorumReadResult.GlobalCommittedSelectedLsn);
+                                secondaryQuorumReadResult.GlobalCommittedSelectedLsn,
+                                readMode);
 
                             entity.RequestContext.QuorumSelectedStoreResponse = secondaryQuorumReadResult.SelectedResponse;
                             entity.RequestContext.StoreResponses = secondaryQuorumReadResult.StoreResponses;
@@ -302,6 +303,12 @@ namespace Microsoft.Azure.Documents
                 bool isGlobalStrongReadCandidate =
                     (ReplicatedResourceClient.IsGlobalStrongEnabled() && this.serviceConfigReader.DefaultConsistencyLevel == ConsistencyLevel.Strong) &&
                     (!entity.RequestContext.OriginalRequestConsistencyLevel.HasValue || entity.RequestContext.OriginalRequestConsistencyLevel == ConsistencyLevel.Strong);
+
+                if (isGlobalStrongReadCandidate && readMode != ReadMode.Strong)
+                {
+                    DefaultTrace.TraceError("Unexpected difference in consistency level isGlobalStrongReadCandidate {0}, ReadMode: {1}",
+                        isGlobalStrongReadCandidate, readMode);
+                }
 
                 if (this.IsQuorumMet(
                     responseResult,
@@ -564,8 +571,8 @@ namespace Microsoft.Azure.Documents
                     //trace on last retry.
                     if (readBarrierRetryCountMultiRegion == 0)
                     {
-                        DefaultTrace.TraceInformation("QuorumReader: WaitForReadBarrierAsync - Last barrier for mult-region strong requests. Responses: {0}", 
-                            string.Join("; ", responses));
+                        DefaultTrace.TraceInformation("QuorumReader: WaitForReadBarrierAsync - Last barrier for mult-region strong requests. ReadMode {1} Responses: {0}", 
+                            string.Join("; ", responses), readMode);
                     }
                     else
                     {
@@ -581,7 +588,8 @@ namespace Microsoft.Azure.Documents
                 }
             }
 
-            DefaultTrace.TraceInformation("QuorumReader: WaitForReadBarrierAsync - TargetGlobalCommittedLsn: {0}, MaxGlobalCommittedLsn: {1}.", targetGlobalCommittedLSN, maxGlobalCommittedLsn);
+            DefaultTrace.TraceInformation("QuorumReader: WaitForReadBarrierAsync - TargetGlobalCommittedLsn: {0}, MaxGlobalCommittedLsn: {1} ReadMode: {2}.",
+                targetGlobalCommittedLSN, maxGlobalCommittedLsn, readMode);
             return false;
         }
 

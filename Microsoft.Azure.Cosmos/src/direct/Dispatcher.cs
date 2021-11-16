@@ -269,7 +269,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                     HttpConstants.HttpHeaders.TransportRequestID,
                     requestId.ToString(CultureInfo.InvariantCulture));
 
-                int headerSize, bodySize;
+                int headerSize;
+                int? bodySize;
                 BufferProvider.DisposableBuffer serializedRequest = TransportSerialization.BuildRequest(
                     request,
                     physicalAddress.PathAndQuery,
@@ -789,7 +790,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 Debug.Assert(this.serverProperties.Version != null);
                 call.TransportRequestStats.RecordState(TransportRequestStats.RequestStage.Received);
                 call.TransportRequestStats.ResponseMetadataSizeInBytes = responseMd.Metadata.Count;
-                call.TransportRequestStats.ResponsetBodySizeInBytes = responseBody?.Length;
+                call.TransportRequestStats.ResponseBodySizeInBytes = responseBody?.Length;
                 call.SetResponse(responseMd, rntbdResponse, responseHeader, responseBody, this.serverProperties.Version);
             }
             else
@@ -908,12 +909,12 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private sealed class CallInfo : IDisposable
+        internal sealed class CallInfo : IDisposable
         {
             private readonly TaskCompletionSource<StoreResponse> completion =
                 new TaskCompletionSource<StoreResponse>();
-            private readonly ManualResetEventSlim sendComplete =
-                new ManualResetEventSlim();
+            private readonly SemaphoreSlim sendComplete =
+                new SemaphoreSlim(0);
 
             private readonly Guid activityId;
             private readonly Uri uri;
@@ -1002,7 +1003,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 this.ThrowIfDisposed();
                 // Call SetException asynchronously.
-                this.RunAsynchronously(() =>
+                this.RunAsynchronously(
+                    async delegate
                     {
                         Trace.CorrelationManager.ActivityId = this.activityId;
                         // When an API caller sends a request, it can get two
@@ -1013,7 +1015,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         // failed. The exception is not necessary, and the
                         // unused completion would trigger
                         // UnobservedTaskException upon garbage collection.
-                        this.sendComplete.Wait();
+                        await this.sendComplete.WaitAsync();
                         lock (this.stateLock)
                         {
                             if (this.state != State.Sent)
@@ -1077,7 +1079,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 Debug.Assert(!Monitor.IsEntered(this.stateLock));
                 lock (this.stateLock)
                 {
-                    if (this.sendComplete.IsSet)
+                    if (this.state != State.New)
                     {
                         throw new InvalidOperationException(
                             "Send may only complete once");
@@ -1087,7 +1089,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         newState == State.Sent ||
                         newState == State.SendFailed);
                     this.state = newState;
-                    this.sendComplete.Set();
+                    this.sendComplete.Release();
                 }
             }
 

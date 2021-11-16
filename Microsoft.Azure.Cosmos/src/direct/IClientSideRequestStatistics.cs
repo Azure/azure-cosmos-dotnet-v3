@@ -10,23 +10,35 @@ namespace Microsoft.Azure.Documents
 
     internal interface IClientSideRequestStatistics
     {
-        List<Uri> ContactedReplicas { get; set; }
+        List<TransportAddressUri> ContactedReplicas { get; set; }
 
-        HashSet<Uri> FailedReplicas { get;}
+        HashSet<TransportAddressUri> FailedReplicas { get;}
 
-        HashSet<Uri> RegionsContacted { get;}
+        HashSet<(string, Uri)> RegionsContacted { get;}
 
-        bool IsCpuOverloaded { get; }
+        bool? IsCpuHigh { get; }
+
+        bool? IsCpuThreadStarvation { get; }
 
         void RecordRequest(DocumentServiceRequest request);
 
-        void RecordResponse(DocumentServiceRequest request, StoreResult storeResult);
+        void RecordResponse(
+            DocumentServiceRequest request,
+            StoreResult storeResult,
+            DateTime startTimeUtc,
+            DateTime endTimeUtc);
+
+        void RecordException(
+            DocumentServiceRequest request,
+            Exception exception,
+            DateTime startTimeUtc,
+            DateTime endTimeUtc);
 
         string RecordAddressResolutionStart(Uri targetEndpoint);
 
         void RecordAddressResolutionEnd(string identifier);
 
-        TimeSpan RequestLatency { get; }
+        TimeSpan? RequestLatency { get; }
 
         void AppendToBuilder(StringBuilder stringBuilder);
 
@@ -39,8 +51,6 @@ namespace Microsoft.Azure.Documents
                                 Exception exception,
                                 ResourceType resourceType,
                                 DateTime requestStartTimeUtc);
-
-
     }
 }
 

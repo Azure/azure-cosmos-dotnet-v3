@@ -51,6 +51,16 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        /// Gets the distinct partition key count in the Azure Cosmos DB service.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.SampledDistinctPartitionKeyCount)]
+        internal long? SampledDistinctPartitionKeyCount
+        {
+            get;
+            private set;
+        }
+
+        /// <summary>
         /// Gets the partition key statistics for a partition key range in the Azure Cosmos DB service.
         /// </summary> 
         /// <remarks>

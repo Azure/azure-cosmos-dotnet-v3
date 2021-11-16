@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Documents
             string replicaPath,
             ResourceOperation resourceOperation,
             out int headerAndMetadataSize,
-            out int bodySize,
+            out int? bodySize,
             Guid activityId)
         {
             BufferProvider.DisposableBuffer requestMessage = base.BuildRequest(request, replicaPath, resourceOperation, out headerAndMetadataSize, out bodySize, activityId);

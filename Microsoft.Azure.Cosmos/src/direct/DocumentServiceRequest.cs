@@ -219,6 +219,11 @@ namespace Microsoft.Azure.Documents
         public bool UseStatusCodeFor429 { get; set; }
 
         /// <summary>
+        /// Flag indicating whether or not to disable retries on RetryWith Exceptions
+        /// </summary>
+        public bool DisableRetryWithPolicy { get; set; }
+
+        /// <summary>
         /// ServiceIdentity of the target service where this request should reach
         /// Only valid for gateway
         /// </summary>
@@ -513,6 +518,7 @@ namespace Microsoft.Azure.Documents
                 case OperationType.ReadReplicaFromMasterPartition:
                 case OperationType.ReadReplicaFromServerPartition:
                 case OperationType.GetStorageAuthToken:
+                case OperationType.GetGraphDatabaseAccountConfiguration:
                     return HttpConstants.HttpMethods.Get;
 #endif
 

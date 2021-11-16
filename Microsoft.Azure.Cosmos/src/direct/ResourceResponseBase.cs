@@ -504,12 +504,13 @@ namespace Microsoft.Azure.Documents.Client
         {
             get
             {
-                if (this.response.RequestStats == null)
+                if (this.response.RequestStats == null ||
+                    !this.response.RequestStats.RequestLatency.HasValue)
                 {
                     return TimeSpan.Zero;
                 }
 
-                return this.response.RequestStats.RequestLatency;
+                return this.response.RequestStats.RequestLatency.Value;
             }
         }
 

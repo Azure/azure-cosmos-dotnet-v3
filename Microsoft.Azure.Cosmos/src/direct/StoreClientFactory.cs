@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Documents
         private bool isDisposed = false;
         private readonly Protocol protocol;
         private readonly RetryWithConfiguration retryWithConfiguration;
+        private readonly bool disableRetryWithRetryPolicy;
         private TransportClient transportClient;
         private TransportClient fallbackClient = null;
         private ConnectionStateListener connectionStateListener = null;
@@ -36,7 +37,7 @@ namespace Microsoft.Azure.Documents
             int rntbdPortPoolBindAttempts = 5,  // RNTBD
             int receiveHangDetectionTimeSeconds = 65,  // RNTBD
             int sendHangDetectionTimeSeconds = 10,  // RNTBD
-            bool enableCpuMonitor = true,
+            bool disableRetryWithRetryPolicy = false, 
             RetryWithConfiguration retryWithConfiguration = null,
             RntbdConstants.CallerId callerId = RntbdConstants.CallerId.Anonymous, // replicatedResourceClient
             bool enableTcpConnectionEndpointRediscovery = false,
@@ -217,7 +218,6 @@ namespace Microsoft.Azure.Documents
                         LocalRegionOpenTimeout = localRegionOpenTimeout,
                         TimerPoolResolution = TimeSpan.FromSeconds(timerPoolGranularityInSeconds),
                         IdleTimeout = TimeSpan.FromSeconds(idleTimeoutInSeconds),
-                        EnableCpuMonitor = enableCpuMonitor,
                         CallerId = callerId,
                         ConnectionStateListener = this.connectionStateListener,
                         EnableChannelMultiplexing = enableChannelMultiplexing,
@@ -231,6 +231,7 @@ namespace Microsoft.Azure.Documents
 
             this.protocol = protocol;
             this.retryWithConfiguration = retryWithConfiguration;
+            this.disableRetryWithRetryPolicy = disableRetryWithRetryPolicy;
         }
 
         private StoreClientFactory(
@@ -284,32 +285,34 @@ namespace Microsoft.Azure.Documents
             if (useFallbackClient && this.fallbackClient != null)
             {
                 return new StoreClient(
-                    addressResolver,
-                    sessionContainer,
-                    serviceConfigurationReader,
-                    authorizationTokenProvider,
-                    this.protocol,
+                    addressResolver: addressResolver,
+                    sessionContainer: sessionContainer,
+                    serviceConfigurationReader: serviceConfigurationReader,
+                    userTokenProvider: authorizationTokenProvider,
+                    protocol: this.protocol,
                     // Use the fallback client instead of the default one.
-                    this.fallbackClient,
-                    enableRequestDiagnostics,
-                    enableReadRequestsFallback,
-                    useMultipleWriteLocations,
-                    detectClientConnectivityIssues,
-                    this.retryWithConfiguration);
+                    transportClient: this.fallbackClient,
+                    enableRequestDiagnostics: enableRequestDiagnostics,
+                    enableReadRequestsFallback: enableReadRequestsFallback,
+                    useMultipleWriteLocations: useMultipleWriteLocations,
+                    detectClientConnectivityIssues: detectClientConnectivityIssues,
+                    disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
+                    retryWithConfiguration: this.retryWithConfiguration);
             }
 
             return new StoreClient(
-                addressResolver,
-                sessionContainer,
-                serviceConfigurationReader,
-                authorizationTokenProvider,
-                this.protocol,
-                this.transportClient,
-                enableRequestDiagnostics,
-                enableReadRequestsFallback,
-                useMultipleWriteLocations,
-                detectClientConnectivityIssues,
-                this.retryWithConfiguration);
+                addressResolver: addressResolver,
+                sessionContainer: sessionContainer,
+                serviceConfigurationReader: serviceConfigurationReader,
+                userTokenProvider: authorizationTokenProvider,
+                protocol: this.protocol,
+                transportClient: this.transportClient,
+                enableRequestDiagnostics: enableRequestDiagnostics,
+                enableReadRequestsFallback: enableReadRequestsFallback,
+                useMultipleWriteLocations: useMultipleWriteLocations,
+                detectClientConnectivityIssues: detectClientConnectivityIssues,
+                disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
+                retryWithConfiguration: this.retryWithConfiguration);
         }
 
         #region IDisposable

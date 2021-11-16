@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Tracing;
     using ResourceId = Documents.ResourceId;
 
@@ -516,11 +517,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         //// In more mathematical terms
         ////  1) <x, y> always comes before <z, y> where x < z
         ////  2) <i, j> always come before <i, k> where j < k
-        public ValueTask<bool> MoveNextAsync()
-        {
-            return this.MoveNextAsync(NoOpTrace.Singleton);
-        }
-
         public ValueTask<bool> MoveNextAsync(ITrace trace)
         {
             this.cancellationToken.ThrowIfCancellationRequested();
@@ -1113,7 +1109,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 // If there is a tie in the sort order the documents should be in _rid order in the same direction as the index (given by the backend)
                 ResourceId rid = ResourceId.Parse(orderByResult.Rid);
                 int ridOrderCompare = continuationRid.Document.CompareTo(rid.Document);
-                if ((orderByQueryPage.Page.CosmosQueryExecutionInfo == null) || orderByQueryPage.Page.CosmosQueryExecutionInfo.ReverseRidEnabled)
+
+                Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo = orderByQueryPage.Page.CosmosQueryExecutionInfo;
+                if ((cosmosQueryExecutionInfo == null) || cosmosQueryExecutionInfo.Value.ReverseRidEnabled)
                 {
                     // If reverse rid is enabled on the backend then fallback to the old way of doing it.
                     if (sortOrders[0] == SortOrder.Descending)
@@ -1124,7 +1122,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 else
                 {
                     // Go by the whatever order the index wants
-                    if (orderByQueryPage.Page.CosmosQueryExecutionInfo.ReverseIndexScan)
+                    if (cosmosQueryExecutionInfo.Value.ReverseIndexScan)
                     {
                         ridOrderCompare = -ridOrderCompare;
                     }

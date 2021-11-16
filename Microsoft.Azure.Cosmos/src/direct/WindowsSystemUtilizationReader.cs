@@ -50,14 +50,14 @@ namespace Microsoft.Azure.Documents.Rntbd
             return 100 * busyTimeElapsed / (float)timeElapsed;
         }
 
-        protected override long GetSystemWideMemoryUsageCore()
+        protected override long? GetSystemWideMemoryAvailabiltyCore()
         {
             NativeMethods.MemoryInfo memInfo = new NativeMethods.MemoryInfo();
             memInfo.dwLength = (uint)Marshal.SizeOf(memInfo);
 
             NativeMethods.GlobalMemoryStatusEx(out memInfo);
 
-            return (long)(memInfo.ullTotalPhys - memInfo.ullAvailPhys);
+            return (long)memInfo.ullAvailPhys/1024;
         }
 
         private static class NativeMethods

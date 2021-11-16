@@ -28,10 +28,34 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        /// This return a random order of the addresses if there are no addresses that failed. Else it moves the failes addresses to the end.
+        /// </summary>
+        public IEnumerable<TransportAddressUri> GetTransportAddresses(IReadOnlyList<TransportAddressUri> transportAddressUris,
+                                                                      HashSet<TransportAddressUri> failedReplicas)
+        {
+            if (failedReplicas == null)
+            {
+                throw new ArgumentNullException(nameof(failedReplicas));
+            }
+
+            // Get a random Permutation.
+            IEnumerable<TransportAddressUri> randomPermutation = this.GetTransportAddresses(transportAddressUris);
+            if (failedReplicas.Count == 0)
+            {
+                return randomPermutation;
+            }
+
+            // We move the failed replicas to the end of the list.
+            // This is done to avoid in some cases(like eventual consistency) a retry to the same replica
+            // that had a problem before. With RandomPermuation there is a 25% chance that the retry lands on the same replica.
+            return this.MoveFailedReplicasToTheEnd(randomPermutation, failedReplicas);
+        }
+
+        /// <summary>
         /// This uses the Fisher–Yates shuffle algorithm to return a random order
         /// of Transport Address URIs
         /// </summary>
-        public IEnumerable<TransportAddressUri> GetTransportAddresses(IReadOnlyList<TransportAddressUri> transportAddressUris)
+        private IEnumerable<TransportAddressUri> GetTransportAddresses(IReadOnlyList<TransportAddressUri> transportAddressUris)
         {
             if (transportAddressUris == null)
             {
@@ -162,6 +186,28 @@ namespace Microsoft.Azure.Documents
                 int tmp = a;
                 a = b;
                 b = tmp;
+            }
+        }
+
+        private IEnumerable<TransportAddressUri> MoveFailedReplicasToTheEnd(IEnumerable<TransportAddressUri> randomPermutation,
+                                                                            HashSet<TransportAddressUri> failedReplicas)
+        {
+            List<TransportAddressUri> failedAddressUris = new List<TransportAddressUri>();
+            foreach (TransportAddressUri addressUri in randomPermutation)
+            {
+                if (!failedReplicas.Contains(addressUri))
+                {
+                    yield return addressUri;
+                }
+                else
+                {
+                    failedAddressUris.Add(addressUri);
+                }
+            }
+
+            foreach (TransportAddressUri addressUri in failedAddressUris)
+            {
+                yield return addressUri;
             }
         }
     }

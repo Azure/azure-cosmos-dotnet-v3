@@ -322,7 +322,7 @@ namespace Microsoft.Azure.Documents
 
             if (string.IsNullOrEmpty(sessionToken))
             {
-                DefaultTrace.TraceCritical("Session token is empty");
+                DefaultTrace.TraceWarning("Session token is empty");
                 return false;
             }
 
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Documents
                 ref index,
                 out version))
             {
-                DefaultTrace.TraceCritical($"Unexpected session token version number from token: {sessionToken} .");
+                DefaultTrace.TraceWarning($"Unexpected session token version number from token: {sessionToken} .");
                 return false;
             }
 
@@ -341,7 +341,7 @@ namespace Microsoft.Azure.Documents
                 ref index,
                 out globalLsn))
             {
-                DefaultTrace.TraceCritical($"Unexpected session token global lsn from token: {sessionToken} .");
+                DefaultTrace.TraceWarning($"Unexpected session token global lsn from token: {sessionToken} .");
                 return false;
             }
 
@@ -360,7 +360,7 @@ namespace Microsoft.Azure.Documents
                     ref index,
                     out uint regionId))
                 {
-                    DefaultTrace.TraceCritical($"Unexpected region progress segment in session token: {sessionToken}.");
+                    DefaultTrace.TraceWarning($"Unexpected region progress segment in session token: {sessionToken}.");
                     return false;
                 }
 
@@ -369,7 +369,7 @@ namespace Microsoft.Azure.Documents
                     ref index,
                     out long localLsn))
                 {
-                    DefaultTrace.TraceCritical($"Unexpected local lsn for region id {regionId.ToString(CultureInfo.InvariantCulture)} for segment in session token: {sessionToken}.");
+                    DefaultTrace.TraceWarning($"Unexpected local lsn for region id {regionId.ToString(CultureInfo.InvariantCulture)} for segment in session token: {sessionToken}.");
                     return false;
                 }
 

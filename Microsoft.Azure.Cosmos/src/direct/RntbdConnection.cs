@@ -313,7 +313,7 @@ namespace Microsoft.Azure.Documents
             // build the request byte payload
             BufferProvider.DisposableBuffer requestPayload = default;
             int headerAndMetadataSize = 0;
-            int bodySize = 0;
+            int? bodySize = null;
             try
             {
                 requestPayload = this.BuildRequest(request, physicalAddress.PathAndQuery.TrimEnd(RntbdConnection.UrlTrim), resourceOperation, out headerAndMetadataSize, out bodySize, activityId);
@@ -426,7 +426,7 @@ namespace Microsoft.Azure.Documents
                         requestStartTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
                         requestSendDoneTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
                         headerAndMetadataSize,
-                        bodySize,
+                        bodySize.HasValue ? bodySize.Value : "No body",
                         requestPayload.Buffer.Count,
                         requestEndTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
                         state.ToString());
@@ -781,7 +781,7 @@ namespace Microsoft.Azure.Documents
             string replicaPath,
             ResourceOperation resourceOperation,
             out int headerAndMetadataSize,
-            out int bodySize,
+            out int? bodySize,
             Guid activityId)
         {
             return Rntbd.TransportSerialization.BuildRequest(request, replicaPath, resourceOperation,

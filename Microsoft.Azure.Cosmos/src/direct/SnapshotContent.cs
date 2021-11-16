@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Documents
             }
             internal set
             {
-                base.SetValue(Constants.Properties.OperationType, value.ToString());
+                base.SetValue(Constants.Properties.OperationType, (int)value);
             }
         }
 

@@ -12,8 +12,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -262,13 +260,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 }
                             }
                         }
-                        else if (feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
-                        {
-                            request.PartitionKeyRangeId = new Documents.PartitionKeyRangeIdentity(feedRangePartitionKeyRange.PartitionKeyRangeId);
-                        }
                         else
                         {
-                            throw new InvalidOperationException($"Unknown feed range type: '{feedRange.GetType()}'.");
+                            request.PartitionKeyRangeId = feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange
+                                ? new Documents.PartitionKeyRangeIdentity(feedRangePartitionKeyRange.PartitionKeyRangeId)
+                                : throw new InvalidOperationException($"Unknown feed range type: '{feedRange.GetType()}'.");
                         }
                     }
 
@@ -281,7 +277,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         request.Headers.ContentType = RuntimeConstants.MediaTypes.JsonPatch;
                     }
 
+                    if (cosmosContainerCore != null)
+                    {
+                        request.ContainerId = cosmosContainerCore?.Id;
+                        request.DatabaseId = cosmosContainerCore?.Database.Id;
+                    }
                     requestEnricher?.Invoke(request);
+
                     return await this.SendAsync(request, cancellationToken);
                 }
                 finally

@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Documents
         private static TransportExceptionCounters transportExceptionCounters = new TransportExceptionCounters();
 
         private readonly object mutex = new object();
-        private CpuLoadHistory cpuHistory;  // Guarded by mutex.
 
         public TransportException(
             TransportErrorCode errorCode,
@@ -81,17 +80,11 @@ namespace Microsoft.Azure.Documents
                         }
                     }
                 }
-                string loadHistoryText = "not available";
-                CpuLoadHistory loadHistory = this.CpuHistory;
-                if (loadHistory != null)
-                {
-                    loadHistoryText = loadHistory.ToString();
-                }
+
                 return string.Format(
                     CultureInfo.InvariantCulture,
                     "{0} (Time: {1:o}, activity ID: {2}, error code: {3} [0x{4:X4}], " +
-                    "base error: {5}, URI: {6}, connection: {7}, payload sent: {8}, " +
-                    "CPU history: {9}, CPU count: {10})",
+                    "base error: {5}, URI: {6}, connection: {7}, payload sent: {8})",
                     base.Message,
                     this.Timestamp,
                     this.ActivityId,
@@ -99,9 +92,7 @@ namespace Microsoft.Azure.Documents
                     baseError,
                     this.RequestUri,
                     this.Source,
-                    this.UserRequestSent,
-                    loadHistoryText,
-                    Environment.ProcessorCount);
+                    this.UserRequestSent);
             }
         }
 
@@ -123,19 +114,6 @@ namespace Microsoft.Azure.Documents
 
         public bool UserRequestSent { get; private set; }
 
-        public bool IsClientCpuOverloaded
-        {
-            get
-            {
-                CpuLoadHistory loadHistory = this.CpuHistory;
-                if (loadHistory == null)
-                {
-                    return false;
-                }
-                return loadHistory.IsCpuOverloaded;
-            }
-        }
-
         public static bool IsTimeout(TransportErrorCode errorCode)
         {
             return
@@ -149,31 +127,6 @@ namespace Microsoft.Azure.Documents
                 (errorCode == TransportErrorCode.SendTimeout) ||
                 (errorCode == TransportErrorCode.ReceiveTimeout) ||
                 (errorCode == TransportErrorCode.ChannelWaitingToOpenTimeout);
-        }
-
-        internal void SetCpuLoad(CpuLoadHistory cpuHistory)
-        {
-            lock (this.mutex)
-            {
-                // A single TransportException can get dispatched to multiple threads
-                // that are awaiting a common Task. Ensure only one thread sets the
-                // CPU history.
-                if (this.cpuHistory == null)
-                {
-                    this.cpuHistory = cpuHistory;
-                }
-            }
-        }
-
-        private CpuLoadHistory CpuHistory
-        {
-            get
-            {
-                lock (this.mutex)
-                {
-                    return this.cpuHistory;
-                }
-            }
         }
 
         private static bool IsUserRequestSent(

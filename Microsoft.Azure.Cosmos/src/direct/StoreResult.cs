@@ -104,6 +104,7 @@ namespace Microsoft.Azure.Documents
 
                 storeResponse.TryGetHeaderValue(HttpConstants.HttpHeaders.ActivityId, out string activityId);
                 storeResponse.TryGetHeaderValue(HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, out string backendRequestDurationMilliseconds);
+                storeResponse.TryGetHeaderValue(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, out string retryAfterInMs);
 
                 return new StoreResult(
                     storeResponse: storeResponse,
@@ -123,6 +124,7 @@ namespace Microsoft.Azure.Documents
                     usingLocalLSN: useLocalLSNBasedHeaders,
                     activityId: activityId,
                     backendRequestDurationInMs: backendRequestDurationMilliseconds,
+                    retryAfterInMs: retryAfterInMs,
                     transportRequestStats: storeResponse.TransportRequestStats);
             }
             else
@@ -223,6 +225,7 @@ namespace Microsoft.Azure.Documents
                         usingLocalLSN: useLocalLSNBasedHeaders,
                         activityId: documentClientException.ActivityId,
                         backendRequestDurationInMs: documentClientException.Headers[HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds],
+                        retryAfterInMs: documentClientException.Headers[HttpConstants.HttpHeaders.RetryAfterInMilliseconds],
                         transportRequestStats: documentClientException.TransportRequestStats);
                 }
                 else
@@ -246,6 +249,7 @@ namespace Microsoft.Azure.Documents
                         usingLocalLSN: useLocalLSNBasedHeaders,
                         activityId: null,
                         backendRequestDurationInMs: null,
+                        retryAfterInMs: null,
                         transportRequestStats: null);
                 }
             }
@@ -269,6 +273,7 @@ namespace Microsoft.Azure.Documents
             bool usingLocalLSN,
             string activityId,
             string backendRequestDurationInMs,
+            string retryAfterInMs,
             TransportRequestStats transportRequestStats)
         {
             if (storeResponse == null && exception == null)
@@ -294,6 +299,7 @@ namespace Microsoft.Azure.Documents
             this.UsingLocalLSN = usingLocalLSN;
             this.ActivityId = activityId;
             this.BackendRequestDurationInMs = backendRequestDurationInMs;
+            this.RetryAfterInMs = retryAfterInMs;
             this.TransportRequestStats = transportRequestStats;
 
             this.StatusCode = (StatusCodes) (this.storeResponse != null ? this.storeResponse.StatusCode :
@@ -339,20 +345,9 @@ namespace Microsoft.Azure.Documents
 
         public string BackendRequestDurationInMs { get; private set;}
 
-        public TransportRequestStats TransportRequestStats { get; private set; }
+        public string RetryAfterInMs { get; private set; }
 
-        public bool IsClientCpuOverloaded
-        {
-            get
-            {
-                TransportException transportException = this.Exception?.InnerException as TransportException;
-                if (transportException == null)
-                {
-                    return false;
-                }
-                return transportException.IsClientCpuOverloaded;
-            }
-        }
+        public TransportRequestStats TransportRequestStats { get; private set; }
 
         public DocumentClientException GetException()
         {
@@ -410,7 +405,7 @@ namespace Microsoft.Azure.Documents
             stringBuilder.AppendFormat(
                 CultureInfo.InvariantCulture,
                 "StorePhysicalAddress: {0}, LSN: {1}, GlobalCommittedLsn: {2}, PartitionKeyRangeId: {3}, IsValid: {4}, StatusCode: {5}, SubStatusCode: {6}, " +
-                "RequestCharge: {7}, ItemLSN: {8}, SessionToken: {9}, UsingLocalLSN: {10}, TransportException: {11}, BELatencyMs: {12}, ActivityId: {13}",
+                "RequestCharge: {7}, ItemLSN: {8}, SessionToken: {9}, UsingLocalLSN: {10}, TransportException: {11}, BELatencyMs: {12}, ActivityId: {13}, RetryAfterInMs: {14}",
                 this.StorePhysicalAddress,
                 this.LSN,
                 this.GlobalCommittedLSN,
@@ -424,36 +419,16 @@ namespace Microsoft.Azure.Documents
                 this.UsingLocalLSN,
                 this.Exception?.InnerException is TransportException ? this.Exception.InnerException.Message : "null",
                 this.BackendRequestDurationInMs,
-                this.ActivityId);
+                this.ActivityId,
+                this.RetryAfterInMs);
 
             if (this.TransportRequestStats != null)
             {
-                stringBuilder.Append(", TransportRequestTimeline: [");
-                foreach (TransportRequestStats.RequestEvent requestEvent in this.TransportRequestStats.GetRequestTimeline())
-                {
-                    stringBuilder.Append("(");
-                    requestEvent.AppendToBuilder(stringBuilder);
-                    stringBuilder.Append("),");
-                }
-                stringBuilder.Append("], ");
-
-                if (this.TransportRequestStats.RequestSizeInBytes.HasValue)
-                {
-                    stringBuilder.Append($"RequestSizeInBytes: {this.TransportRequestStats.RequestSizeInBytes.Value}, ");
-                }
-                if (this.TransportRequestStats.RequestBodySizeInBytes.HasValue)
-                {
-                    stringBuilder.Append($"RequestBodySizeInBytes: {this.TransportRequestStats.RequestBodySizeInBytes.Value}, ");
-                }
-                if (this.TransportRequestStats.ResponseMetadataSizeInBytes.HasValue)
-                {
-                    stringBuilder.Append($"ResponseMetadataSizeInBytes: {this.TransportRequestStats.ResponseMetadataSizeInBytes.Value}, ");
-                }
-                if (this.TransportRequestStats.ResponsetBodySizeInBytes.HasValue)
-                {
-                    stringBuilder.Append($"ResponsetBodySizeInBytes: {this.TransportRequestStats.ResponsetBodySizeInBytes.Value},");
-                }
+                stringBuilder.Append(", TransportRequestTimeline: ");
+                this.TransportRequestStats.AppendJsonString(stringBuilder);
             }
+
+            stringBuilder.Append(";");
         }
 
         private static void SetRequestCharge(StoreResponse response, DocumentClientException documentClientException, double totalRequestCharge)

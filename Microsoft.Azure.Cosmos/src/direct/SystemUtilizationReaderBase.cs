@@ -61,19 +61,19 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        public long GetSystemWideMemoryUsage()
+        public long? GetSystemWideMemoryAvailabilty()
         {
             try
             {
-                return this.GetSystemWideMemoryUsageCore();
+                return this.GetSystemWideMemoryAvailabiltyCore();
             }
             catch (Exception exception)
             {
                 DefaultTrace.TraceError(
-                    "Reading the system-wide Memory usage failed. Exception: {0}",
+                    "Reading the system-wide Memory availability failed. Exception: {0}",
                     exception);
 
-                return -1;
+                return null;
             }
         }
 
@@ -101,6 +101,6 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         protected abstract float GetSystemWideCpuUsageCore();
 
-        protected abstract long GetSystemWideMemoryUsageCore();
+        protected abstract long? GetSystemWideMemoryAvailabiltyCore();
     }
 }
