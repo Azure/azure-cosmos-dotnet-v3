@@ -66,11 +66,7 @@ namespace Microsoft.Azure.Cosmos
             DocumentServiceResponse response;
             try
             {
-                // Collect region name only for document resources
-                if (request.ResourceType.Equals(ResourceType.Document)) 
-                {
-                    request.RequestContext.RegionName = this.endpointManager.GetLocation(request.RequestContext.LocationEndpointToRoute);
-                }
+                request.RequestContext.RegionName = this.endpointManager.GetLocation(request.RequestContext.LocationEndpointToRoute);
 
                 Uri physicalAddress = GatewayStoreClient.IsFeedRequest(request.OperationType) ? this.GetFeedUri(request) : this.GetEntityUri(request);
 

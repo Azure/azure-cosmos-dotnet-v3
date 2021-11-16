@@ -596,8 +596,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 HashSet<OperationInfo> actualOperationSet = new HashSet<OperationInfo>();
                 lock (this.actualInfo)
                 {
-                    List<ClientTelemetryProperties> originalActualInfo = this.actualInfo;
-
                     // Setting the number of unique OperationInfo irrespective of response size as response size is varying in case of queries.
                     this.actualInfo
                         .ForEach(x => x.OperationInfo
@@ -613,7 +611,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         break;
                     }
 
-                    Assert.IsTrue(stopwatch.Elapsed.TotalMinutes < 1, $"The expected operation count({expectedOperationCount}) was never hit, Actual Operation Count is {actualOperationSet.Count * 2}.  ActualInfo:{JsonConvert.SerializeObject(originalActualInfo)}");
+                    Assert.IsTrue(stopwatch.Elapsed.TotalMinutes < 1, $"The expected operation count({expectedOperationCount}) was never hit, Actual Operation Count is {actualOperationSet.Count}.  ActualInfo:{JsonConvert.SerializeObject(this.actualInfo)}");
                 }
 
                 await Task.Delay(TimeSpan.FromMilliseconds(200));
