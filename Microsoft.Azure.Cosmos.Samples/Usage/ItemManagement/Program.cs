@@ -522,7 +522,7 @@
             //******************************************************************************************************************
             // 1.7 - Patch a item
             //
-            // Just update a property on an existing item and issue a Patch command
+            // Just update a property of an existing item and issue a Patch command
             //******************************************************************************************************************
             Console.WriteLine("\n1.6 - Patching a item using its Id");
 
@@ -531,8 +531,8 @@
                 partitionKey: new PartitionKey(order.AccountNumber),
                 patchOperations: new[] { PatchOperation.Replace("/TotalDue", 0) });
 
-            SalesOrder updated = response.Resource;
-            Console.WriteLine($"TotalDue of updated item: {updated.TotalDue}");
+            SalesOrder updatedSalesOrder = response.Resource;
+            Console.WriteLine($"TotalDue of updated item: {updatedSalesOrder.TotalDue}");
 
             PatchItemRequestOptions patchItemRequestOptions = new PatchItemRequestOptions
             {
@@ -544,8 +544,8 @@
                 patchOperations: new[] { PatchOperation.Replace("/ShippedDate", DateTime.UtcNow) },
                 patchItemRequestOptions);
 
-            updated = response.Resource;
-            Console.WriteLine($"\n1.6.2 - Shipped date of updated item: {updated.ShippedDate}");
+            updatedSalesOrder = response.Resource;
+            Console.WriteLine($"\n1.6.2 - Shipped date of updated item: {updatedSalesOrder.ShippedDate}");
 
             IReadOnlyList<PatchOperation> patchOperations = new[] { PatchOperation.Replace("/ShippedDate", DateTime.UtcNow) };
             using (Stream stream = Program.ToStream<IReadOnlyList<PatchOperation>>(patchOperations))
