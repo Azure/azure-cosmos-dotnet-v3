@@ -70,8 +70,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<string> preferredRegionList = new List<string>
             {
-                "region1",
-                "region2"
+                Regions.EastUS,
+                Regions.WestUS
             };
 
             this.cosmosClientBuilder = TestCommon.GetDefaultConfiguration()
@@ -81,20 +81,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestCleanup]
-        public async Task Cleanup()
+        public void Cleanup()
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, null);
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
 
-            await base.TestCleanup();
+           // await base.TestCleanup();
         }
 
         [TestMethod]
-        [DataRow(ConnectionMode.Direct)]
+        //[DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
         public async Task PointSuccessOperationsTest(ConnectionMode mode)
         {
-            Container container = await this.CreateClientAndContainer(mode);
+            Container container = this.GetClientAndContainer(mode);
 
             // Create an item
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity testItemCreated = createResponse.Resource;
 
             // Read an Item
-            await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
+            await container.ReadItemAsync<ToDoActivity>(testItemCreated.id, new Cosmos.PartitionKey("MyTestPkValue"));
 
             // Upsert an Item
             await container.UpsertItemAsync<ToDoActivity>(testItem);
@@ -111,14 +111,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await container.ReplaceItemAsync<ToDoActivity>(testItemCreated, testItemCreated.id.ToString());
 
             // Patch an Item
-            List<PatchOperation> patch = new List<PatchOperation>()
+          /*  List<PatchOperation> patch = new List<PatchOperation>()
             {
                 PatchOperation.Add("/new", "patched")
             };
             await ((ContainerInternal)container).PatchItemAsync<ToDoActivity>(
                 testItem.id,
                 new Cosmos.PartitionKey(testItem.id),
-                patch);
+                patch);*/
 
             // Delete an Item
             await container.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
@@ -725,6 +725,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 partitionKeyPath: "/id",
                 throughput: isLargeContainer? 15000 : 400);
 
+        }
+
+        private Container GetClientAndContainer(ConnectionMode mode, ConsistencyLevel? consistency = null)
+        {
+            if (consistency.HasValue)
+            {
+                this.cosmosClientBuilder = this.cosmosClientBuilder.WithConsistencyLevel(consistency.Value);
+            }
+
+            this.cosmosClient = mode == ConnectionMode.Gateway
+                ? this.cosmosClientBuilder.WithConnectionModeGateway().Build()
+                : this.cosmosClientBuilder.Build();
+
+            this.database = this.cosmosClient.GetDatabase("testdb");
+
+            return this.database.GetContainer("testcol");
         }
 
     }
