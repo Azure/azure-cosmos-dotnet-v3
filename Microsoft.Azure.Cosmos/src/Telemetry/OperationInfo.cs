@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private string RegionsContacted { get; }
 
         [JsonProperty(PropertyName = "greaterThan1Kb")]
-        private bool? GreaterThan1Kb { get; }
+        internal bool? GreaterThan1Kb { get; set; }
 
         [JsonProperty(PropertyName = "databaseName")]
         private string DatabaseName { get; }
@@ -36,9 +36,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         [JsonProperty(PropertyName = "statusCode")]
         public int? StatusCode { get; }
 
-        [JsonProperty(PropertyName = "responseSizeInBytes")]
-        public long? ResponseSizeInBytes { get; }
-
         [JsonProperty(PropertyName = "metricInfo")]
         internal MetricInfo MetricInfo { get; set; }
 
@@ -57,7 +54,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             int? statusCode)
         {
             this.RegionsContacted = regionsContacted;
-            this.ResponseSizeInBytes = responseSizeInBytes;
             if (responseSizeInBytes != null)
             {
                 this.GreaterThan1Kb = responseSizeInBytes > ClientTelemetryOptions.OneKbToBytes;
@@ -77,8 +73,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string operation, 
             string resource, 
             string consistency, 
-            int? statusCode, 
-            long? responseSizeInBytes, 
+            int? statusCode,
             MetricInfo metricInfo)
         {
             this.RegionsContacted = regionsContacted;
@@ -89,7 +84,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.Resource = resource;
             this.Consistency = consistency;
             this.StatusCode = statusCode;
-            this.ResponseSizeInBytes = responseSizeInBytes;
             this.MetricInfo = metricInfo;
         }
 
@@ -103,7 +97,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.Resource,
             this.Consistency,
             this.StatusCode,
-            this.ResponseSizeInBytes, 
             null);
         }
 
