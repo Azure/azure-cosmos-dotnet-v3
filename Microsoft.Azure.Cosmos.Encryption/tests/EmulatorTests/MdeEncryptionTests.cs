@@ -1743,8 +1743,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 new TestDoc.Sensitive_ArrayData
                 {
-                    Sensitive_ArrayIntFormat = 1111,
-                    Sensitive_ArrayDecimalFormat = 1111.11m
+                    Sensitive_ArrayIntFormat = 100,
+                    Sensitive_ArrayDecimalFormat = 100.2m
                 },
                 new TestDoc.Sensitive_ArrayData
                 {
@@ -1772,13 +1772,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 Sensitive_IntArrayL1 = new int[2] { 999, 100 },
                 Sensitive_IntFormatL1 = 1999,
-                Sensitive_DecimalFormatL1 = 1999.1m,
+                Sensitive_DecimalFormatL1 = 1.1m,
                 Sensitive_ArrayFormatL1 = new TestDoc.Sensitive_ArrayData[]
                 {
                     new TestDoc.Sensitive_ArrayData
                     {
                         Sensitive_ArrayIntFormat = 0,
                         Sensitive_ArrayDecimalFormat = 0.1m
+                    },
+                    new TestDoc.Sensitive_ArrayData
+                    {
+                        Sensitive_ArrayIntFormat = 0,
+                        Sensitive_ArrayDecimalFormat = 0.5m
                     },
                     new TestDoc.Sensitive_ArrayData
                     {
@@ -1789,15 +1794,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     {
                         Sensitive_ArrayIntFormat = 2,
                         Sensitive_ArrayDecimalFormat = 3.1m
+                    },
+                    new TestDoc.Sensitive_ArrayData
+                    {
+                        Sensitive_ArrayIntFormat = 3,
+                        Sensitive_ArrayDecimalFormat = 3.5m
                     }
                 }
             };
 
             patchOperations.Clear();
+            patchOperations.Add(PatchOperation.Replace("/Sensitive_ArrayFormat/0", docPostPatching.Sensitive_ArrayFormat[0]));
             patchOperations.Add(PatchOperation.Add("/Sensitive_ArrayFormat/1", docPostPatching.Sensitive_ArrayFormat[1]));
             patchOperations.Add(PatchOperation.Replace("/Sensitive_ArrayMultiTypes/0/1", docPostPatching.Sensitive_ArrayMultiTypes[0, 1]));
             patchOperations.Add(PatchOperation.Remove("/Sensitive_NestedObjectFormatL1/Sensitive_NestedObjectFormatL2"));
             patchOperations.Add(PatchOperation.Set("/Sensitive_NestedObjectFormatL1/Sensitive_ArrayFormatL1/0", docPostPatching.Sensitive_NestedObjectFormatL1.Sensitive_ArrayFormatL1[0]));
+            patchOperations.Add(PatchOperation.Set("/Sensitive_NestedObjectFormatL1/Sensitive_ArrayFormatL1/1", docPostPatching.Sensitive_NestedObjectFormatL1.Sensitive_ArrayFormatL1[1]));
+            patchOperations.Add(PatchOperation.Add("/Sensitive_NestedObjectFormatL1/Sensitive_ArrayFormatL1/4", docPostPatching.Sensitive_NestedObjectFormatL1.Sensitive_ArrayFormatL1[4]));
+            patchOperations.Add(PatchOperation.Replace("/Sensitive_NestedObjectFormatL1/Sensitive_DecimalFormatL1", docPostPatching.Sensitive_NestedObjectFormatL1.Sensitive_DecimalFormatL1));
 
             patchResponse = await MdeEncryptionTests.MdePatchItemAsync(
                 MdeEncryptionTests.encryptionContainer,
@@ -1805,7 +1819,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 docPostPatching,
                 HttpStatusCode.OK);
 
-            VerifyDiagnostics(patchResponse.Diagnostics, expectedPropertiesEncryptedCount: 3);
+            VerifyDiagnostics(patchResponse.Diagnostics, expectedPropertiesEncryptedCount: 7);
 
             patchOperations.Add(PatchOperation.Increment("/Sensitive_IntFormat", 1));
             try
