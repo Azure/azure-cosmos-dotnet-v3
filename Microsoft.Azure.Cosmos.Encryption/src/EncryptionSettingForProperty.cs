@@ -95,6 +95,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 // We dont retry if the etag was already tried upon.
                 if (ex.Status == (int)HttpStatusCode.Forbidden && !string.Equals(clientEncryptionKeyProperties.ETag, ifNoneMatchEtags))
                 {
+                    // just try to force refresh the local client cache first.
+                    // so we set the forceRefreshGatewayCache to true so that if the gateway cache is stale we force refresh it in the next iteration.
                     if (!forceRefreshGatewayCache)
                     {
                         return await this.BuildEncryptionAlgorithmForSettingAsync(
@@ -103,6 +105,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                            forceRefreshGatewayCache: true,
                            cancellationToken: cancellationToken);
                     }
+
+                    // so we tried to force refresh the local cache and still ended up, may be with a stale value(could be possible the key was never rewrapped), try to force refresh the gateway cache.
+                    // shoudlForceFresh is set to true to force it to fetch it from gateway, and we pass the etag so that gateway tries to figure out if it has a stale cache
+                    // and updates it accordingly.
                     else
                     {
                         return await this.BuildEncryptionAlgorithmForSettingAsync(
