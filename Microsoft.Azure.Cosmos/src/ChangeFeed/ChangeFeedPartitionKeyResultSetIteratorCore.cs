@@ -89,9 +89,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A change feed response from cosmos service</returns>
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            return await this.clientContext.OperationHelperAsync("Change Feed Processor Read Next Async",
+            return this.clientContext.OperationHelperAsync("Change Feed Processor Read Next Async",
                                 requestOptions: this.changeFeedOptions,
                                 task: (trace) => this.ReadNextAsync(trace, cancellationToken),
                                 traceComponent: TraceComponent.ChangeFeed,

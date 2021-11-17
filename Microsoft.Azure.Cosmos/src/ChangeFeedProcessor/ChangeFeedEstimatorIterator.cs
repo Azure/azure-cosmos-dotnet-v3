@@ -109,9 +109,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override bool HasMoreResults => this.hasMoreResults;
 
-        public override async Task<FeedResponse<ChangeFeedProcessorState>> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override Task<FeedResponse<ChangeFeedProcessorState>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            return await this.monitoredContainer.ClientContext.OperationHelperAsync("Change Feed Estimator Read Next Async",
+            return this.monitoredContainer.ClientContext.OperationHelperAsync("Change Feed Estimator Read Next Async",
                                 requestOptions: null,
                                 task: (trace) => this.ReadNextAsync(trace, cancellationToken),
                                 traceComponent: TraceComponent.ChangeFeed,
