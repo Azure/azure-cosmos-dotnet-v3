@@ -28,8 +28,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const string RequestLatencyUnit = "MilliSecond";
 
         // Expecting histogram to have Minimum Request Charge of 1 and Maximum Request Charge of 9999900
-        // Maximum precision can be set as 5 so consider maximum value in 5 digit i.e. 99999 of request charge
-        // So 99999 * HistogramPrecisionFactor = 9999900 is the maximum request charge we have set.
         // For all the Document ReadWriteQuery Operations there will be at least 1 request charge.
         internal const long RequestChargeMax = 9999900;
         internal const long RequestChargeMin = 1;
@@ -40,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         // Expecting histogram to have Minimum CPU Usage of .001% and Maximum CPU Usage of 999.99%
         internal const long CpuMax = 99999;
         internal const long CpuMin = 1;
-        internal const int CpuPrecision = 2; // 100 (max CPU Usage) * 100(Historam Precision factor) = 10000 which is 5 digit and that is what we can set as maximum precision in histogram
+        internal const int CpuPrecision = 2; 
         internal const String CpuName = "CPU";
         internal const String CpuUnit = "Percentage";
 
