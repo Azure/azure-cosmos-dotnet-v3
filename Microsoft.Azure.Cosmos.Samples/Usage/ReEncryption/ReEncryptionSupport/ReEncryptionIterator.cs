@@ -25,7 +25,7 @@ namespace Cosmos.Samples.ReEncryption
         private readonly FeedRange feedRange;
         private readonly ReEncryptionBulkOperationBuilder reEncryptionBulkOperationBuilder;
         private readonly CheckIfWritesHaveStopped checkIfWritesHaveStoppedCb;
-        private readonly bool isFFChangeFeedSupported;
+        private readonly bool isFullFidelityChangeFeedSupported;
         private readonly ReEncryptionJsonSerializer reEncryptionJsonSerializer;
 
         private FeedIterator feedIterator;
@@ -61,7 +61,7 @@ namespace Cosmos.Samples.ReEncryption
             this.HasMoreResults = true;
             this.ContinuationToken = continuationToken;
             this.checkIfWritesHaveStoppedCb = new CheckIfWritesHaveStopped(checkIfWritesHaveStopped);
-            this.isFFChangeFeedSupported = isFFChangeFeedSupported;
+            this.isFullFidelityChangeFeedSupported = isFFChangeFeedSupported;
             this.reEncryptionJsonSerializer = new ReEncryptionJsonSerializer(
                 new JsonSerializerSettings()
                 {
@@ -89,7 +89,7 @@ namespace Cosmos.Samples.ReEncryption
         public async Task<ReEncryptionResponseMessage> EncryptNextAsync(
             CancellationToken cancellationToken = default)
         {
-            if (!this.checkIfWritesHaveStoppedCb() && this.isFFChangeFeedSupported == false)
+            if (!this.checkIfWritesHaveStoppedCb() && this.isFullFidelityChangeFeedSupported == false)
             {
                 throw new NotSupportedException("ReEncryption currently supported only on container with no ongoing changes. To perform reEncryption please make sure there is no data being written to the container. ");
             }
@@ -121,7 +121,7 @@ namespace Cosmos.Samples.ReEncryption
 
             bool isFullSyncRequired = false;
 
-            if (this.isFFChangeFeedSupported)
+            if (this.isFullFidelityChangeFeedSupported)
             {
                 if (this.CheckIfFullSyncIsRequired(fullFidelityStartLsn, continuationToken))
                 {
@@ -143,7 +143,7 @@ namespace Cosmos.Samples.ReEncryption
                     fullFidelityStartLsn,
                     cancellationToken);
             }
-            else if (this.isFFChangeFeedSupported)
+            else if (this.isFullFidelityChangeFeedSupported)
             {
                  (responseMessage, reEncryptionBulkOperationResponse, continuationToken) = await this.GetAndReencryptFFChangesAsync(cancellationToken);
             }
@@ -171,7 +171,7 @@ namespace Cosmos.Samples.ReEncryption
 
             if (response.StatusCode == HttpStatusCode.NotModified)
             {
-                if (this.checkIfWritesHaveStoppedCb() && !this.isFFChangeFeedSupported)
+                if (this.checkIfWritesHaveStoppedCb() && !this.isFullFidelityChangeFeedSupported)
                 {
                     this.StoppedWrites();
                 }
@@ -311,7 +311,7 @@ namespace Cosmos.Samples.ReEncryption
                     ChangeFeedMode.Incremental,
                     this.changeFeedRequestOptions);
             }
-            else if (this.isFFChangeFeedSupported)
+            else if (this.isFullFidelityChangeFeedSupported)
             {
                 if (string.IsNullOrEmpty(continuationToken))
                 {
@@ -376,7 +376,7 @@ namespace Cosmos.Samples.ReEncryption
             return this.GetLsnFromContinuationString(response.ContinuationToken);
         }
 
-        private async Task<(string, string)> ParseContinuationTokenAsync(string continuationToken)
+        private async Task<(string continuationToken, string fullFidelityStartLsn)> ParseContinuationTokenAsync(string continuationToken)
         {
             if (string.IsNullOrEmpty(continuationToken))
             {

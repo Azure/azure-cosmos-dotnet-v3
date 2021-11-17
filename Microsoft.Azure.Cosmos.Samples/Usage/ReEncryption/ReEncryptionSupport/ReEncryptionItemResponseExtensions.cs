@@ -17,12 +17,12 @@ namespace Cosmos.Samples.ReEncryption
         {
             try
             {
-                await task;
+                ItemResponse<T> result = await task;
                 return new ReEncryptionOperationResponse<T>()
                 {
-                    Item = item,
+                    Item = result.Resource,
                     IsSuccessful = true,
-                    RequestUnitsConsumed = task.Result.RequestCharge
+                    RequestUnitsConsumed = result.RequestCharge
                 };
 
             }
