@@ -285,12 +285,13 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (cosmosResponseMessage)
                 {
-                    if (
-                        cosmosResponseMessage.Headers.QueryMetricsText != null &&
-                        BackendMetricsParser.TryParse(cosmosResponseMessage.Headers.QueryMetricsText, out BackendMetrics backendMetrics))
+                    if (cosmosResponseMessage.Headers.QueryMetricsText != null)
                     {
                         QueryMetricsTraceDatum datum = new QueryMetricsTraceDatum(
-                            new QueryMetrics(backendMetrics, IndexUtilizationInfo.Empty, ClientSideMetrics.Empty));
+                            new Lazy<QueryMetrics>(() => new QueryMetrics(
+                                cosmosResponseMessage.Headers.QueryMetricsText, 
+                                IndexUtilizationInfo.Empty, 
+                                ClientSideMetrics.Empty)));
                         trace.AddDatum("Query Metrics", datum);
                     }
 
@@ -317,16 +318,6 @@ namespace Microsoft.Azure.Cosmos
                         resourceType,
                         requestOptions.CosmosSerializationFormatOptions);
 
-                    CosmosQueryExecutionInfo cosmosQueryExecutionInfo;
-                    if (cosmosResponseMessage.Headers.TryGetValue(QueryExecutionInfoHeader, out string queryExecutionInfoString))
-                    {
-                        cosmosQueryExecutionInfo = JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(queryExecutionInfoString);
-                    }
-                    else
-                    {
-                        cosmosQueryExecutionInfo = default;
-                    }
-
                     QueryState queryState;
                     if (cosmosResponseMessage.Headers.ContinuationToken != null)
                     {
@@ -344,6 +335,14 @@ namespace Microsoft.Azure.Cosmos
                         {
                             additionalHeaders[key] = cosmosResponseMessage.Headers[key];
                         }
+                    }
+
+                    Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo = default;
+                    if (cosmosResponseMessage.Headers.TryGetValue(QueryExecutionInfoHeader, out string queryExecutionInfoString))
+                    {
+                        cosmosQueryExecutionInfo = 
+                            new Lazy<CosmosQueryExecutionInfo>(
+                                () => JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(queryExecutionInfoString));
                     }
 
                     QueryPage response = new QueryPage(
