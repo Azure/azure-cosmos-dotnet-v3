@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.Telemetry;
     using System.Collections.Generic;
+    using Moq;
 
     /// <summary>
     /// Tests for <see cref="ClientTelemetry"/>.
@@ -115,6 +116,22 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
             string json = JsonConvert.SerializeObject(new ClientTelemetryProperties("clientId", "", null, ConnectionMode.Direct, preferredRegion, 1), ClientTelemetryOptions.JsonSerializerSettings);
             Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"DIRECT\",\"preferredRegions\":[\"region1\"],\"aggregationIntervalInSec\":1,\"systemInfo\":[]}", json);
+        }
+
+        [TestMethod]
+        public void AddMisclleneousInformation()
+        {
+            using ClientTelemetry telemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
+                documentClient: new MockDocumentClient(), 
+                userAgent: "userAgent", 
+                connectionMode: ConnectionMode.Direct, 
+                authorizationTokenProvider: new Mock<AuthorizationTokenProvider>().Object, 
+                diagnosticsHelper: Handler.DiagnosticsHandlerHelper.Instance, 
+                preferredRegions: null);
+
+            telemetry.Miscellaneous = "misc";
+
+            Assert.AreEqual("misc", telemetry.Miscellaneous);
         }
 
     }

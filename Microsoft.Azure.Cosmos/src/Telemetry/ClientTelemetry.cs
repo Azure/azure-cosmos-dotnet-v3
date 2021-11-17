@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Net;
     using System.Net.Http;
     using System.Text;
@@ -32,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private static readonly Uri endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
 
-        private readonly ClientTelemetryProperties clientTelemetryInfo;
+        internal readonly ClientTelemetryProperties clientTelemetryInfo;
 
         private readonly DocumentClient documentClient;
         private readonly CosmosHttpClient httpClient;
@@ -43,8 +42,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private Task telemetryTask;
 
-        private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
+        private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap
             = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
+
+        internal string Miscellaneous
+        {
+            get => this.clientTelemetryInfo.Miscellaneous;
+            set => this.clientTelemetryInfo.Miscellaneous = value;
+        }
 
         /// <summary>
         /// Factory method to intiakize telemetry object and start observer task
