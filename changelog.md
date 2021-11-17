@@ -13,11 +13,30 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.23.0"/> [3.23.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.23.0) - 2021-11-12
+### <a name="3.23.0-preview"/> [3.23.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.23.0-preview) - 2021-11-12
+
+#### Added
+- [#2868](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2868) Patch: Adds support for patch operations
+- [#2822](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2822) Availability: Adds non-blocking async lazy cache to improve upgrade and scaling scenarios
+- [#2807](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2807) ChangeFeedProcessor: Adds ChangeFeedProcessorUserException for detailed error notification
+- [#2818](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2818) Diagnostics: Adds retry after time to diagnostics
+- [#2818](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2818) Availability: Adds retry context to ensure requests on retries do not go to replicas that previously hit transport exceptions
+
+#### Fixed
+- [#2851](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2851) Query: Fixes stack overflow in SkipEmptyPageQueryPipelineStage. Introduced in 3.14.0 PR [#1812](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1812)
+- [#2844](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2844) CosmosClientBuilder: Fixes accountEndpoint not being set when using TokenCredential. (Thanks [@levimatheri](https://github.com/levimatheri)) Introduced in 3.22.0 PR [#2753](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2753)  
+- [#2793](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2793) Query: Fixes missing diagnostic from query pipeline. Introduced in 3.17.0 PR [#2097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2097)
+- [#2818](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2818) Diagnostics: Fixes memory calculations in diagnostics
+- [#2818](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2818) Availability: Fixes blocking call on broken connection exception
+- [#2861](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2861) Performance: Fixes query performance by avoiding ImmutableDictionary. Introduced in 3.17.0 PR [#2144](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2144)
+
 ### <a name="3.22.1-preview"/> [3.22.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.22.1-preview) - 2021-10-28
 ### <a name="3.22.1"/> [3.22.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.22.1) - 2021-10-28
 
 #### Fixed
 - [#2827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2827) Query: Fixes a memory leak when on Windows x64 using ServiceInterop. Introduced in 3.22.0 [2777](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2777)
+- [#2827](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2827) Availability: Adds keep alive to Linux systems for Direct mode connections to match the Windows keep alive interval
 
 ### <a name="3.22.0"/> [3.22.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.22.0) - 2021-10-18
 
@@ -25,7 +44,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#2753](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2753) CosmosClientBuilder: Adds overload for passing TokenCredential (Thanks [@levimatheri](https://github.com/levimatheri))
 - [#2732](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2732) Diagnostics: Adds request status code summary
 - [#2777](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2777) RetryWith(449): Adds improved 449 retry logic with randomized seed and faster retries.
-- [#2796](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2796) Availability: Adds keep alive to Linux systems for Direct mode connections to match the Windows keep alive interval
 - [#2787](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2787) ChangeFeedProcessor: Adds Notification APIs
 
 #### Fixed
