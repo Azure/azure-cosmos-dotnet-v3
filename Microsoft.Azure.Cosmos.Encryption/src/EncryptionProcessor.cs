@@ -287,11 +287,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             (TypeMarker typeMarker, byte[] plainText) = Serialize(propertyValueToEncrypt);
 
-            AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await encryptionSettingForProperty.BuildEncryptionAlgorithmForSettingAsync(
-                ifNoneMatchEtags: null,
-                shouldForceRefresh: false,
-                forceRefreshGatewayCache: false,
-                cancellationToken: cancellationToken);
+            AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await encryptionSettingForProperty.BuildEncryptionAlgorithmForSettingAsync(cancellationToken: cancellationToken);
 
             byte[] cipherText = aeadAes256CbcHmac256EncryptionAlgorithm.Encrypt(plainText);
 
@@ -321,11 +317,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             byte[] cipherText = new byte[cipherTextWithTypeMarker.Length - 1];
             Buffer.BlockCopy(cipherTextWithTypeMarker, 1, cipherText, 0, cipherTextWithTypeMarker.Length - 1);
 
-            AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await encryptionSettingForProperty.BuildEncryptionAlgorithmForSettingAsync(
-                ifNoneMatchEtags: null,
-                shouldForceRefresh: false,
-                forceRefreshGatewayCache: false,
-                cancellationToken: cancellationToken);
+            AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await encryptionSettingForProperty.BuildEncryptionAlgorithmForSettingAsync(cancellationToken: cancellationToken);
 
             byte[] plainText = aeadAes256CbcHmac256EncryptionAlgorithm.Decrypt(cipherText);
 
