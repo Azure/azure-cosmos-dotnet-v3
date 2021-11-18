@@ -146,7 +146,6 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             {
                 if (locationEndpoint != null)
                 {
-                    Console.WriteLine($"Direct: RegionName: {regionName}, locationEndpoint: {locationEndpoint}");
                     this.RegionsContacted.Add((regionName, locationEndpoint));
                 }
 
@@ -222,15 +221,12 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             lock (this.httpResponseStatistics)
             {
                 Uri locationEndpoint = request.RequestUri;
-                object regionName = null;
-
-                request.Properties?.TryGetValue(HttpRequestRegionNameProperty, out regionName);
-
-                if (locationEndpoint != null && regionName != null)
+                if (request.Properties != null && 
+                        request.Properties.TryGetValue(HttpRequestRegionNameProperty, out object regionName))
                 {
-                    Console.WriteLine($"Gateway: RegionName: {regionName}, locationEndpoint: {locationEndpoint}");
-                    this.RegionsContacted.Add((regionName.ToString(), locationEndpoint));
+                    this.RegionsContacted.Add((Convert.ToString(regionName), locationEndpoint));
                 }
+
                 this.shallowCopyOfHttpResponseStatistics = null;
                 this.httpResponseStatistics.Add(new HttpResponseStatistics(requestStartTimeUtc,
                                                                            requestEndTimeUtc,
@@ -253,14 +249,10 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             lock (this.httpResponseStatistics)
             {
                 Uri locationEndpoint = request.RequestUri;
-                object regionName = null;
-
-                request.Properties?.TryGetValue(HttpRequestRegionNameProperty, out regionName);
-
-                if (locationEndpoint != null && regionName != null)
+                if (request.Properties != null &&
+                        request.Properties.TryGetValue(HttpRequestRegionNameProperty, out object regionName))
                 {
-                    Console.WriteLine($"Gateway: OnException=>RegionName: {regionName}, locationEndpoint: {locationEndpoint}");
-                    this.RegionsContacted.Add((regionName.ToString(), locationEndpoint));
+                    this.RegionsContacted.Add((Convert.ToString(regionName), locationEndpoint));
                 }
 
                 this.shallowCopyOfHttpResponseStatistics = null;
