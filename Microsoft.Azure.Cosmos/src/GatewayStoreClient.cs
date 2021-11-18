@@ -318,8 +318,12 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(activityId != Guid.Empty);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
 
-            requestMessage.Properties.Add(ClientSideRequestStatisticsTraceDatum.HttpRequestRegionNameProperty, request?.RequestContext?.RegionName);
-
+            string regionName = request?.RequestContext?.RegionName;
+            if (regionName != null)
+            {
+                requestMessage.Properties.Add(ClientSideRequestStatisticsTraceDatum.HttpRequestRegionNameProperty, regionName);
+            }
+            
             return requestMessage;
         }
 
