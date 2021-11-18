@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     this.defaultEndpoint, 
                     UriComponents.Host, 
                     UriFormat.SafeUnescaped, 
-                    StringComparison.OrdinalIgnoreCase) != 0)
+                    StringComparison.OrdinalIgnoreCase) == 0)
             {
                 regionName = null;
                 return false;
