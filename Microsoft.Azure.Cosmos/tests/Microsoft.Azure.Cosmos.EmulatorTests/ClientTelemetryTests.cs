@@ -70,8 +70,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<string> preferredRegionList = new List<string>
             {
-                Regions.EastUS,
-                Regions.WestUS
+                "region1",
+                "region2"
             };
 
             this.cosmosClientBuilder = TestCommon.GetDefaultConfiguration()
@@ -81,20 +81,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestCleanup]
-        public void Cleanup()
+        public async Task Cleanup()
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, null);
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
 
-           // await base.TestCleanup();
+            await base.TestCleanup();
         }
 
         [TestMethod]
-        //[DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
         public async Task PointSuccessOperationsTest(ConnectionMode mode)
         {
-            Container container = this.GetClientAndContainer(mode);
+            Container container = await this.CreateClientAndContainer(mode);
 
             // Create an item
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity testItemCreated = createResponse.Resource;
 
             // Read an Item
-            await container.ReadItemAsync<ToDoActivity>(testItemCreated.id, new Cosmos.PartitionKey("MyTestPkValue"));
+            await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
 
             // Upsert an Item
             await container.UpsertItemAsync<ToDoActivity>(testItem);
@@ -111,14 +111,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await container.ReplaceItemAsync<ToDoActivity>(testItemCreated, testItemCreated.id.ToString());
 
             // Patch an Item
-          /*  List<PatchOperation> patch = new List<PatchOperation>()
+            List<PatchOperation> patch = new List<PatchOperation>()
             {
                 PatchOperation.Add("/new", "patched")
             };
             await ((ContainerInternal)container).PatchItemAsync<ToDoActivity>(
                 testItem.id,
                 new Cosmos.PartitionKey(testItem.id),
-                patch);*/
+                patch);
 
             // Delete an Item
             await container.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
@@ -596,8 +596,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 HashSet<OperationInfo> actualOperationSet = new HashSet<OperationInfo>();
                 lock (this.actualInfo)
                 {
-                    List<ClientTelemetryProperties> originalActualInfo = this.actualInfo;
-
                     // Setting the number of unique OperationInfo irrespective of response size as response size is varying in case of queries.
                     this.actualInfo
                         .ForEach(x => x.OperationInfo
@@ -613,7 +611,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         break;
                     }
 
-                    Assert.IsTrue(stopwatch.Elapsed.TotalMinutes < 1, $"The expected operation count({expectedOperationCount}) was never hit, Actual Operation Count is {actualOperationSet.Count * 2}.  ActualInfo:{JsonConvert.SerializeObject(originalActualInfo)}");
+                    Assert.IsTrue(stopwatch.Elapsed.TotalMinutes < 1, $"The expected operation count({expectedOperationCount}) was never hit, Actual Operation Count is {actualOperationSet.Count}.  ActualInfo:{JsonConvert.SerializeObject(this.actualInfo)}");
                 }
 
                 await Task.Delay(TimeSpan.FromMilliseconds(200));
@@ -632,7 +630,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(2, telemetryInfo.SystemInfo.Count, $"System Information Count doesn't Match; {JsonConvert.SerializeObject(telemetryInfo.SystemInfo)}");
 
                 Assert.IsNotNull(telemetryInfo.GlobalDatabaseAccountName, "GlobalDatabaseAccountName is null");
-                Assert.IsNotNull(telemetryInfo.ApplicationRegion, "ApplicationRegion is null");
                 Assert.IsNotNull(telemetryInfo.DateTimeUtc, "Timestamp is null");
                 Assert.AreEqual(2, telemetryInfo.PreferredRegions.Count);
                 Assert.AreEqual("region1", telemetryInfo.PreferredRegions[0]);
@@ -653,8 +650,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(operation.Operation, "Operation Type is null");
                 Assert.IsNotNull(operation.Resource, "Resource Type is null");
                 Assert.IsNotNull(operation.StatusCode, "StatusCode is null");
-                Assert.IsNotNull(operation.RegionsContacted, "RegionsContacted is null");
-                Assert.AreNotEqual(string.Empty, operation.RegionsContacted, "RegionsContacted is Empty");
                 Assert.AreEqual(expectedConsistencyLevel?.ToString(), operation.Consistency, $"Consistency is not {expectedConsistencyLevel}");
 
                 Assert.IsNotNull(operation.MetricInfo, "MetricInfo is null");
@@ -725,22 +720,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 partitionKeyPath: "/id",
                 throughput: isLargeContainer? 15000 : 400);
 
-        }
-
-        private Container GetClientAndContainer(ConnectionMode mode, ConsistencyLevel? consistency = null)
-        {
-            if (consistency.HasValue)
-            {
-                this.cosmosClientBuilder = this.cosmosClientBuilder.WithConsistencyLevel(consistency.Value);
-            }
-
-            this.cosmosClient = mode == ConnectionMode.Gateway
-                ? this.cosmosClientBuilder.WithConnectionModeGateway().Build()
-                : this.cosmosClientBuilder.Build();
-
-            this.database = this.cosmosClient.GetDatabase("testdb");
-
-            return this.database.GetContainer("testcol");
         }
 
     }
