@@ -9,12 +9,14 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
     internal sealed class QueryMetricsTraceDatum : TraceDatum
     {
-        public QueryMetricsTraceDatum(QueryMetrics queryMetrics)
+        private readonly Lazy<QueryMetrics> LazyQueryMetrics;
+
+        public QueryMetricsTraceDatum(Lazy<QueryMetrics> queryMetrics)
         {
-            this.QueryMetrics = queryMetrics ?? throw new ArgumentNullException(nameof(queryMetrics));
+            this.LazyQueryMetrics = queryMetrics ?? throw new ArgumentNullException(nameof(queryMetrics));
         }
 
-        public QueryMetrics QueryMetrics { get; }
+        public QueryMetrics QueryMetrics => this.LazyQueryMetrics.Value;
 
         internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
         {

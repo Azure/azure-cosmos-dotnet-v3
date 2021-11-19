@@ -206,7 +206,6 @@ namespace Microsoft.Azure.Cosmos
             string id,
             TransactionalBatchItemRequestOptions requestOptions = null);
 
-#if PREVIEW
         /// <summary>
         /// Adds an operation to patch an item into the batch.
         /// </summary>
@@ -218,7 +217,6 @@ namespace Microsoft.Azure.Cosmos
                 string id,
                 System.Collections.Generic.IReadOnlyList<PatchOperation> patchOperations,
                 TransactionalBatchPatchItemRequestOptions requestOptions = null);
-#endif
 
         /// <summary>
         /// Executes the transactional batch at the Azure Cosmos service as an asynchronous operation.
