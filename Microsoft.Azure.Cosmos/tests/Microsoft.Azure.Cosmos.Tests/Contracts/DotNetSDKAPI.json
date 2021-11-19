@@ -7064,17 +7064,15 @@
           "Attributes": [],
           "MethodInfo": "System.String get_ErrorMessage();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_IndexMetrics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.String get_IndexMetrics()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.String get_IndexMetrics();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "Attributes": [],
+          "MethodInfo": "System.String get_IndexMetrics();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String IndexMetrics": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": "System.String IndexMetrics;CanRead:True;CanWrite:False;System.String get_IndexMetrics();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.String IndexMetrics;CanRead:True;CanWrite:False;System.String get_IndexMetrics();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void .ctor()": {
           "Type": "Constructor",

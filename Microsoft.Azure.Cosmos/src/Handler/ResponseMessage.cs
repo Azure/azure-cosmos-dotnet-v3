@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
             this.CosmosException = cosmosException;
             this.Headers = headers ?? new Headers();
 
-            this.IndexUtilizationText = DecodeIndexMetrics(this.Headers);
+            this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(this.Headers);
 
             if (requestMessage != null && requestMessage.Trace != null)
             {
@@ -275,7 +275,7 @@ namespace Microsoft.Azure.Cosmos
                     });
             }
 
-            return new Lazy<string>();
+            return null;
         }
     }
 }
