@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos
                 // The original task is still being created. Just return the original task.
                 Task<T> valueSnapshot = this.value;
                 T originalValue = default;
-                if (valueSnapshot != null && AsyncLazyWithRefreshTask<T>.IsTaskRunning(valueSnapshot))
+                if (AsyncLazyWithRefreshTask<T>.IsTaskRunning(valueSnapshot))
                 {
                     return await valueSnapshot;
                 }
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos
 
                 // Use a local reference to avoid it being updated between the check and the await
                 Task<T> refresh = this.refreshInProgress;
-                if (refresh != null && AsyncLazyWithRefreshTask<T>.IsTaskRunning(refresh))
+                if (AsyncLazyWithRefreshTask<T>.IsTaskRunning(refresh))
                 {
                     T result = await refresh;
                     callBackOnForceRefresh?.Invoke(originalValue, result);
