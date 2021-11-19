@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private static readonly IReadOnlyDictionary<string, AddressResolutionStatistics> EmptyEndpointToAddressResolutionStatistics = new Dictionary<string, AddressResolutionStatistics>();
         private static readonly IReadOnlyList<StoreResponseStatistics> EmptyStoreResponseStatistics = new List<StoreResponseStatistics>();
         private static readonly IReadOnlyList<HttpResponseStatistics> EmptyHttpResponseStatistics = new List<HttpResponseStatistics>();
+        private readonly List<(PartitionAddressInformation existing, PartitionAddressInformation newInfo)> partitionAddressInformationRefreshes = new List<(PartitionAddressInformation existing, PartitionAddressInformation newInfo)>();
 
         private readonly object requestEndTimeLock = new object();
         private readonly Dictionary<string, AddressResolutionStatistics> endpointToAddressResolutionStats;
@@ -124,60 +125,115 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         {
         }
 
-        private List<(PartitionAddressInformation existing, PartitionAddressInformation newInfo)> partitionAddressInformationRefreshes = null;
-
         public void RecordAddressCachRefreshContent(
             PartitionAddressInformation existingInfo,
             PartitionAddressInformation newInfo)
         {
             lock (this.partitionAddressInformationRefreshes)
             {
-                if (this.partitionAddressInformationRefreshes == null)
-                {
-                    this.partitionAddressInformationRefreshes = new List<(PartitionAddressInformation existing, PartitionAddressInformation newInfo)>();
-                }
-
                 this.partitionAddressInformationRefreshes.Add((existingInfo, newInfo));
             }
         }
 
         public void WriteAddressCachRefreshContent(IJsonWriter jsonWriter)
         {
+            if (this.partitionAddressInformationRefreshes.Count == 0)
+            {
+                return;
+            }
+
             lock (this.partitionAddressInformationRefreshes)
             {
-                if (this.partitionAddressInformationRefreshes == null 
-                     || this.partitionAddressInformationRefreshes.Count == 0)
+                if (this.partitionAddressInformationRefreshes.Count == 0)
                 {
                     return;
                 }
 
-                jsonWriter.WriteFieldName("PartitionRefresh");
+                jsonWriter.WriteFieldName("ForceAddressRefresh");
+
                 jsonWriter.WriteArrayStart();
                 foreach ((PartitionAddressInformation existing, PartitionAddressInformation newInfo) in this.partitionAddressInformationRefreshes)
                 {
-                    jsonWriter.WriteObjectStart();
-                    jsonWriter.WriteFieldName("Original");
-                    jsonWriter.WriteArrayStart();
-                    foreach (AddressInformation addressInformation in existing.AllAddresses)
+                    // Avoid printing the same list twice if the cache update did not change any values
+                    if (ClientSideRequestStatisticsTraceDatum.IsSamePartitionAddressInformation(existing, newInfo))
                     {
-                        jsonWriter.WriteStringValue(addressInformation.PhysicalUri);
-                    }
-                    
-                    jsonWriter.WriteArrayEnd();
+                        jsonWriter.WriteObjectStart();
+                        jsonWriter.WriteFieldName("No change to cache");
+                        jsonWriter.WriteArrayStart();
+                        foreach (AddressInformation addressInformation in existing.AllAddresses)
+                        {
+                            jsonWriter.WriteStringValue(addressInformation.PhysicalUri);
+                        }
 
-                    jsonWriter.WriteFieldName("New");
-                    jsonWriter.WriteArrayStart();
-                    foreach (AddressInformation addressInformation in newInfo.AllAddresses)
+                        jsonWriter.WriteArrayEnd();
+                        jsonWriter.WriteObjectEnd();
+                    }
+                    else
                     {
-                        jsonWriter.WriteStringValue(addressInformation.PhysicalUri);
-                    }
-                    jsonWriter.WriteArrayEnd();
-                    jsonWriter.WriteObjectEnd();
+                        jsonWriter.WriteObjectStart();
+                        jsonWriter.WriteFieldName("Original");
+                        jsonWriter.WriteArrayStart();
+                        foreach (AddressInformation addressInformation in existing.AllAddresses)
+                        {
+                            jsonWriter.WriteStringValue(addressInformation.PhysicalUri);
+                        }
 
+                        jsonWriter.WriteArrayEnd();
+
+                        jsonWriter.WriteFieldName("New");
+                        jsonWriter.WriteArrayStart();
+                        foreach (AddressInformation addressInformation in newInfo.AllAddresses)
+                        {
+                            jsonWriter.WriteStringValue(addressInformation.PhysicalUri);
+                        }
+                        jsonWriter.WriteArrayEnd();
+                        jsonWriter.WriteObjectEnd();
+                    }
                 }
 
                 jsonWriter.WriteArrayEnd();
             }
+        }
+
+        private static bool IsSamePartitionAddressInformation(
+            PartitionAddressInformation info1,
+            PartitionAddressInformation info2)
+        {
+            if (info1 == null && info2 == null)
+            {
+                return true;
+            }
+
+            if (info1 != null && info2 == null)
+            {
+                return false;
+            }
+
+            if (info1 == null && info2 != null)
+            {
+                return false;
+            }
+
+            if (info1.AllAddresses.Count != info2.AllAddresses.Count)
+            {
+                return false;
+            }
+
+            // Assumes both lists are in the same order.
+            for (int i = 0; i < info1.AllAddresses.Count; i++)
+            {
+                AddressInformation info1AddressInfo = info1.AllAddresses[i];
+                AddressInformation info2AddressInfo = info2.AllAddresses[i];
+                if (info1AddressInfo.Protocol != info2AddressInfo.Protocol
+                    || info1AddressInfo.IsPrimary != info2AddressInfo.IsPrimary
+                    || info1AddressInfo.IsPublic != info2AddressInfo.IsPublic
+                    || info1AddressInfo.PhysicalUri != info2AddressInfo.PhysicalUri)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public void RecordResponse(
