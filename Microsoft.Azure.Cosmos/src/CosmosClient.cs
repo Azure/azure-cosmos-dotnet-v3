@@ -103,8 +103,6 @@ namespace Microsoft.Azure.Cosmos
         internal static int numberOfClientsCreated;
         internal DateTime? DisposedDateTimeUtc { get; private set; } = null;
 
-        internal ClientTelemetry Telemetry;
-
         static CosmosClient()
         {
 #if PREVIEW
@@ -1256,7 +1254,6 @@ namespace Microsoft.Azure.Cosmos
                 if (disposing)
                 {
                     this.ClientContext.Dispose();
-                    this.Telemetry?.Dispose();
                 }
 
                 this.isDisposed = true;
