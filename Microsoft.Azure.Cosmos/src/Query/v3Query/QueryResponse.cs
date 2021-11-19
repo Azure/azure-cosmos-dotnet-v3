@@ -57,21 +57,6 @@ namespace Microsoft.Azure.Cosmos
             this.ResponseLengthBytes = responseLengthBytes;
             this.memoryStream = memoryStream;
             this.CosmosSerializationOptions = serializationOptions;
-
-            if (responseHeaders != null)
-            {
-                if (responseHeaders.IndexUtilizationText != null)
-                {
-                    this.IndexUtilizationText = new Lazy<string>(() =>
-                    {
-                        IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseHeaders.IndexUtilizationText);
-                        StringBuilder stringBuilder = new StringBuilder();
-                        IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
-                        indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);
-                        return stringBuilder.ToString();
-                    });
-                }
-            }
         }
 
         public int Count { get; }
@@ -81,10 +66,6 @@ namespace Microsoft.Azure.Cosmos
         internal virtual IReadOnlyList<CosmosElement> CosmosElements { get; }
 
         internal virtual CosmosQueryResponseMessageHeaders QueryHeaders => (CosmosQueryResponseMessageHeaders)this.Headers;
-
-        private Lazy<string> IndexUtilizationText { get; }
-
-        public override string IndexMetrics => this.IndexUtilizationText?.Value;
 
         /// <summary>
         /// Gets the response length in bytes
@@ -201,20 +182,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosArray: cosmosElements,
                 serializerCore: serializerCore);
 
-            if (responseMessageHeaders != null)
-            {
-                if (responseMessageHeaders.IndexUtilizationText != null)
-                {
-                    this.IndexUtilizationText = new Lazy<string>(() =>
-                    {
-                        IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText);
-                        StringBuilder stringBuilder = new StringBuilder();
-                        IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
-                        indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);
-                        return stringBuilder.ToString();
-                    });
-                }
-            }         
+            this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(responseMessageHeaders);
         }
 
         public override string ContinuationToken => this.Headers.ContinuationToken;

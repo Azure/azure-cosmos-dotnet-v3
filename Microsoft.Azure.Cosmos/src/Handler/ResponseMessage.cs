@@ -8,7 +8,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net;
+    using System.Text;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -81,6 +83,9 @@ namespace Microsoft.Azure.Cosmos
             this.RequestMessage = requestMessage;
             this.CosmosException = cosmosException;
             this.Headers = headers ?? new Headers();
+
+            this.IndexUtilizationText = DecodeIndexMetrics(this.Headers);
+
             if (requestMessage != null && requestMessage.Trace != null)
             {
                 this.Trace = requestMessage.Trace;
@@ -127,6 +132,8 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public virtual string ContinuationToken => this.Headers?.ContinuationToken;
 
+        private Lazy<string> IndexUtilizationText { get; }
+
         /// <summary>
         /// Gets the Index Metrics in the current <see cref="ResponseMessage"/> to be used for debugging purposes. 
         /// It's applicable to query response only. Other feed response will return null for this field.
@@ -135,7 +142,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The index utilization metrics.
         /// </value>
-        public virtual string IndexMetrics { get; }
+        public string IndexMetrics => this.IndexUtilizationText?.Value;
 
         /// <summary>
         /// Gets the original request message
@@ -246,6 +253,29 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ObjectDisposedException(this.GetType().ToString());
             }
+        }
+
+        /// <summary>
+        /// Decode the Index Metrics from the response headers, if exists.
+        /// </summary>
+        /// <param name="responseMessageHeaders">The response headers</param>
+        /// <returns>Lazy implementation of the pretty-printed IndexMetrics</returns>
+        static internal Lazy<string> DecodeIndexMetrics(Headers responseMessageHeaders)
+        {
+            if (responseMessageHeaders?.IndexUtilizationText != null)
+            {
+                return new Lazy<string>(() =>
+                    {
+                        IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText);
+                        StringBuilder stringBuilder = new StringBuilder();
+                        IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
+                        indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);
+
+                        return stringBuilder.ToString();
+                    });
+            }
+
+            return new Lazy<string>();
         }
     }
 }
