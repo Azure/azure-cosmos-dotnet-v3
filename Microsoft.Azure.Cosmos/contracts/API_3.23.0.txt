@@ -76,6 +76,13 @@ namespace Microsoft.Azure.Cosmos
         public string InstanceName { get; }
         public string LeaseToken { get; }
     }
+    public class ChangeFeedProcessorUserException : Exception
+    {
+        public ChangeFeedProcessorUserException(Exception originalException, ChangeFeedProcessorContext context);
+        protected ChangeFeedProcessorUserException(SerializationInfo info, StreamingContext context);
+        public ChangeFeedProcessorContext ChangeFeedProcessorContext { get; }
+        public override void GetObjectData(SerializationInfo info, StreamingContext context);
+    }
     public sealed class ChangeFeedRequestOptions : RequestOptions
     {
         public ChangeFeedRequestOptions();
@@ -176,6 +183,8 @@ namespace Microsoft.Azure.Cosmos
         public abstract FeedIterator<T> GetItemQueryIterator<T>(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
         public abstract FeedIterator GetItemQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
         public abstract FeedIterator GetItemQueryStreamIterator(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract Task<ItemResponse<T>> PatchItemAsync<T>(string id, PartitionKey partitionKey, IReadOnlyList<PatchOperation> patchOperations, PatchItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> PatchItemStreamAsync(string id, PartitionKey partitionKey, IReadOnlyList<PatchOperation> patchOperations, PatchItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ContainerResponse> ReadContainerAsync(ContainerRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ResponseMessage> ReadContainerStreamAsync(ContainerRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ItemResponse<T>> ReadItemAsync<T>(string id, PartitionKey partitionKey, ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
@@ -572,6 +581,32 @@ namespace Microsoft.Azure.Cosmos
         V1 = 1,
         V2 = 2,
     }
+    public sealed class PatchItemRequestOptions : ItemRequestOptions
+    {
+        public PatchItemRequestOptions();
+        public string FilterPredicate { get; set; }
+    }
+    public abstract class PatchOperation
+    {
+        protected PatchOperation();
+        public abstract PatchOperationType OperationType { get; }
+        public abstract string Path { get; }
+        public static PatchOperation Add<T>(string path, T value);
+        public static PatchOperation Increment(string path, double value);
+        public static PatchOperation Increment(string path, long value);
+        public static PatchOperation Remove(string path);
+        public static PatchOperation Replace<T>(string path, T value);
+        public static PatchOperation Set<T>(string path, T value);
+        public virtual bool TrySerializeValueParameter(CosmosSerializer cosmosSerializer, out Stream valueParam);
+    }
+    public enum PatchOperationType
+    {
+        Add = 0,
+        Increment = 4,
+        Remove = 1,
+        Replace = 2,
+        Set = 3,
+    }
     public abstract class Permission
     {
         protected Permission();
@@ -810,6 +845,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract TransactionalBatch DeleteItem(string id, TransactionalBatchItemRequestOptions requestOptions=null);
         public abstract Task<TransactionalBatchResponse> ExecuteAsync(TransactionalBatchRequestOptions requestOptions, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<TransactionalBatchResponse> ExecuteAsync(CancellationToken cancellationToken=default(CancellationToken));
+        public abstract TransactionalBatch PatchItem(string id, IReadOnlyList<PatchOperation> patchOperations, TransactionalBatchPatchItemRequestOptions requestOptions=null);
         public abstract TransactionalBatch ReadItem(string id, TransactionalBatchItemRequestOptions requestOptions=null);
         public abstract TransactionalBatch ReplaceItemStream(string id, Stream streamPayload, TransactionalBatchItemRequestOptions requestOptions=null);
         public abstract TransactionalBatch ReplaceItem<T>(string id, T item, TransactionalBatchItemRequestOptions requestOptions=null);
@@ -835,6 +871,11 @@ namespace Microsoft.Azure.Cosmos
     {
         protected TransactionalBatchOperationResult();
         public virtual T Resource { get; set; }
+    }
+    public class TransactionalBatchPatchItemRequestOptions : TransactionalBatchItemRequestOptions
+    {
+        public TransactionalBatchPatchItemRequestOptions();
+        public string FilterPredicate { get; set; }
     }
     public class TransactionalBatchRequestOptions : RequestOptions
     {
