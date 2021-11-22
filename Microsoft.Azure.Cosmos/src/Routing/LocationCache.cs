@@ -95,6 +95,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                     this.UpdateLocationCache();
                 }
 
+                foreach (Uri endpoint1 in this.locationInfo.WriteEndpoints)
+                {
+                    Console.WriteLine("Locationcache => ReadEndpoints " + endpoint1.ToString());
+                }
+
                 return this.locationInfo.ReadEndpoints;
             }
         }
@@ -113,6 +118,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                     && this.locationUnavailablityInfoByEndpoint.Any())
                 {
                     this.UpdateLocationCache();
+                }
+
+                foreach (Uri endpoint1 in this.locationInfo.WriteEndpoints)
+                {
+                    Console.WriteLine("Locationcache WriteEndpoints => " + endpoint1.ToString());
                 }
 
                 return this.locationInfo.WriteEndpoints;
@@ -440,26 +450,46 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 this.ClearStaleEndpointUnavailabilityInfo();
+/*
+                foreach (AccountRegion rlocation in readLocations)
+                {
+                    Console.WriteLine("UpdateLocationCache2 readLocations " + rlocation.Endpoint);
+                }
+
+                foreach (AccountRegion wlocation in writeLocations)
+                {
+                    Console.WriteLine("UpdateLocationCache2 writeLocations " + wlocation.Endpoint);
+                }*/
 
                 if (readLocations != null)
                 {
-                    ReadOnlyCollection<string> availableReadLocations;
-                    nextLocationInfo.AvailableReadEndpointByLocation = this.GetEndpointByLocation(readLocations, out availableReadLocations);
+                    nextLocationInfo.AvailableReadEndpointByLocation = this.GetEndpointByLocation(readLocations, out ReadOnlyCollection<string> availableReadLocations);
                     nextLocationInfo.AvailableReadLocations = availableReadLocations;
                 }
 
                 if (writeLocations != null)
                 {
-                    ReadOnlyCollection<string> availableWriteLocations;
-                    nextLocationInfo.AvailableWriteEndpointByLocation = this.GetEndpointByLocation(writeLocations, out availableWriteLocations);
+                    nextLocationInfo.AvailableWriteEndpointByLocation = this.GetEndpointByLocation(writeLocations, out ReadOnlyCollection<string> availableWriteLocations);
                     nextLocationInfo.AvailableWriteLocations = availableWriteLocations;
                 }
+
+             /*   foreach (KeyValuePair<string, Uri> k in nextLocationInfo.AvailableWriteEndpointByLocation)
+                {
+                    Console.WriteLine("UpdateLocationCache1 " + k.Key + ":::" + k.Value.ToString());
+                }
+
+                foreach (string location in nextLocationInfo.AvailableWriteLocations)
+                {
+                    Console.WriteLine("UpdateLocationCache2 " + location);
+                }
+
+                Console.WriteLine("UpdateLocationCache3 " + this.defaultEndpoint);*/
 
                 nextLocationInfo.WriteEndpoints = this.GetPreferredAvailableEndpoints(nextLocationInfo.AvailableWriteEndpointByLocation, nextLocationInfo.AvailableWriteLocations, OperationType.Write, this.defaultEndpoint);
                 nextLocationInfo.ReadEndpoints = this.GetPreferredAvailableEndpoints(nextLocationInfo.AvailableReadEndpointByLocation, nextLocationInfo.AvailableReadLocations, OperationType.Read, nextLocationInfo.WriteEndpoints[0]);
                 this.lastCacheUpdateTimestamp = DateTime.UtcNow;
 
-                DefaultTrace.TraceInformation("Current WriteEndpoints = ({0}) ReadEndpoints = ({1})",
+                Console.WriteLine("Current WriteEndpoints = ({0}) ReadEndpoints = ({1})",
                     string.Join(", ", nextLocationInfo.WriteEndpoints.Select(endpoint => endpoint.ToString())),
                     string.Join(", ", nextLocationInfo.ReadEndpoints.Select(endpoint => endpoint.ToString())));
 
@@ -475,7 +505,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             // if enableEndpointDiscovery is false, we always use the defaultEndpoint that user passed in during documentClient init
             if (this.enableEndpointDiscovery)
             {
-                if (this.CanUseMultipleWriteLocations() || expectedAvailableOperation.HasFlag(OperationType.Read))
+                if ((this.CanUseMultipleWriteLocations() || expectedAvailableOperation.HasFlag(OperationType.Read)) &&
+                    currentLocationInfo.PreferredLocations != null && 
+                    currentLocationInfo.PreferredLocations.Count > 0)
                 {
                     List<Uri> unavailableEndpoints = new List<Uri>();
 
@@ -483,11 +515,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                     // determining read endpoints order. 
                     // If client can use multiple write locations, preferred locations list should be used for determining
                     // both read and write endpoints order.
-
                     foreach (string location in currentLocationInfo.PreferredLocations)
                     {
-                        Uri endpoint;
-                        if (endpointsByLocation.TryGetValue(location, out endpoint))
+                        if (endpointsByLocation.TryGetValue(location, out Uri endpoint))
                         {
                             if (this.IsEndpointUnavailable(endpoint, expectedAvailableOperation))
                             {
@@ -512,9 +542,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     foreach (string location in orderedLocations)
                     {
-                        Uri endpoint;
                         if (!string.IsNullOrEmpty(location) && // location is empty during manual failover
-                            endpointsByLocation.TryGetValue(location, out endpoint))
+                            endpointsByLocation.TryGetValue(location, out Uri endpoint))
                         {
                             endpoints.Add(endpoint);
                         }

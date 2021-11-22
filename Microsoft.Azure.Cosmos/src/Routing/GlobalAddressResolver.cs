@@ -61,18 +61,20 @@ namespace Microsoft.Azure.Cosmos.Routing
                 ? GlobalAddressResolver.MaxBackupReadRegions : 0;
 
             this.enableTcpConnectionEndpointRediscovery = connectionPolicy.EnableTcpConnectionEndpointRediscovery;
-
+            Console.WriteLine("this.enableTcpConnectionEndpointRediscovery : " + this.enableTcpConnectionEndpointRediscovery);
             this.maxEndpoints = maxBackupReadEndpoints + 2; // for write and alternate write endpoint (during failover)
 
             this.addressCacheByEndpoint = new ConcurrentDictionary<Uri, EndpointCache>();
 
             foreach (Uri endpoint in endpointManager.WriteEndpoints)
             {
+                Console.WriteLine("Write Endpoint : " + endpoint.ToString());
                 this.GetOrAddEndpoint(endpoint);
             }
 
             foreach (Uri endpoint in endpointManager.ReadEndpoints)
             {
+                Console.WriteLine("Read Endpoint : " + endpoint.ToString());
                 this.GetOrAddEndpoint(endpoint);
             }
         }
@@ -158,6 +160,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             Uri endpoint = this.endpointManager.ResolveServiceEndpoint(request);
 
+            Console.WriteLine("GetAddressResolver " + endpoint.ToString());
             return this.GetOrAddEndpoint(endpoint).AddressResolver;
         }
 

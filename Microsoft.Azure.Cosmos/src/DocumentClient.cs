@@ -883,7 +883,7 @@ namespace Microsoft.Azure.Cosmos
             servicePoint.ConnectionLimit = this.ConnectionPolicy.MaxConnectionLimit;
 #endif
 
-            this.GlobalEndpointManager = new GlobalEndpointManager(this, this.ConnectionPolicy);
+            this.GlobalEndpointManager = new GlobalEndpointManager(this, this.ConnectionPolicy); // location cache gets load
             this.PartitionKeyRangeLocation = this.ConnectionPolicy.EnablePartitionLevelFailover
                 ? new GlobalPartitionEndpointManagerCore(this.GlobalEndpointManager)
                 : GlobalPartitionEndpointManagerNoOp.Instance;
@@ -921,7 +921,7 @@ namespace Microsoft.Azure.Cosmos
             this.eventSource = DocumentClientEventSource.Instance;
 
             this.initializeTask = TaskHelper.InlineIfPossibleAsync(
-                () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
+                () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory), // location cache get used
                 new ResourceThrottleRetryPolicy(
                     this.ConnectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests,
                     this.ConnectionPolicy.RetryOptions.MaxRetryWaitTimeInSeconds));
