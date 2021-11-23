@@ -70,8 +70,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<string> preferredRegionList = new List<string>
             {
-                Regions.WestCentralUS,
-                Regions.WestUS
+                "region1",
+                "region2"
             };
 
             this.cosmosClientBuilder = TestCommon.GetDefaultConfiguration()
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [DataRow(ConnectionMode.Direct)]
-       // [DataRow(ConnectionMode.Gateway)]
+        [DataRow(ConnectionMode.Gateway)]
         public async Task PointSuccessOperationsTest(ConnectionMode mode)
         {
             Container container = await this.CreateClientAndContainer(mode);
@@ -99,11 +99,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Create an item
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
             ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(testItem);
+            ToDoActivity testItemCreated = createResponse.Resource;
 
-            Console.WriteLine(createResponse.Diagnostics.ToString());
-          //  ToDoActivity testItemCreated = createResponse.Resource;
-
-           /* // Read an Item
+            // Read an Item
             await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
 
             // Upsert an Item
@@ -136,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             await this.WaitAndAssert(expectedOperationCount: 12,
-                expectedOperationRecordCountMap: expectedRecordCountInOperation);*/
+                expectedOperationRecordCountMap: expectedRecordCountInOperation);
         }
 
         [TestMethod]
