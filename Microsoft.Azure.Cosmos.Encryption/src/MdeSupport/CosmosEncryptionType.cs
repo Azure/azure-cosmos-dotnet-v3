@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// The type of data encryption.
     /// </summary>
     /// <remarks>
-    /// The three encryption types are Plaintext Deterministic and Randomized. Plaintext unencrypted data.
+    /// The two encryption types are Deterministic and Randomized.
     /// Deterministic encryption always generates the same encrypted value for any given plain text value.
     /// Randomized encryption uses a method that encrypts data in a less predictable manner. Randomized encryption is more secure.
     /// </remarks>
