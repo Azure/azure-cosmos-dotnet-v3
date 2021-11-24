@@ -16,8 +16,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     public class CosmosAzureKeyVaultKeyStoreProvider : CosmosEncryptionKeyStoreProvider
     {
-        private readonly Lazy<AzureKeyVaultKeyStoreProvider> azureKeyVaultKeyStoreProviderLazy;
-
         private readonly AzureKeyVaultKeyStoreProvider azureKeyVaultKeyStoreProvider;
 
         private TimeSpan? dataEncryptionKeyCacheTimeToLive;
@@ -29,19 +27,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="tokenCredential"> returns token credentials. </param>
         public CosmosAzureKeyVaultKeyStoreProvider(TokenCredential tokenCredential)
         {
-            this.azureKeyVaultKeyStoreProviderLazy = new Lazy<AzureKeyVaultKeyStoreProvider>(() =>
-            {
-                AzureKeyVaultKeyStoreProvider azureKeyVaultKeyStoreProvider = new AzureKeyVaultKeyStoreProvider(tokenCredential)
-                {
-                    DataEncryptionKeyCacheTimeToLive = this.DataEncryptionKeyCacheTimeToLive,
-                };
-                return azureKeyVaultKeyStoreProvider;
-            });
-
-            this.azureKeyVaultKeyStoreProvider = new AzureKeyVaultKeyStoreProvider(tokenCredential)
-            {
-                DataEncryptionKeyCacheTimeToLive = this.DataEncryptionKeyCacheTimeToLive,
-            };
+            this.azureKeyVaultKeyStoreProvider = new AzureKeyVaultKeyStoreProvider(tokenCredential);
         }
 
         /// <summary>
@@ -52,19 +38,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="trustedEndPoint">TrustedEndpoint is used to validate the key encryption key path.</param>
         public CosmosAzureKeyVaultKeyStoreProvider(TokenCredential tokenCredential, string trustedEndPoint)
         {
-            this.azureKeyVaultKeyStoreProviderLazy = new Lazy<AzureKeyVaultKeyStoreProvider>(() =>
-            {
-                AzureKeyVaultKeyStoreProvider azureKeyVaultKeyStoreProvider = new AzureKeyVaultKeyStoreProvider(tokenCredential, trustedEndPoint)
-                {
-                    DataEncryptionKeyCacheTimeToLive = this.DataEncryptionKeyCacheTimeToLive,
-                };
-                return azureKeyVaultKeyStoreProvider;
-            });
-
-            this.azureKeyVaultKeyStoreProvider = new AzureKeyVaultKeyStoreProvider(tokenCredential)
-            {
-                DataEncryptionKeyCacheTimeToLive = this.DataEncryptionKeyCacheTimeToLive,
-            };
+            this.azureKeyVaultKeyStoreProvider = new AzureKeyVaultKeyStoreProvider(tokenCredential, trustedEndPoint);
         }
 
         /// <summary>
@@ -76,19 +50,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="trustedEndPoints">TrustedEndpoints are used to validate the key encryption key path. </param>
         public CosmosAzureKeyVaultKeyStoreProvider(TokenCredential tokenCredential, string[] trustedEndPoints)
         {
-            this.azureKeyVaultKeyStoreProviderLazy = new Lazy<AzureKeyVaultKeyStoreProvider>(() =>
-            {
-                AzureKeyVaultKeyStoreProvider azureKeyVaultKeyStoreProvider = new AzureKeyVaultKeyStoreProvider(tokenCredential, trustedEndPoints)
-                {
-                    DataEncryptionKeyCacheTimeToLive = this.DataEncryptionKeyCacheTimeToLive,
-                };
-                return azureKeyVaultKeyStoreProvider;
-            });
-
-            this.azureKeyVaultKeyStoreProvider = new AzureKeyVaultKeyStoreProvider(tokenCredential)
-            {
-                DataEncryptionKeyCacheTimeToLive = this.DataEncryptionKeyCacheTimeToLive,
-            };
+            this.azureKeyVaultKeyStoreProvider = new AzureKeyVaultKeyStoreProvider(tokenCredential, trustedEndPoints);
         }
 
         /// <inheritdoc/>
@@ -101,12 +63,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Gets name of the Encryption Key Store Provider implemetation.
         /// </summary>
-        public override string ProviderName => this.azureKeyVaultKeyStoreProviderLazy.Value.ProviderName;
+        public override string ProviderName => this.azureKeyVaultKeyStoreProvider.ProviderName;
 
         /// <summary>
         /// Gets list of Trusted Endpoints.
         /// </summary>
-        public string[] TrustedEndPoints => this.azureKeyVaultKeyStoreProviderLazy.Value.TrustedEndPoints;
+        public string[] TrustedEndPoints => this.azureKeyVaultKeyStoreProvider.TrustedEndPoints;
 
         /// <summary>
         /// This function uses the asymmetric key specified by the key path
