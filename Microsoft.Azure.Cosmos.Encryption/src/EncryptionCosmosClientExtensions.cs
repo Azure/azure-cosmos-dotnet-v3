@@ -16,15 +16,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Get Cosmos Client with Encryption support for performing operations using client-side encryption.
         /// </summary>
         /// <param name="cosmosClient">Regular Cosmos Client.</param>
-        /// <param name="encryptionKeyStoreProvider">EncryptionKeyStoreProvider, provider that allows interaction with the master keys.</param>
+        /// <param name="cosmosEncryptionKeyStoreProvider">EncryptionKeyStoreProvider, provider that allows interaction with the master keys.</param>
         /// <returns> CosmosClient to perform operations supporting client-side encryption / decryption.</returns>
         public static CosmosClient WithEncryption(
             this CosmosClient cosmosClient,
-            CosmosEncryptionKeyStoreProvider encryptionKeyStoreProvider)
+            CosmosEncryptionKeyStoreProvider cosmosEncryptionKeyStoreProvider)
         {
-            if (encryptionKeyStoreProvider == null)
+            if (cosmosEncryptionKeyStoreProvider == null)
             {
-                throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
+                throw new ArgumentNullException(nameof(cosmosEncryptionKeyStoreProvider));
             }
 
             if (cosmosClient == null)
@@ -33,9 +33,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             // set the TTL for ProtectedDataEncryption at the Encryption CosmosClient Init so that we have a uniform expiry of the KeyStoreProvider and ProtectedDataEncryption cache items.
-            if (encryptionKeyStoreProvider.DataEncryptionKeyCacheTimeToLive.HasValue)
+            if (cosmosEncryptionKeyStoreProvider.DataEncryptionKeyCacheTimeToLive.HasValue)
             {
-                ProtectedDataEncryptionKey.TimeToLive = encryptionKeyStoreProvider.DataEncryptionKeyCacheTimeToLive.Value;
+                ProtectedDataEncryptionKey.TimeToLive = cosmosEncryptionKeyStoreProvider.DataEncryptionKeyCacheTimeToLive.Value;
             }
             else
             {
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 ProtectedDataEncryptionKey.TimeToLive = TimeSpan.FromDays(36500);
             }
 
-            return new EncryptionCosmosClient(cosmosClient, encryptionKeyStoreProvider);
+            return new EncryptionCosmosClient(cosmosClient, cosmosEncryptionKeyStoreProvider);
         }
     }
 }

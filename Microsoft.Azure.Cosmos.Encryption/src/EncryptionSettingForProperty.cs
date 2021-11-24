@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 // Here a request is sent out to unwrap using the Master Key configured via the Key Encryption Key.
                 protectedDataEncryptionKey = await this.BuildProtectedDataEncryptionKeyAsync(
                     clientEncryptionKeyProperties,
-                    this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProvider,
+                    this.encryptionContainer.EncryptionCosmosClient.CosmosEncryptionKeyStoreProvider,
                     this.ClientEncryptionKeyId,
                     cancellationToken);
             }
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     // just bail out if this fails.
                     protectedDataEncryptionKey = await this.BuildProtectedDataEncryptionKeyAsync(
                         clientEncryptionKeyProperties,
-                        this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProvider,
+                        this.encryptionContainer.EncryptionCosmosClient.CosmosEncryptionKeyStoreProvider,
                         this.ClientEncryptionKeyId,
                         cancellationToken);
                 }
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private async Task<ProtectedDataEncryptionKey> BuildProtectedDataEncryptionKeyAsync(
             ClientEncryptionKeyProperties clientEncryptionKeyProperties,
-            CosmosEncryptionKeyStoreProvider encryptionKeyStoreProvider,
+            CosmosEncryptionKeyStoreProvider cosmosEncryptionKeyStoreProvider,
             string keyId,
             CancellationToken cancellationToken)
         {
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                         clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
                         clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
-                        encryptionKeyStoreProvider.CosmosEncryptionKeyStoreProviderCore);
+                        cosmosEncryptionKeyStoreProvider.CosmosEncryptionKeyStoreProviderCore);
 
                     ProtectedDataEncryptionKey protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
                         keyId,

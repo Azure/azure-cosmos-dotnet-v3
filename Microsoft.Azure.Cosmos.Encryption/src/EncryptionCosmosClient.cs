@@ -18,14 +18,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private readonly AsyncCache<string, ClientEncryptionKeyProperties> clientEncryptionKeyPropertiesCacheByKeyId;
 
-        public EncryptionCosmosClient(CosmosClient cosmosClient, CosmosEncryptionKeyStoreProvider encryptionKeyStoreProvider)
+        public EncryptionCosmosClient(CosmosClient cosmosClient, CosmosEncryptionKeyStoreProvider cosmosEncryptionKeyStoreProvider)
         {
             this.cosmosClient = cosmosClient ?? throw new ArgumentNullException(nameof(cosmosClient));
-            this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
+            this.CosmosEncryptionKeyStoreProvider = cosmosEncryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(cosmosEncryptionKeyStoreProvider));
             this.clientEncryptionKeyPropertiesCacheByKeyId = new AsyncCache<string, ClientEncryptionKeyProperties>();
         }
 
-        public CosmosEncryptionKeyStoreProvider EncryptionKeyStoreProvider { get; }
+        public CosmosEncryptionKeyStoreProvider CosmosEncryptionKeyStoreProvider { get; }
 
         public override CosmosClientOptions ClientOptions => this.cosmosClient.ClientOptions;
 
