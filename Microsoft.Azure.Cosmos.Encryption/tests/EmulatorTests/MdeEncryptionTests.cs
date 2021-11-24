@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             MdeEncryptionTests.client = TestCommon.CreateCosmosClient();
             testEncryptionKeyStoreProvider = new TestCosmosEncryptionKeyStoreProvider
             {
-                DataEncryptionKeyCacheTimeToLive = TimeSpan.FromSeconds(120)
+                DataEncryptionKeyCacheTimeToLive = null
             };
 
             metadata1 = new EncryptionKeyWrapMetadata(testEncryptionKeyStoreProvider.ProviderName, "key1", "tempmetadata1");

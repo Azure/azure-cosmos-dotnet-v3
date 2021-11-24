@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </remarks>
         public virtual TimeSpan? DataEncryptionKeyCacheTimeToLive
         {
-            get => this.CosmosEncryptionKeyStoreProviderCore.DataEncryptionKeyCacheTimeToLive.Value;
+            get => this.CosmosEncryptionKeyStoreProviderCore.DataEncryptionKeyCacheTimeToLive;
             set => this.CosmosEncryptionKeyStoreProviderCore.DataEncryptionKeyCacheTimeToLive = value;
         }
 
