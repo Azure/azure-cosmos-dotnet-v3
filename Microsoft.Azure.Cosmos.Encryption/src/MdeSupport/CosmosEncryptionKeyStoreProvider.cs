@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// the key encryption key with the specified <paramref name="encryptionKeyId"/> and using the specified <paramref name="algorithm"/>.
         /// </summary>
         /// <param name="encryptionKeyId">The key Id tells the provider where to find the key.</param>
-        /// <param name="keyEncryptionKeyAlgorithm">The encryption algorithm.</param>
+        /// <param name="keyEncryptionKeyAlgorithm">The key encryption algorithm.</param>
         /// <param name="encryptedKey">The ciphertext key.</param>
         /// <returns>The unwrapped data encryption key.</returns>
         public abstract Task<byte[]> UnwrapKeyAsync(string encryptionKeyId, string keyEncryptionKeyAlgorithm, byte[] encryptedKey);
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Wraps a data encryption key using the key encryption key with the specified <paramref name="encryptionKeyId"/> and using the specified <paramref name="algorithm"/>.
         /// </summary>
         /// <param name="encryptionKeyId">The key Id tells the provider where to find the key.</param>
-        /// <param name="keyEncryptionKeyAlgorithm">The encryption algorithm.</param>
+        /// <param name="keyEncryptionKeyAlgorithm">The key encryption algorithm.</param>
         /// <param name="key">The plaintext key.</param>
         /// <returns>The wrapped data encryption key.</returns>
         public abstract Task<byte[]> WrapKeyAsync(string encryptionKeyId, string keyEncryptionKeyAlgorithm, byte[] key);
@@ -68,18 +68,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>Return cached Data Encryption Key.</returns>
         protected virtual async Task<byte[]> GetOrCreateDataEncryptionKeyAsync(string encryptedDataEncryptionKey, Func<byte[]> createItem)
         {
-            return await Task.Run(() => this.CosmosEncryptionKeyStoreProviderCore.GetOrCreateDataEncryptionKey(encryptedDataEncryptionKey, createItem));
-        }
-
-        /// <summary>
-        /// Returns the cached signature verification result, or proceeds to verify if not present.
-        /// </summary>
-        /// <param name="keyInformation">The encryptionKeyId, allowEnclaveComputations and hexadecimal signature.</param>
-        /// <param name="createItem">The delegate function that will perform the verification.</param>
-        /// <returns> Return signature verification result. </returns>
-        protected virtual async Task<bool> GetOrCreateSignatureVerificationResultAsync(Tuple<string, bool, string> keyInformation, Func<bool> createItem)
-        {
-            return await Task.Run(() => this.CosmosEncryptionKeyStoreProviderCore.GetOrCreateSignatureVerificationResult(keyInformation, createItem));
+            return await Task.Run(() => this.CosmosEncryptionKeyStoreProviderCore.GetOrCreateDataEncryptionKey(encryptedDataEncryptionKey, createItem)).ConfigureAwait(false);
         }
     }
 }

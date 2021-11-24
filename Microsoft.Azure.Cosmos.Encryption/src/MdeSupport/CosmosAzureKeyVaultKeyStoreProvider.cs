@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// and decrypts an encrypted data dencryption key with RSA encryption algorithm.
         /// </summary>.
         /// <param name="encryptionKeyId">Identifier of an asymmetric key in Azure Key Vault. </param>
-        /// <param name="cosmosKeyEncryptionKeyAlgorithm">The encryption algorithm.</param>
+        /// <param name="cosmosKeyEncryptionKeyAlgorithm">The key encryption algorithm.</param>
         /// <param name="encryptedKey">The ciphertext key.</param>
         /// <returns>Plain text data encryption key. </returns>
         public override async Task<byte[]> UnwrapKeyAsync(string encryptionKeyId, string cosmosKeyEncryptionKeyAlgorithm, byte[] encryptedKey)
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// and encrypts an unencrypted data encryption key with RSA encryption algorithm.
         /// </summary>
         /// <param name="encryptionKeyId">Identifier of an asymmetric key in Azure Key Vault. </param>
-        /// <param name="cosmosKeyEncryptionKeyAlgorithm">The encryption algorithm.</param>
+        /// <param name="cosmosKeyEncryptionKeyAlgorithm">The key encryption algorithm.</param>
         /// <param name="key">The plaintext key.</param>
         /// <returns>Encrypted data encryption key. </returns>
         public override async Task<byte[]> WrapKeyAsync(string encryptionKeyId, string cosmosKeyEncryptionKeyAlgorithm, byte[] key)
