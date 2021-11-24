@@ -8,13 +8,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using Microsoft.Data.Encryption.Cryptography;
 
     /// <summary>
-    /// The purpose of this class is to utilize the cache provide by the EncryptionKeyStoreProvider abstract class. This class basically
-    /// redirects all the corresponding calls to <see cref="CosmosEncryptionKeyStoreProvider"/> overridden methods and thus allowing us
+    /// The purpose/intention to introduce this class is to utilize the cache provide by the <see cref="EncryptionKeyStoreProvider"/> abstract class. This class basically
+    /// redirects all the corresponding calls to <see cref="CosmosEncryptionKeyStoreProvider"/> 's overridden methods and thus allowing us
     /// to utilize the virtual method <see cref="EncryptionKeyStoreProvider.GetOrCreateDataEncryptionKey"/> to access the cache.
     ///
     /// Note: Since <see cref="EncryptionKeyStoreProvider.Sign"/> and <see cref="EncryptionKeyStoreProvider.Verify"/> methods are not exposed, <see cref="EncryptionKeyStoreProvider.GetOrCreateSignatureVerificationResult"/> is not supported either.
     /// </summary>
-    internal class CosmosEncryptionKeyStoreProviderCore : EncryptionKeyStoreProvider
+    internal sealed class CosmosEncryptionKeyStoreProviderCore : EncryptionKeyStoreProvider
     {
         private readonly CosmosEncryptionKeyStoreProvider cosmosEncryptionKeyStoreProvider;
 

@@ -8,8 +8,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Threading.Tasks;
 
     /// <summary>
-    /// Implementation of key encryption key store provider that allows client applications to access data when a
-    /// key encryption key is stored in Microsoft Azure Key Vault.
+    /// Base class for all key store providers. A custom provider must derive from this
+    /// class and override its member functions.
     /// </summary>
     public abstract class CosmosEncryptionKeyStoreProvider
     {
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         /// <summary>
         /// Unwraps the specified <paramref name="encryptedKey"/> of a data encryption key. The encrypted value is expected to be encrypted using
-        /// the key encryption key with the specified <paramref name="encryptionKeyId"/> and using the specified <paramref name="algorithm"/>.
+        /// the key encryption key with the specified <paramref name="encryptionKeyId"/> and using the specified <paramref name="keyEncryptionKeyAlgorithm"/>.
         /// </summary>
         /// <param name="encryptionKeyId">The key Id tells the provider where to find the key.</param>
         /// <param name="keyEncryptionKeyAlgorithm">The key encryption algorithm.</param>
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public abstract Task<byte[]> UnwrapKeyAsync(string encryptionKeyId, string keyEncryptionKeyAlgorithm, byte[] encryptedKey);
 
         /// <summary>
-        /// Wraps a data encryption key using the key encryption key with the specified <paramref name="encryptionKeyId"/> and using the specified <paramref name="algorithm"/>.
+        /// Wraps a data encryption key using the key encryption key with the specified <paramref name="encryptionKeyId"/> and using the specified <paramref name="keyEncryptionKeyAlgorithm"/>.
         /// </summary>
         /// <param name="encryptionKeyId">The key Id tells the provider where to find the key.</param>
         /// <param name="keyEncryptionKeyAlgorithm">The key encryption algorithm.</param>

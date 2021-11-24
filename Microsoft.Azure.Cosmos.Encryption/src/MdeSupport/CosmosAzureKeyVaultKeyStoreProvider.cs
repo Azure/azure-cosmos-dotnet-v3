@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <summary>
-        /// Gets name of the Encryption Key Store Provider implemetation.
+        /// Gets name of the Encryption Key Store Provider implementation.
         /// </summary>
         public override string ProviderName => this.azureKeyVaultKeyStoreProvider.ProviderName;
 
