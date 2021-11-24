@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private async Task<ProtectedDataEncryptionKey> BuildProtectedDataEncryptionKeyAsync(
             ClientEncryptionKeyProperties clientEncryptionKeyProperties,
-            EncryptionKeyStoreProvider encryptionKeyStoreProvider,
+            CosmosEncryptionKeyStoreProvider encryptionKeyStoreProvider,
             string keyId,
             CancellationToken cancellationToken)
         {
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                         clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
                         clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
-                        encryptionKeyStoreProvider);
+                        encryptionKeyStoreProvider.CosmosEncryptionKeyStoreProviderCore);
 
                     ProtectedDataEncryptionKey protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
                         keyId,

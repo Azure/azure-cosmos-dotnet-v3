@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using global::Azure;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Encryption;
-    using Microsoft.Data.Encryption.Cryptography;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -33,16 +32,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         private static Database database;
         private static Container encryptionContainer;
         private static Container encryptionContainerForChangeFeed;
-        private static TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider;
+        private static TestCosmosEncryptionKeyStoreProvider testEncryptionKeyStoreProvider;
 
         [ClassInitialize]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "The ClassInitialize method takes a single parameter of type TestContext.")]
         public static async Task ClassInitialize(TestContext context)
         {
             MdeEncryptionTests.client = TestCommon.CreateCosmosClient();
-            testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider
+            testEncryptionKeyStoreProvider = new TestCosmosEncryptionKeyStoreProvider
             {
-                DataEncryptionKeyCacheTimeToLive = null
+                DataEncryptionKeyCacheTimeToLive = TimeSpan.FromSeconds(120)
             };
 
             metadata1 = new EncryptionKeyWrapMetadata(testEncryptionKeyStoreProvider.ProviderName, "key1", "tempmetadata1");
@@ -63,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             EncryptionKeyWrapMetadata revokedKekmetadata = new EncryptionKeyWrapMetadata(testEncryptionKeyStoreProvider.ProviderName, "revokedKek", "revokedKek-metadata");
             await database.CreateClientEncryptionKeyAsync(
                 "keywithRevokedKek",
-                DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
+                CosmosDataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256,
                 revokedKekmetadata);
 
             Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>()
@@ -183,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             ClientEncryptionKeyResponse clientEncrytionKeyResponse = await database.CreateClientEncryptionKeyAsync(
                    cekId,
-                   DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
+                   CosmosDataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256,
                    encryptionKeyWrapMetadata);
 
             Assert.AreEqual(HttpStatusCode.Created, clientEncrytionKeyResponse.StatusCode);
@@ -235,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 .WithBulkExecution(true)
                 .Build());
 
-            CosmosClient encryptionCosmosClientWithBulk = clientWithBulk.WithEncryption(new TestEncryptionKeyStoreProvider());
+            CosmosClient encryptionCosmosClientWithBulk = clientWithBulk.WithEncryption(new TestCosmosEncryptionKeyStoreProvider());
             Database databaseWithBulk = encryptionCosmosClientWithBulk.GetDatabase(MdeEncryptionTests.database.Id);
 
             Container encryptionContainerWithBulk = databaseWithBulk.GetContainer(MdeEncryptionTests.encryptionContainer.Id);
@@ -332,7 +331,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             CosmosClient clientWithNoCaching = TestCommon.CreateCosmosClient(builder => builder
                 .Build());
 
-            TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider
+            TestCosmosEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = new TestCosmosEncryptionKeyStoreProvider
             {
                 DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero
             };
@@ -428,7 +427,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 restrictedUserPermission.Token);
 
 
-            CosmosClient encryptedclientForRestrictedUser = clientForRestrictedUser.WithEncryption(new TestEncryptionKeyStoreProvider());
+            CosmosClient encryptedclientForRestrictedUser = clientForRestrictedUser.WithEncryption(new TestCosmosEncryptionKeyStoreProvider());
 
             Database databaseForRestrictedUser = encryptedclientForRestrictedUser.GetDatabase(MdeEncryptionTests.database.Id);                  
 
@@ -439,7 +438,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
                 ClientEncryptionKeyResponse clientEncrytionKeyResponse = await databaseForRestrictedUser.CreateClientEncryptionKeyAsync(
                        cekId,
-                       DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
+                       CosmosDataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256,
                        metadata1);
                 Assert.Fail("CreateClientEncryptionKeyAsync should have failed due to restrictions");
             }
@@ -1001,7 +1000,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 .WithBulkExecution(false)
                 .Build());
 
-            CosmosClient otherEncryptionClient = otherClient.WithEncryption(new TestEncryptionKeyStoreProvider());
+            CosmosClient otherEncryptionClient = otherClient.WithEncryption(new TestCosmosEncryptionKeyStoreProvider());
             Database otherDatabase = otherEncryptionClient.GetDatabase(MdeEncryptionTests.database.Id);
 
             Container otherEncryptionContainer = otherDatabase.GetContainer(encryptionContainerToDelete.Id);
@@ -1111,7 +1110,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             CosmosClient otherClient = TestCommon.CreateCosmosClient(builder => builder
                 .Build());
 
-            CosmosClient otherEncryptionClient = otherClient.WithEncryption(new TestEncryptionKeyStoreProvider());
+            CosmosClient otherEncryptionClient = otherClient.WithEncryption(new TestCosmosEncryptionKeyStoreProvider());
             Database otherDatabase = otherEncryptionClient.GetDatabase(MdeEncryptionTests.database.Id);
 
             Container otherEncryptionContainer = otherDatabase.GetContainer(encryptionContainerToDelete.Id);
@@ -1221,7 +1220,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             CosmosClient otherClient = TestCommon.CreateCosmosClient(builder => builder
                 .Build());
 
-            CosmosClient otherEncryptionClient = otherClient.WithEncryption(new TestEncryptionKeyStoreProvider());
+            CosmosClient otherEncryptionClient = otherClient.WithEncryption(new TestCosmosEncryptionKeyStoreProvider());
             Database otherDatabase = otherEncryptionClient.GetDatabase(MdeEncryptionTests.database.Id);
 
             Container otherEncryptionContainer = otherDatabase.GetContainer(encryptionContainerToDelete.Id);
@@ -1293,7 +1292,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             CosmosClient mainClient = TestCommon.CreateCosmosClient(builder => builder
                 .Build());
 
-            TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider
+            TestCosmosEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = new TestCosmosEncryptionKeyStoreProvider
             {
                 DataEncryptionKeyCacheTimeToLive = TimeSpan.FromMinutes(30),
             };
@@ -1304,7 +1303,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             ClientEncryptionKeyResponse clientEncrytionKeyResponse = await mainDatabase.CreateClientEncryptionKeyAsync(
                    keyWrapMetadata.Name,
-                   DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
+                   CosmosDataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256,
                    keyWrapMetadata);
 
             Collection<ClientEncryptionIncludedPath> originalPaths = new Collection<ClientEncryptionIncludedPath>()
@@ -1346,7 +1345,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             CosmosClient otherClient1 = TestCommon.CreateCosmosClient(builder => builder
                 .Build());
 
-            TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider2 = new TestEncryptionKeyStoreProvider
+            TestCosmosEncryptionKeyStoreProvider testEncryptionKeyStoreProvider2 = new TestCosmosEncryptionKeyStoreProvider
             {
                 DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero,
             };
@@ -1367,7 +1366,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             keyWrapMetadata = new EncryptionKeyWrapMetadata(testEncryptionKeyStoreProvider2.ProviderName, "myCek", "mymetadata2");
             clientEncrytionKeyResponse = await mainDatabase.CreateClientEncryptionKeyAsync(
                    keyWrapMetadata.Name,
-                   DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
+                   CosmosDataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256,
                    keyWrapMetadata);
 
             using (await mainDatabase.GetContainer(encryptionContainerToDelete.Id).DeleteContainerStreamAsync())
@@ -1436,7 +1435,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 .WithBulkExecution(true)
                 .Build());
 
-            TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider3 = new TestEncryptionKeyStoreProvider
+            TestCosmosEncryptionKeyStoreProvider testEncryptionKeyStoreProvider3 = new TestCosmosEncryptionKeyStoreProvider
             {
                 DataEncryptionKeyCacheTimeToLive = TimeSpan.FromMinutes(30),
             };
@@ -1493,7 +1492,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             CosmosClient clientWithNoCaching = TestCommon.CreateCosmosClient(builder => builder
                 .Build());
 
-            TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider
+            TestCosmosEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = new TestCosmosEncryptionKeyStoreProvider
             {
                 DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero
             };
@@ -1829,7 +1828,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 .WithCustomSerializer(customSerializer)
                 .Build());
 
-            CosmosClient encryptionCosmosClientWithCustomSerializer = clientWithCustomSerializer.WithEncryption(new TestEncryptionKeyStoreProvider());
+            CosmosClient encryptionCosmosClientWithCustomSerializer = clientWithCustomSerializer.WithEncryption(new TestCosmosEncryptionKeyStoreProvider());
             Database databaseWithCustomSerializer = encryptionCosmosClientWithCustomSerializer.GetDatabase(MdeEncryptionTests.database.Id);
 
             Container encryptionContainerWithCustomSerializer = databaseWithCustomSerializer.GetContainer(MdeEncryptionTests.encryptionContainer.Id);
@@ -1887,7 +1886,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public async Task ValidateCachingofProtectedDataEncryptionKey()
         {
             // Default cache TTL 2 hours.
-            TestEncryptionKeyStoreProvider newtestEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();           
+            TestCosmosEncryptionKeyStoreProvider newtestEncryptionKeyStoreProvider = new TestCosmosEncryptionKeyStoreProvider();           
             CosmosClient newEncryptionClient = MdeEncryptionTests.client.WithEncryption(newtestEncryptionKeyStoreProvider);
             Database database = newEncryptionClient.GetDatabase(MdeEncryptionTests.database.Id);
 
@@ -1903,7 +1902,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(1, unwrapcount);
 
             // no caching.
-            newtestEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider()
+            newtestEncryptionKeyStoreProvider = new TestCosmosEncryptionKeyStoreProvider()
             {
                 DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero,
             };
@@ -2914,7 +2913,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
         }
 
-        internal class TestEncryptionKeyStoreProvider : EncryptionKeyStoreProvider
+        internal class TestCosmosEncryptionKeyStoreProvider : CosmosEncryptionKeyStoreProvider
         {
             readonly Dictionary<string, int> keyinfo = new Dictionary<string, int>
             {
@@ -2925,7 +2924,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             public bool RevokeAccessSet { get; set; }
             public Dictionary<string, int> WrapKeyCallsCount { get; set; }
             public Dictionary<string, int> UnWrapKeyCallsCount { get; set; }
-            public TestEncryptionKeyStoreProvider()
+            public TestCosmosEncryptionKeyStoreProvider()
             {
                 this.WrapKeyCallsCount = new Dictionary<string, int>();
                 this.UnWrapKeyCallsCount = new Dictionary<string, int>();
@@ -2934,17 +2933,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             public override string ProviderName => "TESTKEYSTORE_VAULT";
 
-            public override byte[] UnwrapKey(string masterKeyPath, KeyEncryptionKeyAlgorithm encryptionAlgorithm, byte[] encryptedKey)
-            {
+            public override async Task<byte[]> UnwrapKeyAsync(string masterKeyPath, string keyEncryptionKeyAlgorithm, byte[] encryptedKey)
+            {              
                 if (masterKeyPath.Equals("revokedKek-metadata") && this.RevokeAccessSet)
                 {
                     throw new RequestFailedException((int)HttpStatusCode.Forbidden, "Forbidden");
                 }
 
-                return this.GetOrCreateDataEncryptionKey(encryptedKey.ToHexString(), DecryptEncryptionKey);
+                return await this.GetOrCreateDataEncryptionKeyAsync("0x" + BitConverter.ToString(encryptedKey).Replace("-", ""), DecryptEncryptionKey);
 
                 byte[] DecryptEncryptionKey()
                 {
+                    Console.WriteLine("UnWrapping");
                     if (!this.UnWrapKeyCallsCount.ContainsKey(masterKeyPath))
                     {
                         this.UnWrapKeyCallsCount[masterKeyPath] = 1;
@@ -2960,7 +2960,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 }
             }
 
-            public override byte[] WrapKey(string masterKeyPath, KeyEncryptionKeyAlgorithm encryptionAlgorithm, byte[] key)
+            public override Task<byte[]> WrapKeyAsync(string masterKeyPath, string keyEncryptionKeyAlgorithm, byte[] key)
             {
                 if (!this.WrapKeyCallsCount.ContainsKey(masterKeyPath))
                 {
@@ -2973,17 +2973,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
                 this.keyinfo.TryGetValue(masterKeyPath, out int moveBy);
                 byte[] encryptedkey = key.Select(b => (byte)(b + moveBy)).ToArray();
-                return encryptedkey;
-            }
-
-            public override byte[] Sign(string masterKeyPath, bool allowEnclaveComputations)
-            {
-                return null;
-            }
-
-            public override bool Verify(string masterKeyPath, bool allowEnclaveComputations, byte[] signature)
-            {
-                return true;
+                return Task.FromResult(encryptedkey);
             }
         }       
 

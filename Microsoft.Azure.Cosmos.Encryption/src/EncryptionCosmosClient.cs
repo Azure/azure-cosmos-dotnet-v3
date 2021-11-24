@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Data.Encryption.Cryptography;
 
     /// <summary>
     /// CosmosClient with Encryption support.
@@ -19,14 +18,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private readonly AsyncCache<string, ClientEncryptionKeyProperties> clientEncryptionKeyPropertiesCacheByKeyId;
 
-        public EncryptionCosmosClient(CosmosClient cosmosClient, EncryptionKeyStoreProvider encryptionKeyStoreProvider)
+        public EncryptionCosmosClient(CosmosClient cosmosClient, CosmosEncryptionKeyStoreProvider encryptionKeyStoreProvider)
         {
             this.cosmosClient = cosmosClient ?? throw new ArgumentNullException(nameof(cosmosClient));
             this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
             this.clientEncryptionKeyPropertiesCacheByKeyId = new AsyncCache<string, ClientEncryptionKeyProperties>();
         }
 
-        public EncryptionKeyStoreProvider EncryptionKeyStoreProvider { get; }
+        public CosmosEncryptionKeyStoreProvider EncryptionKeyStoreProvider { get; }
 
         public override CosmosClientOptions ClientOptions => this.cosmosClient.ClientOptions;
 
