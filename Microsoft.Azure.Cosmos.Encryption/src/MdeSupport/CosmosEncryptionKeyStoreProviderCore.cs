@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </Remark>
         public override byte[] Sign(string encryptionKeyId, bool allowEnclaveComputations)
         {
-            throw new NotSupportedException("This operation is not supported.  Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+            throw new NotSupportedException("The Sign operation is not supported. ");
         }
 
         /// <Remark>
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </Remark>
         public override bool Verify(string encryptionKeyId, bool allowEnclaveComputations, byte[] signature)
         {
-            throw new NotSupportedException("This operation is not supported.  Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+            throw new NotSupportedException("The Verify operation is not supported. ");
         }
     }
 }
