@@ -56,50 +56,36 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     this.ClientEncryptionKeyId,
                     cancellationToken);
             }
-            catch (RequestFailedException ex)
+            catch (RequestFailedException ex) when (ex.Status == (int)HttpStatusCode.Forbidden)
             {
                 // The access to master key was probably revoked. Try to fetch the latest ClientEncryptionKeyProperties from the backend.
                 // This will succeed provided the user has rewraped the Client Encryption Key with right set of meta data.
                 // This is based on the AKV provider implementaion so we expect a RequestFailedException in case other providers are used in unwrap implementation.
-                if (ex.Status == (int)HttpStatusCode.Forbidden)
-                {
-                    // first try to force refresh the local cache, we might have a stale cache.
-                    clientEncryptionKeyProperties = await this.encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
-                     clientEncryptionKeyId: this.ClientEncryptionKeyId,
-                     encryptionContainer: this.encryptionContainer,
-                     databaseRid: this.databaseRid,
-                     ifNoneMatchEtag: null,
-                     shouldForceRefresh: true,
-                     cancellationToken: cancellationToken);
+                // first try to force refresh the local cache, we might have a stale cache.
+                clientEncryptionKeyProperties = await this.encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
+                    clientEncryptionKeyId: this.ClientEncryptionKeyId,
+                    encryptionContainer: this.encryptionContainer,
+                    databaseRid: this.databaseRid,
+                    ifNoneMatchEtag: null,
+                    shouldForceRefresh: true,
+                    cancellationToken: cancellationToken);
 
-                    try
-                    {
-                        // try to build the ProtectedDataEncryptionKey. If it fails, try to force refresh the gateway cache and get the latest client encryption key.
-                        protectedDataEncryptionKey = await this.BuildProtectedDataEncryptionKeyAsync(
-                            clientEncryptionKeyProperties,
-                            this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProvider,
-                            this.ClientEncryptionKeyId,
-                            cancellationToken);
-                    }
-                    catch (RequestFailedException exOnRetry)
-                    {
-                        if (exOnRetry.Status == (int)HttpStatusCode.Forbidden)
-                        {
-                            // the gateway cache could be stale. Force refresh the gateway cache.
-                            // bail out if this fails.
-                            protectedDataEncryptionKey = await this.ForceRefreshGatewayCacheAndBuildProtectedDataEncryptionKeyAsync(
-                                ifNoneMatchEtags: clientEncryptionKeyProperties.ETag,
-                                cancellationToken: cancellationToken);
-                        }
-                        else
-                        {
-                            throw;
-                        }
-                    }
-                }
-                else
+                try
                 {
-                    throw;
+                    // try to build the ProtectedDataEncryptionKey. If it fails, try to force refresh the gateway cache and get the latest client encryption key.
+                    protectedDataEncryptionKey = await this.BuildProtectedDataEncryptionKeyAsync(
+                        clientEncryptionKeyProperties,
+                        this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProvider,
+                        this.ClientEncryptionKeyId,
+                        cancellationToken);
+                }
+                catch (RequestFailedException exOnRetry) when (exOnRetry.Status == (int)HttpStatusCode.Forbidden)
+                {
+                    // the gateway cache could be stale. Force refresh the gateway cache.
+                    // bail out if this fails.
+                    protectedDataEncryptionKey = await this.ForceRefreshGatewayCacheAndBuildProtectedDataEncryptionKeyAsync(
+                        existingCekEtag: clientEncryptionKeyProperties.ETag,
+                        cancellationToken: cancellationToken);
                 }
             }
 
@@ -113,11 +99,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Helper function which force refreshes the gateway cache to fetch the latest client encryption key to build ProtectedDataEncryptionKey object for the encryption setting.
         /// </summary>
-        /// <param name="ifNoneMatchEtags">If-None-Match Etag associated with the request. </param>
+        /// <param name="existingCekEtag">Client encryption key etag to be passed, which is used as If-None-Match Etag for the request. </param>
         /// <param name="cancellationToken"> cacellation token. </param>
         /// <returns>ProtectedDataEncryptionKey object. </returns>
         private async Task<ProtectedDataEncryptionKey> ForceRefreshGatewayCacheAndBuildProtectedDataEncryptionKeyAsync(
-            string ifNoneMatchEtags,
+            string existingCekEtag,
             CancellationToken cancellationToken)
         {
             ClientEncryptionKeyProperties clientEncryptionKeyProperties;
@@ -129,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     clientEncryptionKeyId: this.ClientEncryptionKeyId,
                     encryptionContainer: this.encryptionContainer,
                     databaseRid: this.databaseRid,
-                    ifNoneMatchEtag: ifNoneMatchEtags,
+                    ifNoneMatchEtag: existingCekEtag,
                     shouldForceRefresh: true,
                     cancellationToken: cancellationToken);
             }
