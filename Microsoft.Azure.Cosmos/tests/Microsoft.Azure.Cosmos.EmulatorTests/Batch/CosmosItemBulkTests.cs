@@ -504,6 +504,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Task<ItemResponse<ToDoActivity>> task = replaceTasks[i];
                 ItemResponse<ToDoActivity> result = await task;
+                Assert.IsNotNull(result.Resource);
                 Assert.IsTrue(result.Headers.RequestCharge > 0);
                 Assert.IsNotNull(result.Headers.Session);
                 Assert.IsNotNull(result.Headers.ActivityId);
