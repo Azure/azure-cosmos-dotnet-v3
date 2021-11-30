@@ -146,23 +146,11 @@ namespace CosmosBenchmark
                     await database.DeleteStreamAsync();
                 }
 
-                runSummary.WorkloadType = config.WorkloadType;
-                runSummary.id = $"{DateTime.UtcNow:yyyy-MM-dd:HH-mm}-{config.CommitId}";
-                runSummary.Commit = config.CommitId;
-                runSummary.CommitDate = config.CommitDate;
-                runSummary.CommitTime = config.CommitTime;
-
-                runSummary.Date = DateTime.UtcNow.ToString("yyyy-MM-dd");
-                runSummary.Time = DateTime.UtcNow.ToString("HH-mm");
-                runSummary.BranchName = config.BranchName;
-                runSummary.TotalOps = config.ItemCount;
+                DateTime utcNow = DateTime.UtcNow;
+                runSummary.id = $"{utcNow:yyyy-MM-dd:HH-mm}-{config.CommitId}";
+                runSummary.Date = utcNow.ToString("yyyy-MM-dd");
+                runSummary.Time = utcNow.ToString("HH-mm");  
                 runSummary.Concurrency = taskCount;
-                runSummary.Database = config.Database;
-                runSummary.Container = config.Container;
-                runSummary.AccountName = config.EndPoint;
-                runSummary.pk = config.ResultsPartitionKeyValue;
-                runSummary.MaxTcpConnectionsPerEndpoint = config.MaxTcpConnectionsPerEndpoint;
-                runSummary.MaxRequestsPerTcpConnection = config.MaxRequestsPerTcpConnection;
 
                 string consistencyLevel = config.ConsistencyLevel;
                 if (string.IsNullOrWhiteSpace(consistencyLevel))
