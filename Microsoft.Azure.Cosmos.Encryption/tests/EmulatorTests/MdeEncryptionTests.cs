@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Reflection;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -1487,6 +1488,90 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
+        public void MdeEncryptionTypesContractTest()
+        {
+            string[] cosmosSupportedEncryptionTypes = typeof(CosmosEncryptionType)
+                            .GetMembers(BindingFlags.Static | BindingFlags.Public)
+                            .Select(e => ((FieldInfo)e).GetValue(e).ToString())
+                            .ToArray();
+
+            string[] mdeSupportedEncryptionTypes = typeof(Data.Encryption.Cryptography.EncryptionType)
+                            .GetMembers(BindingFlags.Static | BindingFlags.Public)
+                            .Select(e => e.Name)
+                            .ToArray();
+
+            if (mdeSupportedEncryptionTypes.Length > cosmosSupportedEncryptionTypes.Length)
+            {
+                HashSet<string> missingEncryptionTypes = new HashSet<string>(mdeSupportedEncryptionTypes);
+                foreach (string region in cosmosSupportedEncryptionTypes)
+                {
+                    missingEncryptionTypes.Remove(region);
+                }
+
+                // no Plaintext support.
+                missingEncryptionTypes.Remove("Plaintext");
+                mdeSupportedEncryptionTypes = mdeSupportedEncryptionTypes.Where(value => value != "Plaintext").ToArray();
+
+                if (missingEncryptionTypes.Count != 0)
+                {
+                    Assert.Fail($"Missing EncryptionType support from CosmosEncryptionType: {string.Join(";", missingEncryptionTypes)}");
+                }
+            }
+
+            CollectionAssert.AreEquivalent(mdeSupportedEncryptionTypes, cosmosSupportedEncryptionTypes);
+        }
+
+        [TestMethod]
+        public void MdeEncryptionAlgorithmsTypesContractTest()
+        {
+            string[] cosmosKeyEncryptionAlgorithms = typeof(CosmosKeyEncryptionKeyAlgorithm)
+                            .GetMembers(BindingFlags.Static | BindingFlags.Public)
+                            .Select(e => ((FieldInfo)e).GetValue(e).ToString())
+                            .ToArray();
+
+            string[] mdeKeyEncryptionAlgorithms = typeof(Data.Encryption.Cryptography.KeyEncryptionKeyAlgorithm)
+                            .GetMembers(BindingFlags.Static | BindingFlags.Public)
+                            .Select(e => e.Name)
+                            .ToArray();            
+
+            if (mdeKeyEncryptionAlgorithms.Length > cosmosKeyEncryptionAlgorithms.Length)
+            {
+                HashSet<string> missingKeyEncryptionAlgorithms = new HashSet<string>(mdeKeyEncryptionAlgorithms);
+                foreach (string algorithm in cosmosKeyEncryptionAlgorithms)
+                {
+                    missingKeyEncryptionAlgorithms.Remove(algorithm);
+                }
+
+                Assert.Fail($"Missing key encryption algorithm support from CosmosKeyEncryptionKeyAlgorithm: {string.Join(";", missingKeyEncryptionAlgorithms)}");
+            }
+
+            CollectionAssert.AreEquivalent(mdeKeyEncryptionAlgorithms, cosmosKeyEncryptionAlgorithms);            
+
+            string[] cosmosDataEncryptionAlgorithms = typeof(CosmosDataEncryptionKeyAlgorithm)
+                            .GetMembers(BindingFlags.Static | BindingFlags.Public)
+                            .Select(e => ((FieldInfo)e).GetValue(e).ToString())
+                            .ToArray();
+
+            string[] mdeDataEncryptionAlgorithms = typeof(Data.Encryption.Cryptography.DataEncryptionKeyAlgorithm)
+                            .GetMembers(BindingFlags.Static | BindingFlags.Public)
+                            .Select(e => e.Name)
+                            .ToArray();
+
+            if (mdeDataEncryptionAlgorithms.Length > cosmosDataEncryptionAlgorithms.Length)
+            {
+                HashSet<string> missingDataEncryptionAlgorithms = new HashSet<string>(mdeDataEncryptionAlgorithms);
+                foreach (string algorithm in cosmosDataEncryptionAlgorithms)
+                {
+                    missingDataEncryptionAlgorithms.Remove(algorithm);
+                }
+
+                Assert.Fail($"Missing data encryption algorithm support from CosmosDataEncryptionKeyAlgorithm: {string.Join(";", missingDataEncryptionAlgorithms)}");
+            }
+
+            CollectionAssert.AreEquivalent(mdeDataEncryptionAlgorithms, cosmosDataEncryptionAlgorithms);
+        }
+
+        [TestMethod]
         public async Task VerifyKekRevokeHandling()
         {
             CosmosClient clientWithNoCaching = TestCommon.CreateCosmosClient(builder => builder
@@ -2955,7 +3040,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
                 byte[] DecryptEncryptionKey()
                 {
-                    Console.WriteLine("UnWrapping");
                     if (!this.UnWrapKeyCallsCount.ContainsKey(masterKeyPath))
                     {
                         this.UnWrapKeyCallsCount[masterKeyPath] = 1;
