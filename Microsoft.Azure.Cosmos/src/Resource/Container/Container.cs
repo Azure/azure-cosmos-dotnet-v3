@@ -366,7 +366,7 @@ namespace Microsoft.Azure.Cosmos
         ///    status = "InProgress"
         /// };
         ///
-        /// ItemResponse item = await this.container.CreateItemAsync<ToDoActivity>(test, new PartitionKey(test.status));
+        /// ItemResponse item = await this.container.CreateItemAsync<ToDoActivity>(tests, new PartitionKey(test.status));
         /// ]]>
         /// </code>
         /// </example>
