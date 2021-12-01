@@ -744,13 +744,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (inputExpression.Expression.Type.IsNullable())
             {
                 // ignore .Value 
-                if (memberName == "Value")
+                if (memberName == CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(context?.linqSerializerOptions, "Value"))
                 {
                     return memberExpression;
                 }
 
                 // convert .HasValue to IS_DEFINED expression
-                if (memberName == "HasValue")
+                if (memberName == CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(context?.linqSerializerOptions, "HasValue"))
                 {
                     return SqlFunctionCallScalarExpression.CreateBuiltin("IS_DEFINED", memberExpression);
                 }
