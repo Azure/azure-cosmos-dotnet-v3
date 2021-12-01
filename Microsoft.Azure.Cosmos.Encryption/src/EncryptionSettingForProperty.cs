@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 if (ex.StatusCode == HttpStatusCode.NotModified)
                 {
                     // looks like the key was never rewrapped with a valid Key Encryption Key.
-                    throw new InvalidOperationException($"The Client Encryption Key needs to be rewrapped with a valid Key Encryption Key." +
+                    throw new InvalidOperationException($"The Client Encryption Key with key id:{this.ClientEncryptionKeyId} on database:{this.encryptionContainer.Database.Id} and container:{this.encryptionContainer.Id} , needs to be rewrapped with a valid Key Encryption Key using RewrapClientEncryptionKeyAsync. " +
                         $" The Key Encryption Key used to wrap the Client Encryption Key has been revoked: {ex.Message}." +
                         $" Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
                 }
