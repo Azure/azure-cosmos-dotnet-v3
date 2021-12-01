@@ -95,11 +95,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                     this.UpdateLocationCache();
                 }
 
-                foreach (Uri endpoint1 in this.locationInfo.WriteEndpoints)
-                {
-                    Console.WriteLine("Locationcache => ReadEndpoints " + endpoint1.ToString());
-                }
-
                 return this.locationInfo.ReadEndpoints;
             }
         }
@@ -118,11 +113,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                     && this.locationUnavailablityInfoByEndpoint.Any())
                 {
                     this.UpdateLocationCache();
-                }
-
-                foreach (Uri endpoint1 in this.locationInfo.WriteEndpoints)
-                {
-                    Console.WriteLine("Locationcache WriteEndpoints => " + endpoint1.ToString());
                 }
 
                 return this.locationInfo.WriteEndpoints;
@@ -450,16 +440,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 this.ClearStaleEndpointUnavailabilityInfo();
-/*
-                foreach (AccountRegion rlocation in readLocations)
-                {
-                    Console.WriteLine("UpdateLocationCache2 readLocations " + rlocation.Endpoint);
-                }
-
-                foreach (AccountRegion wlocation in writeLocations)
-                {
-                    Console.WriteLine("UpdateLocationCache2 writeLocations " + wlocation.Endpoint);
-                }*/
 
                 if (readLocations != null)
                 {
@@ -473,23 +453,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                     nextLocationInfo.AvailableWriteLocations = availableWriteLocations;
                 }
 
-             /*   foreach (KeyValuePair<string, Uri> k in nextLocationInfo.AvailableWriteEndpointByLocation)
-                {
-                    Console.WriteLine("UpdateLocationCache1 " + k.Key + ":::" + k.Value.ToString());
-                }
-
-                foreach (string location in nextLocationInfo.AvailableWriteLocations)
-                {
-                    Console.WriteLine("UpdateLocationCache2 " + location);
-                }
-
-                Console.WriteLine("UpdateLocationCache3 " + this.defaultEndpoint);*/
-
                 nextLocationInfo.WriteEndpoints = this.GetPreferredAvailableEndpoints(nextLocationInfo.AvailableWriteEndpointByLocation, nextLocationInfo.AvailableWriteLocations, OperationType.Write, this.defaultEndpoint);
                 nextLocationInfo.ReadEndpoints = this.GetPreferredAvailableEndpoints(nextLocationInfo.AvailableReadEndpointByLocation, nextLocationInfo.AvailableReadLocations, OperationType.Read, nextLocationInfo.WriteEndpoints[0]);
+                
                 this.lastCacheUpdateTimestamp = DateTime.UtcNow;
-
-                Console.WriteLine("Current WriteEndpoints = ({0}) ReadEndpoints = ({1})",
+                DefaultTrace.TraceInformation("Current WriteEndpoints = ({0}) ReadEndpoints = ({1})",
                     string.Join(", ", nextLocationInfo.WriteEndpoints.Select(endpoint => endpoint.ToString())),
                     string.Join(", ", nextLocationInfo.ReadEndpoints.Select(endpoint => endpoint.ToString())));
 
