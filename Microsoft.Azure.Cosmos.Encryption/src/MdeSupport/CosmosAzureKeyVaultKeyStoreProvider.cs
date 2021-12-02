@@ -30,29 +30,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.azureKeyVaultKeyStoreProvider = new AzureKeyVaultKeyStoreProvider(tokenCredential);
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosAzureKeyVaultKeyStoreProvider"/> class.
-        /// Constructor that takes an implementation of Token Credential that is capable of providing an OAuth Token and a trusted endpoint.
-        /// </summary>
-        /// <param name="tokenCredential">Instance of an implementation of Token Credential that is capable of providing an OAuth Token.</param>
-        /// <param name="trustedEndPoint">TrustedEndpoint is used to validate the key encryption key path.</param>
-        public CosmosAzureKeyVaultKeyStoreProvider(TokenCredential tokenCredential, string trustedEndPoint)
-        {
-            this.azureKeyVaultKeyStoreProvider = new AzureKeyVaultKeyStoreProvider(tokenCredential, trustedEndPoint);
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosAzureKeyVaultKeyStoreProvider"/> class.
-        /// Constructor that takes an instance of an implementation of Token Credential that is capable of providing an OAuth Token
-        /// and an array of trusted endpoints.
-        /// </summary>
-        /// <param name="tokenCredential">Instance of an implementation of Token Credential that is capable of providing an OAuth Token. </param>
-        /// <param name="trustedEndPoints">TrustedEndpoints are used to validate the key encryption key path. </param>
-        public CosmosAzureKeyVaultKeyStoreProvider(TokenCredential tokenCredential, string[] trustedEndPoints)
-        {
-            this.azureKeyVaultKeyStoreProvider = new AzureKeyVaultKeyStoreProvider(tokenCredential, trustedEndPoints);
-        }
-
         /// <inheritdoc/>
         public override TimeSpan? DataEncryptionKeyCacheTimeToLive
         {
@@ -64,11 +41,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Gets name of the Encryption Key Store Provider implementation.
         /// </summary>
         public override string ProviderName => this.azureKeyVaultKeyStoreProvider.ProviderName;
-
-        /// <summary>
-        /// Gets list of Trusted Endpoints.
-        /// </summary>
-        public string[] TrustedEndPoints => this.azureKeyVaultKeyStoreProvider.TrustedEndPoints;
 
         /// <summary>
         /// This function uses the asymmetric key specified by the key path

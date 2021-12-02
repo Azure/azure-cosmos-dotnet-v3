@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                         clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
                         clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
-                        cosmosEncryptionKeyStoreProvider.CosmosEncryptionKeyStoreProviderCore);
+                        cosmosEncryptionKeyStoreProvider.EncryptionKeyStoreProviderImpl);
 
                     ProtectedDataEncryptionKey protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
                         keyId,

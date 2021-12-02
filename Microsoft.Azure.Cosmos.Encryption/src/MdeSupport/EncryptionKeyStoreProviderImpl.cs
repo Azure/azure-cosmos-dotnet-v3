@@ -14,11 +14,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
     ///
     /// Note: Since <see cref="EncryptionKeyStoreProvider.Sign"/> and <see cref="EncryptionKeyStoreProvider.Verify"/> methods are not exposed, <see cref="EncryptionKeyStoreProvider.GetOrCreateSignatureVerificationResult"/> is not supported either.
     /// </summary>
-    internal sealed class CosmosEncryptionKeyStoreProviderCore : EncryptionKeyStoreProvider
+    internal sealed class EncryptionKeyStoreProviderImpl : EncryptionKeyStoreProvider
     {
         private readonly CosmosEncryptionKeyStoreProvider cosmosEncryptionKeyStoreProvider;
 
-        public CosmosEncryptionKeyStoreProviderCore(CosmosEncryptionKeyStoreProvider cosmosEncryptionKeyStoreProvider)
+        public EncryptionKeyStoreProviderImpl(CosmosEncryptionKeyStoreProvider cosmosEncryptionKeyStoreProvider)
         {
             this.cosmosEncryptionKeyStoreProvider = cosmosEncryptionKeyStoreProvider;
         }

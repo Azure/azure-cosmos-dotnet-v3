@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                 encryptionKeyWrapMetadata.Name,
                 encryptionKeyWrapMetadata.Value,
-                cosmosEncryptionKeyStoreProvider.CosmosEncryptionKeyStoreProviderCore);
+                cosmosEncryptionKeyStoreProvider.EncryptionKeyStoreProviderImpl);
 
             ProtectedDataEncryptionKey protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
                 clientEncryptionKeyId,
@@ -160,14 +160,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                 clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
                 clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
-                cosmosEncryptionKeyStoreProvider.CosmosEncryptionKeyStoreProviderCore);
+                cosmosEncryptionKeyStoreProvider.EncryptionKeyStoreProviderImpl);
 
             byte[] unwrappedKey = keyEncryptionKey.DecryptEncryptionKey(clientEncryptionKeyProperties.WrappedDataEncryptionKey);
 
             keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                 newEncryptionKeyWrapMetadata.Name,
                 newEncryptionKeyWrapMetadata.Value,
-                cosmosEncryptionKeyStoreProvider.CosmosEncryptionKeyStoreProviderCore);
+                cosmosEncryptionKeyStoreProvider.EncryptionKeyStoreProviderImpl);
 
             byte[] rewrappedKey = keyEncryptionKey.EncryptEncryptionKey(unwrappedKey);
 

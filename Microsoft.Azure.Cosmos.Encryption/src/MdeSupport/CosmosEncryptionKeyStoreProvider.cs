@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         internal CosmosEncryptionKeyStoreProvider()
         {
-            this.CosmosEncryptionKeyStoreProviderCore = new CosmosEncryptionKeyStoreProviderCore(this);
+            this.EncryptionKeyStoreProviderImpl = new EncryptionKeyStoreProviderImpl(this);
         }
 
         /// <summary>
@@ -30,8 +30,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </remarks>
         public virtual TimeSpan? DataEncryptionKeyCacheTimeToLive
         {
-            get => this.CosmosEncryptionKeyStoreProviderCore.DataEncryptionKeyCacheTimeToLive;
-            set => this.CosmosEncryptionKeyStoreProviderCore.DataEncryptionKeyCacheTimeToLive = value;
+            get => this.EncryptionKeyStoreProviderImpl.DataEncryptionKeyCacheTimeToLive;
+            set => this.EncryptionKeyStoreProviderImpl.DataEncryptionKeyCacheTimeToLive = value;
         }
 
         /// <summary>
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         public abstract string ProviderName { get; }
 
-        internal CosmosEncryptionKeyStoreProviderCore CosmosEncryptionKeyStoreProviderCore { get; }
+        internal EncryptionKeyStoreProviderImpl EncryptionKeyStoreProviderImpl { get; }
 
         /// <summary>
         /// Unwraps the specified <paramref name="encryptedKey"/> of a data encryption key. The encrypted value is expected to be encrypted using
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>Return cached Data Encryption Key.</returns>
         protected virtual async Task<byte[]> GetOrCreateDataEncryptionKeyAsync(string encryptedDataEncryptionKey, Func<byte[]> createItem)
         {
-            return await Task.Run(() => this.CosmosEncryptionKeyStoreProviderCore.GetOrCreateDataEncryptionKey(encryptedDataEncryptionKey, createItem)).ConfigureAwait(false);
+            return await Task.Run(() => this.EncryptionKeyStoreProviderImpl.GetOrCreateDataEncryptionKey(encryptedDataEncryptionKey, createItem)).ConfigureAwait(false);
         }
     }
 }
