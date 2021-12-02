@@ -3030,7 +3030,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             public override string ProviderName => "TESTKEYSTORE_VAULT";
 
             public override async Task<byte[]> UnwrapKeyAsync(string masterKeyPath, string keyEncryptionKeyAlgorithm, byte[] encryptedKey)
-            {              
+            {
                 if (masterKeyPath.Equals("revokedKek-metadata") && this.RevokeAccessSet)
                 {
                     throw new RequestFailedException((int)HttpStatusCode.Forbidden, "Forbidden");
