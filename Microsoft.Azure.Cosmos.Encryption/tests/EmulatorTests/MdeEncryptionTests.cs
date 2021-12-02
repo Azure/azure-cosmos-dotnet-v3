@@ -1503,9 +1503,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             if (mdeSupportedEncryptionTypes.Length > cosmosSupportedEncryptionTypes.Length)
             {
                 HashSet<string> missingEncryptionTypes = new HashSet<string>(mdeSupportedEncryptionTypes);
-                foreach (string region in cosmosSupportedEncryptionTypes)
+                foreach (string encryptionTypes in cosmosSupportedEncryptionTypes)
                 {
-                    missingEncryptionTypes.Remove(region);
+                    missingEncryptionTypes.Remove(encryptionTypes);
                 }
 
                 // no Plaintext support.
