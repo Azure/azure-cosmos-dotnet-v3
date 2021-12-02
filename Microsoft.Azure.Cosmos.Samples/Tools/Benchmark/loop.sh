@@ -5,7 +5,7 @@ export RESULTS_PK=test_runs
 export PL=18
 
 #These must be configured
-export ACCOUNT_ENDPOINT= 
+export ACCOUNT_ENDPOINT=
 export ACCOUNT_KEY=
 export TELEMETRY_ENDPOINT=
 
@@ -18,13 +18,14 @@ do
     git pull origin --depth=1
 
     # Query operations take a long time
-    # Only run it them once every 10 runs
-    if [ $(expr $i % 10) != "0" ]; then
-        export INCLUDE_QUERY = true
+    # Only run them once every 10 runs
+    if [ $(($i % 10)) -eq 0 ]; then
+        echo Query run is enabled
+        export INCLUDE_QUERY=true
     else
-        export INCLUDE_QUERY = false
+        export INCLUDE_QUERY=false
     fi
-    i++
+    ((i++))
 
     ./run.sh
 
@@ -32,4 +33,3 @@ do
     sleep 10 #Wait for 10sec
     
 done
-
