@@ -49,11 +49,6 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>
-        /// <para>
-        /// Doing a read of a resource is the most efficient way to get a resource from the Database. If you know the resource's ID, do a read instead of a query by ID.
-        /// </para>
-        /// </remarks>
         public abstract Task<DatabaseResponse> ReadAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default);
