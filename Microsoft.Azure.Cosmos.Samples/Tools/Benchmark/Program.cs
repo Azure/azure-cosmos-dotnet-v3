@@ -147,6 +147,7 @@ namespace CosmosBenchmark
                 }
 
                 DateTime utcNow = DateTime.UtcNow;
+                runSummary.BenchmarkConfig = config;
                 runSummary.id = $"{utcNow:yyyy-MM-dd:HH-mm}-{config.CommitId}";
                 runSummary.Date = utcNow.ToString("yyyy-MM-dd");
                 runSummary.Time = utcNow.ToString("HH-mm");  
