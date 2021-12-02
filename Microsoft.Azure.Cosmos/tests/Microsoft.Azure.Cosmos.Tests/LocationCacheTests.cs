@@ -877,14 +877,23 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                         location => location.Name,
                         location => new Uri(location.Endpoint));
 
-                    Uri[] preferredAvailableWriteEndpoints = this.preferredLocations.Skip(writeLocationIndex)
-                        .Where(location => writeEndpointByLocation.ContainsKey(location))
-                        .Select(location => writeEndpointByLocation[location]).ToArray();
-
-                    Uri[] preferredAvailableReadEndpoints = this.preferredLocations.Skip(readLocationIndex)
-                        .Where(location => readEndpointByLocation.ContainsKey(location))
-                        .Select(location => readEndpointByLocation[location]).ToArray();
-
+                    Uri[] preferredAvailableWriteEndpoints;
+                    Uri[] preferredAvailableReadEndpoints;
+                    if (this.preferredLocations == null || this.preferredLocations.Count == 0)
+                    {
+                        preferredAvailableWriteEndpoints = writeEndpointByLocation.Values.ToArray();
+                        preferredAvailableReadEndpoints = readEndpointByLocation.Values.ToArray();
+                    }
+                    else
+                    {
+                        preferredAvailableWriteEndpoints = this.preferredLocations.Skip(writeLocationIndex)
+                                              .Where(location => writeEndpointByLocation.ContainsKey(location))
+                                              .Select(location => writeEndpointByLocation[location]).ToArray();
+                        preferredAvailableReadEndpoints = this.preferredLocations.Skip(readLocationIndex)
+                            .Where(location => readEndpointByLocation.ContainsKey(location))
+                            .Select(location => readEndpointByLocation[location]).ToArray();
+                    }
+                  
                     this.ValidateEndpointRefresh(
                         useMultipleWriteLocations,
                         endpointDiscoveryEnabled,
