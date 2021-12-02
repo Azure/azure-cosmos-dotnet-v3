@@ -641,7 +641,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(telemetryInfo.UserAgent);
                 Assert.IsNotNull(telemetryInfo.ConnectionMode);
 
-                Assert.IsNull(telemetryInfo.Miscellaneous);
+                Assert.IsNull(telemetryInfo.Misc);
             }
 
             IDictionary<string, long> actualOperationRecordCountMap = new Dictionary<string, long>();

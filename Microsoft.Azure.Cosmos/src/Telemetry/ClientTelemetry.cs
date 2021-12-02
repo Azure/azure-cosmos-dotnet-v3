@@ -47,8 +47,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         internal string Miscellaneous
         {
-            get => this.clientTelemetryInfo.Miscellaneous;
-            set => this.clientTelemetryInfo.Miscellaneous = value;
+            get => this.clientTelemetryInfo.Misc;
+            set => this.clientTelemetryInfo.Misc = value;
         }
 
         /// <summary>
