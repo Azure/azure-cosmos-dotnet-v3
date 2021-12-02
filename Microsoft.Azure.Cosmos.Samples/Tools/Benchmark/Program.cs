@@ -136,8 +136,8 @@ namespace CosmosBenchmark
                         Program.ClearCoreSdkListeners();
                     }
 
-                    IExecutionStrategy execution = IExecutionStrategy.StartNew(config, benchmarkOperationFactory);
-                    runSummary = await execution.ExecuteAsync(taskCount, opsPerTask, config.TraceFailures, 0.01);
+                    IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory);
+                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask,  0.01);
                 }
 
                 if (config.CleanupOnFinish)
@@ -145,13 +145,6 @@ namespace CosmosBenchmark
                     Console.WriteLine($"Deleting Database {config.Database}");
                     await database.DeleteStreamAsync();
                 }
-
-                DateTime utcNow = DateTime.UtcNow;
-                runSummary.BenchmarkConfig = config;
-                runSummary.id = $"{utcNow:yyyy-MM-dd:HH-mm}-{config.CommitId}";
-                runSummary.Date = utcNow.ToString("yyyy-MM-dd");
-                runSummary.Time = utcNow.ToString("HH-mm");  
-                runSummary.Concurrency = taskCount;
 
                 string consistencyLevel = config.ConsistencyLevel;
                 if (string.IsNullOrWhiteSpace(consistencyLevel))

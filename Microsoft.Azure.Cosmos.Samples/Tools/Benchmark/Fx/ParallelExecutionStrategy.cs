@@ -25,9 +25,9 @@ namespace CosmosBenchmark
         }
 
         public async Task<RunSummary> ExecuteAsync(
+            BenchmarkConfig benchmarkConfig,
             int serialExecutorConcurrency,
             int serialExecutorIterationCount,
-            bool traceFailures,
             double warmupFraction)
         {
             IExecutor warmupExecutor = new SerialOperationExecutor(
@@ -36,7 +36,7 @@ namespace CosmosBenchmark
             await warmupExecutor.ExecuteAsync(
                     (int)(serialExecutorIterationCount * warmupFraction),
                     isWarmup: true,
-                    traceFailures: traceFailures,
+                    traceFailures: benchmarkConfig.TraceFailures,
                     completionCallback: () => { });
 
             IExecutor[] executors = new IExecutor[serialExecutorConcurrency];
@@ -53,14 +53,18 @@ namespace CosmosBenchmark
                 _ = executors[i].ExecuteAsync(
                         iterationCount: serialExecutorIterationCount,
                         isWarmup: false,
-                        traceFailures: traceFailures,
+                        traceFailures: benchmarkConfig.TraceFailures,
                         completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount));
             }
 
-            return await this.LogOutputStats(executors);
+            return await this.LogOutputStats(
+                benchmarkConfig, 
+                executors);
         }
 
-        private async Task<RunSummary> LogOutputStats(IExecutor[] executors)
+        private async Task<RunSummary> LogOutputStats(
+            BenchmarkConfig benchmarkConfig,
+            IExecutor[] executors)
         {
             const int outputLoopDelayInSeconds = 1;
             IList<int> perLoopCounters = new List<int>();
@@ -112,7 +116,9 @@ namespace CosmosBenchmark
                 IEnumerable<int> exceptFirst5 = perLoopCounters.Skip(5);
                 int[] summaryCounters = exceptFirst5.Take(exceptFirst5.Count() - 5).OrderByDescending(e => e).ToArray();
 
-                RunSummary runSummary = new RunSummary();
+                RunSummary runSummary = new RunSummary(
+                    benchmarkConfig,
+                    executors.Length);
 
                 if (summaryCounters.Length > 10)
                 {
