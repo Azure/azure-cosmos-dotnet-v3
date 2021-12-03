@@ -90,7 +90,7 @@ Copyright (C) 2019 CosmosBenchmark
   -w                                Required. Workload type insert, read
   -e                                Required. Cosmos account end point
   -k                                Required. Cosmos account master key
-  -n                                Workload Name, it will override the workloadType value in published results
+  --workloadname                    Workload Name, it will override the workloadType value in published results
   --database                        Database to use
   --container                       Collection to use
   -t                                Collection throughput use

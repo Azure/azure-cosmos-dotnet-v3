@@ -26,7 +26,7 @@ namespace CosmosBenchmark
         [JsonIgnore]
         public string Key { get; set; }
 
-        [Option('n', Required = false, HelpText = "Workload Name, it will override the workloadType value in published results")]
+        [Option(Required = false, HelpText = "Workload Name, it will override the workloadType value in published results")]
         public string WorkloadName { get; set; }
 
         [Option(Required = false, HelpText = "Database to use")]
