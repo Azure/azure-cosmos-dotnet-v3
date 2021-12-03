@@ -129,9 +129,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 diagnosticsHelper: Handler.DiagnosticsHandlerHelper.Instance, 
                 preferredRegions: null);
 
-            telemetry.Miscellaneous = "misc";
+            telemetry.Misc = "misc";
 
-            Assert.AreEqual("misc", telemetry.Miscellaneous);
+            Assert.AreEqual("misc", telemetry.Misc);
         }
 
     }

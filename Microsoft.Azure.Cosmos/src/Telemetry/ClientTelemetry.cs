@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap
             = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
 
-        internal string Miscellaneous
+        internal string Misc
         {
             get => this.clientTelemetryInfo.Misc;
             set => this.clientTelemetryInfo.Misc = value;
