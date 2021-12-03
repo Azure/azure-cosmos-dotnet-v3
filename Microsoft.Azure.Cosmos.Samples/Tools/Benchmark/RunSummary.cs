@@ -34,7 +34,7 @@ namespace CosmosBenchmark
         public string Time { get; }
 
         public BenchmarkConfig BenchmarkConfig { get; }
-        public string WorkloadType => this.BenchmarkConfig.WorkloadType;
+        public string WorkloadType => String.IsNullOrWhiteSpace(this.BenchmarkConfig.WorkloadName) ? this.BenchmarkConfig.WorkloadType : this.BenchmarkConfig.WorkloadName;
         public string BranchName => this.BenchmarkConfig.BranchName;
         public string AccountName => this.BenchmarkConfig.EndPoint;
         public string Database => this.BenchmarkConfig.Database;

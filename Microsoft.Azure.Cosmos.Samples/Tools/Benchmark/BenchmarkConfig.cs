@@ -26,6 +26,9 @@ namespace CosmosBenchmark
         [JsonIgnore]
         public string Key { get; set; }
 
+        [Option('n', Required = false, HelpText = "Workload Name, it will override the workloadType value in published results")]
+        public string WorkloadName { get; set; }
+
         [Option(Required = false, HelpText = "Database to use")]
         public string Database { get; set; } = "db";
 
@@ -146,7 +149,12 @@ namespace CosmosBenchmark
         internal static BenchmarkConfig From(string[] args)
         {
             BenchmarkConfig options = null;
-            Parser parser = new Parser((settings) => settings.CaseSensitive = false);
+            Parser parser = new Parser((settings) =>
+            {
+                settings.CaseSensitive = false;
+                settings.HelpWriter = Console.Error;
+                settings.AutoHelp = true;
+            });
             parser.ParseArguments<BenchmarkConfig>(args)
                 .WithParsed<BenchmarkConfig>(e => options = e)
                 .WithNotParsed<BenchmarkConfig>(e => BenchmarkConfig.HandleParseError(e));

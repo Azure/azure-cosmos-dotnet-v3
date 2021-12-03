@@ -87,34 +87,41 @@ while($true){
 >dotnet run CosmosBenchmark.csproj
 CosmosBenchmark 1.0.0
 Copyright (C) 2019 CosmosBenchmark
-
-  -e                     Required. Cosmos account end point
-
-  -k                     Required. Cosmos account master key
-
-  --database             Database to use
-
-  --container            Collection to use
-
-  -t                     Collection throughput use
-
-  -n                     Number of documents to insert
-
-  --cleanuponstart       Start with new collection
-
-  --cleanuponfinish      Clean-up after run
-
-  --partitionkeypath     Container partition key path
-
-  --pl                   Degree of parallism
-
-  --itemtemplatefile     Item template
-
-  --minthreadpoolsize    Min thread pool size
-
-  --help                 Display this help screen.
-
-  --version              Display version information.
+  -w                                Required. Workload type insert, read
+  -e                                Required. Cosmos account end point
+  -k                                Required. Cosmos account master key
+  -n                                Workload Name, it will override the workloadType value in published results
+  --database                        Database to use
+  --container                       Collection to use
+  -t                                Collection throughput use
+  -n                                Number of documents to insert
+  --consistencylevel                Client consistency level to override
+  --enablelatencypercentiles        Enable latency percentiles
+  --cleanuponstart                  Start with new collection
+  --cleanuponfinish                 Clean-up after run
+  --partitionkeypath                Container partition key path
+  --pl                              Degree of parallism
+  --tcp                             MaxRequestsPerTcpConnection
+  --maxtcpconnectionsperendpoint    MaxTcpConnectionsPerEndpoint
+  --itemtemplatefile                Item template
+  --minthreadpoolsize               Min thread pool size
+  --tracefailures                   Write the task execution failure to console. Useful for debugging failures
+  --publishresults                  Publish run results
+  --commitid                        Commit ID, only for publish
+  --commitdate                      Commit date, only for publish
+  --committime                      Commit time, only for publish
+  --branchname                      Branch name, only for publish
+  --resultspartitionkeyvalue        Partitionkey, only for publish
+  --disablecoresdklogging           Disable core SDK logging
+  --enabletelemetry                 Enable Telemetry
+  --telemetryscheduleinsec          Telemetry Schedule in Seconds
+  --telemetryendpoint               Telemetry Endpoint
+  --resultsendpoint                 Endpoint to publish results to
+  --resultskey                      Key to publish results to
+  --resultsdatabase                 Database to publish results to
+  --resultscontainer                Container to publish results to
+  --help                            Display this help screen.
+  --version                         Display version information.
 ```
 
 ## Running on Azure
