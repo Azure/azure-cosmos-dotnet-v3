@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this CosmosClient cosmosClient,
             EncryptionKeyStoreProvider encryptionKeyStoreProvider)
         {
+            Console.WriteLine("Encryption Client With System.Text.Json");
             if (encryptionKeyStoreProvider == null)
             {
                 throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));

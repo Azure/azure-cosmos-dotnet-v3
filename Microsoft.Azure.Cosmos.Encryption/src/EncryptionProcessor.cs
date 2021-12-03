@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
-    using System.Text;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Data.Encryption.Cryptography;
@@ -57,37 +57,63 @@ namespace Microsoft.Azure.Cosmos.Encryption
             operationDiagnostics?.Begin(Constants.DiagnosticsEncryptOperation);
             int propertiesEncryptedCount = 0;
 
-            JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
-
-            foreach (string propertyName in encryptionSettings.PropertiesToEncrypt)
+            MemoryStream encryptedOutputStream = new MemoryStream();
+            using (Utf8JsonWriter encryptedDocumentWriter = new Utf8JsonWriter(encryptedOutputStream))
+            using (JsonDocument document = JsonDocument.Parse(input))
             {
-                // possibly a wrong path configured in the Client Encryption Policy, ignore.
-                JProperty propertyToEncrypt = itemJObj.Property(propertyName);
-                if (propertyToEncrypt == null)
+                JsonElement root = document.RootElement;
+                if (root.ValueKind != JsonValueKind.Object)
                 {
-                    continue;
+                    throw new ArgumentException("Invalid document to encrypt", nameof(input));
+                }
+                else
+                {
+                    encryptedDocumentWriter.WriteStartObject();
                 }
 
-                EncryptionSettingForProperty settingforProperty = encryptionSettings.GetEncryptionSettingForProperty(propertyName);
-
-                if (settingforProperty == null)
+                foreach (JsonProperty jsonProperty in root.EnumerateObject())
                 {
-                    throw new ArgumentException($"Invalid Encryption Setting for the Property:{propertyName}. ");
+                    if (encryptionSettings.PropertiesToEncrypt.Contains(jsonProperty.Name))
+                    {
+                        if (jsonProperty.Value.ValueKind != JsonValueKind.Null)
+                        {
+                            EncryptionSettingForProperty settingforProperty = encryptionSettings.GetEncryptionSettingForProperty(jsonProperty.Name);
+
+                            if (settingforProperty == null)
+                            {
+                                throw new ArgumentException($"Invalid Encryption Setting for the Property:{jsonProperty.Name}. ");
+                            }
+
+                            await EncryptJsonPropertyAsync(
+                                 jsonProperty,
+                                 settingforProperty,
+                                 cancellationToken,
+                                 encryptedDocumentWriter);
+                        }
+
+                        // to make sure we processed this but did not encrypt it since its null amd updated the counter.
+                        else
+                        {
+                            jsonProperty.WriteTo(encryptedDocumentWriter);
+                        }
+
+                        propertiesEncryptedCount++;
+                    }
+                    else
+                    {
+                        jsonProperty.WriteTo(encryptedDocumentWriter);
+                    }
                 }
 
-                await EncryptJTokenAsync(
-                    propertyToEncrypt.Value,
-                    settingforProperty,
-                    cancellationToken);
-
-                propertiesEncryptedCount++;
+                encryptedDocumentWriter.WriteEndObject();
+                encryptedDocumentWriter.Flush();
             }
 
-            Stream result = EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
             input.Dispose();
 
             operationDiagnostics?.End(propertiesEncryptedCount);
-            return result;
+            encryptedOutputStream.Position = 0;
+            return encryptedOutputStream;
         }
 
         /// <remarks>
@@ -106,22 +132,64 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 return input;
             }
 
-            Debug.Assert(input.CanSeek);
-
             operationDiagnostics?.Begin(Constants.DiagnosticsDecryptOperation);
-            JObject itemJObj = RetrieveItem(input);
+            int propertiesEncryptedCount = 0;
 
-            int propertiesDecryptedCount = await DecryptObjectAsync(
-                itemJObj,
-                encryptionSettings,
-                cancellationToken);
+            MemoryStream encryptedOutputStream = new MemoryStream();
+            using (Utf8JsonWriter decryptedDocumentWriter = new Utf8JsonWriter(encryptedOutputStream))
+            using (JsonDocument document = JsonDocument.Parse(input))
+            {
+                JsonElement root = document.RootElement;
+                if (root.ValueKind != JsonValueKind.Object)
+                {
+                    throw new ArgumentException("Invalid document to encrypt", nameof(input));
+                }
+                else
+                {
+                    decryptedDocumentWriter.WriteStartObject();
+                }
 
-            Stream result = EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
+                foreach (JsonProperty jsonProperty in root.EnumerateObject())
+                {
+                    if (encryptionSettings.PropertiesToEncrypt.Contains(jsonProperty.Name))
+                    {
+                        if (jsonProperty.Value.ValueKind != JsonValueKind.Null)
+                        {
+                            EncryptionSettingForProperty settingforProperty = encryptionSettings.GetEncryptionSettingForProperty(jsonProperty.Name);
+
+                            if (settingforProperty == null)
+                            {
+                                throw new ArgumentException($"Invalid Encryption Setting for the Property:{jsonProperty.Name}. ");
+                            }
+
+                            await DecryptJsonPropertyAsync(
+                                 jsonProperty,
+                                 settingforProperty,
+                                 cancellationToken,
+                                 decryptedDocumentWriter);
+                        }
+                        else
+                        {
+                            jsonProperty.WriteTo(decryptedDocumentWriter);
+                        }
+
+                        propertiesEncryptedCount++;
+                    }
+                    else
+                    {
+                        jsonProperty.WriteTo(decryptedDocumentWriter);
+                    }
+                }
+
+                decryptedDocumentWriter.WriteEndObject();
+                decryptedDocumentWriter.Flush();
+            }
+
             input.Dispose();
 
-            operationDiagnostics?.End(propertiesDecryptedCount);
-
-            return result;
+            operationDiagnostics?.End(propertiesEncryptedCount);
+            encryptedOutputStream.Position = 0;
+            return encryptedOutputStream;
         }
 
         public static async Task<(JObject, int)> DecryptAsync(
@@ -129,14 +197,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionSettings encryptionSettings,
             CancellationToken cancellationToken)
         {
-            Debug.Assert(document != null);
-
-            int propertiesDecryptedCount = await DecryptObjectAsync(
-                document,
-                encryptionSettings,
-                cancellationToken);
-
-            return (document, propertiesDecryptedCount);
+            throw new NotImplementedException();
         }
 
         internal static async Task<Stream> DeserializeAndDecryptResponseAsync(
@@ -151,33 +212,55 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             operationDiagnostics?.Begin(Constants.DiagnosticsDecryptOperation);
-            JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
-
-            if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
-            {
-                throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents. ");
-            }
-
             int totalPropertiesDecryptedCount = 0;
-            foreach (JToken value in documents)
+            MemoryStream outputStream = new MemoryStream();
+            using (JsonDocument response = JsonDocument.Parse(content))
+            using (Utf8JsonWriter utf8JsonWriter = new Utf8JsonWriter(outputStream))
             {
-                if (value is not JObject document)
+                JsonElement root = response.RootElement;
+                if (root.ValueKind != JsonValueKind.Object)
                 {
-                    continue;
+                    throw new ArgumentException("Invalid document to decrypt", nameof(content));
                 }
 
-                (_, int propertiesDecrypted) = await EncryptionProcessor.DecryptAsync(
-                    document,
-                    encryptionSettings,
-                    cancellationToken);
+                utf8JsonWriter.WriteStartObject();
 
-                totalPropertiesDecryptedCount += propertiesDecrypted;
+                foreach (JsonProperty property in root.EnumerateObject())
+                {
+                    if (property.Name == Constants.DocumentsResourcePropertyName)
+                    {
+                        if (property.Value.ValueKind != JsonValueKind.Array)
+                        {
+                            throw new InvalidOperationException($"Unexpected type {property.Value.ValueKind} for {Constants.DocumentsResourcePropertyName}");
+                        }
+                        else
+                        {
+                            utf8JsonWriter.WritePropertyName(Constants.DocumentsResourcePropertyName);
+                            utf8JsonWriter.WriteStartArray();
+
+                            foreach (JsonElement doc in property.Value.EnumerateArray())
+                            {
+                                if (doc.ValueKind == JsonValueKind.Object)
+                                {
+                                    int propertiesDecrypted = await DecryptObjectAsync(doc, encryptionSettings, utf8JsonWriter, cancellationToken);
+                                    totalPropertiesDecryptedCount += propertiesDecrypted;
+                                }
+                            }
+
+                            utf8JsonWriter.WriteEndArray();
+                        }
+                    }
+                    else
+                    {
+                        property.WriteTo(utf8JsonWriter);
+                    }
+                }
+
+                utf8JsonWriter.WriteEndObject();
             }
 
             operationDiagnostics?.End(totalPropertiesDecryptedCount);
-
-            // the contents get decrypted in place by DecryptAsync.
-            return EncryptionProcessor.BaseSerializer.ToStream(contentJObj);
+            return outputStream;
         }
 
         internal static async Task<Stream> EncryptValueStreamAsync(
@@ -195,97 +278,301 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(settingsForProperty));
             }
 
-            JToken propertyValueToEncrypt = EncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);
-
-            JToken encryptedPropertyValue = propertyValueToEncrypt;
-            if (propertyValueToEncrypt.Type == JTokenType.Object || propertyValueToEncrypt.Type == JTokenType.Array)
+            MemoryStream encryptedOutputStream = new MemoryStream();
+            using (Utf8JsonWriter encryptedDocumentWriter = new Utf8JsonWriter(encryptedOutputStream))
+            using (JsonDocument document = JsonDocument.Parse(valueStream))
             {
-                await EncryptJTokenAsync(encryptedPropertyValue, settingsForProperty, cancellationToken);
-            }
-            else
-            {
-                encryptedPropertyValue = await SerializeAndEncryptValueAsync(propertyValueToEncrypt, settingsForProperty, cancellationToken);
-            }
+                JsonElement jsonElementToEncrypt = document.RootElement;
 
-            return EncryptionProcessor.BaseSerializer.ToStream(encryptedPropertyValue);
-        }
-
-        private static (TypeMarker, byte[]) Serialize(JToken propertyValue)
-        {
-            return propertyValue.Type switch
-            {
-                JTokenType.Boolean => (TypeMarker.Boolean, SqlSerializerFactory.GetDefaultSerializer<bool>().Serialize(propertyValue.ToObject<bool>())),
-                JTokenType.Float => (TypeMarker.Double, SqlSerializerFactory.GetDefaultSerializer<double>().Serialize(propertyValue.ToObject<double>())),
-                JTokenType.Integer => (TypeMarker.Long, SqlSerializerFactory.GetDefaultSerializer<long>().Serialize(propertyValue.ToObject<long>())),
-                JTokenType.String => (TypeMarker.String, SqlVarcharSerializer.Serialize(propertyValue.ToObject<string>())),
-                _ => throw new InvalidOperationException($"Invalid or Unsupported Data Type Passed : {propertyValue.Type}. "),
-            };
-        }
-
-        private static JToken DeserializeAndAddProperty(
-            byte[] serializedBytes,
-            TypeMarker typeMarker)
-        {
-            return typeMarker switch
-            {
-                TypeMarker.Boolean => SqlSerializerFactory.GetDefaultSerializer<bool>().Deserialize(serializedBytes),
-                TypeMarker.Double => SqlSerializerFactory.GetDefaultSerializer<double>().Deserialize(serializedBytes),
-                TypeMarker.Long => SqlSerializerFactory.GetDefaultSerializer<long>().Deserialize(serializedBytes),
-                TypeMarker.String => SqlVarcharSerializer.Deserialize(serializedBytes),
-                _ => throw new InvalidOperationException($"Invalid or Unsupported Data Type Passed : {typeMarker}. "),
-            };
-        }
-
-        private static async Task EncryptJTokenAsync(
-           JToken jTokenToEncrypt,
-           EncryptionSettingForProperty encryptionSettingForProperty,
-           CancellationToken cancellationToken)
-        {
-            // Top Level can be an Object
-            if (jTokenToEncrypt.Type == JTokenType.Object)
-            {
-                foreach (JProperty jProperty in jTokenToEncrypt.Children<JProperty>())
+                if (jsonElementToEncrypt.ValueKind != JsonValueKind.Null && jsonElementToEncrypt.ValueKind != JsonValueKind.Undefined)
                 {
-                    await EncryptJTokenAsync(
-                        jProperty.Value,
-                        encryptionSettingForProperty,
-                        cancellationToken);
-                }
-            }
-            else if (jTokenToEncrypt.Type == JTokenType.Array)
-            {
-                if (jTokenToEncrypt.Children().Any())
-                {
-                    for (int i = 0; i < jTokenToEncrypt.Count(); i++)
+                    if (jsonElementToEncrypt.ValueKind == JsonValueKind.Object || jsonElementToEncrypt.ValueKind == JsonValueKind.Array)
                     {
-                        await EncryptJTokenAsync(
-                            jTokenToEncrypt[i],
-                            encryptionSettingForProperty,
-                            cancellationToken);
+                        await EncryptJsonElementAsync(
+                             jsonElementToEncrypt,
+                             settingsForProperty,
+                             cancellationToken,
+                             encryptedDocumentWriter);
+                    }
+                    else
+                    {
+                        encryptedDocumentWriter.WriteBase64StringValue(await SerializeAndEncryptValueAsync(jsonElementToEncrypt, settingsForProperty, cancellationToken));
                     }
                 }
+
+                encryptedDocumentWriter.Flush();
+            }
+
+            valueStream.Dispose();
+            encryptedOutputStream.Position = 0;
+            return encryptedOutputStream;
+        }
+
+        private static (TypeMarker, byte[]) Serialize(JsonElement propertyValue)
+        {
+            switch(propertyValue.ValueKind)
+            {
+                case JsonValueKind.True:
+                case JsonValueKind.False:
+                    return (TypeMarker.Boolean, SqlSerializerFactory.GetDefaultSerializer<bool>().Serialize(propertyValue.GetBoolean()));
+                case JsonValueKind.Number:
+                    if (long.TryParse(propertyValue.ToString(), out _))
+                    {
+                        return (TypeMarker.Long, SqlSerializerFactory.GetDefaultSerializer<long>().Serialize(propertyValue.GetInt64()));
+                    }
+                    else
+                    {
+                        return (TypeMarker.Double, SqlSerializerFactory.GetDefaultSerializer<double>().Serialize(propertyValue.GetDouble()));
+                    }
+
+                case JsonValueKind.String:
+                    return (TypeMarker.String, SqlVarcharSerializer.Serialize(propertyValue.GetString()));
+                case JsonValueKind.Null:
+                    Debug.Assert(false, "Null should have been handled");
+                    return (TypeMarker.Null, null);
+                case JsonValueKind.Undefined:
+                    Debug.Assert(false, "Undefined");
+                    return (default, null);
+                default:
+                    throw new InvalidOperationException($"Invalid or Unsupported Data Type Passed : {propertyValue.ValueKind}. ");
+            }
+
+        }
+
+        private static void DeserializeAndWriteJson(
+            byte[] serializedBytes,
+            TypeMarker typeMarker,
+            Utf8JsonWriter utf8JsonWriter = null)
+        {
+            switch(typeMarker)
+            {
+                case TypeMarker.Boolean:
+                    utf8JsonWriter.WriteBooleanValue(SqlSerializerFactory.GetDefaultSerializer<bool>().Deserialize(serializedBytes));
+                    break;
+
+                case TypeMarker.Double:
+                    utf8JsonWriter.WriteNumberValue(SqlSerializerFactory.GetDefaultSerializer<double>().Deserialize(serializedBytes));
+                    break;
+                case TypeMarker.Long:
+                    utf8JsonWriter.WriteNumberValue(SqlSerializerFactory.GetDefaultSerializer<long>().Deserialize(serializedBytes));
+                    break;
+                case TypeMarker.String:
+                    utf8JsonWriter.WriteStringValue(SqlVarcharSerializer.Deserialize(serializedBytes));
+                    break;
+                default:
+                    throw new InvalidOperationException($"Invalid or Unsupported Data Type Passed : {typeMarker}. ");
+            }
+        }
+
+        private static async Task EncryptJsonPropertyAsync(
+           JsonProperty jsonPropertyToEncrypt,
+           EncryptionSettingForProperty encryptionSettingForProperty,
+           CancellationToken cancellationToken,
+           Utf8JsonWriter utf8JsonWriter = null)
+        {
+            // Top Level can be an Object
+            if (jsonPropertyToEncrypt.Value.ValueKind == JsonValueKind.Object)
+            {
+                utf8JsonWriter.WriteStartObject(jsonPropertyToEncrypt.Name);
+                foreach (JsonProperty jsonElement in jsonPropertyToEncrypt.Value.EnumerateObject())
+                {
+                    await EncryptJsonPropertyAsync(
+                        jsonElement,
+                        encryptionSettingForProperty,
+                        cancellationToken,
+                        utf8JsonWriter);
+                }
+
+                utf8JsonWriter.WriteEndObject();
+            }
+            else if (jsonPropertyToEncrypt.Value.ValueKind == JsonValueKind.Array)
+            {
+                utf8JsonWriter.WriteStartArray(jsonPropertyToEncrypt.Name);
+                foreach (JsonElement jsonElement in jsonPropertyToEncrypt.Value.EnumerateArray())
+                {
+                    await EncryptJsonElementAsync(
+                        jsonElement,
+                        encryptionSettingForProperty,
+                        cancellationToken,
+                        utf8JsonWriter);
+                }
+
+                utf8JsonWriter.WriteEndArray();
             }
             else
             {
-                jTokenToEncrypt.Replace(await SerializeAndEncryptValueAsync(jTokenToEncrypt, encryptionSettingForProperty, cancellationToken));
+                if (jsonPropertyToEncrypt.Value.ValueKind != JsonValueKind.Null)
+                {
+                    utf8JsonWriter.WriteBase64String(jsonPropertyToEncrypt.Name, await SerializeAndEncryptValueAsync(jsonPropertyToEncrypt.Value, encryptionSettingForProperty, cancellationToken));
+                }
+                else
+                {
+                    jsonPropertyToEncrypt.WriteTo(utf8JsonWriter);
+                }
             }
 
             return;
         }
 
-        private static async Task<JToken> SerializeAndEncryptValueAsync(
-           JToken jToken,
+        private static async Task EncryptJsonElementAsync(
+          JsonElement jsonElementToEncrypt,
+          EncryptionSettingForProperty encryptionSettingForProperty,
+          CancellationToken cancellationToken,
+          Utf8JsonWriter utf8JsonWriter)
+        {
+            if (jsonElementToEncrypt.ValueKind == JsonValueKind.Object)
+            {
+                utf8JsonWriter.WriteStartObject();
+                foreach (JsonProperty jsonElementObject in jsonElementToEncrypt.EnumerateObject())
+                {
+                    await EncryptJsonPropertyAsync(
+                        jsonElementObject,
+                        encryptionSettingForProperty,
+                        cancellationToken,
+                        utf8JsonWriter);
+                }
+
+                utf8JsonWriter.WriteEndObject();
+            }
+            else if (jsonElementToEncrypt.ValueKind == JsonValueKind.Array)
+            {
+                utf8JsonWriter.WriteStartArray();
+                foreach (JsonElement jsonElementObject in jsonElementToEncrypt.EnumerateArray())
+                {
+                    await EncryptJsonElementAsync(
+                        jsonElementObject,
+                        encryptionSettingForProperty,
+                        cancellationToken,
+                        utf8JsonWriter);
+                }
+
+                utf8JsonWriter.WriteEndArray();
+            }
+            else
+            {
+                if (jsonElementToEncrypt.ValueKind != JsonValueKind.Null)
+                {
+                    utf8JsonWriter.WriteBase64StringValue(await SerializeAndEncryptValueAsync(jsonElementToEncrypt, encryptionSettingForProperty, cancellationToken));
+                }
+                else
+                {
+                    utf8JsonWriter.WriteNullValue();
+                }
+            }
+
+            return;
+        }
+
+        private static async Task DecryptJsonPropertyAsync(
+           JsonProperty jsonPropertyToDecrypt,
+           EncryptionSettingForProperty encryptionSettingForProperty,
+           CancellationToken cancellationToken,
+           Utf8JsonWriter utf8JsonWriter = null)
+        {
+            // Top Level can be an Object
+            if (jsonPropertyToDecrypt.Value.ValueKind == JsonValueKind.Object)
+            {
+                utf8JsonWriter.WriteStartObject(jsonPropertyToDecrypt.Name);
+                foreach (JsonProperty jsonElement in jsonPropertyToDecrypt.Value.EnumerateObject())
+                {
+                    await DecryptJsonPropertyAsync(
+                        jsonElement,
+                        encryptionSettingForProperty,
+                        cancellationToken,
+                        utf8JsonWriter);
+                }
+
+                utf8JsonWriter.WriteEndObject();
+            }
+            else if (jsonPropertyToDecrypt.Value.ValueKind == JsonValueKind.Array)
+            {
+                utf8JsonWriter.WriteStartArray(jsonPropertyToDecrypt.Name);
+                foreach (JsonElement jsonElement in jsonPropertyToDecrypt.Value.EnumerateArray())
+                {
+                    await DecryptJsonElementAsync(
+                        jsonElement,
+                        encryptionSettingForProperty,
+                        cancellationToken,
+                        utf8JsonWriter);
+                }
+
+                utf8JsonWriter.WriteEndArray();
+            }
+            else
+            {
+                // name value pair here:
+                if (jsonPropertyToDecrypt.Value.ValueKind != JsonValueKind.Null)
+                {
+                    utf8JsonWriter.WritePropertyName(jsonPropertyToDecrypt.Name);
+                    await DecryptAndDeserializeValueAsync(jsonPropertyToDecrypt.Value, encryptionSettingForProperty, utf8JsonWriter, cancellationToken);
+                }
+                else
+                {
+                    jsonPropertyToDecrypt.WriteTo(utf8JsonWriter);
+                }
+            }
+
+            return;
+        }
+
+        private static async Task DecryptJsonElementAsync(
+          JsonElement jsonElementToEncrypt,
+          EncryptionSettingForProperty encryptionSettingForProperty,
+          CancellationToken cancellationToken,
+          Utf8JsonWriter utf8JsonWriter)
+        {
+            if (jsonElementToEncrypt.ValueKind == JsonValueKind.Object)
+            {
+                utf8JsonWriter.WriteStartObject();
+                foreach (JsonProperty jsonElementObject in jsonElementToEncrypt.EnumerateObject())
+                {
+                    await DecryptJsonPropertyAsync(
+                        jsonElementObject,
+                        encryptionSettingForProperty,
+                        cancellationToken,
+                        utf8JsonWriter);
+                }
+
+                utf8JsonWriter.WriteEndObject();
+            }
+            else if (jsonElementToEncrypt.ValueKind == JsonValueKind.Array)
+            {
+                utf8JsonWriter.WriteStartArray();
+                foreach (JsonElement jsonElementObject in jsonElementToEncrypt.EnumerateArray())
+                {
+                    await DecryptJsonElementAsync(
+                        jsonElementObject,
+                        encryptionSettingForProperty,
+                        cancellationToken,
+                        utf8JsonWriter);
+                }
+
+                utf8JsonWriter.WriteEndArray();
+            }
+            else
+            {
+                // writes just the value.Say in an array.
+                if (jsonElementToEncrypt.ValueKind != JsonValueKind.Null)
+                {
+                    await DecryptAndDeserializeValueAsync(jsonElementToEncrypt, encryptionSettingForProperty,utf8JsonWriter, cancellationToken);
+                }
+                else
+                {
+                    utf8JsonWriter.WriteNullValue();
+                }
+            }
+
+            return;
+        }
+
+        private static async Task<byte[]> SerializeAndEncryptValueAsync(
+           JsonElement jsonElement,
            EncryptionSettingForProperty encryptionSettingForProperty,
            CancellationToken cancellationToken)
         {
-            JToken propertyValueToEncrypt = jToken;
+            JsonElement jsonElementToEncrypt = jsonElement;
 
-            if (propertyValueToEncrypt.Type == JTokenType.Null)
-            {
-                return propertyValueToEncrypt;
-            }
-
-            (TypeMarker typeMarker, byte[] plainText) = Serialize(propertyValueToEncrypt);
+            (TypeMarker typeMarker, byte[] plainText) = Serialize(jsonElementToEncrypt);
 
             AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await encryptionSettingForProperty.BuildEncryptionAlgorithmForSettingAsync(cancellationToken: cancellationToken);
             byte[] cipherText = aeadAes256CbcHmac256EncryptionAlgorithm.Encrypt(plainText);
@@ -301,16 +588,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return cipherTextWithTypeMarker;
         }
 
-        private static async Task<JToken> DecryptAndDeserializeValueAsync(
-           JToken jToken,
+        private static async Task DecryptAndDeserializeValueAsync(
+           JsonElement jsonElement,
            EncryptionSettingForProperty encryptionSettingForProperty,
+           Utf8JsonWriter utf8JsonWriter,
            CancellationToken cancellationToken)
         {
-            byte[] cipherTextWithTypeMarker = jToken.ToObject<byte[]>();
+            byte[] cipherTextWithTypeMarker = jsonElement.GetBytesFromBase64();
 
             if (cipherTextWithTypeMarker == null)
             {
-                return null;
+                return;
             }
 
             byte[] cipherText = new byte[cipherTextWithTypeMarker.Length - 1];
@@ -324,96 +612,63 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new InvalidOperationException($"{nameof(DecryptAndDeserializeValueAsync)} returned null plainText from {nameof(aeadAes256CbcHmac256EncryptionAlgorithm.Decrypt)}. ");
             }
 
-            return DeserializeAndAddProperty(
+            DeserializeAndWriteJson(
                 plainText,
-                (TypeMarker)cipherTextWithTypeMarker[0]);
-        }
-
-        private static async Task DecryptJTokenAsync(
-            JToken jTokenToDecrypt,
-            EncryptionSettingForProperty encryptionSettingForProperty,
-            CancellationToken cancellationToken)
-        {
-            if (jTokenToDecrypt.Type == JTokenType.Object)
-            {
-                foreach (JProperty jProperty in jTokenToDecrypt.Children<JProperty>())
-                {
-                    await DecryptJTokenAsync(
-                        jProperty.Value,
-                        encryptionSettingForProperty,
-                        cancellationToken);
-                }
-            }
-            else if (jTokenToDecrypt.Type == JTokenType.Array)
-            {
-                if (jTokenToDecrypt.Children().Any())
-                {
-                    for (int i = 0; i < jTokenToDecrypt.Count(); i++)
-                    {
-                        await DecryptJTokenAsync(
-                            jTokenToDecrypt[i],
-                            encryptionSettingForProperty,
-                            cancellationToken);
-                    }
-                }
-            }
-            else
-            {
-                jTokenToDecrypt.Replace(await DecryptAndDeserializeValueAsync(
-                    jTokenToDecrypt,
-                    encryptionSettingForProperty,
-                    cancellationToken));
-            }
+                (TypeMarker)cipherTextWithTypeMarker[0],
+                utf8JsonWriter);
         }
 
         private static async Task<int> DecryptObjectAsync(
-            JObject document,
+            JsonElement document,
             EncryptionSettings encryptionSettings,
+            Utf8JsonWriter utf8JsonWriter,
             CancellationToken cancellationToken)
         {
             int propertiesDecryptedCount = 0;
-            foreach (string propertyName in encryptionSettings.PropertiesToEncrypt)
+
+            if (document.ValueKind != JsonValueKind.Object)
             {
-                JProperty propertyToDecrypt = document.Property(propertyName);
-                if (propertyToDecrypt != null)
+                throw new ArgumentException("Invalid document to decrypt", nameof(document));
+            }
+            else
+            {
+                utf8JsonWriter.WriteStartObject();
+            }
+
+            foreach (JsonProperty jsonProperty in document.EnumerateObject())
+            {
+                if (encryptionSettings.PropertiesToEncrypt.Contains(jsonProperty.Name))
                 {
-                    EncryptionSettingForProperty settingsForProperty = encryptionSettings.GetEncryptionSettingForProperty(propertyName);
-
-                    if (settingsForProperty == null)
+                    if (jsonProperty.Value.ValueKind != JsonValueKind.Null)
                     {
-                        throw new ArgumentException($"Invalid Encryption Setting for Property:{propertyName}. ");
-                    }
+                        EncryptionSettingForProperty settingforProperty = encryptionSettings.GetEncryptionSettingForProperty(jsonProperty.Name);
 
-                    await DecryptJTokenAsync(
-                        propertyToDecrypt.Value,
-                        settingsForProperty,
-                        cancellationToken);
+                        if (settingforProperty == null)
+                        {
+                            throw new ArgumentException($"Invalid Encryption Setting for the Property:{jsonProperty.Name}. ");
+                        }
+
+                        await DecryptJsonPropertyAsync(
+                             jsonProperty,
+                             settingforProperty,
+                             cancellationToken,
+                             utf8JsonWriter);
+                    }
+                    else
+                    {
+                        jsonProperty.WriteTo(utf8JsonWriter);
+                    }
 
                     propertiesDecryptedCount++;
                 }
-            }
-
-            return propertiesDecryptedCount;
-        }
-
-        private static JObject RetrieveItem(
-            Stream input)
-        {
-            Debug.Assert(input != null);
-
-            JObject itemJObj;
-            using (StreamReader sr = new StreamReader(input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
-            using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
-            {
-                JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
+                else
                 {
-                    DateParseHandling = DateParseHandling.None,
-                };
-
-                itemJObj = JsonSerializer.Create(jsonSerializerSettings).Deserialize<JObject>(jsonTextReader);
+                    jsonProperty.WriteTo(utf8JsonWriter);
+                }
             }
 
-            return itemJObj;
+            utf8JsonWriter.WriteEndObject();
+            return propertiesDecryptedCount;
         }
     }
 }
