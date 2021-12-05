@@ -1,9 +1,8 @@
-﻿using System;
-using System.Linq.Expressions;
-using Microsoft.Azure.Cosmos;
-
-namespace StronglyTypedPatch
+﻿namespace StronglyTypedPatch
 {
+    using System;
+    using System.Linq.Expressions;
+    using Microsoft.Azure.Cosmos;
 
     public abstract class StronglyTypedPatchOperation<TObject>
     {

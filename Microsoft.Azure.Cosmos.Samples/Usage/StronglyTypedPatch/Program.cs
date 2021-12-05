@@ -1,10 +1,10 @@
-﻿using System;
-
-namespace StronglyTypedPatch
+﻿namespace StronglyTypedPatch
 {
+    using System;
+
     internal class Program
     {
-        static void Main(string[] args)
+        static void Main()
         {
             Console.WriteLine("Hello World!");
         }

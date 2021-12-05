@@ -5,6 +5,7 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="FluentAssertions" Version="6.2.0" />
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="*" />
   </ItemGroup>
 </Project>

@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using Microsoft.Azure.Cosmos;
-
-namespace StronglyTypedPatch
+﻿namespace StronglyTypedPatch
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Linq.Expressions;
+    using Microsoft.Azure.Cosmos;
+
     public class StronglyTypedPatchOperationBuilder<TObject>
     {
         private readonly List<StronglyTypedPatchOperation<TObject>> stronglyTypedPatchOperations = new();
