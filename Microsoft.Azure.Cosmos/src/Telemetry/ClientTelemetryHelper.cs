@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Telemetry
@@ -90,54 +90,50 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Record System Usage and return recorded metrics
         /// </summary>
         /// <param name="systemUsageHistory"></param>
-        /// <returns>ReportPayload</returns>
-        internal static (SystemInfo cpuInfo, SystemInfo memoryInfo) RecordSystemUsage(SystemUsageHistory systemUsageHistory)
+        /// <param name="systemInfoCollection"></param>
+        internal static void RecordSystemUsage(SystemUsageHistory systemUsageHistory, List<SystemInfo> systemInfoCollection)
         {
-            LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.CpuMin,
-                                                        ClientTelemetryOptions.CpuMax,
-                                                        ClientTelemetryOptions.CpuPrecision);
-
-            LongConcurrentHistogram memoryHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.MemoryMin,
-                                                           ClientTelemetryOptions.MemoryMax,
-                                                           ClientTelemetryOptions.MemoryPrecision);
+            LongConcurrentHistogram systemUsageHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.SystemUsageMin,
+                                                        ClientTelemetryOptions.SystemUsageMax,
+                                                        ClientTelemetryOptions.SystemUsagePrecision);
 
             if (systemUsageHistory.Values == null)
             {
-                return (null, null);
+                return;
             }
 
             DefaultTrace.TraceInformation("System Usage recorded by telemetry is : {0}", systemUsageHistory);
 
-            foreach (SystemUsageLoad systemUsage in systemUsageHistory.Values)
-            {
-                float? cpuValue = systemUsage.CpuUsage;
-                if (cpuValue.HasValue && !float.IsNaN(cpuValue.Value))
-                {
-                    cpuHistogram.RecordValue((long)(cpuValue * ClientTelemetryOptions.HistogramPrecisionFactor));
-                }
+            // Record CPU information
+            systemInfoCollection.Add(SystemInfoUsageFactory.RecordSystemUsageMetricInfoAndResetHist(systemUsageHistory: systemUsageHistory,
+                systemUsageHistogram: systemUsageHistogram,
+                metricName: ClientTelemetryOptions.CpuName,
+                metricUnit: ClientTelemetryOptions.CpuUnit));
 
-                long? memoryLoad = systemUsage.MemoryAvailable;
-                if (memoryLoad.HasValue)
-                {
-                    memoryHistogram.RecordValue(memoryLoad.Value);
-                }
-            }
+            // Record Memory information
+            systemInfoCollection.Add(SystemInfoUsageFactory.RecordSystemUsageMetricInfoAndResetHist(systemUsageHistory: systemUsageHistory,
+                systemUsageHistogram: systemUsageHistogram,
+                metricName: ClientTelemetryOptions.MemoryName,
+                metricUnit: ClientTelemetryOptions.MemoryUnit));
 
-            SystemInfo memoryInfoPayload = null;
-            if (memoryHistogram.TotalCount > 0)
-            {
-                memoryInfoPayload = new SystemInfo(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit);
-                memoryInfoPayload.SetAggregators(memoryHistogram, ClientTelemetryOptions.KbToMbFactor);
-            }
+            // Record Available Thread information
+            systemInfoCollection.Add(SystemInfoUsageFactory.RecordSystemUsageMetricInfoAndResetHist(systemUsageHistory: systemUsageHistory,
+                systemUsageHistogram: systemUsageHistogram,
+                metricName: ClientTelemetryOptions.AvailableThreadsName,
+                metricUnit: ClientTelemetryOptions.AvailableThreadsUnit));
 
-            SystemInfo cpuInfoPayload = null;
-            if (cpuHistogram.TotalCount > 0)
-            {
-                cpuInfoPayload = new SystemInfo(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit);
-                cpuInfoPayload.SetAggregators(cpuHistogram, ClientTelemetryOptions.HistogramPrecisionFactor);
-            }
+            // Record Min Thread information
+            systemInfoCollection.Add(SystemInfoUsageFactory.RecordSystemUsageMetricInfoAndResetHist(systemUsageHistory: systemUsageHistory,
+                systemUsageHistogram: systemUsageHistogram,
+                metricName: ClientTelemetryOptions.MinThreadsName,
+                metricUnit: ClientTelemetryOptions.MinThreadsUnit));
 
-            return (cpuInfoPayload, memoryInfoPayload);
+            // Record Max Thread information
+            systemInfoCollection.Add(SystemInfoUsageFactory.RecordSystemUsageMetricInfoAndResetHist(systemUsageHistory: systemUsageHistory,
+                systemUsageHistogram: systemUsageHistogram,
+                metricName: ClientTelemetryOptions.MaxThreadsName,
+                metricUnit: ClientTelemetryOptions.MaxThreadsUnit));
+
         }
 
         /// <summary>

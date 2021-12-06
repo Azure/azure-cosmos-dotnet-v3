@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     internal static class ClientTelemetryOptions
     {
         // ConversionFactor used in Histogram calculation to maintain precision or to collect data in desired unit
-        internal const double HistogramPrecisionFactor = 100;
+        internal const int HistogramPrecisionFactor = 100;
         internal const double TicksToMsFactor = TimeSpan.TicksPerMillisecond;
         internal const int KbToMbFactor = 1024;
 
@@ -35,19 +35,25 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const string RequestChargeName = "RequestCharge";
         internal const string RequestChargeUnit = "RU";
 
+        internal const long SystemUsageMax = Int64.MaxValue;
+        internal const long SystemUsageMin = 1;
+        internal const int SystemUsagePrecision = 2;
         // Expecting histogram to have Minimum CPU Usage of .001% and Maximum CPU Usage of 999.99%
-        internal const long CpuMax = 99999;
-        internal const long CpuMin = 1;
-        internal const int CpuPrecision = 2; 
         internal const String CpuName = "CPU";
         internal const String CpuUnit = "Percentage";
 
         // Expecting histogram to have Minimum Memory Remaining of 1 MB and Maximum Memory Remaining of Long Max Value
-        internal const long MemoryMax = Int64.MaxValue;
-        internal const long MemoryMin = 1;
-        internal const int MemoryPrecision = 2;
         internal const String MemoryName = "MemoryRemaining";
         internal const String MemoryUnit = "MB";
+
+        internal const String AvailableThreadsName = "AvailableThreads";
+        internal const String AvailableThreadsUnit = "Threads";
+
+        internal const String MinThreadsName = "MinThreads";
+        internal const String MinThreadsUnit = "Threads";
+
+        internal const String MaxThreadsName = "MaxThreads";
+        internal const String MaxThreadsUnit = "Threads";
 
         internal const string DefaultVmMetadataUrL = "http://169.254.169.254/metadata/instance?api-version=2020-06-01";
         internal const double DefaultTimeStampInSeconds = 600;

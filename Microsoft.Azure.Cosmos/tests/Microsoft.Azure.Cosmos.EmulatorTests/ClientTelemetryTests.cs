@@ -756,7 +756,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 actualOperationList.AddRange(telemetryInfo.OperationInfo);
                 actualSystemInformation.AddRange(telemetryInfo.SystemInfo);
 
-                Assert.AreEqual(2, telemetryInfo.SystemInfo.Count, $"System Information Count doesn't Match; {JsonConvert.SerializeObject(telemetryInfo.SystemInfo)}");
+                Assert.AreEqual(5, telemetryInfo.SystemInfo.Count, $"System Information Count doesn't Match; {JsonConvert.SerializeObject(telemetryInfo.SystemInfo)}");
 
                 Assert.IsNotNull(telemetryInfo.GlobalDatabaseAccountName, "GlobalDatabaseAccountName is null");
                 Assert.IsNotNull(telemetryInfo.DateTimeUtc, "Timestamp is null");
@@ -816,11 +816,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(systemInfo.MetricInfo, "MetricInfo is null");
                 Assert.IsNotNull(systemInfo.MetricInfo.MetricsName, "MetricsName is null");
                 Assert.IsNotNull(systemInfo.MetricInfo.UnitName, "UnitName is null");
-                Assert.IsNotNull(systemInfo.MetricInfo.Percentiles, "Percentiles is null");
                 Assert.IsTrue(systemInfo.MetricInfo.Count > 0, "MetricInfo Count is not greater than 0");
+                Assert.IsNotNull(systemInfo.MetricInfo.Percentiles, "Percentiles is null");
                 Assert.IsTrue(systemInfo.MetricInfo.Mean >= 0, "MetricInfo Mean is not greater than or equal to 0");
                 Assert.IsTrue(systemInfo.MetricInfo.Max >= 0, "MetricInfo Max is not greater than or equal to 0");
                 Assert.IsTrue(systemInfo.MetricInfo.Min >= 0, "MetricInfo Min is not greater than or equal to 0");
+                if (systemInfo.MetricInfo.MetricsName.Equals(ClientTelemetryOptions.CpuName))
+                {
+                    Assert.IsTrue(systemInfo.MetricInfo.Mean <= 100, "MetricInfo Mean is not greater than 100 for CPU Usage");
+                    Assert.IsTrue(systemInfo.MetricInfo.Max <= 100, "MetricInfo Max is not greater than 100 for CPU Usage");
+                    Assert.IsTrue(systemInfo.MetricInfo.Min <= 100, "MetricInfo Min is not greater than 100 for CPU Usage");
+                };
             }
         }
 
