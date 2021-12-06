@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             if (isClientTelemetryEnabled.HasValue && isClientTelemetryEnabled.Value)
             {
-                cosmosClientBuilder.WithTelemetryEnabled();
+                //cosmosClientBuilder.WithTelemetryEnabled();
             }
 
             documentClient.dummyHeaderNames = new string[100];
