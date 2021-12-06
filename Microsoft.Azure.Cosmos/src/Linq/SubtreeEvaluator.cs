@@ -13,8 +13,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// </summary> 
     internal sealed class SubtreeEvaluator : ExpressionVisitor
     {
-        private static readonly Dictionary<(Type Type, string Member), MemberInfo> memberInfoCache = new Dictionary<(Type Type, string Member), MemberInfo>();
-
         private HashSet<Expression> candidates;
 
         public SubtreeEvaluator(HashSet<Expression> candidates)
