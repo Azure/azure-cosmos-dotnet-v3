@@ -21,6 +21,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private static readonly IReadOnlyList<HttpResponseStatistics> EmptyHttpResponseStatistics = new List<HttpResponseStatistics>();
         private readonly List<(PartitionAddressInformation existing, PartitionAddressInformation newInfo)> partitionAddressInformationRefreshes = new List<(PartitionAddressInformation existing, PartitionAddressInformation newInfo)>();
 
+        internal static readonly string HttpRequestRegionNameProperty = "regionName";
+
         private readonly object requestEndTimeLock = new object();
         private readonly Dictionary<string, AddressResolutionStatistics> endpointToAddressResolutionStats;
         private readonly List<StoreResponseStatistics> storeResponseStatistics;
@@ -331,6 +333,13 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
             lock (this.httpResponseStatistics)
             {
+                Uri locationEndpoint = request.RequestUri;
+                if (request.Properties != null && 
+                        request.Properties.TryGetValue(HttpRequestRegionNameProperty, out object regionName))
+                {
+                    this.RegionsContacted.Add((Convert.ToString(regionName), locationEndpoint));
+                }
+
                 this.shallowCopyOfHttpResponseStatistics = null;
                 this.httpResponseStatistics.Add(new HttpResponseStatistics(requestStartTimeUtc,
                                                                            requestEndTimeUtc,
@@ -352,6 +361,13 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
             lock (this.httpResponseStatistics)
             {
+                Uri locationEndpoint = request.RequestUri;
+                if (request.Properties != null &&
+                        request.Properties.TryGetValue(HttpRequestRegionNameProperty, out object regionName))
+                {
+                    this.RegionsContacted.Add((Convert.ToString(regionName), locationEndpoint));
+                }
+
                 this.shallowCopyOfHttpResponseStatistics = null;
                 this.httpResponseStatistics.Add(new HttpResponseStatistics(requestStartTimeUtc,
                                                                            requestEndTimeUtc,
