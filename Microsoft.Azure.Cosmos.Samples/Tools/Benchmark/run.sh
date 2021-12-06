@@ -71,7 +71,7 @@ then
     # n value is lowered to 100000 because queries are significantly slower. This prevents the runs from taking to long.
     for WORKLOAD_NAME in ReadFeedStreamV3 QueryTSinglePkV3 QueryTSinglePkOrderByWithPaginationV3 QueryTSinglePkOrderByFullDrainV3 QueryTCrossPkV3 QueryTCrossPkOrderByWithPaginationV3 QueryTCrossPkOrderByFullDrainV3 QueryStreamSinglePkV3 QueryStreamSinglePkOrderByWithPaginationV3 QueryStreamSinglePkOrderByFullDrainV3 QueryStreamCrossPkV3 QueryStreamCrossPkOrderByWithPaginationV3 QueryStreamCrossPkOrderByFullDrainV3
     $do
-        dotnet run -c Release  -- -n 200000 -w $WORKLOAD_NAME --pl $PL --enableTelemetry --telemetryScheduleInSec 60 --telemetryEndpoint $TELEMETRY_ENDPOINT --tcp 10 -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY--enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
+        dotnet run -c Release  -- -n 200000 -w $WORKLOAD_NAME --pl $PL --enableTelemetry --telemetryScheduleInSec 60 --telemetryEndpoint $TELEMETRY_ENDPOINT --tcp 10 -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
         sleep 10 #Wait
     done
 fi

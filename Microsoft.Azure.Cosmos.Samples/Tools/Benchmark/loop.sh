@@ -15,7 +15,7 @@ while :
 do
     #Kill any running processes
     pkill -f run.sh
-    git pull origin --depth=1
+    git pull origin master
 
     # Query operations take a long time
     # Only run them once every 10 runs
