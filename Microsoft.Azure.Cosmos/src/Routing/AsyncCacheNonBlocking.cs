@@ -204,12 +204,16 @@ namespace Microsoft.Azure.Cosmos
                 
                 // The original task is still being created. Just return the original task.
                 Task<T> valueSnapshot = this.value;
-                T originalValue = default;
                 if (AsyncLazyWithRefreshTask<T>.IsTaskRunning(valueSnapshot))
                 {
                     return await valueSnapshot;
                 }
-                else if (valueSnapshot != null)
+
+                // The above check handles the scenario where this value task is still processing.
+                // It will only get here if the valueSnapshot is completed. This is needed for the
+                // callback to compare the original value to the new value.
+                T originalValue = default;
+                if (valueSnapshot != null)
                 {
                     originalValue = await valueSnapshot;
                 }
