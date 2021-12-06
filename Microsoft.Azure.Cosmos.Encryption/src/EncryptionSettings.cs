@@ -15,11 +15,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class EncryptionSettings
     {
-        // TODO: Good to have constants available in the Cosmos SDK. Tracked via https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2431
-        private const string IntendedCollectionHeader = "x-ms-cosmos-intended-collection-rid";
-
-        private const string IsClientEncryptedHeader = "x-ms-cosmos-is-client-encrypted";
-
         private readonly Dictionary<string, EncryptionSettingForProperty> encryptionSettingsDictByPropertyName;
 
         private EncryptionSettings(string containerRidValue)
@@ -49,8 +44,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             requestOptions.AddRequestHeaders = (headers) =>
             {
-                headers.Add(IsClientEncryptedHeader, bool.TrueString);
-                headers.Add(IntendedCollectionHeader, this.ContainerRidValue);
+                headers.Add(Constants.IsClientEncryptedHeader, bool.TrueString);
+                headers.Add(Constants.IntendedCollectionHeader, this.ContainerRidValue);
             };
         }
 
@@ -99,6 +94,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                          clientEncryptionKeyId: clientEncryptionKeyId,
                          encryptionContainer: encryptionContainer,
                          databaseRid: databaseRidValue,
+                         ifNoneMatchEtag: null,
+                         shouldForceRefresh: false,
                          cancellationToken: cancellationToken);
                 }
 
