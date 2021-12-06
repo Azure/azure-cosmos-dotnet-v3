@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private Expression EvaluateConstant(Expression expression)
         {
-            if (expression.CanReduce)
+            while (expression.CanReduce)
             {
                 expression = expression.Reduce();
             }
