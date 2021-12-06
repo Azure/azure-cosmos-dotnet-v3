@@ -1525,7 +1525,7 @@ namespace Microsoft.Azure.Cosmos
             string processorName,
             ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate);
 
-#if INTERNAL
+#if PREVIEW
         /// <summary>
         /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.
         /// Starts an asynchronous Cosmos DB background operation which deletes all items in the Container with the specified value. 
@@ -1541,9 +1541,7 @@ namespace Microsoft.Azure.Cosmos
                Cosmos.PartitionKey partitionKey,
                RequestOptions requestOptions = null,
                CancellationToken cancellationToken = default(CancellationToken));
-#endif
 
-#if PREVIEW
         /// <summary>
         /// Gets the list of Partition Key Range identifiers for a <see cref="FeedRange"/>.
         /// </summary>
