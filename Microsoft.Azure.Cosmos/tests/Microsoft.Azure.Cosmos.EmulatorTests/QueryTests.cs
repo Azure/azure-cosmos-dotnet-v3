@@ -2287,7 +2287,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             string indexUtilization = response.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization];
 
                             QueryMetrics queryMetrics = new QueryMetrics(
-                                BackendMetrics.ParseFromDelimitedString(responseQueryMetrics),
+                                responseQueryMetrics,
                                 IndexUtilizationInfo.CreateFromString(indexUtilization),
                                 ClientSideMetrics.Empty);
                             this.ValidateQueryMetrics(queryMetrics);
