@@ -174,8 +174,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string clientEncryptionKeyId,
             EncryptionContainer encryptionContainer,
             string databaseRid,
-            CancellationToken cancellationToken = default,
-            bool shouldForceRefresh = false)
+            string ifNoneMatchEtag,
+            bool shouldForceRefresh,
+            CancellationToken cancellationToken)
         {
             if (encryptionContainer == null)
             {
@@ -195,25 +196,42 @@ namespace Microsoft.Azure.Cosmos.Encryption
             // Client Encryption key Id is unique within a Database.
             string cacheKey = databaseRid + "|" + clientEncryptionKeyId;
 
+            // this allows us to read from the Gateway Cache. If an IfNoneMatchEtag is passed the logic around the gateway cache allows us to fetch the latest ClientEncryptionKeyProperties
+            // from the servers if the gateway cache has a stale value. This can happen if a client connected via different Gateway has rewrapped the key.
+            RequestOptions requestOptions = new RequestOptions
+            {
+                AddRequestHeaders = (headers) =>
+                {
+                    headers.Add(Constants.AllowCachedReadsHeader, bool.TrueString);
+                    headers.Add(Constants.DatabaseRidHeader, databaseRid);
+                },
+            };
+
+            if (!string.IsNullOrEmpty(ifNoneMatchEtag))
+            {
+                requestOptions.IfNoneMatchEtag = ifNoneMatchEtag;
+            }
+
             return await this.clientEncryptionKeyPropertiesCacheByKeyId.GetAsync(
-                     cacheKey,
-                     obsoleteValue: null,
-                     async () => await this.FetchClientEncryptionKeyPropertiesAsync(encryptionContainer, clientEncryptionKeyId, cancellationToken),
-                     cancellationToken,
-                     forceRefresh: shouldForceRefresh);
+                cacheKey,
+                obsoleteValue: null,
+                async () => await this.FetchClientEncryptionKeyPropertiesAsync(encryptionContainer, clientEncryptionKeyId, requestOptions, cancellationToken),
+                cancellationToken,
+                forceRefresh: shouldForceRefresh);
         }
 
         private async Task<ClientEncryptionKeyProperties> FetchClientEncryptionKeyPropertiesAsync(
             EncryptionContainer encryptionContainer,
             string clientEncryptionKeyId,
-            CancellationToken cancellationToken = default)
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             ClientEncryptionKey clientEncryptionKey = encryptionContainer.Database.GetClientEncryptionKey(clientEncryptionKeyId);
             try
             {
-                return await clientEncryptionKey.ReadAsync(cancellationToken: cancellationToken);
+                return await clientEncryptionKey.ReadAsync(requestOptions: requestOptions, cancellationToken: cancellationToken);
             }
             catch (CosmosException ex)
             {
