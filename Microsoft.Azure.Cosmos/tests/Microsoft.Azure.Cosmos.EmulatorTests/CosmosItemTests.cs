@@ -2814,7 +2814,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(ex.StatusCode, HttpStatusCode.ServiceUnavailable);
                 CosmosTraceDiagnostics diagnostics = (CosmosTraceDiagnostics)ex.Diagnostics;
                 Assert.IsTrue(diagnostics.IsGoneExceptionHit());
-                Assert.IsFalse(string.IsNullOrEmpty(diagnostics.ToString()));
+                string diagnosticString = diagnostics.ToString();
+                Assert.IsFalse(string.IsNullOrEmpty(diagnosticString));
+                Assert.IsTrue(diagnosticString.Contains("ForceAddressRefresh"));
+                Assert.IsTrue(diagnosticString.Contains("No change to cache"));
             }
         }
 

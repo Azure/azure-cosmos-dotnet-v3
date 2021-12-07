@@ -26,6 +26,9 @@ namespace CosmosBenchmark
         [JsonIgnore]
         public string Key { get; set; }
 
+        [Option(Required = false, HelpText = "Workload Name, it will override the workloadType value in published results")]
+        public string WorkloadName { get; set; }
+
         [Option(Required = false, HelpText = "Database to use")]
         public string Database { get; set; } = "db";
 
@@ -98,6 +101,12 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Enable Telemetry")]
         public bool EnableTelemetry { get; set; }
 
+        [Option(Required = false, HelpText = "Telemetry Schedule in Seconds")]
+        public int  TelemetryScheduleInSec { get; set; }
+
+        [Option(Required = false, HelpText = "Telemetry Endpoint")]
+        public string TelemetryEndpoint { get; set; }
+
         [Option(Required = false, HelpText = "Endpoint to publish results to")]
         public string ResultsEndpoint { get; set; }
 
@@ -140,7 +149,12 @@ namespace CosmosBenchmark
         internal static BenchmarkConfig From(string[] args)
         {
             BenchmarkConfig options = null;
-            Parser parser = new Parser((settings) => settings.CaseSensitive = false);
+            Parser parser = new Parser((settings) =>
+            {
+                settings.CaseSensitive = false;
+                settings.HelpWriter = Console.Error;
+                settings.AutoHelp = true;
+            });
             parser.ParseArguments<BenchmarkConfig>(args)
                 .WithParsed<BenchmarkConfig>(e => options = e)
                 .WithNotParsed<BenchmarkConfig>(e => BenchmarkConfig.HandleParseError(e));
@@ -167,13 +181,28 @@ namespace CosmosBenchmark
                 ApplicationName = BenchmarkConfig.UserAgentSuffix,
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
-                MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
-                EnableClientTelemetry = this.EnableTelemetry
+                MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint
             };
 
-            if(this.EnableTelemetry)
+            if (this.EnableTelemetry)
             {
-                Environment.SetEnvironmentVariable(Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
+                Environment.SetEnvironmentVariable(
+                    Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, 
+                    "true");
+
+                if (this.TelemetryScheduleInSec > 0)
+                {
+                    Environment.SetEnvironmentVariable(
+                        Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, 
+                        Convert.ToString(this.TelemetryScheduleInSec));
+                }
+
+                if (!string.IsNullOrEmpty(this.TelemetryEndpoint))
+                {
+                    Environment.SetEnvironmentVariable(
+                        Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, 
+                        this.TelemetryEndpoint);
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))

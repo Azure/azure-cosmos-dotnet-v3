@@ -366,7 +366,7 @@ namespace Microsoft.Azure.Cosmos
         ///    status = "InProgress"
         /// };
         ///
-        /// ItemResponse item = await this.container.CreateItemAsync<ToDoActivity>(tests, new PartitionKey(test.status));
+        /// ItemResponse item = await this.container.CreateItemAsync<ToDoActivity>(test, new PartitionKey(test.status));
         /// ]]>
         /// </code>
         /// </example>
@@ -691,7 +691,6 @@ namespace Microsoft.Azure.Cosmos
             ReadManyRequestOptions readManyRequestOptions = null,
             CancellationToken cancellationToken = default);
 
-#if PREVIEW
         /// <summary>
         /// Patches an item in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
@@ -784,7 +783,6 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyList<PatchOperation> patchOperations,
             PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
-#endif
 
         /// <summary>
         /// Delete a item from the Azure Cosmos service as an asynchronous operation.

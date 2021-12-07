@@ -221,6 +221,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.WriteRegionsContactedArray("RegionsContacted", clientSideRequestStatisticsTraceDatum.RegionsContacted);
                 this.WriteJsonUriArray("FailedReplicas", clientSideRequestStatisticsTraceDatum.FailedReplicas);
 
+                clientSideRequestStatisticsTraceDatum.WriteAddressCachRefreshContent(this.jsonWriter);
+
                 this.jsonWriter.WriteFieldName("AddressResolutionStatistics");
                 this.jsonWriter.WriteArrayStart();
 

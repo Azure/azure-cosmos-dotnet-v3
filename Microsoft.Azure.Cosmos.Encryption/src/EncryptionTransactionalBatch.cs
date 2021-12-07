@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private readonly CosmosSerializer cosmosSerializer;
         private readonly EncryptionContainer encryptionContainer;
+        private readonly EncryptionDiagnosticsContext encryptionDiagnosticsContext;
         private TransactionalBatch transactionalBatch;
 
         public EncryptionTransactionalBatch(
@@ -28,6 +29,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.transactionalBatch = transactionalBatch ?? throw new ArgumentNullException(nameof(transactionalBatch));
             this.encryptionContainer = encryptionContainer ?? throw new ArgumentNullException(nameof(encryptionContainer));
             this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
+            this.encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
+            this.encryptionDiagnosticsContext.Begin(Constants.DiagnosticsEncryptOperation);
         }
 
         public override TransactionalBatch CreateItem<T>(
@@ -182,6 +185,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             EncryptionSettings encryptionSettings = await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
             TransactionalBatchResponse response;
+
+            this.encryptionDiagnosticsContext.End();
+
             if (!encryptionSettings.PropertiesToEncrypt.Any())
             {
                 return await this.transactionalBatch.ExecuteAsync(requestOptions, cancellationToken);
@@ -277,8 +283,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             List<TransactionalBatchOperationResult> decryptedTransactionalBatchOperationResults = new List<TransactionalBatchOperationResult>();
 
-            EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
-            encryptionDiagnosticsContext.Begin(Constants.DiagnosticsDecryptOperation);
+            this.encryptionDiagnosticsContext.Begin(Constants.DiagnosticsDecryptOperation);
 
             foreach (TransactionalBatchOperationResult result in response)
             {
@@ -298,11 +303,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
-            encryptionDiagnosticsContext.End();
+            this.encryptionDiagnosticsContext.End();
             EncryptionCosmosDiagnostics encryptionDiagnostics = new EncryptionCosmosDiagnostics(
                 response.Diagnostics,
-                encryptContent: null,
-                decryptContent: encryptionDiagnosticsContext.DecryptContent);
+                encryptContent: this.encryptionDiagnosticsContext.EncryptContent,
+                decryptContent: this.encryptionDiagnosticsContext.DecryptContent,
+                this.encryptionDiagnosticsContext.TotalProcessingDuration);
 
             return new EncryptionTransactionalBatchResponse(
                 decryptedTransactionalBatchOperationResults,

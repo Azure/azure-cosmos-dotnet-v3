@@ -696,7 +696,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 .ExecuteAsync();
 
             Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
-            VerifyDiagnostics(batchResponse.Diagnostics, encryptOperation: false, expectedPropertiesDecryptedCount: 0);
+            VerifyDiagnostics(batchResponse.Diagnostics, expectedPropertiesEncryptedCount: 0, expectedPropertiesDecryptedCount: 0);
 
             TransactionalBatchOperationResult<TestDoc> doc1 = batchResponse.GetOperationResultAtIndex<TestDoc>(0);
             VerifyExpectedDocResponse(doc1ToCreate, doc1.Resource);
@@ -1800,7 +1800,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
                 Assert.Fail("Create Item should have failed.");
             }
-            catch(RequestFailedException)
+            catch(InvalidOperationException)
             {               
             }
 
@@ -1813,7 +1813,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 testDoc1);
                 Assert.Fail("Query should have failed, since property path /Sensitive_NestedObjectFormatL1 has been encrypted using Cek with revoked access. ");
             }
-            catch (RequestFailedException)
+            catch (InvalidOperationException)
             {
             }
 
@@ -2013,8 +2013,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 new TestDoc.Sensitive_ArrayData
                 {
-                    Sensitive_ArrayIntFormat = 1111,
-                    Sensitive_ArrayDecimalFormat = 1111.11m
+                    Sensitive_ArrayIntFormat = 100,
+                    Sensitive_ArrayDecimalFormat = 100.2m
                 },
                 new TestDoc.Sensitive_ArrayData
                 {
@@ -2042,13 +2042,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 Sensitive_IntArrayL1 = new int[2] { 999, 100 },
                 Sensitive_IntFormatL1 = 1999,
-                Sensitive_DecimalFormatL1 = 1999.1m,
+                Sensitive_DecimalFormatL1 = 1.1m,
                 Sensitive_ArrayFormatL1 = new TestDoc.Sensitive_ArrayData[]
                 {
                     new TestDoc.Sensitive_ArrayData
                     {
                         Sensitive_ArrayIntFormat = 0,
                         Sensitive_ArrayDecimalFormat = 0.1m
+                    },
+                    new TestDoc.Sensitive_ArrayData
+                    {
+                        Sensitive_ArrayIntFormat = 0,
+                        Sensitive_ArrayDecimalFormat = 0.5m
                     },
                     new TestDoc.Sensitive_ArrayData
                     {
@@ -2064,10 +2069,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             };
 
             patchOperations.Clear();
+            patchOperations.Add(PatchOperation.Replace("/Sensitive_ArrayFormat/0", docPostPatching.Sensitive_ArrayFormat[0]));
             patchOperations.Add(PatchOperation.Add("/Sensitive_ArrayFormat/1", docPostPatching.Sensitive_ArrayFormat[1]));
             patchOperations.Add(PatchOperation.Replace("/Sensitive_ArrayMultiTypes/0/1", docPostPatching.Sensitive_ArrayMultiTypes[0, 1]));
             patchOperations.Add(PatchOperation.Remove("/Sensitive_NestedObjectFormatL1/Sensitive_NestedObjectFormatL2"));
             patchOperations.Add(PatchOperation.Set("/Sensitive_NestedObjectFormatL1/Sensitive_ArrayFormatL1/0", docPostPatching.Sensitive_NestedObjectFormatL1.Sensitive_ArrayFormatL1[0]));
+            patchOperations.Add(PatchOperation.Set("/Sensitive_NestedObjectFormatL1/Sensitive_ArrayFormatL1/1", docPostPatching.Sensitive_NestedObjectFormatL1.Sensitive_ArrayFormatL1[1]));
+            patchOperations.Add(PatchOperation.Replace("/Sensitive_NestedObjectFormatL1/Sensitive_DecimalFormatL1", docPostPatching.Sensitive_NestedObjectFormatL1.Sensitive_DecimalFormatL1));
 
             patchResponse = await MdeEncryptionTests.MdePatchItemAsync(
                 MdeEncryptionTests.encryptionContainer,
@@ -2075,8 +2083,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 docPostPatching,
                 HttpStatusCode.OK);
 
-            VerifyDiagnostics(patchResponse.Diagnostics, expectedPropertiesEncryptedCount: 3);
-
+            VerifyDiagnostics(patchResponse.Diagnostics, expectedPropertiesEncryptedCount: 6);
+            
             patchOperations.Add(PatchOperation.Increment("/Sensitive_IntFormat", 1));
             try
             {
@@ -2834,8 +2842,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         private static void VerifyDiagnostics(
-            CosmosDiagnostics diagnostics, 
-            bool encryptOperation = true, 
+            CosmosDiagnostics diagnostics,
+            bool encryptOperation = true,
             bool decryptOperation = true,
             int expectedPropertiesEncryptedCount = 12,
             int expectedPropertiesDecryptedCount = 12)
@@ -2849,12 +2857,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             JObject encryptionDiagnostics = diagnosticsObject.Value<JObject>(Constants.DiagnosticsEncryptionDiagnostics);
             Assert.IsNotNull(encryptionDiagnostics);
 
+            TimeSpan duration;
             if (encryptOperation)
             {
                 JObject encryptOperationDiagnostics = encryptionDiagnostics.Value<JObject>(Constants.DiagnosticsEncryptOperation);
                 Assert.IsNotNull(encryptOperationDiagnostics);
                 Assert.IsNotNull(encryptOperationDiagnostics.GetValue(Constants.DiagnosticsStartTime));
-                Assert.IsNotNull(encryptOperationDiagnostics.GetValue(Constants.DiagnosticsDuration));
+                duration = (TimeSpan)encryptOperationDiagnostics.GetValue(Constants.DiagnosticsDuration);
+                Assert.IsTrue(duration > TimeSpan.Zero);
                 int propertiesEncrypted = encryptOperationDiagnostics.Value<int>(Constants.DiagnosticsPropertiesEncryptedCount);
                 Assert.AreEqual(expectedPropertiesEncryptedCount, propertiesEncrypted);
             }
@@ -2864,7 +2874,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 JObject decryptOperationDiagnostics = encryptionDiagnostics.Value<JObject>(Constants.DiagnosticsDecryptOperation);
                 Assert.IsNotNull(decryptOperationDiagnostics);
                 Assert.IsNotNull(decryptOperationDiagnostics.GetValue(Constants.DiagnosticsStartTime));
-                Assert.IsNotNull(decryptOperationDiagnostics.GetValue(Constants.DiagnosticsDuration));
+                duration = (TimeSpan)decryptOperationDiagnostics.GetValue(Constants.DiagnosticsDuration);
+                Assert.IsTrue(duration > TimeSpan.Zero);
                 if (expectedPropertiesDecryptedCount > 0)
                 {
                     int propertiesDecrypted = decryptOperationDiagnostics.Value<int>(Constants.DiagnosticsPropertiesDecryptedCount);
