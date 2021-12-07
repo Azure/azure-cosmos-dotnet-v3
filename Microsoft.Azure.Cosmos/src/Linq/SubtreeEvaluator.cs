@@ -43,16 +43,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             return node;
         }
 
-        private Expression EvaluateConstant(Expression expression)
+        private Expression EvaluateMemberAccess(Expression expression)
         {
             while (expression.CanReduce)
             {
                 expression = expression.Reduce();
-            }
-
-            if (expression.NodeType == ExpressionType.Constant)
-            {
-                return expression;
             }
 
             // This is an optimization which attempts to avoid the compilation of a delegate lambda for
@@ -62,17 +57,40 @@ namespace Microsoft.Azure.Cosmos.Linq
             // This is done because the compilation of a delegate takes a global lock which causes highly
             // threaded clients to exhibit async-over-sync thread exhaustion behaviour on this call path
             // even when doing relatively straightforward queries.
-            if (expression is MemberExpression memberExpression && memberExpression.Expression is ConstantExpression targetConstant)
+            if (!(expression is MemberExpression memberExpression))
             {
-                if (memberExpression.Member is FieldInfo fieldInfo)
-                {
-                    return Expression.Constant(fieldInfo.GetValue(targetConstant.Value));
-                }
+                return expression;
+            }
 
-                if (memberExpression.Member is PropertyInfo propertyInfo)
-                {
-                    return Expression.Constant(propertyInfo.GetValue(targetConstant.Value));
-                }
+            // We recursively attempt to evaluate member access expressions so that we can support
+            // nested property access (x.y.z) without needing to fall back on delegate compilation.
+            Expression targetExpression = this.EvaluateMemberAccess(memberExpression.Expression);
+
+            if (!(targetExpression is ConstantExpression targetConstant))
+            {
+                return expression;
+            }
+
+            if (memberExpression.Member is FieldInfo fieldInfo)
+            {
+                return Expression.Constant(fieldInfo.GetValue(targetConstant.Value));
+            }
+
+            if (memberExpression.Member is PropertyInfo propertyInfo)
+            {
+                return Expression.Constant(propertyInfo.GetValue(targetConstant.Value));
+            }
+
+            return expression;
+        }
+
+        private Expression EvaluateConstant(Expression expression)
+        {
+            expression = this.EvaluateMemberAccess(expression);
+
+            if (expression.NodeType == ExpressionType.Constant)
+            {
+                return expression;
             }
 
             LambdaExpression lambda = Expression.Lambda(expression);

@@ -1,10 +1,7 @@
 ﻿namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using System.Linq.Expressions;
-    using System.Text;
     using BenchmarkDotNet.Attributes;
 
     public class LinqToSqlBenchmark
@@ -17,6 +14,14 @@
         [Benchmark(Baseline = true)]
         public void DelegatePropertyAccess()
         {
+            string variable = "test";
+
+            this.DoTranslate(doc => doc.Property == variable + variable);
+        }
+
+        [Benchmark]
+        public void NestedPropertyAccess()
+        {
             var holder = new
             {
                 Property = "test"
@@ -26,7 +31,7 @@
         }
 
         [Benchmark]
-        public void ReflectionPropertyAccess()
+        public void VariableAccess()
         {
             string variable = "test";
 
