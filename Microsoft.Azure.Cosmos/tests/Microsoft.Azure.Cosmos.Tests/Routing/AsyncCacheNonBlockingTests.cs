@@ -32,7 +32,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             await asyncCache.GetAsync(
                 "test",
                 () => throw new NotFoundException("testNotFoundException"),
-                forceRefresh);
+                forceRefresh,
+                null);
         }
 
         [TestMethod]
@@ -43,27 +44,33 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             string result = await asyncCache.GetAsync(
                 "test",
                 () => Task.FromResult("test2"),
-                false);
+                false,
+                (x, y) => throw new Exception("Should not be called since there is no refresh"));
 
             string cachedResults = await asyncCache.GetAsync(
                 "test",
                 () => throw new Exception("should not refresh"),
-                false);
+                false,
+                (x, y) => throw new Exception("Should not be called since there is no refresh"));
 
+            string oldValue = null;
+            string newValue = null;
             Task<string> updateTask = asyncCache.GetAsync(
-                "test",
-                async () =>
+                key: "test",
+                singleValueInitFunc: async () =>
                 {
                     await Task.Delay(TimeSpan.FromSeconds(1));
                     return "Test3";
                 },
-                true);
+                forceRefresh: true,
+                callBackOnForceRefresh: (x, y) => {oldValue = x; newValue = y;});
 
             Stopwatch concurrentOperationStopwatch = Stopwatch.StartNew();
             string concurrentUpdateTask = await asyncCache.GetAsync(
                 "test",
                 () => throw new Exception("should not refresh"),
-                false);
+                false,
+                (x, y) => throw new Exception("Should not be called since there is no refresh"));
             Assert.AreEqual("test2", result);
             concurrentOperationStopwatch.Stop();
 
@@ -71,6 +78,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             result = await updateTask;
             Assert.AreEqual("Test3", result);
+            Assert.AreEqual(oldValue, "test2", "The call back was not done.");
+            Assert.AreEqual(newValue, "Test3", "The call back was not done.");
         }
 
         [TestMethod]
@@ -81,13 +90,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             string result = await asyncCache.GetAsync(
                 "test",
                 () => Task.FromResult("test2"),
-                false);
+                false,
+                null);
             Assert.AreEqual("test2", result);
 
             string cachedResults = await asyncCache.GetAsync(
                 "test",
                 () => throw new Exception("should not refresh"),
-                false);
+                false,
+                null);
             Assert.AreEqual("test2", cachedResults);
 
             // Simulate a slow connection on a refresh operation. The async call will
@@ -108,7 +119,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
                             throw new NotFoundException("testNotFoundException");
                         },
-                        true);
+                        true,
+                        null);
                     Assert.Fail();
                 }
                 catch (NotFoundException nfe)
@@ -120,7 +132,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             cachedResults = await asyncCache.GetAsync(
                "test",
                () => throw new Exception("should not refresh"),
-               false);
+               false,
+               null);
             Assert.AreEqual("test2", cachedResults);
 
             delayException = false;
@@ -146,7 +159,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                         Interlocked.Increment(ref totalLazyCalls);
                         return Task.FromResult("Test");
                     },
-                    forceRefresh: false)));
+                    forceRefresh: false,
+                    (x, y) => throw new Exception("Should not be called since there is no refresh"))));
             }
 
             await Task.WhenAll(tasks);
@@ -178,7 +192,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                                 await Task.Delay(random.Next(0, 3));
                                 throw new NotFoundException("test");
                             },
-                            forceRefresh: false);
+                            forceRefresh: false,
+                            (x, y) => throw new Exception("Should not be called since there is no refresh"));
                         Assert.Fail();
                     }
                     catch (DocumentClientException dce)
@@ -210,7 +225,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                         Interlocked.Increment(ref totalLazyCalls);
                         throw new DocumentClientException("test", HttpStatusCode.NotFound, SubStatusCodes.Unknown);
                     },
-                    forceRefresh: false);
+                    forceRefresh: false,
+                    null);
                 Assert.Fail();
             }
             catch (DocumentClientException dce)
@@ -233,7 +249,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                         Interlocked.Increment(ref totalLazyCalls);
                         throw new DocumentClientException("test", HttpStatusCode.BadRequest, SubStatusCodes.Unknown);
                     },
-                    forceRefresh: false);
+                    forceRefresh: false,
+                    null);
                 Assert.Fail();
             }
             catch (DocumentClientException dce)
@@ -253,7 +270,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                         Interlocked.Increment(ref totalLazyCalls);
                         return "Test3";
                     },
-                    forceRefresh: false);
+                    forceRefresh: false,
+                    null);
             Assert.AreEqual(1, totalLazyCalls);
             Assert.AreEqual("Test3", result);
         }
