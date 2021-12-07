@@ -65,10 +65,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="encryptedDataEncryptionKey">Encrypted Data Encryption Key. </param>
         /// <param name="createItem">The delegate function that will decrypt the encrypted column encryption key.</param>
-        /// <returns>Return cached Data Encryption Key.</returns>
-        protected virtual async Task<byte[]> GetOrCreateDataEncryptionKeyAsync(string encryptedDataEncryptionKey, Func<byte[]> createItem)
+        /// <returns>Returns a cached Data Encryption Key.</returns>
+        protected virtual Task<byte[]> GetOrCreateDataEncryptionKeyAsync(string encryptedDataEncryptionKey, Func<byte[]> createItem)
         {
-            return await Task.Run(() => this.EncryptionKeyStoreProviderImpl.GetOrCreateDataEncryptionKey(encryptedDataEncryptionKey, createItem)).ConfigureAwait(false);
+            return Task.FromResult(this.EncryptionKeyStoreProviderImpl.GetOrCreateDataEncryptionKey(encryptedDataEncryptionKey, createItem));
         }
     }
 }

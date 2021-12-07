@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// Implementation of key encryption key store provider that allows client applications to access data when a
     /// key encryption key is stored in Microsoft Azure Key Vault.
     /// </summary>
-    public class CosmosAzureKeyVaultKeyStoreProvider : CosmosEncryptionKeyStoreProvider
+    public sealed class CosmosAzureKeyVaultKeyStoreProvider : CosmosEncryptionKeyStoreProvider
     {
         private readonly AzureKeyVaultKeyStoreProvider azureKeyVaultKeyStoreProvider;
 
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="cosmosKeyEncryptionKeyAlgorithm">The key encryption algorithm.</param>
         /// <param name="encryptedKey">The ciphertext key.</param>
         /// <returns>Plain text data encryption key. </returns>
-        public override async Task<byte[]> UnwrapKeyAsync(string encryptionKeyId, string cosmosKeyEncryptionKeyAlgorithm, byte[] encryptedKey)
+        public override Task<byte[]> UnwrapKeyAsync(string encryptionKeyId, string cosmosKeyEncryptionKeyAlgorithm, byte[] encryptedKey)
         {
             KeyEncryptionKeyAlgorithm keyEncryptionKeyAlgorithm = cosmosKeyEncryptionKeyAlgorithm switch
             {
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 _ => throw new NotSupportedException("The specified KeyEncryptionAlgorithm is not supported. Please refer to https://aka.ms/CosmosClientEncryption for more details. "),
             };
 
-            return await Task.Run(() => this.azureKeyVaultKeyStoreProvider.UnwrapKey(encryptionKeyId, keyEncryptionKeyAlgorithm, encryptedKey)).ConfigureAwait(false);
+            return Task.FromResult(this.azureKeyVaultKeyStoreProvider.UnwrapKey(encryptionKeyId, keyEncryptionKeyAlgorithm, encryptedKey));
         }
 
         /// <summary>
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="cosmosKeyEncryptionKeyAlgorithm">The key encryption algorithm.</param>
         /// <param name="key">The plaintext key.</param>
         /// <returns>Encrypted data encryption key. </returns>
-        public override async Task<byte[]> WrapKeyAsync(string encryptionKeyId, string cosmosKeyEncryptionKeyAlgorithm, byte[] key)
+        public override Task<byte[]> WrapKeyAsync(string encryptionKeyId, string cosmosKeyEncryptionKeyAlgorithm, byte[] key)
         {
             KeyEncryptionKeyAlgorithm keyEncryptionKeyAlgorithm = cosmosKeyEncryptionKeyAlgorithm switch
             {
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 _ => throw new NotSupportedException("This specified KeyEncryptionAlgorithm is not supported. Please refer to https://aka.ms/CosmosClientEncryption for more details. "),
             };
 
-            return await Task.Run(() => this.azureKeyVaultKeyStoreProvider.WrapKey(encryptionKeyId, keyEncryptionKeyAlgorithm, key)).ConfigureAwait(false);
+            return Task.FromResult(this.azureKeyVaultKeyStoreProvider.WrapKey(encryptionKeyId, keyEncryptionKeyAlgorithm, key));
         }
     }
 }
