@@ -759,10 +759,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     throw new ArgumentNullException(nameof(encryptionDiagnosticsContext));
                 }
 
-                EncryptionCosmosDiagnostics encryptionDiagnostics = new EncryptionCosmosDiagnostics(
-                    responseMessage.Diagnostics,
-                    encryptionDiagnosticsContext.EncryptContent,
-                    encryptionDiagnosticsContext.DecryptContent);
+                encryptionDiagnosticsContext.AddEncryptionDiagnosticsToResponseMessage(responseMessage);
 
                 throw new EncryptionCosmosException(
                    "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Retrying may fix the issue. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + responseMessage.ErrorMessage,
@@ -770,7 +767,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                    int.Parse(Constants.IncorrectContainerRidSubStatus),
                    responseMessage.Headers.ActivityId,
                    responseMessage.Headers.RequestCharge,
-                   encryptionDiagnostics);
+                   responseMessage.Diagnostics);
             }
         }
 

@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class EncryptionCosmosException : CosmosException
     {
-        private readonly EncryptionCosmosDiagnostics encryptionCosmosDiagnostics;
+        private readonly CosmosDiagnostics encryptionCosmosDiagnostics;
 
         public EncryptionCosmosException(
             string message,
@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             int subStatusCode,
             string activityId,
             double requestCharge,
-            EncryptionCosmosDiagnostics encryptionCosmosDiagnostics)
+            CosmosDiagnostics encryptionCosmosDiagnostics)
             : base(message, statusCode, subStatusCode, activityId, requestCharge)
         {
             this.encryptionCosmosDiagnostics = encryptionCosmosDiagnostics ?? throw new ArgumentNullException(nameof(encryptionCosmosDiagnostics));
