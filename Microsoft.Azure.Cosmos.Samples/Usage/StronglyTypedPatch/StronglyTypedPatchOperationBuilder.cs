@@ -167,6 +167,7 @@
 
             return "/" + string.Join("/", pathParts);
 
+            //TODO: add cache for a single pass of ToUntyped
             string GetNameUnderContract(MemberInfo member)
             {
                 JsonObjectContract contract = (JsonObjectContract)resolver.ResolveContract(member.DeclaringType);
