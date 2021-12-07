@@ -1057,7 +1057,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Assert.Fail("Create operation should have failed with 1024 SubStatusCode. ");
                 }
 
-                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, 3, 3);
+                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, expectedPropertiesEncryptedCount: 3, expectedPropertiesDecryptedCount: 3);
                 Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
 
@@ -1087,7 +1087,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Assert.Fail("Bulk operation should have failed with 1024 SubStatusCode.");
                 }
 
-                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, 3, 0);
+                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, expectedPropertiesEncryptedCount: 3, expectedPropertiesDecryptedCount: 0);
 
                 Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
@@ -1199,7 +1199,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Assert.Fail("Create operation should have failed with 1024 SubStatusCode");
                 }
 
-                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, 2, 0);
+                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, expectedPropertiesEncryptedCount: 2, expectedPropertiesDecryptedCount: 0);
                 Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
 
@@ -1330,7 +1330,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Assert.Fail("Create operation should have failed with 1024 SubStatusCode .");
                 }
 
-                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, 2, 0);
+                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, expectedPropertiesEncryptedCount: 2, expectedPropertiesDecryptedCount: 0);
 
                 Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
@@ -1462,7 +1462,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Assert.Fail("Create operation should have failed with 1024 SubStatusCode.");
                 }
 
-                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, 2, 0);
+                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, expectedPropertiesEncryptedCount: 2, expectedPropertiesDecryptedCount: 0);
                 Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
 
@@ -1530,7 +1530,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 }
 
                 // stale policy has two path for encryption.
-                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, 2, 0);
+                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, expectedPropertiesEncryptedCount: 2, expectedPropertiesDecryptedCount: 0);
                 Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
 
@@ -1671,7 +1671,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 }
 
                 // only encrypt diags are logged since it fails at create.
-                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation:false, 3, 0);
+                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation:false, expectedPropertiesEncryptedCount: 3, expectedPropertiesDecryptedCount: 0);
 
                 Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
