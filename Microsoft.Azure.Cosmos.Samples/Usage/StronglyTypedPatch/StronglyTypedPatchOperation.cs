@@ -6,7 +6,11 @@
 
     public abstract class StronglyTypedPatchOperation<TObject>
     {
+        public abstract PatchOperationType OperationType { get; }
 
+        internal abstract object UntypedValue { get; }
+
+        internal abstract LambdaExpression UntypedPath { get; }
     }
 
     public class StronglyTypedPatchOperation<TObject, TValue> : StronglyTypedPatchOperation<TObject>
@@ -23,8 +27,12 @@
 
         public TValue Value { get; }
 
-        public PatchOperationType OperationType { get; }
+        public override PatchOperationType OperationType { get; }
 
         public Expression<Func<TObject, TValue>> Path { get; }
+
+        internal override object UntypedValue => this.Value;
+
+        internal override LambdaExpression UntypedPath => this.Path;
     }
 }

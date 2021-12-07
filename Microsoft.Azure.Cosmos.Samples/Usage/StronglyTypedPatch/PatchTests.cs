@@ -8,6 +8,7 @@
     using FluentAssertions;
     using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Serialization;
 
     public class PatchTests
     {
@@ -44,7 +45,7 @@
             };
 
             string[] actualPaths = builder
-                .ToUntyped(new CosmosClient(null!))
+                .ToUntyped(new DefaultContractResolver())
                 .Select(x => x.Path)
                 .ToArray();
 

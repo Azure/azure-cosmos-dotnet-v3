@@ -4,7 +4,9 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
+    using System.Reflection;
     using Microsoft.Azure.Cosmos;
+    using Newtonsoft.Json.Serialization;
 
     public class StronglyTypedPatchOperationBuilder<TObject>
     {
@@ -97,9 +99,90 @@
             return this;
         }
 
-        public List<PatchOperation> ToUntyped(CosmosClient client)
+        internal List<PatchOperation> ToUntyped(CosmosClient client)
         {
+            //TODO: get resolver from client
             throw new NotImplementedException();
+        }
+
+        internal List<PatchOperation> ToUntyped(IContractResolver resolver)
+        {
+            //TODO: create patch operations of tpye PatchOperation<T>, not PatchOperation<object>
+            return this.stronglyTypedPatchOperations.Select(operation =>
+            {
+                string path = GetJsonPointer(resolver, operation.UntypedPath);
+                return operation.OperationType switch
+                {
+                    PatchOperationType.Add => PatchOperation.Add(path, operation.UntypedValue),
+                    PatchOperationType.Remove => PatchOperation.Remove(path),
+                    PatchOperationType.Replace => PatchOperation.Replace(path, operation.UntypedValue),
+                    PatchOperationType.Set => PatchOperation.Set(path, operation.UntypedValue),
+                    PatchOperationType.Increment => operation.UntypedValue is float or double or decimal
+                        ? PatchOperation.Increment(path, (double)operation.UntypedValue)
+                        : PatchOperation.Increment(path, (long)operation.UntypedValue),
+                    _ => throw new ArgumentOutOfRangeException(),
+                };
+            }).ToList();
+        }
+
+        private static string GetJsonPointer(IContractResolver resolver, LambdaExpression expression)
+        {
+            //TODO: use expression visitor
+            //TODO: handle indices assigned by variables, etc - what does Cosmos LINQ support?
+
+            Stack<string> pathParts = new();
+
+            Expression currentExpression = expression.Body;
+            while (currentExpression is not ParameterExpression)
+            {
+                if (currentExpression is MemberExpression memberExpression)
+                {
+                    // Member access: fetch serialized name and pop
+                    pathParts.Push(GetNameUnderContract(memberExpression.Member));
+                    currentExpression = memberExpression.Expression;
+                }
+                else if (
+                    currentExpression is BinaryExpression binaryExpression and { NodeType: ExpressionType.ArrayIndex }
+                    && binaryExpression.Right is ConstantExpression arrayIndexConstantExpression
+                )
+                {
+                    // Array index
+                    pathParts.Push(GetIndex((int)arrayIndexConstantExpression.Value));
+                    currentExpression = binaryExpression.Left;
+                }
+                else if (
+                    currentExpression is MethodCallExpression callExpression and { Arguments: { Count: 1 }, Method: { Name: "get_Item" } }
+                    && callExpression.Arguments[0] is ConstantExpression listIndexConstantExpression and { Type: { Name: nameof(Int32) } }
+                )
+                {
+                    // IReadOnlyList index of other type
+                    pathParts.Push(GetIndex((int)listIndexConstantExpression.Value));
+                    currentExpression = callExpression.Object;
+                }
+                else
+                {
+                    throw new InvalidOperationException($"{currentExpression.GetType().Name} (at {currentExpression}) not supported");
+                }
+            }
+
+            return "/" + string.Join("/", pathParts);
+
+            string GetNameUnderContract(MemberInfo member)
+            {
+                JsonObjectContract contract = (JsonObjectContract)resolver.ResolveContract(member.DeclaringType);
+                JsonProperty property = contract.Properties.Single(x => x.UnderlyingName == member.Name);
+                return property.PropertyName;
+            }
+
+            string GetIndex(int index)
+            {
+                return index switch
+                {
+                    >= 0 => index.ToString(),
+                    -1 => "-", //array append
+                    _ => throw new ArgumentOutOfRangeException(nameof(index))
+                };
+            }
         }
     }
 }
