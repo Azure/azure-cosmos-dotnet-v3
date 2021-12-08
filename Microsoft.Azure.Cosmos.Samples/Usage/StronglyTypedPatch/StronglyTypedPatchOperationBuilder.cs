@@ -5,6 +5,7 @@
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using Fasterflect;
     using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json.Serialization;
 
@@ -107,22 +108,26 @@
 
         internal List<PatchOperation> ToUntyped(IContractResolver resolver)
         {
-            //TODO: create patch operations of tpye PatchOperation<T>, not PatchOperation<object>
+            Type patchOperationType = typeof(PatchOperation);
+
             return this.stronglyTypedPatchOperations.Select(operation =>
             {
                 string path = GetJsonPointer(resolver, operation.UntypedPath);
+
+                Type[] genericType = new[] { operation.UntypedValue.GetType() };
+
                 return operation.OperationType switch
                 {
-                    PatchOperationType.Add => PatchOperation.Add(path, operation.UntypedValue),
+                    PatchOperationType.Add => patchOperationType.CallMethod(genericType, nameof(PatchOperation.Add), path, operation.UntypedValue),
                     PatchOperationType.Remove => PatchOperation.Remove(path),
-                    PatchOperationType.Replace => PatchOperation.Replace(path, operation.UntypedValue),
-                    PatchOperationType.Set => PatchOperation.Set(path, operation.UntypedValue),
+                    PatchOperationType.Replace => patchOperationType.CallMethod(genericType, nameof(PatchOperation.Replace), path, operation.UntypedValue),
+                    PatchOperationType.Set => patchOperationType.CallMethod(genericType, nameof(PatchOperation.Set), path, operation.UntypedValue),
                     PatchOperationType.Increment => operation.UntypedValue is float or double or decimal
                         ? PatchOperation.Increment(path, (double)operation.UntypedValue)
                         : PatchOperation.Increment(path, (long)operation.UntypedValue),
                     _ => throw new ArgumentOutOfRangeException(),
                 };
-            }).ToList();
+            }).Cast<PatchOperation>().ToList();
         }
 
         private static string GetJsonPointer(IContractResolver resolver, LambdaExpression expression)
