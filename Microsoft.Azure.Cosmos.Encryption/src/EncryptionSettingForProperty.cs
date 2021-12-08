@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ProtectedDataEncryptionKey protectedDataEncryptionKey = await this.BuildProtectedDataEncryptionKeyAsync(
                 clientEncryptionKeyProperties,
-                this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProvider,
+                this.encryptionContainer.EncryptionCosmosClient.CosmosEncryptionKeyStoreProvider,
                 this.ClientEncryptionKeyId,
                 cancellationToken);
 
