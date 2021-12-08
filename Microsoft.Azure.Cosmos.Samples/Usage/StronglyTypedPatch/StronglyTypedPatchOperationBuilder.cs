@@ -7,6 +7,7 @@
     using System.Reflection;
     using Fasterflect;
     using Microsoft.Azure.Cosmos;
+    using Newtonsoft.Json;
     using Newtonsoft.Json.Serialization;
 
     public class StronglyTypedPatchOperationBuilder<TObject>
@@ -102,14 +103,16 @@
 
         internal List<PatchOperation> ToUntyped(CosmosClient client)
         {
-            //TODO: get resolver from client
-            throw new NotImplementedException();
+            JsonSerializerSettings serializerSettings  = (JsonSerializerSettings)typeof(CosmosClient).Assembly
+                .GetType("Microsoft.Azure.Cosmos.CosmosJsonDotNetSerializer")
+                .CreateInstance(client.ClientOptions.SerializerOptions ?? new()) //TODO: use this new() behavior for custom serializers?
+                .GetFieldValue("SerializerSettings");
+
+            return this.ToUntyped(serializerSettings.ContractResolver);
         }
 
         internal List<PatchOperation> ToUntyped(IContractResolver resolver)
         {
-            Type patchOperationType = typeof(PatchOperation);
-
             return this.stronglyTypedPatchOperations.Select(operation =>
             {
                 string path = GetJsonPointer(resolver, operation.UntypedPath);
@@ -118,10 +121,10 @@
 
                 return operation.OperationType switch
                 {
-                    PatchOperationType.Add => patchOperationType.CallMethod(genericType, nameof(PatchOperation.Add), path, operation.UntypedValue),
+                    PatchOperationType.Add => typeof(PatchOperation).CallMethod(genericType, nameof(PatchOperation.Add), path, operation.UntypedValue),
                     PatchOperationType.Remove => PatchOperation.Remove(path),
-                    PatchOperationType.Replace => patchOperationType.CallMethod(genericType, nameof(PatchOperation.Replace), path, operation.UntypedValue),
-                    PatchOperationType.Set => patchOperationType.CallMethod(genericType, nameof(PatchOperation.Set), path, operation.UntypedValue),
+                    PatchOperationType.Replace => typeof(PatchOperation).CallMethod(genericType, nameof(PatchOperation.Replace), path, operation.UntypedValue),
+                    PatchOperationType.Set => typeof(PatchOperation).CallMethod(genericType, nameof(PatchOperation.Set), path, operation.UntypedValue),
                     PatchOperationType.Increment => operation.UntypedValue is float or double or decimal
                         ? PatchOperation.Increment(path, (double)operation.UntypedValue)
                         : PatchOperation.Increment(path, (long)operation.UntypedValue),
