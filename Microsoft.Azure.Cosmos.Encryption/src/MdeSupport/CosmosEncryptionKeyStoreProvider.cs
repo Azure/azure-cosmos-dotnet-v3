@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Threading.Tasks;
+    using Microsoft.Data.Encryption.Cryptography;
 
     /// <summary>
     /// Base class for all key store providers. A custom provider must derive from this
@@ -31,7 +32,22 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public virtual TimeSpan? DataEncryptionKeyCacheTimeToLive
         {
             get => this.EncryptionKeyStoreProviderImpl.DataEncryptionKeyCacheTimeToLive;
-            set => this.EncryptionKeyStoreProviderImpl.DataEncryptionKeyCacheTimeToLive = value;
+            set
+            {
+                this.EncryptionKeyStoreProviderImpl.DataEncryptionKeyCacheTimeToLive = value;
+
+                // set the TTL for ProtectedDataEncryption, so that we have a uniform expiry of the KeyStoreProvider and ProtectedDataEncryption cache items.
+                if (this.EncryptionKeyStoreProviderImpl.DataEncryptionKeyCacheTimeToLive.HasValue)
+                {
+                    ProtectedDataEncryptionKey.TimeToLive = this.EncryptionKeyStoreProviderImpl.DataEncryptionKeyCacheTimeToLive.Value;
+                }
+                else
+                {
+                    // If null is passed to DataEncryptionKeyCacheTimeToLive it results in forever caching hence setting
+                    // arbitrarily large caching period. ProtectedDataEncryptionKey does not seem to handle TimeSpan.MaxValue.
+                    ProtectedDataEncryptionKey.TimeToLive = TimeSpan.FromDays(36500);
+                }
+            }
         }
 
         /// <summary>
@@ -68,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>Returns a cached Data Encryption Key.</returns>
         protected virtual Task<byte[]> GetOrCreateDataEncryptionKeyAsync(string encryptedDataEncryptionKey, Func<byte[]> createItem)
         {
-            return Task.FromResult(this.EncryptionKeyStoreProviderImpl.GetOrCreateDataEncryptionKey(encryptedDataEncryptionKey, createItem));
+            return Task.FromResult(this.EncryptionKeyStoreProviderImpl.GetOrCreateDataEncryptionKeyHelper(encryptedDataEncryptionKey, createItem));
         }
     }
 }

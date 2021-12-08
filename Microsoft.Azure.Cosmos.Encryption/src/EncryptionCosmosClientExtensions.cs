@@ -32,18 +32,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(cosmosClient));
             }
 
-            // set the TTL for ProtectedDataEncryption at the Encryption CosmosClient Init so that we have a uniform expiry of the KeyStoreProvider and ProtectedDataEncryption cache items.
-            if (cosmosEncryptionKeyStoreProvider.DataEncryptionKeyCacheTimeToLive.HasValue)
-            {
-                ProtectedDataEncryptionKey.TimeToLive = cosmosEncryptionKeyStoreProvider.DataEncryptionKeyCacheTimeToLive.Value;
-            }
-            else
-            {
-                // If null is passed to DataEncryptionKeyCacheTimeToLive it results in forever caching hence setting
-                // arbitrarily large caching period. ProtectedDataEncryptionKey does not seem to handle TimeSpan.MaxValue.
-                ProtectedDataEncryptionKey.TimeToLive = TimeSpan.FromDays(36500);
-            }
-
             return new EncryptionCosmosClient(cosmosClient, cosmosEncryptionKeyStoreProvider);
         }
     }

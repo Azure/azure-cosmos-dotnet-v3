@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     ///
     /// Note: Since <see cref="EncryptionKeyStoreProvider.Sign"/> and <see cref="EncryptionKeyStoreProvider.Verify"/> methods are not exposed, <see cref="EncryptionKeyStoreProvider.GetOrCreateSignatureVerificationResult"/> is not supported either.
     /// </summary>
-    internal sealed class EncryptionKeyStoreProviderImpl : EncryptionKeyStoreProvider
+    internal class EncryptionKeyStoreProviderImpl : EncryptionKeyStoreProvider
     {
         private readonly CosmosEncryptionKeyStoreProvider cosmosEncryptionKeyStoreProvider;
 
@@ -41,9 +41,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 .GetResult();
         }
 
-        public new byte[] GetOrCreateDataEncryptionKey(string encryptedDataEncryptionKey, Func<byte[]> createItem)
+        public byte[] GetOrCreateDataEncryptionKeyHelper(string encryptedDataEncryptionKey, Func<byte[]> createItem)
         {
-            return base.GetOrCreateDataEncryptionKey(encryptedDataEncryptionKey, createItem);
+            return this.GetOrCreateDataEncryptionKey(encryptedDataEncryptionKey, createItem);
         }
 
         /// <Remark>

@@ -1995,12 +1995,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(1, unwrapcount);
 
             // no caching.
-            newtestEncryptionKeyStoreProvider = new TestCosmosEncryptionKeyStoreProvider()
-            {
-                DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero,
-            };
+            newtestEncryptionKeyStoreProvider.DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero;
 
-            newEncryptionClient = MdeEncryptionTests.client.WithEncryption(newtestEncryptionKeyStoreProvider);
             database = newEncryptionClient.GetDatabase(MdeEncryptionTests.database.Id);
 
             encryptionContainer = database.GetContainer(MdeEncryptionTests.encryptionContainer.Id);
@@ -3020,6 +3016,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             public bool RevokeAccessSet { get; set; }
             public Dictionary<string, int> WrapKeyCallsCount { get; set; }
             public Dictionary<string, int> UnWrapKeyCallsCount { get; set; }
+
             public TestCosmosEncryptionKeyStoreProvider()
             {
                 this.WrapKeyCallsCount = new Dictionary<string, int>();

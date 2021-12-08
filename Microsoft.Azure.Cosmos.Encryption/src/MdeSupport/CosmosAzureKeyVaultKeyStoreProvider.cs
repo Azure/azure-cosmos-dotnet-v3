@@ -18,8 +18,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private readonly AzureKeyVaultKeyStoreProvider azureKeyVaultKeyStoreProvider;
 
-        private TimeSpan? dataEncryptionKeyCacheTimeToLive;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="CosmosAzureKeyVaultKeyStoreProvider"/> class.
         /// Constructor that takes an implementation of Token Credential that is capable of providing an OAuth Token.
@@ -30,11 +28,37 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.azureKeyVaultKeyStoreProvider = new AzureKeyVaultKeyStoreProvider(tokenCredential);
         }
 
-        /// <inheritdoc/>
-        public override TimeSpan? DataEncryptionKeyCacheTimeToLive
+        /// <summary>
+        /// Gets or sets the lifespan of the decrypted data encryption key in the cache.
+        /// Once the timespan has elapsed, the decrypted data encryption key is discarded
+        /// and must be revalidated.
+        /// </summary>
+        /// <remarks>
+        /// Internally, there is a cache of key encryption keys (once they are unwrapped).
+        /// This is useful for rapidly decrypting multiple data values. The default value is 2 hours.
+        /// Setting the <see cref="DataEncryptionKeyCacheTimeToLive"/> to zero disables caching.
+        /// </remarks>
+        /// </summary>
+        public new TimeSpan? DataEncryptionKeyCacheTimeToLive
         {
-            get => this.dataEncryptionKeyCacheTimeToLive;
-            set => this.azureKeyVaultKeyStoreProvider.DataEncryptionKeyCacheTimeToLive = this.dataEncryptionKeyCacheTimeToLive = value;
+            get => this.azureKeyVaultKeyStoreProvider.DataEncryptionKeyCacheTimeToLive;
+            set
+            {
+                // this allows to get the lastest value set for DataEncryptionKeyCacheTimeToLive, since this is used via an internal AzureKeyVaultKeyStoreProvider object.
+                this.azureKeyVaultKeyStoreProvider.DataEncryptionKeyCacheTimeToLive = value;
+
+                // set the TTL for ProtectedDataEncryption, so that we have a uniform expiry of the KeyStoreProvider and ProtectedDataEncryption cache items.
+                if (this.azureKeyVaultKeyStoreProvider.DataEncryptionKeyCacheTimeToLive.HasValue)
+                {
+                    ProtectedDataEncryptionKey.TimeToLive = this.azureKeyVaultKeyStoreProvider.DataEncryptionKeyCacheTimeToLive.Value;
+                }
+                else
+                {
+                    // If null is passed to DataEncryptionKeyCacheTimeToLive it results in forever caching hence setting
+                    // arbitrarily large caching period. ProtectedDataEncryptionKey does not seem to handle TimeSpan.MaxValue.
+                    ProtectedDataEncryptionKey.TimeToLive = TimeSpan.FromDays(36500);
+                }
+            }
         }
 
         /// <summary>
