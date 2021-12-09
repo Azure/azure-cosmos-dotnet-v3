@@ -13,6 +13,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// to utilize the virtual method <see cref="EncryptionKeyStoreProvider.GetOrCreateDataEncryptionKey"/> to access the cache.
     ///
     /// Note: Since <see cref="EncryptionKeyStoreProvider.Sign"/> and <see cref="EncryptionKeyStoreProvider.Verify"/> methods are not exposed, <see cref="EncryptionKeyStoreProvider.GetOrCreateSignatureVerificationResult"/> is not supported either.
+    ///
+    /// <remark>
+    /// The call hierarchy is as follows. Note, all core MDE API's used in internal cosmos encryption code are passed an EncryptionKeyStoreProviderImpl object.
+    /// ProtectedDataEncryptionKey -> KeyEncryptionKey(containing EncryptionKeyStoreProviderImpl object) -> EncryptionKeyStoreProviderImpl.WrapKey -> this.EncryptionKeyWrapProvider.WrapKeyAsync
+    /// ProtectedDataEncryptionKey -> KeyEncryptionKey(containing EncryptionKeyStoreProviderImpl object) -> EncryptionKeyStoreProviderImpl.UnWrapKey -> this.EncryptionKeyWrapProvider.UnwrapKeyAsync
+    /// EncryptionKeyWrapProvider.GetOrCreateDataEncryptionKeyAsync -> this.EncryptionKeyStoreProviderImpl.GetOrCreateDataEncryptionKeyHelper -> (protected)EncryptionKeyStoreProvider.GetOrCreateDataEncryptionKey
+    /// </remark>
     /// </summary>
     internal class EncryptionKeyStoreProviderImpl : EncryptionKeyStoreProvider
     {

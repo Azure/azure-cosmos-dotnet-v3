@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="tokenCredential"> returns token credentials. </param>
         public AzureKeyVaultKeyWrapProvider(TokenCredential tokenCredential)
         {
-            // just rely on cache managed via EncryptionKeyWrapProvider. Setting DataEncryptionKeyCacheTimeToLive results in not using azureKeyVaultKeyWrapProvider cache.
+            // just rely on cache managed via EncryptionKeyWrapProvider. Setting DataEncryptionKeyCacheTimeToLive to zero results in not using azureKeyVaultKeyWrapProvider cache.
             this.azureKeyVaultKeyStoreProvider = new AzureKeyVaultKeyStoreProvider(tokenCredential)
             {
                 DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero,
