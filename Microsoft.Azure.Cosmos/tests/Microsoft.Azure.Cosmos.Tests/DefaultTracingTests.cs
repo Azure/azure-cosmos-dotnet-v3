@@ -17,32 +17,24 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class DefaultTracingTests
     {
         [TestMethod]
-        public void DefaultTracingDisabledByDefault()
-        {
-            // Used to just force the CosmosClient static ctor to get called
-            Assert.IsTrue(CosmosClient.numberOfClientsCreated >= 0);
-
-            if (Debugger.IsAttached)
-            {
-                Assert.IsTrue(this.DefaultTraceHasDefaulTraceListener());
-            }
-            else
-            {
-                Assert.IsFalse(this.DefaultTraceHasDefaulTraceListener());
-            }
-        }
-
-        [TestMethod]
         public void DefaultTracingEnableTest()
         {
-            Assert.IsFalse(this.DefaultTraceHasDefaulTraceListener());
-            CosmosClient.AddDefaultTraceListener();
-            Assert.IsTrue(this.DefaultTraceHasDefaulTraceListener());
-            CosmosClient.RemoveDefaultTraceListener();
-            Assert.IsFalse(this.DefaultTraceHasDefaulTraceListener());
+            // Access cosmos client to cause the static consturctor to get called
+            Assert.IsTrue(CosmosClient.numberOfClientsCreated >= 0);
+
+            if (!Debugger.IsAttached)
+            {
+                Assert.IsFalse(this.DefaultTraceHasDefaultTraceListener());
+                DefaultTrace.TraceSource.Listeners.Add(new DefaultTraceListener());
+            }
+            
+            Assert.IsTrue(this.DefaultTraceHasDefaultTraceListener());
+            typeof(CosmosClient).GetMethod("RemoveDefaultTraceListener", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null);
+            //CosmosClient.RemoveDefaultTraceListener();
+            Assert.IsFalse(this.DefaultTraceHasDefaultTraceListener());
         }
 
-        private bool DefaultTraceHasDefaulTraceListener()
+        private bool DefaultTraceHasDefaultTraceListener()
         {
             if (DefaultTrace.TraceSource.Listeners.Count == 0)
             {

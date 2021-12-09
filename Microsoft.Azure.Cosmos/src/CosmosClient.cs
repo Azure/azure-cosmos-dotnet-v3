@@ -1046,35 +1046,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// The DefaultTraceListener is removed from the CosmosClient's TraceSource unless
-        /// a debugger is attached.This prevents possible lock contention which can lead to 
-        /// availability issues by requests waiting on the locks.
+        /// Removes the DefaultTraceListener which causes locking issues which leads to avability problems. 
         /// </summary>
-        /// <remarks>
-        /// This is enabled by default when Debugger.IsAttached is true. This makes it
-        /// easier to troubleshoot issues while debugging in Visual Studio.
-        /// </remarks>
-        public static void AddDefaultTraceListener()
-        {
-            lock (CosmosClient.defaultTraceLockObject)
-            {
-                if (Core.Trace.DefaultTrace.TraceSource.Listeners.Count > 0)
-                {
-                    foreach (object traceListnerObject in Core.Trace.DefaultTrace.TraceSource.Listeners)
-                    {
-                        // The TraceSource already has the default trace listener
-                        if (traceListnerObject is DefaultTraceListener)
-                        {
-                            return;
-                        }
-                    }
-                }
-
-                Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace.TraceSource.Listeners.Add(new DefaultTraceListener());
-            }
-        }
-
-        internal static void RemoveDefaultTraceListener()
+        private static void RemoveDefaultTraceListener()
         {
             lock (CosmosClient.defaultTraceLockObject)
             {
