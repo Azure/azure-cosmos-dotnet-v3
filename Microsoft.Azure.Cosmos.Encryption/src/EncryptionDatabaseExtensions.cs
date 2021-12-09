@@ -63,17 +63,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 ? encryptionDatabase.EncryptionCosmosClient
                 : throw new ArgumentException("Creating a ClientEncryptionKey resource requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
 
-            CosmosEncryptionKeyStoreProvider cosmosEncryptionKeyStoreProvider = encryptionCosmosClient.CosmosEncryptionKeyStoreProvider;
+            EncryptionKeyWrapProvider encryptionKeyWrapProvider = encryptionCosmosClient.EncryptionKeyWrapProvider;
 
-            if (!string.Equals(encryptionKeyWrapMetadata.Type, cosmosEncryptionKeyStoreProvider.ProviderName))
+            if (!string.Equals(encryptionKeyWrapMetadata.Type, encryptionKeyWrapProvider.ProviderName))
             {
-                throw new ArgumentException("The EncryptionKeyWrapMetadata Type value does not match with the ProviderName of EncryptionKeyStoreProvider configured on the Client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                throw new ArgumentException("The EncryptionKeyWrapMetadata Type value does not match with the ProviderName of EncryptionKeyWrapProvider configured on the Client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
 
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                 encryptionKeyWrapMetadata.Name,
                 encryptionKeyWrapMetadata.Value,
-                cosmosEncryptionKeyStoreProvider.EncryptionKeyStoreProviderImpl);
+                encryptionKeyWrapProvider.EncryptionKeyStoreProviderImpl);
 
             ProtectedDataEncryptionKey protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
                 clientEncryptionKeyId,
@@ -143,11 +143,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 ? encryptionDatabase.EncryptionCosmosClient
                 : throw new ArgumentException("Rewraping a ClientEncryptionKey requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
 
-            CosmosEncryptionKeyStoreProvider cosmosEncryptionKeyStoreProvider = encryptionCosmosClient.CosmosEncryptionKeyStoreProvider;
+            EncryptionKeyWrapProvider encryptionKeyWrapProvider = encryptionCosmosClient.EncryptionKeyWrapProvider;
 
-            if (!string.Equals(newEncryptionKeyWrapMetadata.Type, cosmosEncryptionKeyStoreProvider.ProviderName))
+            if (!string.Equals(newEncryptionKeyWrapMetadata.Type, encryptionKeyWrapProvider.ProviderName))
             {
-                throw new ArgumentException("The EncryptionKeyWrapMetadata Type value does not match with the ProviderName of EncryptionKeyStoreProvider configured on the Client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                throw new ArgumentException("The EncryptionKeyWrapMetadata Type value does not match with the ProviderName of EncryptionKeyWrapProvider configured on the Client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
 
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await clientEncryptionKey.ReadAsync(cancellationToken: cancellationToken);
@@ -160,14 +160,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                 clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
                 clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
-                cosmosEncryptionKeyStoreProvider.EncryptionKeyStoreProviderImpl);
+                encryptionKeyWrapProvider.EncryptionKeyStoreProviderImpl);
 
             byte[] unwrappedKey = keyEncryptionKey.DecryptEncryptionKey(clientEncryptionKeyProperties.WrappedDataEncryptionKey);
 
             keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                 newEncryptionKeyWrapMetadata.Name,
                 newEncryptionKeyWrapMetadata.Value,
-                cosmosEncryptionKeyStoreProvider.EncryptionKeyStoreProviderImpl);
+                encryptionKeyWrapProvider.EncryptionKeyStoreProviderImpl);
 
             byte[] rewrappedKey = keyEncryptionKey.EncryptEncryptionKey(unwrappedKey);
 

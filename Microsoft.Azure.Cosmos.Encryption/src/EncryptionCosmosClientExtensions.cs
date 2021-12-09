@@ -16,15 +16,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Get Cosmos Client with Encryption support for performing operations using client-side encryption.
         /// </summary>
         /// <param name="cosmosClient">Regular Cosmos Client.</param>
-        /// <param name="cosmosEncryptionKeyStoreProvider">CosmosEncryptionKeyStoreProvider, provider that allows interaction with the master keys.</param>
+        /// <param name="encryptionKeyWrapProvider">EncryptionKeyWrapProvider, provider that allows interaction with the master keys.</param>
         /// <returns> CosmosClient to perform operations supporting client-side encryption / decryption.</returns>
         public static CosmosClient WithEncryption(
             this CosmosClient cosmosClient,
-            CosmosEncryptionKeyStoreProvider cosmosEncryptionKeyStoreProvider)
+            EncryptionKeyWrapProvider encryptionKeyWrapProvider)
         {
-            if (cosmosEncryptionKeyStoreProvider == null)
+            if (encryptionKeyWrapProvider == null)
             {
-                throw new ArgumentNullException(nameof(cosmosEncryptionKeyStoreProvider));
+                throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
             }
 
             if (cosmosClient == null)
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(cosmosClient));
             }
 
-            return new EncryptionCosmosClient(cosmosClient, cosmosEncryptionKeyStoreProvider);
+            return new EncryptionCosmosClient(cosmosClient, encryptionKeyWrapProvider);
         }
     }
 }

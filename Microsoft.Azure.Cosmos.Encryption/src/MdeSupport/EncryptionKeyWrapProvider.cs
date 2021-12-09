@@ -12,9 +12,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// Base class for all key store providers. A custom provider must derive from this
     /// class and override its member functions.
     /// </summary>
-    public abstract class CosmosEncryptionKeyStoreProvider
+    public abstract class EncryptionKeyWrapProvider
     {
-        internal CosmosEncryptionKeyStoreProvider()
+        internal EncryptionKeyWrapProvider()
         {
             this.EncryptionKeyStoreProviderImpl = new EncryptionKeyStoreProviderImpl(this);
         }
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// This is useful for rapidly decrypting multiple data values. The default value is 2 hours.
         /// Setting the <see cref="DataEncryptionKeyCacheTimeToLive"/> to zero disables caching.
         /// </remarks>
-        public virtual TimeSpan? DataEncryptionKeyCacheTimeToLive
+        public TimeSpan? DataEncryptionKeyCacheTimeToLive
         {
             get => this.EncryptionKeyStoreProviderImpl.DataEncryptionKeyCacheTimeToLive;
             set
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <summary>
-        /// Gets the unique name that identifies a particular implementation of the abstract <see cref="CosmosEncryptionKeyStoreProvider"/>.
+        /// Gets the unique name that identifies a particular implementation of the abstract <see cref="EncryptionKeyWrapProvider"/>.
         /// </summary>
         public abstract string ProviderName { get; }
 
