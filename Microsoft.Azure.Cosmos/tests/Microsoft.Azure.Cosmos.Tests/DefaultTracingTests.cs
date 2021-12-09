@@ -22,7 +22,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Used to just force the CosmosClient static ctor to get called
             Assert.IsTrue(CosmosClient.numberOfClientsCreated >= 0);
 
-            Assert.IsFalse(this.DefaultTraceHasDefaulTraceListener());
+            if (Debugger.IsAttached)
+            {
+                Assert.IsTrue(this.DefaultTraceHasDefaulTraceListener());
+            }
+            else
+            {
+                Assert.IsFalse(this.DefaultTraceHasDefaulTraceListener());
+            }
         }
 
         [TestMethod]

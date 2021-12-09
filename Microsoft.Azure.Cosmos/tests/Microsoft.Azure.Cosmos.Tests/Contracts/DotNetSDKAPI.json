@@ -2184,15 +2184,15 @@
           "Attributes": [],
           "MethodInfo": "[Void .ctor(System.String, System.String, Microsoft.Azure.Cosmos.CosmosClientOptions), Void .ctor(System.String, System.String, Microsoft.Azure.Cosmos.CosmosClientOptions)]"
         },
+        "Void AddDefaultTraceListener()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void AddDefaultTraceListener();IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Void Dispose()": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void Dispose();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:True;"
-        },
-        "Void EnableDefaultTrace()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void EnableDefaultTrace();IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

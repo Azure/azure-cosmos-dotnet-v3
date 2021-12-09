@@ -126,13 +126,13 @@ namespace Microsoft.Azure.Cosmos
             ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => true);
 
             Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace.InitEventListener();
-            CosmosClient.RemoveDefaultTraceListener();
+            
             // If a debugger is not attached remove the DefaultTraceListener. 
             // DefaultTraceListener can cause lock contention leading to availability issues
-            //if (!Debugger.IsAttached)
-            //{
-
-            //}
+            if (!Debugger.IsAttached)
+            {
+                CosmosClient.RemoveDefaultTraceListener();
+            }
         }
 
         /// <summary>
