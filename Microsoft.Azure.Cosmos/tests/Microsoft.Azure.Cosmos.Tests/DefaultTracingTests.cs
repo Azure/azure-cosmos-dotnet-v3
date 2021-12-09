@@ -17,96 +17,41 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class DefaultTracingTests
     {
         [TestMethod]
-        public async Task DefaultTracingDisabledByDefault()
+        public void DefaultTracingDisabledByDefault()
         {
-            FieldInfo enabledField = typeof(CosmosClient).GetField("enableDefaultTrace", BindingFlags.Static | BindingFlags.NonPublic);
+            // Used to just force the CosmosClient static ctor to get called
+            Assert.IsTrue(CosmosClient.numberOfClientsCreated >= 0);
 
-            bool ccosmosClientAlreadyEnabledTrace = (bool)enabledField.GetValue(null);
-            if (ccosmosClientAlreadyEnabledTrace)
-            {
-                // A previous test enabled the traces. Reset back to the default state.
-                enabledField.SetValue(null, false);
-                DefaultTrace.TraceSource.Switch.Level = SourceLevels.Off;
-                DefaultTrace.TraceSource.Listeners.Clear();
-                FieldInfo defaultTraceIsListenerAdded = typeof(DefaultTrace).GetField("IsListenerAdded", BindingFlags.Static | BindingFlags.NonPublic);
-                defaultTraceIsListenerAdded.SetValue(null, false);
-            }
-
-            Assert.AreEqual(SourceLevels.Off, DefaultTrace.TraceSource.Switch.Level, $"The trace is already enabled.");
-
-            await this.ValidateTraceAsync(false);
-
-            Assert.AreEqual(SourceLevels.Off, DefaultTrace.TraceSource.Switch.Level, $"The trace got enabled.");
+            Assert.IsFalse(this.DefaultTraceHasDefaulTraceListener());
         }
 
         [TestMethod]
-        public async Task DefaultTracingEnableTest()
+        public void DefaultTracingEnableTest()
         {
-            CosmosClient.EnableDefaultTrace();
-            await this.ValidateTraceAsync(true);
+            Assert.IsFalse(this.DefaultTraceHasDefaulTraceListener());
+            CosmosClient.AddDefaultTraceListener();
+            Assert.IsTrue(this.DefaultTraceHasDefaulTraceListener());
+            CosmosClient.RemoveDefaultTraceListener();
+            Assert.IsFalse(this.DefaultTraceHasDefaulTraceListener());
         }
 
-        private async Task ValidateTraceAsync(
-            bool isTraceEnabled)
+        private bool DefaultTraceHasDefaulTraceListener()
         {
-            TestTraceListener testTraceListener = new TestTraceListener();
-            DefaultTrace.TraceSource.Listeners.Add(testTraceListener);
+            if (DefaultTrace.TraceSource.Listeners.Count == 0)
+            {
+                return false;
+            }
 
-            Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>();
-            mockHttpHandler.Setup(x => x.SendAsync(
-                It.IsAny<HttpRequestMessage>(),
-                It.IsAny<CancellationToken>())).Throws(new InvalidOperationException("Test exception that won't be retried"));
-
-            using CosmosClient cosmosClient = new CosmosClient(
-                "https://localhost:8081",
-                Convert.ToBase64String(Guid.NewGuid().ToByteArray()),
-                new CosmosClientOptions()
+            foreach (TraceListener listener in DefaultTrace.TraceSource.Listeners)
+            {
+                if (listener is DefaultTraceListener)
                 {
-                    HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
-                });
-
-            try
-            {
-                await cosmosClient.GetDatabase("randomDb").ReadAsync();
-                Assert.Fail("Should throw exception");
-            }
-            catch (InvalidOperationException ex)
-            {
-            }
-
-            if (isTraceEnabled)
-            {
-                Assert.IsTrue(testTraceListener.IsTraceWritten);
-            }
-            else
-            {
-                Assert.IsFalse(testTraceListener.IsTraceWritten);
-            }
-        }
-
-        private class TestTraceListener : TraceListener
-        {
-            public bool IsTraceWritten = false;
-            public bool WriteTraceToConsole = false;
-
-            public override bool IsThreadSafe => true;
-            public override void Write(string message)
-            {
-                this.IsTraceWritten = true;
-                if (this.WriteTraceToConsole)
-                {
-                    Logger.LogLine("Trace.Write:" + message);
+                    return true;
                 }
             }
 
-            public override void WriteLine(string message)
-            {
-                this.IsTraceWritten = true;
-                if (this.WriteTraceToConsole)
-                {
-                    Logger.LogLine("Trace.WriteLine:" + message);
-                }
-            }
+            DefaultTrace.TraceSource.Listeners.Clear();
+            return false;
         }
     }
 }

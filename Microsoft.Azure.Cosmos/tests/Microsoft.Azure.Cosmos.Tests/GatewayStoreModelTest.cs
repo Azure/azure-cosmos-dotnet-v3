@@ -46,8 +46,6 @@ namespace Microsoft.Azure.Cosmos
         [Owner("kraman")]
         public async Task TestOpenAsyncFailFast()
         {
-            CosmosClient.EnableDefaultTrace();
-
             const string accountEndpoint = "https://veryrandomurl123456789.documents.azure.com:443/";
 
             bool failedToResolve = false;
@@ -73,24 +71,36 @@ namespace Microsoft.Azure.Cosmos
                 Console.WriteLine(message);
             }
 
-            DefaultTrace.TraceSource.Listeners.Add(new TestTraceListener { Callback = TraceHandler });
+            TestTraceListener testTraceListener = new TestTraceListener { Callback = TraceHandler };
+            DefaultTrace.TraceSource.Listeners.Add(testTraceListener);
+            DefaultTrace.InitEventListener();
 
             try
             {
-                DocumentClient myclient = new DocumentClient(new Uri(accountEndpoint), "base64encodedurl",
-                    new ConnectionPolicy
-                    {
-                    });
+                try
+                {
+                    DocumentClient myclient = new DocumentClient(new Uri(accountEndpoint), "base64encodedurl",
+                        new ConnectionPolicy
+                        {
+                        });
 
-                await myclient.OpenAsync();
+                    await myclient.OpenAsync();
+                }
+                catch
+                {
+                }
+
+                DefaultTrace.TraceSource.Flush();
+
+                // it should fail fast and not into the retry logic.
+                Assert.IsTrue(failedToResolve, "OpenAsync did not fail to resolve. No matching trace was received.");
+                Assert.IsTrue(didNotRetry, "OpenAsync did not fail without retrying. No matching trace was received.");
             }
-            catch
+            finally
             {
+                
+                DefaultTrace.TraceSource.Listeners.Remove(testTraceListener);
             }
-
-            // it should fail fast and not into the retry logic.
-            Assert.IsTrue(failedToResolve, "OpenAsync did not fail to resolve. No matching trace was received.");
-            Assert.IsTrue(didNotRetry, "OpenAsync did not fail without retrying. No matching trace was received.");
         }
 
         /// <summary>

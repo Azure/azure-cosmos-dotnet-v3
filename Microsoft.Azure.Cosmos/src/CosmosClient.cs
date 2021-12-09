@@ -5,8 +5,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Net;
     using System.Text;
     using System.Threading;
@@ -98,7 +100,6 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosClient : IDisposable
     {
         private static readonly object defaultTraceLockObject = new object();
-        private static bool enableDefaultTrace = false;
 
         private readonly string DatabaseRootUri = Paths.Databases_Root;
         private ConsistencyLevel? accountConsistencyLevel;
@@ -124,10 +125,14 @@ namespace Microsoft.Azure.Cosmos
             // Revert of this depends on handling such in direct assembly
             ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => true);
 
-            if (Debugger.IsAttached)
-            {
-                CosmosClient.EnableDefaultTrace();
-            }
+            Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace.InitEventListener();
+            CosmosClient.RemoveDefaultTraceListener();
+            // If a debugger is not attached remove the DefaultTraceListener. 
+            // DefaultTraceListener can cause lock contention leading to availability issues
+            //if (!Debugger.IsAttached)
+            //{
+
+            //}
         }
 
         /// <summary>
@@ -404,23 +409,31 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Enable the default trace listener by setting the TraceSource and SourceSwitch
-        /// Default TraceSource name DocDBTrace
-        /// Default SourceSwitch value Information
+        /// The DefaultTraceListener is removed from the CosmosClient's TraceSource unless
+        /// a debugger is attached.This prevents possible lock contention which can lead to 
+        /// availability issues by requests waiting on the locks.
         /// </summary>
         /// <remarks>
         /// This is enabled by default when Debugger.IsAttached is true. This makes it
         /// easier to troubleshoot issues while debugging in Visual Studio.
         /// </remarks>
-        public static void EnableDefaultTrace()
+        public static void AddDefaultTraceListener()
         {
             lock (CosmosClient.defaultTraceLockObject)
             {
-                if (!CosmosClient.enableDefaultTrace)
+                if (Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace.TraceSource.Listeners.Count > 0)
                 {
-                    Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace.InitEventListener();
-                    CosmosClient.enableDefaultTrace = true;
+                    foreach (object traceListnerObject in Core.Trace.DefaultTrace.TraceSource.Listeners)
+                    {
+                        // The TraceSource already has the default trace listener
+                        if (traceListnerObject is DefaultTraceListener)
+                        {
+                            return;
+                        }
+                    }
                 }
+
+                Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace.TraceSource.Listeners.Add(new DefaultTraceListener());
             }
         }
 
@@ -1130,6 +1143,31 @@ namespace Microsoft.Azure.Cosmos
                         trace,
                         cancellationToken);
                 });
+        }
+
+        internal static void RemoveDefaultTraceListener()
+        {
+            lock (CosmosClient.defaultTraceLockObject)
+            {
+                if (Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace.TraceSource.Listeners.Count > 0)
+                {
+                    List<DefaultTraceListener> removeDefaultTraceListeners = new List<DefaultTraceListener>();
+                    foreach (object traceListnerObject in Core.Trace.DefaultTrace.TraceSource.Listeners)
+                    {
+                        // The TraceSource already has the default trace listener
+                        if (traceListnerObject is DefaultTraceListener defaultTraceListener)
+                        {
+                            removeDefaultTraceListeners.Add(defaultTraceListener);
+                        }
+                    }
+
+                    // Remove all the default trace listeners
+                    foreach (DefaultTraceListener defaultTraceListener in removeDefaultTraceListeners)
+                    {
+                        Core.Trace.DefaultTrace.TraceSource.Listeners.Remove(defaultTraceListener);
+                    }
+                }
+            }
         }
 
         private async Task<DatabaseResponse> CreateDatabaseInternalAsync(
