@@ -46,6 +46,8 @@ namespace Microsoft.Azure.Cosmos
         [Owner("kraman")]
         public async Task TestOpenAsyncFailFast()
         {
+            CosmosClient.EnableDefaultTrace();
+
             const string accountEndpoint = "https://veryrandomurl123456789.documents.azure.com:443/";
 
             bool failedToResolve = false;
@@ -60,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     Assert.IsFalse(failedToResolve, "Failure to resolve should happen only once.");
                     failedToResolve = true;
-                    didNotRetryMessage = message.Substring(failedToResolveMessage.Length).Split('\n')[0];
+                    didNotRetryMessage = message[failedToResolveMessage.Length..].Split('\n')[0];
                 }
 
                 if (failedToResolve && message.Contains("NOT be retried") && message.Contains(didNotRetryMessage))
