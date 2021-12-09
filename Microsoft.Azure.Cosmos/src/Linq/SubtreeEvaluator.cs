@@ -73,12 +73,12 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (memberExpression.Member is FieldInfo fieldInfo)
             {
-                return Expression.Constant(fieldInfo.GetValue(targetConstant.Value));
+                return Expression.Constant(fieldInfo.GetValue(targetConstant.Value), memberExpression.Type);
             }
 
             if (memberExpression.Member is PropertyInfo propertyInfo)
             {
-                return Expression.Constant(propertyInfo.GetValue(targetConstant.Value));
+                return Expression.Constant(propertyInfo.GetValue(targetConstant.Value), memberExpression.Type);
             }
 
             return expression;
