@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         private void StartObserverTask()
         {
-            this.telemetryTask = Task.Run(this.EnrichAndSendAsync, this.cancellationTokenSource.Token);
+            this.telemetryTask = Task.Factory.StartNew(this.EnrichAndSendAsync, this.cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
         /// <summary>
