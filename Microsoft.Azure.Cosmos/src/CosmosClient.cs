@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Net;
     using System.Text;
     using System.Threading;
@@ -96,6 +97,9 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
     public class CosmosClient : IDisposable
     {
+        private static readonly object defaultTraceLockObject = new object();
+        private static bool enableDefaultTrace = false;
+
         private readonly string DatabaseRootUri = Paths.Databases_Root;
         private ConsistencyLevel? accountConsistencyLevel;
         private bool isDisposed = false;
@@ -119,6 +123,11 @@ namespace Microsoft.Azure.Cosmos
             // NOTE: Native ServiceInteropWrapper.AssembliesExist has appsettings dependency which are proofed for CTL (native dll entry) scenarios.
             // Revert of this depends on handling such in direct assembly
             ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => true);
+
+            if (Debugger.IsAttached)
+            {
+                CosmosClient.EnableDefaultTrace();
+            }
         }
 
         /// <summary>
@@ -257,7 +266,7 @@ namespace Microsoft.Azure.Cosmos
             this.ClientContext = ClientContextCore.Create(
                 this,
                 clientOptions);
-  
+
             this.ClientConfigurationTraceDatum = new ClientConfigurationTraceDatum(this.ClientContext, DateTime.UtcNow);
         }
 
@@ -392,6 +401,27 @@ namespace Microsoft.Azure.Cosmos
 
             await cosmosClient.InitializeContainersAsync(containers, cancellationToken);
             return cosmosClient;
+        }
+
+        /// <summary>
+        /// Enable the default trace listener by setting the TraceSource and SourceSwitch
+        /// Default TraceSource name DocDBTrace
+        /// Default SourceSwitch value Information
+        /// </summary>
+        /// <remarks>
+        /// This is enabled by default when Debugger.IsAttached is true. This makes it
+        /// easier to troubleshoot issues while debugging in Visual Studio.
+        /// </remarks>
+        public static void EnableDefaultTrace()
+        {
+            lock (CosmosClient.defaultTraceLockObject)
+            {
+                if (!CosmosClient.enableDefaultTrace)
+                {
+                    Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace.InitEventListener();
+                    CosmosClient.enableDefaultTrace = true;
+                }
+            }
         }
 
         /// <summary>
