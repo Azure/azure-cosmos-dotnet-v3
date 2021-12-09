@@ -97,8 +97,6 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
     public class CosmosClient : IDisposable
     {
-        private static readonly object defaultTraceLockObject = new object();
-
         private readonly string DatabaseRootUri = Paths.Databases_Root;
         private ConsistencyLevel? accountConsistencyLevel;
         private bool isDisposed = false;
@@ -1050,25 +1048,22 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         private static void RemoveDefaultTraceListener()
         {
-            lock (CosmosClient.defaultTraceLockObject)
+            if (Core.Trace.DefaultTrace.TraceSource.Listeners.Count > 0)
             {
-                if (Core.Trace.DefaultTrace.TraceSource.Listeners.Count > 0)
+                List<DefaultTraceListener> removeDefaultTraceListeners = new List<DefaultTraceListener>();
+                foreach (object traceListnerObject in Core.Trace.DefaultTrace.TraceSource.Listeners)
                 {
-                    List<DefaultTraceListener> removeDefaultTraceListeners = new List<DefaultTraceListener>();
-                    foreach (object traceListnerObject in Core.Trace.DefaultTrace.TraceSource.Listeners)
+                    // The TraceSource already has the default trace listener
+                    if (traceListnerObject is DefaultTraceListener defaultTraceListener)
                     {
-                        // The TraceSource already has the default trace listener
-                        if (traceListnerObject is DefaultTraceListener defaultTraceListener)
-                        {
-                            removeDefaultTraceListeners.Add(defaultTraceListener);
-                        }
+                        removeDefaultTraceListeners.Add(defaultTraceListener);
                     }
+                }
 
-                    // Remove all the default trace listeners
-                    foreach (DefaultTraceListener defaultTraceListener in removeDefaultTraceListeners)
-                    {
-                        Core.Trace.DefaultTrace.TraceSource.Listeners.Remove(defaultTraceListener);
-                    }
+                // Remove all the default trace listeners
+                foreach (DefaultTraceListener defaultTraceListener in removeDefaultTraceListeners)
+                {
+                    Core.Trace.DefaultTrace.TraceSource.Listeners.Remove(defaultTraceListener);
                 }
             }
         }
