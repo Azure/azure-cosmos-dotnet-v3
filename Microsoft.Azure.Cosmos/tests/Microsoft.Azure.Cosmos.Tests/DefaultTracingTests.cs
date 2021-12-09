@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Diagnostics;
     using System.Net.Http;
+    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -18,13 +19,24 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task DefaultTracingDisabledByDefault()
         {
-            Assert.AreEqual(SourceLevels.Off, DefaultTrace.TraceSource.Switch.Level, $"The trace is already enabled.");
-            bool isTraceEnabled = Debugger.IsAttached;
-            await this.ValidateTraceAsync(isTraceEnabled);
-            if (!isTraceEnabled)
+            FieldInfo enabledField = typeof(CosmosClient).GetField("enableDefaultTrace", BindingFlags.Static | BindingFlags.NonPublic);
+
+            bool ccosmosClientAlreadyEnabledTrace = (bool)enabledField.GetValue(null);
+            if (ccosmosClientAlreadyEnabledTrace)
             {
-                Assert.AreEqual(SourceLevels.Off, DefaultTrace.TraceSource.Switch.Level, $"The trace got enabled.");
+                // A previous test enabled the traces. Reset back to the default state.
+                enabledField.SetValue(null, false);
+                DefaultTrace.TraceSource.Switch.Level = SourceLevels.Off;
+                DefaultTrace.TraceSource.Listeners.Clear();
+                FieldInfo defaultTraceIsListenerAdded = typeof(DefaultTrace).GetField("IsListenerAdded", BindingFlags.Static | BindingFlags.NonPublic);
+                defaultTraceIsListenerAdded.SetValue(null, false);
             }
+
+            Assert.AreEqual(SourceLevels.Off, DefaultTrace.TraceSource.Switch.Level, $"The trace is already enabled.");
+
+            await this.ValidateTraceAsync(false);
+
+            Assert.AreEqual(SourceLevels.Off, DefaultTrace.TraceSource.Switch.Level, $"The trace got enabled.");
         }
 
         [TestMethod]
