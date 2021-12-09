@@ -29,17 +29,18 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 try
                 {
-                    this.telemetry
-                        .Collect(
-                                cosmosDiagnostics: response.Diagnostics,
-                                statusCode: response.StatusCode,
-                                responseSizeInBytes: this.GetPayloadSize(response),
-                                containerId: request.ContainerId,
-                                databaseId: request.DatabaseId,
-                                operationType: request.OperationType,
-                                resourceType: request.ResourceType,
-                                consistencyLevel: request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
-                                requestCharge: response.Headers.RequestCharge);
+                    // fire and forget don't wait
+                    _ = Task.Run(() => this.telemetry
+                          .Collect(
+                                  cosmosDiagnostics: response.Diagnostics,
+                                  statusCode: response.StatusCode,
+                                  responseSizeInBytes: this.GetPayloadSize(response),
+                                  containerId: request.ContainerId,
+                                  databaseId: request.DatabaseId,
+                                  operationType: request.OperationType,
+                                  resourceType: request.ResourceType,
+                                  consistencyLevel: request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
+                                  requestCharge: response.Headers.RequestCharge));
                 }
                 catch (Exception ex)
                 {

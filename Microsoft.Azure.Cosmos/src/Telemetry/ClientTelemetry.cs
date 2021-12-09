@@ -43,8 +43,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private Task telemetryTask;
 
-        private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
-            = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
+        private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
 
         /// <summary>
         /// Factory method to intiakize telemetry object and start observer task
@@ -211,13 +210,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                             resource: resourceType,
                                             statusCode: (int)statusCode);
 
+            int latencyPrecision = ClientTelemetryOptions.RequestLatencyPrecision;
+            if (!statusCode.IsSuccess())    
+            {
+                latencyPrecision = 2;
+            }
+
             (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
-                    .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
-                                                        ClientTelemetryOptions.RequestLatencyMax,
-                                                        ClientTelemetryOptions.RequestLatencyPrecision),
-                            requestcharge: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
-                                                        ClientTelemetryOptions.RequestChargeMax,
-                                                        ClientTelemetryOptions.RequestChargePrecision)));
+               .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+                                                   ClientTelemetryOptions.RequestLatencyMax,
+                                                   latencyPrecision),
+                       requestcharge: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
+                                                   ClientTelemetryOptions.RequestChargeMax,
+                                                   ClientTelemetryOptions.RequestChargePrecision)));
+
             try
             {
                 latency.RecordValue(cosmosDiagnostics.GetClientElapsedTime().Ticks);
