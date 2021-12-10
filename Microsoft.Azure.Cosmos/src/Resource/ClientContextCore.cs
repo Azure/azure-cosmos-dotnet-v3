@@ -111,13 +111,13 @@ namespace Microsoft.Azure.Cosmos
             ClientTelemetry telemetry = null;
             if (connectionPolicy.EnableClientTelemetry)
             {
-               /* telemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
+                telemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
                      documentClient: documentClient,
                      userAgent: connectionPolicy.UserAgentContainer.UserAgent,
                      connectionMode: connectionPolicy.ConnectionMode,
                      authorizationTokenProvider: cosmosClient.AuthorizationTokenProvider,
                      diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
-                     preferredRegions: clientOptions.ApplicationPreferredRegions);*/
+                     preferredRegions: clientOptions.ApplicationPreferredRegions);
             } 
             else
             {
