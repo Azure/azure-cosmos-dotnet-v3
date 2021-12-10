@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private Task telemetryTask;
 
-        private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
+        private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latencyHist, LongConcurrentHistogram requestchargeHist)> operationInfoMap = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latencyHist, LongConcurrentHistogram requestchargeHist)>();
 
         /// <summary>
         /// Factory method to intiakize telemetry object and start observer task
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 diagnosticsHelper,
                 preferredRegions);
 
-            clientTelemetry.StartObserverTask();
+            //clientTelemetry.StartObserverTask();
 
             return clientTelemetry;
         }
@@ -198,8 +198,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 throw new ArgumentNullException(nameof(cosmosDiagnostics));
             }
 
-            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics);
+            //Stopwatch stopwatch = Stopwatch.StartNew();
 
+            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics);
+            //stopwatch.Stop();
+            //Console.WriteLine("region contacted => " + Convert.ToString(stopwatch.Elapsed.TotalMilliseconds));
+
+            // stopwatch.Restart();
             // Recording Request Latency and Request Charge
             OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
                                             responseSizeInBytes: responseSizeInBytes,
@@ -216,17 +221,41 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 latencyPrecision = 2;
             }
 
-            (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
-               .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+            (LongConcurrentHistogram latencyHist, LongConcurrentHistogram requestchargeHist) = this.operationInfoMap
+               .GetOrAdd(payloadKey, x => (latencyHist: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                    ClientTelemetryOptions.RequestLatencyMax,
                                                    latencyPrecision),
-                       requestcharge: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
+                       requestchargeHist: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
                                                    ClientTelemetryOptions.RequestChargeMax,
                                                    ClientTelemetryOptions.RequestChargePrecision)));
+            //stopwatch.Stop();
+            //Console.WriteLine("histogram => " + Convert.ToString(stopwatch.Elapsed.TotalMilliseconds));
 
+            //stopwatch.Restart();
+
+          /*  if (this.operationInfoMapDict.TryGetValue(payloadKey, out (LongConcurrentHistogram, LongConcurrentHistogram) val))
+            {
+                latencyHist = val.Item1;
+                requestchargeHist = val.Item2;
+            }
+            else
+            {
+                latencyHist = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+                                                 ClientTelemetryOptions.RequestLatencyMax,
+                                                 latencyPrecision);
+                requestchargeHist = new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
+                                                 ClientTelemetryOptions.RequestChargeMax,
+                                                 ClientTelemetryOptions.RequestChargePrecision);
+                this.operationInfoMapDict.Add(payloadKey, (latencyHist, requestchargeHist));
+            }
+
+            stopwatch.Stop();
+            Console.WriteLine("dictionary => " + Convert.ToString(stopwatch.Elapsed.TotalMilliseconds));
+
+            stopwatch.Restart();*/
             try
             {
-                latency.RecordValue(cosmosDiagnostics.GetClientElapsedTime().Ticks);
+                latencyHist.RecordValue(cosmosDiagnostics.GetClientElapsedTime().Ticks);
             } 
             catch (Exception ex)
             {
@@ -236,12 +265,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             long requestChargeToRecord = (long)(requestCharge * ClientTelemetryOptions.HistogramPrecisionFactor);
             try
             {
-                requestcharge.RecordValue(requestChargeToRecord);
+                requestchargeHist.RecordValue(requestChargeToRecord);
             }
             catch (Exception ex)
             {
                 DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex.Message);
             }
+           /* stopwatch.Stop();
+            Console.WriteLine("recording => " + Convert.ToString(stopwatch.Elapsed.TotalMilliseconds));
+            Console.WriteLine(String.Empty);*/
         }
 
         /// <summary>
