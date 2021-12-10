@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Net;
     using System.Text;
     using System.Threading;
@@ -119,6 +120,15 @@ namespace Microsoft.Azure.Cosmos
             // NOTE: Native ServiceInteropWrapper.AssembliesExist has appsettings dependency which are proofed for CTL (native dll entry) scenarios.
             // Revert of this depends on handling such in direct assembly
             ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => true);
+
+            Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace.InitEventListener();
+
+            // If a debugger is not attached remove the DefaultTraceListener. 
+            // DefaultTraceListener can cause lock contention leading to availability issues
+            if (!Debugger.IsAttached)
+            {
+                CosmosClient.RemoveDefaultTraceListener();
+            }
         }
 
         /// <summary>
@@ -257,7 +267,7 @@ namespace Microsoft.Azure.Cosmos
             this.ClientContext = ClientContextCore.Create(
                 this,
                 clientOptions);
-  
+
             this.ClientConfigurationTraceDatum = new ClientConfigurationTraceDatum(this.ClientContext, DateTime.UtcNow);
         }
 
@@ -1031,6 +1041,31 @@ namespace Microsoft.Azure.Cosmos
                          trace,
                          cancellationToken);
                  });
+        }
+
+        /// <summary>
+        /// Removes the DefaultTraceListener which causes locking issues which leads to avability problems. 
+        /// </summary>
+        private static void RemoveDefaultTraceListener()
+        {
+            if (Core.Trace.DefaultTrace.TraceSource.Listeners.Count > 0)
+            {
+                List<DefaultTraceListener> removeDefaultTraceListeners = new List<DefaultTraceListener>();
+                foreach (object traceListnerObject in Core.Trace.DefaultTrace.TraceSource.Listeners)
+                {
+                    // The TraceSource already has the default trace listener
+                    if (traceListnerObject is DefaultTraceListener defaultTraceListener)
+                    {
+                        removeDefaultTraceListeners.Add(defaultTraceListener);
+                    }
+                }
+
+                // Remove all the default trace listeners
+                foreach (DefaultTraceListener defaultTraceListener in removeDefaultTraceListeners)
+                {
+                    Core.Trace.DefaultTrace.TraceSource.Listeners.Remove(defaultTraceListener);
+                }
+            }
         }
 
         internal virtual async Task<ConsistencyLevel> GetAccountConsistencyLevelAsync()
