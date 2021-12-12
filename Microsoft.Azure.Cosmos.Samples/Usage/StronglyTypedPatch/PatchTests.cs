@@ -14,7 +14,7 @@
     {
         public void TestPathResoluition()
         {
-            StronglyTypedPatchOperationBuilder<Person> builder = new StronglyTypedPatchOperationBuilder<Person>()
+            StronglyTypedPatchOperationBuilder<Person> builder = new StronglyTypedPatchOperationBuilder<Person>(new DefaultContractResolver())
                 .WithAdd(person => person.Age, 50)
                 .WithAdd(person => person.Children, new List<Person> { new Person("Billy", 1, 0) })
                 .WithAdd(person => person.Children[-1], new Person("Billy", 25, 0))
@@ -45,7 +45,7 @@
             };
 
             string[] actualPaths = builder
-                .ToUntyped(new DefaultContractResolver())
+                .PatchOperations
                 .Select(x => x.Path)
                 .ToArray();
 

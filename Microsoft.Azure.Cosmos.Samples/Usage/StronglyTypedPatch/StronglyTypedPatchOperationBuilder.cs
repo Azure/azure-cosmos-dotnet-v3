@@ -10,130 +10,125 @@
     using Newtonsoft.Json;
     using Newtonsoft.Json.Serialization;
 
+    // TODO: convert to factory
     public class StronglyTypedPatchOperationBuilder<TObject>
     {
-        private readonly List<StronglyTypedPatchOperation<TObject>> stronglyTypedPatchOperations = new();
+        private readonly List<PatchOperation> patchOperations = new();
+        private readonly IContractResolver contractResolver;
 
-        public IReadOnlyList<StronglyTypedPatchOperation<TObject>> StronglyTypedPatchOperations => this.stronglyTypedPatchOperations;
+        internal StronglyTypedPatchOperationBuilder(IContractResolver contractResolver)
+        {
+            this.contractResolver = contractResolver;
+        }
+
+        internal StronglyTypedPatchOperationBuilder(CosmosClient client) : this(GetResolver(client))
+        {
+        }
+
+        private static IContractResolver GetResolver(CosmosClient client)
+        {
+            //TODO: remove Fasterflect
+            JsonSerializerSettings serializerSettings = (JsonSerializerSettings)typeof(CosmosClient).Assembly
+                .GetType("Microsoft.Azure.Cosmos.CosmosJsonDotNetSerializer")
+                .CreateInstance(client.ClientOptions.SerializerOptions ?? new()) //TODO: use this new() behavior for custom serializers?
+                .GetFieldValue("SerializerSettings");
+
+            return serializerSettings.ContractResolver;
+        }
+
+        public IReadOnlyList<PatchOperation> PatchOperations => this.patchOperations;
 
         public StronglyTypedPatchOperationBuilder<TObject> WithAdd<TValue>(Expression<Func<TObject, TValue>> path, TValue value)
         {
-            this.stronglyTypedPatchOperations.Add(new StronglyTypedPatchOperation<TObject, TValue>(value, PatchOperationType.Add, path));
+            this.patchOperations.Add(PatchOperation.Add(this.GetJsonPointer(path), value));
             return this;
         }
 
         public StronglyTypedPatchOperationBuilder<TObject> WithRemove<TValue>(Expression<Func<TObject, TValue>> path)
         {
-            this.stronglyTypedPatchOperations.Add(new StronglyTypedPatchOperation<TObject, TValue>(default, PatchOperationType.Remove, path));
+            this.patchOperations.Add(PatchOperation.Remove(this.GetJsonPointer(path)));
             return this;
         }
 
         public StronglyTypedPatchOperationBuilder<TObject> WithReplace<TValue>(Expression<Func<TObject, TValue>> path, TValue value)
         {
-            this.stronglyTypedPatchOperations.Add(new StronglyTypedPatchOperation<TObject, TValue>(value, PatchOperationType.Replace, path));
+            this.patchOperations.Add(PatchOperation.Replace(this.GetJsonPointer(path), value));
             return this;
         }
 
         public StronglyTypedPatchOperationBuilder<TObject> WithSet<TValue>(Expression<Func<TObject, TValue>> path, TValue value)
         {
-            this.stronglyTypedPatchOperations.Add(new StronglyTypedPatchOperation<TObject, TValue>(value, PatchOperationType.Set, path));
+            this.patchOperations.Add(PatchOperation.Set(this.GetJsonPointer(path), value));
             return this;
         }
 
         public StronglyTypedPatchOperationBuilder<TObject> WithIncrement(Expression<Func<TObject, byte>> path, byte value)
         {
-            return this.WithIncrement<byte>(path, value);
+            this.patchOperations.Add(PatchOperation.Increment(this.GetJsonPointer(path), value));
+            return this;
         }
 
         public StronglyTypedPatchOperationBuilder<TObject> WithIncrement(Expression<Func<TObject, short>> path, short value)
         {
-            return this.WithIncrement<short>(path, value);
+            this.patchOperations.Add(PatchOperation.Increment(this.GetJsonPointer(path), value));
+            return this;
         }
 
         public StronglyTypedPatchOperationBuilder<TObject> WithIncrement(Expression<Func<TObject, int>> path, int value)
         {
-            return this.WithIncrement<int>(path, value);
+            this.patchOperations.Add(PatchOperation.Increment(this.GetJsonPointer(path), value));
+            return this;
         }
 
         public StronglyTypedPatchOperationBuilder<TObject> WithIncrement(Expression<Func<TObject, long>> path, long value)
         {
-            return this.WithIncrement<long>(path, value);
+            this.patchOperations.Add(PatchOperation.Increment(this.GetJsonPointer(path), value));
+            return this;
         }
 
         public StronglyTypedPatchOperationBuilder<TObject> WithIncrement(Expression<Func<TObject, sbyte>> path, sbyte value)
         {
-            return this.WithIncrement<sbyte>(path, value);
+            this.patchOperations.Add(PatchOperation.Increment(this.GetJsonPointer(path), value));
+            return this;
         }
 
         public StronglyTypedPatchOperationBuilder<TObject> WithIncrement(Expression<Func<TObject, ushort>> path, ushort value)
         {
-            return this.WithIncrement<ushort>(path, value);
+            this.patchOperations.Add(PatchOperation.Increment(this.GetJsonPointer(path), value));
+            return this;
         }
 
         public StronglyTypedPatchOperationBuilder<TObject> WithIncrement(Expression<Func<TObject, uint>> path, uint value)
         {
-            return this.WithIncrement<uint>(path, value);
+            this.patchOperations.Add(PatchOperation.Increment(this.GetJsonPointer(path), value));
+            return this;
         }
 
         public StronglyTypedPatchOperationBuilder<TObject> WithIncrement(Expression<Func<TObject, ulong>> path, ulong value)
         {
-            return this.WithIncrement<ulong>(path, value);
+            this.patchOperations.Add(PatchOperation.Increment(this.GetJsonPointer(path), value));
+            return this;
         }
 
         public StronglyTypedPatchOperationBuilder<TObject> WithIncrement(Expression<Func<TObject, float>> path, float value)
         {
-            return this.WithIncrement<float>(path, value);
+            this.patchOperations.Add(PatchOperation.Increment(this.GetJsonPointer(path), value));
+            return this;
         }
 
         public StronglyTypedPatchOperationBuilder<TObject> WithIncrement(Expression<Func<TObject, double>> path, double value)
         {
-            return this.WithIncrement<double>(path, value);
+            this.patchOperations.Add(PatchOperation.Increment(this.GetJsonPointer(path), value));
+            return this;
         }
 
         public StronglyTypedPatchOperationBuilder<TObject> WithIncrement(Expression<Func<TObject, decimal>> path, decimal value)
         {
-            return this.WithIncrement<decimal>(path, value);
-        }
-
-        private StronglyTypedPatchOperationBuilder<TObject> WithIncrement<TValue>(Expression<Func<TObject, TValue>> path, TValue value)
-        {
-            this.stronglyTypedPatchOperations.Add(new StronglyTypedPatchOperation<TObject, TValue>(value, PatchOperationType.Increment, path));
+            this.patchOperations.Add(PatchOperation.Increment(this.GetJsonPointer(path), (double)value));
             return this;
         }
 
-        internal List<PatchOperation> ToUntyped(CosmosClient client)
-        {
-            JsonSerializerSettings serializerSettings  = (JsonSerializerSettings)typeof(CosmosClient).Assembly
-                .GetType("Microsoft.Azure.Cosmos.CosmosJsonDotNetSerializer")
-                .CreateInstance(client.ClientOptions.SerializerOptions ?? new()) //TODO: use this new() behavior for custom serializers?
-                .GetFieldValue("SerializerSettings");
-
-            return this.ToUntyped(serializerSettings.ContractResolver);
-        }
-
-        internal List<PatchOperation> ToUntyped(IContractResolver resolver)
-        {
-            return this.stronglyTypedPatchOperations.Select(operation =>
-            {
-                string path = GetJsonPointer(resolver, operation.UntypedPath);
-
-                Type[] genericType = new[] { operation.UntypedValue.GetType() };
-
-                return operation.OperationType switch
-                {
-                    PatchOperationType.Add => typeof(PatchOperation).CallMethod(genericType, nameof(PatchOperation.Add), path, operation.UntypedValue),
-                    PatchOperationType.Remove => PatchOperation.Remove(path),
-                    PatchOperationType.Replace => typeof(PatchOperation).CallMethod(genericType, nameof(PatchOperation.Replace), path, operation.UntypedValue),
-                    PatchOperationType.Set => typeof(PatchOperation).CallMethod(genericType, nameof(PatchOperation.Set), path, operation.UntypedValue),
-                    PatchOperationType.Increment => operation.UntypedValue is float or double or decimal
-                        ? PatchOperation.Increment(path, (double)operation.UntypedValue)
-                        : PatchOperation.Increment(path, (long)operation.UntypedValue),
-                    _ => throw new ArgumentOutOfRangeException(),
-                };
-            }).Cast<PatchOperation>().ToList();
-        }
-
-        private static string GetJsonPointer(IContractResolver resolver, LambdaExpression expression)
+        private string GetJsonPointer(LambdaExpression expression)
         {
             //TODO: use expression visitor
             //TODO: handle indices assigned by variables, etc - what does Cosmos LINQ support?
@@ -178,7 +173,7 @@
             //TODO: add cache for a single pass of ToUntyped
             string GetNameUnderContract(MemberInfo member)
             {
-                JsonObjectContract contract = (JsonObjectContract)resolver.ResolveContract(member.DeclaringType);
+                JsonObjectContract contract = (JsonObjectContract)this.contractResolver.ResolveContract(member.DeclaringType);
                 JsonProperty property = contract.Properties.Single(x => x.UnderlyingName == member.Name);
                 return property.PropertyName;
             }
