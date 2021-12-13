@@ -207,55 +207,58 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 ConcurrentQueue<TelemetryRawObject> rawdatalist
                                       = Interlocked.Exchange(ref this.rawData, new ConcurrentQueue<TelemetryRawObject>());
 
-                foreach (TelemetryRawObject raw in rawdatalist)
+                while (rawdatalist.Count > 0)
                 {
-                    if (raw.cosmosDiagnostics == null)
+                    if (rawdatalist.TryDequeue(out TelemetryRawObject raw))
                     {
-                        throw new ArgumentNullException(nameof(raw.cosmosDiagnostics));
-                    }
+                        if (raw.cosmosDiagnostics == null)
+                        {
+                            throw new ArgumentNullException(nameof(raw.cosmosDiagnostics));
+                        }
 
-                    string regionsContacted = ClientTelemetryHelper.GetContactedRegions(raw.cosmosDiagnostics);
+                        string regionsContacted = ClientTelemetryHelper.GetContactedRegions(raw.cosmosDiagnostics);
 
-                    // Recording Request Latency and Request Charge
-                    OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
-                                                    responseSizeInBytes: raw.responseSizeInBytes,
-                                                    consistency: raw.consistencyLevel,
-                                                    databaseName: raw.databaseId,
-                                                    containerName: raw.containerId,
-                                                    operation: raw.operationType,
-                                                    resource: raw.resourceType,
-                                                    statusCode: (int)raw.statusCode);
+                        // Recording Request Latency and Request Charge
+                        OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
+                                                        responseSizeInBytes: raw.responseSizeInBytes,
+                                                        consistency: raw.consistencyLevel,
+                                                        databaseName: raw.databaseId,
+                                                        containerName: raw.containerId,
+                                                        operation: raw.operationType,
+                                                        resource: raw.resourceType,
+                                                        statusCode: (int)raw.statusCode);
 
-                    int latencyPrecision = ClientTelemetryOptions.RequestLatencyPrecision;
-                    if (!raw.statusCode.IsSuccess())
-                    {
-                        latencyPrecision = 2;
-                    }
+                        int latencyPrecision = ClientTelemetryOptions.RequestLatencyPrecision;
+                        if (!raw.statusCode.IsSuccess())
+                        {
+                            latencyPrecision = 2;
+                        }
 
-                    (LongConcurrentHistogram latencyHist, LongConcurrentHistogram requestchargeHist) = this.operationInfoMap
-                       .GetOrAdd(payloadKey, x => (latencyHist: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
-                                                           ClientTelemetryOptions.RequestLatencyMax,
-                                                           latencyPrecision),
-                               requestchargeHist: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
-                                                           ClientTelemetryOptions.RequestChargeMax,
-                                                           ClientTelemetryOptions.RequestChargePrecision)));
-                    try
-                    {
-                        latencyHist.RecordValue(raw.cosmosDiagnostics.GetClientElapsedTime().Ticks);
-                    }
-                    catch (Exception ex)
-                    {
-                        DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex.Message);
-                    }
+                        (LongConcurrentHistogram latencyHist, LongConcurrentHistogram requestchargeHist) = this.operationInfoMap
+                           .GetOrAdd(payloadKey, x => (latencyHist: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+                                                               ClientTelemetryOptions.RequestLatencyMax,
+                                                               latencyPrecision),
+                                   requestchargeHist: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
+                                                               ClientTelemetryOptions.RequestChargeMax,
+                                                               ClientTelemetryOptions.RequestChargePrecision)));
+                        try
+                        {
+                            latencyHist.RecordValue(raw.cosmosDiagnostics.GetClientElapsedTime().Ticks);
+                        }
+                        catch (Exception ex)
+                        {
+                            DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex.Message);
+                        }
 
-                    long requestChargeToRecord = (long)(raw.requestCharge * ClientTelemetryOptions.HistogramPrecisionFactor);
-                    try
-                    {
-                        requestchargeHist.RecordValue(requestChargeToRecord);
-                    }
-                    catch (Exception ex)
-                    {
-                        DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex.Message);
+                        long requestChargeToRecord = (long)(raw.requestCharge * ClientTelemetryOptions.HistogramPrecisionFactor);
+                        try
+                        {
+                            requestchargeHist.RecordValue(requestChargeToRecord);
+                        }
+                        catch (Exception ex)
+                        {
+                            DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex.Message);
+                        }
                     }
                 }
 
