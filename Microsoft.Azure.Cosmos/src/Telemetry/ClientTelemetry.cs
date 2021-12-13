@@ -197,7 +197,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 this.rawData.Add(raw);
             }
-;
         }
 
         /// <summary>
@@ -389,7 +388,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Dispose of cosmos client.It will get disposed with client so not making it thread safe.
         /// </summary>
-        public void Dispose()3
+        public void Dispose()
         {
             this.cancellationTokenSource.Cancel();
             this.cancellationTokenSource.Dispose();
