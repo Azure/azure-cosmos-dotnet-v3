@@ -174,11 +174,20 @@ namespace CosmosBenchmark
             return options;
         }
 
+        /// <summary>
+        /// Give each workload a unique user agent string
+        /// so the backend logs can be filtered by the workload.
+        /// </summary>
+        private string GetUserAgentPrefix()
+        {
+            return this.WorkloadName ?? this.WorkloadType ?? BenchmarkConfig.UserAgentSuffix;
+        }
+
         internal Microsoft.Azure.Cosmos.CosmosClient CreateCosmosClient(string accountKey)
         {
             Microsoft.Azure.Cosmos.CosmosClientOptions clientOptions = new Microsoft.Azure.Cosmos.CosmosClientOptions()
             {
-                ApplicationName = BenchmarkConfig.UserAgentSuffix,
+                ApplicationName = this.GetUserAgentPrefix(),
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint
@@ -232,7 +241,7 @@ namespace CosmosBenchmark
                                 ConnectionProtocol = Protocol.Tcp,
                                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
-                                UserAgentSuffix = BenchmarkConfig.UserAgentSuffix,
+                                UserAgentSuffix = this.GetUserAgentPrefix(),
                                 RetryOptions = new RetryOptions()
                                 {
                                     MaxRetryAttemptsOnThrottledRequests = 0
