@@ -1138,7 +1138,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         ///
         /// // LINQ query generation
-        /// using (FeedIterator setIterator = container.GetItemLinqQueryable<Book>()
+        /// using (FeedIterator<Book> setIterator = container.GetItemLinqQueryable<Book>()
         ///                      .Where(b => b.Title == "War and Peace")
         ///                      .ToFeedIterator())
         /// {                   
