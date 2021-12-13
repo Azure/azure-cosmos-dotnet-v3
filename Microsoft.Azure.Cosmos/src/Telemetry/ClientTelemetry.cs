@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private Task collectorTask;
 
         private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latencyHist, LongConcurrentHistogram requestchargeHist)> operationInfoMap = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latencyHist, LongConcurrentHistogram requestchargeHist)>();
-        private List<TelemetryRawObject> rawData = new List<TelemetryRawObject>();
+        private ConcurrentQueue<TelemetryRawObject> rawData = new ConcurrentQueue<TelemetryRawObject>();
 
         /// <summary>
         /// Factory method to intiakize telemetry object and start observer task
@@ -193,10 +193,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                            resourceType,
                            consistencyLevel,
                            requestCharge);
-            lock (this.rawData)
-            {
-                this.rawData.Add(raw);
-            }
+
+            this.rawData.Enqueue(raw);
         }
 
         /// <summary>
@@ -206,8 +204,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             while (!this.cancellationTokenSource.IsCancellationRequested)
             {
-                List<TelemetryRawObject> rawdatalist
-                                      = Interlocked.Exchange(ref this.rawData, new List<TelemetryRawObject>());
+                ConcurrentQueue<TelemetryRawObject> rawdatalist
+                                      = Interlocked.Exchange(ref this.rawData, new ConcurrentQueue<TelemetryRawObject>());
 
                 foreach (TelemetryRawObject raw in rawdatalist)
                 {
