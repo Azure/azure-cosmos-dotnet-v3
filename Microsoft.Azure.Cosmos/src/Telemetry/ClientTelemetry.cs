@@ -41,9 +41,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private readonly CancellationTokenSource cancellationTokenSource;
 
-        private Task telemetryTask;
+        private Task observerTask;
+        private Task collectorTask;
 
         private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latencyHist, LongConcurrentHistogram requestchargeHist)> operationInfoMap = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latencyHist, LongConcurrentHistogram requestchargeHist)>();
+        private List<TelemetryRawObject> rawData = new List<TelemetryRawObject>();
 
         /// <summary>
         /// Factory method to intiakize telemetry object and start observer task
@@ -71,7 +73,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 diagnosticsHelper,
                 preferredRegions);
 
-            //clientTelemetry.StartObserverTask();
+            clientTelemetry.StartObserverTask();
+            clientTelemetry.StartCollectorTask();
 
             return clientTelemetry;
         }
@@ -100,12 +103,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.cancellationTokenSource = new CancellationTokenSource();
         }
 
-        /// <summary>
-        ///  Start telemetry Process which Calculate and Send telemetry Information (never ending task)
+        /// <summary>emetry Process which Calculate and Send telemetry Information (never ending task)
         /// </summary>
         private void StartObserverTask()
         {
-            this.telemetryTask = Task.Factory.StartNew(this.EnrichAndSendAsync, this.cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            this.observerTask = Task.Factory.StartNew(this.EnrichAndSendAsync, this.cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        }
+
+        private void StartCollectorTask()
+        {
+            this.collectorTask = Task.Factory.StartNew(this.CollectAsync, this.cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
         /// <summary>
@@ -116,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>Async Task</returns>
         private async Task EnrichAndSendAsync()
         {
-            DefaultTrace.TraceInformation("Telemetry Job Started with Observing window : {0}", observingWindow);
+            Console.WriteLine("Telemetry Job Started with Observing window : {0}", observingWindow);
 
             try
             {
@@ -169,111 +176,97 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             DefaultTrace.TraceInformation("Telemetry Job Stopped.");
         }
 
+        internal void Publish(CosmosDiagnostics cosmosDiagnostics,
+                           HttpStatusCode statusCode,
+                           long responseSizeInBytes,
+                           string containerId,
+                           string databaseId,
+                           OperationType operationType,
+                           ResourceType resourceType,
+                           string consistencyLevel,
+                           double requestCharge)
+        {
+            Console.WriteLine("published");
+            TelemetryRawObject raw = new TelemetryRawObject(cosmosDiagnostics,
+                           statusCode,
+                           responseSizeInBytes,
+                           containerId,
+                           databaseId,
+                           operationType,
+                           resourceType,
+                           consistencyLevel,
+                           requestCharge);
+            this.rawData.Add(raw);
+            Console.WriteLine(this.rawData.Count.ToString());
+        }
+
         /// <summary>
         /// Collects Telemetry Information.
         /// </summary>
-        /// <param name="cosmosDiagnostics"></param>
-        /// <param name="statusCode"></param>
-        /// <param name="responseSizeInBytes"></param>
-        /// <param name="containerId"></param>
-        /// <param name="databaseId"></param>
-        /// <param name="operationType"></param>
-        /// <param name="resourceType"></param>
-        /// <param name="consistencyLevel"></param>
-        /// <param name="requestCharge"></param>
-        internal void Collect(CosmosDiagnostics cosmosDiagnostics,
-                            HttpStatusCode statusCode,
-                            long responseSizeInBytes,
-                            string containerId,
-                            string databaseId,
-                            OperationType operationType,
-                            ResourceType resourceType,
-                            string consistencyLevel,
-                            double requestCharge)
+        internal async Task CollectAsync()
         {
-            DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
-
-            if (cosmosDiagnostics == null)
+            while (!this.cancellationTokenSource.IsCancellationRequested)
             {
-                throw new ArgumentNullException(nameof(cosmosDiagnostics));
+                List<TelemetryRawObject> rawdatalist
+                                      = Interlocked.Exchange(ref this.rawData, new List<TelemetryRawObject>());
+
+                Console.WriteLine("Collecting Operation data for Telemetry.");
+
+                foreach (TelemetryRawObject raw in rawdatalist)
+                {
+                    if (raw.cosmosDiagnostics == null)
+                    {
+                        throw new ArgumentNullException(nameof(raw.cosmosDiagnostics));
+                    }
+
+                    string regionsContacted = ClientTelemetryHelper.GetContactedRegions(raw.cosmosDiagnostics);
+
+                    // Recording Request Latency and Request Charge
+                    OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
+                                                    responseSizeInBytes: raw.responseSizeInBytes,
+                                                    consistency: raw.consistencyLevel,
+                                                    databaseName: raw.databaseId,
+                                                    containerName: raw.containerId,
+                                                    operation: raw.operationType,
+                                                    resource: raw.resourceType,
+                                                    statusCode: (int)raw.statusCode);
+
+                    int latencyPrecision = ClientTelemetryOptions.RequestLatencyPrecision;
+                    if (!raw.statusCode.IsSuccess())
+                    {
+                        latencyPrecision = 2;
+                    }
+
+                    (LongConcurrentHistogram latencyHist, LongConcurrentHistogram requestchargeHist) = this.operationInfoMap
+                       .GetOrAdd(payloadKey, x => (latencyHist: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+                                                           ClientTelemetryOptions.RequestLatencyMax,
+                                                           latencyPrecision),
+                               requestchargeHist: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
+                                                           ClientTelemetryOptions.RequestChargeMax,
+                                                           ClientTelemetryOptions.RequestChargePrecision)));
+                    try
+                    {
+                        latencyHist.RecordValue(raw.cosmosDiagnostics.GetClientElapsedTime().Ticks);
+                    }
+                    catch (Exception ex)
+                    {
+                        DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex.Message);
+                    }
+
+                    long requestChargeToRecord = (long)(raw.requestCharge * ClientTelemetryOptions.HistogramPrecisionFactor);
+                    try
+                    {
+                        requestchargeHist.RecordValue(requestChargeToRecord);
+                    }
+                    catch (Exception ex)
+                    {
+                        DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex.Message);
+                    }
+                }
+
+                await Task.Delay(500, this.cancellationTokenSource.Token);
             }
-
-            //Stopwatch stopwatch = Stopwatch.StartNew();
-
-            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics);
-            //stopwatch.Stop();
-            //Console.WriteLine("region contacted => " + Convert.ToString(stopwatch.Elapsed.TotalMilliseconds));
-
-            // stopwatch.Restart();
-            // Recording Request Latency and Request Charge
-            OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
-                                            responseSizeInBytes: responseSizeInBytes,
-                                            consistency: consistencyLevel,
-                                            databaseName: databaseId,
-                                            containerName: containerId,
-                                            operation: operationType,
-                                            resource: resourceType,
-                                            statusCode: (int)statusCode);
-
-            int latencyPrecision = ClientTelemetryOptions.RequestLatencyPrecision;
-            if (!statusCode.IsSuccess())    
-            {
-                latencyPrecision = 2;
-            }
-
-            (LongConcurrentHistogram latencyHist, LongConcurrentHistogram requestchargeHist) = this.operationInfoMap
-               .GetOrAdd(payloadKey, x => (latencyHist: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
-                                                   ClientTelemetryOptions.RequestLatencyMax,
-                                                   latencyPrecision),
-                       requestchargeHist: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
-                                                   ClientTelemetryOptions.RequestChargeMax,
-                                                   ClientTelemetryOptions.RequestChargePrecision)));
-            //stopwatch.Stop();
-            //Console.WriteLine("histogram => " + Convert.ToString(stopwatch.Elapsed.TotalMilliseconds));
-
-            //stopwatch.Restart();
-
-          /*  if (this.operationInfoMapDict.TryGetValue(payloadKey, out (LongConcurrentHistogram, LongConcurrentHistogram) val))
-            {
-                latencyHist = val.Item1;
-                requestchargeHist = val.Item2;
-            }
-            else
-            {
-                latencyHist = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
-                                                 ClientTelemetryOptions.RequestLatencyMax,
-                                                 latencyPrecision);
-                requestchargeHist = new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
-                                                 ClientTelemetryOptions.RequestChargeMax,
-                                                 ClientTelemetryOptions.RequestChargePrecision);
-                this.operationInfoMapDict.Add(payloadKey, (latencyHist, requestchargeHist));
-            }
-
-            stopwatch.Stop();
-            Console.WriteLine("dictionary => " + Convert.ToString(stopwatch.Elapsed.TotalMilliseconds));
-
-            stopwatch.Restart();*/
-            try
-            {
-                latencyHist.RecordValue(cosmosDiagnostics.GetClientElapsedTime().Ticks);
-            } 
-            catch (Exception ex)
-            {
-                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex.Message);
-            }
-
-            long requestChargeToRecord = (long)(requestCharge * ClientTelemetryOptions.HistogramPrecisionFactor);
-            try
-            {
-                requestchargeHist.RecordValue(requestChargeToRecord);
-            }
-            catch (Exception ex)
-            {
-                DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex.Message);
-            }
-           /* stopwatch.Stop();
-            Console.WriteLine("recording => " + Convert.ToString(stopwatch.Elapsed.TotalMilliseconds));
-            Console.WriteLine(String.Empty);*/
+           
         }
 
         /// <summary>
@@ -403,7 +396,41 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.cancellationTokenSource.Cancel();
             this.cancellationTokenSource.Dispose();
 
-            this.telemetryTask = null;
+            this.observerTask = null;
         }
+    }
+
+    internal class TelemetryRawObject
+    {
+        internal TelemetryRawObject(CosmosDiagnostics cosmosDiagnostics,
+                           HttpStatusCode statusCode,
+                           long responseSizeInBytes,
+                           string containerId,
+                           string databaseId,
+                           OperationType operationType,
+                           ResourceType resourceType,
+                           string consistencyLevel,
+                           double requestCharge)
+        {
+            this.cosmosDiagnostics = cosmosDiagnostics;
+            this.statusCode = statusCode;
+            this.responseSizeInBytes = responseSizeInBytes;
+            this.containerId = containerId;
+            this.databaseId = databaseId;
+            this.operationType = operationType;
+            this.resourceType = resourceType;
+            this.consistencyLevel = consistencyLevel;
+            this.requestCharge = requestCharge;
+        }
+
+        internal CosmosDiagnostics cosmosDiagnostics { get; set; }
+        internal HttpStatusCode statusCode { get; set; }
+        internal long responseSizeInBytes { get; set; }
+        internal string containerId { get; set; }
+        internal string databaseId { get; set; }
+        internal OperationType operationType { get; set; }
+        internal ResourceType resourceType { get; set; }
+        internal string consistencyLevel { get; set; }
+        internal double requestCharge { get; set; }
     }
 }

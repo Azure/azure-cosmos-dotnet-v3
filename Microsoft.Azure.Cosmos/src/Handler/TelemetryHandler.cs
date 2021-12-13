@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 try
                 {
                     this.telemetry
-                          .Collect(
+                          .Publish(
                                   cosmosDiagnostics: response.Diagnostics,
                                   statusCode: response.StatusCode,
                                   responseSizeInBytes: this.GetPayloadSize(response),
