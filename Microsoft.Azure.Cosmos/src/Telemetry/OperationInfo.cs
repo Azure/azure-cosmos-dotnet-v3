@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
+    using System.Collections.Generic;
+    using System.Text;
     using HdrHistogram;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
@@ -44,13 +46,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.MetricInfo = new MetricInfo(metricsName, unitName);
         }
 
-        internal OperationInfo(string regionsContacted, 
-            long? responseSizeInBytes,            
-            string consistency, 
-            string databaseName, 
-            string containerName, 
-            OperationType? operation, 
-            ResourceType? resource, 
+        internal OperationInfo(string regionsContacted,
+            long? responseSizeInBytes,
+            string consistency,
+            string databaseName,
+            string containerName,
+            OperationType? operation,
+            ResourceType? resource,
             int? statusCode)
         {
             this.RegionsContacted = regionsContacted;
@@ -66,13 +68,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.StatusCode = statusCode;
         }
 
-        public OperationInfo(string regionsContacted, 
-            bool? greaterThan1Kb, 
-            string databaseName, 
-            string containerName, 
-            string operation, 
-            string resource, 
-            string consistency, 
+        public OperationInfo(string regionsContacted,
+            bool? greaterThan1Kb,
+            string databaseName,
+            string containerName,
+            string operation,
+            string resource,
+            string consistency,
             int? statusCode,
             MetricInfo metricInfo)
         {
@@ -118,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             bool isequal = obj is OperationInfo payload &&
                    ((this.RegionsContacted == null && payload.RegionsContacted == null) || (this.RegionsContacted != null && payload.RegionsContacted != null && this.RegionsContacted.Equals(payload.RegionsContacted))) &&
-                   ((this.GreaterThan1Kb == null && payload.GreaterThan1Kb == null ) || (this.GreaterThan1Kb != null && payload.GreaterThan1Kb != null && this.GreaterThan1Kb.Equals(payload.GreaterThan1Kb))) &&
+                   ((this.GreaterThan1Kb == null && payload.GreaterThan1Kb == null) || (this.GreaterThan1Kb != null && payload.GreaterThan1Kb != null && this.GreaterThan1Kb.Equals(payload.GreaterThan1Kb))) &&
                    ((this.Consistency == null && payload.Consistency == null) || (this.Consistency != null && payload.Consistency != null && this.Consistency.Equals(payload.Consistency))) &&
                    ((this.DatabaseName == null && payload.DatabaseName == null) || (this.DatabaseName != null && payload.DatabaseName != null && this.DatabaseName.Equals(payload.DatabaseName))) &&
                    ((this.ContainerName == null && payload.ContainerName == null) || (this.ContainerName != null && payload.ContainerName != null && this.ContainerName.Equals(payload.ContainerName))) &&
@@ -129,9 +131,87 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return isequal;
         }
 
+        private string keyInternal = null;
+        public string Key
+        {
+            get
+            {
+                if (this.keyInternal == null)
+                {
+                    StringBuilder keySTr = new StringBuilder();
+                    this.keyInternal = keySTr
+                        .Append(this.RegionsContacted)
+                        .Append(this.GreaterThan1Kb)
+                        .Append(this.Consistency)
+                        .Append(this.DatabaseName)
+                        .Append(this.ContainerName)
+                        .Append(this.Operation)
+                        .Append(this.Resource)
+                        .Append(this.StatusCode).ToString();
+                }
+                return this.keyInternal;
+            }
+        }
+
         internal void SetAggregators(LongConcurrentHistogram histogram, double adjustment = 1)
         {
             this.MetricInfo.SetAggregators(histogram, adjustment);
+        }
+
+        private LongConcurrentHistogram latencyInternal = null;
+        internal LongConcurrentHistogram latency
+        {
+            get
+            {
+                if (this.latencyInternal == null)
+                {
+                    this.latencyInternal = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+                                             ClientTelemetryOptions.RequestLatencyMax,
+                                             ClientTelemetryOptions.RequestLatencyPrecision);
+                }
+
+                return this.latencyInternal;
+
+            }
+        }
+
+        private LongConcurrentHistogram rcInternal = null;
+        internal LongConcurrentHistogram requestcharge
+        {
+            get
+            {
+                if (this.rcInternal == null)
+                {
+                    this.rcInternal = new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
+                                                ClientTelemetryOptions.RequestChargeMax,
+                                                ClientTelemetryOptions.RequestChargePrecision);
+                }
+
+                return this.rcInternal;
+            }
+        }
+
+        internal List<OperationInfo> GenerateMetrics()
+        {
+            List<OperationInfo> opList = new List<OperationInfo>();
+
+            if (this.latency.TotalCount > 0)
+            {
+                OperationInfo payloadForLatency = this;
+                payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
+                payloadForLatency.SetAggregators(this.latency, ClientTelemetryOptions.TicksToMsFactor);
+
+                opList.Add(payloadForLatency);
+            }
+
+            if (this.requestcharge.TotalCount > 0)
+            {
+                OperationInfo payloadForRequestCharge = this.Copy();
+                payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
+                payloadForRequestCharge.SetAggregators(this.requestcharge, ClientTelemetryOptions.HistogramPrecisionFactor);
+                opList.Add(payloadForRequestCharge);
+            }
+            return opList;
         }
     }
 }

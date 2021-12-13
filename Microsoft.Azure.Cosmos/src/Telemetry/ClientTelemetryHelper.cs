@@ -145,22 +145,22 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         /// <param name="metrics"></param>
         /// <returns>Collection of ReportPayload</returns>
-        internal static List<OperationInfo> ToListWithMetricsInfo(IDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> metrics)
+        internal static List<OperationInfo> ToListWithMetricsInfo(HashSet<OperationInfo> metrics)
         {
             DefaultTrace.TraceInformation("Aggregating operation information to list started");
 
             List<OperationInfo> payloadWithMetricInformation = new List<OperationInfo>();
-            foreach (KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry in metrics)
+            foreach (OperationInfo entry in metrics)
             {
-                OperationInfo payloadForLatency = entry.Key;
+                OperationInfo payloadForLatency = entry;
                 payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
-                payloadForLatency.SetAggregators(entry.Value.latency, ClientTelemetryOptions.TicksToMsFactor);
+                payloadForLatency.SetAggregators(entry.latency, ClientTelemetryOptions.TicksToMsFactor);
 
                 payloadWithMetricInformation.Add(payloadForLatency);
 
                 OperationInfo payloadForRequestCharge = payloadForLatency.Copy();
                 payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
-                payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.HistogramPrecisionFactor);
+                payloadForRequestCharge.SetAggregators(entry.requestcharge, ClientTelemetryOptions.HistogramPrecisionFactor);
 
                 payloadWithMetricInformation.Add(payloadForRequestCharge);
             }
