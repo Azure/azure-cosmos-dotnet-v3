@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         private static readonly Uri endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
+        private static readonly int collectorWindow = (int)(observingWindow.TotalMilliseconds / 4);
 
         private readonly ClientTelemetryProperties clientTelemetryInfo;
 
@@ -45,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private Task collectorTask;
 
         private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latencyHist, LongConcurrentHistogram requestchargeHist)> operationInfoMap = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latencyHist, LongConcurrentHistogram requestchargeHist)>();
-        private ConcurrentBag<TelemetryRawObject> rawData = new ConcurrentBag<TelemetryRawObject>();
+        private BlockingCollection<TelemetryRawObject> rawData = new BlockingCollection<TelemetryRawObject>();
 
         /// <summary>
         /// Factory method to intiakize telemetry object and start observer task
@@ -204,8 +205,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             while (!this.cancellationTokenSource.IsCancellationRequested)
             {
-                ConcurrentBag<TelemetryRawObject> rawdatalist
-                                      = Interlocked.Exchange(ref this.rawData, new ConcurrentBag<TelemetryRawObject>());
+                BlockingCollection<TelemetryRawObject> rawdatalist
+                                      = Interlocked.Exchange(ref this.rawData, new BlockingCollection<TelemetryRawObject>());
 
                 while (rawdatalist.Count > 0)
                 {
@@ -262,9 +263,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     }
                 }
 
-                await Task.Delay(500, this.cancellationTokenSource.Token);
+                await Task.Delay(collectorWindow, this.cancellationTokenSource.Token);
+
             }
-           
+
         }
 
         /// <summary>
