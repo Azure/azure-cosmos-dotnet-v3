@@ -123,8 +123,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>Async Task</returns>
         private async Task EnrichAndSendAsync()
         {
-            Console.WriteLine("Telemetry Job Started with Observing window : {0}", observingWindow);
-
             try
             {
                 while (!this.cancellationTokenSource.IsCancellationRequested)
@@ -186,7 +184,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                            string consistencyLevel,
                            double requestCharge)
         {
-            Console.WriteLine("published");
             TelemetryRawObject raw = new TelemetryRawObject(cosmosDiagnostics,
                            statusCode,
                            responseSizeInBytes,
@@ -197,7 +194,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                            consistencyLevel,
                            requestCharge);
             this.rawData.Add(raw);
-            Console.WriteLine(this.rawData.Count.ToString());
         }
 
         /// <summary>
@@ -209,8 +205,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 List<TelemetryRawObject> rawdatalist
                                       = Interlocked.Exchange(ref this.rawData, new List<TelemetryRawObject>());
-
-                Console.WriteLine("Collecting Operation data for Telemetry.");
 
                 foreach (TelemetryRawObject raw in rawdatalist)
                 {
