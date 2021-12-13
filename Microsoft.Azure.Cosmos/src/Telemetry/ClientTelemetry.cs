@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         string regionsContacted = ClientTelemetryHelper.GetContactedRegions(raw.cosmosDiagnostics);
 
                         // Recording Request Latency and Request Charge
-                        OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
+                        new OperationInfo(regionsContacted: regionsContacted?.ToString(),
                                                         responseSizeInBytes: raw.responseSizeInBytes,
                                                         consistency: raw.consistencyLevel,
                                                         databaseName: raw.databaseId,
@@ -229,13 +229,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                         resource: raw.resourceType,
                                                         statusCode: (int)raw.statusCode);
 
-                        int latencyPrecision = ClientTelemetryOptions.RequestLatencyPrecision;
+                      /*  int latencyPrecision = ClientTelemetryOptions.RequestLatencyPrecision;
                         if (!raw.statusCode.IsSuccess())
                         {
                             latencyPrecision = 2;
-                        }
+                        }*/
 
-                        (LongConcurrentHistogram latencyHist, LongConcurrentHistogram requestchargeHist) = this.operationInfoMap
+                      /*  (LongConcurrentHistogram latencyHist, LongConcurrentHistogram requestchargeHist) = this.operationInfoMap
                            .GetOrAdd(payloadKey, x => (latencyHist: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                                ClientTelemetryOptions.RequestLatencyMax,
                                                                latencyPrecision),
@@ -259,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         catch (Exception ex)
                         {
                             DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex.Message);
-                        }
+                        }*/
                     }
                 }
 
