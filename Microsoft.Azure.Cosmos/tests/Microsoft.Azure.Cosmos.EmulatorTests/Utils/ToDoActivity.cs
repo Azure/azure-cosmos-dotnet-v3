@@ -1,14 +1,15 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+
     public class ToDoActivity
     {
         public string id { get; set; }
@@ -22,6 +23,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public ToDoActivity[] children { get; set; }
 
+        public TestEnum Test { get; set; }
+        
         public override bool Equals(Object obj)
         {
             ToDoActivity input = obj as ToDoActivity;
@@ -92,6 +95,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 valid = true
             };
+        }
+
+        [JsonConverter(typeof(StringEnumConverter))]
+        public enum TestEnum
+        {
+            TestValue,
+            TestValue2,
         }
     }
 }

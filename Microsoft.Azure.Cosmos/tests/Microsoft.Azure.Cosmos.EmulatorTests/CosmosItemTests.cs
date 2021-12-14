@@ -140,20 +140,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics.ToString()));
             Assert.IsTrue(diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
 
-            response = await this.Container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
+            ItemResponse<JObject> jObjectResponse = await this.Container.ReadItemAsync<JObject>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Resource);
-            Assert.IsNotNull(response.Diagnostics);
-            Assert.IsFalse(string.IsNullOrEmpty(response.Diagnostics.ToString()));
-            Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
-
-            Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.MaxResourceQuota));
-            Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.CurrentResourceQuotaUsage));
-            ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.pk), id: testItem.id);
-            Assert.IsNotNull(deleteResponse);
-            Assert.IsNotNull(response.Diagnostics);
-            Assert.IsFalse(string.IsNullOrEmpty(response.Diagnostics.ToString()));
-            Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
+            Assert.AreEqual(jObjectResponse.Resource["Test"].Value<string>(), "TestValue");
         }
 
         [TestMethod]
