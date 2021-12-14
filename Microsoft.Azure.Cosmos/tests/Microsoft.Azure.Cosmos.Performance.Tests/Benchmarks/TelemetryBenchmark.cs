@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             for (int i = 0; i < 1000; i++)
             {
-                this.CollectOperationAndHistogram(cosmosDiagnostics: this.diagnostics,
+                this.CollectMasterOperationAndHistogram(cosmosDiagnostics: this.diagnostics,
                     statusCode: HttpStatusCode.OK,
                     responseSizeInBytes: 10 * i,
                     containerId: "containerid",
