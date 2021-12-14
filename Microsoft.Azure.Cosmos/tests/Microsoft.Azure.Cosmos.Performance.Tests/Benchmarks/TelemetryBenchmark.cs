@@ -45,6 +45,44 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         }
 
         [Benchmark]
+        public void CollectMasterOperationAndHistogramTest()
+        {
+            this.CollectMasterOperationAndHistogram(cosmosDiagnostics: this.diagnostics,
+                statusCode: HttpStatusCode.OK,
+                responseSizeInBytes: 1000,
+                containerId: "containerid",
+                databaseId: "databaseid",
+                operationType: OperationType.Read,
+                resourceType: ResourceType.Document,
+                consistencyLevel: "eventual",
+                requestCharge: 10d);
+        }
+
+        [Benchmark]
+        public void CollectMasterOperationAndHistogramFor1000RequestsTest()
+        {
+            for (int i = 0; i < 1000; i++)
+            {
+                this.CollectOperationAndHistogram(cosmosDiagnostics: this.diagnostics,
+                    statusCode: HttpStatusCode.OK,
+                    responseSizeInBytes: 10 * i,
+                    containerId: "containerid",
+                    databaseId: "databaseid",
+                    operationType: OperationType.Read,
+                    resourceType: ResourceType.Document,
+                    consistencyLevel: "eventual",
+                    requestCharge: 10d);
+            }
+
+        }
+
+        [Benchmark]
+        public void CollectRegionContactedTest()
+        {
+            this.CollectRegionContacted(cosmosDiagnostics: this.diagnostics);
+        }
+
+        [Benchmark]
         public void CollectFullWithDictionaryStringKeyTest()
         {
             this.CollectFullWithDictionaryStringKey(cosmosDiagnostics: this.diagnostics,
@@ -59,28 +97,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         }
 
         [Benchmark]
-        public void CollectMasterOperationAndHistogramTest()
-        {
-            this.CollectMasterOperationAndHistogram(cosmosDiagnostics: this.diagnostics,
-                statusCode: HttpStatusCode.OK,
-                responseSizeInBytes: 1000,
-                containerId: "containerid",
-                databaseId: "databaseid",
-                operationType: OperationType.Read,
-                resourceType: ResourceType.Document,
-                consistencyLevel: "eventual",
-                requestCharge: 10d);
-        }
-
-
-        [Benchmark]
-        public void CollectRegionContactedTest()
-        {
-            this.CollectRegionContacted(cosmosDiagnostics: this.diagnostics);
-        }
-
-        [Benchmark]
-        public void CollectOperationAndHistogramTest()
+        public void CollectOperationAndHistogramWithDictionaryStringKeyTest()
         {
             this.CollectOperationAndHistogram(cosmosDiagnostics: this.diagnostics,
                 statusCode: HttpStatusCode.OK,
@@ -94,60 +111,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         }
 
         [Benchmark]
-        public void CollectOperationAndHistogramWithTwoDiffOpsTest()
-        {
-            this.CollectOperationAndHistogram(cosmosDiagnostics: this.diagnostics,
-                statusCode: HttpStatusCode.OK,
-                responseSizeInBytes: 1000,
-                containerId: "containerid",
-                databaseId: "databaseid",
-                operationType: OperationType.Read,
-                resourceType: ResourceType.Document,
-                consistencyLevel: "eventual",
-                requestCharge: 10d);
-
-            this.CollectOperationAndHistogram(cosmosDiagnostics: this.diagnostics,
-                statusCode: HttpStatusCode.NotFound,
-                responseSizeInBytes: 1000,
-                containerId: "containerid",
-                databaseId: "databaseid",
-                operationType: OperationType.Read,
-                resourceType: ResourceType.Document,
-                consistencyLevel: "eventual",
-                requestCharge: 10d);
-        }
-
-        [Benchmark]
-        public void CollectOperationAndHistogramWithTwoSameOpsTest()
-        {
-            this.CollectOperationAndHistogram(cosmosDiagnostics: this.diagnostics,
-                statusCode: HttpStatusCode.OK,
-                responseSizeInBytes: 1000,
-                containerId: "containerid",
-                databaseId: "databaseid",
-                operationType: OperationType.Read,
-                resourceType: ResourceType.Document,
-                consistencyLevel: "eventual",
-                requestCharge: 10d);
-
-            this.CollectOperationAndHistogram(cosmosDiagnostics: this.diagnostics,
-                statusCode: HttpStatusCode.OK,
-                responseSizeInBytes: 1000,
-                containerId: "containerid",
-                databaseId: "databaseid",
-                operationType: OperationType.Read,
-                resourceType: ResourceType.Document,
-                consistencyLevel: "eventual",
-                requestCharge: 10d);
-        }
-
-        [Benchmark]
-        public void CollectOperationAndHistogramWithFor1000RequestsTest()
+        public void CollectOperationAndHistogramWithDictionaryStringFor1000RequestsTest()
         {
             for(int i = 0; i< 1000; i++)
             {
                 this.CollectOperationAndHistogram(cosmosDiagnostics: this.diagnostics,
-                    statusCode: HttpStatusCode.NotFound,
+                    statusCode: HttpStatusCode.OK,
                     responseSizeInBytes: 10 * i,
                     containerId: "containerid",
                     databaseId: "databaseid",
