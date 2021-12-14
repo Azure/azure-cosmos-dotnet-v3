@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>Async Task</returns>
         private async Task EnrichAndSendAsync()
         {
-            Console.WriteLine("Telemetry Job Started with Observing window : {0}", observingWindow);
+           // Console.WriteLine("Telemetry Job Started with Observing window : {0}", observingWindow);
 
             try
             {
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     // If cancellation is requested after the delay then return from here.
                     if (this.cancellationTokenSource.IsCancellationRequested)
                     {
-                        Console.WriteLine("Observer Task Cancelled.");
+                        //Console.WriteLine("Observer Task Cancelled.");
                         break;
                     }
 
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     this.clientTelemetryInfo.DateTimeUtc = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
 
-                    Console.WriteLine("set count in observer " + this.operationInfo.Count);
+                   // Console.WriteLine("set count in observer " + this.operationInfo.Count);
 
                     try
                     {
@@ -167,19 +167,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             ConcurrentDictionary<string, OperationInfo> operationInfoSnapshot
                             = Interlocked.Exchange(ref this.operationInfo, new ConcurrentDictionary<string, OperationInfo>());
 
-                            Console.WriteLine("set count in observer after snapshot " + operationInfoSnapshot.Count);
+                            //Console.WriteLine("set count in observer after snapshot " + operationInfoSnapshot.Count);
                             List<OperationInfo> opList = new List<OperationInfo>();
                             foreach (OperationInfo operationInfo in operationInfoSnapshot.Values)
                             {
                                 List<OperationInfo> tempList = operationInfo.GenerateMetrics();
-                                Console.WriteLine("set count in observer tempList" + tempList.Count);
+                               // Console.WriteLine("set count in observer tempList" + tempList.Count);
                                 if (tempList.Count > 0)
                                 {
                                     opList.AddRange(tempList);
                                 }
                             }
 
-                            Console.WriteLine("set count in observer opList " + opList.Count);
+                           // Console.WriteLine("set count in observer opList " + opList.Count);
                             this.clientTelemetryInfo.OperationInfo = opList;
                         }
                     }
@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 Console.WriteLine("Exception in EnrichAndSendAsync() : {0}", ex.Message);
             }
 
-            Console.WriteLine("Telemetry Job Stopped.");
+            //Console.WriteLine("Telemetry Job Stopped.");
         }
 
         /// <summary>
@@ -221,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             string consistencyLevel,
                             double requestCharge)
         {
-            Console.WriteLine("Collecting Operation data for Telemetry.");
+            //Console.WriteLine("Collecting Operation data for Telemetry.");
 
             if (cosmosDiagnostics == null)
             {
@@ -261,7 +261,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 Console.WriteLine("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex.Message);
             }
 
-            Console.WriteLine("set count " + this.operationInfo.Count);
+       //     Console.WriteLine("set count " + this.operationInfo.Count);
        
         }
 
@@ -272,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             try
             {
-                Console.WriteLine("Started Recording System Usage for telemetry.");
+                //Console.WriteLine("Started Recording System Usage for telemetry.");
 
                 SystemUsageHistory systemUsageHistory = this.diagnosticsHelper.GetClientTelemtrySystemHistory();
 
