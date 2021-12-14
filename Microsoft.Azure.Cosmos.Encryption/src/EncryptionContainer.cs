@@ -762,12 +762,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 encryptionDiagnosticsContext.AddEncryptionDiagnosticsToResponseMessage(responseMessage);
 
                 throw new EncryptionCosmosException(
-                   "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Retrying may fix the issue. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + responseMessage.ErrorMessage,
-                   HttpStatusCode.BadRequest,
-                   int.Parse(Constants.IncorrectContainerRidSubStatus),
-                   responseMessage.Headers.ActivityId,
-                   responseMessage.Headers.RequestCharge,
-                   responseMessage.Diagnostics);
+                    "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Retrying may fix the issue. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + responseMessage.ErrorMessage,
+                    HttpStatusCode.BadRequest,
+                    int.Parse(Constants.IncorrectContainerRidSubStatus),
+                    responseMessage.Headers.ActivityId,
+                    responseMessage.Headers.RequestCharge,
+                    responseMessage.Diagnostics);
             }
         }
 
@@ -1077,10 +1077,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
             List<PatchOperation> encryptedPatchOperations = await this.EncryptPatchOperationsAsync(
-                   patchOperations,
-                   encryptionSettings,
-                   encryptionDiagnosticsContext,
-                   cancellationToken);
+                patchOperations,
+                encryptionSettings,
+                encryptionDiagnosticsContext,
+                cancellationToken);
 
             ResponseMessage responseMessage = await this.container.PatchItemStreamAsync(
                 id,
