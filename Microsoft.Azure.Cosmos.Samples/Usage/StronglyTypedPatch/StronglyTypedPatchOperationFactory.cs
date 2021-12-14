@@ -7,30 +7,26 @@
     using System.Reflection;
     using Fasterflect;
     using Microsoft.Azure.Cosmos;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Serialization;
 
     public class StronglyTypedPatchOperationFactory<TObject>
     {
-        private readonly IContractResolver contractResolver;
+        private readonly CosmosLinqSerializerOptions serializerOptions;
 
-        internal StronglyTypedPatchOperationFactory(IContractResolver contractResolver)
+        internal StronglyTypedPatchOperationFactory(CosmosLinqSerializerOptions serializerOptions)
         {
-            this.contractResolver = contractResolver;
+            this.serializerOptions = serializerOptions;
         }
 
-        internal StronglyTypedPatchOperationFactory(CosmosClient client) : this(GetResolver(client))
+        public StronglyTypedPatchOperationFactory(CosmosClient client) : this(GetOptions(client))
         {
         }
-        private static IContractResolver GetResolver(CosmosClient client)
-        {
-            //TODO: remove Fasterflect
-            JsonSerializerSettings serializerSettings = (JsonSerializerSettings)typeof(CosmosClient).Assembly
-                .GetType("Microsoft.Azure.Cosmos.CosmosJsonDotNetSerializer")
-                .CreateInstance(client.ClientOptions.SerializerOptions ?? new()) //TODO: use this new() behavior for custom serializers?
-                .GetFieldValue("SerializerSettings");
 
-            return serializerSettings.ContractResolver;
+        private static CosmosLinqSerializerOptions GetOptions(CosmosClient client)
+        {
+            // see ContainerCore.Items.GetItemLinqQueryable for source of this
+            return client.ClientOptions.SerializerOptions is { } options
+                ? new() { PropertyNamingPolicy = options.PropertyNamingPolicy }
+                : null;
         }
 
         public PatchOperation Add<TValue>(Expression<Func<TObject, TValue>> path, TValue value)
@@ -150,13 +146,14 @@
 
             return "/" + string.Join("/", pathParts);
 
-            //TODO: add cache for a single pass of ToUntyped
             string GetNameUnderContract(MemberInfo member)
             {
-                JsonObjectContract contract = (JsonObjectContract)this.contractResolver.ResolveContract(member.DeclaringType);
-                JsonProperty property = contract.Properties.Single(x => x.UnderlyingName == member.Name);
-                return property.PropertyName;
-            }
+                Type type = typeof(CosmosClient).Assembly
+                    .GetType("Microsoft.Azure.Cosmos.Linq.TypeSystem");
+
+                //TODO: remove Fasterflect; use call delegate instead
+                return (string)type.CallMethod("GetMemberName", new[] { typeof(MemberInfo), typeof(CosmosLinqSerializerOptions) }, member, this.serializerOptions);
+            } 
 
             string GetIndex(int index)
             {

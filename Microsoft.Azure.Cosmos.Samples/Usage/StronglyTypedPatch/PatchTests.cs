@@ -14,7 +14,7 @@
     {
         public void TestPathResoluition()
         {
-            StronglyTypedPatchOperationFactory<Person> factory = new StronglyTypedPatchOperationFactory<Person>(new DefaultContractResolver());
+            StronglyTypedPatchOperationFactory<Person> factory = new(serializerOptions : null);
 
             string[] actualPaths = new[] {
 
