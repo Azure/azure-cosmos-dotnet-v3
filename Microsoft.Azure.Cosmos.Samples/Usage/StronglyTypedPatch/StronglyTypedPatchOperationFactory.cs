@@ -106,8 +106,11 @@
 
         private string GetJsonPointer(LambdaExpression expression)
         {
+            //TODO: handle indices assigned by variables (const or dynamic)
+            //TODO: handle string keys in dictionaries
+            //TODO: add tests for some unsupported expressions (e.g. method calls, property like string.Length)
             //TODO: use expression visitor
-            //TODO: handle indices assigned by variables, etc - what does Cosmos LINQ support?
+
 
             Stack<string> pathParts = new();
 
