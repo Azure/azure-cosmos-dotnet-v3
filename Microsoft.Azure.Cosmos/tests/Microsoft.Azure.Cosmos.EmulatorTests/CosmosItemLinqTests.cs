@@ -453,6 +453,67 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task LinqHasValue()
+        {
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(this.Container, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
+
+            // NamingPolicy - CamelCase set
+            CosmosLinqSerializerOptions linqSerializerOptions = new CosmosLinqSerializerOptions
+            {
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+            };
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true, null, null, linqSerializerOptions);
+            // Nullable<T>.HasValue transaltes to IS_DEFINED - should work regardless of serialization/casing
+            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.nullableInt.HasValue);
+            Assert.AreEqual(2, queriable.Count(), "HasValue should have returned two items with CamelCase serialization");
+
+            // Override camelcase client with default
+            linqSerializerOptions = new CosmosLinqSerializerOptions
+            {
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.Default
+            };
+            linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true, null, null, linqSerializerOptions);
+            // Nullable<T>.HasValue transaltes to IS_DEFINED - should work regardless of serialization/casing
+            queriable = linqQueryable.Where(item => item.nullableInt.HasValue);
+            Assert.AreEqual(2, queriable.Count(), "HasValue should have returned two items with default serialization");
+        }
+
+        [TestMethod]
+        public async Task LinqWithIgnoreNullValuesHasValueNoResults()
+        {
+            static void builder(CosmosClientBuilder action)
+            {
+                action.WithSerializerOptions(new CosmosSerializationOptions()
+                {
+                    IgnoreNullValues = true
+                });
+            }
+            CosmosClient nullValuesClient = TestCommon.CreateCosmosClient(builder, false);
+            Cosmos.Database database = nullValuesClient.GetDatabase(this.database.Id);
+            Container containerFromNulValuesClient = database.GetContainer(this.Container.Id);
+
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(containerFromNulValuesClient, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
+
+            // NamingPolicy - CamelCase set
+            CosmosLinqSerializerOptions linqSerializerOptions = new CosmosLinqSerializerOptions
+            {
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+            };
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true, null, null, linqSerializerOptions);
+            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.nullableInt.HasValue);
+            Assert.AreEqual(0, queriable.Count(), "HasValue should have returned zero items with CamelCase serialization");
+
+            // Override camelcase client with default
+            linqSerializerOptions = new CosmosLinqSerializerOptions
+            {
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.Default
+            };
+            linqQueryable = containerFromNulValuesClient.GetItemLinqQueryable<ToDoActivity>(true, null, null, linqSerializerOptions);
+            queriable = linqQueryable.Where(item => item.nullableInt.HasValue);
+            Assert.AreEqual(0, queriable.Count(), "HasValue should have returned zero items with default serialization");
+        }
+
+        [TestMethod]
         public async Task LinqParameterisedTest1()
         {
             //Creating items for query.
