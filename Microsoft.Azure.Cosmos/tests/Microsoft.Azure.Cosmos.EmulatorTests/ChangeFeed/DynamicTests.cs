@@ -137,8 +137,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     ChangeFeedProcessorUserException cfpException = exception as ChangeFeedProcessorUserException;
                     Assert.IsNotNull(cfpException);
                     Assert.ReferenceEquals(exceptionToPropagate, exception.InnerException);
-                    Assert.IsNotNull(cfpException.ChangeFeedProcessorContext.Diagnostics);
-                    Assert.IsNotNull(cfpException.ChangeFeedProcessorContext.Headers);
+                    this.ValidateContext(cfpException.ChangeFeedProcessorContext);
                     return Task.CompletedTask;
                 })
                 .WithLeaseContainer(this.LeaseContainer).Build();
@@ -388,6 +387,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Assert.IsNotNull(changeFeedProcessorContext.Headers);
             Assert.IsNotNull(changeFeedProcessorContext.Headers.Session);
             Assert.IsTrue(changeFeedProcessorContext.Headers.RequestCharge > 0);
+            string diagnosticsAsString = changeFeedProcessorContext.Diagnostics.ToString();
+            Assert.IsTrue(diagnosticsAsString.Contains("Change Feed Processor Read Next Async"));
         }
 
     }

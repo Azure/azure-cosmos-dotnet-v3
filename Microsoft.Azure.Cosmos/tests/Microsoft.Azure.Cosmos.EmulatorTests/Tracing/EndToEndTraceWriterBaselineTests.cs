@@ -293,6 +293,51 @@
             }
             //----------------------------------------------------------------
 
+            //----------------------------------------------------------------
+            //  ChangeFeed Estimator
+            //----------------------------------------------------------------
+            {
+                Container leaseContainer = await EndToEndTraceWriterBaselineTests.database.CreateContainerAsync(
+                    id: Guid.NewGuid().ToString(),
+                    partitionKeyPath: "/id");
+
+                ChangeFeedProcessor processor = container
+                .GetChangeFeedProcessorBuilder(
+                    processorName: "test",
+                    onChangesDelegate: (IReadOnlyCollection<dynamic> docs, CancellationToken token) => Task.CompletedTask)
+                .WithInstanceName("random")
+                .WithLeaseContainer(leaseContainer)
+                .Build();
+
+                await processor.StartAsync();
+
+                // Letting processor initialize
+                await Task.Delay(2000);
+
+                await processor.StopAsync();
+
+                startLineNumber = GetLineNumber();
+                ChangeFeedEstimator estimator = container.GetChangeFeedEstimator(
+                    "test",
+                    leaseContainer);
+                using FeedIterator<ChangeFeedProcessorState> feedIterator = estimator.GetCurrentStateIterator();
+
+                List<ITrace> traces = new List<ITrace>();
+
+                while (feedIterator.HasMoreResults)
+                {
+                    FeedResponse<ChangeFeedProcessorState> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                    traces.Add(trace);
+                }
+
+                ITrace traceForest = TraceJoiner.JoinTraces(traces);
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("Change Feed Estimator", traceForest, startLineNumber, endLineNumber));
+            }
+            //----------------------------------------------------------------
+
             this.ExecuteTestSuite(inputs);
         }
 
@@ -1176,6 +1221,11 @@
                 trace.Name == "ReadManyItemsAsync")
             {
                 return; // skip test for read many as the queries are done in parallel
+            }
+
+            if (trace.Name == "Change Feed Estimator Read Next Async")
+            {
+                return; // Change Feed Estimator issues parallel requests
             }
 
             if (trace.Children.Count == 0)

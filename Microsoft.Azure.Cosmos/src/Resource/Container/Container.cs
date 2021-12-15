@@ -366,7 +366,7 @@ namespace Microsoft.Azure.Cosmos
         ///    status = "InProgress"
         /// };
         ///
-        /// ItemResponse item = await this.container.CreateItemAsync<ToDoActivity>(tests, new PartitionKey(test.status));
+        /// ItemResponse item = await this.container.CreateItemAsync<ToDoActivity>(test, new PartitionKey(test.status));
         /// ]]>
         /// </code>
         /// </example>
@@ -1138,7 +1138,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         ///
         /// // LINQ query generation
-        /// using (FeedIterator setIterator = container.GetItemLinqQueryable<Book>()
+        /// using (FeedIterator<Book> setIterator = container.GetItemLinqQueryable<Book>()
         ///                      .Where(b => b.Title == "War and Peace")
         ///                      .ToFeedIterator())
         /// {                   

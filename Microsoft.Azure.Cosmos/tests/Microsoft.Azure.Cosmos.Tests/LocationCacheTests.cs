@@ -79,6 +79,36 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
         }
 
+
+        [TestMethod]
+        [Owner("sourabhjain")]
+        public void ValidateTryGetLocationForGatewayDiagnostics()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: true);
+
+            Assert.AreEqual(false, this.cache.TryGetLocationForGatewayDiagnostics(LocationCacheTests.DefaultEndpoint, out string regionName));
+            Assert.IsNull(regionName);
+
+            // Default Endpoint with path
+            Assert.AreEqual(false, this.cache.TryGetLocationForGatewayDiagnostics(new Uri(LocationCacheTests.DefaultEndpoint, "random/path"), out regionName));
+            Assert.IsNull(regionName);
+
+            foreach (AccountRegion databaseAccountLocation in this.databaseAccount.WriteLocationsInternal)
+            {
+                Assert.AreEqual(true, this.cache.TryGetLocationForGatewayDiagnostics(new Uri(databaseAccountLocation.Endpoint), out regionName));
+                Assert.AreEqual(databaseAccountLocation.Name, regionName);
+            }
+
+            foreach (AccountRegion databaseAccountLocation in this.databaseAccount.ReadLocationsInternal)
+            {
+                Assert.AreEqual(true, this.cache.TryGetLocationForGatewayDiagnostics(new Uri(databaseAccountLocation.Endpoint), out regionName));
+                Assert.AreEqual(databaseAccountLocation.Name, regionName);
+            }
+        }
+
         [TestMethod]
         [Owner("atulk")]
         public async Task ValidateRetryOnSessionNotAvailabeWithDisableMultipleWriteLocationsAndEndpointDiscoveryDisabled()
