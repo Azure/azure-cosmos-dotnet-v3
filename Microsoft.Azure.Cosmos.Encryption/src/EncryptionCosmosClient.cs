@@ -14,6 +14,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     internal sealed class EncryptionCosmosClient : CosmosClient
     {
+        internal static readonly SemaphoreSlim EncryptionKeyCacheSemaphore = new SemaphoreSlim(1, 1);
+
         private readonly CosmosClient cosmosClient;
 
         private readonly AsyncCache<string, ClientEncryptionKeyProperties> clientEncryptionKeyPropertiesCacheByKeyId;

@@ -33,29 +33,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public override byte[] UnwrapKey(string encryptionKeyId, Data.Encryption.Cryptography.KeyEncryptionKeyAlgorithm algorithm, byte[] encryptedKey)
         {
-            // since AzureKeyVaultKeyWrapProvider/AzureKeyVaultKeyStoreProvider has access to KeyStoreProvider cache lets directly call UnwrapKeyAsync instead of looking up cache ourselves,
-            // avoids additional cache look up by AzureKeyVaultKeyStoreProvider Unwrap() in case of cache miss
-            if (this.encryptionKeyWrapProvider is AzureKeyVaultKeyWrapProvider)
+            // since we do not expose GetOrCreateDataEncryptionKey we first look up the cache.
+            // Cache miss results in call to UnWrapCore which updates the cache after UnwrapKeyAsync is called.
+            return this.GetOrCreateDataEncryptionKey(encryptedKey.ToHexString(), UnWrapKeyCore);
+
+            // delegate that is called by GetOrCreateDataEncryptionKey, which unwraps the key and updates the cache in case of cache miss.
+            byte[] UnWrapKeyCore()
             {
                 return this.encryptionKeyWrapProvider.UnwrapKeyAsync(encryptionKeyId, algorithm.ToString(), encryptedKey)
                     .ConfigureAwait(false)
                     .GetAwaiter()
                     .GetResult();
-            }
-            else
-            {
-                // for any other custom derived instances of EncryptionKeyWrapProvider, since we do not expose GetOrCreateDataEncryptionKey we first look up the cache.
-                // Cache miss results in call to UnWrapCore which updates the cache after UnwrapKeyAsync is called.
-                return this.GetOrCreateDataEncryptionKey(encryptedKey.ToHexString(), UnWrapKeyCore);
-
-                // delegate that is called by GetOrCreateDataEncryptionKey, which unwraps the key and updates the cache in case of cache miss.
-                byte[] UnWrapKeyCore()
-                {
-                    return this.encryptionKeyWrapProvider.UnwrapKeyAsync(encryptionKeyId, algorithm.ToString(), encryptedKey)
-                        .ConfigureAwait(false)
-                        .GetAwaiter()
-                        .GetResult();
-                }
             }
         }
 

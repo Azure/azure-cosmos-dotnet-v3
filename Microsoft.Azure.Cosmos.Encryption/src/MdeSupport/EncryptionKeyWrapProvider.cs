@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 // set the TTL for ProtectedDataEncryption, so that we have a uniform expiry of the KeyStoreProvider and ProtectedDataEncryption cache items.
                 if (this.EncryptionKeyStoreProviderImpl.DataEncryptionKeyCacheTimeToLive.HasValue)
                 {
-                    if (EncryptionSettingForProperty.EncryptionKeyCacheSemaphore.Wait(-1))
+                    if (EncryptionCosmosClient.EncryptionKeyCacheSemaphore.Wait(-1))
                     {
                         try
                         {
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         }
                         finally
                         {
-                            EncryptionSettingForProperty.EncryptionKeyCacheSemaphore.Release(1);
+                            EncryptionCosmosClient.EncryptionKeyCacheSemaphore.Release(1);
                         }
                     }
                 }

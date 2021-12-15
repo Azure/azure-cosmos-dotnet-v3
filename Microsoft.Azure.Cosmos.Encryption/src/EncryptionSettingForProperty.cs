@@ -13,8 +13,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class EncryptionSettingForProperty
     {
-        internal static readonly SemaphoreSlim EncryptionKeyCacheSemaphore = new SemaphoreSlim(1, 1);
-
         private readonly string databaseRid;
 
         private readonly EncryptionContainer encryptionContainer;
@@ -156,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string keyId,
             CancellationToken cancellationToken)
         {
-            if (await EncryptionKeyCacheSemaphore.WaitAsync(-1, cancellationToken))
+            if (await EncryptionCosmosClient.EncryptionKeyCacheSemaphore.WaitAsync(-1, cancellationToken))
             {
                 try
                 {
@@ -174,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
                 finally
                 {
-                    EncryptionKeyCacheSemaphore.Release(1);
+                    EncryptionCosmosClient.EncryptionKeyCacheSemaphore.Release(1);
                 }
             }
 
