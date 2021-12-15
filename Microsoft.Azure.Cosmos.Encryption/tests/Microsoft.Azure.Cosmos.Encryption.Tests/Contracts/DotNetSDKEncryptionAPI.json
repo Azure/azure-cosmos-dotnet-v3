@@ -31,40 +31,13 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyAlgorithm;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyAlgorithm;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.String AeadAes256CbcHmacSha256": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String AeadAes256CbcHmacSha256;IsInitOnly:False;IsStatic:True;"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "Microsoft.Azure.Cosmos.Encryption.CosmosEncryptionType;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {
-        "System.String Deterministic": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String Deterministic;IsInitOnly:False;IsStatic:True;"
-        },
-        "System.String Randomized": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String Randomized;IsInitOnly:False;IsStatic:True;"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "Microsoft.Azure.Cosmos.Encryption.CosmosKeyEncryptionKeyAlgorithm;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {
-        "System.String RsaOaep": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String RsaOaep;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}
@@ -208,6 +181,33 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_DataEncryptionKeyCacheTimeToLive(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.Encryption.EncryptionType;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.String Deterministic": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String Deterministic;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String Randomized": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String Randomized;IsInitOnly:False;IsStatic:True;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.Encryption.KeyEncryptionKeyAlgorithm;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.String RsaOaep": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String RsaOaep;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}
