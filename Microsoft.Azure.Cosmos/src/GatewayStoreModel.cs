@@ -81,13 +81,13 @@ namespace Microsoft.Azure.Cosmos
                     (exception.StatusCode == HttpStatusCode.PreconditionFailed || exception.StatusCode == HttpStatusCode.Conflict
                     || (exception.StatusCode == HttpStatusCode.NotFound && exception.GetSubStatus() != SubStatusCodes.ReadSessionNotAvailable)))
                 {
-                    await this.CaptureSessionTokenAndHandleSplitAsync(exception.StatusCode, exception.GetSubStatus(), request, exception.Headers);
+                    await this.CaptureSessionTokenAndHandleSplitAsync(exception.StatusCode, exception.GetSubStatus(), request, exception.Headers, cancellationToken);
                 }
 
                 throw;
             }
 
-            await this.CaptureSessionTokenAndHandleSplitAsync(response.StatusCode, response.SubStatusCode, request, response.Headers);
+            await this.CaptureSessionTokenAndHandleSplitAsync(response.StatusCode, response.SubStatusCode, request, response.Headers, cancellationToken);
             return response;
         }
 
@@ -177,7 +177,8 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode? statusCode,
             SubStatusCodes subStatusCode,
             DocumentServiceRequest request,
-            INameValueCollection responseHeaders)
+            INameValueCollection responseHeaders,
+            CancellationToken cancellationToken)
         {
             // Exceptionless can try to capture session token from CompleteResponse
             if (request.IsValidStatusCodeForExceptionlessRetry((int)statusCode, subStatusCode))
@@ -224,7 +225,7 @@ namespace Microsoft.Azure.Cosmos
                     // The request ended up being on a different partition unknown to the client, so we better refresh the caches
                     ContainerProperties collection = await this.clientCollectionCache.ResolveCollectionAsync(
                         request,
-                        CancellationToken.None,
+                        cancellationToken,
                         NoOpTrace.Singleton);
 
                     await this.partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(
