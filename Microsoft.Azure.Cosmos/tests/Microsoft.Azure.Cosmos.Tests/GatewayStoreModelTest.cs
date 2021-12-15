@@ -836,6 +836,75 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// When the response contains a PKRangeId header different than the one targetted with the session token, trigger a refresh of the PKRange cache
+        /// </summary>
+        [TestMethod]
+        public async Task GatewayStoreModel_OnSplitRefreshesPKRanges()
+        {
+            const string originalPKRangeId = "0";
+            const string splitPKRangeId = "1";
+            const string originalSessionToken = originalPKRangeId+ ":1#100#1=20#2=5#3=30";
+            const string updatedSessionToken = splitPKRangeId + ":1#100#1=20#2=5#3=31";
+
+            static Task<HttpResponseMessage> sendFunc(HttpRequestMessage request)
+            {
+                HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.OK);
+                response.Headers.Add(HttpConstants.HttpHeaders.SessionToken, updatedSessionToken);
+                response.Headers.Add(WFConstants.BackendHeaders.PartitionKeyRangeId, splitPKRangeId);
+                return Task.FromResult(response);
+            }
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            SessionContainer sessionContainer = new SessionContainer(string.Empty);
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            using GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                ConsistencyLevel.Session,
+                eventSource,
+                null,
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+
+            Mock<ClientCollectionCache> clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null);
+
+            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object);
+            storeModel.SetCaches(partitionKeyRangeCache.Object, clientCollectionCache.Object);
+
+            INameValueCollection headers = new StoreRequestNameValueCollection();
+            headers.Set(HttpConstants.HttpHeaders.SessionToken, originalSessionToken);
+
+            using (new ActivityScope(Guid.NewGuid()))
+            {
+                using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.Document,
+                "dbs/OVJwAA==/colls/OVJwAOcMtA0=/docs/OVJwAOcMtA0BAAAAAAAAAA==/",
+                AuthorizationTokenType.PrimaryMasterKey,
+                headers))
+                {
+                    ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("dbs/OVJwAA==/colls/OVJwAOcMtA0=");
+                    clientCollectionCache.Setup(collCache => collCache.ResolveCollectionAsync(
+                        It.Is<DocumentServiceRequest>(dsr => dsr == request),
+                        It.IsAny<CancellationToken>(),
+                        It.IsAny<ITrace>())).ReturnsAsync(containerProperties);
+                    
+                    request.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange() { Id = originalPKRangeId };
+                    await storeModel.ProcessMessageAsync(request);
+                    Assert.AreEqual(updatedSessionToken, sessionContainer.GetSessionToken("dbs/OVJwAA==/colls/OVJwAOcMtA0="));
+                    partitionKeyRangeCache.Verify(pkRangeCache => pkRangeCache.TryGetPartitionKeyRangeByIdAsync(
+                         It.Is<string>(str => str == "dbs/OVJwAA==/colls/OVJwAOcMtA0="),
+                         It.Is<string>(str => str == splitPKRangeId),
+                         It.IsAny<ITrace>(),
+                         It.Is<bool>(b => b == true)), Times.Once);
+                }
+            }
+        }
+
         private class MockMessageHandler : HttpMessageHandler
         {
             private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc;
