@@ -118,5 +118,47 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             TraceWriter.WriteTrace(jsonTextWriter, this.Value);
             return jsonTextWriter.GetResult();
         }
+
+        public override DateTime GetStartTimeUtc()
+        {
+            return this.Value.StartTime;
+        }
+
+        public bool WalkTraceTreeForRequestRetried(ITrace currentTrace)
+        {
+            if (currentTrace == null)
+            {
+                return false;
+            }
+
+            foreach (object datums in currentTrace.Data.Values)
+            {
+                if (datums is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                {
+                    foreach (StoreResponseStatistics responseStatistics in clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList)
+                    {
+                        if (responseStatistics.StoreResult != null && Convert.ToInt32(responseStatistics.StoreResult.StatusCode) > 400)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            foreach (ITrace childTrace in currentTrace.Children)
+            {
+                if (this.WalkTraceTreeForRequestRetried(childTrace))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public override bool IsRequestRetried()
+        {
+            return this.WalkTraceTreeForRequestRetried(this.Value);
+        }
     }
 }

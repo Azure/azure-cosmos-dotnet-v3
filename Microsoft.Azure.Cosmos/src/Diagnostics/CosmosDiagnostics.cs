@@ -27,6 +27,18 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.
         /// </summary>
         /// <returns>The string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.</returns>
+        public abstract DateTime GetStartTimeUtc();
+
+        /// <summary>
+        /// Gets the string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.
+        /// </summary>
+        /// <returns>The string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.</returns>
+        public abstract bool IsRequestRetried();
+
+        /// <summary>
+        /// Gets the string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.
+        /// </summary>
+        /// <returns>The string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.</returns>
         public abstract override string ToString();
 
         /// <summary>
