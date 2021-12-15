@@ -61,7 +61,8 @@ namespace Microsoft.Azure.Cosmos
                 this.defaultConsistencyLevel,
                 this.sessionContainer,
                 this.partitionKeyRangeCache,
-                this.clientCollectionCache);
+                this.clientCollectionCache,
+                this.endpointManager);
 
             DocumentServiceResponse response;
             try
@@ -222,7 +223,8 @@ namespace Microsoft.Azure.Cosmos
             ConsistencyLevel defaultConsistencyLevel,
             ISessionContainer sessionContainer,
             PartitionKeyRangeCache partitionKeyRangeCache,
-            CollectionCache clientCollectionCache)
+            CollectionCache clientCollectionCache,
+            IGlobalEndpointManager globalEndpointManager)
         {
             if (request.Headers == null)
             {
@@ -253,7 +255,12 @@ namespace Microsoft.Azure.Cosmos
                 (!string.IsNullOrEmpty(requestConsistencyLevel)
                     && string.Equals(requestConsistencyLevel, ConsistencyLevel.Session.ToString(), StringComparison.OrdinalIgnoreCase));
 
-            if (!sessionConsistency || (!request.IsReadOnlyRequest && request.OperationType != OperationType.Batch))
+            bool isMultiMasterEnabledForRequest = globalEndpointManager.CanUseMultipleWriteLocations(request);
+
+            if (!sessionConsistency 
+                || (!request.IsReadOnlyRequest 
+                    && request.OperationType != OperationType.Batch
+                    && !isMultiMasterEnabledForRequest))
             {
                 return; // Only apply the session token in case of session consistency and the request is read only
             }
