@@ -17,8 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// <remark>
     /// The call hierarchy is as follows. Note, all core MDE API's used in internal cosmos encryption code are passed an EncryptionKeyStoreProviderImpl object.
     /// ProtectedDataEncryptionKey -> KeyEncryptionKey(containing EncryptionKeyStoreProviderImpl object) -> EncryptionKeyStoreProviderImpl.WrapKey -> this.EncryptionKeyWrapProvider.WrapKeyAsync
-    /// ProtectedDataEncryptionKey -> KeyEncryptionKey(containing EncryptionKeyStoreProviderImpl object) -> EncryptionKeyStoreProviderImpl.UnWrapKey -> this.EncryptionKeyWrapProvider.UnwrapKeyAsync
-    /// EncryptionKeyWrapProvider.GetOrCreateDataEncryptionKeyAsync -> this.EncryptionKeyStoreProviderImpl.GetOrCreateDataEncryptionKeyHelper -> (protected)EncryptionKeyStoreProvider.GetOrCreateDataEncryptionKey
+    /// ProtectedDataEncryptionKey -> KeyEncryptionKey(containing EncryptionKeyStoreProviderImpl object) -> EncryptionKeyStoreProviderImpl.UnWrapKey -> this.EncryptionKeyWrapProvider.UnwrapKeyAsync 
     /// </remark>
     /// </summary>
     internal class EncryptionKeyStoreProviderImpl : EncryptionKeyStoreProvider
@@ -32,25 +31,40 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public override string ProviderName => this.encryptionKeyWrapProvider.ProviderName;
 
-        public override byte[] UnwrapKey(string encryptionKeyId, KeyEncryptionKeyAlgorithm algorithm, byte[] encryptedKey)
+        public override byte[] UnwrapKey(string encryptionKeyId, Data.Encryption.Cryptography.KeyEncryptionKeyAlgorithm algorithm, byte[] encryptedKey)
         {
-            return this.encryptionKeyWrapProvider.UnwrapKeyAsync(encryptionKeyId, algorithm.ToString(), encryptedKey)
-                .ConfigureAwait(false)
-                .GetAwaiter()
-                .GetResult();
+            // since AzureKeyVaultKeyWrapProvider/AzureKeyVaultKeyStoreProvider has access to KeyStoreProvider cache lets directly call UnwrapKeyAsync instead of looking up cache ourselves,
+            // avoids additional cache look up by AzureKeyVaultKeyStoreProvider Unwrap() in case of cache miss
+            if (this.encryptionKeyWrapProvider is AzureKeyVaultKeyWrapProvider)
+            {
+                return this.encryptionKeyWrapProvider.UnwrapKeyAsync(encryptionKeyId, algorithm.ToString(), encryptedKey)
+                    .ConfigureAwait(false)
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            else
+            {
+                // for any other custom derived instances of EncryptionKeyWrapProvider, since we do not expose GetOrCreateDataEncryptionKey we first look up the cache.
+                // Cache miss results in call to UnWrapCore which updates the cache after UnwrapKeyAsync is called.
+                return this.GetOrCreateDataEncryptionKey(encryptedKey.ToHexString(), UnWrapKeyCore);
+
+                // delegate that is called by GetOrCreateDataEncryptionKey, which unwraps the key and updates the cache in case of cache miss.
+                byte[] UnWrapKeyCore()
+                {
+                    return this.encryptionKeyWrapProvider.UnwrapKeyAsync(encryptionKeyId, algorithm.ToString(), encryptedKey)
+                        .ConfigureAwait(false)
+                        .GetAwaiter()
+                        .GetResult();
+                }
+            }
         }
 
-        public override byte[] WrapKey(string encryptionKeyId, KeyEncryptionKeyAlgorithm algorithm, byte[] key)
+        public override byte[] WrapKey(string encryptionKeyId, Data.Encryption.Cryptography.KeyEncryptionKeyAlgorithm algorithm, byte[] key)
         {
             return this.encryptionKeyWrapProvider.WrapKeyAsync(encryptionKeyId, algorithm.ToString(), key)
                 .ConfigureAwait(false)
                 .GetAwaiter()
                 .GetResult();
-        }
-
-        public byte[] GetOrCreateDataEncryptionKeyHelper(string encryptedDataEncryptionKey, Func<byte[]> createItem)
-        {
-            return this.GetOrCreateDataEncryptionKey(encryptedDataEncryptionKey, createItem);
         }
 
         /// <Remark>

@@ -39,13 +39,26 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 // set the TTL for ProtectedDataEncryption, so that we have a uniform expiry of the KeyStoreProvider and ProtectedDataEncryption cache items.
                 if (this.EncryptionKeyStoreProviderImpl.DataEncryptionKeyCacheTimeToLive.HasValue)
                 {
-                    ProtectedDataEncryptionKey.TimeToLive = this.EncryptionKeyStoreProviderImpl.DataEncryptionKeyCacheTimeToLive.Value;
-                }
-                else
-                {
-                    // If null is passed to DataEncryptionKeyCacheTimeToLive it results in forever caching hence setting
-                    // arbitrarily large caching period. ProtectedDataEncryptionKey does not seem to handle TimeSpan.MaxValue.
-                    ProtectedDataEncryptionKey.TimeToLive = TimeSpan.FromDays(36500);
+                    if (EncryptionSettingForProperty.EncryptionKeyCacheSemaphore.Wait(-1))
+                    {
+                        try
+                        {
+                            // pick the min of the new value being set and ProtectedDataEncryptionKey's current TTL. Note ProtectedDataEncryptionKey TimeToLive is static
+                            // and results in various instances to share this value. Hence we pick up whatever is the min value. If a TimeSpan.Zero is across any one instance
+                            // it should be fine, since we look up the KeyStoreProvider cache. ProtectedDataEncryptionKey's own cache supersedes KeyStoreProvider cache, since it stores
+                            // the RootKey which is derived from unwrapped key(Data Encryption Key).
+                            // Note: DataEncryptionKeyCacheTimeToLive is nullable. When set to null this results in AbsoluteExpirationRelativeToNow to be set to null which caches forever.
+                            // whatever is the current set value for ProtectedDataEncryptionKey TimeToLive(is not nullable) would be min if null value is passed.
+                            if (TimeSpan.Compare(this.EncryptionKeyStoreProviderImpl.DataEncryptionKeyCacheTimeToLive.Value, ProtectedDataEncryptionKey.TimeToLive) < 0)
+                            {
+                                ProtectedDataEncryptionKey.TimeToLive = this.EncryptionKeyStoreProviderImpl.DataEncryptionKeyCacheTimeToLive.Value;
+                            }
+                        }
+                        finally
+                        {
+                            EncryptionSettingForProperty.EncryptionKeyCacheSemaphore.Release(1);
+                        }
+                    }
                 }
             }
         }
@@ -75,16 +88,5 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="key">The plaintext key.</param>
         /// <returns>The wrapped data encryption key.</returns>
         public abstract Task<byte[]> WrapKeyAsync(string encryptionKeyId, string keyEncryptionKeyAlgorithm, byte[] key);
-
-        /// <summary>
-        /// Returns the cached decrypted data encryption key, or unwraps the encrypted data encryption if not present.
-        /// </summary>
-        /// <param name="encryptedDataEncryptionKey">Encrypted Data Encryption Key. </param>
-        /// <param name="createItem">The delegate function that will decrypt the encrypted column encryption key.</param>
-        /// <returns>Returns a cached Data Encryption Key.</returns>
-        protected virtual Task<byte[]> GetOrCreateDataEncryptionKeyAsync(string encryptedDataEncryptionKey, Func<byte[]> createItem)
-        {
-            return Task.FromResult(this.EncryptionKeyStoreProviderImpl.GetOrCreateDataEncryptionKeyHelper(encryptedDataEncryptionKey, createItem));
-        }
     }
 }

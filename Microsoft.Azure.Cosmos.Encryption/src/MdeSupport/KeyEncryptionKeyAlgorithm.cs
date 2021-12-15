@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// <summary>
     /// Represents the encryption algorithms supported for key encryption.
     /// </summary>
-    public static class CosmosKeyEncryptionKeyAlgorithm
+    public static class KeyEncryptionKeyAlgorithm
     {
         /// <summary>
         /// RSA public key cryptography algorithm with Optimal Asymmetric Encryption Padding (OAEP) padding.

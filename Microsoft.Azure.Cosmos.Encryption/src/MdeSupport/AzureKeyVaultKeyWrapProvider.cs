@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Threading.Tasks;
     using global::Azure.Core;
     using Microsoft.Data.Encryption.AzureKeyVaultProvider;
-    using Microsoft.Data.Encryption.Cryptography;
 
     /// <summary>
     /// Implementation of key encryption key store provider that allows client applications to access data when a
@@ -47,9 +46,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>Plain text data encryption key. </returns>
         public override Task<byte[]> UnwrapKeyAsync(string encryptionKeyId, string cosmosKeyEncryptionKeyAlgorithm, byte[] encryptedKey)
         {
-            KeyEncryptionKeyAlgorithm keyEncryptionKeyAlgorithm = cosmosKeyEncryptionKeyAlgorithm switch
+            Data.Encryption.Cryptography.KeyEncryptionKeyAlgorithm keyEncryptionKeyAlgorithm = cosmosKeyEncryptionKeyAlgorithm switch
             {
-                CosmosKeyEncryptionKeyAlgorithm.RsaOaep => KeyEncryptionKeyAlgorithm.RSA_OAEP,
+                KeyEncryptionKeyAlgorithm.RsaOaep => Data.Encryption.Cryptography.KeyEncryptionKeyAlgorithm.RSA_OAEP,
                 _ => throw new NotSupportedException("The specified KeyEncryptionAlgorithm is not supported. Please refer to https://aka.ms/CosmosClientEncryption for more details. "),
             };
 
@@ -66,9 +65,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>Encrypted data encryption key. </returns>
         public override Task<byte[]> WrapKeyAsync(string encryptionKeyId, string cosmosKeyEncryptionKeyAlgorithm, byte[] key)
         {
-            KeyEncryptionKeyAlgorithm keyEncryptionKeyAlgorithm = cosmosKeyEncryptionKeyAlgorithm switch
+            Data.Encryption.Cryptography.KeyEncryptionKeyAlgorithm keyEncryptionKeyAlgorithm = cosmosKeyEncryptionKeyAlgorithm switch
             {
-                CosmosKeyEncryptionKeyAlgorithm.RsaOaep => KeyEncryptionKeyAlgorithm.RSA_OAEP,
+                KeyEncryptionKeyAlgorithm.RsaOaep => Data.Encryption.Cryptography.KeyEncryptionKeyAlgorithm.RSA_OAEP,
                 _ => throw new NotSupportedException("This specified KeyEncryptionAlgorithm is not supported. Please refer to https://aka.ms/CosmosClientEncryption for more details. "),
             };
 

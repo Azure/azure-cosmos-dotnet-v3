@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(clientEncryptionKeyId));
             }
 
-            if (!string.Equals(dataEncryptionKeyAlgorithm, CosmosDataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256))
+            if (!string.Equals(dataEncryptionKeyAlgorithm, DataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256))
             {
                 throw new ArgumentException($"Invalid Encryption Algorithm '{dataEncryptionKeyAlgorithm}' passed. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }

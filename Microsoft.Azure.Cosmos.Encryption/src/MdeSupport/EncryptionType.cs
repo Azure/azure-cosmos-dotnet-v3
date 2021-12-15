@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// Deterministic encryption always generates the same encrypted value for any given plain text value.
     /// Randomized encryption uses a method that encrypts data in a less predictable manner. Randomized encryption is more secure.
     /// </remarks>
-    public static class CosmosEncryptionType
+    public static class EncryptionType
     {
         /// <summary>
         /// Deterministic encryption always generates the same encrypted value for any given plain text value.
