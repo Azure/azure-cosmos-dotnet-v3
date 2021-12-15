@@ -245,8 +245,10 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        [TestMethod]
-        public async Task TestApplySessionForDataOperation()
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task TestApplySessionForDataOperation(bool multiMaster)
         {
             List<ResourceType> resourceTypes = new List<ResourceType>()
             {
@@ -309,6 +311,8 @@ namespace Microsoft.Azure.Cosmos
                         Mock<ISessionContainer> sMock = new Mock<ISessionContainer>();
                         sMock.Setup(x => x.ResolveGlobalSessionToken(dsrNoSessionToken)).Returns(dsrSessionToken);
 
+                        Mock<IGlobalEndpointManager> globalEndpointManager = new Mock<IGlobalEndpointManager>();
+                        globalEndpointManager.Setup(gem => gem.CanUseMultipleWriteLocations(It.Is<DocumentServiceRequest>(drs => drs == dsrNoSessionToken))).Returns(multiMaster);
                         await this.GetGatewayStoreModelForConsistencyTest(async (gatewayStoreModel) =>
                         {
                             await GatewayStoreModel.ApplySessionTokenAsync(
@@ -317,9 +321,9 @@ namespace Microsoft.Azure.Cosmos
                                 sMock.Object,
                                 partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
                                 clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null).Object,
-                                globalEndpointManager: Mock.Of<IGlobalEndpointManager>());
+                                globalEndpointManager: globalEndpointManager.Object);
 
-                            if (dsrNoSessionToken.IsReadOnlyRequest || dsrNoSessionToken.OperationType == OperationType.Batch)
+                            if (dsrNoSessionToken.IsReadOnlyRequest || dsrNoSessionToken.OperationType == OperationType.Batch || multiMaster)
                             {
                                 Assert.AreEqual(dsrSessionToken, dsrNoSessionToken.Headers[HttpConstants.HttpHeaders.SessionToken]);
                             }

@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos
                     && request.OperationType != OperationType.Batch
                     && !isMultiMasterEnabledForRequest))
             {
-                return; // Only apply the session token in case of session consistency and the request is read only
+                return; // Only apply the session token in case of session consistency and the request is read only or read/write on multimaster
             }
 
             (bool isSuccess, string sessionToken) = await GatewayStoreModel.TryResolveSessionTokenAsync(
