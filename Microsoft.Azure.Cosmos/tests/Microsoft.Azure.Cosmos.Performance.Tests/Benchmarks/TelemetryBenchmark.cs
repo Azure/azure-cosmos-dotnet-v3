@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     [MemoryDiagnoser]
     public class TelemetryBenchmark
     {
-        private readonly ConcurrentDictionary<string, OperationInfo> operationInfo;
+       /* private readonly ConcurrentDictionary<string, OperationInfo> operationInfo;
         private readonly CosmosTraceDiagnostics diagnostics;
         private readonly ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap;
 
@@ -331,6 +331,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 //DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex.Message);
             }
-        }
+        }*/
     }
 }

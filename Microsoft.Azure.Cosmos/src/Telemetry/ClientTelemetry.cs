@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Text;
@@ -44,11 +43,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private Task telemetryTask;
 
-        private ConcurrentDictionary<string, OperationInfo> operationInfo = new ConcurrentDictionary<string, OperationInfo>();
-
-/*
         private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
-            = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();*/
+            = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
 
         /// <summary>
         /// Factory method to intiakize telemetry object and start observer task
@@ -121,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>Async Task</returns>
         private async Task EnrichAndSendAsync()
         {
-           // Console.WriteLine("Telemetry Job Started with Observing window : {0}", observingWindow);
+            DefaultTrace.TraceInformation("Telemetry Job Started with Observing window : {0}", observingWindow);
 
             try
             {
@@ -150,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     // If cancellation is requested after the delay then return from here.
                     if (this.cancellationTokenSource.IsCancellationRequested)
                     {
-                        //Console.WriteLine("Observer Task Cancelled.");
+                        DefaultTrace.TraceInformation("Observer Task Cancelled.");
                         break;
                     }
 
@@ -158,45 +154,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     this.clientTelemetryInfo.DateTimeUtc = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
 
-                   // Console.WriteLine("set count in observer " + this.operationInfo.Count);
+                    ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
+                        = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
 
-                    try
-                    {
-                        if (this.operationInfo != null && this.operationInfo.Count > 0)
-                        {
-                            ConcurrentDictionary<string, OperationInfo> operationInfoSnapshot
-                            = Interlocked.Exchange(ref this.operationInfo, new ConcurrentDictionary<string, OperationInfo>());
-
-                            //Console.WriteLine("set count in observer after snapshot " + operationInfoSnapshot.Count);
-                            List<OperationInfo> opList = new List<OperationInfo>();
-                            foreach (OperationInfo operationInfo in operationInfoSnapshot.Values)
-                            {
-                                List<OperationInfo> tempList = operationInfo.GenerateMetrics();
-                               // Console.WriteLine("set count in observer tempList" + tempList.Count);
-                                if (tempList.Count > 0)
-                                {
-                                    opList.AddRange(tempList);
-                                }
-                            }
-
-                           // Console.WriteLine("set count in observer opList " + opList.Count);
-                            this.clientTelemetryInfo.OperationInfo = opList;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.ToString());
-                    }
+                    this.clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot);
 
                     await this.SendAsync();
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Exception in EnrichAndSendAsync() : {0}", ex.Message);
+                DefaultTrace.TraceError("Exception in EnrichAndSendAsync() : {0}", ex.Message);
             }
 
-            //Console.WriteLine("Telemetry Job Stopped.");
+            DefaultTrace.TraceInformation("Telemetry Job Stopped.");
         }
 
         /// <summary>
@@ -221,17 +192,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             string consistencyLevel,
                             double requestCharge)
         {
-            //Console.WriteLine("Collecting Operation data for Telemetry.");
+            DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
 
             if (cosmosDiagnostics == null)
             {
                 throw new ArgumentNullException(nameof(cosmosDiagnostics));
             }
 
-            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics);
+            //string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics);
 
             // Recording Request Latency and Request Charge
-            OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
+            OperationInfo payloadKey = new OperationInfo(regionsContacted: "Test ",
                                             responseSizeInBytes: responseSizeInBytes,
                                             consistency: consistencyLevel,
                                             databaseName: databaseId,
@@ -240,29 +211,31 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                             resource: resourceType,
                                             statusCode: (int)statusCode);
 
-            payloadKey = this.operationInfo.GetOrAdd(payloadKey.Key, payloadKey);
-
+            (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
+                    .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+                                                        ClientTelemetryOptions.RequestLatencyMax,
+                                                        ClientTelemetryOptions.RequestLatencyPrecision),
+                            requestcharge: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
+                                                        ClientTelemetryOptions.RequestChargeMax,
+                                                        ClientTelemetryOptions.RequestChargePrecision)));
             try
             {
-                payloadKey.latency.RecordValue(cosmosDiagnostics.GetClientElapsedTime().Ticks);
-            }
+                latency.RecordValue(cosmosDiagnostics.GetClientElapsedTime().Ticks);
+            } 
             catch (Exception ex)
             {
-                Console.WriteLine("Latency Recording Failed by Telemetry. Exception : {0}", ex.Message);
+                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex.Message);
             }
 
             long requestChargeToRecord = (long)(requestCharge * ClientTelemetryOptions.HistogramPrecisionFactor);
             try
             {
-                payloadKey.requestcharge.RecordValue(requestChargeToRecord);
+                requestcharge.RecordValue(requestChargeToRecord);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex.Message);
+                DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex.Message);
             }
-
-       //     Console.WriteLine("set count " + this.operationInfo.Count);
-       
         }
 
         /// <summary>
@@ -272,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             try
             {
-                //Console.WriteLine("Started Recording System Usage for telemetry.");
+                DefaultTrace.TraceVerbose("Started Recording System Usage for telemetry.");
 
                 SystemUsageHistory systemUsageHistory = this.diagnosticsHelper.GetClientTelemtrySystemHistory();
 
