@@ -183,6 +183,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="consistencyLevel"></param>
         /// <param name="requestCharge"></param>
         internal void Collect(CosmosDiagnostics cosmosDiagnostics,
+#pragma warning disable IDE0060 // Remove unused parameter
                             HttpStatusCode statusCode,
                             long responseSizeInBytes,
                             string containerId,
@@ -191,6 +192,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             ResourceType resourceType,
                             string consistencyLevel,
                             double requestCharge)
+#pragma warning restore IDE0060 // Remove unused parameter
         {
             DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
 
@@ -199,19 +201,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 throw new ArgumentNullException(nameof(cosmosDiagnostics));
             }
 
-            //string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics);
+            ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics);
 
             // Recording Request Latency and Request Charge
-            OperationInfo payloadKey = new OperationInfo(regionsContacted: "Test ",
+           /* OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted,
                                             responseSizeInBytes: responseSizeInBytes,
                                             consistency: consistencyLevel,
                                             databaseName: databaseId,
                                             containerName: containerId,
                                             operation: operationType,
                                             resource: resourceType,
-                                            statusCode: (int)statusCode);
+                                            statusCode: (int)statusCode);*/
 
-            (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
+/*            (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
                     .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                         ClientTelemetryOptions.RequestLatencyMax,
                                                         ClientTelemetryOptions.RequestLatencyPrecision),
@@ -235,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             catch (Exception ex)
             {
                 DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex.Message);
-            }
+            }*/
         }
 
         /// <summary>
