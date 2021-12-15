@@ -81,13 +81,13 @@ namespace Microsoft.Azure.Cosmos
                     (exception.StatusCode == HttpStatusCode.PreconditionFailed || exception.StatusCode == HttpStatusCode.Conflict
                     || (exception.StatusCode == HttpStatusCode.NotFound && exception.GetSubStatus() != SubStatusCodes.ReadSessionNotAvailable)))
                 {
-                    this.CaptureSessionToken(exception.StatusCode, exception.GetSubStatus(), request, exception.Headers);
+                    await this.CaptureSessionTokenAndHandleSplitAsync(exception.StatusCode, exception.GetSubStatus(), request, exception.Headers);
                 }
 
                 throw;
             }
 
-            this.CaptureSessionToken(response.StatusCode, response.SubStatusCode, request, response.Headers);
+            await this.CaptureSessionTokenAndHandleSplitAsync(response.StatusCode, response.SubStatusCode, request, response.Headers);
             return response;
         }
 
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos
             this.Dispose(true);
         }
 
-        private void CaptureSessionToken(
+        private async Task CaptureSessionTokenAndHandleSplitAsync(
             HttpStatusCode? statusCode,
             SubStatusCodes subStatusCode,
             DocumentServiceRequest request,
@@ -215,6 +215,24 @@ namespace Microsoft.Azure.Cosmos
             else
             {
                 this.sessionContainer.SetSessionToken(request, responseHeaders);
+                PartitionKeyRange detectedPartitionKeyRange = request.RequestContext.ResolvedPartitionKeyRange;
+                string partitionKeyRangeInResponse = responseHeaders[HttpConstants.HttpHeaders.PartitionKeyRangeId];
+                if (detectedPartitionKeyRange != null
+                    && !string.IsNullOrEmpty(partitionKeyRangeInResponse)
+                    && !partitionKeyRangeInResponse.Equals(detectedPartitionKeyRange.Id, StringComparison.OrdinalIgnoreCase))
+                {
+                    // The request ended up being on a different partition unknown to the client, so we better refresh the caches
+                    ContainerProperties collection = await this.clientCollectionCache.ResolveCollectionAsync(
+                        request,
+                        CancellationToken.None,
+                        NoOpTrace.Singleton);
+
+                    await this.partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(
+                        collection.ResourceId,
+                        partitionKeyRangeInResponse,
+                        NoOpTrace.Singleton,
+                        forceRefresh: true);
+                }
             }
         }
 
