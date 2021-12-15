@@ -839,15 +839,15 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// When the response contains a PKRangeId header different than the one targetted with the session token, trigger a refresh of the PKRange cache
         /// </summary>
-        [TestMethod]
-        public async Task GatewayStoreModel_OnSplitRefreshesPKRanges()
+        [DataTestMethod]
+        [DataRow("0", "0", false)]
+        [DataRow("0", "1", true)]
+        public async Task GatewayStoreModel_OnSplitRefreshesPKRanges(string originalPKRangeId, string splitPKRangeId, bool shouldCallRefresh)
         {
-            const string originalPKRangeId = "0";
-            const string splitPKRangeId = "1";
-            const string originalSessionToken = originalPKRangeId+ ":1#100#1=20#2=5#3=30";
-            const string updatedSessionToken = splitPKRangeId + ":1#100#1=20#2=5#3=31";
+            string originalSessionToken = originalPKRangeId+ ":1#100#1=20#2=5#3=30";
+            string updatedSessionToken = splitPKRangeId + ":1#100#1=20#2=5#3=31";
 
-            static Task<HttpResponseMessage> sendFunc(HttpRequestMessage request)
+            Task<HttpResponseMessage> sendFunc(HttpRequestMessage request)
             {
                 HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.OK);
                 response.Headers.Add(HttpConstants.HttpHeaders.SessionToken, updatedSessionToken);
@@ -896,11 +896,12 @@ namespace Microsoft.Azure.Cosmos
                     request.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange() { Id = originalPKRangeId };
                     await storeModel.ProcessMessageAsync(request);
                     Assert.AreEqual(updatedSessionToken, sessionContainer.GetSessionToken("dbs/OVJwAA==/colls/OVJwAOcMtA0="));
+
                     partitionKeyRangeCache.Verify(pkRangeCache => pkRangeCache.TryGetPartitionKeyRangeByIdAsync(
                          It.Is<string>(str => str == "dbs/OVJwAA==/colls/OVJwAOcMtA0="),
                          It.Is<string>(str => str == splitPKRangeId),
                          It.IsAny<ITrace>(),
-                         It.Is<bool>(b => b == true)), Times.Once);
+                         It.Is<bool>(b => b == true)), shouldCallRefresh ? Times.Once : Times.Never);
                 }
             }
         }
