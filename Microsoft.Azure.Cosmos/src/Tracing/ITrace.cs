@@ -68,8 +68,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// </summary>
         IReadOnlyDictionary<string, object> Data { get; }
 
-        HashSet<(string regionName, Uri uri)> RegionsContacted { get; }
-
         /// <summary>
         /// Starts a Trace and adds it as a child to this instance.
         /// </summary>
