@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             this.operationInfoMap = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
         }
 
-        [Benchmark]
+       /* [Benchmark]
         public void CollectMasterTest()
         {
             this.CollectMaster(cosmosDiagnostics: this.diagnostics,
@@ -56,9 +56,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 resourceType: ResourceType.Document,
                 consistencyLevel: "eventual",
                 requestCharge: 10d);
-        }
+        }*/
 
-        [Benchmark]
+   /*     [Benchmark]
         public void CollectMasterOperationAndHistogramFor1000RequestsTest()
         {
             for (int i = 0; i < 1000; i++)
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                     requestCharge: 10d);
             }
 
-        }
+        }*/
 
         [Benchmark]
         public void CollectRegionContactedTest()
