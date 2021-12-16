@@ -39,6 +39,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public IReadOnlyDictionary<string, object> Data => NoOpData;
 
+        public HashSet<(string regionName, Uri uri)> RegionsContacted { get; }
+
         public void Dispose()
         {
             // NoOp

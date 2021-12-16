@@ -921,9 +921,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
             public IReadOnlyDictionary<string, object> Data => this.data;
 
+            public HashSet<(string regionName, Uri uri)> RegionsContacted { get; }
+
             public void AddDatum(string key, TraceDatum traceDatum)
             {
                 this.data[key] = traceDatum;
+
+                if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                {
+                    this.RegionsContacted.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
+                }
             }
 
             public void AddDatum(string key, object value)
