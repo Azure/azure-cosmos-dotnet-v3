@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -19,67 +20,119 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     public class TelemetryBenchmark
     {
         private readonly ConcurrentDictionary<string, OperationInfo> operationInfo;
-        private readonly CosmosTraceDiagnostics diagnostics;
+        private readonly CosmosTraceDiagnostics noOpTracediagnostics;
+        private readonly CosmosTraceDiagnostics diagnosticsWithData;
         private readonly ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap;
 
         public TelemetryBenchmark()
         {
             ITrace trace = NoOpTrace.Singleton;
-            this.diagnostics = new Diagnostics.CosmosTraceDiagnostics(trace);
+            this.noOpTracediagnostics = new Diagnostics.CosmosTraceDiagnostics(trace);
+            this.diagnosticsWithData = new Diagnostics.CosmosTraceDiagnostics(this.CreateTestTraceTree());
             this.operationInfo = new ConcurrentDictionary<string, OperationInfo>();
             this.operationInfoMap = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
         }
 
-       /* [Benchmark]
-        public void CollectMasterTest()
+        private ITrace CreateTestTraceTree()
         {
-            this.CollectMaster(cosmosDiagnostics: this.diagnostics,
-                statusCode: HttpStatusCode.OK,
-                responseSizeInBytes: 1000,
-                containerId: "containerid",
-                databaseId: "databaseid",
-                operationType: OperationType.Read,
-                resourceType: ResourceType.Document,
-                consistencyLevel: "eventual",
-                requestCharge: 10d);
+            ITrace trace;
+            using (trace = Trace.GetRootTrace("Root Trace", TraceComponent.Unknown, TraceLevel.Info))
+            {
+                using (ITrace firstLevel = trace.StartChild("First level Node", TraceComponent.Unknown, TraceLevel.Info))
+                {
+                    using (ITrace secondLevel = trace.StartChild("Second level Node", TraceComponent.Unknown, TraceLevel.Info))
+                    {
+                        using (ITrace thirdLevel = trace.StartChild("Third level Node", TraceComponent.Unknown, TraceLevel.Info))
+                        {
+                            thirdLevel.AddDatum("Client Side Request Stats", this.GetDatumObject(Regions.CentralUS));
+                        }
+                    }
+
+                    using (ITrace secondLevel = trace.StartChild("Second level Node", TraceComponent.Unknown, TraceLevel.Info))
+                    {
+                        secondLevel.AddDatum("Client Side Request Stats", this.GetDatumObject(Regions.CentralIndia, Regions.EastUS2));
+                    }
+                }
+
+                using (ITrace firstLevel = trace.StartChild("First level Node", TraceComponent.Unknown, TraceLevel.Info))
+                {
+                    firstLevel.AddDatum("Client Side Request Stats", this.GetDatumObject(Regions.FranceCentral));
+                }
+            }
+
+            return trace;
+        }
+
+        private TraceDatum GetDatumObject(string regionName1, string regionName2 = null)
+        {
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+            Uri uri1 = new Uri("http://someUri1.com");
+            datum.RegionsContacted.Add((regionName1, uri1));
+            if (regionName2 != null)
+            {
+                Uri uri2 = new Uri("http://someUri2.com");
+                datum.RegionsContacted.Add((regionName2, uri2));
+            }
+
+            return datum;
+        }
+
+        /* [Benchmark]
+         public void CollectMasterTest()
+         {
+             this.CollectMaster(cosmosDiagnostics: this.diagnostics,
+                 statusCode: HttpStatusCode.OK,
+                 responseSizeInBytes: 1000,
+                 containerId: "containerid",
+                 databaseId: "databaseid",
+                 operationType: OperationType.Read,
+                 resourceType: ResourceType.Document,
+                 consistencyLevel: "eventual",
+                 requestCharge: 10d);
+         }
+
+         [Benchmark]
+         public void CollectMasterOperationAndHistogramTest()
+         {
+             this.CollectMasterOperationAndHistogram(cosmosDiagnostics: this.diagnostics,
+                 statusCode: HttpStatusCode.OK,
+                 responseSizeInBytes: 1000,
+                 containerId: "containerid",
+                 databaseId: "databaseid",
+                 operationType: OperationType.Read,
+                 resourceType: ResourceType.Document,
+                 consistencyLevel: "eventual",
+                 requestCharge: 10d);
+         }*/
+
+        /*     [Benchmark]
+             public void CollectMasterOperationAndHistogramFor1000RequestsTest()
+             {
+                 for (int i = 0; i < 1000; i++)
+                 {
+                     this.CollectMasterOperationAndHistogram(cosmosDiagnostics: this.diagnostics,
+                         statusCode: HttpStatusCode.OK,
+                         responseSizeInBytes: 10 * i,
+                         containerId: "containerid",
+                         databaseId: "databaseid",
+                         operationType: OperationType.Read,
+                         resourceType: ResourceType.Document,
+                         consistencyLevel: "eventual",
+                         requestCharge: 10d);
+                 }
+
+             }*/
+
+        [Benchmark]
+        public void CollectRegionContactedWithMultiLevelTraceTest()
+        {
+            this.CollectRegionContacted(cosmosDiagnostics: this.diagnosticsWithData);
         }
 
         [Benchmark]
-        public void CollectMasterOperationAndHistogramTest()
+        public void CollectRegionContactedWithNoOpsTraceTest()
         {
-            this.CollectMasterOperationAndHistogram(cosmosDiagnostics: this.diagnostics,
-                statusCode: HttpStatusCode.OK,
-                responseSizeInBytes: 1000,
-                containerId: "containerid",
-                databaseId: "databaseid",
-                operationType: OperationType.Read,
-                resourceType: ResourceType.Document,
-                consistencyLevel: "eventual",
-                requestCharge: 10d);
-        }*/
-
-   /*     [Benchmark]
-        public void CollectMasterOperationAndHistogramFor1000RequestsTest()
-        {
-            for (int i = 0; i < 1000; i++)
-            {
-                this.CollectMasterOperationAndHistogram(cosmosDiagnostics: this.diagnostics,
-                    statusCode: HttpStatusCode.OK,
-                    responseSizeInBytes: 10 * i,
-                    containerId: "containerid",
-                    databaseId: "databaseid",
-                    operationType: OperationType.Read,
-                    resourceType: ResourceType.Document,
-                    consistencyLevel: "eventual",
-                    requestCharge: 10d);
-            }
-
-        }*/
-
-        [Benchmark]
-        public void CollectRegionContactedTest()
-        {
-            this.CollectRegionContacted(cosmosDiagnostics: this.diagnostics);
+            this.CollectRegionContacted(cosmosDiagnostics: this.noOpTracediagnostics);
         }
 
         internal void CollectRegionContacted(CosmosDiagnostics cosmosDiagnostics)
