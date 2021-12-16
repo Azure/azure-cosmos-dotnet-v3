@@ -303,7 +303,10 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (key.Equals(HttpConstants.HttpHeaders.ContentType, StringComparison.OrdinalIgnoreCase))
                         {
-                            requestMessage.Content.Headers.ContentType = new MediaTypeHeaderValue(request.Headers[key]);
+                            if (requestMessage.Content != null)
+                            {
+                                requestMessage.Content.Headers.ContentType = new MediaTypeHeaderValue(request.Headers[key]);
+                            }
                         }
                         else
                         {
