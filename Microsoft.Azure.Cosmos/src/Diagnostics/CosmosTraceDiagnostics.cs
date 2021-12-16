@@ -46,7 +46,10 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override IReadOnlyList<(string regionName, Uri uri)> GetContactedRegions()
         {
-            return this.Value.RegionsContacted.ToList();
+            HashSet<(string, Uri)> regionsContacted = new HashSet<(string, Uri)>();
+            ITrace rootTrace = this.Value;
+            this.WalkTraceTreeForRegionsContated(rootTrace, regionsContacted);
+            return regionsContacted.ToList();
         }
 
         internal bool IsGoneExceptionHit()

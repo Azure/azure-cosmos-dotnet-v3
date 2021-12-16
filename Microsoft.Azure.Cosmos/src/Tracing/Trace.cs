@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Runtime.CompilerServices;
-    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     internal sealed class Trace : ITrace
     {
@@ -54,8 +53,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public IReadOnlyList<ITrace> Children => this.children;
 
         public IReadOnlyDictionary<string, object> Data => this.data;
-
-        public HashSet<(string regionName, Uri uri)> RegionsContacted { get; }
 
         public void Dispose()
         {
@@ -132,11 +129,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public void AddDatum(string key, TraceDatum traceDatum)
         {
             this.data.Add(key, traceDatum);
-
-            if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
-            {
-                this.RegionsContacted.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
-            }
         }
 
         public void AddDatum(string key, object value)

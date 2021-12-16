@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     internal static class TraceJoiner
     {
@@ -68,16 +67,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             public IReadOnlyDictionary<string, object> Data => this.data;
 
-            public HashSet<(string regionName, Uri uri)> RegionsContacted { get; }
-
             public void AddDatum(string key, TraceDatum traceDatum)
             {
                 this.data[key] = traceDatum;
-
-                if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
-                {
-                    this.RegionsContacted.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
-                }
             }
 
             public void AddDatum(string key, object value)
