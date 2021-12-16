@@ -24,6 +24,8 @@ namespace Microsoft.Azure.Cosmos
     // Marking it as non-sealed in order to unit test it using Moq framework
     internal class GatewayStoreModel : IStoreModel, IDisposable
     {
+        private static readonly string sessionConsistencyAsString = ConsistencyLevel.Session.ToString();
+
         private readonly GlobalEndpointManager endpointManager;
         private readonly DocumentClientEventSource eventSource;
         private readonly ISessionContainer sessionContainer;
@@ -267,7 +269,7 @@ namespace Microsoft.Azure.Cosmos
             bool sessionConsistency =
                 defaultConsistencyLevel == ConsistencyLevel.Session ||
                 (!string.IsNullOrEmpty(requestConsistencyLevel)
-                    && string.Equals(requestConsistencyLevel, ConsistencyLevel.Session.ToString(), StringComparison.OrdinalIgnoreCase));
+                    && string.Equals(requestConsistencyLevel, GatewayStoreModel.sessionConsistencyAsString, StringComparison.OrdinalIgnoreCase));
 
             bool isMultiMasterEnabledForRequest = globalEndpointManager.CanUseMultipleWriteLocations(request);
 
