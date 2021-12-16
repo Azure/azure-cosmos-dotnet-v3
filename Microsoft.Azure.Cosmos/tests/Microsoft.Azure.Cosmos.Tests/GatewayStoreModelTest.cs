@@ -837,7 +837,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// When the response contains a PKRangeId header different than the one targetted with the session token, trigger a refresh of the PKRange cache
+        /// When the response contains a PKRangeId header different than the one targeted with the session token, trigger a refresh of the PKRange cache
         /// </summary>
         [DataTestMethod]
         [DataRow("0", "0", false)]
@@ -887,12 +887,7 @@ namespace Microsoft.Azure.Cosmos
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
                 {
-                    ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("dbs/OVJwAA==/colls/OVJwAOcMtA0=");
-                    clientCollectionCache.Setup(collCache => collCache.ResolveCollectionAsync(
-                        It.Is<DocumentServiceRequest>(dsr => dsr == request),
-                        It.IsAny<CancellationToken>(),
-                        It.IsAny<ITrace>())).ReturnsAsync(containerProperties);
-                    
+                    request.RequestContext.ResolvedCollectionRid = "dbs/OVJwAA==/colls/OVJwAOcMtA0=";
                     request.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange() { Id = originalPKRangeId };
                     await storeModel.ProcessMessageAsync(request);
                     Assert.AreEqual(updatedSessionToken, sessionContainer.GetSessionToken("dbs/OVJwAA==/colls/OVJwAOcMtA0="));

@@ -81,13 +81,13 @@ namespace Microsoft.Azure.Cosmos
                     (exception.StatusCode == HttpStatusCode.PreconditionFailed || exception.StatusCode == HttpStatusCode.Conflict
                     || (exception.StatusCode == HttpStatusCode.NotFound && exception.GetSubStatus() != SubStatusCodes.ReadSessionNotAvailable)))
                 {
-                    await this.CaptureSessionTokenAndHandleSplitAsync(exception.StatusCode, exception.GetSubStatus(), request, exception.Headers, cancellationToken);
+                    await this.CaptureSessionTokenAndHandleSplitAsync(exception.StatusCode, exception.GetSubStatus(), request, exception.Headers);
                 }
 
                 throw;
             }
 
-            await this.CaptureSessionTokenAndHandleSplitAsync(response.StatusCode, response.SubStatusCode, request, response.Headers, cancellationToken);
+            await this.CaptureSessionTokenAndHandleSplitAsync(response.StatusCode, response.SubStatusCode, request, response.Headers);
             return response;
         }
 
@@ -177,8 +177,7 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode? statusCode,
             SubStatusCodes subStatusCode,
             DocumentServiceRequest request,
-            INameValueCollection responseHeaders,
-            CancellationToken cancellationToken)
+            INameValueCollection responseHeaders)
         {
             // Exceptionless can try to capture session token from CompleteResponse
             if (request.IsValidStatusCodeForExceptionlessRetry((int)statusCode, subStatusCode))
@@ -220,16 +219,12 @@ namespace Microsoft.Azure.Cosmos
                 string partitionKeyRangeInResponse = responseHeaders[HttpConstants.HttpHeaders.PartitionKeyRangeId];
                 if (detectedPartitionKeyRange != null
                     && !string.IsNullOrEmpty(partitionKeyRangeInResponse)
+                    && !string.IsNullOrEmpty(request.RequestContext.ResolvedCollectionRid)
                     && !partitionKeyRangeInResponse.Equals(detectedPartitionKeyRange.Id, StringComparison.OrdinalIgnoreCase))
                 {
                     // The request ended up being on a different partition unknown to the client, so we better refresh the caches
-                    ContainerProperties collection = await this.clientCollectionCache.ResolveCollectionAsync(
-                        request,
-                        cancellationToken,
-                        NoOpTrace.Singleton);
-
                     await this.partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(
-                        collection.ResourceId,
+                        request.RequestContext.ResolvedCollectionRid,
                         partitionKeyRangeInResponse,
                         NoOpTrace.Singleton,
                         forceRefresh: true);
