@@ -14,6 +14,7 @@
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
@@ -1365,9 +1366,16 @@
 
             public IReadOnlyDictionary<string, object> Data => this.data;
 
+            public HashSet<(string regionName, Uri uri)> RegionsContacted { get; }
+
             public void AddDatum(string key, TraceDatum traceDatum)
             {
                 this.data[key] = traceDatum;
+
+                if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                {
+                    this.RegionsContacted.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
+                }
             }
 
             public void AddDatum(string key, object value)
