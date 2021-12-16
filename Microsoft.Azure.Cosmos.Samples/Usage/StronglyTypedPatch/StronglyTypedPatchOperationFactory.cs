@@ -106,9 +106,8 @@
 
         private string GetJsonPointer(LambdaExpression expression)
         {
-            //TODO: handle indices assigned by variables (const or dynamic)
             //TODO: handle string keys in dictionaries
-            //TODO: add tests for some unsupported expressions (e.g. method calls, property like string.Length)
+            //TODO: handle .Value
             //TODO: use expression visitor
 
 
@@ -125,20 +124,19 @@
                 }
                 else if (
                     currentExpression is BinaryExpression binaryExpression and { NodeType: ExpressionType.ArrayIndex }
-                    && binaryExpression.Right is ConstantExpression arrayIndexConstantExpression
                 )
                 {
                     // Array index
-                    pathParts.Push(GetIndex((int)arrayIndexConstantExpression.Value));
+                    pathParts.Push(GetIndex(binaryExpression.Right));
                     currentExpression = binaryExpression.Left;
                 }
                 else if (
                     currentExpression is MethodCallExpression callExpression and { Arguments: { Count: 1 }, Method: { Name: "get_Item" } }
-                    && callExpression.Arguments[0] is ConstantExpression listIndexConstantExpression and { Type: { Name: nameof(Int32) } }
+                    && callExpression.Arguments[0] is var listIndexExpression and { Type: { Name: nameof(Int32) } }
                 )
                 {
                     // IReadOnlyList index of other type
-                    pathParts.Push(GetIndex((int)listIndexConstantExpression.Value));
+                    pathParts.Push(GetIndex(listIndexExpression));
                     currentExpression = callExpression.Object;
                 }
                 else
@@ -158,8 +156,19 @@
                 return (string)type.CallMethod("GetMemberName", new[] { typeof(MemberInfo), typeof(CosmosLinqSerializerOptions) }, member, this.serializerOptions);
             } 
 
-            string GetIndex(int index)
+            string GetIndex(Expression expression)
             {
+                Type type = typeof(CosmosClient).Assembly
+                    .GetType("Microsoft.Azure.Cosmos.Linq.ConstantEvaluator");
+
+                //TODO: remove Fasterflect; use call delegate instead
+                if (type.CallMethod("PartialEval", expression) is not ConstantExpression constantExpression)
+                {
+                    throw new ArgumentException(nameof(expression), "Expression cannot be simplified to a constant");
+                }
+
+                int index = (int)constantExpression.Value;
+
                 return index switch
                 {
                     >= 0 => index.ToString(),

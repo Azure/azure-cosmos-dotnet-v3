@@ -16,13 +16,20 @@
         {
             StronglyTypedPatchOperationFactory<Person> factory = new(serializerOptions : null);
 
+            int variableIndex = 0;
+
             string[] actualPaths = new[] {
 
                 factory.Add(person => person.Age, 50),
                 factory.Add(person => person.Children, new List<Person> { new Person("Billy", 1, 0) }),
                 factory.Add(person => person.Children[-1], new Person("Billy", 25, 0)),
                 factory.Add(person => person.Children[0], new Person("Billy", 25, 0)),
+
+                // Test constants evaluation
                 factory.Add(person => person.Children[0].Age, 25),
+                factory.Add(person => person.Children[variableIndex].Age, 25),
+                factory.Add(person => person.Children[4-4].Age, 25),
+
                 factory.Add(person => person.Children[0].Name, "Bill"),
                 factory.Add(person => person.Children[0].Salary, 0),
                 factory.Add(person => person.Children[0].Children[0], value: new Person("Susie", 1, 0)),
@@ -39,7 +46,11 @@
                 "/children",
                 "/children/-",
                 "/children/0",
+
                 "/children/0/age",
+                "/children/0/age",
+                "/children/0/age",
+
                 "/children/0/name",
                 "/children/0/salary",
                 "/children/0/children/0",
