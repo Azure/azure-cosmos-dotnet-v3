@@ -463,7 +463,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
             };
             IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true, null, null, linqSerializerOptions);
-            // Nullable<T>.HasValue transaltes to IS_DEFINED - should work regardless of serialization/casing
+            // Nullable<T>.HasValue translates to IS_DEFINED - should work regardless of serialization/casing
             IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.nullableInt.HasValue);
             Assert.AreEqual(2, queriable.Count(), "HasValue should have returned two items with CamelCase serialization");
 
@@ -473,7 +473,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PropertyNamingPolicy = CosmosPropertyNamingPolicy.Default
             };
             linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true, null, null, linqSerializerOptions);
-            // Nullable<T>.HasValue transaltes to IS_DEFINED - should work regardless of serialization/casing
+            // Nullable<T>.HasValue translates to IS_DEFINED - should work regardless of serialization/casing
             queriable = linqQueryable.Where(item => item.nullableInt.HasValue);
             Assert.AreEqual(2, queriable.Count(), "HasValue should have returned two items with default serialization");
         }
