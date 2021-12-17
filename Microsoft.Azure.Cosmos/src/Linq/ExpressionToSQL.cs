@@ -743,14 +743,16 @@ namespace Microsoft.Azure.Cosmos.Linq
             // if expression is nullable
             if (inputExpression.Expression.Type.IsNullable())
             {
+                MemberNames memberNames = context?.memberNames ?? MemberNames.Default;
+
                 // ignore .Value 
-                if (memberName == CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(context?.linqSerializerOptions, "Value"))
+                if (memberName == memberNames.Value)
                 {
                     return memberExpression;
                 }
 
                 // convert .HasValue to IS_DEFINED expression
-                if (memberName == CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(context?.linqSerializerOptions, "HasValue"))
+                if (memberName == memberNames.HasValue)
                 {
                     return SqlFunctionCallScalarExpression.CreateBuiltin("IS_DEFINED", memberExpression);
                 }
