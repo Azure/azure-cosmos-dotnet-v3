@@ -882,7 +882,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             }
         }
 
-        private sealed class TraceForBaselineTesting : ITrace
+        private sealed class TraceForBaselineTesting : ITr                                                                                                                                                                           ace
         {
             private readonly Dictionary<string, object> data;
             private readonly List<ITrace> children;
@@ -917,12 +917,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
             public ITrace Parent { get; }
 
+            public HashSet<(string, Uri)> RegionsContacted { get; set; }
+
             public IReadOnlyList<ITrace> Children => this.children;
 
             public IReadOnlyDictionary<string, object> Data => this.data;
 
             public void AddDatum(string key, TraceDatum traceDatum)
             {
+                if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                {
+                    this.RegionsContacted = clientSideRequestStatisticsTraceDatum.RegionsContacted;
+                }
+
                 this.data[key] = traceDatum;
             }
 
@@ -955,6 +962,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             public static TraceForBaselineTesting GetRootTrace()
             {
                 return new TraceForBaselineTesting("Trace For Baseline Testing", TraceLevel.Info, TraceComponent.Unknown, parent: null);
+            }
+
+            public void UpdateRegionContacted(HashSet<(string, Uri)> newRegionContacted)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void UpdateRegionContacted(TraceDatum traceDatum)
+            {
+                throw new NotImplementedException();
             }
         }
     }
