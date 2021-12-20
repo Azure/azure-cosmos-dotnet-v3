@@ -51,17 +51,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 return new List<(string regionName, Uri uri)>();
             }
 
-           /* foreach (ITrace trace in this.Value.Children)
-            {
-                if (trace.RegionsContacted == null)
-                {
-                    continue;
-                }
-
-                this.Value.RegionsContacted.Union(trace.RegionsContacted);
-
-            }*/
-
             return this.Value?.RegionsContacted?.ToList();
         }
 

@@ -124,6 +124,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         void UpdateRegionContacted(HashSet<(string, Uri)> newRegionContacted);
 
-        public void UpdateRegionContacted(TraceDatum traceDatum);
+        void UpdateRegionContacted(TraceDatum traceDatum);
     }
 }

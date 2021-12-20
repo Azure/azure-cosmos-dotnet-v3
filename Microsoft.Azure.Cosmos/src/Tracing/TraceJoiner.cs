@@ -103,28 +103,21 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.UpdateRegionContacted(trace.RegionsContacted);
             }
 
-            private void UpdateRegionContacted(TraceDatum traceDatum)
+            public void UpdateRegionContacted(TraceDatum traceDatum)
             {
                 if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
                 {
-                    if (this.RegionsContacted == null)
-                    {
-                        this.RegionsContacted = clientSideRequestStatisticsTraceDatum.RegionsContacted;
-                    }
-                    else
-                    {
-                        this.RegionsContacted.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
-                    }
-
-                    if (this.Parent != null)
-                    {
-                        this.Parent.UpdateRegionContacted(this.RegionsContacted);
-                    }
+                    this.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum.RegionsContacted);
                 }
             }
 
-            private void UpdateRegionContacted(HashSet<(string, Uri)> newRegionContacted)
+            public void UpdateRegionContacted(HashSet<(string, Uri)> newRegionContacted)
             {
+                if (newRegionContacted == null || newRegionContacted.Count == 0)
+                {
+                    return;
+                }
+
                 if (this.RegionsContacted == null)
                 {
                     this.RegionsContacted = newRegionContacted;
@@ -132,22 +125,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 else
                 {
                     this.RegionsContacted.UnionWith(newRegionContacted);
+
                 }
 
                 if (this.Parent != null)
                 {
                     this.Parent.UpdateRegionContacted(this.RegionsContacted);
                 }
-            }
-
-            void ITrace.UpdateRegionContacted(HashSet<(string, Uri)> newRegionContacted)
-            {
-                throw new NotImplementedException();
-            }
-
-            void ITrace.UpdateRegionContacted(TraceDatum traceDatum)
-            {
-                throw new NotImplementedException();
             }
         }
     }

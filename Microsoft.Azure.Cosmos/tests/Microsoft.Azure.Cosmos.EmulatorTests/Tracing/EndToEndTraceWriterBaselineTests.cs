@@ -14,6 +14,7 @@
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
@@ -1365,7 +1366,7 @@
 
             public IReadOnlyDictionary<string, object> Data => this.data;
 
-            public HashSet<(string, Uri)> RegionsContacted => throw new NotImplementedException();
+            public HashSet<(string, Uri)> RegionsContacted { get; set; }
 
             public void AddDatum(string key, TraceDatum traceDatum)
             {
@@ -1407,6 +1408,37 @@
             public static TraceForBaselineTesting GetRootTrace()
             {
                 return new TraceForBaselineTesting("Trace For Baseline Testing", TraceLevel.Info, TraceComponent.Unknown, parent: null);
+            }
+
+            public void UpdateRegionContacted(TraceDatum traceDatum)
+            {
+                if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                {
+                    this.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum.RegionsContacted);
+                }
+            }
+
+            public void UpdateRegionContacted(HashSet<(string, Uri)> newRegionContacted)
+            {
+                if (newRegionContacted == null || newRegionContacted.Count == 0)
+                {
+                    return;
+                }
+
+                if (this.RegionsContacted == null)
+                {
+                    this.RegionsContacted = newRegionContacted;
+                }
+                else
+                {
+                    this.RegionsContacted.UnionWith(newRegionContacted);
+
+                }
+
+                if (this.Parent != null)
+                {
+                    this.Parent.UpdateRegionContacted(this.RegionsContacted);
+                }
             }
         }
 

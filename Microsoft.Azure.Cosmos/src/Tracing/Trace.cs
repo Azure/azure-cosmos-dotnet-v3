@@ -141,25 +141,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
             {
-                if (clientSideRequestStatisticsTraceDatum.RegionsContacted == null ||
-                        clientSideRequestStatisticsTraceDatum.RegionsContacted.Count == 0)
-                {
-                    return;
-                }
-
-                if (this.RegionsContacted == null)
-                {
-                    this.RegionsContacted = clientSideRequestStatisticsTraceDatum.RegionsContacted;
-                }
-                else
-                {
-                    this.RegionsContacted.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
-                }
-
-                if (this.Parent != null)
-                {
-                    this.Parent.UpdateRegionContacted(this.RegionsContacted);
-                }
+                this.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum.RegionsContacted);
             }
         }
 
