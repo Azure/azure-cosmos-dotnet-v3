@@ -882,7 +882,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             }
         }
 
-        private sealed class TraceForBaselineTesting : ITr                                                                                                                                                                           ace
+        private sealed class TraceForBaselineTesting : ITrace
         {
             private readonly Dictionary<string, object> data;
             private readonly List<ITrace> children;
@@ -917,19 +917,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
             public ITrace Parent { get; }
 
-            public HashSet<(string, Uri)> RegionsContacted { get; set; }
-
             public IReadOnlyList<ITrace> Children => this.children;
 
             public IReadOnlyDictionary<string, object> Data => this.data;
 
+            public HashSet<(string, Uri)> RegionsContacted { get; set; }
+
             public void AddDatum(string key, TraceDatum traceDatum)
             {
-                if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
-                {
-                    this.RegionsContacted = clientSideRequestStatisticsTraceDatum.RegionsContacted;
-                }
-
                 this.data[key] = traceDatum;
             }
 
@@ -964,14 +959,35 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 return new TraceForBaselineTesting("Trace For Baseline Testing", TraceLevel.Info, TraceComponent.Unknown, parent: null);
             }
 
-            public void UpdateRegionContacted(HashSet<(string, Uri)> newRegionContacted)
-            {
-                throw new NotImplementedException();
-            }
-
             public void UpdateRegionContacted(TraceDatum traceDatum)
             {
-                throw new NotImplementedException();
+                if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                {
+                    this.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum.RegionsContacted);
+                }
+            }
+
+            public void UpdateRegionContacted(HashSet<(string, Uri)> newRegionContacted)
+            {
+                if (newRegionContacted == null || newRegionContacted.Count == 0)
+                {
+                    return;
+                }
+
+                if (this.RegionsContacted == null)
+                {
+                    this.RegionsContacted = newRegionContacted;
+                }
+                else
+                {
+                    this.RegionsContacted.UnionWith(newRegionContacted);
+
+                }
+
+                if (this.Parent != null)
+                {
+                    this.Parent.UpdateRegionContacted(this.RegionsContacted);
+                }
             }
         }
     }
