@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         {
             if (this.Value == null || this.Value.RegionsContacted == null) 
             {
-                return new List<(string regionName, Uri uri)>();
+                return new List<(string regionName, Uri uri)>(0);
             }
 
             return this.Value?.RegionsContacted?.ToList();
