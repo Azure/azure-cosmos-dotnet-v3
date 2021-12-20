@@ -179,6 +179,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             IReadOnlyList<(string regionName, Uri uri)> regionList = cosmosDiagnostics.GetContactedRegions();
 
+            if (regionList == null || regionList.Count == 0)
+            {
+                return null;
+            }
+
             if (regionList.Count == 1)
             {
                 return regionList[0].regionName;

@@ -1365,6 +1365,8 @@
 
             public IReadOnlyDictionary<string, object> Data => this.data;
 
+            public HashSet<(string, Uri)> RegionsContacted => throw new NotImplementedException();
+
             public void AddDatum(string key, TraceDatum traceDatum)
             {
                 this.data[key] = traceDatum;

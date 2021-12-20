@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Runtime.CompilerServices;
+    using Antlr4.Runtime.Dfa;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     internal sealed class Trace : ITrace
     {
@@ -49,6 +51,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public TraceComponent Component { get; }
 
         public ITrace Parent { get; }
+
+        public HashSet<(string, Uri)> RegionsContacted { get; set; }
 
         public IReadOnlyList<ITrace> Children => this.children;
 
@@ -99,6 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             lock (this.children)
             {
                 this.children.Add(child);
+                this.UpdateRegionContacted(child.RegionsContacted);
             }
         }
 
@@ -129,6 +134,56 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public void AddDatum(string key, TraceDatum traceDatum)
         {
             this.data.Add(key, traceDatum);
+            this.UpdateRegionContacted(traceDatum);
+        }
+
+        public void UpdateRegionContacted(TraceDatum traceDatum)
+        {
+            if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+            {
+                if (clientSideRequestStatisticsTraceDatum.RegionsContacted == null ||
+                        clientSideRequestStatisticsTraceDatum.RegionsContacted.Count == 0)
+                {
+                    return;
+                }
+
+                if (this.RegionsContacted == null)
+                {
+                    this.RegionsContacted = clientSideRequestStatisticsTraceDatum.RegionsContacted;
+                }
+                else
+                {
+                    this.RegionsContacted.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
+                }
+
+                if (this.Parent != null)
+                {
+                    this.Parent.UpdateRegionContacted(this.RegionsContacted);
+                }
+            }
+        }
+
+        public void UpdateRegionContacted(HashSet<(string, Uri)> newRegionContacted)
+        {
+            if (newRegionContacted == null || newRegionContacted.Count == 0)
+            {
+                return;
+            }
+
+            if (this.RegionsContacted == null)
+            {
+                this.RegionsContacted = newRegionContacted;
+            }
+            else
+            {
+                this.RegionsContacted.UnionWith(newRegionContacted);
+              
+            }
+
+            if (this.Parent != null)
+            {
+                this.Parent.UpdateRegionContacted(this.RegionsContacted);
+            }
         }
 
         public void AddDatum(string key, object value)

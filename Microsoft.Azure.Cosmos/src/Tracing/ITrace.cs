@@ -63,6 +63,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// </summary>
         IReadOnlyList<ITrace> Children { get; }
 
+        HashSet<(string, Uri)> RegionsContacted { get; set; }
+
         /// <summary>
         /// Gets additional datum associated with this trace.
         /// </summary>
@@ -119,5 +121,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// </summary>
         /// <param name="trace">Existing trace.</param>
         void AddChild(ITrace trace);
+
+        void UpdateRegionContacted(HashSet<(string, Uri)> newRegionContacted);
+
+        public void UpdateRegionContacted(TraceDatum traceDatum);
     }
 }

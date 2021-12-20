@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     internal static class TraceJoiner
     {
@@ -67,9 +68,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             public IReadOnlyDictionary<string, object> Data => this.data;
 
+            public HashSet<(string, Uri)> RegionsContacted { get; set; }
+
             public void AddDatum(string key, TraceDatum traceDatum)
             {
                 this.data[key] = traceDatum;
+                this.UpdateRegionContacted(traceDatum);
             }
 
             public void AddDatum(string key, object value)
@@ -96,6 +100,54 @@ namespace Microsoft.Azure.Cosmos.Tracing
             public void AddChild(ITrace trace)
             {
                 this.children.Add(trace);
+                this.UpdateRegionContacted(trace.RegionsContacted);
+            }
+
+            private void UpdateRegionContacted(TraceDatum traceDatum)
+            {
+                if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                {
+                    if (this.RegionsContacted == null)
+                    {
+                        this.RegionsContacted = clientSideRequestStatisticsTraceDatum.RegionsContacted;
+                    }
+                    else
+                    {
+                        this.RegionsContacted.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
+                    }
+
+                    if (this.Parent != null)
+                    {
+                        this.Parent.UpdateRegionContacted(this.RegionsContacted);
+                    }
+                }
+            }
+
+            private void UpdateRegionContacted(HashSet<(string, Uri)> newRegionContacted)
+            {
+                if (this.RegionsContacted == null)
+                {
+                    this.RegionsContacted = newRegionContacted;
+                }
+                else
+                {
+                    this.RegionsContacted.UnionWith(newRegionContacted);
+                }
+
+                if (this.Parent != null)
+                {
+                    this.Parent.UpdateRegionContacted(this.RegionsContacted);
+                }
+            }
+
+            void ITrace.UpdateRegionContacted(HashSet<(string, Uri)> newRegionContacted)
+            {
+                throw new NotImplementedException();
+            }
+
+            void ITrace.UpdateRegionContacted(TraceDatum traceDatum)
+            {
+                throw new NotImplementedException();
             }
         }
     }
