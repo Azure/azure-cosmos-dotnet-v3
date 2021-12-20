@@ -106,10 +106,8 @@
 
         private string GetJsonPointer(LambdaExpression expression)
         {
-            //TODO: handle string keys in dictionaries
             //TODO: handle .Value
             //TODO: use expression visitor
-
 
             Stack<string> pathParts = new();
 
@@ -132,11 +130,26 @@
                 }
                 else if (
                     currentExpression is MethodCallExpression callExpression and { Arguments: { Count: 1 }, Method: { Name: "get_Item" } }
-                    && callExpression.Arguments[0] is var listIndexExpression and { Type: { Name: nameof(Int32) } }
                 )
                 {
-                    // IReadOnlyList index of other type
-                    pathParts.Push(GetIndex(listIndexExpression));
+                    Expression listIndexExpression = callExpression.Arguments[0];
+
+                    if (listIndexExpression.Type == typeof(int))
+                    {
+                        //// Assume IReadOnlyList index. Int dictionaries are NOT supported.
+                        pathParts.Push(GetIndex(listIndexExpression));
+                    }
+                    else if (listIndexExpression.Type == typeof(string))
+                    {
+                        
+                        //string dictionary. Other dictionary types not supported.
+                        pathParts.Push(ResolveConstant<string>(listIndexExpression));
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException($"Indexing type (at {currentExpression}) not supported");
+                    }    
+                    
                     currentExpression = callExpression.Object;
                 }
                 else
@@ -145,7 +158,7 @@
                 }
             }
 
-            return "/" + string.Join("/", pathParts);
+            return "/" + string.Join("/", pathParts.Select(EscapeJsonPointer));
 
             string GetNameUnderContract(MemberInfo member)
             {
@@ -155,19 +168,10 @@
                 //TODO: remove Fasterflect; use call delegate instead
                 return (string)type.CallMethod("GetMemberName", new[] { typeof(MemberInfo), typeof(CosmosLinqSerializerOptions) }, member, this.serializerOptions);
             } 
-
+            
             string GetIndex(Expression expression)
             {
-                Type type = typeof(CosmosClient).Assembly
-                    .GetType("Microsoft.Azure.Cosmos.Linq.ConstantEvaluator");
-
-                //TODO: remove Fasterflect; use call delegate instead
-                if (type.CallMethod("PartialEval", expression) is not ConstantExpression constantExpression)
-                {
-                    throw new ArgumentException(nameof(expression), "Expression cannot be simplified to a constant");
-                }
-
-                int index = (int)constantExpression.Value;
+                int index = ResolveConstant<int>(expression);
 
                 return index switch
                 {
@@ -176,6 +180,30 @@
                     _ => throw new ArgumentOutOfRangeException(nameof(index))
                 };
             }
+
+            static string EscapeJsonPointer(string str)
+            {
+                return new(str.SelectMany(c => c switch
+                {
+                    '~' => new[] { '~', '0' },
+                    '/' => new[] { '~', '1' },
+                    _   => new[] { c }
+                }).ToArray());
+            }
+        }
+
+        private static T ResolveConstant<T>(Expression expression)
+        {
+            Type type = typeof(CosmosClient).Assembly
+                                .GetType("Microsoft.Azure.Cosmos.Linq.ConstantEvaluator");
+
+            //TODO: remove Fasterflect; use call delegate instead
+            if (type.CallMethod("PartialEval", expression) is not ConstantExpression constantExpression)
+            {
+                throw new ArgumentException(nameof(expression), "Expression cannot be simplified to a constant");
+            }
+
+            return (T)constantExpression.Value;
         }
     }
 }
