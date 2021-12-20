@@ -106,7 +106,6 @@
 
         private string GetJsonPointer(LambdaExpression expression)
         {
-            //TODO: handle .Value
             //TODO: use expression visitor
 
             Stack<string> pathParts = new();
@@ -116,19 +115,30 @@
             {
                 if (currentExpression is MemberExpression memberExpression)
                 {
+                    if (memberExpression.Member.Name == "Value" && Nullable.GetUnderlyingType(memberExpression.Expression.Type) != null)
+                    {
+                        //omit nullable .Value calls
+                        currentExpression = memberExpression.Expression;
+                        continue;
+                    }
+
                     // Member access: fetch serialized name and pop
                     pathParts.Push(GetNameUnderContract(memberExpression.Member));
                     currentExpression = memberExpression.Expression;
+                    continue;
                 }
-                else if (
+                
+                if (
                     currentExpression is BinaryExpression binaryExpression and { NodeType: ExpressionType.ArrayIndex }
                 )
                 {
                     // Array index
                     pathParts.Push(GetIndex(binaryExpression.Right));
                     currentExpression = binaryExpression.Left;
+                    continue;
                 }
-                else if (
+                
+                if (
                     currentExpression is MethodCallExpression callExpression and { Arguments: { Count: 1 }, Method: { Name: "get_Item" } }
                 )
                 {
@@ -151,11 +161,10 @@
                     }    
                     
                     currentExpression = callExpression.Object;
+                    continue;
                 }
-                else
-                {
-                    throw new InvalidOperationException($"{currentExpression.GetType().Name} (at {currentExpression}) not supported");
-                }
+
+                throw new InvalidOperationException($"{currentExpression.GetType().Name} (at {currentExpression}) not supported");
             }
 
             return "/" + string.Join("/", pathParts.Select(EscapeJsonPointer));
