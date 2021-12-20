@@ -6,7 +6,7 @@
     {
         static void Main()
         {
-            new PatchTests().TestPathResoluition();
+            new PatchTests().TestPathResolution();
         }
     }
 }

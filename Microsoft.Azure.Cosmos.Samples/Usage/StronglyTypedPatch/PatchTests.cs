@@ -12,11 +12,12 @@
 
     public class PatchTests
     {
-        public void TestPathResoluition()
+        public void TestPathResolution()
         {
             StronglyTypedPatchOperationFactory<Person> factory = new(serializerOptions : null);
 
             int variableIndex = 0;
+            string dictionaryIndex = "NormalMan";
 
             string[] actualPaths = new[] {
 
@@ -36,7 +37,17 @@
                 factory.Add(person => person.Children[0].Children, new List<Person> { new Person("Billy", 1, 0) }),
                 factory.Add(person => person.Children[0].Children[-1], new Person("Billy", 25, 0)),
                 factory.Add(person => person.Name, "Ted"),
-                factory.Add(person => person.Salary, 25000)
+                factory.Add(person => person.Salary, 25000),
+
+                // Value support
+                factory.Increment(person => person.YearsWorked.Value, 1),
+
+                // Dictionary support, escaping JsonPointer
+                factory.Add(person => person.AlterEgos[dictionaryIndex]  , new Person("George", 1, 0)),
+                factory.Add(person => person.AlterEgos["Space Man"]  , new Person("Neil", 1, 0)),
+                factory.Add(person => person.AlterEgos["Tilde~Man"]  , new Person("Will", 1, 0)),
+                factory.Add(person => person.AlterEgos["Slash/Woman"], new Person("Sally", 1, 0)),
+
             }.Select(x => x.Path)
             .ToArray();
 
@@ -58,6 +69,13 @@
                 "/children/0/children/-",
                 "/name",
                 "/salary",
+
+                "/yearsWorked",
+
+                "/alterEgos/NormalMan",
+                "/alterEgos/Space Man",
+                "/alterEgos/Tilde~0Man",
+                "/alterEgos/Slash~1Woman",
             };
 
             actualPaths.Should().BeEquivalentTo(expectedPaths, o => o.WithStrictOrdering());
@@ -66,12 +84,14 @@
 
     public sealed class Person
     {
-        public Person(string name, int age, double salary, IReadOnlyList<Person> children = null)
+        public Person(string name, int age, double salary, IReadOnlyList<Person> children = null, int? yearsWorked = null, IReadOnlyDictionary<string, Person> alterEgos = null)
         {
             this.Name = name;
             this.Age = age;
             this.Salary = salary;
-            this.Children = new List<Person>(children ?? Array.Empty<Person>());
+            this.YearsWorked = yearsWorked;
+            this.Children = children ?? Array.Empty<Person>();
+            this.AlterEgos = alterEgos ?? new Dictionary<string, Person>();
         }
 
         [JsonProperty("name")]
@@ -83,8 +103,14 @@
         [JsonProperty("salary")]
         public double Salary { get; }
 
+        [JsonProperty("yearsWorked")]
+        public int? YearsWorked { get; }
+
         [JsonProperty("children")]
         public IReadOnlyList<Person> Children { get; }
+
+        [JsonProperty("alterEgos")]
+        public IReadOnlyDictionary<string, Person> AlterEgos { get; }
 
         public override bool Equals(object obj)
         {
