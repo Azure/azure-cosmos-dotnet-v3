@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Runtime.CompilerServices;
-    using Antlr4.Runtime.Dfa;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     internal sealed class Trace : ITrace
