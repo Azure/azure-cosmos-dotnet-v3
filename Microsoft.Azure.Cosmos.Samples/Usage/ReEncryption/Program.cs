@@ -196,7 +196,8 @@
             }
 
             Console.WriteLine("\n ReEncryption in progress. Press esc key to exit. \n");
-            await CheckReEncryptionProgressOrCancelReEncryptionTasksAsync(sourceContainer, targetContainer, cancellationTokenSource);
+
+            Task reEncryptionProgress = CheckReEncryptionProgressOrCancelReEncryptionTasksAsync(sourceContainer, targetContainer, cancellationTokenSource);
 
             try
             {
@@ -204,10 +205,18 @@
             }
             catch (OperationCanceledException)
             {
-                Console.WriteLine("ReEncryption operation was cancelled.");
+                Console.WriteLine("\n\n Warning: ReEncryption operation was cancelled.");
             }
+            catch(Exception)
+            {
+                cancellationTokenSource.Cancel();
+                cancellationTokenSource.Dispose();
+                throw;
+            }
+
             finally
             {
+                await reEncryptionProgress;
                 Console.WriteLine("\n If the reEncryption task is complete,do you want to delete the continuation token file.(y/n) \n");                
                 while (true)
                 {
@@ -379,7 +388,7 @@
 
         private static void ShowReEncryptionProgressBar(int progress, int total, int progressCurrent)
         {
-            int progressBar = 40;
+            int progressBar = 50;
 
             Console.CursorLeft = 1;
 
