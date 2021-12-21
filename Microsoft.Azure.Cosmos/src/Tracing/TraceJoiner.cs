@@ -108,7 +108,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
             public void AddChild(ITrace trace)
             {
                 this.children.Add(trace);
-                this.UpdateRegionContacted(trace.RegionsContacted);
+                if (trace.RegionsContacted != null)
+                {
+                    this.UpdateRegionContacted(trace.RegionsContacted);
+                }
             }
 
             private void UpdateRegionContacted(TraceDatum traceDatum)

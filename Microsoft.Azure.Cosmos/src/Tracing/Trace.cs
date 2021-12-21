@@ -102,7 +102,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
             lock (this.children)
             {
                 this.children.Add(child);
-                this.UpdateRegionContacted(child.RegionsContacted);
+                if (child.RegionsContacted != null)
+                {
+                    this.UpdateRegionContacted(child.RegionsContacted);
+                }
+
             }
         }
 
