@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public ITrace Parent { get; }
 
-        public HashSet<(string, Uri)> RegionsContacted { get; set; }
+        public HashSet<(string, Uri)> RegionsContacted { get; private set; }
 
         public IReadOnlyList<ITrace> Children => this.children;
 
@@ -136,21 +136,20 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.UpdateRegionContacted(traceDatum);
         }
 
-        public void UpdateRegionContacted(TraceDatum traceDatum)
+        private void UpdateRegionContacted(TraceDatum traceDatum)
         {
             if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
             {
+                if (clientSideRequestStatisticsTraceDatum.RegionsContacted == null || clientSideRequestStatisticsTraceDatum.RegionsContacted.Count == 0)
+                {
+                    return;
+                }
                 this.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum.RegionsContacted);
             }
         }
 
         public void UpdateRegionContacted(HashSet<(string, Uri)> newRegionContacted)
         {
-            if (newRegionContacted == null || newRegionContacted.Count == 0)
-            {
-                return;
-            }
-
             if (this.RegionsContacted == null)
             {
                 this.RegionsContacted = newRegionContacted;
@@ -163,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             if (this.Parent != null)
             {
-                this.Parent.UpdateRegionContacted(this.RegionsContacted);
+                this.Parent.UpdateRegionContacted(newRegionContacted);
             }
         }
 
