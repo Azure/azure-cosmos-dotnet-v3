@@ -88,10 +88,5 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             // NoOp
         }
-
-        public void UpdateRegionContacted(TraceDatum traceDatum)
-        {
-            // NoOp
-        }
     }
 }

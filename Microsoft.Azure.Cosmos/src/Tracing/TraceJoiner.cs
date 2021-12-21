@@ -46,6 +46,14 @@ namespace Microsoft.Azure.Cosmos.Tracing
             {
                 this.children = new List<ITrace>(children);
                 this.data = new Dictionary<string, object>();
+
+                HashSet<(string, Uri)> regionsList = new HashSet<(string, Uri)>();
+                foreach (ITrace trace in children)
+                {
+                    regionsList.UnionWith(trace.RegionsContacted);
+                }
+
+                this.UpdateRegionContacted(regionsList);
             }
 
             public string Name => "Trace Forest";
@@ -68,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             public IReadOnlyDictionary<string, object> Data => this.data;
 
-            public HashSet<(string, Uri)> RegionsContacted { get; set; }
+            public HashSet<(string, Uri)> RegionsContacted { get; private set; }
 
             public void AddDatum(string key, TraceDatum traceDatum)
             {
@@ -103,21 +111,20 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.UpdateRegionContacted(trace.RegionsContacted);
             }
 
-            public void UpdateRegionContacted(TraceDatum traceDatum)
+            private void UpdateRegionContacted(TraceDatum traceDatum)
             {
                 if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
                 {
+                    if (clientSideRequestStatisticsTraceDatum.RegionsContacted == null || clientSideRequestStatisticsTraceDatum.RegionsContacted.Count == 0)
+                    {
+                        return;
+                    }
                     this.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum.RegionsContacted);
                 }
             }
 
             public void UpdateRegionContacted(HashSet<(string, Uri)> newRegionContacted)
             {
-                if (newRegionContacted == null || newRegionContacted.Count == 0)
-                {
-                    return;
-                }
-
                 if (this.RegionsContacted == null)
                 {
                     this.RegionsContacted = newRegionContacted;
@@ -130,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 if (this.Parent != null)
                 {
-                    this.Parent.UpdateRegionContacted(this.RegionsContacted);
+                    this.Parent.UpdateRegionContacted(newRegionContacted);
                 }
             }
         }

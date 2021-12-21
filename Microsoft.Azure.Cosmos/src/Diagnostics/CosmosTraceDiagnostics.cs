@@ -86,23 +86,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return false;
         }
 
-        private void WalkTraceTreeForRegionsContated(ITrace currentTrace, HashSet<(string, Uri)> regionsContacted)
-        {
-            foreach (object datums in currentTrace.Data.Values)
-            {
-                if (datums is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
-                {
-                    regionsContacted.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
-                    return;
-                }
-            }
-
-            foreach (ITrace childTrace in currentTrace.Children)
-            {
-                this.WalkTraceTreeForRegionsContated(childTrace, regionsContacted);
-            }
-        }
-
         private string ToJsonString()
         {
             ReadOnlyMemory<byte> utf8String = this.WriteTraceToJsonWriter(JsonSerializationFormat.Text);
