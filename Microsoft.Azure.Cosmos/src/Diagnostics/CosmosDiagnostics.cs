@@ -24,16 +24,16 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.
+        /// This represent the start time of the request.
         /// </summary>
-        /// <returns>The string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.</returns>
+        /// <returns>This returns the start time of the request.</returns>
         public abstract DateTime GetStartTimeUtc();
 
         /// <summary>
-        /// Gets the string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.
+        ///  This represent the count of failed requests.
         /// </summary>
-        /// <returns>The string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.</returns>
-        public abstract bool IsRequestRetried();
+        /// <returns>The integer field returns the count of failed requests.</returns>
+        public abstract int FailedRequestCount();
 
         /// <summary>
         /// Gets the string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.

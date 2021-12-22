@@ -139,6 +139,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsFalse(diagnostics.IsGoneExceptionHit());
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics.ToString()));
             Assert.IsTrue(diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
+            Assert.IsFalse(response.Diagnostics.FailedRequestCount()>0);
 
             response = await this.Container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
             Assert.IsNotNull(response);
@@ -146,6 +147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Diagnostics);
             Assert.IsFalse(string.IsNullOrEmpty(response.Diagnostics.ToString()));
             Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
+            Assert.IsFalse(response.Diagnostics.FailedRequestCount()>0);
 
             Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.MaxResourceQuota));
             Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.CurrentResourceQuotaUsage));
@@ -222,6 +224,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string diagnostics = ce.Diagnostics.ToString();
                 Assert.IsTrue(diagnostics.Contains("999999"));
                 CosmosItemTests.ValidateCosmosException(ce);
+
+
             }
         }
 

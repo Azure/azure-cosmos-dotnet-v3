@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -121,14 +122,23 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override DateTime GetStartTimeUtc()
         {
+            if (this.Value == null)
+            {
+                return DateTime.MinValue;
+            }
             return this.Value.StartTime;
         }
+        
+        public override int FailedRequestCount()
+        {
+           return this.WalkTraceTreeForFailedRequestCount(this.Value);
+        }
 
-        public bool WalkTraceTreeForRequestRetried(ITrace currentTrace)
+        private int WalkTraceTreeForFailedRequestCount(ITrace currentTrace)
         {
             if (currentTrace == null)
             {
-                return false;
+                return this.failedRequestCount;
             }
 
             foreach (object datums in currentTrace.Data.Values)
@@ -137,9 +147,9 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 {
                     foreach (StoreResponseStatistics responseStatistics in clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList)
                     {
-                        if (responseStatistics.StoreResult != null && Convert.ToInt32(responseStatistics.StoreResult.StatusCode) > 400)
+                        if (responseStatistics.StoreResult != null && (int)responseStatistics.StoreResult.StatusCode > 400)
                         {
-                            return true;
+                            this.failedRequestCount++;
                         }
                     }
                 }
@@ -147,18 +157,11 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             foreach (ITrace childTrace in currentTrace.Children)
             {
-                if (this.WalkTraceTreeForRequestRetried(childTrace))
-                {
-                    return true;
-                }
+                this.failedRequestCount += this.WalkTraceTreeForFailedRequestCount(childTrace);
             }
 
-            return false;
+            return this.failedRequestCount;
         }
-
-        public override bool IsRequestRetried()
-        {
-            return this.WalkTraceTreeForRequestRetried(this.Value);
-        }
+        private int failedRequestCount { get; set; }
     }
 }
