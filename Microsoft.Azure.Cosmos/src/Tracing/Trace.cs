@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.UpdateRegionContacted(traceDatum);
         }
 
-        private void UpdateRegionContacted(TraceDatum traceDatum)
+        public void UpdateRegionContacted(TraceDatum traceDatum)
         {
             if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
             {

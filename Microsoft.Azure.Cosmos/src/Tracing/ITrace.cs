@@ -130,5 +130,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// </summary>
         /// <param name="newRegionContacted"></param>
         void UpdateRegionContacted(HashSet<(string, Uri)> newRegionContacted);
+
+        /// <summary>
+        /// Update region contacted information to the parent Itrace
+        /// </summary>
+        /// <param name="traceDatum"></param>
+        void UpdateRegionContacted(TraceDatum traceDatum);
     }
 }
