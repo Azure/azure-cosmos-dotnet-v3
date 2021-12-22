@@ -112,12 +112,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 Tracing.TraceLevel.Info))
             {
                 request.Trace = processMessageAsyncTrace;
+                processMessageAsyncTrace.AddDatum("Client Side Request Stats", clientSideRequestStatisticsTraceDatum);
 
                 DocumentServiceResponse response = request.OperationType == OperationType.Upsert
                         ? await this.ProcessUpsertAsync(storeProxy, serviceRequest, cancellationToken)
                         : await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
 
-                processMessageAsyncTrace.AddDatum("Client Side Request Stats", clientSideRequestStatisticsTraceDatum);
+                processMessageAsyncTrace.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum);
 
                 return response.ToCosmosResponseMessage(
                     request,
