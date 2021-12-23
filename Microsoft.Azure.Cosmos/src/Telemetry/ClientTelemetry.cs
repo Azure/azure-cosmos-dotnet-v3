@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Handler;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Telemetry.Payloads;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Rntbd;
@@ -27,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// Dividing these same values with 1000 during Serialization.
     /// This Class get initiated with the client and get disposed with client.
     /// </summary>
-    internal class ClientTelemetry : IDisposable
+    internal class ClientTelemetry : IObserver<KeyValuePair<string, object>>
     {
         private static readonly Uri endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
@@ -143,6 +144,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
 
+                    //Console.WriteLine("i m observing");
+
                     // If cancellation is requested after the delay then return from here.
                     if (this.cancellationTokenSource.IsCancellationRequested)
                     {
@@ -158,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
 
                     this.clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot);
-
+                    //Console.WriteLine("Observer: this.clientTelemetryInfo.OperationInfo : " + this.clientTelemetryInfo.OperationInfo.Count);
                     await this.SendAsync();
                 }
             }
@@ -192,7 +195,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             string consistencyLevel,
                             double requestCharge)
         {
-            DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
+            //Console.WriteLine("Collecting Operation data for Telemetry.");
 
             if (cosmosDiagnostics == null)
             {
@@ -366,6 +369,36 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.cancellationTokenSource.Dispose();
 
             this.telemetryTask = null;
+        }
+
+        public void OnCompleted()
+        {
+            //throw new NotImplementedException();
+        }
+
+        public void OnError(Exception error)
+        {
+            //throw new NotImplementedException();
+        }
+
+        public void OnNext(KeyValuePair<string, object> value)
+        {
+           // Console.WriteLine("Request Listestener => " + value.Key);
+
+            if (value.Key.Equals("RequestTelemetry"))
+            {
+                //Console.WriteLine("Request Listestener ");
+                RequestPayload payload = (RequestPayload)value.Value;
+                this.Collect(payload.cosmosDiagnostics,
+                    payload.statusCode,
+                    payload.responseSizeInBytes,
+                    payload.containerId,
+                    payload.databaseId,
+                    payload.operationType,
+                    payload.resourceType,
+                    payload.consistencyLevel,
+                    payload.requestCharge);
+            }
         }
     }
 }
