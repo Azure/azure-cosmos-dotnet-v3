@@ -469,7 +469,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             foreach(CosmosLinqSerializerOptions linqSerializerOptions in serializerOptions)
             {
-                IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true, null, null, linqSerializerOptions;
+                IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true, null, null, linqSerializerOptions);
                 // Nullable<T>.HasValue translates to IS_DEFINED - should work regardless of serialization/casing
                 IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.nullableInt.HasValue);
                 Assert.AreEqual(2, queriable.Count(), "HasValue should have returned two items.");
