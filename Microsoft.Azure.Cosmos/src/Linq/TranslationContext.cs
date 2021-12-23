@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         private Stack<SubqueryBinding> subqueryBindingStack;
 
-        public TranslationContext()
+        public TranslationContext(CosmosLinqSerializerOptions linqSerializerOptions, IDictionary<object, string> parameters = null)
         {
             this.InScope = new HashSet<ParameterExpression>();
             this.substitutions = new ParameterSubstitution();
@@ -67,11 +67,6 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.collectionStack = new List<Collection>();
             this.currentQuery = new QueryUnderConstruction(this.GetGenFreshParameterFunc());
             this.subqueryBindingStack = new Stack<SubqueryBinding>();
-        }
-
-        public TranslationContext(CosmosLinqSerializerOptions linqSerializerOptions, IDictionary<object, string> parameters = null)
-            : this()
-        {
             this.linqSerializerOptions = linqSerializerOptions;
             this.parameters = parameters;
             this.memberNames = new MemberNames(linqSerializerOptions);
