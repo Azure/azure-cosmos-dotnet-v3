@@ -352,11 +352,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Default instance of <see cref="MemberNames"/> using default serialization options
-        /// </summary>
-        public static readonly MemberNames Default = new MemberNames(null);
-
-        /// <summary>
         /// HasValue for mapping <see cref="Nullable{T}.Value"/>
         /// </summary>
         public string Value { get; }
