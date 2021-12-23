@@ -106,105 +106,104 @@
 
         private string GetJsonPointer(LambdaExpression expression)
         {
-            //TODO: use expression visitor
-
             Stack<string> pathParts = new();
 
             Expression currentExpression = expression.Body;
             while (currentExpression is not ParameterExpression)
             {
-                if (currentExpression is MemberExpression memberExpression)
+                currentExpression = this.GrabSegmentAndTraverse(currentExpression, out string pathPart);
+                if (pathPart != null)
                 {
-                    if (memberExpression.Member.Name == "Value" && Nullable.GetUnderlyingType(memberExpression.Expression.Type) != null)
-                    {
-                        //omit nullable .Value calls
-                        currentExpression = memberExpression.Expression;
-                        continue;
-                    }
-
-                    // Member access: fetch serialized name and pop
-                    pathParts.Push(GetNameUnderContract(memberExpression.Member));
-                    currentExpression = memberExpression.Expression;
-                    continue;
+                    pathParts.Push(pathPart);
                 }
-                
-                if (
-                    currentExpression is BinaryExpression binaryExpression and { NodeType: ExpressionType.ArrayIndex }
-                )
-                {
-                    // Array index
-                    pathParts.Push(GetIndex(binaryExpression.Right));
-                    currentExpression = binaryExpression.Left;
-                    continue;
-                }
-                
-                if (
-                    currentExpression is MethodCallExpression callExpression and { Arguments: { Count: 1 }, Method: { Name: "get_Item" } }
-                )
-                {
-                    Expression listIndexExpression = callExpression.Arguments[0];
-
-                    if (listIndexExpression.Type == typeof(int))
-                    {
-                        //// Assume IReadOnlyList index. Int dictionaries are NOT supported.
-                        pathParts.Push(GetIndex(listIndexExpression));
-                    }
-                    else if (listIndexExpression.Type == typeof(string))
-                    {
-                        
-                        //string dictionary. Other dictionary types not supported.
-                        pathParts.Push(ResolveConstant<string>(listIndexExpression));
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException($"Indexing type (at {currentExpression}) not supported");
-                    }    
-                    
-                    currentExpression = callExpression.Object;
-                    continue;
-                }
-
-                throw new InvalidOperationException($"{currentExpression.GetType().Name} (at {currentExpression}) not supported");
             }
 
             return "/" + string.Join("/", pathParts.Select(EscapeJsonPointer));
+        }
 
-            string GetNameUnderContract(MemberInfo member)
+        private Expression GrabSegmentAndTraverse(Expression currentExpression, out string pathPart)
+        {
+            pathPart = null;
+
+            if (currentExpression is MemberExpression memberExpression)
             {
-                Type type = typeof(CosmosClient).Assembly
-                    .GetType("Microsoft.Azure.Cosmos.Linq.TypeSystem");
-
-                //TODO: remove Fasterflect; use call delegate instead
-                return (string)type.CallMethod("GetMemberName", new[] { typeof(MemberInfo), typeof(CosmosLinqSerializerOptions) }, member, this.serializerOptions);
-            } 
-            
-            string GetIndex(Expression expression)
-            {
-                int index = ResolveConstant<int>(expression);
-
-                return index switch
+                if (memberExpression.Member.Name == "Value" && Nullable.GetUnderlyingType(memberExpression.Expression.Type) != null)
                 {
-                    >= 0 => index.ToString(),
-                    -1 => "-", //array append
-                    _ => throw new ArgumentOutOfRangeException(nameof(index))
-                };
+                    //omit nullable .Value calls
+                    return memberExpression.Expression;
+                }
+
+                // Member access: fetch serialized name and pop
+                pathPart = this.GetNameUnderContract(memberExpression.Member);
+                return memberExpression.Expression;
             }
 
-            static string EscapeJsonPointer(string str)
+            if (currentExpression is BinaryExpression { NodeType: ExpressionType.ArrayIndex } binaryExpression)
             {
-                return new(str.SelectMany(c => c switch
-                {
-                    '~' => new[] { '~', '0' },
-                    '/' => new[] { '~', '1' },
-                    _   => new[] { c }
-                }).ToArray());
+                // Array index
+                pathPart = GetIndex(binaryExpression.Right);
+                return binaryExpression.Left;
             }
+
+            if (currentExpression is MethodCallExpression { Arguments: { Count: 1 }, Method: { Name: "get_Item" } } callExpression)
+            {
+                Expression listIndexExpression = callExpression.Arguments[0];
+
+                if (listIndexExpression.Type == typeof(int))
+                {
+                    //// Assume IReadOnlyList index. Int dictionaries are NOT supported.
+                    pathPart = GetIndex(listIndexExpression);
+                }
+                else if (listIndexExpression.Type == typeof(string))
+                {
+
+                    //string dictionary. Other dictionary types not supported.
+                    pathPart = ResolveConstant<string>(listIndexExpression);
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Indexing type (at {currentExpression}) not supported");
+                }
+
+                return callExpression.Object;
+            }
+
+            throw new InvalidOperationException($"{currentExpression.GetType().Name} (at {currentExpression}) not supported");
+        }
+
+        private string GetNameUnderContract(MemberInfo member)
+        {
+            Type type = typeof(CosmosClient).Assembly.GetType("Microsoft.Azure.Cosmos.Linq.TypeSystem");
+
+            //TODO: remove Fasterflect; use call delegate instead
+            return (string)type.CallMethod("GetMemberName", new[] { typeof(MemberInfo), typeof(CosmosLinqSerializerOptions) }, member, this.serializerOptions);
+        }
+
+        private static string GetIndex(Expression expression)
+        {
+            int index = ResolveConstant<int>(expression);
+
+            return index switch
+            {
+                >= 0 => index.ToString(),
+                -1 => "-", //array append
+                _ => throw new ArgumentOutOfRangeException(nameof(index))
+            };
+        }
+
+        private static string EscapeJsonPointer(string str)
+        {
+            return new(str.SelectMany(c => c switch
+            {
+                '~' => new[] { '~', '0' },
+                '/' => new[] { '~', '1' },
+                _ => new[] { c }
+            }).ToArray());
         }
 
         private static T ResolveConstant<T>(Expression expression)
         {
-            Type type = typeof(CosmosClient).Assembly
-                                .GetType("Microsoft.Azure.Cosmos.Linq.ConstantEvaluator");
+            Type type = typeof(CosmosClient).Assembly.GetType("Microsoft.Azure.Cosmos.Linq.ConstantEvaluator");
 
             //TODO: remove Fasterflect; use call delegate instead
             if (type.CallMethod("PartialEval", expression) is not ConstantExpression constantExpression)
