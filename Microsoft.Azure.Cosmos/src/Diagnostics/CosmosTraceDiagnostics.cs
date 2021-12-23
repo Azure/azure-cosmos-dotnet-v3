@@ -52,6 +52,19 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.WalkTraceTreeForRegionsContated(rootTrace, regionsContacted);
             return regionsContacted.ToList();
         }
+        public override DateTime GetStartTimeUtc()
+        {
+            if (this.Value == null)
+            {
+                return DateTime.MinValue;
+            }
+            return this.Value.StartTime;
+        }
+
+        public override int FailedRequestCount()
+        {
+            return this.WalkTraceTreeForFailedRequestCount(this.Value);
+        }
 
         internal bool IsGoneExceptionHit()
         {
@@ -118,20 +131,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             IJsonWriter jsonTextWriter = JsonWriter.Create(jsonSerializationFormat);
             TraceWriter.WriteTrace(jsonTextWriter, this.Value);
             return jsonTextWriter.GetResult();
-        }
-
-        public override DateTime GetStartTimeUtc()
-        {
-            if (this.Value == null)
-            {
-                return DateTime.MinValue;
-            }
-            return this.Value.StartTime;
-        }
-        
-        public override int FailedRequestCount()
-        {
-           return this.WalkTraceTreeForFailedRequestCount(this.Value);
         }
 
         private int WalkTraceTreeForFailedRequestCount(ITrace currentTrace)

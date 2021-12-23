@@ -27,13 +27,21 @@ namespace Microsoft.Azure.Cosmos
         /// This represent the start time of the request.
         /// </summary>
         /// <returns>This returns the start time of the request.</returns>
-        public abstract DateTime GetStartTimeUtc();
+        public virtual DateTime GetStartTimeUtc()
+        {            
+            // Default implementation avoids breaking change for users upgrading.
+            throw new NotImplementedException($"CosmosDiagnostics.GetStartTimeUtc");
+        }
 
         /// <summary>
         ///  This represent the count of failed requests.
         /// </summary>
         /// <returns>The integer field returns the count of failed requests.</returns>
-        public abstract int FailedRequestCount();
+        public virtual int FailedRequestCount()
+        {            
+            // Default implementation avoids breaking change for users upgrading.
+            throw new NotImplementedException($"CosmosDiagnostics.FailedRequestCount");
+        }
 
         /// <summary>
         /// Gets the string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.
