@@ -79,6 +79,12 @@
             };
 
             actualPaths.Should().BeEquivalentTo(expectedPaths, o => o.WithStrictOrdering());
+
+            FluentActions.Invoking(() => factory.Add(person => person.ToString(), "Ted"))
+                .Should().Throw<InvalidOperationException>(because: "methods are not supported");
+
+            FluentActions.Invoking(() => factory.Add(person => person.Age + 5, 1))
+                .Should().Throw<InvalidOperationException>(because: "while some binary operators are supported, addition is not");
         }       
     }
 
