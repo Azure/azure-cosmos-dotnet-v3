@@ -338,7 +338,16 @@
             (string desiredThroughputType, int desiredThroughputValue) = GetThroughputTypeAndValue(throughputProperties);
 
             Database database = await client.CreateDatabaseIfNotExistsAsync(databaseName, isSharedThroughput ? throughputProperties : null);
-            ThroughputProperties existingDatabaseThroughput = await database.ReadThroughputAsync(null);
+            ThroughputProperties existingDatabaseThroughput;
+            try
+            {
+                existingDatabaseThroughput = await database.ReadThroughputAsync(requestOptions: null);
+            }
+            catch(CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                // the database does not have throughput provisioned
+                existingDatabaseThroughput = null;
+            }
 
             if(isSharedThroughput && existingDatabaseThroughput != null)
             {
