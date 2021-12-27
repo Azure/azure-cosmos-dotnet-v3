@@ -13,6 +13,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
     internal static class ClientTelemetryOptions
     {
+        internal const string DiagnosticSourceName = "CT";
+        internal const string RequestPayloadKey = "RequestTelemetry";
+
         // ConversionFactor used in Histogram calculation to maintain precision or to collect data in desired unit
         internal const double HistogramPrecisionFactor = 100;
         internal const double TicksToMsFactor = TimeSpan.TicksPerMillisecond;

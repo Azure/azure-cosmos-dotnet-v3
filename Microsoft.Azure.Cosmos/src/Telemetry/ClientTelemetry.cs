@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// Dividing these same values with 1000 during Serialization.
     /// This Class get initiated with the client and get disposed with client.
     /// </summary>
-    internal class ClientTelemetry : IObserver<KeyValuePair<string, object>>
+    internal class ClientTelemetry : IDisposable
     {
         private static readonly Uri endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private Task telemetryTask;
 
-        private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
+        private static ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
             = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
 
         /// <summary>
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.clientTelemetryInfo.DateTimeUtc = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
 
                     ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
-                        = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
+                        = Interlocked.Exchange(ref operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
 
                     this.clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot);
                     //Console.WriteLine("Observer: this.clientTelemetryInfo.OperationInfo : " + this.clientTelemetryInfo.OperationInfo.Count);
@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="resourceType"></param>
         /// <param name="consistencyLevel"></param>
         /// <param name="requestCharge"></param>
-        internal void Collect(CosmosDiagnostics cosmosDiagnostics,
+        internal static void Collect(CosmosDiagnostics cosmosDiagnostics,
                             HttpStatusCode statusCode,
                             long responseSizeInBytes,
                             string containerId,
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                             resource: resourceType,
                                             statusCode: (int)statusCode);
 
-            (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
+            (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = operationInfoMap
                     .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                         ClientTelemetryOptions.RequestLatencyMax,
                                                         ClientTelemetryOptions.RequestLatencyPrecision),
@@ -371,34 +371,5 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.telemetryTask = null;
         }
 
-        public void OnCompleted()
-        {
-            //throw new NotImplementedException();
-        }
-
-        public void OnError(Exception error)
-        {
-            //throw new NotImplementedException();
-        }
-
-        public void OnNext(KeyValuePair<string, object> value)
-        {
-           // Console.WriteLine("Request Listestener => " + value.Key);
-
-            if (value.Key.Equals("RequestTelemetry"))
-            {
-                //Console.WriteLine("Request Listestener ");
-                RequestPayload payload = (RequestPayload)value.Value;
-                this.Collect(payload.cosmosDiagnostics,
-                    payload.statusCode,
-                    payload.responseSizeInBytes,
-                    payload.containerId,
-                    payload.databaseId,
-                    payload.operationType,
-                    payload.resourceType,
-                    payload.consistencyLevel,
-                    payload.requestCharge);
-            }
-        }
     }
 }

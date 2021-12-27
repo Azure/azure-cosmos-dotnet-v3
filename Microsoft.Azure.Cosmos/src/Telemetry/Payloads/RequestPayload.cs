@@ -12,7 +12,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Payloads
 
     internal class RequestPayload
     {
-        public RequestPayload(CosmosDiagnostics cosmosDiagnostics,
+        public RequestPayload(string id,
+                            CosmosDiagnostics cosmosDiagnostics,
                             HttpStatusCode statusCode,
                             long responseSizeInBytes,
                             string containerId,
@@ -22,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Payloads
                             string consistencyLevel,
                             double requestCharge)
         {
+            this.Id = id;
             this.cosmosDiagnostics = cosmosDiagnostics;
             this.statusCode = statusCode;       
             this.responseSizeInBytes = responseSizeInBytes;
@@ -32,6 +34,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Payloads
             this.consistencyLevel = consistencyLevel;
             this.requestCharge = requestCharge;
         }
+
+        public string Id { get; }
 
         public CosmosDiagnostics cosmosDiagnostics { get; }
 

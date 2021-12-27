@@ -676,7 +676,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (expectedOperationRecordCountMap != null)
             {
-                Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo(actualOperationRecordCountMap), $"actual record count({actualOperationRecordCountMap.Count}) for operation does not match with expected record count({expectedOperationRecordCountMap.Count})");
+                Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo(actualOperationRecordCountMap), 
+                    $"actual record are [{string.Join(",",actualOperationRecordCountMap.Select(kvp => string.Format("{0}={1}", kvp.Key, kvp.Value)))}] for operation does not match with expected record are [{string.Join(",", expectedOperationRecordCountMap.Select(kvp => string.Format("{0}={1}", kvp.Key, kvp.Value)))}]");
             }
 
             // Asserting If system information list is as expected

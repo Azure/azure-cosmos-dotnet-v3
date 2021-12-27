@@ -29,9 +29,12 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosResponseFactoryInternal responseFactory;
         private readonly RequestInvokerHandler requestHandler;
         private readonly CosmosClientOptions clientOptions;
-        private readonly ClientTelemetry telemetry;
 
         private readonly string userAgent;
+
+        private readonly ClientTelemetry telemetry;
+        private readonly IDisposable subscription;
+
         private bool isDisposed = false;
 
         private ClientContextCore(
@@ -43,7 +46,8 @@ namespace Microsoft.Azure.Cosmos
             DocumentClient documentClient,
             string userAgent,
             BatchAsyncContainerExecutorCache batchExecutorCache,
-            ClientTelemetry telemetry)
+            ClientTelemetry telemetry,
+            IDisposable subscription)
         {
             this.client = client;
             this.clientOptions = clientOptions;
@@ -53,6 +57,8 @@ namespace Microsoft.Azure.Cosmos
             this.documentClient = documentClient;
             this.userAgent = userAgent;
             this.batchExecutorCache = batchExecutorCache;
+
+            this.subscription = subscription;
             this.telemetry = telemetry;
         }
 
@@ -108,7 +114,9 @@ namespace Microsoft.Azure.Cosmos
             clientOptions = ClientContextCore.CreateOrCloneClientOptions(clientOptions);
 
             ConnectionPolicy connectionPolicy = clientOptions.GetConnectionPolicy(cosmosClient.ClientId);
+
             ClientTelemetry telemetry = null;
+            IDisposable subscription = null;
             if (connectionPolicy.EnableClientTelemetry)
             {
                 telemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
@@ -118,6 +126,8 @@ namespace Microsoft.Azure.Cosmos
                      authorizationTokenProvider: cosmosClient.AuthorizationTokenProvider,
                      diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
                      preferredRegions: clientOptions.ApplicationPreferredRegions);
+
+                subscription = DiagnosticListener.AllListeners.Subscribe(new Subscribe());
             } 
             else
             {
@@ -130,8 +140,7 @@ namespace Microsoft.Azure.Cosmos
                 ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
                     cosmosClient,
                     clientOptions.ConsistencyLevel,
-                    clientOptions.CustomHandlers,
-                    telemetry: telemetry);
+                    clientOptions.CustomHandlers);
 
                 requestInvokerHandler = clientPipelineBuilder.Build();
             }
@@ -154,7 +163,8 @@ namespace Microsoft.Azure.Cosmos
                 documentClient: documentClient,
                 userAgent: documentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
                 batchExecutorCache: new BatchAsyncContainerExecutorCache(),
-                telemetry: telemetry);
+                telemetry,
+                subscription);
         }
 
         /// <summary>
@@ -439,6 +449,7 @@ namespace Microsoft.Azure.Cosmos
                     this.batchExecutorCache.Dispose();
                     this.DocumentClient.Dispose();
                     this.telemetry?.Dispose();
+                    this.subscription?.Dispose();
                 }
 
                 this.isDisposed = true;

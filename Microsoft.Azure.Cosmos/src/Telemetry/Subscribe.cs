@@ -11,29 +11,28 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
     internal class Subscribe : IObserver<DiagnosticListener>
     {
-        private readonly ClientTelemetry telemetry;
-        public Subscribe(ClientTelemetry telemetry)
-        {
-            this.telemetry = telemetry;
-        }
-
+        private DiagnosticListener listener;
         public void OnCompleted()
         {
-           // Console.WriteLine("Client Telemetry Subscribed...Complete");
+            this.listener.Dispose();
+
+            Console.WriteLine("Client Telemetry Subscribed...Complete");
         }
 
         public void OnError(Exception error)
         {
-            //Console.WriteLine("Client Telemetry Subscribed...Error => " + error.Message);
+            Console.WriteLine("Client Telemetry Subscribed...Error => " + error.Message);
         }
 
         public void OnNext(DiagnosticListener value)
         {
-            //Console.WriteLine("Came here to subscribe..." + value.Name);
-            if (value.Name.Equals("ClientTelemetry"))
+            this.listener = value;
+
+            Console.WriteLine("Came here to subscribe..." + value.Name);
+            if (value.Name.Equals(ClientTelemetryOptions.DiagnosticSourceName))
             {
-               // Console.WriteLine("Client Telemetry Subscribed...");
-                value.Subscribe(this.telemetry);
+                Console.WriteLine("Client Telemetry Subscribed...");
+                value.Subscribe(new ClientTelemetryCollector());
             }
         }
     }

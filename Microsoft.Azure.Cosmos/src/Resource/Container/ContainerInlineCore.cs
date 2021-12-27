@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.ReadFeed;
-    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
@@ -170,6 +169,7 @@ namespace Microsoft.Azure.Cosmos
                 nameof(CreateItemStreamAsync),
                 requestOptions,
                 func);
+
         }
 
         public override Task<ItemResponse<T>> CreateItemAsync<T>(T item,

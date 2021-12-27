@@ -15,18 +15,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
     internal class TelemetryHandler : RequestHandler
     {
-        private readonly ClientTelemetry telemetry;
-        private static readonly DiagnosticSource diagnosticSource = new DiagnosticListener("ClientTelemetry");
-
-        public TelemetryHandler(ClientTelemetry telemetry)
-        {
-            this.telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
-            //Console.WriteLine("subscribing all listeners");
-
-            DiagnosticListener.AllListeners.Subscribe(new Subscribe(this.telemetry));
-            //Console.WriteLine("subscribtion done");
-
-        }
+        private static readonly DiagnosticSource diagnosticSource = new DiagnosticListener(ClientTelemetryOptions.DiagnosticSourceName);
 
         public override async Task<ResponseMessage> SendAsync(
             RequestMessage request,
@@ -37,12 +26,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 try
                 {
-                    //Console.WriteLine("Diagnostic Source ClientTelmetry ");
+                    Console.WriteLine("Diagnostic Source ClientTelmetry ");
 
-                    if (diagnosticSource.IsEnabled("ClientTelemetry"))
+                    if (diagnosticSource.IsEnabled(ClientTelemetryOptions.DiagnosticSourceName))
                     {
-                       // Console.WriteLine("Diagnostic Source ClientTelmetry enabled ");
-                        diagnosticSource.Write("RequestTelemetry", new RequestPayload (
+                        RequestPayload payload = new RequestPayload(
+                                id: Guid.NewGuid().ToString(),  
                                 cosmosDiagnostics: response.Diagnostics,
                                 statusCode: response.StatusCode,
                                 responseSizeInBytes: this.GetPayloadSize(response),
@@ -51,20 +40,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 operationType: request.OperationType,
                                 resourceType: request.ResourceType,
                                 consistencyLevel: request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
-                                requestCharge: response.Headers.RequestCharge));
+                                requestCharge: response.Headers.RequestCharge);
+
+                        Console.WriteLine("Diagnostic Source ClientTelmetry enabled, payload id " + payload.Id);
+                        diagnosticSource.Write(ClientTelemetryOptions.RequestPayloadKey, payload);
                     }
 
-                   /* this.telemetry
-                        .Collect(
-                                cosmosDiagnostics: response.Diagnostics,
-                                statusCode: response.StatusCode,
-                                responseSizeInBytes: this.GetPayloadSize(response),
-                                containerId: request.ContainerId,
-                                databaseId: request.DatabaseId,
-                                operationType: request.OperationType,
-                                resourceType: request.ResourceType,
-                                consistencyLevel: request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
-                                requestCharge: response.Headers.RequestCharge);*/
                 }
                 catch (Exception ex)
                 {
