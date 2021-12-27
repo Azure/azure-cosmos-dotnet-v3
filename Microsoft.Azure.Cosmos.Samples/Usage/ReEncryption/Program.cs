@@ -48,7 +48,8 @@
         private static string SourceDatabase = null;
         private static string SourceContainer = null;
         private static string DestinationContainer = null;
-        private static readonly int PageHintSize = 100; 
+        private static readonly int PageHintSize = 100;
+        private static readonly int ProgressPollingInterval = 3000;
         private static readonly string ContinuationTokenFile = "continuationTokenFile";
         private static CosmosClient client = null;
 
@@ -214,32 +215,29 @@
                 throw;
             }
 
-            finally
+            await reEncryptionProgress;
+            Console.WriteLine("\n If the reEncryption task is complete,do you want to delete the continuation token file.(y/n) \n");
+            while (true)
             {
-                await reEncryptionProgress;
-                Console.WriteLine("\n If the reEncryption task is complete,do you want to delete the continuation token file.(y/n) \n");                
-                while (true)
+                string ans = Console.ReadLine();
+                if (ans != null && ans == "y")
                 {
-                    string ans = Console.ReadLine();
-                    if (ans != null && ans == "y")
+                    foreach (FeedRange feedRange in ranges)
                     {
-                        foreach (FeedRange feedRange in ranges)
-                        {
-                            File.Delete(@ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id);
-                        }
-                        break;
+                        File.Delete(@ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id);
                     }
-                    else if (ans != null && ans == "n")
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        Console.Write("\n Only y or n Allowed \n");
-                    }
+                    break;
                 }
-                cancellationTokenSource.Dispose();
+                else if (ans != null && ans == "n")
+                {
+                    break;
+                }
+                else
+                {
+                    Console.Write("\n Only y or n Allowed \n");
+                }
             }
+            cancellationTokenSource.Dispose();
         }
 
         private static async Task ExecuteReEncrytionAsync(Container sourceContainer, FeedRange feedRange,CancellationToken cancellationToken = default)
@@ -330,7 +328,7 @@
 
         private static bool CheckAndSetWritesAsStopped()
         {
-            //Note: If you have enabled FullFidelity on your account and have active writes, you can perhaps poll to check if writes on the source container has stopped and return true.
+            //Note: If you have enabled FullFidelity on your account and have active writes, you can perhaps poll to check if writes on the source container have stopped and return true.
             return true;
         }
 
@@ -345,7 +343,7 @@
                 }
 
                 // fetch and display the progress every 3 seconds.
-                await Task.Delay(3000);
+                await Task.Delay(ProgressPollingInterval);
                 await GetReEncryptionProgressPercentageAsync(sourceContainer, targetContainer, cancellationToken.Token);
             }
         }
