@@ -13,25 +13,25 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         public void OnCompleted()
         {
-            Console.WriteLine("collection recorded");
+            //Console.WriteLine("collection recorded");
             //throw new NotImplementedException();
         }
 
         public void OnError(Exception error)
         {
-            Console.WriteLine("collection recorded with error " + error.Message);
+            //Console.WriteLine("collection recorded with error " + error.Message);
            // throw new NotImplementedException();
         }
 
         public void OnNext(KeyValuePair<string, object> value)
         {
-            Console.WriteLine("Request Listestener => " + value.Key);
+            //Console.WriteLine("Request Listestener => " + value.Key);
 
             if (value.Key.Equals(ClientTelemetryOptions.RequestPayloadKey))
             {
                 RequestPayload payload = (RequestPayload)value.Value;
 
-                Console.WriteLine("Request Listestener, payload id: " + payload.Id);
+                //Console.WriteLine("Request Listestener, payload id: " + payload.Id);
  
                 ClientTelemetry.Collect(payload.cosmosDiagnostics,
                     payload.statusCode,

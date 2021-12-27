@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 try
                 {
-                    Console.WriteLine("Diagnostic Source ClientTelmetry ");
+                    //Console.WriteLine("Diagnostic Source ClientTelmetry ");
 
                     if (diagnosticSource.IsEnabled(ClientTelemetryOptions.DiagnosticSourceName))
                     {
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 consistencyLevel: request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
                                 requestCharge: response.Headers.RequestCharge);
 
-                        Console.WriteLine("Diagnostic Source ClientTelmetry enabled, payload id " + payload.Id);
+                        //Console.WriteLine("Diagnostic Source ClientTelmetry enabled, payload id " + payload.Id);
                         diagnosticSource.Write(ClientTelemetryOptions.RequestPayloadKey, payload);
                     }
 
