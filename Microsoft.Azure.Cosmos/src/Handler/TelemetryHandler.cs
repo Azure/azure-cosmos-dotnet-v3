@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken cancellationToken)
         {
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
+            Stopwatch stopwatch = Stopwatch.StartNew();
             if (this.IsAllowed(request))
             {
                 try
@@ -49,9 +50,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
                 catch (Exception ex)
                 {
+                    Console.WriteLine(ex.Message);
                     DefaultTrace.TraceError("Error while collecting telemetry information : " + ex.Message);
                 }
             }
+
+            stopwatch.Stop();
+
+            Console.WriteLine("time to collect " + stopwatch.Elapsed.TotalMilliseconds);
             return response;
         }
 
@@ -69,19 +75,33 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// <returns>Size of Payload</returns>
         private long GetPayloadSize(ResponseMessage response)
         {
+            Stopwatch stopwatch = Stopwatch.StartNew();
             if (response != null)
             {
                 if (response.Content != null && response.Content is MemoryStream)
                 {
-                    return response.Content.Length;
+                    long value = response.Content.Length;
+                    stopwatch.Stop();
+
+                    Console.WriteLine(" time to get response payloadsize " + stopwatch.Elapsed.TotalMilliseconds);
+                    return value;
                 }
 
                 if (response.Headers != null && response.Headers.ContentLength != null)
                 {
-                    return long.Parse(response.Headers.ContentLength);
+                    long value = long.Parse(response.Headers.ContentLength);
+
+                    stopwatch.Stop();
+
+                    Console.WriteLine(" time to get response payloadsize " + stopwatch.Elapsed.TotalMilliseconds);
+
+                    return value;
                 }
             }
 
+            stopwatch.Stop();
+
+            Console.WriteLine(" time to get response payloadsize " + stopwatch.Elapsed.TotalMilliseconds);
             return 0;
         }
     }
