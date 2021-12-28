@@ -16,15 +16,15 @@ namespace Microsoft.Azure.Cosmos.Handler
     internal class DiagnosticsHandlerHelper
     {
         public static readonly TimeSpan DiagnosticsRefreshInterval = TimeSpan.FromSeconds(10);
-        private readonly SystemUsageRecorder diagnosticSystemUsageRecorder = new SystemUsageRecorder(
+        private static readonly SystemUsageRecorder diagnosticSystemUsageRecorder = new SystemUsageRecorder(
             identifier: Diagnostickey,
             historyLength: 6,
             refreshInterval: DiagnosticsHandlerHelper.DiagnosticsRefreshInterval);
-
-        private readonly SystemUsageRecorder telemetrySystemUsageRecorder = new SystemUsageRecorder(
+        
+        private static readonly SystemUsageRecorder telemetrySystemUsageRecorder = new SystemUsageRecorder(
             identifier: Telemetrykey,
-            historyLength: 120,
-            refreshInterval: TimeSpan.FromSeconds(5));
+            historyLength: 60,
+            refreshInterval: TimeSpan.FromSeconds(10));
 
         internal const string Diagnostickey = "diagnostic";
         internal const string Telemetrykey = "telemetry";
@@ -53,8 +53,8 @@ namespace Microsoft.Azure.Cosmos.Handler
                 SystemUsageMonitor systemUsageMonitor = SystemUsageMonitor.CreateAndStart(
                     new List<SystemUsageRecorder>
                     {
-                        this.diagnosticSystemUsageRecorder,
-                        this.telemetrySystemUsageRecorder,
+                        diagnosticSystemUsageRecorder,
+                        telemetrySystemUsageRecorder,
                     });
 
                 this.isMonitoringEnabled = true;
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Handler
 
             try
             {
-                return this.diagnosticSystemUsageRecorder.Data;
+                return diagnosticSystemUsageRecorder.Data;
             }
             catch (Exception ex)
             {
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Handler
 
             try
             {
-                return this.telemetrySystemUsageRecorder.Data;
+                return telemetrySystemUsageRecorder.Data;
             }
             catch (Exception ex)
             {
