@@ -5,6 +5,7 @@
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using System.Text;
     using Microsoft.Azure.Cosmos;
 
     public class JsonPointerBuilder
@@ -54,7 +55,19 @@
                 }
             }
 
-            return "/" + string.Join("/", pathParts.Select(EscapeJsonPointer));
+            return pathParts.Aggregate(new StringBuilder(), AddEscapedPathPart).ToString();
+
+            static StringBuilder AddEscapedPathPart(StringBuilder sb, string str)
+            {
+                return str.Aggregate(
+                    sb.Append('/'), //each part starts with a /
+                    (sb, c) => c switch //escape string per JsonPointer spec
+                    {
+                        '~' => sb.Append('~').Append('0'),
+                        '/' => sb.Append('~').Append('1'),
+                        _ => sb.Append(c),
+                    });
+            }
         }
 
         private Expression GrabSegmentAndTraverse(Expression currentExpression, out string pathPart)
@@ -122,17 +135,7 @@
                 -1 => "-", //array append
                 _ => throw new ArgumentOutOfRangeException(nameof(index))
             };
-        }
-
-        private static string EscapeJsonPointer(string str)
-        {
-            return new(str.SelectMany(c => c switch
-            {
-                '~' => new[] { '~', '0' },
-                '/' => new[] { '~', '1' },
-                _ => new[] { c }
-            }).ToArray());
-        }
+        }       
 
         private static T ResolveConstant<T>(Expression expression)
         {
