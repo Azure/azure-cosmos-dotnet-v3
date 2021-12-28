@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsTrue(serialization.Contains(envInfo.ProcessArchitecture));
             string[] values = serialization.Split('|');
-            Assert.AreEqual($"cosmos-netstandard-sdk/{envInfo.ClientVersion}P", values[0]);
+            Assert.AreEqual($"cosmos-netstandard-sdk/{envInfo.ClientVersion}"+"P", values[0]);
             Assert.AreEqual(envInfo.DirectVersion, values[1]);
             Assert.AreEqual("0", values[2]);
             Assert.AreEqual(envInfo.ProcessArchitecture, values[3]);
