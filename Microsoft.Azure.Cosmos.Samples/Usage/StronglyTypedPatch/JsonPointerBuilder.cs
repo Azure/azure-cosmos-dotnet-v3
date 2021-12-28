@@ -5,11 +5,34 @@
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-    using Fasterflect;
     using Microsoft.Azure.Cosmos;
 
     public class JsonPointerBuilder
     {
+        // optimized invocation of internal methods. See https://mattwarren.org/2016/12/14/Why-is-Reflection-slow/
+        // Obviously, the delegates would be replaced by direct access if this was in the main SDK.
+        static readonly Func<Expression, Expression> resolveConstantDelegate;
+        static readonly Func<MemberInfo, CosmosLinqSerializerOptions, string> getMemberNameDelegate;
+
+        static JsonPointerBuilder()
+        {
+            Assembly sdkAssembly = typeof(CosmosClient).Assembly;
+
+            MethodInfo getMemberNameMethod = sdkAssembly
+                .GetType("Microsoft.Azure.Cosmos.Linq.TypeSystem")
+                .GetMethod("GetMemberName");
+            getMemberNameDelegate = (Func<MemberInfo, CosmosLinqSerializerOptions, string>)Delegate.CreateDelegate(
+                typeof(Func<MemberInfo, CosmosLinqSerializerOptions, string>),
+                getMemberNameMethod);
+
+            MethodInfo resolveConstantMethod = sdkAssembly
+                .GetType("Microsoft.Azure.Cosmos.Linq.ConstantEvaluator")
+                .GetMethod("PartialEval", new[] {typeof(Expression) });
+            resolveConstantDelegate = (Func<Expression, Expression>)Delegate.CreateDelegate(
+                typeof(Func<Expression, Expression>),
+                resolveConstantMethod);
+        }
+
         private readonly CosmosLinqSerializerOptions serializerOptions;
 
         internal JsonPointerBuilder(CosmosLinqSerializerOptions serializerOptions)
@@ -86,10 +109,7 @@
 
         private string GetNameUnderContract(MemberInfo member)
         {
-            Type type = typeof(CosmosClient).Assembly.GetType("Microsoft.Azure.Cosmos.Linq.TypeSystem");
-
-            //TODO: remove Fasterflect; use call delegate instead
-            return (string)type.CallMethod("GetMemberName", new[] { typeof(MemberInfo), typeof(CosmosLinqSerializerOptions) }, member, this.serializerOptions);
+            return getMemberNameDelegate(member, this.serializerOptions);
         }
 
         private static string GetIndex(Expression expression)
@@ -116,10 +136,7 @@
 
         private static T ResolveConstant<T>(Expression expression)
         {
-            Type type = typeof(CosmosClient).Assembly.GetType("Microsoft.Azure.Cosmos.Linq.ConstantEvaluator");
-
-            //TODO: remove Fasterflect; use call delegate instead
-            if (type.CallMethod("PartialEval", expression) is not ConstantExpression constantExpression)
+            if (resolveConstantDelegate(expression) is not ConstantExpression constantExpression)
             {
                 throw new ArgumentException(nameof(expression), "Expression cannot be simplified to a constant");
             }
