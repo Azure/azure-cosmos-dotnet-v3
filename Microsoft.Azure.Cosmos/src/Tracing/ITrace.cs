@@ -22,49 +22,49 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <summary>
         /// Gets the name of the node.
         /// </summary>
-        internal string Name { get; set; }
+        internal abstract string Name { get; }
 
         /// <summary>
         /// Gets the ID of the node.
         /// </summary>
-        internal Guid Id { get; set; }
+        internal abstract Guid Id { get; }
 
         /// <summary>
         /// Gets the information for what line of source code this trace was called on.
         /// </summary>
-        internal CallerInfo CallerInfo { get; set; }
+        internal abstract CallerInfo CallerInfo { get; }
 
         /// <summary>
         /// Gets the time when the trace was started.
         /// </summary>
-        internal DateTime StartTime { get; set; }
+        internal abstract DateTime StartTime { get; }
 
         /// <summary>
         /// Gets the duration of the trace.
         /// </summary>
-        internal TimeSpan Duration { get; }
+        internal abstract TimeSpan Duration { get; }
 
         /// <summary>
         /// Gets the level (of information) of the trace.
         /// </summary>
-        internal TraceLevel Level { get; set; }
+        internal abstract TraceLevel Level { get; }
 
         /// <summary>
         /// Gets the component that governs this trace.
         /// </summary>
-        internal TraceComponent Component { get; set; }
+        internal abstract TraceComponent Component { get; }
 
         /// <summary>
         /// Gets the parent node of this trace.
         /// </summary>
-        internal ITrace Parent { get; set; }
+        internal abstract ITrace Parent { get; }
 
         /// <summary>
         /// Gets the children of this trace.
         /// </summary>
-        internal IReadOnlyList<ITrace> Children { get; }
+        internal abstract IReadOnlyList<ITrace> Children { get; }
 
-        internal ISet<(string, Uri)> RegionsContactedTemporary { get; set; }
+        private ISet<(string, Uri)> RegionsContactedTemporary { get; set; }
 
         /// <summary>
         /// Consolidated Region contacted Information of this and children nodes
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <summary>
         /// Gets additional datum associated with this trace.
         /// </summary>
-        internal IReadOnlyDictionary<string, object> Data { get; }
+        internal abstract IReadOnlyDictionary<string, object> Data { get; }
 
         /// <summary>
         /// Starts a Trace and adds it as a child to this instance.

@@ -19,25 +19,25 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
         }
 
-        internal new string Name => "NoOp";
+        internal override string Name => "NoOp";
 
-        internal new Guid Id => default;
+        internal override Guid Id => default;
 
-        internal new CallerInfo CallerInfo => NoOpCallerInfo;
+        internal override CallerInfo CallerInfo => NoOpCallerInfo;
 
-        internal new DateTime StartTime => default;
+        internal override DateTime StartTime => default;
 
-        internal new TimeSpan Duration => default;
+        internal override TimeSpan Duration => default;
 
-        internal new TraceLevel Level => default;
+        internal override TraceLevel Level => default;
 
-        internal new TraceComponent Component => default;
+        internal override TraceComponent Component => default;
 
-        internal new ITrace Parent => null;
+        internal override ITrace Parent => null;
 
-        internal new IReadOnlyList<ITrace> Children => NoOpChildren;
+        internal override IReadOnlyList<ITrace> Children => NoOpChildren;
 
-        internal new IReadOnlyDictionary<string, object> Data => NoOpData;
+        internal override IReadOnlyDictionary<string, object> Data => NoOpData;
 
         public override void Dispose()
         {

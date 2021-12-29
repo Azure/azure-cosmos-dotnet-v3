@@ -35,11 +35,25 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.data = new Dictionary<string, object>();
         }
 
-        internal new TimeSpan Duration => this.stopwatch.Elapsed;
+        internal override TimeSpan Duration => this.stopwatch.Elapsed;
 
-        internal new IReadOnlyList<ITrace> Children => this.children;
+        internal override IReadOnlyList<ITrace> Children => this.children;
 
-        internal new IReadOnlyDictionary<string, object> Data => this.data;
+        internal override IReadOnlyDictionary<string, object> Data => this.data;
+
+        internal override string Name { get; }
+
+        internal override Guid Id { get; }
+
+        internal override CallerInfo CallerInfo { get; }
+
+        internal override DateTime StartTime { get; }
+
+        internal override TraceLevel Level { get; }
+
+        internal override TraceComponent Component { get; }
+
+        internal override ITrace Parent { get; }
 
         public override void Dispose()
         {

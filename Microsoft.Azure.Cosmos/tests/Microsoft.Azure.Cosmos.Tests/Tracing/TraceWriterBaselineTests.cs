@@ -901,17 +901,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 this.data = new Dictionary<string, object>();
             }
 
-            internal new Guid Id => Guid.Empty;
+            internal override Guid Id => Guid.Empty;
 
-            internal new CallerInfo CallerInfo => new CallerInfo("MemberName", "FilePath", 42);
+            internal override CallerInfo CallerInfo => new CallerInfo("MemberName", "FilePath", 42);
 
-            internal new DateTime StartTime => DateTime.MinValue;
+            internal override DateTime StartTime => DateTime.MinValue;
 
-            internal new TimeSpan Duration => TimeSpan.Zero;
+            internal override TimeSpan Duration => TimeSpan.Zero;
 
-            internal new IReadOnlyList<ITrace> Children => this.children;
+            internal override IReadOnlyList<ITrace> Children => this.children;
 
-            internal new IReadOnlyDictionary<string, object> Data => this.data;
+            internal override IReadOnlyDictionary<string, object> Data => this.data;
+
+            internal override string Name { get; }
+
+            internal override TraceLevel Level { get; }
+
+            internal override TraceComponent Component { get; }
+
+            internal override ITrace Parent { get; }
 
             internal override void AddDatum(string key, TraceDatum traceDatum)
             {

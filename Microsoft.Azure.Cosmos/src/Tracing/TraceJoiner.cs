@@ -56,25 +56,25 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.RegionsContacted = regionsList;
             }
 
-            internal new string Name => "Trace Forest";
+            internal override string Name => "Trace Forest";
 
-            internal new Guid Id => Guid.Empty;
+            internal override Guid Id => Guid.Empty;
 
-            internal new CallerInfo CallerInfo => EmptyInfo;
+            internal override CallerInfo CallerInfo => EmptyInfo;
 
-            internal new DateTime StartTime => DateTime.MinValue;
+            internal override DateTime StartTime => DateTime.MinValue;
 
-            internal new TimeSpan Duration => TimeSpan.MaxValue;
+            internal override TimeSpan Duration => TimeSpan.MaxValue;
 
-            internal new TraceLevel Level => TraceLevel.Info;
+            internal override TraceLevel Level => TraceLevel.Info;
 
-            internal new TraceComponent Component => TraceComponent.Unknown;
+            internal override TraceComponent Component => TraceComponent.Unknown;
 
-            internal new ITrace Parent => null;
+            internal override ITrace Parent => null;
 
-            internal new IReadOnlyList<ITrace> Children => this.children;
+            internal override IReadOnlyList<ITrace> Children => this.children;
 
-            internal new IReadOnlyDictionary<string, object> Data => this.data;
+            internal override IReadOnlyDictionary<string, object> Data => this.data;
 
             internal override void AddDatum(string key, TraceDatum traceDatum)
             {
