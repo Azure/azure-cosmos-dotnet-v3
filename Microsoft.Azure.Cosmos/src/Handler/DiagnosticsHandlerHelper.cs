@@ -20,12 +20,12 @@ namespace Microsoft.Azure.Cosmos.Handler
     internal class DiagnosticsHandlerHelper
     {
         public static readonly TimeSpan DiagnosticsRefreshInterval = TimeSpan.FromSeconds(10);
-        private static readonly SystemUsageRecorder diagnosticSystemUsageRecorder = new SystemUsageRecorder(
+        private readonly SystemUsageRecorder diagnosticSystemUsageRecorder = new SystemUsageRecorder(
             identifier: Diagnostickey,
             historyLength: 6,
             refreshInterval: DiagnosticsHandlerHelper.DiagnosticsRefreshInterval);
 
-        private static readonly SystemUsageRecorder telemetrySystemUsageRecorder = new SystemUsageRecorder(
+        private readonly SystemUsageRecorder telemetrySystemUsageRecorder = new SystemUsageRecorder(
             identifier: Telemetrykey,
             historyLength: 60,
             refreshInterval: TimeSpan.FromSeconds(10));
@@ -64,13 +64,13 @@ namespace Microsoft.Azure.Cosmos.Handler
                     ? SystemUsageMonitor.CreateAndStart(
                     new List<SystemUsageRecorder>
                     {
-                        DiagnosticsHandlerHelper.diagnosticSystemUsageRecorder,
-                        DiagnosticsHandlerHelper.telemetrySystemUsageRecorder,
+                        this.diagnosticSystemUsageRecorder,
+                        this.telemetrySystemUsageRecorder,
                     })
                     : SystemUsageMonitor.CreateAndStart(
                     new List<SystemUsageRecorder>
                     {
-                        DiagnosticsHandlerHelper.diagnosticSystemUsageRecorder
+                        this.diagnosticSystemUsageRecorder
                     });
 
                 this.isDiagnosticsMonitoringEnabled = true;
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Handler
 
             try
             {
-                return DiagnosticsHandlerHelper.diagnosticSystemUsageRecorder.Data;
+                return this.diagnosticSystemUsageRecorder.Data;
             }
             catch (Exception ex)
             {
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Handler
 
             try
             {
-                return DiagnosticsHandlerHelper.telemetrySystemUsageRecorder.Data;
+                return this.telemetrySystemUsageRecorder.Data;
             }
             catch (Exception ex)
             {
