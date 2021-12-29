@@ -163,6 +163,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
             }
         }
 
+        /// <summary>
+        /// <see cref="IDisposable"/>
+        /// </summary>
         public abstract void Dispose();
     }
 }
