@@ -17,12 +17,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     using Microsoft.Azure.Documents.Collections;
 
     [MemoryDiagnoser]
-    public class TelemetryBenchmark
+    public class RegionContactedInDiagnosticsBenchmark
     {
         private readonly CosmosTraceDiagnostics noOpTracediagnostics;
         private readonly CosmosTraceDiagnostics diagnosticsWithData;
 
-        public TelemetryBenchmark()
+        public RegionContactedInDiagnosticsBenchmark()
         {
             ITrace trace = NoOpTrace.Singleton;
             this.noOpTracediagnostics = new Diagnostics.CosmosTraceDiagnostics(trace);
@@ -33,28 +33,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             ITrace trace;
             using (trace = Trace.GetRootTrace("Root Trace", TraceComponent.Unknown, TraceLevel.Info))
-            {
-                using (ITrace firstLevel = trace.StartChild("First level Node", TraceComponent.Unknown, TraceLevel.Info))
-                {
-                    using (ITrace secondLevel = trace.StartChild("Second level Node", TraceComponent.Unknown, TraceLevel.Info))
-                    {
-                        using (ITrace thirdLevel = trace.StartChild("Third level Node", TraceComponent.Unknown, TraceLevel.Info))
-                        {
-                            thirdLevel.AddDatum("Client Side Request Stats", this.GetDatumObject(Regions.CentralUS));
-                        }
-                    }
-
-                    using (ITrace secondLevel = trace.StartChild("Second level Node", TraceComponent.Unknown, TraceLevel.Info))
-                    {
-                        secondLevel.AddDatum("Client Side Request Stats", this.GetDatumObject(Regions.CentralIndia, Regions.EastUS2));
-                    }
-                }
-
-                using (ITrace firstLevel = trace.StartChild("First level Node", TraceComponent.Unknown, TraceLevel.Info))
-                {
-                    firstLevel.AddDatum("Client Side Request Stats", this.GetDatumObject(Regions.FranceCentral));
-                }
-            }
+            using (ITrace firstLevel = trace.StartChild("First level Node", TraceComponent.Unknown, TraceLevel.Info))
+            using (ITrace secondLevel = trace.StartChild("Second level Node", TraceComponent.Unknown, TraceLevel.Info))
+            using (ITrace thirdLevel = trace.StartChild("Third level Node", TraceComponent.Unknown, TraceLevel.Info))
+                thirdLevel.AddDatum("Client Side Request Stats", this.GetDatumObject(Regions.CentralUS));
+            using (ITrace secondLevel = trace.StartChild("Second level Node", TraceComponent.Unknown, TraceLevel.Info))
+                secondLevel.AddDatum("Client Side Request Stats", this.GetDatumObject(Regions.CentralIndia, Regions.EastUS2));
+            using (ITrace firstLevel = trace.StartChild("First level Node", TraceComponent.Unknown, TraceLevel.Info))
+                firstLevel.AddDatum("Client Side Request Stats", this.GetDatumObject(Regions.FranceCentral));
 
             return trace;
         }
