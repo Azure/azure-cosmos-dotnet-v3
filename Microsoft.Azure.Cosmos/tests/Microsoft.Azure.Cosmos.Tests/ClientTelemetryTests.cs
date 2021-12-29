@@ -103,19 +103,53 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void CheckJsonSerializerContract()
         {
-            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties("clientId", "", null, ConnectionMode.Direct, null, 10), ClientTelemetryOptions.JsonSerializerSettings);
+            string json = 
+                JsonConvert.SerializeObject(
+                    new ClientTelemetryProperties(
+                        clientId: "clientId",
+                        processId: string.Empty,
+                        userAgent: null,
+                        connectionMode: ConnectionMode.Direct,
+                        preferredRegions: null,
+                        aggregationIntervalInSec: 10), 
+                    ClientTelemetryOptions.JsonSerializerSettings);
+
             Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"DIRECT\",\"aggregationIntervalInSec\":10,\"systemInfo\":[]}", json);
         }
 
         [TestMethod]
-        public void CheckJsonSerializerContractWithPreferredRegions()
+        public void CheckJsonSerializerContractWithValues()
         {
             List<string> preferredRegion = new List<string>
             {
                 "region1"
             };
-            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties("clientId", "", null, ConnectionMode.Direct, preferredRegion, 1), ClientTelemetryOptions.JsonSerializerSettings);
-            Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"DIRECT\",\"preferredRegions\":[\"region1\"],\"aggregationIntervalInSec\":1,\"systemInfo\":[]}", json);
+
+            ClientTelemetryProperties ctPropertiesToSerialize = new ClientTelemetryProperties(
+                        dateTimeUtc: "time",
+                        clientId: "clientId",
+                        processId: "processId",
+                        userAgent: "userAgent",
+                        connectionMode: ConnectionMode.Direct.ToString(),
+                        globalDatabaseAccountName: "AccountName",
+                        applicationRegion: "appRegion",
+                        hostEnvInfo: "hostEnvInfo",
+                        acceleratedNetworking: null,
+                        preferredRegions: preferredRegion,
+                        systemInfo: null,
+                        cacheRefreshInfo: null,
+                        operationInfo: null,
+                        aggregationIntervalInSec: 10,
+                        misc: "miscellaneous");
+
+            string json = JsonConvert.SerializeObject(ctPropertiesToSerialize, ClientTelemetryOptions.JsonSerializerSettings);
+
+            Assert.AreEqual("{\"timeStamp\":\"time\",\"clientId\":\"clientId\",\"processId\":\"processId\",\"userAgent\":\"userAgent\",\"connectionMode\":\"Direct\",\"globalDatabaseAccountName\":\"AccountName\",\"applicationRegion\":\"appRegion\",\"hostEnvInfo\":\"hostEnvInfo\",\"preferredRegions\":[\"region1\"],\"aggregationIntervalInSec\":10,\"misc\":\"miscellaneous\"}", json);
+
+            ClientTelemetryProperties deserializedCtProperties = JsonConvert.DeserializeObject<ClientTelemetryProperties>(json);
+
+            Assert.AreEqual("miscellaneous", deserializedCtProperties.Misc);
+
         }
 
         [TestMethod]

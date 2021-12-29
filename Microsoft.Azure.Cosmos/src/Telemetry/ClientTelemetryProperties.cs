@@ -87,14 +87,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string processId,
             string userAgent,
             string connectionMode,
-            string globalDatabaseAccountName,
-            string applicationRegion,
-            string hostEnvInfo,
-            bool? acceleratedNetworking,
-            IReadOnlyList<string> preferredRegions,
-            List<SystemInfo> systemInfo,
-            List<OperationInfo> cacheRefreshInfo,
-            List<OperationInfo> operationInfo)
+            string globalDatabaseAccountName = null,
+            string applicationRegion = null,
+            string hostEnvInfo = null,
+            bool? acceleratedNetworking = null,
+            IReadOnlyList<string> preferredRegions = null,
+            List<SystemInfo> systemInfo = null,
+            List<OperationInfo> cacheRefreshInfo = null,
+            List<OperationInfo> operationInfo = null,
+            int aggregationIntervalInSec = 0,
+            string misc = null)
         {
             this.DateTimeUtc = dateTimeUtc;
             this.ClientId = clientId;
@@ -109,6 +111,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.CacheRefreshInfo = cacheRefreshInfo;
             this.OperationInfo = operationInfo;
             this.PreferredRegions = preferredRegions;
+            this.Misc = misc;
+            this.AggregationIntervalInSec = aggregationIntervalInSec;
         }
 
         private static string GetConnectionModeString(ConnectionMode connectionMode)
