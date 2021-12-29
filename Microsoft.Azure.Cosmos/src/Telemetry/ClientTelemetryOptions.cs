@@ -156,5 +156,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             return environmentName;
         }
+
+        internal static bool IsClientTelemetryEnabled()
+        {
+            return ConfigurationManager
+                .GetEnvironmentVariable<bool>(ClientTelemetryOptions
+                                                        .EnvPropsClientTelemetryEnabled, false);
+        }
     }
 }
