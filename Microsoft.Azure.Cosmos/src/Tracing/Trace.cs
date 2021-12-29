@@ -35,34 +35,18 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.data = new Dictionary<string, object>();
         }
 
-        public string Name { get; }
+        internal new TimeSpan Duration => this.stopwatch.Elapsed;
 
-        public Guid Id { get; }
+        internal new IReadOnlyList<ITrace> Children => this.children;
 
-        public CallerInfo CallerInfo { get; }
+        internal new IReadOnlyDictionary<string, object> Data => this.data;
 
-        public DateTime StartTime { get; }
-
-        public TimeSpan Duration => this.stopwatch.Elapsed;
-
-        public TraceLevel Level { get; }
-
-        public TraceComponent Component { get; }
-
-        public ITrace Parent { get; }
-
-        public HashSet<(string, Uri)> RegionsContacted { get; private set; }
-
-        public IReadOnlyList<ITrace> Children => this.children;
-
-        public IReadOnlyDictionary<string, object> Data => this.data;
-
-        public void Dispose()
+        public override void Dispose()
         {
             this.stopwatch.Stop();
         }
 
-        public ITrace StartChild(
+        internal override ITrace StartChild(
             string name,
             [CallerMemberName] string memberName = "",
             [CallerFilePath] string sourceFilePath = "",
@@ -77,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 sourceLineNumber: sourceLineNumber);
         }
 
-        public ITrace StartChild(
+        internal override ITrace StartChild(
             string name,
             TraceComponent component,
             TraceLevel level,
@@ -97,20 +81,20 @@ namespace Microsoft.Azure.Cosmos.Tracing
             return child;
         }
 
-        public void AddChild(ITrace child)
+        internal override void AddChild(ITrace child)
         {
             lock (this.children)
             {
                 this.children.Add(child);
                 if (child.RegionsContacted != null)
                 {
-                    this.UpdateRegionContacted(child.RegionsContacted);
+                    this.RegionsContacted = child.RegionsContacted;
                 }
 
             }
         }
 
-        public static Trace GetRootTrace(string name)
+        internal static Trace GetRootTrace(string name)
         {
             return Trace.GetRootTrace(
                 name,
@@ -118,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 level: TraceLevel.Verbose);
         }
 
-        public static Trace GetRootTrace(
+        internal static Trace GetRootTrace(
             string name,
             TraceComponent component,
             TraceLevel level,
@@ -134,43 +118,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 parent: null);
         }
 
-        public void AddDatum(string key, TraceDatum traceDatum)
+        internal override void AddDatum(string key, TraceDatum traceDatum)
         {
             this.data.Add(key, traceDatum);
             this.UpdateRegionContacted(traceDatum);
         }
 
-        public void UpdateRegionContacted(TraceDatum traceDatum)
-        {
-            if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
-            {
-                if (clientSideRequestStatisticsTraceDatum.RegionsContacted == null || clientSideRequestStatisticsTraceDatum.RegionsContacted.Count == 0)
-                {
-                    return;
-                }
-                this.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum.RegionsContacted);
-            }
-        }
-
-        public void UpdateRegionContacted(HashSet<(string, Uri)> newRegionContacted)
-        {
-            if (this.RegionsContacted == null)
-            {
-                this.RegionsContacted = newRegionContacted;
-            }
-            else
-            {
-                this.RegionsContacted.UnionWith(newRegionContacted);
-              
-            }
-
-            if (this.Parent != null)
-            {
-                this.Parent.UpdateRegionContacted(newRegionContacted);
-            }
-        }
-
-        public void AddDatum(string key, object value)
+        internal override void AddDatum(string key, object value)
         {
             this.data.Add(key, value);
         }

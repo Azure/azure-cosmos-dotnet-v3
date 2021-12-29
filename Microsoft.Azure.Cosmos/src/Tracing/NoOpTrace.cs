@@ -19,34 +19,32 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
         }
 
-        public string Name => "NoOp";
+        internal new string Name => "NoOp";
 
-        public Guid Id => default;
+        internal new Guid Id => default;
 
-        public CallerInfo CallerInfo => NoOpCallerInfo;
+        internal new CallerInfo CallerInfo => NoOpCallerInfo;
 
-        public DateTime StartTime => default;
+        internal new DateTime StartTime => default;
 
-        public TimeSpan Duration => default;
+        internal new TimeSpan Duration => default;
 
-        public TraceLevel Level => default;
+        internal new TraceLevel Level => default;
 
-        public TraceComponent Component => default;
+        internal new TraceComponent Component => default;
 
-        public ITrace Parent => null;
+        internal new ITrace Parent => null;
 
-        public IReadOnlyList<ITrace> Children => NoOpChildren;
+        internal new IReadOnlyList<ITrace> Children => NoOpChildren;
 
-        public IReadOnlyDictionary<string, object> Data => NoOpData;
+        internal new IReadOnlyDictionary<string, object> Data => NoOpData;
 
-        public HashSet<(string, Uri)> RegionsContacted { get; set; }
-
-        public void Dispose()
+        public override void Dispose()
         {
             // NoOp
         }
 
-        public ITrace StartChild(
+        internal override ITrace StartChild(
             string name,
             string memberName = "",
             string sourceFilePath = "",
@@ -58,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 level: TraceLevel.Info);
         }
 
-        public ITrace StartChild(
+        internal override ITrace StartChild(
             string name,
             TraceComponent component,
             TraceLevel level,
@@ -69,29 +67,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
             return this;
         }
 
-        public void AddDatum(string key, TraceDatum traceDatum)
+        internal override void AddDatum(string key, TraceDatum traceDatum)
         {
             // NoOp
         }
 
-        public void AddDatum(string key, object value)
+        internal override void AddDatum(string key, object value)
         {
             // NoOp
         }
 
-        public void AddChild(ITrace trace)
+        internal override void AddChild(ITrace trace)
         {
             // NoOp
-        }
-
-        public void UpdateRegionContacted(HashSet<(string, Uri)> newRegionContacted)
-        {
-            // NoOp
-        }
-
-        public void UpdateRegionContacted(TraceDatum traceDatum)
-        {
-            //NoOp
         }
     }
 }

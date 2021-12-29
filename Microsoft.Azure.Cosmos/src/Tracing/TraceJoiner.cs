@@ -53,94 +53,62 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     regionsList.UnionWith(trace.RegionsContacted);
                 }
 
-                this.UpdateRegionContacted(regionsList);
+                this.RegionsContacted = regionsList;
             }
 
-            public string Name => "Trace Forest";
+            internal new string Name => "Trace Forest";
 
-            public Guid Id => Guid.Empty;
+            internal new Guid Id => Guid.Empty;
 
-            public CallerInfo CallerInfo => EmptyInfo;
+            internal new CallerInfo CallerInfo => EmptyInfo;
 
-            public DateTime StartTime => DateTime.MinValue;
+            internal new DateTime StartTime => DateTime.MinValue;
 
-            public TimeSpan Duration => TimeSpan.MaxValue;
+            internal new TimeSpan Duration => TimeSpan.MaxValue;
 
-            public TraceLevel Level => TraceLevel.Info;
+            internal new TraceLevel Level => TraceLevel.Info;
 
-            public TraceComponent Component => TraceComponent.Unknown;
+            internal new TraceComponent Component => TraceComponent.Unknown;
 
-            public ITrace Parent => null;
+            internal new ITrace Parent => null;
 
-            public IReadOnlyList<ITrace> Children => this.children;
+            internal new IReadOnlyList<ITrace> Children => this.children;
 
-            public IReadOnlyDictionary<string, object> Data => this.data;
+            internal new IReadOnlyDictionary<string, object> Data => this.data;
 
-            public HashSet<(string, Uri)> RegionsContacted { get; private set; }
-
-            public void AddDatum(string key, TraceDatum traceDatum)
+            internal override void AddDatum(string key, TraceDatum traceDatum)
             {
                 this.data[key] = traceDatum;
                 this.UpdateRegionContacted(traceDatum);
             }
 
-            public void AddDatum(string key, object value)
+            internal override void AddDatum(string key, object value)
             {
                 this.data[key] = value;
             }
 
-            public void Dispose()
+            public override void Dispose()
             {
             }
 
-            public ITrace StartChild(string name, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
+            internal override ITrace StartChild(string name, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
             {
                 return this.StartChild(name, TraceComponent.Unknown, TraceLevel.Info, memberName, sourceFilePath, sourceLineNumber);
             }
 
-            public ITrace StartChild(string name, TraceComponent component, TraceLevel level, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
+            internal override ITrace StartChild(string name, TraceComponent component, TraceLevel level, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
             {
                 ITrace child = Trace.GetRootTrace(name, component, level, memberName, sourceFilePath, sourceLineNumber);
                 this.AddChild(child);
                 return child;
             }
 
-            public void AddChild(ITrace trace)
+            internal override void AddChild(ITrace trace)
             {
                 this.children.Add(trace);
                 if (trace.RegionsContacted != null)
                 {
-                    this.UpdateRegionContacted(trace.RegionsContacted);
-                }
-            }
-
-            public void UpdateRegionContacted(TraceDatum traceDatum)
-            {
-                if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
-                {
-                    if (clientSideRequestStatisticsTraceDatum.RegionsContacted == null || clientSideRequestStatisticsTraceDatum.RegionsContacted.Count == 0)
-                    {
-                        return;
-                    }
-                    this.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum.RegionsContacted);
-                }
-            }
-
-            public void UpdateRegionContacted(HashSet<(string, Uri)> newRegionContacted)
-            {
-                if (this.RegionsContacted == null)
-                {
-                    this.RegionsContacted = newRegionContacted;
-                }
-                else
-                {
-                    this.RegionsContacted.UnionWith(newRegionContacted);
-
-                }
-
-                if (this.Parent != null)
-                {
-                    this.Parent.UpdateRegionContacted(newRegionContacted);
+                    this.RegionsContacted = trace.RegionsContacted;
                 }
             }
         }

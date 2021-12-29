@@ -1346,34 +1346,25 @@
                 this.data = new Dictionary<string, object>();
             }
 
-            public string Name { get; }
+            internal new Guid Id => Guid.Empty;
 
-            public Guid Id => Guid.Empty;
+            internal new CallerInfo CallerInfo => new CallerInfo("MemberName", "FilePath", 42);
 
-            public CallerInfo CallerInfo => new CallerInfo("MemberName", "FilePath", 42);
+            internal new DateTime StartTime => DateTime.MinValue;
 
-            public DateTime StartTime => DateTime.MinValue;
+            internal new TimeSpan Duration => TimeSpan.Zero;
 
-            public TimeSpan Duration => TimeSpan.Zero;
+            internal new IReadOnlyList<ITrace> Children => this.children;
 
-            public TraceLevel Level { get; }
+            internal new IReadOnlyDictionary<string, object> Data => this.data;
 
-            public TraceComponent Component { get; }
-
-            public ITrace Parent { get; }
-
-            public IReadOnlyList<ITrace> Children => this.children;
-
-            public IReadOnlyDictionary<string, object> Data => this.data;
-
-            public HashSet<(string, Uri)> RegionsContacted { get; set; }
-
-            public void AddDatum(string key, TraceDatum traceDatum)
+            internal override void AddDatum(string key, TraceDatum traceDatum)
             {
                 this.data[key] = traceDatum;
+                this.UpdateRegionContacted(traceDatum);
             }
 
-            public void AddDatum(string key, object value)
+            internal override void AddDatum(string key, object value)
             {
                 if (key.Contains("CPU"))
                 {
@@ -1384,62 +1375,36 @@
                 this.data[key] = "Redacted To Not Change The Baselines From Run To Run";
             }
 
-            public void Dispose()
+            public override void Dispose()
             {
             }
 
-            public ITrace StartChild(string name, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
+            internal override ITrace StartChild(string name, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
             {
                 return this.StartChild(name, TraceComponent.Unknown, TraceLevel.Info, memberName, sourceFilePath, sourceLineNumber);
             }
 
-            public ITrace StartChild(string name, TraceComponent component, TraceLevel level, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
+            internal override ITrace StartChild(string name, TraceComponent component, TraceLevel level, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
             {
                 TraceForBaselineTesting child = new TraceForBaselineTesting(name, level, component, parent: this);
                 this.AddChild(child);
                 return child;
             }
 
-            public void AddChild(ITrace trace)
+            internal override void AddChild(ITrace trace)
             {
                 this.children.Add(trace);
+                if (trace.RegionsContacted != null)
+                {
+                    this.RegionsContacted = trace.RegionsContacted;
+                }
             }
 
-            public static TraceForBaselineTesting GetRootTrace()
+            internal static TraceForBaselineTesting GetRootTrace()
             {
                 return new TraceForBaselineTesting("Trace For Baseline Testing", TraceLevel.Info, TraceComponent.Unknown, parent: null);
             }
 
-            public void UpdateRegionContacted(TraceDatum traceDatum)
-            {
-                if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
-                {
-                    this.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum.RegionsContacted);
-                }
-            }
-
-            public void UpdateRegionContacted(HashSet<(string, Uri)> newRegionContacted)
-            {
-                if (newRegionContacted == null || newRegionContacted.Count == 0)
-                {
-                    return;
-                }
-
-                if (this.RegionsContacted == null)
-                {
-                    this.RegionsContacted = newRegionContacted;
-                }
-                else
-                {
-                    this.RegionsContacted.UnionWith(newRegionContacted);
-
-                }
-
-                if (this.Parent != null)
-                {
-                    this.Parent.UpdateRegionContacted(this.RegionsContacted);
-                }
-            }
         }
 
         private sealed class RequestHandlerSleepHelper : RequestHandler
