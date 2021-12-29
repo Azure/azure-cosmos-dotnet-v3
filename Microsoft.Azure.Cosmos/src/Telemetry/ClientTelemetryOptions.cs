@@ -157,6 +157,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return environmentName;
         }
 
+        /// <summary>
+        /// Check if telemetry is enabled. It is not cached as we would need latest value of it.
+        /// </summary>
+        /// <returns>true/false</returns>
         internal static bool IsClientTelemetryEnabled()
         {
             return ConfigurationManager

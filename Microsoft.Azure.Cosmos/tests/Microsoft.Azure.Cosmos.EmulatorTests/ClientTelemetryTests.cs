@@ -25,8 +25,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private const string telemetryEndpointUrl = "http://dummy.telemetry.endpoint/";
         private const int scheduledInSeconds = 1;
-        private CosmosClientBuilder cosmosClientBuilder;
 
+        private CosmosClientBuilder cosmosClientBuilder;
         private List<ClientTelemetryProperties> actualInfo;
 
         [TestInitialize]
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.actualInfo = new List<ClientTelemetryProperties>();
 
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "true");
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, scheduledInSeconds.ToString());
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, telemetryEndpointUrl);
 
             HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
