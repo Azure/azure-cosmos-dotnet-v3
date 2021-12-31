@@ -27,8 +27,8 @@ namespace Microsoft.Azure.Cosmos.Handler
 
         private readonly SystemUsageRecorder telemetrySystemUsageRecorder = new SystemUsageRecorder(
             identifier: Telemetrykey,
-            historyLength: 60,
-            refreshInterval: TimeSpan.FromSeconds(10));
+            historyLength: 120,
+            refreshInterval: TimeSpan.FromSeconds(5));
 
         internal const string Diagnostickey = "diagnostic";
         internal const string Telemetrykey = "telemetry";
