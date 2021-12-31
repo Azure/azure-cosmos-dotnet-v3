@@ -73,6 +73,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private static Uri clientTelemetryEndpoint;
         private static string environmentName;
 
+        internal static bool IsClientTelemetryEnabled => ConfigurationManager
+                .GetEnvironmentVariable<bool>(ClientTelemetryOptions
+                                                        .EnvPropsClientTelemetryEnabled, false);
+
         internal static Uri GetVmMetadataUrl()
         {
             if (vmMetadataUrl == null)
@@ -155,17 +159,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     String.Empty);
             }
             return environmentName;
-        }
-
-        /// <summary>
-        /// Check if telemetry is enabled. It is not cached as we would need latest value of it.
-        /// </summary>
-        /// <returns>true/false</returns>
-        internal static bool IsClientTelemetryEnabled()
-        {
-            return ConfigurationManager
-                .GetEnvironmentVariable<bool>(ClientTelemetryOptions
-                                                        .EnvPropsClientTelemetryEnabled, false);
         }
     }
 }
