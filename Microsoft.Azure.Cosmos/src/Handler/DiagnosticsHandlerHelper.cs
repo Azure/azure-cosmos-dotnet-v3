@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Handler
             refreshInterval: DiagnosticsHandlerHelper.ClientTelemetryRefreshInterval);
 
         private bool isDiagnosticsMonitoringEnabled = false;
-        private bool isTelemetryMonitoringEnabled = false;
+        private bool isTelemetryMonitoringEnabled = ClientTelemetryOptions.IsClientTelemetryEnabled();
 
         /// <summary>
         /// Singleton to make sure only one instance of DiagnosticHandlerHelper is there.
@@ -56,7 +56,6 @@ namespace Microsoft.Azure.Cosmos.Handler
         private DiagnosticsHandlerHelper()
         {
             this.isDiagnosticsMonitoringEnabled = false;
-            this.isTelemetryMonitoringEnabled = ClientTelemetryOptions.IsClientTelemetryEnabled();
 
             // If the CPU monitor fails for some reason don't block the application
             try
