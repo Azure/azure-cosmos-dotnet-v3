@@ -265,10 +265,11 @@ namespace Microsoft.Azure.Cosmos
             }
 
             string requestConsistencyLevel = request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel];
+            bool requestHasConsistencySet = !string.IsNullOrEmpty(requestConsistencyLevel);
 
             bool sessionConsistency =
-                defaultConsistencyLevel == ConsistencyLevel.Session ||
-                (!string.IsNullOrEmpty(requestConsistencyLevel)
+                (!requestHasConsistencySet && defaultConsistencyLevel == ConsistencyLevel.Session) ||
+                (requestHasConsistencySet
                     && string.Equals(requestConsistencyLevel, GatewayStoreModel.sessionConsistencyAsString, StringComparison.OrdinalIgnoreCase));
 
             bool isMultiMasterEnabledForRequest = globalEndpointManager.CanUseMultipleWriteLocations(request);
