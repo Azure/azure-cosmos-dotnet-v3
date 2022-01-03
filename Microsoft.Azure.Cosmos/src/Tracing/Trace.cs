@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
-    internal sealed class Trace : ITrace
+    internal sealed class Trace : AbstractTrace
     {
         private readonly List<ITrace> children;
         private readonly Dictionary<string, object> data;
@@ -35,32 +35,32 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.data = new Dictionary<string, object>();
         }
 
-        internal override TimeSpan Duration => this.stopwatch.Elapsed;
+        public override TimeSpan Duration => this.stopwatch.Elapsed;
 
-        internal override IReadOnlyList<ITrace> Children => this.children;
+        public override IReadOnlyList<ITrace> Children => this.children;
 
-        internal override IReadOnlyDictionary<string, object> Data => this.data;
+        public override IReadOnlyDictionary<string, object> Data => this.data;
 
-        internal override string Name { get; }
+        public override string Name { get; }
 
-        internal override Guid Id { get; }
+        public override Guid Id { get; }
 
-        internal override CallerInfo CallerInfo { get; }
+        public override CallerInfo CallerInfo { get; }
 
-        internal override DateTime StartTime { get; }
+        public override DateTime StartTime { get; }
 
-        internal override TraceLevel Level { get; }
+        public override TraceLevel Level { get; }
 
-        internal override TraceComponent Component { get; }
+        public override TraceComponent Component { get; }
 
-        internal override ITrace Parent { get; }
+        public override ITrace Parent { get; }
 
         public override void Dispose()
         {
             this.stopwatch.Stop();
         }
 
-        internal override ITrace StartChild(
+        public override ITrace StartChild(
             string name,
             [CallerMemberName] string memberName = "",
             [CallerFilePath] string sourceFilePath = "",
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 sourceLineNumber: sourceLineNumber);
         }
 
-        internal override ITrace StartChild(
+        public override ITrace StartChild(
             string name,
             TraceComponent component,
             TraceLevel level,
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             return child;
         }
 
-        internal override void AddChild(ITrace child)
+        public override void AddChild(ITrace child)
         {
             lock (this.children)
             {
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             }
         }
 
-        internal static Trace GetRootTrace(string name)
+        public static Trace GetRootTrace(string name)
         {
             return Trace.GetRootTrace(
                 name,
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 level: TraceLevel.Verbose);
         }
 
-        internal static Trace GetRootTrace(
+        public static Trace GetRootTrace(
             string name,
             TraceComponent component,
             TraceLevel level,
@@ -132,13 +132,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 parent: null);
         }
 
-        internal override void AddDatum(string key, TraceDatum traceDatum)
+        public override void AddDatum(string key, TraceDatum traceDatum)
         {
             this.data.Add(key, traceDatum);
             this.UpdateRegionContacted(traceDatum);
         }
 
-        internal override void AddDatum(string key, object value)
+        public override void AddDatum(string key, object value)
         {
             this.data.Add(key, value);
         }

@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             return traceForest;
         }
 
-        private sealed class TraceForest : ITrace
+        private sealed class TraceForest : AbstractTrace
         {
             private static readonly CallerInfo EmptyInfo = new CallerInfo(string.Empty, string.Empty, 0);
 
@@ -56,33 +56,33 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.RegionsContacted = regionsList;
             }
 
-            internal override string Name => "Trace Forest";
+            public override string Name => "Trace Forest";
 
-            internal override Guid Id => Guid.Empty;
+            public override Guid Id => Guid.Empty;
 
-            internal override CallerInfo CallerInfo => EmptyInfo;
+            public override CallerInfo CallerInfo => EmptyInfo;
 
-            internal override DateTime StartTime => DateTime.MinValue;
+            public override DateTime StartTime => DateTime.MinValue;
 
-            internal override TimeSpan Duration => TimeSpan.MaxValue;
+            public override TimeSpan Duration => TimeSpan.MaxValue;
 
-            internal override TraceLevel Level => TraceLevel.Info;
+            public override TraceLevel Level => TraceLevel.Info;
 
-            internal override TraceComponent Component => TraceComponent.Unknown;
+            public override TraceComponent Component => TraceComponent.Unknown;
 
-            internal override ITrace Parent => null;
+            public override ITrace Parent => null;
 
-            internal override IReadOnlyList<ITrace> Children => this.children;
+            public override IReadOnlyList<ITrace> Children => this.children;
 
-            internal override IReadOnlyDictionary<string, object> Data => this.data;
+            public override IReadOnlyDictionary<string, object> Data => this.data;
 
-            internal override void AddDatum(string key, TraceDatum traceDatum)
+            public override void AddDatum(string key, TraceDatum traceDatum)
             {
                 this.data[key] = traceDatum;
                 this.UpdateRegionContacted(traceDatum);
             }
 
-            internal override void AddDatum(string key, object value)
+            public override void AddDatum(string key, object value)
             {
                 this.data[key] = value;
             }
@@ -91,19 +91,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
             {
             }
 
-            internal override ITrace StartChild(string name, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
+            public override ITrace StartChild(string name, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
             {
                 return this.StartChild(name, TraceComponent.Unknown, TraceLevel.Info, memberName, sourceFilePath, sourceLineNumber);
             }
 
-            internal override ITrace StartChild(string name, TraceComponent component, TraceLevel level, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
+            public override ITrace StartChild(string name, TraceComponent component, TraceLevel level, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
             {
                 ITrace child = Trace.GetRootTrace(name, component, level, memberName, sourceFilePath, sourceLineNumber);
                 this.AddChild(child);
                 return child;
             }
 
-            internal override void AddChild(ITrace trace)
+            public override void AddChild(ITrace trace)
             {
                 this.children.Add(trace);
                 if (trace.RegionsContacted != null)

@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System;
     using System.Collections.Generic;
     using System.Runtime.CompilerServices;
-    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     /// <summary>
     /// Interface to represent a single node in a trace tree.
@@ -17,83 +16,62 @@ namespace Microsoft.Azure.Cosmos.Tracing
 #else
     internal
 #endif 
-        abstract class ITrace : IDisposable
+        interface ITrace : IDisposable
     {
         /// <summary>
         /// Gets the name of the node.
         /// </summary>
-        internal abstract string Name { get; }
+        string Name { get; }
 
         /// <summary>
         /// Gets the ID of the node.
         /// </summary>
-        internal abstract Guid Id { get; }
+        Guid Id { get; }
 
         /// <summary>
         /// Gets the information for what line of source code this trace was called on.
         /// </summary>
-        internal abstract CallerInfo CallerInfo { get; }
+        CallerInfo CallerInfo { get; }
 
         /// <summary>
         /// Gets the time when the trace was started.
         /// </summary>
-        internal abstract DateTime StartTime { get; }
+        DateTime StartTime { get; }
 
         /// <summary>
         /// Gets the duration of the trace.
         /// </summary>
-        internal abstract TimeSpan Duration { get; }
+        TimeSpan Duration { get; }
 
         /// <summary>
         /// Gets the level (of information) of the trace.
         /// </summary>
-        internal abstract TraceLevel Level { get; }
+        TraceLevel Level { get; }
 
         /// <summary>
         /// Gets the component that governs this trace.
         /// </summary>
-        internal abstract TraceComponent Component { get; }
+        TraceComponent Component { get; }
 
         /// <summary>
         /// Gets the parent node of this trace.
         /// </summary>
-        internal abstract ITrace Parent { get; }
+        ITrace Parent { get; }
 
         /// <summary>
         /// Gets the children of this trace.
         /// </summary>
-        internal abstract IReadOnlyList<ITrace> Children { get; }
-
-        private ISet<(string, Uri)> RegionsContactedTemporary { get; set; }
-
-        /// <summary>
-        /// Consolidated Region contacted Information of this and children nodes
-        /// </summary>
-        internal ISet<(string, Uri)> RegionsContacted
-        {
-            get => this.RegionsContactedTemporary;
-            set
-            {
-                if (this.RegionsContactedTemporary == null)
-                {
-                    this.RegionsContactedTemporary = value;
-                } 
-                else
-                {
-                    this.RegionsContactedTemporary.UnionWith(value);
-                }
-                
-                if (this.Parent != null)
-                {
-                    this.Parent.RegionsContacted = value;
-                }
-            }
-        }
+        IReadOnlyList<ITrace> Children { get; }
 
         /// <summary>
         /// Gets additional datum associated with this trace.
         /// </summary>
-        internal abstract IReadOnlyDictionary<string, object> Data { get; }
+        IReadOnlyDictionary<string, object> Data { get; }
+
+        /// <summary>
+        /// Consolidated Region contacted Information of this and children nodes
+        /// </summary>
+        ISet<(string, Uri)> RegionsContacted { get; set; }
 
         /// <summary>
         /// Starts a Trace and adds it as a child to this instance.
@@ -103,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <param name="sourceFilePath">The path to the source file of the child.</param>
         /// <param name="sourceLineNumber">The line number of the child.</param>
         /// <returns>A reference to the initialized child (that needs to be disposed to stop the timing).</returns>
-        internal abstract ITrace StartChild(
+        ITrace StartChild(
             string name,
             [CallerMemberName] string memberName = "",
             [CallerFilePath] string sourceFilePath = "",
@@ -119,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <param name="sourceFilePath">The path to the source file of the child.</param>
         /// <param name="sourceLineNumber">The line number of the child.</param>
         /// <returns>A reference to the initialized child (that needs to be disposed to stop the timing).</returns>
-        internal abstract ITrace StartChild(
+        ITrace StartChild(
             string name,
             TraceComponent component,
             TraceLevel level,
@@ -132,40 +110,25 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// </summary>
         /// <param name="key">The key to associate the datum.</param>
         /// <param name="traceDatum">The datum itself.</param>
-        internal abstract void AddDatum(string key, TraceDatum traceDatum);
+        void AddDatum(string key, TraceDatum traceDatum);
 
         /// <summary>
         /// Adds a datum to the this trace instance.
         /// </summary>
         /// <param name="key">The key to associate the datum.</param>
         /// <param name="value">The datum itself.</param>
-        internal abstract void AddDatum(string key, object value);
+        void AddDatum(string key, object value);
 
         /// <summary>
         /// Adds a trace children that is already completed.
         /// </summary>
         /// <param name="trace">Existing trace.</param>
-        internal abstract void AddChild(ITrace trace);
+        void AddChild(ITrace trace);
 
         /// <summary>
         /// Update region contacted information to the parent Itrace
         /// </summary>
         /// <param name="traceDatum"></param>
-        internal void UpdateRegionContacted(TraceDatum traceDatum)
-        {
-            if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
-            {
-                if (clientSideRequestStatisticsTraceDatum.RegionsContacted == null || clientSideRequestStatisticsTraceDatum.RegionsContacted.Count == 0)
-                {
-                    return;
-                }
-                this.RegionsContacted = clientSideRequestStatisticsTraceDatum.RegionsContacted;
-            }
-        }
-
-        /// <summary>
-        /// <see cref="IDisposable"/>
-        /// </summary>
-        public abstract void Dispose();
+        void UpdateRegionContacted(TraceDatum traceDatum);
     }
 }
