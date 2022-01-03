@@ -22,18 +22,16 @@ namespace Microsoft.Azure.Cosmos.Tracing
             get => this.RegionsContactedTemporary;
             set
             {
-                if (this.Parent == null)
+                if (this.RegionsContactedTemporary == null)
                 {
-                    if (this.RegionsContactedTemporary == null)
-                    {
-                        this.RegionsContactedTemporary = value;
-                    }
-                    else
-                    {
-                        this.RegionsContactedTemporary.UnionWith(value);
-                    }
-                } 
+                    this.RegionsContactedTemporary = value;
+                }
                 else
+                {
+                    this.RegionsContactedTemporary.UnionWith(value);
+                }
+
+                if (this.Parent != null)
                 {
                     this.Parent.RegionsContacted = value;
                 }
