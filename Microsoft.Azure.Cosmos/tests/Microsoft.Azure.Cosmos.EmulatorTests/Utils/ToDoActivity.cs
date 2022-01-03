@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public string description { get; set; }
         public string pk { get; set; }
         public string CamelCase { get; set; }
+        public int? nullableInt { get; set; }
 
         public bool valid { get; set; }
 
@@ -90,7 +91,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 { new ToDoActivity { id = "child1", taskNum = 30 },
                   new ToDoActivity { id = "child2", taskNum = 40}
                 },
-                valid = true
+                valid = true,
+                nullableInt = null
             };
         }
     }
