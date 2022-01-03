@@ -73,9 +73,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private static Uri clientTelemetryEndpoint;
         private static string environmentName;
 
-        internal static bool IsClientTelemetryEnabled => ConfigurationManager
+        internal static bool IsClientTelemetryEnabled()
+        {
+            return ConfigurationManager
                 .GetEnvironmentVariable<bool>(ClientTelemetryOptions
                                                         .EnvPropsClientTelemetryEnabled, false);
+        }
 
         internal static Uri GetVmMetadataUrl()
         {

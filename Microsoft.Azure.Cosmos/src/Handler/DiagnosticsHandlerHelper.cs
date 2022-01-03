@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Handler
         private DiagnosticsHandlerHelper()
         {
             this.isDiagnosticsMonitoringEnabled = false;
-            this.isTelemetryMonitoringEnabled = ClientTelemetryOptions.IsClientTelemetryEnabled;
+            this.isTelemetryMonitoringEnabled = ClientTelemetryOptions.IsClientTelemetryEnabled();
 
             // If the CPU monitor fails for some reason don't block the application
             try

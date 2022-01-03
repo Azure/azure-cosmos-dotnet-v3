@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
             this.RetryOptions = new RetryOptions();
             this.EnableReadRequestsFallback = null;
 
-            this.EnableClientTelemetry = ClientTelemetryOptions.IsClientTelemetryEnabled;
+            this.EnableClientTelemetry = ClientTelemetryOptions.IsClientTelemetryEnabled();
         }
 
         /// <summary>
