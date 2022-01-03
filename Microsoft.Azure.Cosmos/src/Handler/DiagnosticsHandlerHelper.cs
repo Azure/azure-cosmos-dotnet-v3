@@ -60,18 +60,17 @@ namespace Microsoft.Azure.Cosmos.Handler
             // If the CPU monitor fails for some reason don't block the application
             try
             {
-                SystemUsageMonitor systemUsageMonitor = this.isTelemetryMonitoringEnabled
-                    ? SystemUsageMonitor.CreateAndStart(
-                    new List<SystemUsageRecorder>
-                    {
-                        this.diagnosticSystemUsageRecorder,
-                        this.telemetrySystemUsageRecorder,
-                    })
-                    : SystemUsageMonitor.CreateAndStart(
-                    new List<SystemUsageRecorder>
-                    {
-                        this.diagnosticSystemUsageRecorder
-                    });
+                List<SystemUsageRecorder> recorders = new List<SystemUsageRecorder>()
+                {
+                    this.diagnosticSystemUsageRecorder,
+                };
+
+                if (this.isTelemetryMonitoringEnabled)
+                {
+                    recorders.Add(this.telemetrySystemUsageRecorder);
+                }
+
+                SystemUsageMonitor.CreateAndStart(recorders);
 
                 this.isDiagnosticsMonitoringEnabled = true;
             }
