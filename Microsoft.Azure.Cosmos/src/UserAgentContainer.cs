@@ -64,8 +64,11 @@ namespace Microsoft.Azure.Cosmos
 
             // Regex replaces all special characters with empty space except . - | since they do not cause format exception for the user agent string.
             // Do not change the cosmos-netstandard-sdk as it is required for reporting
+#if PREVIEW
             string baseUserAgent = $"cosmos-netstandard-sdk/{clientVersion}" + "P" + Regex.Replace($"|{directVersion}|{this.clientId}|{processArchitecture}|{operatingSystem}|{runtimeFramework}|", @"[^0-9a-zA-Z\.\|\-]+", " ");
-
+#else
+            string baseUserAgent = $"cosmos-netstandard-sdk/{clientVersion}" + Regex.Replace($"|{directVersion}|{this.clientId}|{processArchitecture}|{operatingSystem}|{runtimeFramework}|", @"[^0-9a-zA-Z\.\|\-]+", " ");
+#endif
             if (!string.IsNullOrEmpty(regionConfiguration))
             {
                 baseUserAgent += $"{regionConfiguration}|";

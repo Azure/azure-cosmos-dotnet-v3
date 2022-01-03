@@ -88,7 +88,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsTrue(serialization.Contains(envInfo.ProcessArchitecture));
             string[] values = serialization.Split('|');
-            Assert.AreEqual($"cosmos-netstandard-sdk/{envInfo.ClientVersion}"+"P", values[0]);
+
+#if PREVIEW
+            Assert.AreEqual($"cosmos-netstandard-sdk/{envInfo.ClientVersion}", values[0]);
+#else
+            Assert.AreEqual($"cosmos-netstandard-sdk/{envInfo.ClientVersion}" + "P", values[0]);
+#endif
             Assert.AreEqual(envInfo.DirectVersion, values[1]);
             Assert.AreEqual("0", values[2]);
             Assert.AreEqual(envInfo.ProcessArchitecture, values[3]);
@@ -100,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task VerifyUserAgentWithRegionConfiguration()
         {
             string databaseName = Guid.NewGuid().ToString();
-            string containerName = Guid.NewGuid().ToString();
+            string containerName = Guid.NewGuid().ToString();           
 
             {
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
