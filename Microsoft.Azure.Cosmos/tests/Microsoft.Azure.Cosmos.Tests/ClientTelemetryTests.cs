@@ -21,6 +21,12 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class ClientTelemetryTests
     {
+        [TestCleanup]
+        public void Cleanup()
+        {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, null);
+        }
+
         [TestMethod]
         public async Task ParseAzureVMMetadataTest()
         {
@@ -123,9 +129,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void CheckMisconfiguredTelemetry_should_fail()
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "non-boolean");
-
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
-
         }
 
     }
