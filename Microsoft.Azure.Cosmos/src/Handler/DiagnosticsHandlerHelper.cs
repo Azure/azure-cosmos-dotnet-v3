@@ -19,19 +19,20 @@ namespace Microsoft.Azure.Cosmos.Handler
     /// </summary>
     internal class DiagnosticsHandlerHelper
     {
+        private const string Diagnostickey = "diagnostic";
+        private const string Telemetrykey = "telemetry";
+
         public static readonly TimeSpan DiagnosticsRefreshInterval = TimeSpan.FromSeconds(10);
         private readonly SystemUsageRecorder diagnosticSystemUsageRecorder = new SystemUsageRecorder(
             identifier: Diagnostickey,
             historyLength: 6,
             refreshInterval: DiagnosticsHandlerHelper.DiagnosticsRefreshInterval);
 
+        private static readonly TimeSpan ClientTelemetryRefreshInterval = TimeSpan.FromSeconds(5);
         private readonly SystemUsageRecorder telemetrySystemUsageRecorder = new SystemUsageRecorder(
             identifier: Telemetrykey,
             historyLength: 120,
-            refreshInterval: TimeSpan.FromSeconds(5));
-
-        internal const string Diagnostickey = "diagnostic";
-        internal const string Telemetrykey = "telemetry";
+            refreshInterval: DiagnosticsHandlerHelper.ClientTelemetryRefreshInterval);
 
         private bool isDiagnosticsMonitoringEnabled = false;
         private bool isTelemetryMonitoringEnabled = false;
