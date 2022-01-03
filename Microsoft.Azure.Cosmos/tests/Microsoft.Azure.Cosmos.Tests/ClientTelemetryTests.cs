@@ -117,5 +117,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"DIRECT\",\"preferredRegions\":[\"region1\"],\"aggregationIntervalInSec\":1,\"systemInfo\":[]}", json);
         }
 
+
+        [TestMethod]
+        [ExpectedException(typeof(System.FormatException))]
+        public void CheckMisconfiguredTelemetry_should_fail()
+        {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "non-boolean");
+
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+
+        }
+
     }
 }

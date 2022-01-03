@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     vmMetadataUrl = new Uri(vmMetadataUrlProp);
                 }
 
-                DefaultTrace.TraceInformation("VM metadata URL for telemetry " + vmMetadataUrlProp);
+                DefaultTrace.TraceInformation($"VM metadata URL for telemetry {vmMetadataUrlProp}");
             }
             return vmMetadataUrl;
         }
@@ -97,18 +97,27 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (scheduledTimeSpan.Equals(TimeSpan.Zero))
             {
-                double scheduledTimeInSeconds = ConfigurationManager
-                .GetEnvironmentVariable<double>(
-                    ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds,
-                    ClientTelemetryOptions.DefaultTimeStampInSeconds);
-
-                if (scheduledTimeInSeconds <= 0)
+                double scheduledTimeInSeconds = ClientTelemetryOptions.DefaultTimeStampInSeconds;
+                try
                 {
-                    throw new ArgumentException("Telemetry Scheduled time can not be less than or equal to 0.");
+                    scheduledTimeInSeconds = ConfigurationManager
+                                                    .GetEnvironmentVariable<double>(
+                                                           ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds,
+                                                           ClientTelemetryOptions.DefaultTimeStampInSeconds);
+
+                    if (scheduledTimeInSeconds <= 0)
+                    {
+                        throw new ArgumentException("Telemetry Scheduled time can not be less than or equal to 0.");
+                    }
                 }
+                catch (Exception ex)
+                {
+                    DefaultTrace.TraceError($"Error while getting telemetry scheduling configuration : {ex.Message}. Falling back to default configuration i.e. {scheduledTimeInSeconds}" );
+                }
+               
                 scheduledTimeSpan = TimeSpan.FromSeconds(scheduledTimeInSeconds);
 
-                DefaultTrace.TraceInformation("Telemetry Scheduled in Seconds " + scheduledTimeSpan.TotalSeconds);
+                DefaultTrace.TraceInformation($"Telemetry Scheduled in Seconds {scheduledTimeSpan.TotalSeconds}");
 
             }
             return scheduledTimeSpan;
@@ -144,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     clientTelemetryEndpoint = new Uri(uriProp);
                 }
 
-                DefaultTrace.TraceInformation("Telemetry Endpoint URL is  {0}", uriProp);
+                DefaultTrace.TraceInformation($"Telemetry Endpoint URL is  {uriProp}");
             }
             return clientTelemetryEndpoint;
         }

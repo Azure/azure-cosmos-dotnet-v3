@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Handler
 
         /// <summary>
         /// This method will give CPU Usage(%), Memory Usage(kb) and ThreadPool Information from Diagnostic recorder, 
-        /// It will return null if if Diagnostic Monitoring is not enabled or throws any error while reading data from the recorder.
+        /// It will return null if Diagnostic Monitoring is not enabled or throws any error while reading data from the recorder.
         /// </summary>
         public SystemUsageHistory GetDiagnosticsSystemHistory()
         {
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Handler
 
         /// <summary>
         /// This method will give CPU Usage(%), Memory Usage(kb) and ThreadPool Information from Client Telemetry recorder.
-        /// It will return null if if Diagnostic Monitoring is not enabled or throws any error while reading data from the recorder.
+        /// It will return null if Diagnostic Monitoring is not enabled or throws any error while reading data from the recorder.
         /// </summary>
         /// <returns> CpuAndMemoryUsageRecorder</returns>
         public SystemUsageHistory GetClientTelemetrySystemHistory()
