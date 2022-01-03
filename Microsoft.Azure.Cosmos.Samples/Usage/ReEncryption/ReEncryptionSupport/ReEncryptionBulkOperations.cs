@@ -28,7 +28,7 @@ namespace Cosmos.Samples.ReEncryption
             {
                 TotalTimeTaken = this.stopwatch.Elapsed,
                 TotalRequestUnitsConsumed = this.Tasks.Sum(task => task.Result.RequestUnitsConsumed),
-                SuccessfulDocuments = this.Tasks.Count(task => task.Result.IsSuccessful),
+                SuccessfulDocumentCount = this.Tasks.Count(task => task.Result.IsSuccessful),
                 FailedDocuments = this.Tasks
                     .Where(task => !task.Result.IsSuccessful)
                     .Select(task => (task.Result.Item, task.Result.CosmosException))

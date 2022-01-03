@@ -26,7 +26,7 @@ namespace Cosmos.Samples.ReEncryption
         /// <summary>
         /// Gets total Documents Successfully reencrypted.
         /// </summary>
-        public int SuccessfulDocuments { get; internal set; } = 0;
+        public int SuccessfulDocumentCount { get; internal set; } = 0;
 
         /// <summary>
         /// Gets list of all failures and returns the document and corresponding exception.

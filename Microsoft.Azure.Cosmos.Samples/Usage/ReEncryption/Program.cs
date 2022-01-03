@@ -224,7 +224,7 @@
                 {
                     foreach (FeedRange feedRange in ranges)
                     {
-                        File.Delete(@ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id);
+                        File.Delete(ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id);
                     }
                     break;
                 }
@@ -244,7 +244,7 @@
         {
             string continuationToken = null;
 
-            bool doesContinuationTokenFileExist = File.Exists(@ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id);
+            bool doesContinuationTokenFileExist = File.Exists(ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id);
 
             if (doesContinuationTokenFileExist)
             {
@@ -254,7 +254,7 @@
                     string input = Console.ReadLine();
                     if (input != null && input == "y")
                     {
-                        continuationToken = File.ReadAllText(@ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id);
+                        continuationToken = File.ReadAllText(ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id);
                         break;
                     }
                     else if (input != null && input == "n")
@@ -278,12 +278,12 @@
             {
                 responseMessage = await ReEncryptNextAsync(sourceContainer, feedRange, continuationToken, cancellationToken);
 
-                if (responseMessage != null)
+                if (responseMessage.ContinuationToken != null)
                 {
                     continuationToken = responseMessage.ContinuationToken;
                 }
 
-            } while (responseMessage != null);
+            } while (responseMessage.ContinuationToken != null);
         }
 
         private static async Task<ReEncryptionResponseMessage> ReEncryptNextAsync(
@@ -311,7 +311,7 @@
             while (iterator.HasMoreResults)
             {
                 responseMessage = await iterator.EncryptNextAsync(cancellationToken);
-                File.WriteAllText(@ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id, responseMessage.ContinuationToken);
+                File.WriteAllText(ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id, responseMessage.ContinuationToken);
                 if (responseMessage.StatusCode == HttpStatusCode.NotModified)
                 {
                     break;
@@ -320,7 +320,7 @@
 
             if (iterator.HasMoreResults == false)
             {
-                return null;
+                return new ReEncryptionResponseMessage(responseMessage, null, responseMessage.ReEncryptionBulkOperationResponse);
             }
             
             return responseMessage;
@@ -328,23 +328,23 @@
 
         private static bool CheckAndSetWritesAsStopped()
         {
-            //Note: If you have enabled FullFidelity on your account and have active writes, you can perhaps poll to check if writes on the source container have stopped and return true.
+            //Note: If you have enabled FullFidelity on your account and have active writes, make sure CosmosDB is not receiving any changes before you return true.
             return true;
         }
 
-        private static async Task CheckReEncryptionProgressOrCancelReEncryptionTasksAsync(Container sourceContainer, Container targetContainer, CancellationTokenSource cancellationToken)
+        private static async Task CheckReEncryptionProgressOrCancelReEncryptionTasksAsync(Container sourceContainer, Container targetContainer, CancellationTokenSource cancellationTokenSource)
         {
             while (true)
             {
                 if (Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Escape)
                 {
-                    cancellationToken.Cancel();
+                    cancellationTokenSource.Cancel();
                     return;
                 }
 
                 // fetch and display the progress every 3 seconds.
                 await Task.Delay(ProgressPollingInterval);
-                await GetReEncryptionProgressPercentageAsync(sourceContainer, targetContainer, cancellationToken.Token);
+                await GetReEncryptionProgressPercentageAsync(sourceContainer, targetContainer, cancellationTokenSource.Token);
             }
         }
 
@@ -357,29 +357,22 @@
             string usage = result.Headers["x-ms-resource-usage"];
             int index = usage.IndexOf("documentsCount");
             string[] quotas = usage.Remove(0, index).Split(';');
-            long sourceContainerTotalDocCount = long.Parse(quotas.GetValue(0).ToString().Split('=').GetValue(1).ToString());
+            long sourceContainerTotalDocCount = long.Parse(quotas[0].Split('=')[1]);
 
             result = await targetContainer.ReadContainerAsync(containerRequestOptions);
             usage = result.Headers["x-ms-resource-usage"];
             index = usage.IndexOf("documentsCount");
             quotas = usage.Remove(0, index).Split(';');
-            long destinationContainerTotalDocCount = long.Parse(quotas.GetValue(0).ToString().Split('=').GetValue(1).ToString());
+            long destinationContainerTotalDocCount = long.Parse(quotas[0].Split('=')[1]);
 
-            float progress = 100 * (float)((double)destinationContainerTotalDocCount / (double)sourceContainerTotalDocCount);
-            if (progress > 100)
-            {
-                progress = 100 - (progress - 100);
-            }
-
-            if (destinationContainerTotalDocCount <= sourceContainerTotalDocCount)
-            {
-                ShowReEncryptionProgressBar((int)destinationContainerTotalDocCount, (int)sourceContainerTotalDocCount, (int)progress);
-            }
-            else
+            if (destinationContainerTotalDocCount > sourceContainerTotalDocCount)
             {
                 destinationContainerTotalDocCount = sourceContainerTotalDocCount - (destinationContainerTotalDocCount - sourceContainerTotalDocCount);
-                ShowReEncryptionProgressBar((int)destinationContainerTotalDocCount, (int)sourceContainerTotalDocCount, (int)progress);
             }
+
+            float progress = 100 * (float)((double)destinationContainerTotalDocCount / (double)sourceContainerTotalDocCount);
+
+            ShowReEncryptionProgressBar((int)destinationContainerTotalDocCount, (int)sourceContainerTotalDocCount, (int)progress);
 
             return progress;
         }
