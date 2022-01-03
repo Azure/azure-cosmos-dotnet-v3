@@ -6,7 +6,7 @@ namespace Cosmos.Samples.ReEncryption
 {
     using System;
 
-    internal class ReEncryptionOperationResponse<T>
+    internal sealed class ReEncryptionOperationResponse<T>
     {
         public T Item { get; set; }
 

@@ -381,7 +381,7 @@ namespace Cosmos.Samples.ReEncryption
             if (string.IsNullOrEmpty(continuationToken))
             {
                 string fullFidelityStartLSNString = await this.GetCurrentLargestCommittedLsnAsync();
-                return (null, fullFidelityStartLSNString);
+                return (continuationToken: null, fullFidelityStartLsn: fullFidelityStartLSNString);
             }
 
             JObject jContinuationToken = JObject.Parse(continuationToken);
