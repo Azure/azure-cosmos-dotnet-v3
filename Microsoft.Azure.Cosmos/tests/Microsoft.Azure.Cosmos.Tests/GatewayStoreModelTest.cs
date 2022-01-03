@@ -415,6 +415,39 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        public async Task TestRequestOverloadRemovesSessionToken()
+        {
+            INameValueCollection headers = new StoreRequestNameValueCollection();
+            headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Eventual.ToString());
+
+            DocumentServiceRequest dsrNoSessionToken = DocumentServiceRequest.CreateFromName(
+                OperationType.Read,
+                "Test",
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey,
+                headers);
+
+            string dsrSessionToken = Guid.NewGuid().ToString();
+            Mock<ISessionContainer> sMock = new Mock<ISessionContainer>();
+            sMock.Setup(x => x.ResolveGlobalSessionToken(dsrNoSessionToken)).Returns(dsrSessionToken);
+
+            Mock<IGlobalEndpointManager> globalEndpointManager = new Mock<IGlobalEndpointManager>();
+            await this.GetGatewayStoreModelForConsistencyTest(async (gatewayStoreModel) =>
+            {
+                await GatewayStoreModel.ApplySessionTokenAsync(
+                    dsrNoSessionToken,
+                    ConsistencyLevel.Session,
+                    sMock.Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
+                    clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null).Object,
+                    globalEndpointManager: new Mock<IGlobalEndpointManager>().Object);
+
+                // Should not add the session token because the request is lower
+                Assert.IsNull(dsrNoSessionToken.Headers[HttpConstants.HttpHeaders.SessionToken]);
+            });
+        }
+
+        [TestMethod]
         public async Task TestErrorResponsesProvideBody()
         {
             string testContent = "Content";
