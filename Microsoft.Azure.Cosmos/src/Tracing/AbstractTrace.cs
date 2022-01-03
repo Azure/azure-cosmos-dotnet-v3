@@ -12,12 +12,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
     internal abstract class AbstractTrace : ITrace
     {
-        private ISet<(string, Uri)> RegionsContactedTemporary { get; set; }
+        private HashSet<(string, Uri)> RegionsContactedTemporary { get; set; }
 
         /// <summary>
         /// Consolidated Region contacted Information of this and children nodes
         /// </summary>
-        public ISet<(string, Uri)> RegionsContacted
+        public HashSet<(string, Uri)> RegionsContacted
         {
             get => this.RegionsContactedTemporary;
             set
