@@ -646,8 +646,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("serviceEndpoint");
             }
 
-            DefaultTrace.InitEventListener();
-
             this.queryPartitionProvider = new AsyncLazy<QueryPartitionProvider>(async () =>
             {
                 await this.EnsureValidClientAsync(NoOpTrace.Singleton);

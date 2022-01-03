@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
     /// <![CDATA[ 
     /// using (CosmosClient client = new CosmosClient("connection string"))
     /// {
-    ///     CosmosDatabase db = await client.CreateDatabaseAsync(new Database { Id = "MyDatabase" });
+    ///     DatabaseProperties db1 = await client.CreateDatabaseAsync("MyDatabase");
     /// }
     /// ]]>
     /// </code>

@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
@@ -195,7 +196,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                             partitionKeyRangeIdentity.CollectionRid,
                             partitionKeyRangeIdentity.PartitionKeyRangeId,
                             forceRefresh: forceRefreshPartitionAddresses),
-                        forceRefresh: true);
+                        forceRefresh: true,
+                        callBackOnForceRefresh: (old, updated) => GatewayAddressCache.LogPartitionCacheRefresh(request.RequestContext.ClientRequestStatistics, old, updated));
 
                     this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out DateTime ignoreDateTime);
                 }
@@ -208,7 +210,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                             partitionKeyRangeIdentity.CollectionRid,
                             partitionKeyRangeIdentity.PartitionKeyRangeId,
                             forceRefresh: false),
-                        forceRefresh: false);
+                        forceRefresh: false,
+                        callBackOnForceRefresh: (old, updated) => GatewayAddressCache.LogPartitionCacheRefresh(request.RequestContext.ClientRequestStatistics, old, updated));
                 }
 
                 int targetReplicaSetSize = this.serviceConfigReader.UserReplicationPolicy.MaxReplicaSetSize;
@@ -240,6 +243,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 throw;
+            }
+        }
+
+        private static void LogPartitionCacheRefresh(
+            IClientSideRequestStatistics clientSideRequestStatistics,
+            PartitionAddressInformation old,
+            PartitionAddressInformation updated)
+        {
+            if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum traceDatum)
+            {
+                traceDatum.RecordAddressCachRefreshContent(old, updated);
             }
         }
 
@@ -289,7 +303,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                            partitionKeyRangeIdentity.CollectionRid,
                            partitionKeyRangeIdentity.PartitionKeyRangeId,
                            forceRefresh: true),
-                       forceRefresh: true);
+                       forceRefresh: true,
+                       callBackOnForceRefresh: null);
         }
 
         private async Task<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> ResolveMasterAsync(DocumentServiceRequest request, bool forceRefresh)
