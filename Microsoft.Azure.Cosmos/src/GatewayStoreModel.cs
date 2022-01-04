@@ -24,6 +24,8 @@ namespace Microsoft.Azure.Cosmos
     // Marking it as non-sealed in order to unit test it using Moq framework
     internal class GatewayStoreModel : IStoreModel, IDisposable
     {
+        private static readonly string sessionConsistencyAsString = ConsistencyLevel.Session.ToString();
+
         private readonly GlobalEndpointManager endpointManager;
         private readonly DocumentClientEventSource eventSource;
         private readonly ISessionContainer sessionContainer;
@@ -61,7 +63,8 @@ namespace Microsoft.Azure.Cosmos
                 this.defaultConsistencyLevel,
                 this.sessionContainer,
                 this.partitionKeyRangeCache,
-                this.clientCollectionCache);
+                this.clientCollectionCache,
+                this.endpointManager);
 
             DocumentServiceResponse response;
             try
@@ -80,13 +83,13 @@ namespace Microsoft.Azure.Cosmos
                     (exception.StatusCode == HttpStatusCode.PreconditionFailed || exception.StatusCode == HttpStatusCode.Conflict
                     || (exception.StatusCode == HttpStatusCode.NotFound && exception.GetSubStatus() != SubStatusCodes.ReadSessionNotAvailable)))
                 {
-                    this.CaptureSessionToken(exception.StatusCode, exception.GetSubStatus(), request, exception.Headers);
+                    await this.CaptureSessionTokenAndHandleSplitAsync(exception.StatusCode, exception.GetSubStatus(), request, exception.Headers);
                 }
 
                 throw;
             }
 
-            this.CaptureSessionToken(response.StatusCode, response.SubStatusCode, request, response.Headers);
+            await this.CaptureSessionTokenAndHandleSplitAsync(response.StatusCode, response.SubStatusCode, request, response.Headers);
             return response;
         }
 
@@ -172,7 +175,7 @@ namespace Microsoft.Azure.Cosmos
             this.Dispose(true);
         }
 
-        private void CaptureSessionToken(
+        private async Task CaptureSessionTokenAndHandleSplitAsync(
             HttpStatusCode? statusCode,
             SubStatusCodes subStatusCode,
             DocumentServiceRequest request,
@@ -214,6 +217,20 @@ namespace Microsoft.Azure.Cosmos
             else
             {
                 this.sessionContainer.SetSessionToken(request, responseHeaders);
+                PartitionKeyRange detectedPartitionKeyRange = request.RequestContext.ResolvedPartitionKeyRange;
+                string partitionKeyRangeInResponse = responseHeaders[HttpConstants.HttpHeaders.PartitionKeyRangeId];
+                if (detectedPartitionKeyRange != null
+                    && !string.IsNullOrEmpty(partitionKeyRangeInResponse)
+                    && !string.IsNullOrEmpty(request.RequestContext.ResolvedCollectionRid)
+                    && !partitionKeyRangeInResponse.Equals(detectedPartitionKeyRange.Id, StringComparison.OrdinalIgnoreCase))
+                {
+                    // The request ended up being on a different partition unknown to the client, so we better refresh the caches
+                    await this.partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(
+                        request.RequestContext.ResolvedCollectionRid,
+                        partitionKeyRangeInResponse,
+                        NoOpTrace.Singleton,
+                        forceRefresh: true);
+                }
             }
         }
 
@@ -222,7 +239,8 @@ namespace Microsoft.Azure.Cosmos
             ConsistencyLevel defaultConsistencyLevel,
             ISessionContainer sessionContainer,
             PartitionKeyRangeCache partitionKeyRangeCache,
-            CollectionCache clientCollectionCache)
+            CollectionCache clientCollectionCache,
+            IGlobalEndpointManager globalEndpointManager)
         {
             if (request.Headers == null)
             {
@@ -251,11 +269,16 @@ namespace Microsoft.Azure.Cosmos
             bool sessionConsistency =
                 defaultConsistencyLevel == ConsistencyLevel.Session ||
                 (!string.IsNullOrEmpty(requestConsistencyLevel)
-                    && string.Equals(requestConsistencyLevel, ConsistencyLevel.Session.ToString(), StringComparison.OrdinalIgnoreCase));
+                    && string.Equals(requestConsistencyLevel, GatewayStoreModel.sessionConsistencyAsString, StringComparison.OrdinalIgnoreCase));
 
-            if (!sessionConsistency || (!request.IsReadOnlyRequest && request.OperationType != OperationType.Batch))
+            bool isMultiMasterEnabledForRequest = globalEndpointManager.CanUseMultipleWriteLocations(request);
+
+            if (!sessionConsistency 
+                || (!request.IsReadOnlyRequest 
+                    && request.OperationType != OperationType.Batch
+                    && !isMultiMasterEnabledForRequest))
             {
-                return; // Only apply the session token in case of session consistency and the request is read only
+                return; // Only apply the session token in case of session consistency and the request is read only or read/write on multimaster
             }
 
             (bool isSuccess, string sessionToken) = await GatewayStoreModel.TryResolveSessionTokenAsync(
