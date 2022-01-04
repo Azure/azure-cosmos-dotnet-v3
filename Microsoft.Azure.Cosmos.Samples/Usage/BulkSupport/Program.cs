@@ -192,25 +192,28 @@
                 EnableContentResponseOnWrite = false,
             };
 
+            // While loop is used to handle scenarios when the item being updated was changed by a
+            // different process. The item needs to be read again to get the latest version.
             while (true)
             {
+                // Remove the 'other' property from the json. 
                 item.Remove("other");
+
                 string id = item["id"].Value<string>();
                 string pk = item["pk"].Value<string>();
+
+                // Setting the etag will cause an exception if the item was updated after it was read
                 itemRequestOptions.IfMatchEtag = item["_etag"].Value<string>();
                 try
                 {
-                    await container.ReplaceItemAsync<JObject>(item, id, new PartitionKey(pk));
+                    await container.ReplaceItemAsync<JObject>(item, id, new PartitionKey(pk), itemRequestOptions);
                     return;
                 }
-                catch (CosmosException ex)
+                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
                 {
-                    Console.WriteLine($"Replace item failed at {DateTime.UtcNow} with id:{id}; pk:{pk}; Excepion: {ex}");
                     // The item was updated after the query. Read the latest item and try update again.
-                    if (ex.StatusCode == HttpStatusCode.Conflict)
-                    {
-                        item = await container.ReadItemAsync<JObject>(id, new PartitionKey(pk));
-                    }
+                    Console.WriteLine($"Replace item failed at {DateTime.UtcNow} with id:{id}; pk:{pk}; Excepion: {ex}");
+                    item = await container.ReadItemAsync<JObject>(id, new PartitionKey(pk));
                 }
             }
         }
