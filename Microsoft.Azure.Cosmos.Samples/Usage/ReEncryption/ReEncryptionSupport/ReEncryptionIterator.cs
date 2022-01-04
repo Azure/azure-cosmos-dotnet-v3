@@ -135,15 +135,15 @@ namespace Cosmos.Samples.ReEncryption
 
             this.feedIterator = this.SetChangeFeedIterator(continuationToken, isFullSyncRequired);
 
-            ResponseMessage responseMessage = null;
-            ReEncryptionBulkOperationResponse<JObject> reEncryptionBulkOperationResponse = null;
+            ResponseMessage responseMessage;
+            ReEncryptionBulkOperationResponse<JObject> reEncryptionBulkOperationResponse;
             if (isFullSyncRequired)
             {
                 (responseMessage, reEncryptionBulkOperationResponse, continuationToken) = await this.InitiateFullSyncAsync(
                     fullFidelityStartLsn,
                     cancellationToken);
             }
-            else if (this.isFullFidelityChangeFeedSupported)
+            else
             {
                  (responseMessage, reEncryptionBulkOperationResponse, continuationToken) = await this.GetAndReencryptFFChangesAsync(cancellationToken);
             }

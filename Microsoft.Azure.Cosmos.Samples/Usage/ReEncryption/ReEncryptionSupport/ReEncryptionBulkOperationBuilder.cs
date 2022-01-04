@@ -162,13 +162,13 @@ namespace Cosmos.Samples.ReEncryption
                         throw new InvalidOperationException();
                     }
 
-                    string id = previousImage.GetValue(Constants.DocumentIdPropertyName).ToString();
+                    string rid = previousImage.GetValue(Constants.DocumentRidPropertyName).ToString();
 
-                    if (changeFeedChangesBatcher.ContainsKey(id))
+                    if (changeFeedChangesBatcher.ContainsKey(rid))
                     {
-                        List<JObject> operationToAdd = changeFeedChangesBatcher[id];
+                        List<JObject> operationToAdd = changeFeedChangesBatcher[rid];
                         operationToAdd.Add(document);
-                        changeFeedChangesBatcher[id] = operationToAdd;
+                        changeFeedChangesBatcher[rid] = operationToAdd;
                     }
                     else
                     {
@@ -177,17 +177,17 @@ namespace Cosmos.Samples.ReEncryption
                             document,
                         };
 
-                        changeFeedChangesBatcher.Add(id, operationToAdd);
+                        changeFeedChangesBatcher.Add(rid, operationToAdd);
                     }
                 }
                 else
                 {
-                    string id = document.GetValue(Constants.DocumentIdPropertyName).ToString();
-                    if (changeFeedChangesBatcher.ContainsKey(id))
+                    string rid = document.GetValue(Constants.DocumentRidPropertyName).ToString();
+                    if (changeFeedChangesBatcher.ContainsKey(rid))
                     {
-                        List<JObject> operationToAdd = changeFeedChangesBatcher[id];
+                        List<JObject> operationToAdd = changeFeedChangesBatcher[rid];
                         operationToAdd.Add(document);
-                        changeFeedChangesBatcher[id] = operationToAdd;
+                        changeFeedChangesBatcher[rid] = operationToAdd;
                     }
                     else
                     {
@@ -196,7 +196,7 @@ namespace Cosmos.Samples.ReEncryption
                             document,
                         };
 
-                        changeFeedChangesBatcher.Add(id, operationToAdd);
+                        changeFeedChangesBatcher.Add(rid, operationToAdd);
                     }
                 }
             }
