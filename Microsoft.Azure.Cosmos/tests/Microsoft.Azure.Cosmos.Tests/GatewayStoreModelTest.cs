@@ -414,14 +414,18 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        [TestMethod]
-        public async Task TestRequestOverloadRemovesSessionToken()
+        [DataTestMethod]
+        [DataRow(false, false, DisplayName = "Single master - Read")]
+        [DataRow(true, false, DisplayName = "Multi master - Read")]
+        [DataRow(false, true, DisplayName = "Single master - Write")]
+        [DataRow(true, true, DisplayName = "Multi master - Write")]
+        public async Task TestRequestOverloadRemovesSessionToken(bool multiMaster, bool isWriteRequest)
         {
             INameValueCollection headers = new StoreRequestNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Eventual.ToString());
 
             DocumentServiceRequest dsrNoSessionToken = DocumentServiceRequest.CreateFromName(
-                OperationType.Read,
+                isWriteRequest ? OperationType.Create : OperationType.Read,
                 "Test",
                 ResourceType.Document,
                 AuthorizationTokenType.PrimaryMasterKey,
@@ -432,6 +436,7 @@ namespace Microsoft.Azure.Cosmos
             sMock.Setup(x => x.ResolveGlobalSessionToken(dsrNoSessionToken)).Returns(dsrSessionToken);
 
             Mock<IGlobalEndpointManager> globalEndpointManager = new Mock<IGlobalEndpointManager>();
+            globalEndpointManager.Setup(gem => gem.CanUseMultipleWriteLocations(It.Is<DocumentServiceRequest>(drs => drs == dsrNoSessionToken))).Returns(multiMaster);
             await this.GetGatewayStoreModelForConsistencyTest(async (gatewayStoreModel) =>
             {
                 await GatewayStoreModel.ApplySessionTokenAsync(
