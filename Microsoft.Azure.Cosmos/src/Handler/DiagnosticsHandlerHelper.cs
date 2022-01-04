@@ -54,6 +54,7 @@ namespace Microsoft.Azure.Cosmos.Handler
         /// </summary>
         private DiagnosticsHandlerHelper()
         {
+            Console.WriteLine("DiagnosticsHandlerHelper => initialized" );
             this.isDiagnosticsMonitoringEnabled = false;
 
             // If the CPU monitor fails for some reason don't block the application
@@ -73,6 +74,8 @@ namespace Microsoft.Azure.Cosmos.Handler
 
                 SystemUsageMonitor.CreateAndStart(recorders);
 
+                Console.WriteLine("DiagnosticsHandlerHelper => monitor started with recorder count " + recorders.Count);
+
                 this.isDiagnosticsMonitoringEnabled = true;
             }
             catch (Exception ex)
@@ -91,6 +94,7 @@ namespace Microsoft.Azure.Cosmos.Handler
         /// </summary>
         public SystemUsageHistory GetDiagnosticsSystemHistory()
         {
+            Console.WriteLine("GetDiagnosticsSystemHistory => " + this.isTelemetryMonitoringEnabled);
             if (!this.isDiagnosticsMonitoringEnabled)
             {
                 return null;
@@ -116,6 +120,7 @@ namespace Microsoft.Azure.Cosmos.Handler
         /// <returns> CpuAndMemoryUsageRecorder</returns>
         public SystemUsageHistory GetClientTelemetrySystemHistory()
         {
+            Console.WriteLine("GetClientTelemetrySystemHistory => " + this.isTelemetryMonitoringEnabled);
             if (!this.isTelemetryMonitoringEnabled)
             {
                 return null;

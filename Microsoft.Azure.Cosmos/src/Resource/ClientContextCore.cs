@@ -120,6 +120,8 @@ namespace Microsoft.Azure.Cosmos
                         authorizationTokenProvider: cosmosClient.AuthorizationTokenProvider,
                         diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
                         preferredRegions: clientOptions.ApplicationPreferredRegions);
+
+                    Console.WriteLine("Client Telemetry enabled.");
                 } 
                 catch (Exception ex)
                 {
@@ -132,6 +134,7 @@ namespace Microsoft.Azure.Cosmos
             else
             {
                 DefaultTrace.TraceInformation("Client Telemetry Disabled.");
+                Console.WriteLine("Client Telemetry Disabled.");
             }
 
             if (requestInvokerHandler == null)

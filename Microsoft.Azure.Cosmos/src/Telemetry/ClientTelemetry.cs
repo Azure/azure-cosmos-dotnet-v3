@@ -64,6 +64,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             IReadOnlyList<string> preferredRegions)
         {
             DefaultTrace.TraceInformation("Initiating telemetry with background task.");
+            Console.WriteLine("Initiating telemetry with background task.");
 
             ClientTelemetry clientTelemetry = new ClientTelemetry(documentClient,
                 userAgent,
@@ -118,6 +119,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private async Task EnrichAndSendAsync()
         {
             DefaultTrace.TraceInformation("Telemetry Job Started with Observing window : {0}", observingWindow);
+            Console.WriteLine("Telemetry Job Started with Observing window : {0}", observingWindow);
 
             try
             {
@@ -195,6 +197,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             double requestCharge)
         {
             DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
+            Console.WriteLine("Collecting Operation data for Telemetry.");
 
             if (cosmosDiagnostics == null)
             {
