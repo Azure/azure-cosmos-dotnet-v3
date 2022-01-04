@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string[] values = serialization.Split('|');
             string previewFlag = string.Empty;
 #if PREVIEW
-     previewFlag = "P";
+            previewFlag = "P";
 #endif
             Assert.AreEqual($"cosmos-netstandard-sdk/{envInfo.ClientVersion}" + previewFlag, values[0]);
             Assert.AreEqual(envInfo.DirectVersion, values[1]);
