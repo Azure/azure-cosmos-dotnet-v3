@@ -22,8 +22,13 @@ The sample creates separate re-encryption tasks for each of the feed range and s
 The user gets the option to use an existing continuationToken/bookmark from the last saved checkpoint which was saved earlier in a file. If the re-encryption activity is finished the user can discard the file.
 
 
+
+
 ![ReadMe_Image01.png (1098×403) (github.com)](./Images/ReadMe_Image01.png)
 	
+	<center>Image: ReEncryption console output </center>
+
+
 
 The following fields in the sample code pick up the required details from the application settings file(AppSettings.json).
      
