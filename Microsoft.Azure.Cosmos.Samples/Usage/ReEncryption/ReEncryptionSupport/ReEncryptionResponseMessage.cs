@@ -22,7 +22,7 @@ namespace Cosmos.Samples.ReEncryption
         /// </summary>
         public ReEncryptionBulkOperationResponse<JObject> ReEncryptionBulkOperationResponse { get; }
 
-        internal ReEncryptionResponseMessage(
+        public ReEncryptionResponseMessage(
             ResponseMessage responseMessage,
             string reEncryptionContinuationToken,
             ReEncryptionBulkOperationResponse<JObject> reEncryptionBulkOperationResponse)

@@ -16,11 +16,11 @@ namespace Cosmos.Samples.ReEncryption
     {
         /// <summary>
         /// Gets an iterator for reencrypting the data.
-        /// The source container should have no data changes during reEncryption operation or should have changefeed full fidelity enabled .
+        /// The source container should have no data changes during reEncryption operation or should have changefeed full fidelity enabled.
         /// </summary>
         /// <param name="container"> Source container object. </param>
         /// <param name="destinationContainerName"> Destination Container configured with new policy or key. </param>
-        /// <param name="checkIfWritesHaveStoppedCb"> Callback to check if writes have stopped.The called function should return true if writes have stopped.If FullFidelity change feed is not enabled,return true by default. </param>
+        /// <param name="checkIfWritesHaveStoppedCb"> Callback to check if writes have stopped. The called function should return true if writes have stopped. If FullFidelity change feed is not enabled, return true by default. </param>
         /// <param name="changeFeedRequestOptions"> (Optional) Request options. </param>
         /// <param name="sourceFeedRange"> (Optional) The range to start from. </param>
         /// <param name="continuationToken"> (Optional) continuationToken: The continuation to resume from. </param>
