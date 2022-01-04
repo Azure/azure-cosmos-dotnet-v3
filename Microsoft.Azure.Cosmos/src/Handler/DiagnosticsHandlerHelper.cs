@@ -76,6 +76,7 @@ namespace Microsoft.Azure.Cosmos.Handler
             }
             catch (Exception ex)
             {
+                Console.WriteLine("DiagnosticsHandlerHelper =>" + ex.Message);
                 DefaultTrace.TraceError(ex.Message);
 
                 this.isDiagnosticsMonitoringEnabled = false;
@@ -100,6 +101,7 @@ namespace Microsoft.Azure.Cosmos.Handler
             }
             catch (Exception ex)
             {
+                Console.WriteLine("GetDiagnosticsSystemHistory =>" + ex.Message);
                 DefaultTrace.TraceError(ex.Message);
                 this.isDiagnosticsMonitoringEnabled = false;
                 return null;
@@ -124,6 +126,8 @@ namespace Microsoft.Azure.Cosmos.Handler
             }
             catch (Exception ex)
             {
+                Console.WriteLine("GetClientTelemetrySystemHistory =>" + ex.Message);
+
                 DefaultTrace.TraceError(ex.Message);
                 this.isTelemetryMonitoringEnabled = false;
                 return null;

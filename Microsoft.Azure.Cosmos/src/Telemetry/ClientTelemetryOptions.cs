@@ -69,15 +69,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
 
         private static Uri vmMetadataUrl;
-        private static TimeSpan scheduledTimeSpan = TimeSpan.Zero;
         private static Uri clientTelemetryEndpoint;
         private static string environmentName;
+        private static TimeSpan scheduledTimeSpan = TimeSpan.Zero;
 
         internal static bool IsClientTelemetryEnabled()
         {
-            return ConfigurationManager
+            bool isTelemetryEnabled = ConfigurationManager
                 .GetEnvironmentVariable<bool>(ClientTelemetryOptions
                                                         .EnvPropsClientTelemetryEnabled, false);
+            Console.WriteLine("IsClientTelemetryEnabled =>" + isTelemetryEnabled);
+            DefaultTrace.TraceInformation($"Telemetry Flag is set to {isTelemetryEnabled}");
+
+            return isTelemetryEnabled;
         }
 
         internal static Uri GetVmMetadataUrl()
