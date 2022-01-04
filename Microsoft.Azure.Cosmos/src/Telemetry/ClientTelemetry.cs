@@ -191,7 +191,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             OperationType operationType,
                             ResourceType resourceType,
                             string consistencyLevel,
-                            double requestCharge)
+                            double requestCharge,
+                            string subStatusCode)
         {
             DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
 
@@ -210,7 +211,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                             containerName: containerId,
                                             operation: operationType,
                                             resource: resourceType,
-                                            statusCode: (int)statusCode);
+                                            statusCode: (int)statusCode,
+                                            subStatusCode: subStatusCode);
 
             (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
                     .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
