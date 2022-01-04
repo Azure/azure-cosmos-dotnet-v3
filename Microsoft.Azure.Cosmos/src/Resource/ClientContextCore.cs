@@ -123,6 +123,7 @@ namespace Microsoft.Azure.Cosmos
                 } 
                 catch (Exception ex)
                 {
+                    Console.WriteLine("Client Context core => " + ex.Message);
                     DefaultTrace.TraceInformation($"Error While starting Telemetry Job : {ex.Message}. Hence disabling Client Telemetry");
                     connectionPolicy.EnableClientTelemetry = false;
                 }

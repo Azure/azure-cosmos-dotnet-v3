@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Handler
 {
     using System;
     using System.Collections.Generic;
-    using System.Runtime.CompilerServices;
     using Documents.Rntbd;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Telemetry;
@@ -35,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Handler
             refreshInterval: DiagnosticsHandlerHelper.ClientTelemetryRefreshInterval);
 
         private bool isDiagnosticsMonitoringEnabled = false;
-        private bool isTelemetryMonitoringEnabled = ClientTelemetryOptions.IsClientTelemetryEnabled();
+        private bool isTelemetryMonitoringEnabled = false;
 
         /// <summary>
         /// Singleton to make sure only one instance of DiagnosticHandlerHelper is there.
@@ -60,6 +59,8 @@ namespace Microsoft.Azure.Cosmos.Handler
             // If the CPU monitor fails for some reason don't block the application
             try
             {
+                this.isTelemetryMonitoringEnabled = ClientTelemetryOptions.IsClientTelemetryEnabled();
+
                 List<SystemUsageRecorder> recorders = new List<SystemUsageRecorder>()
                 {
                     this.diagnosticSystemUsageRecorder,
