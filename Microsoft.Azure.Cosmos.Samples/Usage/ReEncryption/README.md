@@ -26,7 +26,7 @@ The user gets the option to use an existing continuationToken/bookmark from the 
 
 ![ReadMe_Image01.png (1098×403) (github.com)](./Images/ReadMe_Image01.png)
 	
-	<center>Image: ReEncryption tool console output </center>
+	<p style="text-align: center;"> Image: ReEncryption tool console output </p>
 
 
 
