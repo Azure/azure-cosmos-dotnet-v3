@@ -46,7 +46,7 @@ written(Always Encrypted CosmosDB handles the encryption) into the destination c
 
 - The core library exposes an iterator model API which provides you with an iterator which is exposed as an extension method on container.
 
-		```
+		```csharp
 		
 		/// <summary>
         /// Gets an iterator for reencrypting the data.
@@ -80,7 +80,7 @@ separate tasks for each feedrange that can help in improving the performance. Th
 - The iterator has method EncryptNextAsync on it which is the core function that does the re-encryption, reading from the source container and writing the data to the destination container. The ReEncryptionResponseMessage class
 provides you with ReEncryptionBulkOperationResponse which has important information which includes total documents that were successfully re-encrypted, gets you list of all failures and returns the documents,corresponding exception and other important information.
 
-		```
+		```csharp
 		
 		/// <summary>
         /// EncryptNextAsync.
