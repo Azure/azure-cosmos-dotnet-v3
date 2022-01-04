@@ -123,6 +123,7 @@ namespace Microsoft.Azure.Cosmos.Handler
 
             try
             {
+                Console.WriteLine("GetClientTelemetrySystemHistory => is enabled");
                 return this.telemetrySystemUsageRecorder.Data;
             }
             catch (Exception ex)

@@ -248,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 DefaultTrace.TraceVerbose("Started Recording System Usage for telemetry.");
 
                 SystemUsageHistory systemUsageHistory = this.diagnosticsHelper.GetClientTelemetrySystemHistory();
-
+                Console.WriteLine("got systemUsageHistory => " + systemUsageHistory.ToString());
                 if (systemUsageHistory != null )
                 {
                     (SystemInfo cpuUsagePayload, SystemInfo memoryUsagePayload) = ClientTelemetryHelper.RecordSystemUsage(systemUsageHistory);
