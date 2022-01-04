@@ -29,13 +29,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private List<ClientTelemetryProperties> actualInfo;
 
+        [ClassInitialize]
+        public static void ClassInitialize(TestContext context)
+        {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "true");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, telemetryEndpointUrl);
+        }
+
         [TestInitialize]
         public void TestInitialize()
         {
             this.actualInfo = new List<ClientTelemetryProperties>();
-
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, telemetryEndpointUrl);
 
             HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
             {
@@ -76,16 +81,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             this.cosmosClientBuilder = TestCommon.GetDefaultConfiguration()
                                         .WithApplicationPreferredRegions(preferredRegionList)
-                                        .WithTelemetryEnabled()
                                         .WithHttpClientFactory(() => new HttpClient(httpHandler));
+        }
+
+        [ClassCleanup]
+        public static void FinalCleanup()
+        {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, null);
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, null);
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
         }
 
         [TestCleanup]
         public async Task Cleanup()
         {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, null);
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
-
             await base.TestCleanup();
         }
 

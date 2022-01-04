@@ -147,6 +147,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     if (this.cancellationTokenSource.IsCancellationRequested)
                     {
                         DefaultTrace.TraceInformation("Observer Task Cancelled.");
+
+                        Console.WriteLine("Observer Task Cancelled.");
                         break;
                     }
 
