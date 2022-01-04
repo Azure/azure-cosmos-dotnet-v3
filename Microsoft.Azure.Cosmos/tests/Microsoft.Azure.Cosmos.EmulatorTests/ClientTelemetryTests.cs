@@ -25,8 +25,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private const string telemetryEndpointUrl = "http://dummy.telemetry.endpoint/";
         private const int scheduledInSeconds = 1;
-
         private CosmosClientBuilder cosmosClientBuilder;
+
         private List<ClientTelemetryProperties> actualInfo;
 
         [TestInitialize]
@@ -34,8 +34,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             this.actualInfo = new List<ClientTelemetryProperties>();
 
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "true");
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, scheduledInSeconds.ToString());
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, telemetryEndpointUrl);
 
             HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
@@ -77,13 +76,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             this.cosmosClientBuilder = TestCommon.GetDefaultConfiguration()
                                         .WithApplicationPreferredRegions(preferredRegionList)
+                                        .WithTelemetryEnabled()
                                         .WithHttpClientFactory(() => new HttpClient(httpHandler));
         }
 
         [TestCleanup]
         public async Task Cleanup()
         {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, null);
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, null);
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
 
