@@ -1,6 +1,6 @@
 # Microsoft Azure Cosmos DB Reencryption Tool
 
-Microsoft Azure Cosmos DB Reencryption Tool consists of a sample or driver code to demonstrates, how re-encryption of encrypted data in the Cosmos DB can be carried out using Always Encrypted CosmosDB SDK Client-Side encryption.
+Microsoft Azure Cosmos DB Reencryption Tool consists of a sample or driver code to demonstrates, how re-encryption of encrypted data in CosmosDB can be carried out using Always Encrypted CosmosDB SDK Client-Side encryption.
 This can be used to change/rotate Data Encryption Keys or change the Client Encryption Policy. This can also be used to migrate your data from regular container to an encryption container.
 The sample code shows how the APIs which help with re-encryption can be used. The core library for these APIs are located in ReEncryptionSupport folder within the same project.
 
