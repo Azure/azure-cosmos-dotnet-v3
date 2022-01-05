@@ -445,10 +445,17 @@ namespace Microsoft.Azure.Cosmos
                     sMock.Object,
                     partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
                     clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null).Object,
-                    globalEndpointManager: new Mock<IGlobalEndpointManager>().Object);
+                    globalEndpointManager: globalEndpointManager.Object);
 
-                // Should not add the session token because the request is lower
-                Assert.IsNull(dsrNoSessionToken.Headers[HttpConstants.HttpHeaders.SessionToken]);
+                if (isWriteRequest && multiMaster)
+                {
+                    // Multi master write requests should not lower the consistency and remove the session token
+                    Assert.AreEqual(dsrSessionToken, dsrNoSessionToken.Headers[HttpConstants.HttpHeaders.SessionToken]);
+                }
+                else
+                {
+                    Assert.IsNull(dsrNoSessionToken.Headers[HttpConstants.HttpHeaders.SessionToken]);
+                }
             });
         }
 
