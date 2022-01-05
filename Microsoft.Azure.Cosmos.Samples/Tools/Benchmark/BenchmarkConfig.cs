@@ -176,26 +176,26 @@ namespace CosmosBenchmark
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint
             };
 
-            if (this.EnableTelemetry)
-            {
-                Environment.SetEnvironmentVariable(
-                    Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, 
-                    "true");
+            //if (this.EnableTelemetry)
+            //{
+            //    Environment.SetEnvironmentVariable(
+            //        Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, 
+            //        "true");
 
-                if (this.TelemetryScheduleInSec > 0)
-                {
-                    Environment.SetEnvironmentVariable(
-                        Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, 
-                        Convert.ToString(this.TelemetryScheduleInSec));
-                }
+            //    if (this.TelemetryScheduleInSec > 0)
+            //    {
+            //        Environment.SetEnvironmentVariable(
+            //            Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, 
+            //            Convert.ToString(this.TelemetryScheduleInSec));
+            //    }
 
-                if (!string.IsNullOrEmpty(this.TelemetryEndpoint))
-                {
-                    Environment.SetEnvironmentVariable(
-                        Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, 
-                        this.TelemetryEndpoint);
-                }
-            }
+            //    if (!string.IsNullOrEmpty(this.TelemetryEndpoint))
+            //    {
+            //        Environment.SetEnvironmentVariable(
+            //            Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, 
+            //            this.TelemetryEndpoint);
+            //    }
+            //}
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
             {
