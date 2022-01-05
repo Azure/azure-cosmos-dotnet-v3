@@ -265,8 +265,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             string requestConsistencyLevel = request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel];
-            bool isConsideredAReadRequest = request.IsReadOnlyRequest || request.OperationType == OperationType.Batch;
-            bool requestHasConsistencySet = !string.IsNullOrEmpty(requestConsistencyLevel) && isConsideredAReadRequest; // Only read requests can have their consistency modified
+            bool isReadOrBatchRequest = request.IsReadOnlyRequest || request.OperationType == OperationType.Batch;
+            bool requestHasConsistencySet = !string.IsNullOrEmpty(requestConsistencyLevel) && isReadOrBatchRequest; // Only read requests can have their consistency modified
             
             bool sessionConsistencyApplies =
                 (!requestHasConsistencySet && defaultConsistencyLevel == ConsistencyLevel.Session) ||
@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos
             bool isMultiMasterEnabledForRequest = globalEndpointManager.CanUseMultipleWriteLocations(request);
 
             if (!sessionConsistencyApplies
-                || (!isConsideredAReadRequest
+                || (!isReadOrBatchRequest
                     && !isMultiMasterEnabledForRequest))
             {
                 return; // Only apply the session token in case of session consistency and the request is read only or read/write on multimaster
