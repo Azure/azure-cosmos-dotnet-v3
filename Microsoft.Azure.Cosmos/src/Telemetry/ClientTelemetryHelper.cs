@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
 
             DefaultTrace.TraceInformation("System Usage recorded by telemetry is : {0}", systemUsageHistory);
-            Console.WriteLine("RecordSystemUsage => " + systemUsageHistory.ToString());
+
             foreach (SystemUsageLoad systemUsage in systemUsageHistory.Values)
             {
                 float? cpuValue = systemUsage.CpuUsage;

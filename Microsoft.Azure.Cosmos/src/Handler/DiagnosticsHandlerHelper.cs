@@ -33,8 +33,8 @@ namespace Microsoft.Azure.Cosmos.Handler
             historyLength: 120,
             refreshInterval: DiagnosticsHandlerHelper.ClientTelemetryRefreshInterval);
 
-        private bool isDiagnosticsMonitoringEnabled = false;
-        private bool isTelemetryMonitoringEnabled = false;
+        private static bool isDiagnosticsMonitoringEnabled = false;
+        private static bool isTelemetryMonitoringEnabled = false;
 
         /// <summary>
         /// Singleton to make sure only one instance of DiagnosticHandlerHelper is there.
@@ -48,44 +48,41 @@ namespace Microsoft.Azure.Cosmos.Handler
             new DiagnosticsHandlerHelper();
 #endif
 
+        private readonly SystemUsageMonitor systemUsageMonitor = null;
+
         /// <summary>
         /// Start System Usage Monitor with Diagnostic and Telemetry Recorder if Telemetry is enabled 
         /// Otherwise Start System Usage Monitor with only Diagnostic Recorder
         /// </summary>
         private DiagnosticsHandlerHelper()
         {
-            Console.WriteLine("DiagnosticsHandlerHelper => initialized" );
-            this.isDiagnosticsMonitoringEnabled = false;
+            DiagnosticsHandlerHelper.isDiagnosticsMonitoringEnabled = false;
 
             // If the CPU monitor fails for some reason don't block the application
             try
             {
-                this.isTelemetryMonitoringEnabled = ClientTelemetryOptions.IsClientTelemetryEnabled();
+                DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled = ClientTelemetryOptions.IsClientTelemetryEnabled();
 
-                Console.WriteLine("DiagnosticsHandlerHelper => isTelemetryMonitoringEnabled " + this.isTelemetryMonitoringEnabled);
                 List<SystemUsageRecorder> recorders = new List<SystemUsageRecorder>()
                 {
                     this.diagnosticSystemUsageRecorder,
                 };
 
-               /* if (this.isTelemetryMonitoringEnabled)
-                {*/
-                recorders.Add(this.telemetrySystemUsageRecorder);
-              //  }
+                if (DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled)
+                {
+                    recorders.Add(this.telemetrySystemUsageRecorder);
+                }
 
-                SystemUsageMonitor.CreateAndStart(recorders);
+                this.systemUsageMonitor = SystemUsageMonitor.CreateAndStart(recorders);
 
-                Console.WriteLine("DiagnosticsHandlerHelper => monitor started with recorder count " + recorders.Count);
-
-                this.isDiagnosticsMonitoringEnabled = true;
+                DiagnosticsHandlerHelper.isDiagnosticsMonitoringEnabled = true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("DiagnosticsHandlerHelper =>" + ex.Message);
                 DefaultTrace.TraceError(ex.Message);
 
-                this.isDiagnosticsMonitoringEnabled = false;
-                this.isTelemetryMonitoringEnabled = false;
+                DiagnosticsHandlerHelper.isDiagnosticsMonitoringEnabled = false;
+                DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled = false;
             }
         }
 
@@ -95,8 +92,7 @@ namespace Microsoft.Azure.Cosmos.Handler
         /// </summary>
         public SystemUsageHistory GetDiagnosticsSystemHistory()
         {
-            Console.WriteLine("GetDiagnosticsSystemHistory => " + this.isTelemetryMonitoringEnabled);
-            if (!this.isDiagnosticsMonitoringEnabled)
+            if (!DiagnosticsHandlerHelper.isDiagnosticsMonitoringEnabled)
             {
                 return null;
             }
@@ -107,9 +103,8 @@ namespace Microsoft.Azure.Cosmos.Handler
             }
             catch (Exception ex)
             {
-                Console.WriteLine("GetDiagnosticsSystemHistory =>" + ex.Message);
                 DefaultTrace.TraceError(ex.Message);
-                this.isDiagnosticsMonitoringEnabled = false;
+                DiagnosticsHandlerHelper.isDiagnosticsMonitoringEnabled = false;
                 return null;
             }
         }
@@ -121,23 +116,19 @@ namespace Microsoft.Azure.Cosmos.Handler
         /// <returns> CpuAndMemoryUsageRecorder</returns>
         public SystemUsageHistory GetClientTelemetrySystemHistory()
         {
-            Console.WriteLine("GetClientTelemetrySystemHistory => " + this.isTelemetryMonitoringEnabled);
-            if (!this.isTelemetryMonitoringEnabled)
+            if (!DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled)
             {
                 return null;
             }
 
             try
             {
-                Console.WriteLine("GetClientTelemetrySystemHistory => is enabled");
                 return this.telemetrySystemUsageRecorder.Data;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("GetClientTelemetrySystemHistory =>" + ex.Message);
-
                 DefaultTrace.TraceError(ex.Message);
-                this.isTelemetryMonitoringEnabled = false;
+                DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled = false;
                 return null;
             }
         }

@@ -121,11 +121,9 @@ namespace Microsoft.Azure.Cosmos
                         diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
                         preferredRegions: clientOptions.ApplicationPreferredRegions);
 
-                    Console.WriteLine("Client Telemetry enabled.");
                 } 
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Client Context core => " + ex.Message);
                     DefaultTrace.TraceInformation($"Error While starting Telemetry Job : {ex.Message}. Hence disabling Client Telemetry");
                     connectionPolicy.EnableClientTelemetry = false;
                 }
@@ -134,7 +132,6 @@ namespace Microsoft.Azure.Cosmos
             else
             {
                 DefaultTrace.TraceInformation("Client Telemetry Disabled.");
-                Console.WriteLine("Client Telemetry Disabled.");
             }
 
             if (requestInvokerHandler == null)

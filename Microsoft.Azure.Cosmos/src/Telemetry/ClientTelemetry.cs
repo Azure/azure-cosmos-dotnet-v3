@@ -64,7 +64,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             IReadOnlyList<string> preferredRegions)
         {
             DefaultTrace.TraceInformation("Initiating telemetry with background task.");
-            Console.WriteLine("Initiating telemetry with background task.");
 
             ClientTelemetry clientTelemetry = new ClientTelemetry(documentClient,
                 userAgent,
@@ -119,7 +118,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private async Task EnrichAndSendAsync()
         {
             DefaultTrace.TraceInformation("Telemetry Job Started with Observing window : {0}", observingWindow);
-            Console.WriteLine("Telemetry Job Started with Observing window : {0}", observingWindow);
 
             try
             {
@@ -150,7 +148,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     {
                         DefaultTrace.TraceInformation("Observer Task Cancelled.");
 
-                        Console.WriteLine("Observer Task Cancelled.");
                         break;
                     }
 
@@ -197,7 +194,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             double requestCharge)
         {
             DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
-            Console.WriteLine("Collecting Operation data for Telemetry.");
 
             if (cosmosDiagnostics == null)
             {
@@ -253,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 DefaultTrace.TraceVerbose("Started Recording System Usage for telemetry.");
 
                 SystemUsageHistory systemUsageHistory = this.diagnosticsHelper.GetClientTelemetrySystemHistory();
-                Console.WriteLine("got systemUsageHistory => " + systemUsageHistory.ToString());
+
                 if (systemUsageHistory != null )
                 {
                     (SystemInfo cpuUsagePayload, SystemInfo memoryUsagePayload) = ClientTelemetryHelper.RecordSystemUsage(systemUsageHistory);

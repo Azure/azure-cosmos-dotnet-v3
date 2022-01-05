@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             bool isTelemetryEnabled = ConfigurationManager
                 .GetEnvironmentVariable<bool>(ClientTelemetryOptions
                                                         .EnvPropsClientTelemetryEnabled, false);
-            Console.WriteLine("IsClientTelemetryEnabled =>" + isTelemetryEnabled);
+
             DefaultTrace.TraceInformation($"Telemetry Flag is set to {isTelemetryEnabled}");
 
             return isTelemetryEnabled;
