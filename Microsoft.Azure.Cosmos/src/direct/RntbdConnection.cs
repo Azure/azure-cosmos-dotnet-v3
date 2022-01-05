@@ -426,7 +426,7 @@ namespace Microsoft.Azure.Documents
                         requestStartTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
                         requestSendDoneTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
                         headerAndMetadataSize,
-                        bodySize.HasValue ? bodySize.Value : "No body",
+                        bodySize.HasValue ? bodySize.Value.ToString() : "No body",
                         requestPayload.Buffer.Count,
                         requestEndTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
                         state.ToString());
