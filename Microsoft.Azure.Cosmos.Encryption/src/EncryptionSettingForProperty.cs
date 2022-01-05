@@ -13,15 +13,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class EncryptionSettingForProperty
     {
-        private static readonly SemaphoreSlim EncryptionKeyCacheSemaphore = new SemaphoreSlim(1, 1);
-
         private readonly string databaseRid;
 
         private readonly EncryptionContainer encryptionContainer;
 
         public EncryptionSettingForProperty(
             string clientEncryptionKeyId,
-            EncryptionType encryptionType,
+            Data.Encryption.Cryptography.EncryptionType encryptionType,
             EncryptionContainer encryptionContainer,
             string databaseRid)
         {
@@ -33,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public string ClientEncryptionKeyId { get; }
 
-        public EncryptionType EncryptionType { get; }
+        public Data.Encryption.Cryptography.EncryptionType EncryptionType { get; }
 
         public async Task<AeadAes256CbcHmac256EncryptionAlgorithm> BuildEncryptionAlgorithmForSettingAsync(CancellationToken cancellationToken)
         {
@@ -52,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 // Here a request is sent out to unwrap using the Master Key configured via the Key Encryption Key.
                 protectedDataEncryptionKey = await this.BuildProtectedDataEncryptionKeyAsync(
                     clientEncryptionKeyProperties,
-                    this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProvider,
+                    this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyWrapProvider,
                     this.ClientEncryptionKeyId,
                     cancellationToken);
             }
@@ -75,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     // try to build the ProtectedDataEncryptionKey. If it fails, try to force refresh the gateway cache and get the latest client encryption key.
                     protectedDataEncryptionKey = await this.BuildProtectedDataEncryptionKeyAsync(
                         clientEncryptionKeyProperties,
-                        this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProvider,
+                        this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyWrapProvider,
                         this.ClientEncryptionKeyId,
                         cancellationToken);
                 }
@@ -143,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ProtectedDataEncryptionKey protectedDataEncryptionKey = await this.BuildProtectedDataEncryptionKeyAsync(
                 clientEncryptionKeyProperties,
-                this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProvider,
+                this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyWrapProvider,
                 this.ClientEncryptionKeyId,
                 cancellationToken);
 
@@ -152,18 +150,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private async Task<ProtectedDataEncryptionKey> BuildProtectedDataEncryptionKeyAsync(
             ClientEncryptionKeyProperties clientEncryptionKeyProperties,
-            EncryptionKeyStoreProvider encryptionKeyStoreProvider,
+            EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             string keyId,
             CancellationToken cancellationToken)
         {
-            if (await EncryptionKeyCacheSemaphore.WaitAsync(-1, cancellationToken))
+            if (await EncryptionCosmosClient.EncryptionKeyCacheSemaphore.WaitAsync(-1, cancellationToken))
             {
                 try
                 {
                     KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                         clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
                         clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
-                        encryptionKeyStoreProvider);
+                        encryptionKeyWrapProvider.EncryptionKeyStoreProviderImpl);
 
                     ProtectedDataEncryptionKey protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
                         keyId,
@@ -174,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
                 finally
                 {
-                    EncryptionKeyCacheSemaphore.Release(1);
+                    EncryptionCosmosClient.EncryptionKeyCacheSemaphore.Release(1);
                 }
             }
 
