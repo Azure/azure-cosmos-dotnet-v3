@@ -49,6 +49,7 @@ namespace Microsoft.Azure.Documents
         /// <param name="readMode"> Read mode </param>
         /// <param name="checkMinLSN"> set minimum required session lsn </param>
         /// <param name="forceReadAll"> reads from all available replicas to gather result from readsToRead number of replicas </param>
+        /// <param name="isStrong"> will read from all available replicas to put together result from readsToRead number of replicas </param>
         /// <returns> ReadReplicaResult which indicates the LSN and whether Quorum was Met / Not Met etc </returns>
         public async Task<IList<StoreResult>> ReadMultipleReplicaAsync(
             DocumentServiceRequest entity,
@@ -58,7 +59,8 @@ namespace Microsoft.Azure.Documents
             bool useSessionToken,
             ReadMode readMode,
             bool checkMinLSN = false,
-            bool forceReadAll = false)
+            bool forceReadAll = false,
+            bool isStrong = false)
         {
             entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
@@ -66,7 +68,7 @@ namespace Microsoft.Azure.Documents
             try
             {
                 ReadReplicaResult readQuorumResult = await this.ReadMultipleReplicasInternalAsync(
-                    entity, includePrimary, replicaCountToRead, requiresValidLsn, useSessionToken, readMode, checkMinLSN, forceReadAll);
+                    entity, includePrimary, replicaCountToRead, requiresValidLsn, useSessionToken, readMode, checkMinLSN, forceReadAll, isStrong: isStrong);
                 if (entity.RequestContext.PerformLocalRefreshOnGoneException &&
                     readQuorumResult.RetryWithForceRefresh &&
                     !entity.RequestContext.ForceRefreshAddressCache)
@@ -82,7 +84,8 @@ namespace Microsoft.Azure.Documents
                         useSessionToken: useSessionToken,
                         readMode: readMode,
                         checkMinLSN: false,
-                        forceReadAll: forceReadAll);
+                        forceReadAll: forceReadAll,
+                        isStrong: isStrong);
                 }
 
                 return readQuorumResult.Responses;
@@ -141,6 +144,7 @@ namespace Microsoft.Azure.Documents
         /// <param name="readMode"> Read mode </param>
         /// <param name="checkMinLSN"> set minimum required session lsn </param>
         /// <param name="forceReadAll"> will read from all available replicas to put together result from readsToRead number of replicas </param>
+        /// <param name="isStrong"> will read from all available replicas to put together result from readsToRead number of replicas </param>
         /// <returns> ReadReplicaResult which indicates the LSN and whether Quorum was Met / Not Met etc </returns>
         private async Task<ReadReplicaResult> ReadMultipleReplicasInternalAsync(DocumentServiceRequest entity,
             bool includePrimary,
@@ -149,7 +153,8 @@ namespace Microsoft.Azure.Documents
             bool useSessionToken,
             ReadMode readMode,
             bool checkMinLSN = false,
-            bool forceReadAll = false)
+            bool forceReadAll = false,
+            bool isStrong = false)
         {
             entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
@@ -203,6 +208,7 @@ namespace Microsoft.Azure.Documents
 
             bool hasGoneException = false;
             bool hasCancellationException = false;
+            bool fullBodyResponseRead = false;
             Exception cancellationException = null;
             Exception exceptionToThrow = null;
             IEnumerator<TransportAddressUri> uriEnumerator = this.addressEnumerator
@@ -218,10 +224,22 @@ namespace Microsoft.Azure.Documents
 
                 do
                 {
-                    readStoreTasks.Add(this.ReadFromStoreAsync(
-                            physicalAddress: uriEnumerator.Current,
-                            request: entity),
-                        (uriEnumerator.Current, DateTime.UtcNow));
+                    if (isStrong && fullBodyResponseRead)
+                    {
+                        readStoreTasks.Add(this.ReadFromStoreAsync(
+                                physicalAddress: uriEnumerator.Current,
+                                request: entity,
+                                isNoResponseRequest: true),
+                            (uriEnumerator.Current, DateTime.UtcNow));
+                    }
+                    else
+                    {
+                        readStoreTasks.Add(this.ReadFromStoreAsync(
+                                physicalAddress: uriEnumerator.Current,
+                                request: entity),
+                            (uriEnumerator.Current, DateTime.UtcNow));
+                        fullBodyResponseRead = true;
+                    }
 
                     if (!forceReadAll && readStoreTasks.Count == replicasToRead)
                     {
@@ -428,10 +446,17 @@ namespace Microsoft.Azure.Documents
 
         private async Task<(StoreResponse, DateTime endTime)> ReadFromStoreAsync(
             TransportAddressUri physicalAddress,
-            DocumentServiceRequest request)
+            DocumentServiceRequest request,
+            bool isNoResponseRequest = false)
         {
             request.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
             this.LastReadAddress = physicalAddress.ToString();
+            DocumentServiceRequest clonedRequest = request;
+            if (isNoResponseRequest)
+            {
+                clonedRequest = request.Clone();
+                clonedRequest.Headers.Set(HttpConstants.HttpHeaders.Prefer, HttpConstants.HttpHeaderValues.PreferReturnMinimal);
+            }
 
             switch (request.OperationType)
             {
@@ -447,17 +472,17 @@ namespace Microsoft.Azure.Documents
                     {
                         StoreResponse result = await this.transportClient.InvokeResourceOperationAsync(
                             physicalAddress,
-                            request);
+                            clonedRequest);
                         return (result, DateTime.UtcNow);
                     }
 
                 case OperationType.ReadFeed:
                 case OperationType.Query:
                     {
-                        QueryRequestPerformanceActivity activity = CustomTypeExtensions.StartActivity(request);
+                        QueryRequestPerformanceActivity activity = CustomTypeExtensions.StartActivity(clonedRequest);
                         StoreResponse result = await StoreReader.CompleteActivity(this.transportClient.InvokeResourceOperationAsync(
                             physicalAddress,
-                            request),
+                            clonedRequest),
                             activity);
                         return (result, DateTime.UtcNow);
                     }

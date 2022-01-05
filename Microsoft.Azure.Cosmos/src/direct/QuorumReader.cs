@@ -288,7 +288,8 @@ namespace Microsoft.Azure.Documents
                     replicaCountToRead: readQuorum, 
                     requiresValidLsn: true,
                     useSessionToken: false, 
-                    readMode: readMode);
+                    readMode: readMode,
+                    isStrong: true);
 
                 storeResponses = responseResult.Select(response => response.ToString()).ToList();
 
