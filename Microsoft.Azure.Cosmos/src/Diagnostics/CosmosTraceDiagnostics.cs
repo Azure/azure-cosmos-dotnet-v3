@@ -52,12 +52,14 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.WalkTraceTreeForRegionsContated(rootTrace, regionsContacted);
             return regionsContacted.ToList();
         }
+
         public override DateTime GetStartTimeUtc()
         {
             if (this.Value == null)
             {
                 return DateTime.MinValue;
             }
+
             return this.Value.StartTime;
         }
 
@@ -161,6 +163,8 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             return this.failedRequestCount;
         }
-        private int failedRequestCount { get; set; }
+
+        private int failedRequestCount;
+
     }
 }
