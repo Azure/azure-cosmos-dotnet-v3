@@ -46,31 +46,30 @@ written(Always Encrypted CosmosDB handles the encryption) into the destination c
 
 - The core library exposes an iterator model API which provides you with an iterator which is exposed as an extension method on container.
 
-		```csharp
+```csharp
+/// <summary>
+/// Gets an iterator for reencrypting the data.
+/// The source container should have no data changes during reEncryption operation or should have changefeed full fidelity enabled.
+/// </summary>
+/// <param name="container"> Source container object. </param>
+/// <param name="destinationContainerName"> Destination Container configured with new policy or key. </param>
+/// <param name="checkIfWritesHaveStoppedCb"> Callback to check if writes have stopped.The called function should return true if writes have stopped.If FullFidelity change feed is not enabled,return true by default. </param>
+/// <param name="changeFeedRequestOptions"> (Optional) Request options. </param>
+/// <param name="sourceFeedRange"> (Optional) The range to start from. </param>
+/// <param name="continuationToken"> (Optional) continuationToken: The continuation to resume from. </param>
+/// <param name="cancellationToken"> (Optional) System.Threading.CancellationToken representing request cancellation. </param>
+/// <returns> Returns a ReEncryption Iterator. </returns>
+public static async Task<ReEncryptionIterator> GetReEncryptionIteratorAsync(
+    this Container container,
+    string destinationContainerName,
+    CosmosClient encryptionCosmosClient,
+    Func<bool> checkIfWritesHaveStoppedCb,
+    ChangeFeedRequestOptions changeFeedRequestOptions = null,
+    FeedRange sourceFeedRange = null,
+    string continuationToken = null,
+    CancellationToken cancellationToken = default)			
+```
 		
-		/// <summary>
-        /// Gets an iterator for reencrypting the data.
-        /// The source container should have no data changes during reEncryption operation or should have changefeed full fidelity enabled.
-        /// </summary>
-        /// <param name="container"> Source container object. </param>
-        /// <param name="destinationContainerName"> Destination Container configured with new policy or key. </param>
-        /// <param name="checkIfWritesHaveStoppedCb"> Callback to check if writes have stopped.The called function should return true if writes have stopped.If FullFidelity change feed is not enabled,return true by default. </param>
-        /// <param name="changeFeedRequestOptions"> (Optional) Request options. </param>
-        /// <param name="sourceFeedRange"> (Optional) The range to start from. </param>
-        /// <param name="continuationToken"> (Optional) continuationToken: The continuation to resume from. </param>
-        /// <param name="cancellationToken"> (Optional) System.Threading.CancellationToken representing request cancellation. </param>
-        /// <returns> Returns a ReEncryption Iterator. </returns>
-        public static async Task<ReEncryptionIterator> GetReEncryptionIteratorAsync(
-            this Container container,
-            string destinationContainerName,
-            CosmosClient encryptionCosmosClient,
-            Func<bool> checkIfWritesHaveStoppedCb,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null,
-            FeedRange sourceFeedRange = null,
-            string continuationToken = null,
-            CancellationToken cancellationToken = default)
-			
-		```
 
 This API can be used with the source container object and you can pass the destination container name. The method also accepts a callback delegate which gets called by the core library to check if the source container is not receiving 
 anymore writes. This is used by the core library to set the required flag (HasMoreResults) in the iterator which will indicate if there are anymore further results/changes that need to re-encrypted.
@@ -80,17 +79,15 @@ separate tasks for each feedrange that can help in improving the performance. Th
 - The iterator has method EncryptNextAsync on it which is the core function that does the re-encryption, reading from the source container and writing the data to the destination container. The ReEncryptionResponseMessage class
 provides you with ReEncryptionBulkOperationResponse which has important information which includes total documents that were successfully re-encrypted, gets you list of all failures and returns the documents,corresponding exception and other important information.
 
-		```csharp
-		
-		/// <summary>
-        /// EncryptNextAsync.
-        /// </summary>
-        /// <param name="cancellationToken"> cancellationTOken. </param>
-        /// <returns> Response Message. </returns>
-        public async Task<ReEncryptionResponseMessage> EncryptNextAsync(
-            CancellationToken cancellationToken = default)
-			
-		```
+```csharp
+/// <summary>
+/// EncryptNextAsync.
+/// </summary>
+/// <param name="cancellationToken"> cancellationTOken. </param>
+/// <returns> Response Message. </returns>
+public async Task<ReEncryptionResponseMessage> EncryptNextAsync(
+    CancellationToken cancellationToken = default)
+```
 
 
 
