@@ -62,15 +62,16 @@ namespace Microsoft.Azure.Cosmos.Handler
             {
                 this.isTelemetryMonitoringEnabled = ClientTelemetryOptions.IsClientTelemetryEnabled();
 
+                Console.WriteLine("DiagnosticsHandlerHelper => isTelemetryMonitoringEnabled " + this.isTelemetryMonitoringEnabled);
                 List<SystemUsageRecorder> recorders = new List<SystemUsageRecorder>()
                 {
                     this.diagnosticSystemUsageRecorder,
                 };
 
-                if (this.isTelemetryMonitoringEnabled)
-                {
-                    recorders.Add(this.telemetrySystemUsageRecorder);
-                }
+               /* if (this.isTelemetryMonitoringEnabled)
+                {*/
+                recorders.Add(this.telemetrySystemUsageRecorder);
+              //  }
 
                 SystemUsageMonitor.CreateAndStart(recorders);
 

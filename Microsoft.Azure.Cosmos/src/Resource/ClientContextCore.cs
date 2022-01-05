@@ -449,9 +449,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (disposing)
                 {
+                    this.telemetry?.Dispose();
                     this.batchExecutorCache.Dispose();
                     this.DocumentClient.Dispose();
-                    this.telemetry?.Dispose();
                 }
 
                 this.isDisposed = true;
