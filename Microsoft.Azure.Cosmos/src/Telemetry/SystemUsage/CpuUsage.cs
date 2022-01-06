@@ -4,22 +4,26 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry.SystemUsage
 {
+    using System.Collections.Generic;
+    using HdrHistogram;
     using Microsoft.Azure.Documents.Rntbd;
 
     internal class CpuUsage : ISystemUsage
     {
-        private readonly SystemUsageLoad systemUsage;
-
-        public CpuUsage(SystemUsageLoad systemUsage)
-        {
-            this.systemUsage = systemUsage;
+        public CpuUsage(LongConcurrentHistogram systemUsageHistogram, IReadOnlyCollection<SystemUsageLoad> systemUsageCollection)
+            : base(systemUsageHistogram, systemUsageCollection)
+        { 
         }
 
         public override int AggregationAdjustment => ClientTelemetryOptions.HistogramPrecisionFactor;
 
-        public override long? ValueToRecord()
+        public override string MetricName => ClientTelemetryOptions.CpuName;
+
+        public override string MetricUnit => ClientTelemetryOptions.CpuUnit;
+
+        public override long? ValueToRecord(SystemUsageLoad systemUsage)
         {
-            return (long?)this.systemUsage.CpuUsage * ClientTelemetryOptions.HistogramPrecisionFactor;
+            return (long?)systemUsage.CpuUsage * ClientTelemetryOptions.HistogramPrecisionFactor;
         }
     }
 }

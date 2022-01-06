@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Threading.Tasks;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Telemetry.SystemUsage;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 
@@ -104,35 +105,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             DefaultTrace.TraceInformation("System Usage recorded by telemetry is : {0}", systemUsageHistory);
 
-            // Record CPU information
-            systemInfoCollection.Add(SystemInfoUsageFactory.RecordSystemUsageMetricInfoAndResetHist(systemUsageHistory: systemUsageHistory,
-                systemUsageHistogram: systemUsageHistogram,
-                metricName: ClientTelemetryOptions.CpuName,
-                metricUnit: ClientTelemetryOptions.CpuUnit));
-
-            // Record Memory information
-            systemInfoCollection.Add(SystemInfoUsageFactory.RecordSystemUsageMetricInfoAndResetHist(systemUsageHistory: systemUsageHistory,
-                systemUsageHistogram: systemUsageHistogram,
-                metricName: ClientTelemetryOptions.MemoryName,
-                metricUnit: ClientTelemetryOptions.MemoryUnit));
-
-            // Record Available Thread information
-            systemInfoCollection.Add(SystemInfoUsageFactory.RecordSystemUsageMetricInfoAndResetHist(systemUsageHistory: systemUsageHistory,
-                systemUsageHistogram: systemUsageHistogram,
-                metricName: ClientTelemetryOptions.AvailableThreadsName,
-                metricUnit: ClientTelemetryOptions.AvailableThreadsUnit));
-
-            // Record Min Thread information
-            systemInfoCollection.Add(SystemInfoUsageFactory.RecordSystemUsageMetricInfoAndResetHist(systemUsageHistory: systemUsageHistory,
-                systemUsageHistogram: systemUsageHistogram,
-                metricName: ClientTelemetryOptions.MinThreadsName,
-                metricUnit: ClientTelemetryOptions.MinThreadsUnit));
-
-            // Record Max Thread information
-            systemInfoCollection.Add(SystemInfoUsageFactory.RecordSystemUsageMetricInfoAndResetHist(systemUsageHistory: systemUsageHistory,
-                systemUsageHistogram: systemUsageHistogram,
-                metricName: ClientTelemetryOptions.MaxThreadsName,
-                metricUnit: ClientTelemetryOptions.MaxThreadsUnit));
+            systemInfoCollection.Add(
+                new CpuUsage(systemUsageHistogram, systemUsageHistory.Values)
+                        .GetSystemInfo());
+            systemInfoCollection.Add(
+                new MemoryRemaining(systemUsageHistogram, systemUsageHistory.Values)
+                        .GetSystemInfo());
+            systemInfoCollection.Add(
+                new AvailableThreads(systemUsageHistogram, systemUsageHistory.Values)
+                        .GetSystemInfo());
+            systemInfoCollection.Add(
+                new MinThreads(systemUsageHistogram, systemUsageHistory.Values)
+                        .GetSystemInfo());
+            systemInfoCollection.Add(
+                new MaxThreads(systemUsageHistogram, systemUsageHistory.Values)
+                        .GetSystemInfo());
 
         }
 

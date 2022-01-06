@@ -4,20 +4,24 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry.SystemUsage
 {
+    using System.Collections.Generic;
+    using HdrHistogram;
     using Microsoft.Azure.Documents.Rntbd;
 
     internal class MinThreads : ISystemUsage
     {
-        private readonly SystemUsageLoad systemUsage;
-
-        public MinThreads(SystemUsageLoad systemUsage)
+        public MinThreads(LongConcurrentHistogram systemUsageHistogram, IReadOnlyCollection<SystemUsageLoad> systemUsageCollection) 
+            : base(systemUsageHistogram, systemUsageCollection)
         {
-            this.systemUsage = systemUsage;
         }
 
-        public override long? ValueToRecord()
+        public override string MetricName => ClientTelemetryOptions.MinThreadsName;
+
+        public override string MetricUnit => ClientTelemetryOptions.MinThreadsUnit;
+
+        public override long? ValueToRecord(SystemUsageLoad systemUsage)
         {
-            return (long?)this.systemUsage.ThreadInfo?.MinThreads;
+            return (long?)systemUsage.ThreadInfo?.MinThreads;
         }
     }
 }

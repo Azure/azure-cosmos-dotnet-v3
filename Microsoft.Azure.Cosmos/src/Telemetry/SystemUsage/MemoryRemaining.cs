@@ -4,22 +4,26 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry.SystemUsage
 {
+    using System.Collections.Generic;
+    using HdrHistogram;
     using Microsoft.Azure.Documents.Rntbd;
 
     internal class MemoryRemaining : ISystemUsage
     {
-        private readonly SystemUsageLoad systemUsage;
-
-        public MemoryRemaining(SystemUsageLoad systemUsage)
+        public MemoryRemaining(LongConcurrentHistogram systemUsageHistogram, IReadOnlyCollection<SystemUsageLoad> systemUsageCollection) 
+            : base(systemUsageHistogram, systemUsageCollection)
         {
-            this.systemUsage = systemUsage;
         }
 
         public override int AggregationAdjustment => ClientTelemetryOptions.KbToMbFactor;
 
-        public override long? ValueToRecord()
+        public override string MetricName => ClientTelemetryOptions.MemoryName;
+
+        public override string MetricUnit => ClientTelemetryOptions.MemoryUnit;
+
+        public override long? ValueToRecord(SystemUsageLoad systemUsage)
         {
-            return (long?)this.systemUsage.MemoryAvailable;
+            return (long?)systemUsage.MemoryAvailable;
         }
     }
 }
