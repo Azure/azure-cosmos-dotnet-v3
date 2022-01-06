@@ -47,8 +47,8 @@ namespace Microsoft.Azure.Cosmos
             this.RetryOptions = new RetryOptions();
             this.EnableReadRequestsFallback = null;
 
-            this.EnableClientTelemetry = ConfigurationManager.GetEnvironmentVariable<bool>(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, false);
-    }
+            this.EnableClientTelemetry = ClientTelemetryOptions.IsClientTelemetryEnabled();
+        }
 
         /// <summary>
         /// Automatically populates the <see cref="PreferredLocations"/> for geo-replicated database accounts in the Azure Cosmos DB service,
