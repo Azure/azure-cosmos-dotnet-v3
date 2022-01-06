@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!RegionProximityUtil.SourceRegionToTargetRegionsRTTInMs.ContainsKey(location))
             {
-                throw new ArgumentException("Current location is not a valid Azure region.");
+                throw new ArgumentException($"ApplicationRegion configuration '{location}' is not a valid Azure region or the current SDK version does not recognize it. If the value represents a valid region, make sure you are using the latest SDK version.");
             }
 
             List<string> proximityBasedPreferredLocations = RegionProximityUtil.GeneratePreferredRegionList(location);
