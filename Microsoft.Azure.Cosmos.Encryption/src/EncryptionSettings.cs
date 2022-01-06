@@ -49,12 +49,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             };
         }
 
-        private static EncryptionType GetEncryptionTypeForProperty(ClientEncryptionIncludedPath clientEncryptionIncludedPath)
+        private static Data.Encryption.Cryptography.EncryptionType GetEncryptionTypeForProperty(ClientEncryptionIncludedPath clientEncryptionIncludedPath)
         {
             return clientEncryptionIncludedPath.EncryptionType switch
             {
-                CosmosEncryptionType.Deterministic => EncryptionType.Deterministic,
-                CosmosEncryptionType.Randomized => EncryptionType.Randomized,
+                EncryptionType.Deterministic => Data.Encryption.Cryptography.EncryptionType.Deterministic,
+                EncryptionType.Randomized => Data.Encryption.Cryptography.EncryptionType.Randomized,
                 _ => throw new ArgumentException($"Invalid encryption type {clientEncryptionIncludedPath.EncryptionType}. Please refer to https://aka.ms/CosmosClientEncryption for more details. "),
             };
         }
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 // update the property level setting.
                 foreach (ClientEncryptionIncludedPath propertyToEncrypt in clientEncryptionPolicy.IncludedPaths)
                 {
-                    EncryptionType encryptionType = GetEncryptionTypeForProperty(propertyToEncrypt);
+                    Data.Encryption.Cryptography.EncryptionType encryptionType = GetEncryptionTypeForProperty(propertyToEncrypt);
 
                     EncryptionSettingForProperty encryptionSettingsForProperty = new EncryptionSettingForProperty(
                         propertyToEncrypt.ClientEncryptionKeyId,
