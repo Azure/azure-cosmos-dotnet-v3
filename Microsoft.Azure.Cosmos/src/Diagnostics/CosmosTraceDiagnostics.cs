@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 {
                     foreach (StoreResponseStatistics responseStatistics in clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList)
                     {
-                        if (responseStatistics.StoreResult != null && (int)responseStatistics.StoreResult.StatusCode > 400)
+                        if (responseStatistics.StoreResult != null && !Extensions.IsSuccess((HttpStatusCode)responseStatistics.StoreResult.StatusCode))
                         {
                             this.failedRequestCount++;
                         }
