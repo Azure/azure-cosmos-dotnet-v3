@@ -204,7 +204,10 @@
 
             Console.WriteLine("\n ReEncryption in progress. Press esc key to exit. \n");
 
-            Task reEncryptionProgress = Program.CheckReEncryptionProgressOrCancelReEncryptionTasksAsync(sourceContainer, targetContainer, cancellationTokenSource);
+            Task reEncryptionProgress = Program.CheckReEncryptionProgressOrCancelReEncryptionTasksAsync(
+                sourceContainer,
+                targetContainer,
+                cancellationTokenSource);
 
             try
             {
@@ -285,7 +288,11 @@
             ReEncryptionResponseMessage responseMessage;
             do
             {
-                responseMessage = await Program.ReEncryptNextAsync(sourceContainer, feedRange, continuationToken, cancellationToken);
+                responseMessage = await Program.ReEncryptNextAsync(
+                    sourceContainer,
+                    feedRange,
+                    continuationToken,
+                    cancellationToken);
 
                 if (responseMessage.ContinuationToken != null)
                 {
@@ -321,6 +328,7 @@
             {
                 responseMessage = await iterator.EncryptNextAsync(cancellationToken);
                 File.WriteAllText(ContinuationTokenFile + sourceContainer.Id + feedRange.ToString(), responseMessage.ContinuationToken);
+
                 if (responseMessage.StatusCode == HttpStatusCode.NotModified)
                 {
                     break;
@@ -329,7 +337,10 @@
 
             if (iterator.HasMoreResults == false)
             {
-                return new ReEncryptionResponseMessage(responseMessage, null, responseMessage.ReEncryptionBulkOperationResponse);
+                return new ReEncryptionResponseMessage(
+                    responseMessage: responseMessage,
+                    reEncryptionContinuationToken: null,
+                    reEncryptionBulkOperationResponse: responseMessage.ReEncryptionBulkOperationResponse);
             }
             
             return responseMessage;
