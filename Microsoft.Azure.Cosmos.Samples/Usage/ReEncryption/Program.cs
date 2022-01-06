@@ -87,12 +87,12 @@
                 }
 
                 // Get the Token Credential that is capable of providing an OAuth Token.
-                TokenCredential tokenCredential = GetTokenCredential(configuration);
+                TokenCredential tokenCredential = Program.GetTokenCredential(configuration);
                 AzureKeyVaultKeyStoreProvider azureKeyVaultKeyStoreProvider = new AzureKeyVaultKeyStoreProvider(tokenCredential);
 
                 Program.client = Program.CreateClientInstance(configuration, azureKeyVaultKeyStoreProvider);
 
-                await Program.CreateAndRunReEncryptionTasks(client);
+                await Program.CreateAndRunReEncryptionTasks();
             }
             catch (CosmosException cosmosException)
             {
@@ -111,7 +111,9 @@
         }
         // </Main>
 
-        private static CosmosClient CreateClientInstance(IConfigurationRoot configuration, AzureKeyVaultKeyStoreProvider azureKeyVaultKeyStoreProvider)
+        private static CosmosClient CreateClientInstance(
+            IConfigurationRoot configuration,
+            AzureKeyVaultKeyStoreProvider azureKeyVaultKeyStoreProvider)
         {
             string endpoint = configuration["EndPointUrl"];
             if (string.IsNullOrEmpty(endpoint))
@@ -137,14 +139,18 @@
 
         private static X509Certificate2 GetCertificate(string clientCertThumbprint)
         {
-            X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+            using X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
             store.Open(OpenFlags.ReadOnly);
-            X509Certificate2Collection certs = store.Certificates.Find(findType: X509FindType.FindByThumbprint, findValue: clientCertThumbprint, validOnly: false);
+            X509Certificate2Collection certs = store.Certificates.Find(
+                findType: X509FindType.FindByThumbprint,
+                findValue: clientCertThumbprint,
+                validOnly: false);
+
             store.Close();
 
             if (certs.Count == 0)
             {
-                throw new ArgumentException("Certificate with thumbprint not found in CurrentUser certificate store");
+                throw new ArgumentException("Certificate with thumbprint: {0} not found in CurrentUser certificate store", clientCertThumbprint);
             }
 
             return certs[0];
@@ -178,10 +184,10 @@
             return new ClientCertificateCredential(tenantId, clientId, Program.GetCertificate(clientCertThumbprint));
         }
 
-        private static async Task CreateAndRunReEncryptionTasks(CosmosClient client)
+        private static async Task CreateAndRunReEncryptionTasks()
         {
-            Container sourceContainer = client.GetContainer(SourceDatabase, SourceContainer);
-            Container targetContainer = client.GetContainer(SourceDatabase, DestinationContainer);
+            Container sourceContainer = Program.client.GetContainer(SourceDatabase, SourceContainer);
+            Container targetContainer = Program.client.GetContainer(SourceDatabase, DestinationContainer);
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
             // get the feed ranges
@@ -193,12 +199,12 @@
             foreach (FeedRange feedRange in ranges)
             {
                 Console.WriteLine("Creating task for reEncryption, tapping into feedrange: {0}", feedRange.ToString());
-                reEncryptionTasks.Add(ExecuteReEncrytionAsync(sourceContainer, feedRange, cancellationTokenSource.Token));
+                reEncryptionTasks.Add(Program.ExecuteReEncrytionAsync(sourceContainer, feedRange, cancellationTokenSource.Token));
             }
 
             Console.WriteLine("\n ReEncryption in progress. Press esc key to exit. \n");
 
-            Task reEncryptionProgress = CheckReEncryptionProgressOrCancelReEncryptionTasksAsync(sourceContainer, targetContainer, cancellationTokenSource);
+            Task reEncryptionProgress = Program.CheckReEncryptionProgressOrCancelReEncryptionTasksAsync(sourceContainer, targetContainer, cancellationTokenSource);
 
             try
             {
@@ -224,7 +230,7 @@
                 {
                     foreach (FeedRange feedRange in ranges)
                     {
-                        File.Delete(ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id);
+                        File.Delete(ContinuationTokenFile + sourceContainer.Id + feedRange.ToString());
                     }
                     break;
                 }
@@ -240,11 +246,14 @@
             cancellationTokenSource.Dispose();
         }
 
-        private static async Task ExecuteReEncrytionAsync(Container sourceContainer, FeedRange feedRange,CancellationToken cancellationToken = default)
+        private static async Task ExecuteReEncrytionAsync(
+            Container sourceContainer,
+            FeedRange feedRange,
+            CancellationToken cancellationToken = default)
         {
             string continuationToken = null;
 
-            bool doesContinuationTokenFileExist = File.Exists(ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id);
+            bool doesContinuationTokenFileExist = File.Exists(ContinuationTokenFile + sourceContainer.Id + feedRange.ToString());
 
             if (doesContinuationTokenFileExist)
             {
@@ -254,7 +263,7 @@
                     string input = Console.ReadLine();
                     if (input != null && input == "y")
                     {
-                        continuationToken = File.ReadAllText(ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id);
+                        continuationToken = File.ReadAllText(ContinuationTokenFile + sourceContainer.Id + feedRange.ToString());
                         break;
                     }
                     else if (input != null && input == "n")
@@ -276,7 +285,7 @@
             ReEncryptionResponseMessage responseMessage;
             do
             {
-                responseMessage = await ReEncryptNextAsync(sourceContainer, feedRange, continuationToken, cancellationToken);
+                responseMessage = await Program.ReEncryptNextAsync(sourceContainer, feedRange, continuationToken, cancellationToken);
 
                 if (responseMessage.ContinuationToken != null)
                 {
@@ -301,7 +310,7 @@
             ReEncryptionIterator iterator = await sourceContainer.GetReEncryptionIteratorAsync(
                 DestinationContainer,
                 client,
-                CheckAndSetWritesAsStopped,
+                Program.CheckAndSetWritesAsStopped,
                 changeFeedRequestOptions,
                 sourceFeedRange: feedRange,
                 continuationToken: continuationToken);
@@ -311,7 +320,7 @@
             while (iterator.HasMoreResults)
             {
                 responseMessage = await iterator.EncryptNextAsync(cancellationToken);
-                File.WriteAllText(ContinuationTokenFile + feedRange.ToString() + sourceContainer.Id, responseMessage.ContinuationToken);
+                File.WriteAllText(ContinuationTokenFile + sourceContainer.Id + feedRange.ToString(), responseMessage.ContinuationToken);
                 if (responseMessage.StatusCode == HttpStatusCode.NotModified)
                 {
                     break;
@@ -328,11 +337,14 @@
 
         private static bool CheckAndSetWritesAsStopped()
         {
-            //Note: If you have enabled FullFidelity on your account and have active writes, make sure CosmosDB is not receiving any changes before you return true.
+            //Note: If you have enabled FullFidelity on your account and have active writes, please make sure CosmosDB is not receiving any changes before you return true.
             return true;
         }
 
-        private static async Task CheckReEncryptionProgressOrCancelReEncryptionTasksAsync(Container sourceContainer, Container targetContainer, CancellationTokenSource cancellationTokenSource)
+        private static async Task CheckReEncryptionProgressOrCancelReEncryptionTasksAsync(
+            Container sourceContainer,
+            Container targetContainer,
+            CancellationTokenSource cancellationTokenSource)
         {
             while (true)
             {
@@ -344,11 +356,17 @@
 
                 // fetch and display the progress every 3 seconds.
                 await Task.Delay(ProgressPollingInterval);
-                await GetReEncryptionProgressPercentageAsync(sourceContainer, targetContainer, cancellationTokenSource.Token);
+                await Program.GetReEncryptionProgressPercentageAsync(
+                    sourceContainer,
+                    targetContainer,
+                    cancellationTokenSource.Token);
             }
         }
 
-        private static async Task<float> GetReEncryptionProgressPercentageAsync(Container sourceContainer, Container targetContainer, CancellationToken cancellationToken)
+        private static async Task<float> GetReEncryptionProgressPercentageAsync(
+            Container sourceContainer,
+            Container targetContainer,
+            CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -372,12 +390,15 @@
 
             float progress = 100 * (float)((double)destinationContainerTotalDocCount / (double)sourceContainerTotalDocCount);
 
-            ShowReEncryptionProgressBar((int)destinationContainerTotalDocCount, (int)sourceContainerTotalDocCount, (int)progress);
+            Program.ShowReEncryptionProgressBar((int)destinationContainerTotalDocCount, (int)sourceContainerTotalDocCount, (int)progress);
 
             return progress;
         }
 
-        private static void ShowReEncryptionProgressBar(int progress, int total, int progressCurrent)
+        private static void ShowReEncryptionProgressBar(
+            int progress,
+            int total,
+            int progressCurrent)
         {
             int progressBar = 50;
 
