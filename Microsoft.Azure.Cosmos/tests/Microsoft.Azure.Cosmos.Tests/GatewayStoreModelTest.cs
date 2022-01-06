@@ -414,6 +414,51 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
+        [DataTestMethod]
+        [DataRow(false, false, DisplayName = "Single master - Read")]
+        [DataRow(true, false, DisplayName = "Multi master - Read")]
+        [DataRow(false, true, DisplayName = "Single master - Write")]
+        [DataRow(true, true, DisplayName = "Multi master - Write")]
+        public async Task TestRequestOverloadRemovesSessionToken(bool multiMaster, bool isWriteRequest)
+        {
+            INameValueCollection headers = new StoreRequestNameValueCollection();
+            headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Eventual.ToString());
+
+            DocumentServiceRequest dsrNoSessionToken = DocumentServiceRequest.CreateFromName(
+                isWriteRequest ? OperationType.Create : OperationType.Read,
+                "Test",
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey,
+                headers);
+
+            string dsrSessionToken = Guid.NewGuid().ToString();
+            Mock<ISessionContainer> sMock = new Mock<ISessionContainer>();
+            sMock.Setup(x => x.ResolveGlobalSessionToken(dsrNoSessionToken)).Returns(dsrSessionToken);
+
+            Mock<IGlobalEndpointManager> globalEndpointManager = new Mock<IGlobalEndpointManager>();
+            globalEndpointManager.Setup(gem => gem.CanUseMultipleWriteLocations(It.Is<DocumentServiceRequest>(drs => drs == dsrNoSessionToken))).Returns(multiMaster);
+            await this.GetGatewayStoreModelForConsistencyTest(async (gatewayStoreModel) =>
+            {
+                await GatewayStoreModel.ApplySessionTokenAsync(
+                    dsrNoSessionToken,
+                    ConsistencyLevel.Session,
+                    sMock.Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
+                    clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null).Object,
+                    globalEndpointManager: globalEndpointManager.Object);
+
+                if (isWriteRequest && multiMaster)
+                {
+                    // Multi master write requests should not lower the consistency and remove the session token
+                    Assert.AreEqual(dsrSessionToken, dsrNoSessionToken.Headers[HttpConstants.HttpHeaders.SessionToken]);
+                }
+                else
+                {
+                    Assert.IsNull(dsrNoSessionToken.Headers[HttpConstants.HttpHeaders.SessionToken]);
+                }
+            });
+        }
+
         [TestMethod]
         public async Task TestErrorResponsesProvideBody()
         {
