@@ -13,6 +13,7 @@
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Configuration;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     // ----------------------------------------------------------------------------------------------------------
     // Prerequisites - 
@@ -48,6 +49,8 @@
 
                 // Running bulk ingestion on a container.
                 await Program.CreateItemsConcurrentlyAsync(container);
+
+                await Program.RemovePropertyFromAllItemsAsync(container);
             }
             catch (CosmosException cre)
             {
@@ -149,7 +152,70 @@
             }
 
             int created = countsByStatus.SingleOrDefault(x => x.Key == HttpStatusCode.Created).Value;
-            Console.WriteLine($"Inserted {created} items in {(stopwatch.ElapsedMilliseconds - startMilliseconds) /1000} seconds");
+            Console.WriteLine($"Inserted {created} items in {(stopwatch.ElapsedMilliseconds - startMilliseconds) / 1000} seconds");
+        }
+
+        private static async Task RemovePropertyFromAllItemsAsync(Container container)
+        {
+            Console.WriteLine($"Starting remove property from {itemsToCreate} items");
+
+            using FeedIterator<JObject> queryOfItemsToUpdate = container.GetItemQueryIterator<JObject>(
+                "select * from T where IS_DEFINED(T.other)",
+                requestOptions: new QueryRequestOptions()
+                {
+                    MaxBufferedItemCount = 0,
+                    MaxConcurrency = 1,
+                    MaxItemCount = 100
+                });
+
+            while (queryOfItemsToUpdate.HasMoreResults)
+            {
+                FeedResponse<JObject> items = await queryOfItemsToUpdate.ReadNextAsync();
+                List<Task> tasks = new List<Task>(1000);
+                foreach (JObject item in items)
+                {
+                    tasks.Add(Program.RemoveItemProperty(container, item));
+                }
+
+                await Task.WhenAll(tasks);
+            }
+
+            Console.WriteLine($"All items updated to remove property 'other'");
+        }
+
+        private static async Task RemoveItemProperty(
+            Container container,
+            JObject item)
+        {
+            ItemRequestOptions itemRequestOptions = new ItemRequestOptions()
+            {
+                EnableContentResponseOnWrite = false,
+            };
+
+            // While loop is used to handle scenarios when the item being updated was changed by a
+            // different process. The item needs to be read again to get the latest version.
+            while (true)
+            {
+                // Remove the 'other' property from the json. 
+                item.Remove("other");
+
+                string id = item["id"].Value<string>();
+                string pk = item["pk"].Value<string>();
+
+                // Setting the etag will cause an exception if the item was updated after it was read
+                itemRequestOptions.IfMatchEtag = item["_etag"].Value<string>();
+                try
+                {
+                    await container.ReplaceItemAsync<JObject>(item, id, new PartitionKey(pk), itemRequestOptions);
+                    return;
+                }
+                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
+                {
+                    // The item was updated after the query. Read the latest item and try update again.
+                    Console.WriteLine($"Replace item failed at {DateTime.UtcNow} with id:{id}; pk:{pk}; Excepion: {ex}");
+                    item = await container.ReadItemAsync<JObject>(id, new PartitionKey(pk));
+                }
+            }
         }
 
         // <Model>
@@ -231,9 +297,12 @@
 
         private static CosmosClient GetBulkClientInstance(
             string endpoint,
-            string authKey) =>
-        // </Initialization>
-            new CosmosClient(endpoint, authKey, new CosmosClientOptions() { AllowBulkExecution = true});
+            string authKey)
+        {
+            // </Initialization>
+            return new CosmosClient(endpoint, authKey, new CosmosClientOptions() { AllowBulkExecution = true });
+        }
+
         // </Initialization>
 
         private static async Task CleanupAsync()
@@ -253,7 +322,8 @@
                 Console.WriteLine("Deleting old container if it exists.");
                 await database.GetContainer(containerName).DeleteContainerStreamAsync();
             }
-            catch(Exception) {
+            catch (Exception)
+            {
                 // Do nothing
             }
 
@@ -302,7 +372,7 @@
             {
                 string partitionKey = Guid.NewGuid().ToString();
                 string id = Guid.NewGuid().ToString();
-                
+
                 MyDocument myDocument = new MyDocument() { id = id, pk = partitionKey, other = padding };
                 string value = JsonConvert.SerializeObject(myDocument);
                 partitionKeyValue = new PartitionKey(partitionKey);
