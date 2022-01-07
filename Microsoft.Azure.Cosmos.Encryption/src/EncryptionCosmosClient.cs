@@ -8,25 +8,26 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Data.Encryption.Cryptography;
 
     /// <summary>
     /// CosmosClient with Encryption support.
     /// </summary>
     internal sealed class EncryptionCosmosClient : CosmosClient
     {
+        internal static readonly SemaphoreSlim EncryptionKeyCacheSemaphore = new SemaphoreSlim(1, 1);
+
         private readonly CosmosClient cosmosClient;
 
         private readonly AsyncCache<string, ClientEncryptionKeyProperties> clientEncryptionKeyPropertiesCacheByKeyId;
 
-        public EncryptionCosmosClient(CosmosClient cosmosClient, EncryptionKeyStoreProvider encryptionKeyStoreProvider)
+        public EncryptionCosmosClient(CosmosClient cosmosClient, EncryptionKeyWrapProvider encryptionKeyWrapProvider)
         {
             this.cosmosClient = cosmosClient ?? throw new ArgumentNullException(nameof(cosmosClient));
-            this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
+            this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
             this.clientEncryptionKeyPropertiesCacheByKeyId = new AsyncCache<string, ClientEncryptionKeyProperties>();
         }
 
-        public EncryptionKeyStoreProvider EncryptionKeyStoreProvider { get; }
+        public EncryptionKeyWrapProvider EncryptionKeyWrapProvider { get; }
 
         public override CosmosClientOptions ClientOptions => this.cosmosClient.ClientOptions;
 
@@ -174,8 +175,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string clientEncryptionKeyId,
             EncryptionContainer encryptionContainer,
             string databaseRid,
-            CancellationToken cancellationToken = default,
-            bool shouldForceRefresh = false)
+            string ifNoneMatchEtag,
+            bool shouldForceRefresh,
+            CancellationToken cancellationToken)
         {
             if (encryptionContainer == null)
             {
@@ -195,25 +197,42 @@ namespace Microsoft.Azure.Cosmos.Encryption
             // Client Encryption key Id is unique within a Database.
             string cacheKey = databaseRid + "|" + clientEncryptionKeyId;
 
+            // this allows us to read from the Gateway Cache. If an IfNoneMatchEtag is passed the logic around the gateway cache allows us to fetch the latest ClientEncryptionKeyProperties
+            // from the servers if the gateway cache has a stale value. This can happen if a client connected via different Gateway has rewrapped the key.
+            RequestOptions requestOptions = new RequestOptions
+            {
+                AddRequestHeaders = (headers) =>
+                {
+                    headers.Add(Constants.AllowCachedReadsHeader, bool.TrueString);
+                    headers.Add(Constants.DatabaseRidHeader, databaseRid);
+                },
+            };
+
+            if (!string.IsNullOrEmpty(ifNoneMatchEtag))
+            {
+                requestOptions.IfNoneMatchEtag = ifNoneMatchEtag;
+            }
+
             return await this.clientEncryptionKeyPropertiesCacheByKeyId.GetAsync(
-                     cacheKey,
-                     obsoleteValue: null,
-                     async () => await this.FetchClientEncryptionKeyPropertiesAsync(encryptionContainer, clientEncryptionKeyId, cancellationToken),
-                     cancellationToken,
-                     forceRefresh: shouldForceRefresh);
+                cacheKey,
+                obsoleteValue: null,
+                async () => await this.FetchClientEncryptionKeyPropertiesAsync(encryptionContainer, clientEncryptionKeyId, requestOptions, cancellationToken),
+                cancellationToken,
+                forceRefresh: shouldForceRefresh);
         }
 
         private async Task<ClientEncryptionKeyProperties> FetchClientEncryptionKeyPropertiesAsync(
             EncryptionContainer encryptionContainer,
             string clientEncryptionKeyId,
-            CancellationToken cancellationToken = default)
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             ClientEncryptionKey clientEncryptionKey = encryptionContainer.Database.GetClientEncryptionKey(clientEncryptionKeyId);
             try
             {
-                return await clientEncryptionKey.ReadAsync(cancellationToken: cancellationToken);
+                return await clientEncryptionKey.ReadAsync(requestOptions: requestOptions, cancellationToken: cancellationToken);
             }
             catch (CosmosException ex)
             {

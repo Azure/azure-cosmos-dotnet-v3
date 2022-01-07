@@ -350,6 +350,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.locationCache.GetLocation(endpoint);
         }
 
+        public bool TryGetLocationForGatewayDiagnostics(Uri endpoint, out string regionName)
+        {
+            return this.locationCache.TryGetLocationForGatewayDiagnostics(endpoint, out regionName);
+        }
+
         public virtual void MarkEndpointUnavailableForRead(Uri endpoint)
         {
             DefaultTrace.TraceInformation("GlobalEndpointManager: Marking endpoint {0} unavailable for read", endpoint);

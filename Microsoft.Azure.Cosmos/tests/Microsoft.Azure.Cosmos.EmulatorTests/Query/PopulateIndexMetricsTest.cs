@@ -45,6 +45,7 @@
                 
                 // Test using GetItemQueryIterator
                 QueryRequestOptions requestOptions = new QueryRequestOptions() { PopulateIndexMetrics = true };
+                
                 FeedIterator<CosmosElement> itemQuery = container.GetItemQueryIterator<CosmosElement>(
                     query,
                     requestOptions: requestOptions);
@@ -72,6 +73,7 @@
                         Assert.IsNotNull(response.Content);
                         Assert.IsTrue(response.Headers.AllKeys().Length > 1);
                         Assert.IsNotNull(response.Headers.Get(HttpConstants.HttpHeaders.IndexUtilization), "Expected index utilization headers for query");
+                        Assert.AreEqual(expectedIndexMetricsString, response.IndexMetrics);
                     }
                 }
             }

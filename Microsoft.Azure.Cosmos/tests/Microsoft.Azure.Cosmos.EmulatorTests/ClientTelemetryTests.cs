@@ -8,17 +8,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Text;
     using System.Threading.Tasks;
+    using System.Net;
+    using System.Net.Http;
+    using System.Diagnostics;
+    using System.Reflection;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using System.Net;
-    using Newtonsoft.Json.Linq;
-    using System.Net.Http;
-    using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Telemetry;
-    using System.IO;
-    using System.Diagnostics;
-    using System.Linq;
+    using Microsoft.Azure.Cosmos.Handler;
+    using Newtonsoft.Json.Linq;
+    using Newtonsoft.Json;
+    using Documents.Rntbd;
 
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper
@@ -26,16 +27,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private const string telemetryEndpointUrl = "http://dummy.telemetry.endpoint/";
         private const int scheduledInSeconds = 1;
         private CosmosClientBuilder cosmosClientBuilder;
+        private static SystemUsageMonitor systemUsageMonitor;
 
         private List<ClientTelemetryProperties> actualInfo;
+
+        [ClassInitialize]
+        public static void ClassInitialize(TestContext context)
+        {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "true");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, telemetryEndpointUrl);
+
+            SystemUsageMonitor oldSystemUsageMonitor = (SystemUsageMonitor)typeof(DiagnosticsHandlerHelper)
+                .GetField("systemUsageMonitor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(DiagnosticsHandlerHelper.Instance);
+            oldSystemUsageMonitor.Stop();
+
+            ClientTelemetryTests.ResetSystemUsageMonitor(true);
+        }
 
         [TestInitialize]
         public void TestInitialize()
         {
             this.actualInfo = new List<ClientTelemetryProperties>();
-
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, telemetryEndpointUrl);
 
             HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
             {
@@ -76,16 +89,50 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             this.cosmosClientBuilder = TestCommon.GetDefaultConfiguration()
                                         .WithApplicationPreferredRegions(preferredRegionList)
-                                        .WithTelemetryEnabled()
                                         .WithHttpClientFactory(() => new HttpClient(httpHandler));
+        }
+
+        [ClassCleanup]
+        public static void FinalCleanup()
+        {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, null);
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, null);
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
+
+            ClientTelemetryTests.ResetSystemUsageMonitor(false);
+        }
+
+        private static void ResetSystemUsageMonitor(bool isTelemetryEnabled)
+        {
+            ClientTelemetryTests.systemUsageMonitor?.Stop();
+
+            FieldInfo diagnosticsHandlerHelperInstance = typeof(DiagnosticsHandlerHelper)
+                .GetField("isTelemetryMonitoringEnabled", BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
+            diagnosticsHandlerHelperInstance.SetValue(null, isTelemetryEnabled);
+
+            List<SystemUsageRecorder> recorders = new List<SystemUsageRecorder>()
+            {
+                (SystemUsageRecorder)typeof(DiagnosticsHandlerHelper)
+                        .GetField("diagnosticSystemUsageRecorder", 
+                                                BindingFlags.Instance | BindingFlags.NonPublic)
+                        .GetValue(DiagnosticsHandlerHelper.Instance)
+            };
+
+            if (isTelemetryEnabled)
+            {
+                recorders.Add(
+                    (SystemUsageRecorder)typeof(DiagnosticsHandlerHelper)
+                                .GetField("telemetrySystemUsageRecorder", 
+                                                            BindingFlags.Instance | BindingFlags.NonPublic)
+                                .GetValue(DiagnosticsHandlerHelper.Instance));
+            }
+
+            ClientTelemetryTests.systemUsageMonitor = SystemUsageMonitor.CreateAndStart(recorders);
         }
 
         [TestCleanup]
         public async Task Cleanup()
         {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, null);
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
-
             await base.TestCleanup();
         }
 
