@@ -164,11 +164,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return this.failedRequestCount;
         }
 
-        private bool IsSuccessStatusCode()
-        {
-            throw new NotImplementedException();
-        }
-
         private int failedRequestCount;
 
     }
