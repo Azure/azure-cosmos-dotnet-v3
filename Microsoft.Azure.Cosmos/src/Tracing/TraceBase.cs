@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
+    using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
@@ -17,14 +19,14 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <summary>
         /// Consolidated Region contacted Information of this and children nodes
         /// </summary>
-        public ISet<(string, Uri)> RegionsContacted
+        public IReadOnlyList<(string, Uri)> RegionsContacted
         {
-            get => this.RegionsContactedTemporary;
+            get => this.RegionsContactedTemporary.ToList();
             set
             {
                 if (this.RegionsContactedTemporary == null)
                 {
-                    this.RegionsContactedTemporary = value;
+                    this.RegionsContactedTemporary = new HashSet<(string, Uri)>(value);
                 }
                 else
                 {
