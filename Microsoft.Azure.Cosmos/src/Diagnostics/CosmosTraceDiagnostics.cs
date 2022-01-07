@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 {
                     foreach (StoreResponseStatistics responseStatistics in clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList)
                     {
-                        if (responseStatistics.StoreResult != null && !Extensions.IsSuccess((HttpStatusCode)responseStatistics.StoreResult.StatusCode))
+                        if (responseStatistics.StoreResult != null && !((HttpStatusCode)responseStatistics.StoreResult.StatusCode).IsSuccess())
                         {
                             this.failedRequestCount++;
                         }
@@ -162,6 +162,11 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             }
 
             return this.failedRequestCount;
+        }
+
+        private bool IsSuccessStatusCode()
+        {
+            throw new NotImplementedException();
         }
 
         private int failedRequestCount;
