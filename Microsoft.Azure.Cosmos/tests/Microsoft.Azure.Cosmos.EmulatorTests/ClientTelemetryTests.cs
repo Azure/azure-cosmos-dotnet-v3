@@ -22,6 +22,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json;
     using Documents.Rntbd;
     using System.Globalization;
+    using System.Linq;
+    using Microsoft.VisualBasic;
 
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper
@@ -656,12 +658,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
 
                     return Task.FromResult(result);
-                } 
+                }
                 else if (request.Method == HttpMethod.Get && request.RequestUri.AbsolutePath == "//addresses/")
                 {
                     HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.Forbidden);
 
-                    // Add a substatus code that is not part of the enum. 
+                    // Add a substatus code that is not part of the enum.
                     // This ensures that if the backend adds a enum the status code is not lost.
                     result.Headers.Add(WFConstants.BackendHeaders.SubStatus, 999999.ToString(CultureInfo.InvariantCulture));
 
@@ -687,7 +689,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.Forbidden)
             {
-                Assert.AreEqual(999999, ce.SubStatusCode);  
+                Assert.AreEqual(999999, ce.SubStatusCode);
             }
 
             IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
@@ -709,9 +711,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <param name="expectedOperationRecordCountMap"> Expected number of requests recorded for each operation </param>
         /// <returns></returns>
         private async Task WaitAndAssert(int expectedOperationCount,
-            Microsoft.Azure.Cosmos.ConsistencyLevel? expectedConsistencyLevel = null, 
+            Microsoft.Azure.Cosmos.ConsistencyLevel? expectedConsistencyLevel = null,
             IDictionary<string, long> expectedOperationRecordCountMap = null,
-            string expectedSubstatuscode = null) 
+            string expectedSubstatuscode = null)
         {
             Assert.IsNotNull(this.actualInfo, "Telemetry Information not available");
 
@@ -728,12 +730,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     // Setting the number of unique OperationInfo irrespective of response size as response size is varying in case of queries.
                     this.actualInfo
                         .ForEach(x => x.OperationInfo
-                                       .ForEach(y => { 
+                                       .ForEach(y =>
+                                       {
                                            y.GreaterThan1Kb = false;
                                            actualOperationSet.Add(y);
                                        }));
 
-                    if (actualOperationSet.Count == expectedOperationCount/2)
+                    if (actualOperationSet.Count == expectedOperationCount / 2)
                     {
                         // Copy the list to avoid it being modified while validating
                         localCopyOfActualInfo = new List<ClientTelemetryProperties>(this.actualInfo);
@@ -750,27 +753,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<OperationInfo> actualOperationList = new List<OperationInfo>();
             List<SystemInfo> actualSystemInformation = new List<SystemInfo>();
 
-            // Asserting If basic client telemetry object is as expected
-            foreach (ClientTelemetryProperties telemetryInfo in localCopyOfActualInfo)
+            ClientTelemetryTests.AssertAccountLevelInformation(localCopyOfActualInfo, actualOperationList, actualSystemInformation);
+            ClientTelemetryTests.AssertOperationLevelInformation(expectedConsistencyLevel, expectedOperationRecordCountMap, actualOperationList);
+            ClientTelemetryTests.AssertSystemLevelInformation(actualSystemInformation);
+        }
+
+        private static void AssertSystemLevelInformation(List<SystemInfo> actualSystemInformation)
+        {
+            Dictionary<string, string> expectedMetricNameUnitMap = new Dictionary<string, string>()
             {
-                actualOperationList.AddRange(telemetryInfo.OperationInfo);
-                actualSystemInformation.AddRange(telemetryInfo.SystemInfo);
+                { ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit },
+                { ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit },
+                { ClientTelemetryOptions.AvailableThreadsName, ClientTelemetryOptions.AvailableThreadsUnit },
+                { ClientTelemetryOptions.MinThreadsName, ClientTelemetryOptions.MinThreadsUnit },
+                { ClientTelemetryOptions.MaxThreadsName, ClientTelemetryOptions.MaxThreadsUnit }
+            };
 
-                Assert.AreEqual(5, telemetryInfo.SystemInfo.Count, $"System Information Count doesn't Match; {JsonConvert.SerializeObject(telemetryInfo.SystemInfo)}");
+            Dictionary<string, string> actualMetricNameUnitMap = new Dictionary<string, string>();
 
-                Assert.IsNotNull(telemetryInfo.GlobalDatabaseAccountName, "GlobalDatabaseAccountName is null");
-                Assert.IsNotNull(telemetryInfo.DateTimeUtc, "Timestamp is null");
-                Assert.AreEqual(2, telemetryInfo.PreferredRegions.Count);
-                Assert.AreEqual("region1", telemetryInfo.PreferredRegions[0]);
-                Assert.AreEqual("region2", telemetryInfo.PreferredRegions[1]);
-                Assert.AreEqual(1, telemetryInfo.AggregationIntervalInSec);
-                Assert.IsNull(telemetryInfo.AcceleratedNetworking);
-                Assert.IsNotNull(telemetryInfo.ClientId);
-                Assert.IsNotNull(telemetryInfo.ProcessId);
-                Assert.IsNotNull(telemetryInfo.UserAgent);
-                Assert.IsNotNull(telemetryInfo.ConnectionMode);
+            // Asserting If system information list is as expected
+            foreach (SystemInfo systemInfo in actualSystemInformation)
+            {
+                Assert.AreEqual("HostMachine", systemInfo.Resource);
+                Assert.IsNotNull(systemInfo.MetricInfo, "MetricInfo is null");
+
+                if(!actualMetricNameUnitMap.TryAdd(systemInfo.MetricInfo.MetricsName, systemInfo.MetricInfo.UnitName))
+                {
+                    Assert.AreEqual(systemInfo.MetricInfo.UnitName, actualMetricNameUnitMap[systemInfo.MetricInfo.MetricsName]);
+                }
+
+                Assert.IsTrue(systemInfo.MetricInfo.Count > 0, "MetricInfo Count is not greater than 0");
+                Assert.IsNotNull(systemInfo.MetricInfo.Percentiles, "Percentiles is null");
+                Assert.IsTrue(systemInfo.MetricInfo.Mean >= 0, "MetricInfo Mean is not greater than or equal to 0");
+                Assert.IsTrue(systemInfo.MetricInfo.Max >= 0, "MetricInfo Max is not greater than or equal to 0");
+                Assert.IsTrue(systemInfo.MetricInfo.Min >= 0, "MetricInfo Min is not greater than or equal to 0");
+                if (systemInfo.MetricInfo.MetricsName.Equals(ClientTelemetryOptions.CpuName))
+                {
+                    Assert.IsTrue(systemInfo.MetricInfo.Mean <= 100, "MetricInfo Mean is not greater than 100 for CPU Usage");
+                    Assert.IsTrue(systemInfo.MetricInfo.Max <= 100, "MetricInfo Max is not greater than 100 for CPU Usage");
+                    Assert.IsTrue(systemInfo.MetricInfo.Min <= 100, "MetricInfo Min is not greater than 100 for CPU Usage");
+                };
             }
 
+            Assert.IsTrue(expectedMetricNameUnitMap.EqualsTo<string, string>(actualMetricNameUnitMap), $"Actual System Information metric i.e {actualMetricNameUnitMap.Select(x => x.Key + ':' + x.Value + ',')} is not matching with expected System Information Metric i.e. {expectedMetricNameUnitMap.Select(x => x.Key + ':' + x.Value + ',')}");
+
+        }
+
+        private static void AssertOperationLevelInformation(ConsistencyLevel? expectedConsistencyLevel, IDictionary<string, long> expectedOperationRecordCountMap, List<OperationInfo> actualOperationList)
+        {
             IDictionary<string, long> actualOperationRecordCountMap = new Dictionary<string, long>();
 
             // Asserting If operation list is as expected
@@ -806,27 +836,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (expectedOperationRecordCountMap != null)
             {
-                Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo(actualOperationRecordCountMap), $"actual record count({actualOperationRecordCountMap.Count}) for operation does not match with expected record count({expectedOperationRecordCountMap.Count})");
+                Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo<string,long>(actualOperationRecordCountMap), $"actual record i.e. ({actualOperationRecordCountMap}) for operation does not match with expected record i.e. ({expectedOperationRecordCountMap})");
             }
+        }
 
-            // Asserting If system information list is as expected
-            foreach (SystemInfo systemInfo in actualSystemInformation)
+        private static void AssertAccountLevelInformation(List<ClientTelemetryProperties> localCopyOfActualInfo, List<OperationInfo> actualOperationList, List<SystemInfo> actualSystemInformation)
+        {
+            // Asserting If basic client telemetry object is as expected
+            foreach (ClientTelemetryProperties telemetryInfo in localCopyOfActualInfo)
             {
-                Assert.AreEqual("HostMachine", systemInfo.Resource);
-                Assert.IsNotNull(systemInfo.MetricInfo, "MetricInfo is null");
-                Assert.IsNotNull(systemInfo.MetricInfo.MetricsName, "MetricsName is null");
-                Assert.IsNotNull(systemInfo.MetricInfo.UnitName, "UnitName is null");
-                Assert.IsTrue(systemInfo.MetricInfo.Count > 0, "MetricInfo Count is not greater than 0");
-                Assert.IsNotNull(systemInfo.MetricInfo.Percentiles, "Percentiles is null");
-                Assert.IsTrue(systemInfo.MetricInfo.Mean >= 0, "MetricInfo Mean is not greater than or equal to 0");
-                Assert.IsTrue(systemInfo.MetricInfo.Max >= 0, "MetricInfo Max is not greater than or equal to 0");
-                Assert.IsTrue(systemInfo.MetricInfo.Min >= 0, "MetricInfo Min is not greater than or equal to 0");
-                if (systemInfo.MetricInfo.MetricsName.Equals(ClientTelemetryOptions.CpuName))
-                {
-                    Assert.IsTrue(systemInfo.MetricInfo.Mean <= 100, "MetricInfo Mean is not greater than 100 for CPU Usage");
-                    Assert.IsTrue(systemInfo.MetricInfo.Max <= 100, "MetricInfo Max is not greater than 100 for CPU Usage");
-                    Assert.IsTrue(systemInfo.MetricInfo.Min <= 100, "MetricInfo Min is not greater than 100 for CPU Usage");
-                };
+                actualOperationList.AddRange(telemetryInfo.OperationInfo);
+                actualSystemInformation.AddRange(telemetryInfo.SystemInfo);
+
+                Assert.AreEqual(5, telemetryInfo.SystemInfo.Count, $"System Information Count doesn't Match; {JsonConvert.SerializeObject(telemetryInfo.SystemInfo)}");
+
+                Assert.IsNotNull(telemetryInfo.GlobalDatabaseAccountName, "GlobalDatabaseAccountName is null");
+                Assert.IsNotNull(telemetryInfo.DateTimeUtc, "Timestamp is null");
+                Assert.AreEqual(2, telemetryInfo.PreferredRegions.Count);
+                Assert.AreEqual("region1", telemetryInfo.PreferredRegions[0]);
+                Assert.AreEqual("region2", telemetryInfo.PreferredRegions[1]);
+                Assert.AreEqual(1, telemetryInfo.AggregationIntervalInSec);
+                Assert.IsNull(telemetryInfo.AcceleratedNetworking);
+                Assert.IsNotNull(telemetryInfo.ClientId);
+                Assert.IsNotNull(telemetryInfo.ProcessId);
+                Assert.IsNotNull(telemetryInfo.UserAgent);
+                Assert.IsNotNull(telemetryInfo.ConnectionMode);
             }
         }
 
@@ -837,7 +871,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private async Task<Container> CreateClientAndContainer(ConnectionMode mode,
-            Microsoft.Azure.Cosmos.ConsistencyLevel? consistency = null, 
+            Microsoft.Azure.Cosmos.ConsistencyLevel? consistency = null,
             bool isLargeContainer = false)
         {
             if (consistency.HasValue)
