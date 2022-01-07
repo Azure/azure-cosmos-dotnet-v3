@@ -27,17 +27,14 @@ namespace Microsoft.Azure.Documents
             // ipv6 is not customer-facing. do not embed it.
             if (clientIpAddress.AddressFamily == AddressFamily.InterNetworkV6)
             {
-                result = new ForbiddenException(isPrivateIpPacket ?
-                    RMResources.ForbiddenPrivateEndpoint :
-                    RMResources.ForbiddenServiceEndpoint);
+                string trafficType = isPrivateIpPacket ? "private endpoint" : "service endpoint";
+                string clientInfo = string.Format(CultureInfo.InvariantCulture, RMResources.ClientVnetInfo, trafficType);
+                result = new ForbiddenException(string.Format(CultureInfo.InvariantCulture, RMResources.ForbiddenClientIpAddress, clientInfo));
             }
             else
             {
-                result = new ForbiddenException(string.Format(
-                    CultureInfo.InvariantCulture,
-                    RMResources.ForbiddenPublicIpv4,
-                    clientIpAddress.ToString()));
-
+                string clientInfo = string.Format(CultureInfo.InvariantCulture, RMResources.ClientPublicIpInfo, clientIpAddress.ToString());
+                result = new ForbiddenException(string.Format(CultureInfo.InvariantCulture, RMResources.ForbiddenClientIpAddress, clientInfo));
                 result.ClientIpAddress = clientIpAddress;
             }
 

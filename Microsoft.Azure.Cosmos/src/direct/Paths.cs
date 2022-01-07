@@ -312,14 +312,5 @@ namespace Microsoft.Azure.Documents
         // /retriablewritecachedresponse
         public const string RetriableWriteCachedResponsePathSegment = "retriablewritecachedresponse";
         public const string RetriableWriteCachedResponse_Root = Root + "/" + RetriableWriteCachedResponsePathSegment + "/";
-
-        // urls like http://hostname/accounts/{id}/address
-        // /accounts/{id}/
-        public const string AccountsPathSegment = "accounts";
-        public const string AccountId = "accountId";
-        public const string FederationEndpoint_Root = Root + "/" + AccountsPathSegment + "/{" + AccountId + "}/";
-
-        // /accounts/{id}/address
-        public const string FederationEndpoint_Address_Root = FederationEndpoint_Root + "/" + AddressPathSegment + "/";
     }
 }

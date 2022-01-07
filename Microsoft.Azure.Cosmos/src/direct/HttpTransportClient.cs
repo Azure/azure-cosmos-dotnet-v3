@@ -452,8 +452,6 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateAnalyticalMigrationProgress, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateByokEncryptionProgress, request);
 
-            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IncludePhysicalPartitionThroughputInfo, request);
-
             Stream clonedStream = null;
             if (request.Body != null)
             {

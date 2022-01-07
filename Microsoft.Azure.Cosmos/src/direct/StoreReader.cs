@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Documents
     using System;
     using System.Collections.Generic;
     using System.Globalization;
-    using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
@@ -235,25 +234,9 @@ namespace Microsoft.Azure.Documents
                 }
                 catch (Exception exception)
                 {
-                    exceptionToThrow = exception;
-
                     //All task exceptions are visited below.
-                    if (exception is DocumentClientException dce && 
-                        (dce.StatusCode == HttpStatusCode.NotFound
-                            || dce.StatusCode == HttpStatusCode.Conflict
-                            || (int)dce.StatusCode == (int)StatusCodes.TooManyRequests))
-                    {
-                        // Only trace message for common scenarios to avoid the overhead of computing the stack trace.
-                        DefaultTrace.TraceInformation("StoreReader.ReadMultipleReplicasInternalAsync exception thrown: StatusCode: {0}; SubStatusCode:{1}; Exception.Message: {2}",
-                            dce.StatusCode,
-                            dce.Headers?.Get(WFConstants.BackendHeaders.SubStatus),
-                            dce.Message);
-                    }
-                    else
-                    {
-                        // Include the full exception for other scenarios for troubleshooting
-                        DefaultTrace.TraceInformation("StoreReader.ReadMultipleReplicasInternalAsync exception thrown: Exception: {0}", exception);
-                    }
+                    DefaultTrace.TraceInformation("Exception {0} is thrown while doing readMany", exception);
+                    exceptionToThrow = exception;
                 }
 
                 foreach (KeyValuePair<Task<(StoreResponse response, DateTime endTime)>, (TransportAddressUri uri, DateTime startTime)> readTaskValuePair in readStoreTasks)

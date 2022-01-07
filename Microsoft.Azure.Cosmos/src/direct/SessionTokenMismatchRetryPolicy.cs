@@ -136,6 +136,7 @@ namespace Microsoft.Azure.Documents
             }
 
             this.durationTimer.Stop();
+            DefaultTrace.TraceInformation("SessionTokenMismatchRetryPolicy not retrying because StatusCode or SubStatusCode not found.");
 
             return ShouldRetryResult.NoRetry();
         }

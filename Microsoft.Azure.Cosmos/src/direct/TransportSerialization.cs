@@ -187,10 +187,9 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.RbacUserId, rntbdRequest.rbacUserId, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.RbacAction, rntbdRequest.rbacAction, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.RbacResource, rntbdRequest.rbacResource, rntbdRequest);
-            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.ChangeFeedWireFormatVersion, rntbdRequest.changeFeedWireFormatVersion, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.ChangeFeedWireFormatVersion, rntbdRequest.rbacResource, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.PopulateByokEncryptionProgress, rntbdRequest.populateBYOKEncryptionProgress, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.UseUserBackgroundBudget, rntbdRequest.useUserBackgroundBudget, rntbdRequest);
-            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.IncludePhysicalPartitionThroughputInfo, rntbdRequest.includePhysicalPartitionThroughputInfo, rntbdRequest);
 
             // will be null in case of direct, which is fine - BE will use the value from the connection context message.
             // When this is used in Gateway, the header value will be populated with the proxied HTTP request's header, and

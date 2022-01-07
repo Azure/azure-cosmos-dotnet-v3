@@ -27,7 +27,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
         private State state = State.New;  // Guarded by stateLock.
         private Task initializationTask = null;  // Guarded by stateLock.
-        private volatile bool isInitializationComplete = false;
 
         private ChannelOpenArguments openArguments;
         private readonly SemaphoreSlim openingSlim;
@@ -59,7 +58,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                 channelProperties.CallerId);
 
             this.openingSlim = openingSlim;
-            this.Initialize();
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -105,7 +103,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private void Initialize()
+        public void Initialize()
         {
             this.ThrowIfDisposed();
             this.stateLock.EnterWriteLock();
@@ -128,8 +126,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                     Debug.Assert(this.openArguments.CommonArguments != null);
                     Trace.CorrelationManager.ActivityId = this.openArguments.CommonArguments.ActivityId;
                     await this.InitializeAsync();
-                    this.isInitializationComplete = true;
-                    this.TestOnInitializeComplete?.Invoke();
                 });
             }
             finally
@@ -143,13 +139,26 @@ namespace Microsoft.Azure.Documents.Rntbd
             ResourceOperation resourceOperation, Guid activityId, TransportRequestStats transportRequestStats)
         {
             this.ThrowIfDisposed();
-
-            if (!this.isInitializationComplete)
+            Task initTask = null;
+            this.stateLock.EnterReadLock();
+            try
+            {
+                if (this.state != State.Open)
+                {
+                    Debug.Assert(this.initializationTask != null);
+                    initTask = this.initializationTask;
+                }
+            }
+            finally
+            {
+                this.stateLock.ExitReadLock();
+            }
+            if (initTask != null)
             {
                 DefaultTrace.TraceInformation(
                     "Awaiting RNTBD channel initialization. Request URI: {0}",
                     physicalAddress);
-                await this.initializationTask;
+                await initTask;
             }
 
             // Waiting for channel initialization to move to Pipelined stage
@@ -439,6 +448,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                     this.openingSlim.Release();
                 }
             }
+
+            this.TestOnInitializeComplete?.Invoke();
         }
 
         private void FinishInitialization(State nextState)

@@ -337,7 +337,7 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Name of the Azure Qatar Central region in the Azure Cosmos DB service.
         /// </summary>
-        public const string QatarCentral = "Qatar Central";
+        internal const string QatarCentral = "Qatar Central";
 
         /// <summary>
         /// Name of the Azure China North 3 region in the Azure Cosmos DB service.

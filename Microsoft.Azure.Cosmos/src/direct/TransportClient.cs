@@ -1,517 +1,1208 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Documents.Rntbd
+namespace Microsoft.Azure.Documents
 {
     using System;
-    using System.Diagnostics;
     using System.Globalization;
-    using System.Text;
-    using System.Threading;
+    using System.IO;
+    using System.Net.Http;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.Routing;
 
-#if NETSTANDARD15 || NETSTANDARD16
-    using Trace = Microsoft.Azure.Documents.Trace;
-#endif
-
-    internal sealed class TransportClient :
-        Microsoft.Azure.Documents.TransportClient, IDisposable
+    internal abstract class TransportClient : IDisposable
     {
-        private enum TransportResponseStatusCode
+        protected TransportClient()
         {
-            Success = 0,
-            DocumentClientException = -1,
-            UnknownException = -2
+
         }
-        private static TransportPerformanceCounters transportPerformanceCounters = new TransportPerformanceCounters();
 
-        private readonly TimerPool timerPool;
-        private readonly TimerPool idleTimerPool;
-        private readonly ChannelDictionary channelDictionary;
-        private bool disposed = false;
+        public virtual void Dispose()
+        {
+        }
 
-        #region RNTBD Transition
+        // Uses requests's ResourceOperation to determine the operation
+        public virtual Task<StoreResponse> InvokeResourceOperationAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(physicalAddress, new ResourceOperation(request.OperationType, request.ResourceType), request);
+        }
 
-        // Transitional state while migrating SDK users from the old RNTBD stack
-        // to the new version. Delete these fields when the old stack is deleted.
-        private readonly object disableRntbdChannelLock = new object();
-        // Guarded by disableRntbdChannelLock
-        private bool disableRntbdChannel = false;
+        // Uses requests's ResourceOperation to determine the operation
+        public virtual Task<StoreResponse> InvokeResourceOperationAsync(TransportAddressUri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(physicalAddress, new ResourceOperation(request.OperationType, request.ResourceType), request);
+        }
+
+        #region Offer Operations
+
+        public Task<StoreResponse> CreateOfferAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.CreateOffer,
+                request);
+        }
+
+        public Task<StoreResponse> GetOfferAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadOffer,
+                request);
+        }
+
+        public Task<StoreResponse> ListOffersAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadOfferFeed,
+                request);
+        }
+
+        public Task<StoreResponse> DeleteOfferAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.DeleteOffer,
+                request);
+        }
+
+        public Task<StoreResponse> ReplaceOfferAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReplaceOffer,
+                request);
+        }
+
+        public Task<StoreResponse> QueryOfferAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeQueryStoreAsync(
+                physicalAddress,
+                ResourceType.Offer,
+                request);
+        }
 
         #endregion
 
-        public TransportClient(Options clientOptions)
+#if !COSMOSCLIENT
+        #region CrossPartitionReplicaSetInformation Operations
+        public Task<StoreResponse> GetPartitionSetAsync(Uri physicalAddress, DocumentServiceRequest request)
         {
-            if (clientOptions == null)
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadPartitionSetInformation,
+                request);
+        }
+
+        public Task<StoreResponse> GetRestoreMetadataFeedAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadRestoreMetadataFeed,
+                request);
+        }
+        #endregion
+
+#region Replica Operations
+        public Task<StoreResponse> GetReplicaAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadReplica,
+                request);
+        }
+#endregion
+#endif
+
+#region Database Operations
+        public Task<StoreResponse> ListDatabasesAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(physicalAddress, ResourceOperation.ReadDatabaseFeed, request);
+        }
+        public Task<StoreResponse> HeadDatabasesAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(physicalAddress, ResourceOperation.HeadDatabaseFeed, request);
+        }
+        public Task<StoreResponse> GetDatabaseAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadDatabase,
+                request);
+        }
+        public Task<StoreResponse> CreateDatabaseAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.CreateDatabase,
+                request);
+        }
+        public Task<StoreResponse> UpsertDatabaseAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.UpsertDatabase,
+                request);
+        }
+        public Task<StoreResponse> PatchDatabaseAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.PatchDatabase,
+                request);
+        }
+        public Task<StoreResponse> ReplaceDatabaseAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReplaceDatabase,
+                request);
+        }
+        public Task<StoreResponse> DeleteDatabaseAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.DeleteDatabase,
+                request);
+        }
+        public Task<StoreResponse> QueryDatabasesAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeQueryStoreAsync(
+                physicalAddress,
+                ResourceType.Database,
+                request);
+        }
+#endregion
+
+#region DocumentCollection Operations
+        public Task<StoreResponse> ListDocumentCollectionsAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadCollectionFeed,
+                request);
+        }
+
+        public Task<StoreResponse> GetDocumentCollectionAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadCollection,
+                request);
+        }
+        public Task<StoreResponse> HeadDocumentCollectionAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.HeadCollection,
+                request);
+        }
+        public Task<StoreResponse> CreateDocumentCollectionAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.CreateCollection,
+                request);
+        }
+        public Task<StoreResponse> PatchDocumentCollectionAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.PatchCollection,
+                request);
+        }
+        public Task<StoreResponse> ReplaceDocumentCollectionAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReplaceCollection,
+                request);
+        }
+        public Task<StoreResponse> DeleteDocumentCollectionAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.DeleteCollection,
+                request);
+        }
+        public Task<StoreResponse> QueryDocumentCollectionsAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeQueryStoreAsync(
+                physicalAddress,
+                ResourceType.Collection,
+                request);
+        }
+        #endregion
+
+        #region EncryptionKey Operations
+
+        public Task<StoreResponse> CreateClientEncryptionKeyAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.CreateClientEncryptionKey,
+                request);
+        }
+
+        public Task<StoreResponse> ReadClientEncryptionKeyAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadClientEncryptionKey,
+                request);
+        }
+
+        public Task<StoreResponse> DeleteClientEncryptionKeyAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.DeleteClientEncryptionKey,
+                request);
+        }
+
+        public Task<StoreResponse> ReadClientEncryptionKeyFeedAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadClientEncryptionKeyFeed,
+                request);
+        }
+
+        public Task<StoreResponse> ReplaceClientEncryptionKeyFeedAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReplaceClientEncryptionKey,
+                request);
+        }
+      
+        #endregion
+
+        #region Sproc Operations
+        public Task<StoreResponse> ListStoredProceduresAsync(Uri physicalAddress,
+            DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadStoredProcedureFeed,
+                request);
+        }
+
+        public Task<StoreResponse> GetStoredProcedureAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadStoredProcedure,
+                request);
+        }
+
+        public Task<StoreResponse> CreateStoredProcedureAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.CreateStoredProcedure,
+                request);
+        }
+
+        public Task<StoreResponse> UpsertStoredProcedureAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.UpsertStoredProcedure,
+                request);
+        }
+
+        public Task<StoreResponse> ReplaceStoredProcedureAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReplaceStoredProcedure,
+                request);
+        }
+        public Task<StoreResponse> DeleteStoredProcedureAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.DeleteStoredProcedure,
+                request);
+        }
+        public Task<StoreResponse> QueryStoredProceduresAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeQueryStoreAsync(
+                physicalAddress,
+                ResourceType.StoredProcedure,
+                request);
+        }
+#endregion
+
+#region Trigger Operations
+        public Task<StoreResponse> ListTriggersAsync(Uri physicalAddress,
+            DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.XXReadTriggerFeed,
+                request);
+        }
+
+        public Task<StoreResponse> GetTriggerAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.XXReadTrigger,
+                request);
+        }
+
+        public Task<StoreResponse> CreateTriggerAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.XXCreateTrigger,
+                request);
+        }
+
+        public Task<StoreResponse> UpsertTriggerAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.XXUpsertTrigger,
+                request);
+        }
+
+        public Task<StoreResponse> ReplaceTriggerAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.XXReplaceTrigger,
+                request);
+        }
+        public Task<StoreResponse> DeleteTriggerAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.XXDeleteTrigger,
+                request);
+        }
+        public Task<StoreResponse> QueryTriggersAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeQueryStoreAsync(
+                physicalAddress,
+                ResourceType.Trigger,
+                request);
+        }
+#endregion
+
+#region UDF Operations
+        public Task<StoreResponse> ListUserDefinedFunctionsAsync(Uri physicalAddress,
+            DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.XXReadUserDefinedFunctionFeed,
+                request);
+        }
+
+        public Task<StoreResponse> GetUserDefinedFunctionAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.XXReadUserDefinedFunction,
+                request);
+        }
+
+        public Task<StoreResponse> CreateUserDefinedFunctionAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.XXCreateUserDefinedFunction,
+                request);
+        }
+
+        public Task<StoreResponse> UpsertUserDefinedFunctionAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.XXUpsertUserDefinedFunction,
+                request);
+        }
+
+        public Task<StoreResponse> ReplaceUserDefinedFunctionAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.XXReplaceUserDefinedFunction,
+                request);
+        }
+        public Task<StoreResponse> DeleteUserDefinedFunctionAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.XXDeleteUserDefinedFunction,
+                request);
+        }
+        public Task<StoreResponse> QueryUserDefinedFunctionsAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeQueryStoreAsync(
+                physicalAddress,
+                ResourceType.UserDefinedFunction,
+                request);
+        }
+#endregion
+
+#region SystemDocumentOperations Operations
+        internal Task<StoreResponse> ListSystemDocumentsAsync(Uri physicalAddress,
+            DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadSystemDocumentFeed,
+                request);
+        }
+
+        internal Task<StoreResponse> GetSystemDocumentAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadSystemDocument,
+                request);
+        }
+
+        internal Task<StoreResponse> CreateSystemDocumentAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.CreateSystemDocument,
+                request);
+        }
+
+        internal Task<StoreResponse> ReplaceSystemDocumentAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReplaceSystemDocument,
+                request);
+        }
+
+        internal Task<StoreResponse> DeleteSystemDocumentAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.DeleteSystemDocument,
+                request);
+        }
+#endregion
+
+#region Conflict Operations
+        public Task<StoreResponse> ListConflictsAsync(Uri physicalAddress,
+            DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.XReadConflictFeed,
+                request);
+        }
+
+        public Task<StoreResponse> GetConflictAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.XReadConflict,
+                request);
+        }
+
+        public Task<StoreResponse> DeleteConflictAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.XDeleteConflict,
+                request);
+        }
+        public Task<StoreResponse> QueryConflictsAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeQueryStoreAsync(
+                physicalAddress,
+                ResourceType.Conflict,
+                request);
+        }
+#endregion
+
+#region Document Operations
+        public Task<StoreResponse> ListDocumentsAsync(Uri physicalAddress,
+            DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadDocumentFeed,
+                request);
+        }
+
+        public Task<StoreResponse> GetDocumentAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadDocument,
+                request);
+        }
+
+        public Task<StoreResponse> CreateDocumentAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.CreateDocument,
+                request);
+        }
+
+        public Task<StoreResponse> UpsertDocumentAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.UpsertDocument,
+                request);
+        }
+
+        public Task<StoreResponse> PatchDocumentAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.PatchDocument,
+                request);
+        }
+        public Task<StoreResponse> ReplaceDocumentAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReplaceDocument,
+                request);
+        }
+        public Task<StoreResponse> DeleteDocumentAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.DeleteDocument,
+                request);
+        }
+        public Task<StoreResponse> QueryDocumentsAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeQueryStoreAsync(
+                physicalAddress,
+                ResourceType.Document,
+                request);
+        }
+#endregion
+
+#region Attachment Operations
+        public Task<StoreResponse> ListAttachmentsAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadAttachmentFeed,
+                request);
+        }
+
+        public Task<StoreResponse> GetAttachmentAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadAttachment,
+                request);
+        }
+
+        public Task<StoreResponse> CreateAttachmentAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.CreateAttachment,
+                request);
+        }
+
+        public Task<StoreResponse> UpsertAttachmentAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.UpsertAttachment,
+                request);
+        }
+
+        public Task<StoreResponse> ReplaceAttachmentAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReplaceAttachment,
+                request);
+        }
+
+        public Task<StoreResponse> DeleteAttachmentAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.DeleteAttachment,
+                request);
+        }
+
+        public Task<StoreResponse> QueryAttachmentsAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeQueryStoreAsync(
+                physicalAddress,
+                ResourceType.Attachment,
+                request);
+        }
+#endregion
+
+#region User Operations
+
+        public Task<StoreResponse> ListUsersAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(physicalAddress,
+                ResourceOperation.ReadUserFeed,
+                request);
+        }
+        public Task<StoreResponse> GetUserAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadUser,
+                request);
+        }
+        public Task<StoreResponse> CreateUserAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.CreateUser,
+                request);
+        }
+
+        public Task<StoreResponse> UpsertUserAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.UpsertUser,
+                request);
+        }
+        public Task<StoreResponse> PatchUserAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.PatchUser,
+                request);
+        }
+        public Task<StoreResponse> ReplaceUserAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReplaceUser,
+                request);
+        }
+        public Task<StoreResponse> DeleteUserAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.DeleteUser,
+                request);
+        }
+
+        public Task<StoreResponse> QueryUsersAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeQueryStoreAsync(
+                physicalAddress,
+                ResourceType.User,
+                request);
+        }
+
+#endregion
+
+#region Permission Operations
+
+        public Task<StoreResponse> ListPermissionsAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadPermissionFeed,
+                request);
+        }
+        public Task<StoreResponse> GetPermissionAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadPermission,
+                request);
+        }
+        public Task<StoreResponse> CreatePermissionAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.CreatePermission,
+                request);
+        }
+        public Task<StoreResponse> UpsertPermissionAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.UpsertPermission,
+                request);
+        }
+        public Task<StoreResponse> PatchPermissionAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.PatchPermission,
+                request);
+        }
+        public Task<StoreResponse> ReplacePermissionAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReplacePermission,
+                request);
+        }
+        public Task<StoreResponse> DeletePermissionAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.DeletePermission,
+                request);
+        }
+
+        public Task<StoreResponse> QueryPermissionsAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeQueryStoreAsync(
+                physicalAddress,
+                ResourceType.Permission,
+                request);
+        }
+#endregion
+
+#region Row Operations
+        public Task<StoreResponse> ListRecordsAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.XReadRecordFeed,
+                request);
+        }
+
+        public Task<StoreResponse> CreateRecordAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.XCreateRecord,
+                request);
+        }
+
+        public Task<StoreResponse> ReadRecordAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.XReadRecord,
+                request);
+        }
+
+        public Task<StoreResponse> PatchRecordAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.XUpdateRecord,
+                request);
+        }
+
+        public Task<StoreResponse> DeleteRecordAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.XDeleteRecord,
+                request);
+        }
+#endregion
+
+#region Execute Operations
+
+        public Task<StoreResponse> ExecuteAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ExecuteDocumentFeed,
+                request);
+        }
+
+#endregion
+
+#region Transaction Operations
+
+        public Task<StoreResponse> CompleteUserTransaction(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.CompleteUserTransaction,
+                request);
+        }
+#endregion
+
+        public static void ThrowServerException(string resourceAddress, StoreResponse storeResponse, Uri physicalAddress, Guid activityId, DocumentServiceRequest request = null)
+        {
+            INameValueCollection responseHeaders;
+            string errorMessage = null;
+
+            // If the status code is < 300 or 304 NotModified (we treat not modified as success) then it means that it's a success code and shouldn't throw.
+            // NotFound, PreconditionFailed and Conflict should not throw either if useStatusCodeForFailures is set
+            if (storeResponse.Status < 300
+               || (StatusCodes)storeResponse.Status == StatusCodes.NotModified
+               || (request != null && request.IsValidStatusCodeForExceptionlessRetry(storeResponse.Status, storeResponse.SubStatusCode))
+               )
             {
-                throw new ArgumentNullException(nameof(clientOptions));
+                return;
             }
 
-            TransportClient.LogClientOptions(clientOptions);
+            DocumentClientException exception;
 
-            UserPortPool userPortPool = null;
-            if (clientOptions.PortReuseMode == PortReuseMode.PrivatePortPool)
+            switch ((StatusCodes)storeResponse.Status)
             {
-                userPortPool = new UserPortPool(
-                    clientOptions.PortPoolReuseThreshold,
-                    clientOptions.PortPoolBindAttempts);
+                case StatusCodes.Unauthorized:
+                    errorMessage = TransportClient.GetErrorResponse(storeResponse, RMResources.Unauthorized, out responseHeaders);
+                    exception = new UnauthorizedException(
+                        string.Format(CultureInfo.CurrentUICulture,
+                            RMResources.ExceptionMessage,
+                            errorMessage),
+                        responseHeaders,
+                        physicalAddress);
+                    break;
+
+                case StatusCodes.Forbidden:
+                    errorMessage = TransportClient.GetErrorResponse(storeResponse, RMResources.Forbidden, out responseHeaders);
+                    exception = new ForbiddenException(
+                        string.Format(CultureInfo.CurrentUICulture,
+                            RMResources.ExceptionMessage,
+                            errorMessage),
+                        responseHeaders,
+                        physicalAddress);
+                    break;
+
+                case StatusCodes.NotFound:
+                    errorMessage = TransportClient.GetErrorResponse(storeResponse, RMResources.NotFound, out responseHeaders);
+                    exception = new NotFoundException(
+                        string.Format(CultureInfo.CurrentUICulture,
+                            RMResources.ExceptionMessage,
+                            errorMessage),
+                        responseHeaders,
+                        physicalAddress);
+                    break;
+
+                case StatusCodes.BadRequest:
+                    errorMessage = TransportClient.GetErrorResponse(storeResponse, RMResources.BadRequest, out responseHeaders);
+                    exception = new BadRequestException(
+                        string.Format(CultureInfo.CurrentUICulture,
+                            RMResources.ExceptionMessage,
+                            errorMessage),
+                        responseHeaders,
+                        physicalAddress);
+                    break;
+
+                case StatusCodes.MethodNotAllowed:
+                    errorMessage = TransportClient.GetErrorResponse(storeResponse, RMResources.MethodNotAllowed, out responseHeaders);
+                    exception = new MethodNotAllowedException(
+                        string.Format(CultureInfo.CurrentUICulture,
+                            RMResources.ExceptionMessage,
+                            errorMessage),
+                        responseHeaders,
+                        physicalAddress);
+                    break;
+
+                case StatusCodes.Gone:
+                    {
+#if NETFX
+                        if (PerfCounters.Counters.RoutingFailures != null)
+                        {
+                            PerfCounters.Counters.RoutingFailures.Increment();
+                        }
+#endif
+
+                        TransportClient.LogGoneException(physicalAddress, activityId.ToString());
+                        errorMessage = TransportClient.GetErrorResponse(storeResponse,
+                            RMResources.Gone,
+                            out responseHeaders);
+
+                        uint nSubStatus = 0;
+                        string valueSubStatus = responseHeaders.Get(WFConstants.BackendHeaders.SubStatus);
+                        if (!string.IsNullOrEmpty(valueSubStatus))
+                        {
+                            if (!uint.TryParse(valueSubStatus, NumberStyles.Integer, CultureInfo.InvariantCulture, out nSubStatus))
+                            {
+                                exception = new BadRequestException(
+                                    string.Format(CultureInfo.CurrentUICulture,
+                                        RMResources.ExceptionMessage,
+                                        string.IsNullOrEmpty(errorMessage) ? RMResources.BadRequest : errorMessage),
+                                    responseHeaders,
+                                    physicalAddress);
+                                break;
+                            }
+                        }
+
+                        if ((SubStatusCodes)nSubStatus == SubStatusCodes.NameCacheIsStale)
+                        {
+                            exception = new InvalidPartitionException(
+                                string.Format(CultureInfo.CurrentUICulture,
+                                    RMResources.ExceptionMessage,
+                                    errorMessage),
+                                responseHeaders,
+                                physicalAddress);
+                            break;
+                        }
+                        else if ((SubStatusCodes)nSubStatus == SubStatusCodes.PartitionKeyRangeGone)
+                        {
+                            exception = new PartitionKeyRangeGoneException(
+                                string.Format(CultureInfo.CurrentUICulture,
+                                    RMResources.ExceptionMessage,
+                                    errorMessage),
+                                responseHeaders,
+                                physicalAddress);
+                            break;
+                        }
+                        else if ((SubStatusCodes)nSubStatus == SubStatusCodes.CompletingSplit)
+                        {
+                            exception = new PartitionKeyRangeIsSplittingException(
+                                string.Format(CultureInfo.CurrentUICulture,
+                                    RMResources.ExceptionMessage,
+                                    errorMessage),
+                                responseHeaders,
+                                physicalAddress);
+                            break;
+                        }
+                        else if ((SubStatusCodes)nSubStatus == SubStatusCodes.CompletingPartitionMigration)
+                        {
+                            exception = new PartitionIsMigratingException(
+                                string.Format(CultureInfo.CurrentUICulture,
+                                    RMResources.ExceptionMessage,
+                                    errorMessage),
+                                responseHeaders,
+                                physicalAddress);
+                            break;
+                        }
+                        else
+                        {
+                            // Have the request URL in the exception message for debugging purposes.
+                            // Activity ID should already be there in the response headers.
+                            exception = new GoneException(
+                                string.Format(CultureInfo.CurrentUICulture,
+                                        RMResources.ExceptionMessage,
+                                        RMResources.Gone),
+                                    responseHeaders,
+                                    physicalAddress);
+                            break;
+                        }
+                    }
+
+                case StatusCodes.Conflict:
+                    errorMessage = TransportClient.GetErrorResponse(storeResponse, RMResources.EntityAlreadyExists, out responseHeaders);
+                    exception = new ConflictException(
+                        string.Format(CultureInfo.CurrentUICulture,
+                            RMResources.ExceptionMessage,
+                            errorMessage),
+                        responseHeaders,
+                        physicalAddress);
+                    break;
+
+                case StatusCodes.PreconditionFailed:
+                    errorMessage = TransportClient.GetErrorResponse(storeResponse, RMResources.PreconditionFailed, out responseHeaders);
+                    exception = new PreconditionFailedException(
+                        string.Format(CultureInfo.CurrentUICulture,
+                            RMResources.ExceptionMessage,
+                            errorMessage),
+                        responseHeaders,
+                        physicalAddress);
+                    break;
+
+                case StatusCodes.RequestEntityTooLarge:
+                    errorMessage = TransportClient.GetErrorResponse(storeResponse, string.Format(CultureInfo.CurrentUICulture,
+                        RMResources.RequestEntityTooLarge,
+                        HttpConstants.HttpHeaders.PageSize),
+                        out responseHeaders);
+                    exception = new RequestEntityTooLargeException(
+                        string.Format(CultureInfo.CurrentUICulture,
+                            RMResources.ExceptionMessage,
+                            errorMessage),
+                        responseHeaders,
+                        physicalAddress);
+                    break;
+
+                case StatusCodes.Locked:
+                    errorMessage = TransportClient.GetErrorResponse(storeResponse, RMResources.Locked, out responseHeaders);
+                    exception = new LockedException(
+                        string.Format(CultureInfo.CurrentUICulture,
+                            RMResources.ExceptionMessage,
+                            errorMessage),
+                        responseHeaders,
+                        physicalAddress);
+                    break;
+
+                case StatusCodes.TooManyRequests:
+                    errorMessage = TransportClient.GetErrorResponse(storeResponse, RMResources.TooManyRequests, out responseHeaders);
+                    exception = new RequestRateTooLargeException(
+                        string.Format(CultureInfo.CurrentUICulture,
+                            RMResources.ExceptionMessage,
+                            errorMessage),
+                        responseHeaders,
+                        physicalAddress);
+                    break;
+
+                case StatusCodes.ServiceUnavailable:
+                    errorMessage = TransportClient.GetErrorResponse(storeResponse, RMResources.ServiceUnavailable, out responseHeaders);
+                    exception = new ServiceUnavailableException(
+                        string.Format(CultureInfo.CurrentUICulture,
+                            RMResources.ExceptionMessage,
+                            errorMessage),
+                        responseHeaders,
+                        physicalAddress);
+                    break;
+
+                case StatusCodes.RequestTimeout:
+                    errorMessage = TransportClient.GetErrorResponse(storeResponse, RMResources.RequestTimeout, out responseHeaders);
+                    exception = new RequestTimeoutException(
+                        string.Format(CultureInfo.CurrentUICulture,
+                            RMResources.ExceptionMessage,
+                            errorMessage),
+                        responseHeaders,
+                        physicalAddress);
+                    break;
+
+                case StatusCodes.RetryWith:
+                    errorMessage = TransportClient.GetErrorResponse(storeResponse, RMResources.RetryWith, out responseHeaders);
+                    exception = new RetryWithException(
+                        string.Format(CultureInfo.CurrentUICulture,
+                            RMResources.ExceptionMessage,
+                            errorMessage),
+                        responseHeaders,
+                        physicalAddress);
+                    break;
+
+                case StatusCodes.InternalServerError:
+                    errorMessage = TransportClient.GetErrorResponse(storeResponse, RMResources.InternalServerError, out responseHeaders);
+                    exception = new InternalServerErrorException(
+                        string.Format(CultureInfo.CurrentUICulture,
+                            RMResources.ExceptionMessage,
+                            errorMessage),
+                        responseHeaders,
+                        physicalAddress);
+                    break;
+
+                default:
+                    {
+                        DefaultTrace.TraceCritical("Unrecognized status code {0} returned by backend. ActivityId {1}", storeResponse.Status, activityId);
+                        TransportClient.LogException(null, physicalAddress, resourceAddress, activityId);
+                        errorMessage = TransportClient.GetErrorResponse(storeResponse, RMResources.InvalidBackendResponse, out responseHeaders);
+                        exception = new InternalServerErrorException(
+                            string.Format(CultureInfo.CurrentUICulture,
+                                RMResources.ExceptionMessage,
+                                errorMessage),
+                            responseHeaders,
+                            physicalAddress);
+                    }
+                    break;
             }
 
-            this.timerPool = new TimerPool((int)clientOptions.TimerPoolResolution.TotalSeconds);
-            if (clientOptions.IdleTimeout > TimeSpan.Zero)
+            exception.LSN = storeResponse.LSN;
+            exception.PartitionKeyRangeId = storeResponse.PartitionKeyRangeId;
+            exception.ResourceAddress = resourceAddress;
+            exception.TransportRequestStats = storeResponse.TransportRequestStats;
+            throw exception;
+        }
+
+        protected Task<StoreResponse> InvokeQueryStoreAsync(
+            Uri physicalAddress,
+            ResourceType resourceType,
+            DocumentServiceRequest request)
+        {
+            string contentType = request.Headers[HttpConstants.HttpHeaders.ContentType];
+
+            OperationType operationType;
+            if (string.Equals(contentType, RuntimeConstants.MediaTypes.SQL, StringComparison.Ordinal))
             {
-                this.idleTimerPool = new TimerPool(minSupportedTimerDelayInSeconds: 30);
+                operationType = OperationType.SqlQuery;
             }
             else
             {
-                this.idleTimerPool = null;
+                operationType = OperationType.Query;
             }
 
-            this.channelDictionary = new ChannelDictionary(
-                new ChannelProperties(
-                    clientOptions.UserAgent,
-                    clientOptions.CertificateHostNameOverride,
-                    clientOptions.ConnectionStateListener,
-                    this.timerPool,
-                    clientOptions.RequestTimeout,
-                    clientOptions.OpenTimeout,
-                    clientOptions.LocalRegionOpenTimeout,
-                    clientOptions.PortReuseMode,
-                    userPortPool,
-                    clientOptions.MaxChannels,
-                    clientOptions.PartitionCount,
-                    clientOptions.MaxRequestsPerChannel,
-                    clientOptions.MaxConcurrentOpeningConnectionCount,
-                    clientOptions.ReceiveHangDetectionTime,
-                    clientOptions.SendHangDetectionTime,
-                    clientOptions.IdleTimeout,
-                    this.idleTimerPool,
-                    clientOptions.CallerId,
-                    clientOptions.EnableChannelMultiplexing));
+            return InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.Query(operationType, resourceType),
+                request);
         }
 
-        internal override Task<StoreResponse> InvokeStoreAsync(
-            Uri physicalAddress,
+        internal virtual Task<StoreResponse> InvokeStoreAsync(
+            TransportAddressUri physicalAddress,
             ResourceOperation resourceOperation,
             DocumentServiceRequest request)
         {
-            return this.InvokeStoreAsync(new TransportAddressUri(physicalAddress), resourceOperation, request);
+            return this.InvokeStoreAsync(physicalAddress.Uri, resourceOperation, request);
         }
 
-        internal override async Task<StoreResponse> InvokeStoreAsync(
-            TransportAddressUri physicalAddress, ResourceOperation resourceOperation,
-            DocumentServiceRequest request)
+        internal abstract Task<StoreResponse> InvokeStoreAsync(
+            Uri physicalAddress,
+            ResourceOperation resourceOperation,
+            DocumentServiceRequest request);
+
+        protected async static Task<string> GetErrorResponseAsync(HttpResponseMessage responseMessage)
         {
-            this.ThrowIfDisposed();
-
-            Guid activityId = Trace.CorrelationManager.ActivityId;
-
-            if (!request.IsBodySeekableClonableAndCountable)
+            if (responseMessage.Content != null)
             {
-                throw new InternalServerErrorException();
+                Stream responseStream = await responseMessage.Content.ReadAsStreamAsync();
+                return TransportClient.GetErrorFromStream(responseStream);
             }
-
-            StoreResponse storeResponse = null;
-            TransportRequestStats transportRequestStats = new TransportRequestStats();
-            string operation = "Unknown operation";
-            DateTime requestStartTime = DateTime.UtcNow;
-            int transportResponseStatusCode = (int)TransportResponseStatusCode.Success;
-            try
+            else
             {
-                TransportClient.IncrementCounters();
-
-                operation = "GetChannel";
-
-                // Treat all retries as out of region request for open timeout. This is to prevent too many retries because of the shorter time duration.
-                bool localRegionRequest = request.RequestContext.IsRetry ? false : request.RequestContext.LocalRegionRequest;
-                IChannel channel = this.channelDictionary.GetChannel(physicalAddress.Uri, localRegionRequest);
-
-                TransportClient.GetTransportPerformanceCounters().IncrementRntbdRequestCount(resourceOperation.resourceType, resourceOperation.operationType);
-
-                operation = "RequestAsync";
-                storeResponse = await channel.RequestAsync(request, physicalAddress,
-                    resourceOperation, activityId, transportRequestStats);
-                transportRequestStats.RecordState(TransportRequestStats.RequestStage.Completed);
-                storeResponse.TransportRequestStats = transportRequestStats;
-            }
-            catch (TransportException ex)
-            {
-                // App-compat shim: On transport failure, TransportClient callers
-                // expect one of:
-                // - GoneException - widely abused to mean "refresh the address
-                //   cache and try again".
-                // - RequestTimeoutException - means what it says, but it's a
-                //   non-retriable error.
-                // - ServiceUnavailableException - abused to mean "non-retriable
-                //   error other than timeout". Endless source of customer
-                //   confusion.
-                //
-                // Traditionally, the transport client has converted timeouts to
-                // RequestTimeoutException or GoneException based on whether
-                // the request was a write (non-retriable) or a read (retriable).
-                // This design leads to a low-level piece of code driving a
-                // component much higher in the stack (the retry loop)
-                // based on high-level information (request types).
-                // Low-level code should only return errors describing what went
-                // wrong at its level and provide enough information that callers
-                // can decide what to do.
-                //
-                // Until the retry loop can be fixed so that it handles
-                // TransportException directly, don't allow TransportException
-                // to escape, and wrap it in an expected DocumentClientException
-                // instead. Tracked in backlog item 303368.
-                transportRequestStats.RecordState(TransportRequestStats.RequestStage.Failed);
-                transportResponseStatusCode = (int) ex.ErrorCode;
-                ex.RequestStartTime = requestStartTime;
-                ex.RequestEndTime = DateTime.UtcNow;
-                ex.OperationType = resourceOperation.operationType;
-                ex.ResourceType = resourceOperation.resourceType;
-                TransportClient.GetTransportPerformanceCounters().IncrementRntbdResponseCount(resourceOperation.resourceType,
-                    resourceOperation.operationType, (int) ex.ErrorCode);
-
-                DefaultTrace.TraceInformation(
-                    "{0} failed: RID: {1}, Resource Type: {2}, Op: {3}, Address: {4}, " +
-                    "Exception: {5}",
-                    operation, request.ResourceAddress, request.ResourceType,
-                    resourceOperation, physicalAddress, ex);
-                if (request.IsReadOnlyRequest)
-                {
-                    DefaultTrace.TraceInformation("Converting to Gone (read-only request)");
-                    throw TransportExceptions.GetGoneException(
-                        physicalAddress.Uri, activityId, ex, transportRequestStats);
-                }
-                if (!ex.UserRequestSent)
-                {
-                    DefaultTrace.TraceInformation("Converting to Gone (write request, not sent)");
-                    throw TransportExceptions.GetGoneException(
-                        physicalAddress.Uri, activityId, ex, transportRequestStats);
-                }
-                if (TransportException.IsTimeout(ex.ErrorCode))
-                {
-                    DefaultTrace.TraceInformation("Converting to RequestTimeout");
-                    throw TransportExceptions.GetRequestTimeoutException(
-                        physicalAddress.Uri, activityId, ex, transportRequestStats);
-                }
-                DefaultTrace.TraceInformation("Converting to ServiceUnavailable");
-                throw TransportExceptions.GetServiceUnavailableException(
-                    physicalAddress.Uri, activityId, ex, transportRequestStats);
-            }
-            catch (DocumentClientException ex)
-            {
-                transportResponseStatusCode = (int)TransportResponseStatusCode.DocumentClientException;
-                DefaultTrace.TraceInformation("{0} failed: RID: {1}, Resource Type: {2}, Op: {3}, Address: {4}, " +
-                                              "Exception: {5}", operation, request.ResourceAddress, request.ResourceType, resourceOperation,
-                    physicalAddress, ex);
-                transportRequestStats.RecordState(TransportRequestStats.RequestStage.Failed);
-                ex.TransportRequestStats = transportRequestStats;
-                throw;
-            }
-            catch (Exception ex)
-            {
-                transportResponseStatusCode = (int)TransportResponseStatusCode.UnknownException;
-                DefaultTrace.TraceInformation("{0} failed: RID: {1}, Resource Type: {2}, Op: {3}, Address: {4}, " +
-                    "Exception: {5}", operation, request.ResourceAddress, request.ResourceType, resourceOperation,
-                    physicalAddress, ex);
-                throw;
-            }
-            finally
-            {
-                TransportClient.DecrementCounters();
-                TransportClient.GetTransportPerformanceCounters().IncrementRntbdResponseCount(resourceOperation.resourceType,
-                    resourceOperation.operationType, transportResponseStatusCode);
-                this.RaiseProtocolDowngradeRequest(storeResponse);
-            }
-
-            TransportClient.ThrowServerException(request.ResourceAddress, storeResponse, physicalAddress.Uri, activityId, request);
-            return storeResponse;
-        }
-
-        public override void Dispose()
-        {
-            this.ThrowIfDisposed();
-            this.disposed = true;
-            this.channelDictionary.Dispose();
-
-            if (this.idleTimerPool != null)
-            {
-                this.idleTimerPool.Dispose();
-            }
-
-            this.timerPool.Dispose();
-
-            base.Dispose();
-
-            DefaultTrace.TraceInformation("Rntbd.TransportClient disposed.");
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (this.disposed)
-            {
-                throw new ObjectDisposedException(nameof(TransportClient));
+                return "";
             }
         }
 
-        private static void LogClientOptions(Options clientOptions)
+        protected static string GetErrorResponse(StoreResponse storeResponse, string defaultMessage, out INameValueCollection responseHeaders)
         {
-            DefaultTrace.TraceInformation("Creating RNTBD TransportClient with options {0}", clientOptions.ToString());
+            string result = null;
+            responseHeaders = storeResponse.Headers;
+
+            if (storeResponse.ResponseBody != null)
+            {
+                result = TransportClient.GetErrorFromStream(storeResponse.ResponseBody);
+            }
+
+            return string.IsNullOrEmpty(result) ? defaultMessage : result;
         }
 
-        private static void IncrementCounters()
+        protected static string GetErrorFromStream(Stream responseStream)
         {
-#if NETFX
-            if (PerfCounters.Counters.BackendActiveRequests != null)
+            using (responseStream)
             {
-                PerfCounters.Counters.BackendActiveRequests.Increment();
+                return new StreamReader(responseStream).ReadToEnd();
             }
-            if (PerfCounters.Counters.BackendRequestsPerSec != null)
-            {
-                PerfCounters.Counters.BackendRequestsPerSec.Increment();
-            }
-#endif
         }
 
-        private static void DecrementCounters()
+        protected static void LogException(Uri physicalAddress, string activityId)
         {
-#if NETFX
-            if (PerfCounters.Counters.BackendActiveRequests != null)
-            {
-                PerfCounters.Counters.BackendActiveRequests.Decrement();
-            }
-#endif
+            DefaultTrace.TraceInformation(string.Format(CultureInfo.InvariantCulture, "Store Request Failed. Store Physical Address {0} ActivityId {1}",
+                physicalAddress, activityId));
         }
 
-        #region RNTBD Transition
-
-        public event Action OnDisableRntbdChannel;
-
-        // Examines storeResponse and raises an event if this is the first time
-        // this transport client sees the "disable RNTBD channel" header set to
-        // true by the back-end.
-        private void RaiseProtocolDowngradeRequest(StoreResponse storeResponse)
+        protected static void LogException(Exception exception, Uri physicalAddress, string rid, Guid activityId)
         {
-            if (storeResponse == null)
+            if (exception != null)
             {
-                return;
+                DefaultTrace.TraceInformation(string.Format(CultureInfo.InvariantCulture,
+                    "Store Request Failed. Exception {0} Store Physical Address {1} RID {2} ActivityId {3}",
+                    exception.Message, physicalAddress, rid, activityId.ToString()));
             }
-            string disableRntbdChannelHeader = null;
-            if (!storeResponse.TryGetHeaderValue(HttpConstants.HttpHeaders.DisableRntbdChannel, out disableRntbdChannelHeader))
+            else
             {
-                return;
+                DefaultTrace.TraceInformation(string.Format(CultureInfo.InvariantCulture,
+                    "Store Request Failed. Store Physical Address {0} RID {1} ActivityId {2}",
+                    physicalAddress, rid, activityId.ToString()));
             }
-            if (!string.Equals(disableRntbdChannelHeader, "true"))
-            {
-                return;
-            }
-
-            bool raiseRntbdChannelDisable = false;
-            lock (this.disableRntbdChannelLock)
-            {
-                if (this.disableRntbdChannel)
-                {
-                    return;
-                }
-                this.disableRntbdChannel = true;
-                raiseRntbdChannelDisable = true;
-            }
-            if (!raiseRntbdChannelDisable)
-            {
-                return;
-            }
-
-            // Schedule execution on current .NET task scheduler.
-            // Compute gateway uses custom task scheduler to track tenant resource utilization.
-            // Task.Run() switches to default task scheduler for entire sub-tree of tasks making compute gateway incapable of tracking resource usage accurately.
-            // Task.Factory.StartNew() allows specifying task scheduler to use.
-            Task.Factory.StartNewOnCurrentTaskSchedulerAsync(() =>
-            {
-                this.OnDisableRntbdChannel?.Invoke();
-            })
-            .ContinueWith(
-                failedTask =>
-                {
-                    DefaultTrace.TraceError(
-                        "RNTBD channel callback failed: {0}",
-                        failedTask.Exception);
-                },
-                default(CancellationToken),
-                TaskContinuationOptions.OnlyOnFaulted,
-                TaskScheduler.Current);
         }
 
-        #endregion
-
-        public sealed class Options
+        protected static void LogGoneException(Uri physicalAddress, string activityId)
         {
-            private UserAgentContainer userAgent = null;
-            private TimeSpan openTimeout = TimeSpan.Zero;
-            private TimeSpan localRegionOpenTimeout = TimeSpan.Zero;
-            private TimeSpan timerPoolResolution = TimeSpan.Zero;
-
-            public Options(TimeSpan requestTimeout)
-            {
-                Debug.Assert(requestTimeout > TimeSpan.Zero);
-                this.RequestTimeout = requestTimeout;
-                this.MaxChannels = ushort.MaxValue;
-                this.PartitionCount = 1;
-                this.MaxRequestsPerChannel = 30;
-                this.PortReuseMode = PortReuseMode.ReuseUnicastPort;
-                this.PortPoolReuseThreshold = 256;
-                this.PortPoolBindAttempts = 5;
-                this.ReceiveHangDetectionTime = TimeSpan.FromSeconds(65.0);
-                this.SendHangDetectionTime = TimeSpan.FromSeconds(10.0);
-                this.IdleTimeout = TimeSpan.FromSeconds(1800);
-                this.CallerId = RntbdConstants.CallerId.Anonymous;
-                this.EnableChannelMultiplexing = false;
-                this.MaxConcurrentOpeningConnectionCount = ushort.MaxValue;
-            }
-
-            public TimeSpan RequestTimeout { get; private set; }
-            public int MaxChannels { get; set; }
-            public int PartitionCount { get; set; }
-            public int MaxRequestsPerChannel { get; set; }
-            public TimeSpan ReceiveHangDetectionTime { get; set; }
-            public TimeSpan SendHangDetectionTime { get; set; }
-            public TimeSpan IdleTimeout { get; set; }
-            public RntbdConstants.CallerId CallerId { get; set; }
-            public bool EnableChannelMultiplexing { get; set; }
-
-            public UserAgentContainer UserAgent
-            {
-                get
-                {
-                    if (this.userAgent != null)
-                    {
-                        return this.userAgent;
-                    }
-                    this.userAgent = new UserAgentContainer();
-                    return this.userAgent;
-                }
-                set { this.userAgent = value; }
-            }
-
-            public string CertificateHostNameOverride { get; set; }
-
-            public IConnectionStateListener ConnectionStateListener { get; set; }
-
-            public TimeSpan OpenTimeout
-            {
-                get
-                {
-                    if (this.openTimeout > TimeSpan.Zero)
-                    {
-                        return this.openTimeout;
-                    }
-                    return this.RequestTimeout;
-                }
-                set { this.openTimeout = value; }
-            }
-
-            public TimeSpan LocalRegionOpenTimeout
-            {
-                get
-                {
-                    if (this.localRegionOpenTimeout > TimeSpan.Zero)
-                    {
-                        return this.localRegionOpenTimeout;
-                    }
-                    return this.OpenTimeout;
-                }
-                set { this.localRegionOpenTimeout = value; }
-            }
-
-            public PortReuseMode PortReuseMode { get; set; }
-
-            public int PortPoolReuseThreshold { get; internal set; }
-
-            public int PortPoolBindAttempts { get; internal set; }
-
-
-            public TimeSpan TimerPoolResolution
-            {
-                get
-                {
-                    return Options.GetTimerPoolResolutionSeconds(
-                        this.timerPoolResolution, this.RequestTimeout, this.openTimeout);
-                }
-                set { this.timerPoolResolution = value; }
-            }
-
-            public int MaxConcurrentOpeningConnectionCount { get; set; }
-
-            public override string ToString()
-            {
-                StringBuilder s = new StringBuilder();
-                s.AppendLine("Rntbd.TransportClient.Options");
-                s.Append("  OpenTimeout: ");
-                s.AppendLine(this.OpenTimeout.ToString("c"));
-                s.Append("  RequestTimeout: ");
-                s.AppendLine(this.RequestTimeout.ToString("c"));
-                s.Append("  TimerPoolResolution: ");
-                s.AppendLine(this.TimerPoolResolution.ToString("c"));
-                s.Append("  MaxChannels: ");
-                s.AppendLine(this.MaxChannels.ToString(CultureInfo.InvariantCulture));
-                s.Append("  PartitionCount: ");
-                s.AppendLine(this.PartitionCount.ToString(CultureInfo.InvariantCulture));
-                s.Append("  MaxRequestsPerChannel: ");
-                s.AppendLine(this.MaxRequestsPerChannel.ToString(CultureInfo.InvariantCulture));
-                s.Append("  ReceiveHangDetectionTime: ");
-                s.AppendLine(this.ReceiveHangDetectionTime.ToString("c"));
-                s.Append("  SendHangDetectionTime: ");
-                s.AppendLine(this.SendHangDetectionTime.ToString("c"));
-                s.Append("  IdleTimeout: ");
-                s.AppendLine(this.IdleTimeout.ToString("c"));
-                s.Append("  UserAgent: ");
-                s.Append(this.UserAgent.UserAgent);
-                s.Append(" Suffix: ");
-                s.AppendLine(this.UserAgent.Suffix);
-                s.Append("  CertificateHostNameOverride: ");
-                s.AppendLine(this.CertificateHostNameOverride);
-                s.Append("  LocalRegionTimeout: ");
-                s.AppendLine(this.LocalRegionOpenTimeout.ToString("c"));
-                s.Append("  EnableChannelMultiplexing: ");
-                s.AppendLine(this.EnableChannelMultiplexing.ToString());
-                s.Append("  MaxConcurrentOpeningConnectionCount: ");
-                s.AppendLine(this.MaxConcurrentOpeningConnectionCount.ToString(CultureInfo.InvariantCulture));
-                return s.ToString();
-            }
-
-            private static TimeSpan GetTimerPoolResolutionSeconds(
-                TimeSpan timerPoolResolution, TimeSpan requestTimeout, TimeSpan openTimeout)
-            {
-                Debug.Assert(timerPoolResolution > TimeSpan.Zero ||
-                    openTimeout > TimeSpan.Zero ||
-                    requestTimeout > TimeSpan.Zero);
-                if (timerPoolResolution > TimeSpan.Zero &&
-                    timerPoolResolution < openTimeout &&
-                    timerPoolResolution < requestTimeout)
-                {
-                    return timerPoolResolution;
-                }
-                if (openTimeout > TimeSpan.Zero && requestTimeout > TimeSpan.Zero)
-                {
-                    return openTimeout < requestTimeout ? openTimeout : requestTimeout;
-                }
-                return openTimeout > TimeSpan.Zero ? openTimeout : requestTimeout;
-            }
-
-        }
-
-        internal static void SetTransportPerformanceCounters(TransportPerformanceCounters transportPerformanceCounters)
-        {
-            if (transportPerformanceCounters == null)
-            {
-                throw new ArgumentNullException(nameof(transportPerformanceCounters));
-            }
-
-            TransportClient.transportPerformanceCounters = transportPerformanceCounters;
-        }
-
-        internal static TransportPerformanceCounters GetTransportPerformanceCounters()
-        {
-            return transportPerformanceCounters;
+            DefaultTrace.TraceInformation(string.Format(CultureInfo.InvariantCulture, "Listener not found. Store Physical Address {0} ActivityId {1}",
+                physicalAddress, activityId));
         }
     }
 }

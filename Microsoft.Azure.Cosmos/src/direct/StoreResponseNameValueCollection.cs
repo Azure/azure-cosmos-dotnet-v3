@@ -2915,10 +2915,7 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 if (value == null)
                 {
-                    if (this.lazyNotCommonHeaders.IsValueCreated)
-                    {
-                        this.lazyNotCommonHeaders.Value.Remove(key);
-                    }
+                    this.lazyNotCommonHeaders.Value.Remove(key);
                 }
                 else
                 {

@@ -109,7 +109,6 @@ namespace Microsoft.Azure.Documents
         MergeIsDisabled = 2012,
 		TombstoneRecordsNotFound = 2015, // Tombstone records were not found because they were purged.
         InvalidAccountStatus = 2016,
-        OfferValidationFailed = 2017,
 
         // 500: InternalServerError
         ConfigurationNameNotEmpty = 3001,

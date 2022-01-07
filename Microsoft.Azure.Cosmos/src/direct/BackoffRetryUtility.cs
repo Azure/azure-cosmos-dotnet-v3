@@ -10,6 +10,13 @@ namespace Microsoft.Azure.Documents
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
+    /// <summary>
+    /// Utility to retry operations based off retry policies.
+    /// </summary>
+    /// <remarks>
+    /// This implementation differs from the one in SharedFiles on the fact that it does not check the cancellationToken status between capturing an error and evaluating the retry policy.
+    /// Ref: https://msdata.visualstudio.com/CosmosDB/_git/CosmosDB/pullrequest/550056
+    /// </remarks>
     internal static class BackoffRetryUtility<T>
     {
         public const string ExceptionSourceToIgnoreForIgnoreForRetry = "BackoffRetryUtility";
@@ -22,6 +29,22 @@ namespace Microsoft.Azure.Documents
         {
             return ExecuteRetryAsync(
                 () => callbackMethod(),
+                (Exception exception, CancellationToken token) => retryPolicy.ShouldRetryAsync(exception, cancellationToken),
+                null,
+                TimeSpan.Zero,
+                cancellationToken,
+                preRetryCallback);
+        }
+
+        public static Task<T> ExecuteAsync<TParam>(
+            Func<TParam, Task<T>> callbackMethod,
+            IRetryPolicy retryPolicy,
+            TParam param,
+            CancellationToken cancellationToken,
+            Action<Exception> preRetryCallback = null)
+        {
+            return ExecuteRetryAsync(
+                () => callbackMethod(param),
                 (Exception exception, CancellationToken token) => retryPolicy.ShouldRetryAsync(exception, cancellationToken),
                 null,
                 TimeSpan.Zero,
@@ -114,11 +137,10 @@ namespace Microsoft.Azure.Documents
         {
             while (true)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 ExceptionDispatchInfo exception = null;
                 try
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-
                     return await callbackMethod();
                 }
                 catch (Exception ex)
@@ -126,13 +148,6 @@ namespace Microsoft.Azure.Documents
                     await Task.Yield();
                     exception = ExceptionDispatchInfo.Capture(ex);
                 }
-
-                // Don't retry if caller specified cancellation token was signaled.
-                // Note that we can't simply key off of OperationCancelledException
-                // here as this can be thrown independent of caller's CancellationToken
-                // being signaled. For example, WinFab throws OperationCancelledException
-                // when it gets E_ABORT from native code.
-                cancellationToken.ThrowIfCancellationRequested();
 
                 ShouldRetryResult result = await callShouldRetry(exception.SourceException, cancellationToken);
 

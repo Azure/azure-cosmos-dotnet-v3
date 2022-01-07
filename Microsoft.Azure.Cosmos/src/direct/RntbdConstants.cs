@@ -449,7 +449,6 @@ namespace Microsoft.Azure.Documents
             ChangeFeedWireFormatVersion = 0x00B2,
             PopulateBYOKEncryptionProgress = 0x00B3,
             UseUserBackgroundBudget = 0x00B4,
-            IncludePhysicalPartitionThroughputInfo = 0x00B5,
         }
 
         public sealed class Request : RntbdTokenStream<RequestIdentifiers>
@@ -618,7 +617,6 @@ namespace Microsoft.Azure.Documents
             public RntbdToken changeFeedWireFormatVersion;
             public RntbdToken populateBYOKEncryptionProgress;
             public RntbdToken useUserBackgroundBudget;
-            public RntbdToken includePhysicalPartitionThroughputInfo;
 
             public Request()
             {
@@ -786,7 +784,6 @@ namespace Microsoft.Azure.Documents
                 this.changeFeedWireFormatVersion = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.ChangeFeedWireFormatVersion);
                 this.populateBYOKEncryptionProgress = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateBYOKEncryptionProgress);
                 this.useUserBackgroundBudget = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.UseUserBackgroundBudget);
-                this.includePhysicalPartitionThroughputInfo = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.IncludePhysicalPartitionThroughputInfo);
                 base.SetTokens(new RntbdToken[]
                 {
                     this.resourceId,
@@ -953,7 +950,6 @@ namespace Microsoft.Azure.Documents
                     this.changeFeedWireFormatVersion,
                     this.populateBYOKEncryptionProgress,
                     this.useUserBackgroundBudget,
-                    this.includePhysicalPartitionThroughputInfo,
                 });
             }
         }

@@ -271,24 +271,11 @@ namespace Microsoft.Azure.Documents
         // Extract the tenant id from the dns name
         // All our supported domain names are have more then one dns zone so they we only need accept names with at least one zone in them
         // ie, we do not have to supoprt http://localhost/ as a value uri with tenant information but we will for ease of use
-        // Also support http://hostname/accounts/{id}/operation/...
         internal static string ExtractTenantIdFromUri(Uri uri)
-        {
-            if (UrlUtility.IsAccountsPathSegmentPartOfFirstItem(uri))
-            {
-                return UrlUtility.ExtractIdFromItemUri(uri, 2);
-            }
-
-            return UrlUtility.ExtractTenantIdFromUriIgnoreAccountsPattern(uri);
-        }
-
-        // Extract the tenant id from the dns name
-        // Support for extract federationname from the format http://federationname.documents.azure.com/accounts/{id}/operation/...
-        internal static string ExtractTenantIdFromUriIgnoreAccountsPattern(Uri uri)
         {
             string hostName = uri.DnsSafeHost;
             int firstPeriod = hostName.IndexOf('.');
-
+            
             if (firstPeriod != -1)
             {
                 return hostName.Substring(0, firstPeriod);
@@ -364,18 +351,6 @@ namespace Microsoft.Azure.Documents
             }
 
             return false;
-        }
-
-        // Parsing urls like http://hostname/accounts/{id}/operation/...
-        private static bool IsAccountsPathSegmentPartOfFirstItem(Uri uri)
-        {
-            if (uri.Segments.Length < 3)
-            {
-                return false;
-            }
-
-            string firstPart = UrlUtility.ExtractIdFromItemUri(uri, 1);
-            return string.Equals(firstPart, Paths.AccountsPathSegment, StringComparison.Ordinal);
         }
 
         #region Astoria Url Parsing functions
