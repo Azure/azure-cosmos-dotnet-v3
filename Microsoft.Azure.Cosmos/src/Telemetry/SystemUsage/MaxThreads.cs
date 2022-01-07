@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.SystemUsage
     using HdrHistogram;
     using Microsoft.Azure.Documents.Rntbd;
 
-    internal class MaxThreads : ISystemUsage
+    internal class MaxThreads : SystemUsageBase
     {
         public MaxThreads(LongConcurrentHistogram systemUsageHistogram, IReadOnlyCollection<SystemUsageLoad> systemUsageCollection) 
             : base(systemUsageHistogram, systemUsageCollection)

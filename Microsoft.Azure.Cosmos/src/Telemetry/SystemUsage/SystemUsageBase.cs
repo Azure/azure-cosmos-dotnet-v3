@@ -10,12 +10,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry.SystemUsage
     using HdrHistogram;
     using Microsoft.Azure.Documents.Rntbd;
 
-    internal abstract class ISystemUsage
+    internal abstract class SystemUsageBase
     {
         private readonly LongConcurrentHistogram systemUsageHistogram;
         private readonly IReadOnlyCollection<SystemUsageLoad> systemUsageCollection;
 
-        public ISystemUsage(LongConcurrentHistogram systemUsageHistogram, IReadOnlyCollection<SystemUsageLoad> systemUsageCollection)
+        public SystemUsageBase(LongConcurrentHistogram systemUsageHistogram, IReadOnlyCollection<SystemUsageLoad> systemUsageCollection)
         {
             this.systemUsageHistogram = systemUsageHistogram;
             this.systemUsageCollection = systemUsageCollection;
@@ -27,8 +27,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry.SystemUsage
         /// <returns>Vlaue to recorded in Client Telemetry</returns>
         public abstract long? ValueToRecord(SystemUsageLoad systemUsage);
 
+        /// <summary>
+        /// Name of the metrics
+        /// </summary>
         public abstract string MetricName { get; }
 
+        /// <summary>
+        /// Unit name in which the values will be recorded
+        /// </summary>
         public abstract string MetricUnit { get; }
 
         /// <summary>
@@ -36,6 +42,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry.SystemUsage
         /// </summary>
         public virtual int AggregationAdjustment => 1;
 
+        /// <summary>
+        /// Get System Information Object with Aggregated results and reset the Histogram
+        /// </summary>
+        /// <returns>SystemInfo</returns>
         public virtual SystemInfo GetSystemInfo()
         {
             SystemInfo systemInfo = new SystemInfo(this.MetricName, this.MetricUnit);

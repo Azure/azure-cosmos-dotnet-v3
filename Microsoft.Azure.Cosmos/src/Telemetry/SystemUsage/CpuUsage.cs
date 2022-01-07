@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.SystemUsage
     using HdrHistogram;
     using Microsoft.Azure.Documents.Rntbd;
 
-    internal class CpuUsage : ISystemUsage
+    internal class CpuUsage : SystemUsageBase
     {
         public CpuUsage(LongConcurrentHistogram systemUsageHistogram, IReadOnlyCollection<SystemUsageLoad> systemUsageCollection)
             : base(systemUsageHistogram, systemUsageCollection)
