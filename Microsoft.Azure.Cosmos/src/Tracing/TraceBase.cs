@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// </summary>
         public IReadOnlyList<(string, Uri)> RegionsContacted
         {
-            get => this.RegionsContactedTemporary.ToList();
+            get => this.RegionsContactedTemporary?.ToList();
             set
             {
                 if (this.RegionsContactedTemporary == null)
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 {
                     return;
                 }
-                this.RegionsContacted = clientSideRequestStatisticsTraceDatum.RegionsContacted;
+                this.RegionsContacted = clientSideRequestStatisticsTraceDatum.RegionsContacted?.ToList();
             }
         }
 

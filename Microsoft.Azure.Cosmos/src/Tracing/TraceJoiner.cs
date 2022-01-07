@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     regionsList.UnionWith(trace.RegionsContacted);
                 }
 
-                this.RegionsContacted = regionsList;
+                this.RegionsContacted = regionsList?.ToList();
             }
 
             public override string Name => "Trace Forest";
