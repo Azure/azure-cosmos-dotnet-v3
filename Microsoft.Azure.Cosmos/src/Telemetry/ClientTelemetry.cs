@@ -147,6 +147,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     if (this.cancellationTokenSource.IsCancellationRequested)
                     {
                         DefaultTrace.TraceInformation("Observer Task Cancelled.");
+
                         break;
                     }
 
@@ -247,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 DefaultTrace.TraceVerbose("Started Recording System Usage for telemetry.");
 
-                SystemUsageHistory systemUsageHistory = this.diagnosticsHelper.GetClientTelemtrySystemHistory();
+                SystemUsageHistory systemUsageHistory = this.diagnosticsHelper.GetClientTelemetrySystemHistory();
 
                 if (systemUsageHistory != null )
                 {
