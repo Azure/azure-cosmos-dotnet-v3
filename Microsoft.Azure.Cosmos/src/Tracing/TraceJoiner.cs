@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             return traceForest;
         }
 
-        private sealed class TraceForest : AbstractTrace
+        private sealed class TraceForest : TraceBase
         {
             private static readonly CallerInfo EmptyInfo = new CallerInfo(string.Empty, string.Empty, 0);
 

@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
-    internal sealed class Trace : AbstractTrace
+    internal sealed class Trace : TraceBase
     {
         private readonly List<ITrace> children;
         private readonly Dictionary<string, object> data;

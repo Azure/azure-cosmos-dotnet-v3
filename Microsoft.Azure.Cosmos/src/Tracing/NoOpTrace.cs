@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System;
     using System.Collections.Generic;
 
-    internal sealed class NoOpTrace : AbstractTrace
+    internal sealed class NoOpTrace : TraceBase
     {
         public static readonly NoOpTrace Singleton = new NoOpTrace();
 

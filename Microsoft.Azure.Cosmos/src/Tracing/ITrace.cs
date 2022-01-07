@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <summary>
         /// Consolidated Region contacted Information of this and children nodes
         /// </summary>
-        HashSet<(string, Uri)> RegionsContacted { get; set; }
+        ISet<(string, Uri)> RegionsContacted { get; set; }
 
         /// <summary>
         /// Starts a Trace and adds it as a child to this instance.

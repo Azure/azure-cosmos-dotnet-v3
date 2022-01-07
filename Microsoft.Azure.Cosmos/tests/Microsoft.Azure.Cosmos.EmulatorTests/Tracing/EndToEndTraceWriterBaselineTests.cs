@@ -1327,7 +1327,7 @@
             }
         }
 
-        private sealed class TraceForBaselineTesting : AbstractTrace
+        private sealed class TraceForBaselineTesting : TraceBase
         {
             public readonly Dictionary<string, object> data;
             public readonly List<ITrace> children;

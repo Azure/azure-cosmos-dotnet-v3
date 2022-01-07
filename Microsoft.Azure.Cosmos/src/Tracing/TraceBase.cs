@@ -10,14 +10,14 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Text;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
-    internal abstract class AbstractTrace : ITrace
+    internal abstract class TraceBase : ITrace
     {
-        private HashSet<(string, Uri)> RegionsContactedTemporary { get; set; }
+        private ISet<(string, Uri)> RegionsContactedTemporary { get; set; }
 
         /// <summary>
         /// Consolidated Region contacted Information of this and children nodes
         /// </summary>
-        public HashSet<(string, Uri)> RegionsContacted
+        public ISet<(string, Uri)> RegionsContacted
         {
             get => this.RegionsContactedTemporary;
             set

@@ -882,7 +882,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             }
         }
 
-        private sealed class TraceForBaselineTesting : AbstractTrace
+        private sealed class TraceForBaselineTesting : TraceBase
         {
             private readonly Dictionary<string, object> data;
             private readonly List<ITrace> children;
