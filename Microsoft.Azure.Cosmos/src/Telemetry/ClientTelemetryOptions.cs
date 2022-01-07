@@ -46,14 +46,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const String MemoryName = "MemoryRemaining";
         internal const String MemoryUnit = "MB";
 
-        internal const String AvailableThreadsName = "AvailableWorkerThreads";
-        internal const String AvailableThreadsUnit = "Threads";
+        internal const String AvailableThreadsName = "SystemPool_AvailableThreads";
+        internal const String AvailableThreadsUnit = "ThreadCount";
 
-        internal const String MinThreadsName = "MinWorkerThreads";
-        internal const String MinThreadsUnit = "Threads";
+        internal const String MinThreadsName = "SystemPool_MinThreads";
+        internal const String MinThreadsUnit = "ThreadCount";
 
-        internal const String MaxThreadsName = "MaxWorkerThreads";
-        internal const String MaxThreadsUnit = "Threads";
+        internal const String MaxThreadsName = "SystemPool_MaxThreads";
+        internal const String MaxThreadsUnit = "ThreadCount";
 
         internal const string DefaultVmMetadataUrL = "http://169.254.169.254/metadata/instance?api-version=2020-06-01";
         internal const double DefaultTimeStampInSeconds = 600;
