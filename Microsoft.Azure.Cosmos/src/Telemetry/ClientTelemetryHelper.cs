@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Telemetry
@@ -88,7 +88,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         /// <summary>
-        /// Record System Usage and return recorded metrics
+        /// Record System Usage and update passed system Info collection. Right now, it collects following metrics
+        /// 1) CPU Usage
+        /// 2) Memory Remaining
+        /// 3) Available Threads
+        /// 4) Min Threads
+        /// 5) Max Threads
+        /// 
         /// </summary>
         /// <param name="systemUsageHistory"></param>
         /// <param name="systemInfoCollection"></param>

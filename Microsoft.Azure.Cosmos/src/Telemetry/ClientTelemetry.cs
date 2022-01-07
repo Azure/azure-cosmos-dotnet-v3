@@ -255,6 +255,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 if (systemUsageHistory != null )
                 {
                     ClientTelemetryHelper.RecordSystemUsage(systemUsageHistory, this.clientTelemetryInfo.SystemInfo);
+                } 
+                else
+                {
+                    DefaultTrace.TraceWarning("System Usage History not available");
                 }
             }
             catch (Exception ex)
