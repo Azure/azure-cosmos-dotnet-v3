@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <summary>
         /// Gets the name of the node.
         /// </summary>
-        string Name { get; }
+        string Name { get; set; }
 
         /// <summary>
         /// Gets the ID of the node.

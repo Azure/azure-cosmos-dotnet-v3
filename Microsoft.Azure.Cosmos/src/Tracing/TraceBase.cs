@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             }
         }
 
-        public abstract string Name { get; }
+        public abstract string Name { get; set; }
 
         public abstract Guid Id { get; }
 

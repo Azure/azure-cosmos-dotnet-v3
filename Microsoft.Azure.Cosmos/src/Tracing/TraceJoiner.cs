@@ -56,7 +56,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.RegionsContacted = regionsList?.ToList();
             }
 
-            public override string Name => "Trace Forest";
+            public override string Name
+            {
+                get => "Trace Forest";
+                set
+                {
+                }
+            }
 
             public override Guid Id => Guid.Empty;
 

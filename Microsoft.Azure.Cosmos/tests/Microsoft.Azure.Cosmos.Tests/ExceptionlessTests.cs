@@ -15,6 +15,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -397,7 +399,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     using (new ActivityScope(Guid.NewGuid()))
                     {
-                        return await base.ProcessMessageAsync(request, cancellationToken);
+                        ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+                        ITrace trace = request.Trace.StartChild(
+                                                           name: "Transport Request",
+                                                           component: TraceComponent.Transport,
+                                                           level: Microsoft.Azure.Cosmos.Tracing.TraceLevel.Info);
+
+                        return await base.ProcessMessageAsync(request, cancellationToken,trace, clientSideRequestStatisticsTraceDatum);
                     }
                 }
                 catch (DocumentClientException)
