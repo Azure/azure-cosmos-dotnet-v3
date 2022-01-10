@@ -147,5 +147,39 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(readSessionToken, createSessionToken);
             }
         }
+
+        [TestMethod]
+        public async Task FirstCallToPartitionAvoidsSessionTokenTestAsync()
+        {
+            bool isFirstRequestToPartition = true;
+            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper
+            {
+                RequestCallBack = (request, cancellationToken) =>
+                {
+                    if (isFirstRequestToPartition)
+                    {
+                        Assert.IsFalse(request.Headers.Contains(HttpConstants.HttpHeaders.SessionToken));
+                    }
+                    else
+                    {
+                        Assert.IsTrue(request.Headers.Contains(HttpConstants.HttpHeaders.SessionToken));
+                    }
+
+                    return null;
+                }
+            };
+
+            using (CosmosClient client = TestCommon.CreateCosmosClient(builder => builder
+                .WithConnectionModeGateway()
+                .WithConsistencyLevel(Cosmos.ConsistencyLevel.Session)
+                .WithHttpClientFactory(() => new HttpClient(httpClientHandlerHelper))))
+            {
+                Container container = client.GetContainer(this.database.Id, this.Container.Id);
+                await container.ReadItemAsync<ToDoActivity>("1", new Cosmos.PartitionKey("Status1"));
+                await container.ReadItemAsync<ToDoActivity>("3", new Cosmos.PartitionKey("Status3"));
+                isFirstRequestToPartition = false;
+                await container.ReadItemAsync<ToDoActivity>("3", new Cosmos.PartitionKey("Status3"));
+            }
+        }
     }
 }
