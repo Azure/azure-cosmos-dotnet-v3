@@ -710,7 +710,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <param name="expectedConsistencyLevel"> Expected Consistency level of the operation recorded by telemetry</param>
         /// <param name="expectedOperationRecordCountMap"> Expected number of requests recorded for each operation </param>
         /// <returns></returns>
-        private async Task WaitAndAssert(int expectedOperationCount,
+        private async Task WaitAndAssert(int expectedOperationCount = 0,
             Microsoft.Azure.Cosmos.ConsistencyLevel? expectedConsistencyLevel = null,
             IDictionary<string, long> expectedOperationRecordCountMap = null,
             string expectedSubstatuscode = null)
@@ -722,6 +722,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Stopwatch stopwatch = Stopwatch.StartNew();
             do
             {
+                await Task.Delay(TimeSpan.FromMilliseconds(1500)); // wait at least for 1 round of telemetry
+
                 await Task.Delay(TimeSpan.FromMilliseconds(1500));
 
                 HashSet<OperationInfo> actualOperationSet = new HashSet<OperationInfo>();
@@ -745,8 +747,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     Assert.IsTrue(stopwatch.Elapsed.TotalMinutes < 1, $"The expected operation count({expectedOperationCount}) was never hit, Actual Operation Count is {actualOperationSet.Count}.  ActualInfo:{JsonConvert.SerializeObject(this.actualInfo)}");
                 }
-
-                await Task.Delay(TimeSpan.FromMilliseconds(200));
             }
             while (localCopyOfActualInfo == null);
 
@@ -795,7 +795,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 };
             }
 
-            Assert.IsTrue(expectedMetricNameUnitMap.EqualsTo<string, string>(actualMetricNameUnitMap), $"Actual System Information metric i.e {actualMetricNameUnitMap.Select(x => x.Key + ':' + x.Value + ',')} is not matching with expected System Information Metric i.e. {expectedMetricNameUnitMap.Select(x => x.Key + ':' + x.Value + ',')}");
+            Assert.IsTrue(expectedMetricNameUnitMap.EqualsTo<string, string>(actualMetricNameUnitMap), $"Actual System Information metric i.e {string.Join(", ", actualMetricNameUnitMap)} is not matching with expected System Information Metric i.e. {string.Join(", ", expectedMetricNameUnitMap)}");
 
         }
 
