@@ -7,10 +7,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
-    internal sealed class Trace : TraceBase
+    internal sealed class Trace : ITrace
     {
         private readonly List<ITrace> children;
         private readonly Dictionary<string, object> data;
@@ -35,32 +36,77 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.data = new Dictionary<string, object>();
         }
 
-        public override TimeSpan Duration => this.stopwatch.Elapsed;
+        public string Name { get; }
 
-        public override IReadOnlyList<ITrace> Children => this.children;
+        public Guid Id { get; }
 
-        public override IReadOnlyDictionary<string, object> Data => this.data;
+        public CallerInfo CallerInfo { get; }
 
-        public override string Name { get; }
+        public DateTime StartTime { get; }
 
-        public override Guid Id { get; }
+        public TimeSpan Duration => this.stopwatch.Elapsed;
 
-        public override CallerInfo CallerInfo { get; }
+        public TraceLevel Level { get; }
 
-        public override DateTime StartTime { get; }
+        public TraceComponent Component { get; }
 
-        public override TraceLevel Level { get; }
+        public ITrace Parent { get; }
 
-        public override TraceComponent Component { get; }
+        public IReadOnlyList<ITrace> Children => this.children;
 
-        public override ITrace Parent { get; }
+        public IReadOnlyDictionary<string, object> Data => this.data;
 
-        public override void Dispose()
+        private ISet<(string, Uri)> RegionsContactedTemporary { get; set; }
+
+        /// <summary>
+        /// Consolidated Region contacted Information of this and children nodes
+        /// </summary>
+        public IReadOnlyList<(string, Uri)> RegionsContacted
+        {
+            get => this.RegionsContactedTemporary?.ToList();
+            set
+            {
+                if (this.Parent != null)
+                {
+                    this.Parent.RegionsContacted = value;
+                }
+                else
+                {
+                    // Once root is found, collect region contacted information
+                    if (this.RegionsContactedTemporary == null)
+                    {
+                        this.RegionsContactedTemporary = new HashSet<(string, Uri)>(value);
+                    }
+                    else
+                    {
+                        this.RegionsContactedTemporary.UnionWith(value);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Update region contacted information to the parent Itrace
+        /// </summary>
+        /// <param name="traceDatum"></param>
+        public void UpdateRegionContacted(TraceDatum traceDatum)
+        {
+            if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+            {
+                if (clientSideRequestStatisticsTraceDatum.RegionsContacted == null || clientSideRequestStatisticsTraceDatum.RegionsContacted.Count == 0)
+                {
+                    return;
+                }
+                this.RegionsContacted = clientSideRequestStatisticsTraceDatum.RegionsContacted?.ToList();
+            }
+        }
+
+        public void Dispose()
         {
             this.stopwatch.Stop();
         }
 
-        public override ITrace StartChild(
+        public ITrace StartChild(
             string name,
             [CallerMemberName] string memberName = "",
             [CallerFilePath] string sourceFilePath = "",
@@ -75,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 sourceLineNumber: sourceLineNumber);
         }
 
-        public override ITrace StartChild(
+        public ITrace StartChild(
             string name,
             TraceComponent component,
             TraceLevel level,
@@ -95,16 +141,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
             return child;
         }
 
-        public override void AddChild(ITrace child)
+        public void AddChild(ITrace child)
         {
             lock (this.children)
             {
                 this.children.Add(child);
-                if (child.RegionsContacted != null)
-                {
-                    this.RegionsContacted = child.RegionsContacted;
-                }
-
             }
         }
 
@@ -132,13 +173,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 parent: null);
         }
 
-        public override void AddDatum(string key, TraceDatum traceDatum)
+        public void AddDatum(string key, TraceDatum traceDatum)
         {
             this.data.Add(key, traceDatum);
             this.UpdateRegionContacted(traceDatum);
         }
 
-        public override void AddDatum(string key, object value)
+        public void AddDatum(string key, object value)
         {
             this.data.Add(key, value);
         }

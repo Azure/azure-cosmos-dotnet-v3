@@ -14,7 +14,6 @@
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
@@ -1327,7 +1326,7 @@
             }
         }
 
-        private sealed class TraceForBaselineTesting : TraceBase
+        private sealed class TraceForBaselineTesting : ITrace
         {
             public readonly Dictionary<string, object> data;
             public readonly List<ITrace> children;
@@ -1346,33 +1345,41 @@
                 this.data = new Dictionary<string, object>();
             }
 
-            public override Guid Id => Guid.Empty;
+            public string Name { get; }
 
-            public override CallerInfo CallerInfo => new CallerInfo("MemberName", "FilePath", 42);
+            public Guid Id => Guid.Empty;
 
-            public override DateTime StartTime => DateTime.MinValue;
+            public CallerInfo CallerInfo => new CallerInfo("MemberName", "FilePath", 42);
 
-            public override TimeSpan Duration => TimeSpan.Zero;
+            public DateTime StartTime => DateTime.MinValue;
 
-            public override IReadOnlyList<ITrace> Children => this.children;
+            public TimeSpan Duration => TimeSpan.Zero;
 
-            public override IReadOnlyDictionary<string, object> Data => this.data;
+            public TraceLevel Level { get; }
 
-            public override string Name { get; }
+            public TraceComponent Component { get; }
 
-            public override TraceLevel Level { get; }
+            public ITrace Parent { get; }
 
-            public override TraceComponent Component { get; }
+            public IReadOnlyList<ITrace> Children => this.children;
 
-            public override ITrace Parent { get; }
+            public IReadOnlyDictionary<string, object> Data => this.data;
 
-            public override void AddDatum(string key, TraceDatum traceDatum)
+            public IReadOnlyList<(string, Uri)> RegionsContacted
             {
-                this.data[key] = traceDatum;
-                this.UpdateRegionContacted(traceDatum);
+                get => new List<(string, Uri)>();
+                set
+                {
+                    //NoImplementation
+                }
             }
 
-            public override void AddDatum(string key, object value)
+            public void AddDatum(string key, TraceDatum traceDatum)
+            {
+                this.data[key] = traceDatum;
+            }
+
+            public void AddDatum(string key, object value)
             {
                 if (key.Contains("CPU"))
                 {
@@ -1383,36 +1390,36 @@
                 this.data[key] = "Redacted To Not Change The Baselines From Run To Run";
             }
 
-            public override void Dispose()
+            public void Dispose()
             {
             }
 
-            public override ITrace StartChild(string name, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
+            public ITrace StartChild(string name, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
             {
                 return this.StartChild(name, TraceComponent.Unknown, TraceLevel.Info, memberName, sourceFilePath, sourceLineNumber);
             }
 
-            public override ITrace StartChild(string name, TraceComponent component, TraceLevel level, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
+            public ITrace StartChild(string name, TraceComponent component, TraceLevel level, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
             {
                 TraceForBaselineTesting child = new TraceForBaselineTesting(name, level, component, parent: this);
                 this.AddChild(child);
                 return child;
             }
 
-            public override void AddChild(ITrace trace)
+            public void AddChild(ITrace trace)
             {
                 this.children.Add(trace);
-                if (trace.RegionsContacted != null)
-                {
-                    this.RegionsContacted = trace.RegionsContacted;
-                }
             }
 
-            internal static TraceForBaselineTesting GetRootTrace()
+            public static TraceForBaselineTesting GetRootTrace()
             {
                 return new TraceForBaselineTesting("Trace For Baseline Testing", TraceLevel.Info, TraceComponent.Unknown, parent: null);
             }
 
+            public void UpdateRegionContacted(TraceDatum traceDatum)
+            {
+                //NoImplementation
+            }
         }
 
         private sealed class RequestHandlerSleepHelper : RequestHandler
