@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Documents
         public DateTime? ConnectionLastSendTime { get; set; }
         public DateTime? ConnectionLastReceiveTime { get; set; }
 
-        public void RecordState(RequestStage requestStage
+        public void RecordState(RequestStage requestStage)
         {
             TimeSpan elapsedTime = this.stopwatch.Elapsed;
             switch (requestStage)
