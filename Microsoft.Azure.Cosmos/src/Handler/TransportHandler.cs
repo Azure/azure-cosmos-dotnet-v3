@@ -28,14 +28,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
-            ITrace trace = request.Trace.StartChild(
-                name: "Transport Request",
-                component: TraceComponent.Transport,
-                level: Tracing.TraceLevel.Info);
             try
             {
-                ResponseMessage response = await this.ProcessMessageAsync(request, cancellationToken, trace, clientSideRequestStatisticsTraceDatum);
+                ResponseMessage response = await this.ProcessMessageAsync(request, cancellationToken);
                 Debug.Assert(System.Diagnostics.Trace.CorrelationManager.ActivityId != Guid.Empty, "Trace activity id is missing");
 
                 return response;
@@ -85,17 +80,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 throw;
             }
-            finally
-            {
-                request.Trace.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum);
-            }
         }
 
         internal async Task<ResponseMessage> ProcessMessageAsync(
             RequestMessage request,
-            CancellationToken cancellationToken,
-            ITrace processMessageAsyncTrace,
-            ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+            CancellationToken cancellationToken)
         {
             if (request == null)
             {
@@ -103,6 +92,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
+
+            ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
             serviceRequest.RequestContext.ClientRequestStatistics = clientSideRequestStatisticsTraceDatum;
 
             //TODO: extrace auth into a separate handler
@@ -117,17 +108,26 @@ namespace Microsoft.Azure.Cosmos.Handlers
             serviceRequest.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
             IStoreModel storeProxy = this.client.DocumentClient.GetStoreProxy(serviceRequest);
-            using (processMessageAsyncTrace)
+            using (ITrace processMessageAsyncTrace = request.Trace.StartChild(
+                            name: $"{storeProxy.GetType().FullName} Transport Request",
+                            component: TraceComponent.Transport,
+                            level: Tracing.TraceLevel.Info))
             {
-                processMessageAsyncTrace.Name = $"{storeProxy.GetType().FullName} Transport Request";
-
                 request.Trace = processMessageAsyncTrace;
                 processMessageAsyncTrace.AddDatum("Client Side Request Stats", clientSideRequestStatisticsTraceDatum);
 
-                DocumentServiceResponse response = request.OperationType == OperationType.Upsert
-                        ? await this.ProcessUpsertAsync(storeProxy, serviceRequest, cancellationToken)
-                        : await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
-
+                DocumentServiceResponse response = null;
+                try
+                {
+                    response = request.OperationType == OperationType.Upsert
+                       ? await this.ProcessUpsertAsync(storeProxy, serviceRequest, cancellationToken)
+                       : await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
+                }
+                finally
+                {
+                    processMessageAsyncTrace.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum);
+                }
+               
                 return response.ToCosmosResponseMessage(
                     request,
                     serviceRequest.RequestContext.RequestChargeTracker);

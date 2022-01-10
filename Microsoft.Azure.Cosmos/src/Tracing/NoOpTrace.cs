@@ -19,13 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
         }
 
-        public override string Name
-        {
-            get => "NoOp";
-            set
-            {
-            }
-        }
+        public override string Name => "NoOp";
 
         public override Guid Id => default;
 

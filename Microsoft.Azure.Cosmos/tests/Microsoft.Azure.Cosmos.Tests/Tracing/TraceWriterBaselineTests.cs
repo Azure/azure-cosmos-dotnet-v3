@@ -913,7 +913,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
             public override IReadOnlyDictionary<string, object> Data => this.data;
 
-            public override string Name { get; set; }
+            public override string Name { get; }
 
             public override TraceLevel Level { get; }
 

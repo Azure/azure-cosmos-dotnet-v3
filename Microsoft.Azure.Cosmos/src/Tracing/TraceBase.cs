@@ -24,23 +24,26 @@ namespace Microsoft.Azure.Cosmos.Tracing
             get => this.RegionsContactedTemporary?.ToList();
             set
             {
-                if (this.RegionsContactedTemporary == null)
-                {
-                    this.RegionsContactedTemporary = new HashSet<(string, Uri)>(value);
-                }
-                else
-                {
-                    this.RegionsContactedTemporary.UnionWith(value);
-                }
-
                 if (this.Parent != null)
                 {
                     this.Parent.RegionsContacted = value;
+                } 
+                else 
+                {
+                    // Once root is found, collect region contacted information
+                    if (this.RegionsContactedTemporary == null)
+                    {
+                        this.RegionsContactedTemporary = new HashSet<(string, Uri)>(value);
+                    } 
+                    else
+                    {
+                        this.RegionsContactedTemporary.UnionWith(value);
+                    }
                 }
             }
         }
 
-        public abstract string Name { get; set; }
+        public abstract string Name { get; }
 
         public abstract Guid Id { get; }
 

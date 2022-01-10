@@ -399,13 +399,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     using (new ActivityScope(Guid.NewGuid()))
                     {
-                        ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
-                        ITrace trace = request.Trace.StartChild(
-                                                           name: "Transport Request",
-                                                           component: TraceComponent.Transport,
-                                                           level: Microsoft.Azure.Cosmos.Tracing.TraceLevel.Info);
-
-                        return await base.ProcessMessageAsync(request, cancellationToken,trace, clientSideRequestStatisticsTraceDatum);
+                        return await base.ProcessMessageAsync(request, cancellationToken);
                     }
                 }
                 catch (DocumentClientException)
