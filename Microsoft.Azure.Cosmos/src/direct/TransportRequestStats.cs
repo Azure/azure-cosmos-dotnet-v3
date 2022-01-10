@@ -238,8 +238,9 @@ namespace Microsoft.Azure.Documents
             stringBuilder.Append("{");
             if (this.RequestWaitingForConnectionInitialization.HasValue)
             {
-                stringBuilder.Append("\"waitforConnectionInit\":");
+                stringBuilder.Append("\"waitforConnectionInit\":\"");
                 stringBuilder.Append(this.RequestWaitingForConnectionInitialization.Value.ToString());
+                stringBuilder.Append("\"");
             }
             if (this.NumberOfInflightRequestsInConnection.HasValue)
             {
