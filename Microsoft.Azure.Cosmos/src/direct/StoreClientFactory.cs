@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Documents
         private bool isDisposed = false;
         private readonly Protocol protocol;
         private readonly RetryWithConfiguration retryWithConfiguration;
+        private readonly bool disableRetryWithRetryPolicy;
         private TransportClient transportClient;
         private TransportClient fallbackClient = null;
         private ConnectionStateListener connectionStateListener = null;
@@ -36,12 +37,14 @@ namespace Microsoft.Azure.Documents
             int rntbdPortPoolBindAttempts = 5,  // RNTBD
             int receiveHangDetectionTimeSeconds = 65,  // RNTBD
             int sendHangDetectionTimeSeconds = 10,  // RNTBD
-            bool enableCpuMonitor = true,
+            bool disableRetryWithRetryPolicy = false, 
             RetryWithConfiguration retryWithConfiguration = null,
             RntbdConstants.CallerId callerId = RntbdConstants.CallerId.Anonymous, // replicatedResourceClient
             bool enableTcpConnectionEndpointRediscovery = false,
             IAddressResolver addressResolver = null, // globalAddressResolver
-            TimeSpan localRegionOpenTimeout = default) 
+            TimeSpan localRegionOpenTimeout = default,
+            bool enableChannelMultiplexing = false,
+            int rntbdMaxConcurrentOpeningConnectionCount = ushort.MaxValue) // Optional for Rntbd
         {
             // <=0 means idle timeout is disabled.
             // valid value: >= 10 minutes
@@ -187,6 +190,8 @@ namespace Microsoft.Azure.Documents
                     this.connectionStateListener = new ConnectionStateListener(addressResolver);
                 }
 
+                StoreClientFactory.ValidateRntbdMaxConcurrentOpeningConnectionCount(ref rntbdMaxConcurrentOpeningConnectionCount);
+
                 this.fallbackClient = new RntbdTransportClient(
                     requestTimeoutInSeconds,
                     maxConcurrentConnectionOpenRequests,
@@ -213,9 +218,10 @@ namespace Microsoft.Azure.Documents
                         LocalRegionOpenTimeout = localRegionOpenTimeout,
                         TimerPoolResolution = TimeSpan.FromSeconds(timerPoolGranularityInSeconds),
                         IdleTimeout = TimeSpan.FromSeconds(idleTimeoutInSeconds),
-                        EnableCpuMonitor = enableCpuMonitor,
                         CallerId = callerId,
-                        ConnectionStateListener = this.connectionStateListener
+                        ConnectionStateListener = this.connectionStateListener,
+                        EnableChannelMultiplexing = enableChannelMultiplexing,
+                        MaxConcurrentOpeningConnectionCount = rntbdMaxConcurrentOpeningConnectionCount
                     });
             }
             else
@@ -225,6 +231,7 @@ namespace Microsoft.Azure.Documents
 
             this.protocol = protocol;
             this.retryWithConfiguration = retryWithConfiguration;
+            this.disableRetryWithRetryPolicy = disableRetryWithRetryPolicy;
         }
 
         private StoreClientFactory(
@@ -278,32 +285,34 @@ namespace Microsoft.Azure.Documents
             if (useFallbackClient && this.fallbackClient != null)
             {
                 return new StoreClient(
-                    addressResolver,
-                    sessionContainer,
-                    serviceConfigurationReader,
-                    authorizationTokenProvider,
-                    this.protocol,
+                    addressResolver: addressResolver,
+                    sessionContainer: sessionContainer,
+                    serviceConfigurationReader: serviceConfigurationReader,
+                    userTokenProvider: authorizationTokenProvider,
+                    protocol: this.protocol,
                     // Use the fallback client instead of the default one.
-                    this.fallbackClient,
-                    enableRequestDiagnostics,
-                    enableReadRequestsFallback,
-                    useMultipleWriteLocations,
-                    detectClientConnectivityIssues,
-                    this.retryWithConfiguration);
+                    transportClient: this.fallbackClient,
+                    enableRequestDiagnostics: enableRequestDiagnostics,
+                    enableReadRequestsFallback: enableReadRequestsFallback,
+                    useMultipleWriteLocations: useMultipleWriteLocations,
+                    detectClientConnectivityIssues: detectClientConnectivityIssues,
+                    disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
+                    retryWithConfiguration: this.retryWithConfiguration);
             }
 
             return new StoreClient(
-                addressResolver,
-                sessionContainer,
-                serviceConfigurationReader,
-                authorizationTokenProvider,
-                this.protocol,
-                this.transportClient,
-                enableRequestDiagnostics,
-                enableReadRequestsFallback,
-                useMultipleWriteLocations,
-                detectClientConnectivityIssues,
-                this.retryWithConfiguration);
+                addressResolver: addressResolver,
+                sessionContainer: sessionContainer,
+                serviceConfigurationReader: serviceConfigurationReader,
+                userTokenProvider: authorizationTokenProvider,
+                protocol: this.protocol,
+                transportClient: this.transportClient,
+                enableRequestDiagnostics: enableRequestDiagnostics,
+                enableReadRequestsFallback: enableReadRequestsFallback,
+                useMultipleWriteLocations: useMultipleWriteLocations,
+                detectClientConnectivityIssues: detectClientConnectivityIssues,
+                disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
+                retryWithConfiguration: this.retryWithConfiguration);
         }
 
         #region IDisposable
@@ -381,6 +390,41 @@ namespace Microsoft.Azure.Documents
                     nameof(rntbdPortPoolBindAttempts),
                     rntbdPortPoolBindAttempts, maxRntbdPortPoolBindAttempts);
                 rntbdPortPoolBindAttempts = maxRntbdPortPoolBindAttempts;
+            }
+        }
+
+        private static void ValidateRntbdMaxConcurrentOpeningConnectionCount(ref int rntbdMaxConcurrentOpeningConnectionCount)
+        {
+            // RntbdMaxConcurrentOpeningConnectionCount is used to control how fast connections can be opened. 
+            // Usually, each upcaller should choose a resonable value for rntbdMaxConcurrentOpeningConnectionCount.
+            // The RntbdMaxConcurrentOpeningConnectionUpperLimitConfig is added here to add another defense in case we need to mitigate tcp flood issue
+            // but the upcaller does not have a way to reconfig RntbdMaxConcurrentOpeningConnectionCount.
+            int rntbdMaxConcurrentOpeningConnectionUpperLimit = ushort.MaxValue;
+            const string RntbdMaxConcurrentOpeningConnectionUpperLimitConfig = "AZURE_COSMOS_TCP_MAX_CONCURRENT_OPENING_CONNECTION_UPPER_LIMIT";
+
+            string rntbdMaxConcurrentOpeningConnectionUpperLimitOverrideString = Environment.GetEnvironmentVariable(RntbdMaxConcurrentOpeningConnectionUpperLimitConfig);
+            if (!string.IsNullOrEmpty(rntbdMaxConcurrentOpeningConnectionUpperLimitOverrideString))
+            {
+                int rntbdMaxConcurrentOpeningConnectionUpperLimitOverrideInt = 0;
+                if (Int32.TryParse(rntbdMaxConcurrentOpeningConnectionUpperLimitOverrideString, out rntbdMaxConcurrentOpeningConnectionUpperLimitOverrideInt))
+                {
+                    if (rntbdMaxConcurrentOpeningConnectionUpperLimitOverrideInt <= 0)
+                    {
+                        throw new ArgumentException("RntbdMaxConcurrentOpeningConnectionUpperLimitConfig should be larger than 0");
+                    }
+
+                    rntbdMaxConcurrentOpeningConnectionUpperLimit = rntbdMaxConcurrentOpeningConnectionUpperLimitOverrideInt;
+                }
+            }
+
+            if (rntbdMaxConcurrentOpeningConnectionCount > rntbdMaxConcurrentOpeningConnectionUpperLimit)
+            {
+                DefaultTrace.TraceWarning(
+                    "The value of {0} is too large. Received {1}. Adjusting to {2}",
+                    nameof(rntbdMaxConcurrentOpeningConnectionCount),
+                    rntbdMaxConcurrentOpeningConnectionCount,
+                    rntbdMaxConcurrentOpeningConnectionUpperLimit);
+                rntbdMaxConcurrentOpeningConnectionCount = rntbdMaxConcurrentOpeningConnectionUpperLimit;
             }
         }
     }

@@ -141,7 +141,7 @@ For globally strong write:
 
                 // the transportclient relies on this contacted replicas being present *before* the request is made
                 // TODO: Can we not rely on this inversion of dependencies.
-                request.RequestContext.ClientRequestStatistics.ContactedReplicas = partitionPerProtocolAddress.ReplicaUris.ToList();
+                request.RequestContext.ClientRequestStatistics.ContactedReplicas = partitionPerProtocolAddress.ReplicaTransportAddressUris.ToList();
 
                 TransportAddressUri primaryUri = partitionPerProtocolAddress.GetPrimaryAddressUri(request);
                 this.LastWriteAddress = primaryUri.ToString();
@@ -161,17 +161,28 @@ For globally strong write:
                     SessionTokenHelper.ValidateAndRemoveSessionToken(request);
                 }
 
+                DateTime startTimeUtc = DateTime.UtcNow;
                 StoreResult storeResult = null;
                 try
                 {
                     response = await this.transportClient.InvokeResourceOperationAsync(primaryUri, request);
 
-                    storeResult = StoreResult.CreateStoreResult(response, null, true, false, primaryUri.Uri);
+                    storeResult = StoreResult.CreateStoreResult(
+                        storeResponse: response,
+                        responseException: null,
+                        requiresValidLsn: true,
+                        useLocalLSNBasedHeaders: false,
+                        storePhysicalAddress: primaryUri.Uri);
 
                 }
                 catch (Exception ex)
                 {
-                    storeResult = StoreResult.CreateStoreResult(null, ex, true, false, primaryUri.Uri);
+                    storeResult = StoreResult.CreateStoreResult(
+                        storeResponse: null,
+                        responseException: ex,
+                        requiresValidLsn: true,
+                        useLocalLSNBasedHeaders: false,
+                        storePhysicalAddress: primaryUri.Uri);
 
                     if (ex is DocumentClientException)
                     {
@@ -185,7 +196,7 @@ For globally strong write:
                                 CultureInfo.InvariantCulture,
                                 out result) && result == 1)
                             {
-                                this.StartBackgroundAddressRefresh(request);
+                                this.addressSelector.StartBackgroundAddressRefresh(request);
                             }
                         }
                     }
@@ -199,8 +210,10 @@ For globally strong write:
                 }
 
                 request.RequestContext.ClientRequestStatistics.RecordResponse(
-                    request,
-                    storeResult);
+                    request: request,
+                    storeResult: storeResult,
+                    startTimeUtc: startTimeUtc,
+                    endTimeUtc: DateTime.UtcNow);
 
                 if (ReplicatedResourceClient.IsGlobalStrongEnabled() && this.ShouldPerformWriteBarrierForGlobalStrong(storeResult))
                 {
@@ -322,25 +335,6 @@ For globally strong write:
             DefaultTrace.TraceInformation("ConsistencyWriter: Highest global committed lsn received for write barrier call is {0}", maxGlobalCommittedLsnReceived);
 
             return false;
-        }
-
-        private void StartBackgroundAddressRefresh(DocumentServiceRequest request)
-        {
-            try
-            {
-                this.addressSelector.ResolvePrimaryTransportAddressUriAsync(request, true).ContinueWith((task) =>
-                {
-                    if (task.IsFaulted)
-                    {
-                        DefaultTrace.TraceWarning(
-                            "Background refresh of the primary address failed with {0}", task.Exception.ToString());
-                    }
-                });
-            }
-            catch (Exception exception)
-            {
-                DefaultTrace.TraceWarning("Background refresh of the primary address failed with {0}", exception.ToString());
-            }
         }
     }
 }

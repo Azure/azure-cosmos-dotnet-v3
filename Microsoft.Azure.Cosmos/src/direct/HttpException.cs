@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Documents
             : base(DocumentClientException.MessageWithActivityId(errorResource.Message, responseHeaders))
         {
             this.error = errorResource;
-            this.responseHeaders = new DictionaryNameValueCollection();
+            this.responseHeaders = new StoreResponseNameValueCollection();
             this.StatusCode = statusCode;
 
             if (responseHeaders != null)
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Documents
             SubStatusCodes? substatusCode = null)
             : base(DocumentClientException.MessageWithActivityId(message, responseHeaders), innerException)
         {
-            this.responseHeaders = new DictionaryNameValueCollection();
+            this.responseHeaders = new StoreResponseNameValueCollection();
             this.StatusCode = statusCode;
             this.substatus = substatusCode;
             if (this.substatus.HasValue)
@@ -144,12 +144,19 @@ namespace Microsoft.Azure.Documents
             Uri requestUri = null)
             : base(DocumentClientException.MessageWithActivityId(message, responseHeaders), innerException)
         {
-            this.responseHeaders = new DictionaryNameValueCollection();
             this.StatusCode = statusCode;
 
-            if (responseHeaders != null)
+            if (responseHeaders is StoreResponseNameValueCollection storeResponseHeader)
             {
-                this.responseHeaders.Add(responseHeaders);
+                this.responseHeaders = storeResponseHeader.Clone();
+            }
+            else
+            {
+                this.responseHeaders = new StoreResponseNameValueCollection();
+                if (responseHeaders != null)
+                {
+                    this.responseHeaders.Add(responseHeaders);
+                }
             }
 
             // Stamp the ambient activity ID (if present) over the server's response ActivityId (if present).
@@ -291,7 +298,6 @@ namespace Microsoft.Azure.Documents
         internal INameValueCollection Headers
         {
             get { return this.responseHeaders; }
-            set { this.responseHeaders = value; }
         }
 
         /// <summary>
@@ -303,6 +309,8 @@ namespace Microsoft.Azure.Documents
         /// Gets the textual description of request completion status.
         /// </summary>
         internal string StatusDescription { get; set; }
+
+        internal TransportRequestStats TransportRequestStats { get; set; }
 
         /// <summary>
         /// Cost of the request in the Azure Cosmos DB service.
@@ -422,6 +430,8 @@ namespace Microsoft.Azure.Documents
 
         internal string ResourceAddress { get; set; }
 
+        internal bool UseArmErrorResponse { get; set; }
+
         /// <summary>
         /// Gets the request uri from the current exception from the Azure Cosmos DB service.
         /// </summary>
@@ -538,7 +548,7 @@ namespace Microsoft.Azure.Documents
         {
             if (responseHeaders == null) return "null";
 
-            IEnumerable<Tuple<string, string>> items = responseHeaders.AllKeys().SelectMany(responseHeaders.GetValues, (k, v) => new Tuple<string, string>(k, v ));
+            IEnumerable<Tuple<string, string>> items = responseHeaders.AllKeys().SelectMany(responseHeaders.GetValues, (k, v) => new Tuple<string, string>(k, v));
 
             StringBuilder result = new StringBuilder("{");
             result.Append(Environment.NewLine);

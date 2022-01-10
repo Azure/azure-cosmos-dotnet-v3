@@ -44,10 +44,16 @@ namespace CosmosCTL
         [Option("ctl_throughput", Required = false, HelpText = "Provisioned throughput to use")]
         public int Throughput { get; set; } = 100000;
 
+        [Option("ctl_db_throughput", Required = false, HelpText = "Provisioned throughput to use for databases")]
+        public int? DatabaseThroughput { get; set; }
+
         [Option("ctl_read_write_query_pct", Required = false, HelpText = "Distribution of read, writes, and queries")]
         public string ReadWriteQueryPercentage { get; set; } = "90,9,1";
 
-        [Option("ctl_number_of_operations", Required = false, HelpText = "Number of documents to insert")]
+        [Option("ctl_precreated_documents", Required = false, HelpText = "Number of documents to pre-create for read workloads")]
+        public long PreCreatedDocuments { get; set; } = 1000;
+
+        [Option("ctl_number_of_operations", Required = false, HelpText = "Number of operations to perform")]
         public long Operations { get; set; } = -1;
 
         [Option("ctl_max_running_time_duration", Required = false, HelpText = "Running time in PT format, for example, PT10H.")]
@@ -75,6 +81,9 @@ namespace CosmosCTL
         [Option("ctl_output_event_traces", Required = false, HelpText = "Outputs TraceSource to console")]
         public bool OutputEventTraces { get; set; } = false;
 
+        [Option("ctl_gateway_mode", Required = false, HelpText = "Uses gateway mode")]
+        public bool UseGatewayMode { get; set; } = false;
+
         [Option("ctl_reporting_interval", Required = false, HelpText = "Reporting interval")]
         public int ReportingIntervalInSeconds { get; set; } = 10;
 
@@ -86,6 +95,12 @@ namespace CosmosCTL
 
         [Option("ctl_logging_context", Required = false, HelpText = "Defines a custom context to use on metrics")]
         public string LogginContext { get; set; } = string.Empty;
+
+        [Option("ctl_telemetry_endpoint", Required = false, HelpText = "telemetry juno end point")]
+        public string TelemetryEndpoint { get; set; }
+
+        [Option("ctl_telemetry_schedule_in_sec", Required = false, HelpText = "telemetry task schedule time in sec")]
+        public string TelemetryScheduleInSeconds { get; set; }
 
         internal TimeSpan RunningTimeDurationAsTimespan { get; private set; } = TimeSpan.FromHours(10);
         internal TimeSpan DiagnosticsThresholdDurationAsTimespan { get; private set; } = TimeSpan.FromSeconds(60);
@@ -110,8 +125,14 @@ namespace CosmosCTL
         {
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
-                ApplicationName = CTLConfig.UserAgentSuffix
+                ApplicationName = CTLConfig.UserAgentSuffix,
+                EnableClientTelemetry = true
             };
+
+            if (this.UseGatewayMode)
+            {
+                clientOptions.ConnectionMode = ConnectionMode.Gateway;
+            }
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
             {

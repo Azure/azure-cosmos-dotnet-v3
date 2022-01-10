@@ -1,12 +1,9 @@
 ﻿namespace Microsoft.Azure.Documents
 {
     using System;
-    using System.Collections.Specialized;
     using System.Diagnostics;
-    using System.Globalization;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Documents.Routing;
 
     internal sealed class RntbdTransportClient : TransportClient
     {

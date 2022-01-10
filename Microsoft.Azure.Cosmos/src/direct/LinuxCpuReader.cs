@@ -3,14 +3,13 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents.Rntbd
 {
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using System;
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Linq;
-    using System.Security.Cryptography;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal sealed class LinuxCpuReader : CpuReaderBase
     {

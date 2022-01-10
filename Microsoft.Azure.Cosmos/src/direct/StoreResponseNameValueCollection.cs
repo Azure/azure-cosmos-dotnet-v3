@@ -38,7 +38,10 @@ namespace Microsoft.Azure.Documents.Collections
 
         public string AadAppliedRoleAssignmentId { get; set; }
         public string ActivityId { get; set; }
+        public string AnalyticalMigrationProgress { get; set; }
+        public string AppliedPolicyElementId { get; set; }
         public string BackendRequestDurationMilliseconds { get; set; }
+        public string ByokEncryptionProgress { get; set; }
         public string CollectionIndexTransformationProgress { get; set; }
         public string CollectionLazyIndexingProgress { get; set; }
         public string CollectionPartitionIndex { get; set; }
@@ -95,6 +98,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string SubStatus { get; set; }
         public string TentativeStoreChecksum { get; set; }
         public string TimeToLiveInSeconds { get; set; }
+        public string TotalAccountThroughput { get; set; }
         public string TransportRequestID { get; set; }
         public string UnflushedMergLogEntryCount { get; set; }
         public string VectorClockLocalProgress { get; set; }
@@ -145,7 +149,10 @@ namespace Microsoft.Azure.Documents.Collections
 
             this.AadAppliedRoleAssignmentId = null;
             this.ActivityId = null;
+            this.AnalyticalMigrationProgress = null;
+            this.AppliedPolicyElementId = null;
             this.BackendRequestDurationMilliseconds = null;
+            this.ByokEncryptionProgress = null;
             this.CollectionIndexTransformationProgress = null;
             this.CollectionLazyIndexingProgress = null;
             this.CollectionPartitionIndex = null;
@@ -202,6 +209,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.SubStatus = null;
             this.TentativeStoreChecksum = null;
             this.TimeToLiveInSeconds = null;
+            this.TotalAccountThroughput = null;
             this.TransportRequestID = null;
             this.UnflushedMergLogEntryCount = null;
             this.VectorClockLocalProgress = null;
@@ -226,7 +234,10 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 AadAppliedRoleAssignmentId = this.AadAppliedRoleAssignmentId,
                 ActivityId = this.ActivityId,
+                AnalyticalMigrationProgress = this.AnalyticalMigrationProgress,
+                AppliedPolicyElementId = this.AppliedPolicyElementId,
                 BackendRequestDurationMilliseconds = this.BackendRequestDurationMilliseconds,
+                ByokEncryptionProgress = this.ByokEncryptionProgress,
                 CollectionIndexTransformationProgress = this.CollectionIndexTransformationProgress,
                 CollectionLazyIndexingProgress = this.CollectionLazyIndexingProgress,
                 CollectionPartitionIndex = this.CollectionPartitionIndex,
@@ -283,6 +294,7 @@ namespace Microsoft.Azure.Documents.Collections
                 SubStatus = this.SubStatus,
                 TentativeStoreChecksum = this.TentativeStoreChecksum,
                 TimeToLiveInSeconds = this.TimeToLiveInSeconds,
+                TotalAccountThroughput = this.TotalAccountThroughput,
                 TransportRequestID = this.TransportRequestID,
                 UnflushedMergLogEntryCount = this.UnflushedMergLogEntryCount,
                 VectorClockLocalProgress = this.VectorClockLocalProgress,
@@ -565,12 +577,10 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return WFConstants.BackendHeaders.PendingPKDelete;
             }
-
             if (this.AadAppliedRoleAssignmentId != null)
             {
                 yield return HttpConstants.HttpHeaders.AadAppliedRoleAssignmentId;
             }
-
             if (this.CollectionUniqueIndexReIndexProgress != null)
             {
                 yield return WFConstants.BackendHeaders.CollectionUniqueIndexReIndexProgress;
@@ -578,6 +588,22 @@ namespace Microsoft.Azure.Documents.Collections
             if (this.CollectionUniqueKeysUnderReIndex != null)
             {
                 yield return WFConstants.BackendHeaders.CollectionUniqueKeysUnderReIndex;
+            }
+            if (this.AnalyticalMigrationProgress != null)
+            {
+                yield return WFConstants.BackendHeaders.AnalyticalMigrationProgress;
+            }
+            if (this.TotalAccountThroughput != null)
+            {
+                yield return HttpConstants.HttpHeaders.TotalAccountThroughput;
+            }
+            if (this.ByokEncryptionProgress != null)
+            {
+                yield return WFConstants.BackendHeaders.ByokEncryptionProgress;
+            }
+            if (this.AppliedPolicyElementId != null)
+            {
+                yield return HttpConstants.HttpHeaders.AppliedPolicyElementId;
             }
 
             if(this.lazyNotCommonHeaders.IsValueCreated)
@@ -849,12 +875,10 @@ namespace Microsoft.Azure.Documents.Collections
                         {
                             this.nameValueCollection.Add(WFConstants.BackendHeaders.PendingPKDelete, this.PendingPKDelete);
                         }
-
                         if (this.AadAppliedRoleAssignmentId != null)
                         {
                             this.nameValueCollection.Add(HttpConstants.HttpHeaders.AadAppliedRoleAssignmentId, this.AadAppliedRoleAssignmentId);
                         }
-
                         if (this.CollectionUniqueIndexReIndexProgress != null)
                         {
                             this.nameValueCollection.Add(WFConstants.BackendHeaders.CollectionUniqueIndexReIndexProgress, this.CollectionUniqueIndexReIndexProgress);
@@ -863,7 +887,22 @@ namespace Microsoft.Azure.Documents.Collections
                         {
                             this.nameValueCollection.Add(WFConstants.BackendHeaders.CollectionUniqueKeysUnderReIndex, this.CollectionUniqueKeysUnderReIndex);
                         }
-
+                        if (this.AnalyticalMigrationProgress != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.AnalyticalMigrationProgress, this.AnalyticalMigrationProgress);
+                        }
+                        if (this.TotalAccountThroughput != null)
+                        {
+                            this.nameValueCollection.Add(HttpConstants.HttpHeaders.TotalAccountThroughput, this.TotalAccountThroughput);
+                        }
+                        if (this.ByokEncryptionProgress != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.ByokEncryptionProgress, this.ByokEncryptionProgress);
+                        }
+                        if (this.AppliedPolicyElementId != null)
+                        {
+                            this.nameValueCollection.Add(HttpConstants.HttpHeaders.AppliedPolicyElementId, this.AppliedPolicyElementId);
+                        }
                         if(this.lazyNotCommonHeaders.IsValueCreated)
                         {
                             foreach (KeyValuePair<string, string> keyValuePair in this.lazyNotCommonHeaders.Value)
@@ -1225,9 +1264,22 @@ namespace Microsoft.Azure.Documents.Collections
 
                     break;
                 case 27:
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.NumberOfReadRegions, key))
+                    {
+                        return this.NumberOfReadRegions;
+                    }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.AppliedPolicyElementId, key))
+                    {
+                        return this.AppliedPolicyElementId;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.NumberOfReadRegions, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.NumberOfReadRegions;
+                    }
+
+                    if (string.Equals(HttpConstants.HttpHeaders.AppliedPolicyElementId, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.AppliedPolicyElementId;
                     }
 
                     break;
@@ -1372,6 +1424,26 @@ namespace Microsoft.Azure.Documents.Collections
                     }
 
                     break;
+                case 36:
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.TotalAccountThroughput, key))
+                    {
+                        return this.TotalAccountThroughput;
+                    }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ByokEncryptionProgress, key))
+                    {
+                        return this.ByokEncryptionProgress;
+                    }
+                    if (string.Equals(HttpConstants.HttpHeaders.TotalAccountThroughput, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.TotalAccountThroughput;
+                    }
+
+                    if (string.Equals(WFConstants.BackendHeaders.ByokEncryptionProgress, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.ByokEncryptionProgress;
+                    }
+
+                    break;
                 case 37:
                     if (object.ReferenceEquals(WFConstants.BackendHeaders.IsRUPerMinuteUsed, key))
                     {
@@ -1428,6 +1500,13 @@ namespace Microsoft.Azure.Documents.Collections
                     }
 
                     break;
+                case 41:
+                    if (string.Equals(WFConstants.BackendHeaders.AnalyticalMigrationProgress, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.AnalyticalMigrationProgress;
+                    }
+
+                    break;
                 case 42:
                     if (string.Equals(WFConstants.BackendHeaders.XPConfigurationSessionsCount, key, StringComparison.OrdinalIgnoreCase))
                     {
@@ -1447,7 +1526,7 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.CollectionUniqueKeysUnderReIndex;
                     }
-                
+
                     break;
                 case 49:
                     if (string.Equals(HttpConstants.HttpHeaders.CollectionLazyIndexingProgress, key, StringComparison.OrdinalIgnoreCase))
@@ -1469,12 +1548,12 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.UnflushedMergLogEntryCount;
                     }
-                
+
                     if (string.Equals(WFConstants.BackendHeaders.CollectionUniqueIndexReIndexProgress, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.CollectionUniqueIndexReIndexProgress;
                     }
-                
+
                     break;
                 case 56:
                     if (string.Equals(HttpConstants.HttpHeaders.CollectionIndexTransformationProgress, key, StringComparison.OrdinalIgnoreCase))
@@ -2217,6 +2296,26 @@ namespace Microsoft.Azure.Documents.Collections
                     }
                     break;
                 case 27:
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.NumberOfReadRegions, key))
+                    {
+                        if (throwIfAlreadyExists && this.NumberOfReadRegions != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.NumberOfReadRegions = value;
+                        return;
+                    }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.AppliedPolicyElementId, key))
+                    {
+                        if (throwIfAlreadyExists && this.AppliedPolicyElementId != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.AppliedPolicyElementId = value;
+                        return;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.NumberOfReadRegions, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.NumberOfReadRegions != null)
@@ -2225,6 +2324,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.NumberOfReadRegions = value;
+                        return;
+                    }
+                    if (string.Equals(HttpConstants.HttpHeaders.AppliedPolicyElementId, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.AppliedPolicyElementId != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.AppliedPolicyElementId = value;
                         return;
                     }
                     break;
@@ -2522,6 +2631,48 @@ namespace Microsoft.Azure.Documents.Collections
                         return;
                     }
                     break;
+                case 36:
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.TotalAccountThroughput, key))
+                    {
+                        if (throwIfAlreadyExists && this.TotalAccountThroughput != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.TotalAccountThroughput = value;
+                        return;
+                    }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ByokEncryptionProgress, key))
+                    {
+                        if (throwIfAlreadyExists && this.ByokEncryptionProgress != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.ByokEncryptionProgress = value;
+                        return;
+                    }
+                    if (string.Equals(HttpConstants.HttpHeaders.TotalAccountThroughput, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.TotalAccountThroughput != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.TotalAccountThroughput = value;
+                        return;
+                    }
+                    if (string.Equals(WFConstants.BackendHeaders.ByokEncryptionProgress, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.ByokEncryptionProgress != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.ByokEncryptionProgress = value;
+                        return;
+                    }
+                    break;
                 case 37:
                     if (object.ReferenceEquals(WFConstants.BackendHeaders.IsRUPerMinuteUsed, key))
                     {
@@ -2635,6 +2786,18 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.SoftMaxAllowedThroughput = value;
+                        return;
+                    }
+                    break;
+                case 41:
+                    if (string.Equals(WFConstants.BackendHeaders.AnalyticalMigrationProgress, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.AnalyticalMigrationProgress != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.AnalyticalMigrationProgress = value;
                         return;
                     }
                     break;
@@ -2752,7 +2915,10 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 if (value == null)
                 {
-                    this.lazyNotCommonHeaders.Value.Remove(key);
+                    if (this.lazyNotCommonHeaders.IsValueCreated)
+                    {
+                        this.lazyNotCommonHeaders.Value.Remove(key);
+                    }
                 }
                 else
                 {

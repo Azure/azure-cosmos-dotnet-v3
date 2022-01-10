@@ -25,6 +25,11 @@ namespace Microsoft.Azure.Documents
         private const int backoffMultiplier = 2;
         private const int defaultMaximumBackoffTimeInMilliSeconds = 15000;
 
+        // RetryWith default behavior
+        private const int defaultInitialBackoffTimeForRetryWithInMilliseconds = 10;
+        private const int defaultMaximumBackoffTimeForRetryWithInMilliseconds = 1000;
+        private const int defaultRandomSaltForRetryWithInMilliseconds = 5;
+
         private const int minFailedReplicaCountToConsiderConnectivityIssue = 3;
 
         private readonly int maximumBackoffTimeInMilliSeconds;
@@ -49,8 +54,10 @@ namespace Microsoft.Azure.Documents
         private readonly int waitTimeInMilliseconds;
         private readonly int waitTimeInMillisecondsForRetryWith;
         private readonly bool detectConnectivityIssues;
+        private readonly bool disableRetryWithPolicy;
 
         public GoneAndRetryWithRequestRetryPolicy(
+            bool disableRetryWithPolicy,
             int? waitTimeInSecondsOverride = null,
             TimeSpan minBackoffForRegionReroute = default(TimeSpan),
             bool detectConnectivityIssues = false,
@@ -65,6 +72,7 @@ namespace Microsoft.Azure.Documents
                 this.waitTimeInMilliseconds = GoneAndRetryWithRequestRetryPolicy<TResponse>.defaultWaitTimeInMilliSeconds;
             }
 
+            this.disableRetryWithPolicy = disableRetryWithPolicy;
             this.detectConnectivityIssues = detectConnectivityIssues;
             this.minBackoffForRegionReroute = minBackoffForRegionReroute;
 
@@ -75,16 +83,15 @@ namespace Microsoft.Azure.Documents
             this.initialBackoffTimeInMilliSeconds =
                 GoneAndRetryWithRequestRetryPolicy<TResponse>.initialBackoffMilliSeconds;
             this.initialBackoffTimeInMillisecondsForRetryWith =
-                retryWithConfiguration?.InitialRetryIntervalMilliseconds ?? GoneAndRetryWithRequestRetryPolicy<TResponse>.initialBackoffMilliSeconds;
+                retryWithConfiguration?.InitialRetryIntervalMilliseconds ?? GoneAndRetryWithRequestRetryPolicy<TResponse>.defaultInitialBackoffTimeForRetryWithInMilliseconds;
             this.maximumBackoffTimeInMilliSeconds =
                 GoneAndRetryWithRequestRetryPolicy<TResponse>.defaultMaximumBackoffTimeInMilliSeconds;
             this.maximumBackoffTimeInMillisecondsForRetryWith =
-                retryWithConfiguration?.MaximumRetryIntervalMilliseconds ?? GoneAndRetryWithRequestRetryPolicy<TResponse>
-                .defaultMaximumBackoffTimeInMilliSeconds;
+                retryWithConfiguration?.MaximumRetryIntervalMilliseconds ?? GoneAndRetryWithRequestRetryPolicy<TResponse>.defaultMaximumBackoffTimeForRetryWithInMilliseconds;
             this.waitTimeInMillisecondsForRetryWith =
                 retryWithConfiguration?.TotalWaitTimeMilliseconds ?? this.waitTimeInMilliseconds;
 
-            this.randomSaltForRetryWithMilliseconds = retryWithConfiguration?.RandomSaltMaxValueMilliseconds;
+            this.randomSaltForRetryWithMilliseconds = retryWithConfiguration?.RandomSaltMaxValueMilliseconds ?? GoneAndRetryWithRequestRetryPolicy<TResponse>.defaultRandomSaltForRetryWithInMilliseconds;
             if (this.randomSaltForRetryWithMilliseconds != null && this.randomSaltForRetryWithMilliseconds < 1)
             {
                 throw new ArgumentException($"{nameof(retryWithConfiguration.RandomSaltMaxValueMilliseconds)} must be a number greater than 1 or null");
@@ -120,6 +127,18 @@ namespace Microsoft.Azure.Documents
             }
             else if (exception is RetryWithException)
             {
+                // If the RetryWithPolicy is disabled then
+                // return the no retry to let it propagate the RetryWith exception.
+                if (disableRetryWithPolicy)
+                {
+                    DefaultTrace.TraceWarning(
+                        "The GoneAndRetryWithRequestRetryPolicy is configured with disableRetryWithPolicy to true. Retries on 449(RetryWith) exceptions has been disabled. This is by design to allow users to handle the exception: {0}", 
+                        exception.ToStringWithData());
+                    this.durationTimer.Stop();
+                    shouldRetryResult = ShouldRetryResult.NoRetry();
+                    return true;
+                }
+
                 isRetryWith = true;
                 this.lastRetryWithException = exception as RetryWithException;
             }
@@ -163,18 +182,30 @@ namespace Microsoft.Azure.Documents
 
                             if (this.detectConnectivityIssues &&
                                 request.RequestContext.ClientRequestStatistics != null &&
-                                request.RequestContext.ClientRequestStatistics.IsCpuOverloaded)
+                                request.RequestContext.ClientRequestStatistics.IsCpuHigh.GetValueOrDefault(false))
                             {
+
                                 exceptionToThrow = new ServiceUnavailableException(
-                                    string.Format(
-                                        RMResources.ClientCpuOverload,
-                                        request.RequestContext.ClientRequestStatistics.FailedReplicas.Count,
-                                        request.RequestContext.ClientRequestStatistics.RegionsContacted.Count == 0 ?
-                                            1 : request.RequestContext.ClientRequestStatistics.RegionsContacted.Count));
+                                string.Format(
+                                    RMResources.ClientCpuOverload,
+                                    request.RequestContext.ClientRequestStatistics.FailedReplicas.Count,
+                                    request.RequestContext.ClientRequestStatistics.RegionsContacted.Count == 0 ?
+                                        1 : request.RequestContext.ClientRequestStatistics.RegionsContacted.Count));
                             }
                             else if (this.detectConnectivityIssues &&
-                                request.RequestContext.ClientRequestStatistics != null &&
-                                request.RequestContext.ClientRequestStatistics.FailedReplicas.Count >= GoneAndRetryWithRequestRetryPolicy<TResponse>.minFailedReplicaCountToConsiderConnectivityIssue)
+                                    request.RequestContext.ClientRequestStatistics != null &&
+                                    request.RequestContext.ClientRequestStatistics.IsCpuThreadStarvation.GetValueOrDefault(false))
+                            {
+                                exceptionToThrow = new ServiceUnavailableException(
+                                string.Format(
+                                    RMResources.ClientCpuThreadStarvation,
+                                    request.RequestContext.ClientRequestStatistics.FailedReplicas.Count,
+                                    request.RequestContext.ClientRequestStatistics.RegionsContacted.Count == 0 ?
+                                        1 : request.RequestContext.ClientRequestStatistics.RegionsContacted.Count));
+                            }
+                            else if (this.detectConnectivityIssues &&
+                                    request.RequestContext.ClientRequestStatistics != null &&
+                                    request.RequestContext.ClientRequestStatistics.FailedReplicas.Count >= GoneAndRetryWithRequestRetryPolicy<TResponse>.minFailedReplicaCountToConsiderConnectivityIssue)
                             {
                                 exceptionToThrow = new ServiceUnavailableException(
                                     string.Format(

@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Documents.Rntbd
 {
     using System;
-    using System.Diagnostics;
 
     internal sealed class ChannelCallArguments : IDisposable
     {

@@ -4,11 +4,9 @@
 
 namespace Microsoft.Azure.Documents
 {
+    using System;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
-    using System;
-    using System.Collections.ObjectModel;
-    using System.Globalization;
 
     /// <summary>
     /// Represents the schema discovery policy configuration for a collection.

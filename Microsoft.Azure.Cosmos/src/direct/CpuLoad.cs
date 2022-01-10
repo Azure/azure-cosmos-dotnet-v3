@@ -13,12 +13,6 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         public CpuLoad(DateTime timestamp, float value)
         {
-            if ((value < 0.0) || (value > 100.0))
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(value), value,
-                    "Valid CPU load values must be between 0.0 and 100.0");
-            }
             this.Timestamp = timestamp;
             this.Value = value;
         }

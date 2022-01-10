@@ -4,13 +4,11 @@
 namespace Microsoft.Azure.Documents.Rntbd
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Net;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -26,7 +24,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
     // Dispatcher encapsulates the state and logic needed to dispatch multiple requests through
     // a single connection.
-    internal class Dispatcher : IDisposable
+    internal sealed class Dispatcher : IDisposable
     {
         // Connection is thread-safe for sending.
         // Receiving is done only from the receive loop.
@@ -41,6 +39,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         // guard the operation with connectionLock.
         private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
         private readonly TimerPool idleTimerPool;
+        private readonly bool enableChannelMultiplexing;
 
         private bool disposed = false;
 
@@ -73,7 +72,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             TimeSpan receiveHangDetectionTime,
             TimeSpan sendHangDetectionTime,
             TimerPool idleTimerPool,
-            TimeSpan idleTimeout)
+            TimeSpan idleTimeout,
+            bool enableChannelMultiplexing)
         {
             this.connection = new Connection(
                 serverUri, hostNameCertificateOverride,
@@ -83,6 +83,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.connectionStateListener = connectionStateListener;
             this.serverUri = serverUri;
             this.idleTimerPool = idleTimerPool;
+            this.enableChannelMultiplexing = enableChannelMultiplexing;
         }
 
         #region Test hook.
@@ -250,8 +251,11 @@ namespace Microsoft.Azure.Documents.Rntbd
         // PrepareCall assigns a request ID to the request, serializes it, and
         // returns the result. The caller must treat PrepareCallResult as an
         // opaque handle.
-        public PrepareCallResult PrepareCall(DocumentServiceRequest request, TransportAddressUri physicalAddress,
-            ResourceOperation resourceOperation, Guid activityId)
+        public PrepareCallResult PrepareCall(DocumentServiceRequest request, 
+                                             TransportAddressUri physicalAddress,
+                                             ResourceOperation resourceOperation, 
+                                             Guid activityId, 
+                                             TransportRequestStats transportRequestStats)
         {
             uint requestId = unchecked((uint) Interlocked.Increment(ref this.nextRequestId));
 
@@ -265,38 +269,25 @@ namespace Microsoft.Azure.Documents.Rntbd
                     HttpConstants.HttpHeaders.TransportRequestID,
                     requestId.ToString(CultureInfo.InvariantCulture));
 
-                BufferProvider.DisposableBuffer serializedRequest = this.BuildRequest(
+                int headerSize;
+                int? bodySize;
+                BufferProvider.DisposableBuffer serializedRequest = TransportSerialization.BuildRequest(
                     request,
                     physicalAddress.PathAndQuery,
                     resourceOperation,
                     activityId,
                     this.connection.BufferProvider,
-                    out int headerSize, out int bodySize);
+                    out headerSize, 
+                    out bodySize);
+
+                transportRequestStats.RequestBodySizeInBytes = bodySize;
+                transportRequestStats.RequestSizeInBytes = serializedRequest.Buffer.Count;
 
                 return new PrepareCallResult(requestId, physicalAddress.Uri, serializedRequest);
             }
         }
 
-        protected virtual BufferProvider.DisposableBuffer BuildRequest(
-                    DocumentServiceRequest request,
-                    string pathAndQuery,
-                    ResourceOperation resourceOperation,
-                    Guid activityId,
-                    BufferProvider bufferProvider,
-                    out int headerSize,
-                    out int bodySize)
-        {
-            return TransportSerialization.BuildRequest(
-                    request,
-                    pathAndQuery,
-                    resourceOperation,
-                    activityId,
-                    this.connection.BufferProvider,
-                    out headerSize,
-                    out bodySize);
-        }
-
-        public async Task<StoreResponse> CallAsync(ChannelCallArguments args)
+        public async Task<StoreResponse> CallAsync(ChannelCallArguments args, TransportRequestStats transportRequestStats)
         {
             this.ThrowIfDisposed();
             // The current task scheduler must be used for correctness and to
@@ -304,7 +295,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             using (CallInfo callInfo = new CallInfo(
                 args.CommonArguments.ActivityId,
                 args.PreparedCall.Uri,
-                TaskScheduler.Current))
+                TaskScheduler.Current,
+                transportRequestStats))
             {
                 uint requestId = args.PreparedCall.RequestId;
                 Debug.Assert(!Monitor.IsEntered(this.callLock));
@@ -328,6 +320,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         await this.connection.WriteRequestAsync(
                             args.CommonArguments,
                             args.PreparedCall.SerializedRequest);
+                        transportRequestStats.RecordState(TransportRequestStats.RequestStage.Sent);
                     }
                     catch (Exception e)
                     {
@@ -617,10 +610,8 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private async Task NegotiateRntbdContextAsync(ChannelOpenArguments args)
         {
-            byte[] contextMessage = this.BuildContextRequest(
-                                        args.CommonArguments.ActivityId,
-                                        this.userAgent,
-                                        args.CallerId);
+            byte[] contextMessage = TransportSerialization.BuildContextRequest(
+                args.CommonArguments.ActivityId, this.userAgent, args.CallerId, this.enableChannelMultiplexing);
 
             await this.connection.WriteRequestAsync(args.CommonArguments, new ArraySegment<byte>(contextMessage, 0, contextMessage.Length));
 
@@ -699,15 +690,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             args.OpenTimeline.RecordRntbdHandshakeFinishTime();
         }
 
-        protected virtual byte[] BuildContextRequest(Guid activityId,
-            UserAgentContainer userAgent,
-            RntbdConstants.CallerId callerId)
-        {
-            return TransportSerialization.BuildContextRequest(
-                        activityId,
-                        userAgent,
-                        callerId);
-        }
         private async Task ReceiveLoopAsync()
         {
             CancellationToken cancellationToken = this.cancellation.Token;
@@ -806,6 +788,9 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 Debug.Assert(this.serverProperties != null);
                 Debug.Assert(this.serverProperties.Version != null);
+                call.TransportRequestStats.RecordState(TransportRequestStats.RequestStage.Received);
+                call.TransportRequestStats.ResponseMetadataSizeInBytes = responseMd.Metadata.Count;
+                call.TransportRequestStats.ResponseBodySizeInBytes = responseBody?.Length;
                 call.SetResponse(responseMd, rntbdResponse, responseHeader, responseBody, this.serverProperties.Version);
             }
             else
@@ -924,12 +909,12 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private sealed class CallInfo : IDisposable
+        internal sealed class CallInfo : IDisposable
         {
             private readonly TaskCompletionSource<StoreResponse> completion =
                 new TaskCompletionSource<StoreResponse>();
-            private readonly ManualResetEventSlim sendComplete =
-                new ManualResetEventSlim();
+            private readonly SemaphoreSlim sendComplete =
+                new SemaphoreSlim(0);
 
             private readonly Guid activityId;
             private readonly Uri uri;
@@ -939,15 +924,19 @@ namespace Microsoft.Azure.Documents.Rntbd
             private readonly object stateLock = new object();
             private State state;
 
-            public CallInfo(Guid activityId, Uri uri, TaskScheduler scheduler)
+            public TransportRequestStats TransportRequestStats { get; }
+
+            public CallInfo(Guid activityId, Uri uri, TaskScheduler scheduler, TransportRequestStats transportRequestStats)
             {
                 Debug.Assert(activityId != Guid.Empty);
                 Debug.Assert(uri != null);
                 Debug.Assert(scheduler != null);
+                Debug.Assert(transportRequestStats != null);
 
                 this.activityId = activityId;
                 this.uri = uri;
                 this.scheduler = scheduler;
+                this.TransportRequestStats = transportRequestStats;
             }
 
             public Task<StoreResponse> ReadResponseAsync(ChannelCallArguments args)
@@ -1014,7 +1003,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 this.ThrowIfDisposed();
                 // Call SetException asynchronously.
-                this.RunAsynchronously(() =>
+                this.RunAsynchronously(
+                    async delegate
                     {
                         Trace.CorrelationManager.ActivityId = this.activityId;
                         // When an API caller sends a request, it can get two
@@ -1025,7 +1015,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         // failed. The exception is not necessary, and the
                         // unused completion would trigger
                         // UnobservedTaskException upon garbage collection.
-                        this.sendComplete.Wait();
+                        await this.sendComplete.WaitAsync();
                         lock (this.stateLock)
                         {
                             if (this.state != State.Sent)
@@ -1089,7 +1079,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 Debug.Assert(!Monitor.IsEntered(this.stateLock));
                 lock (this.stateLock)
                 {
-                    if (this.sendComplete.IsSet)
+                    if (this.state != State.New)
                     {
                         throw new InvalidOperationException(
                             "Send may only complete once");
@@ -1099,7 +1089,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         newState == State.Sent ||
                         newState == State.SendFailed);
                     this.state = newState;
-                    this.sendComplete.Set();
+                    this.sendComplete.Release();
                 }
             }
 

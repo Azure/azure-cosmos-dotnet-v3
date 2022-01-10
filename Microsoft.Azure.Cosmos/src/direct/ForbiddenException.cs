@@ -3,14 +3,13 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
-    using Microsoft.Azure.Documents.Collections;
     using System;
-    using System.Collections.Specialized;
     using System.Globalization;
     using System.Net;
-    using System.Net.Sockets;
     using System.Net.Http.Headers;
+    using System.Net.Sockets;
     using System.Runtime.Serialization;
+    using Microsoft.Azure.Documents.Collections;
 
     [Serializable]
     internal sealed class ForbiddenException : DocumentClientException
@@ -28,14 +27,17 @@ namespace Microsoft.Azure.Documents
             // ipv6 is not customer-facing. do not embed it.
             if (clientIpAddress.AddressFamily == AddressFamily.InterNetworkV6)
             {
-                string trafficType = isPrivateIpPacket ? "private endpoint" : "service endpoint";
-                string clientInfo = string.Format(CultureInfo.InvariantCulture, RMResources.ClientVnetInfo, trafficType);
-                result = new ForbiddenException(string.Format(CultureInfo.InvariantCulture, RMResources.ForbiddenClientIpAddress, clientInfo));
+                result = new ForbiddenException(isPrivateIpPacket ?
+                    RMResources.ForbiddenPrivateEndpoint :
+                    RMResources.ForbiddenServiceEndpoint);
             }
             else
             {
-                string clientInfo = string.Format(CultureInfo.InvariantCulture, RMResources.ClientPublicIpInfo, clientIpAddress.ToString());
-                result = new ForbiddenException(string.Format(CultureInfo.InvariantCulture, RMResources.ForbiddenClientIpAddress, clientInfo));
+                result = new ForbiddenException(string.Format(
+                    CultureInfo.InvariantCulture,
+                    RMResources.ForbiddenPublicIpv4,
+                    clientIpAddress.ToString()));
+
                 result.ClientIpAddress = clientIpAddress;
             }
 

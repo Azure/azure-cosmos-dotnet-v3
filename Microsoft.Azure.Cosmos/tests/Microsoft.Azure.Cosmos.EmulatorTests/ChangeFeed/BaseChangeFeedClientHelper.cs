@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 {
-    using System;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
 
@@ -13,21 +12,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         public static int ChangeFeedSetupTime = 1000;
         public static int ChangeFeedCleanupTime = 5000;
 
-        public Container Container = null;
         public Container LeaseContainer = null;
 
-        public async Task ChangeFeedTestInit()
+        public async Task ChangeFeedTestInit(string leaseContainerPk = "/id")
         {
-            await base.TestInit();
-            string PartitionKey = "/id";
+            await base.TestInit(customizeClientBuilder: (builder) => builder.WithContentResponseOnWrite(false));
+
             ContainerResponse response = await this.database.CreateContainerAsync(
-                new ContainerProperties(id: "monitored", partitionKeyPath: PartitionKey),
-                cancellationToken: this.cancellationToken);
-            this.Container = response;
-
-
-            response = await this.database.CreateContainerAsync(
-                new ContainerProperties(id: "leases", partitionKeyPath: PartitionKey),
+                new ContainerProperties(id: "leases", partitionKeyPath: leaseContainerPk),
                 cancellationToken: this.cancellationToken);
 
             this.LeaseContainer = response;

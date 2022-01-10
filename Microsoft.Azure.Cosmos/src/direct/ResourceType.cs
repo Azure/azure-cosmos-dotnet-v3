@@ -75,7 +75,10 @@ namespace Microsoft.Azure.Documents
 
 #if !COSMOSCLIENT
         TransportControlCommand = 151,
+        StorageAuthToken = 152,
 #endif
+
+        RetriableWriteCachedResponse = 153,
 
         // These names make it unclear what they map to in ResourceType.
         Key = -2,
@@ -85,6 +88,7 @@ namespace Microsoft.Azure.Documents
 #endif
         Address = -5,
         ControllerService = -6,
+        Telemetry = 1001
     }
 
     internal static class ResourceTypeExtensions
@@ -114,7 +118,8 @@ namespace Microsoft.Azure.Documents
                 type == ResourceType.Attachment ||
                 type == ResourceType.Conflict ||
                 type == ResourceType.PartitionKey ||
-                type == ResourceType.PartitionedSystemDocument;
+                type == ResourceType.PartitionedSystemDocument ||
+                type == ResourceType.RetriableWriteCachedResponse;
         }
 
         public static bool IsCollectionChild(this ResourceType type)

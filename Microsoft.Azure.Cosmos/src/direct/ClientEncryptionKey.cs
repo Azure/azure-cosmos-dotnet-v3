@@ -4,14 +4,7 @@
 
 namespace Microsoft.Azure.Documents
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Globalization;
-    using System.Linq;
-    using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents a client encryption key in the Azure Cosmos DB service.
@@ -25,12 +18,25 @@ namespace Microsoft.Azure.Documents
 
         }
 
-        [JsonProperty(PropertyName = Constants.Properties.WrappedDataEncryptionKey)]
-        internal string WrappedDataEncryptionKey
+        [JsonProperty(PropertyName = Constants.Properties.EncryptionAlgorithm)]
+        internal string EncryptionAlgorithm
         {
             get
             {
-                return this.GetValue<string>(Constants.Properties.WrappedDataEncryptionKey);
+                return this.GetValue<string>(Constants.Properties.EncryptionAlgorithm);
+            }
+            set
+            {
+                base.SetValue(Constants.Properties.EncryptionAlgorithm, value);
+            }
+        }
+
+        [JsonProperty(PropertyName = Constants.Properties.WrappedDataEncryptionKey)]
+        internal byte[] WrappedDataEncryptionKey
+        {
+            get
+            {
+                return this.GetValue<byte[]>(Constants.Properties.WrappedDataEncryptionKey);
             }
             set
             {

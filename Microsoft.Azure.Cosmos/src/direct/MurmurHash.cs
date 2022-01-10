@@ -153,8 +153,8 @@ namespace Microsoft.Azure.Documents.Routing
             const ulong c1 = 0x87c37b91114253d5;
             const ulong c2 = 0x4cf5ad432745937f;
 
-            ulong h1 = seed.GetHigh();
-            ulong h2 = seed.GetLow();
+            ulong h1 = seed.GetLow();
+            ulong h2 = seed.GetHigh();
 
             // body
             int position;

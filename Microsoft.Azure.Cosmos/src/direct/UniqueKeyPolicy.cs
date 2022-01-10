@@ -3,10 +3,10 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
-    using Newtonsoft.Json;
     using System;
     using System.Collections.ObjectModel;
     using System.Globalization;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Represents the unique key policy configuration for specifying uniqueness constraints on documents in the collection in the Azure Cosmos DB service.
@@ -105,6 +105,41 @@ namespace Microsoft.Azure.Documents
                 this.uniqueKeys = value;
                 base.SetValue(Constants.Properties.UniqueKeys, this.uniqueKeys);
             }
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is UniqueKeyPolicy uniqueKeyPolicy))
+            {
+                return false;
+            }
+
+            if (this.UniqueKeys.Count != uniqueKeyPolicy.UniqueKeys.Count)
+            {
+                return false;
+            }
+
+            foreach (UniqueKey uniqueKey in this.uniqueKeys)
+            {
+                if (!uniqueKeyPolicy.UniqueKeys.Contains(uniqueKey))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public override int GetHashCode()
+        {
+            int hashcode = 0;
+
+            foreach (UniqueKey uniqueKey in this.uniqueKeys)
+            {
+                hashcode ^= uniqueKey.GetHashCode();
+            }
+
+            return hashcode;
         }
 
         internal override void OnSave()

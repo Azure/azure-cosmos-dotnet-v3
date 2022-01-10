@@ -114,6 +114,41 @@ else
 dotnetparameters="$dotnetparameters --ctl_output_event_traces $ctl_output_event_traces"
 fi
 
+if [ -z "$ctl_gateway_mode" ]
+then
+dotnetparameters="$dotnetparameters"
+else
+dotnetparameters="$dotnetparameters --ctl_gateway_mode $ctl_gateway_mode"
+fi
+
+if [ -z "$ctl_logging_context" ]
+then
+dotnetparameters="$dotnetparameters"
+else
+dotnetparameters="$dotnetparameters --ctl_logging_context $ctl_logging_context"
+fi
+
+if [ -z "$ctl_telemetry_endpoint" ]
+then
+dotnetparameters="$dotnetparameters"
+else
+dotnetparameters="$dotnetparameters --ctl_telemetry_endpoint $ctl_telemetry_endpoint"
+fi
+
+if [ -z "$ctl_telemetry_schedule_in_sec" ]
+then
+dotnetparameters="$dotnetparameters"
+else
+dotnetparameters="$dotnetparameters --ctl_telemetry_schedule_in_sec $ctl_telemetry_schedule_in_sec"
+fi
+
+if [ -z "$ctl_precreated_documents" ]
+then
+dotnetparameters="$dotnetparameters"
+else
+dotnetparameters="$dotnetparameters --ctl_precreated_documents $ctl_precreated_documents"
+fi
+
 log_filename="/tmp/dotnetctl.log"
 
 echo "Log file name is $log_filename"

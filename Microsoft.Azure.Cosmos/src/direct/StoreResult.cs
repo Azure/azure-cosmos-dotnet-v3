@@ -103,6 +103,8 @@ namespace Microsoft.Azure.Documents
                 }
 
                 storeResponse.TryGetHeaderValue(HttpConstants.HttpHeaders.ActivityId, out string activityId);
+                storeResponse.TryGetHeaderValue(HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, out string backendRequestDurationMilliseconds);
+                storeResponse.TryGetHeaderValue(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, out string retryAfterInMs);
 
                 return new StoreResult(
                     storeResponse: storeResponse,
@@ -120,7 +122,10 @@ namespace Microsoft.Azure.Documents
                     itemLSN: itemLSN,
                     sessionToken: sessionToken,
                     usingLocalLSN: useLocalLSNBasedHeaders,
-                    activityId: activityId);
+                    activityId: activityId,
+                    backendRequestDurationInMs: backendRequestDurationMilliseconds,
+                    retryAfterInMs: retryAfterInMs,
+                    transportRequestStats: storeResponse.TransportRequestStats);
             }
             else
             {
@@ -218,7 +223,10 @@ namespace Microsoft.Azure.Documents
                         itemLSN: -1,
                         sessionToken: sessionToken,
                         usingLocalLSN: useLocalLSNBasedHeaders,
-                        activityId: documentClientException.ActivityId);
+                        activityId: documentClientException.ActivityId,
+                        backendRequestDurationInMs: documentClientException.Headers[HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds],
+                        retryAfterInMs: documentClientException.Headers[HttpConstants.HttpHeaders.RetryAfterInMilliseconds],
+                        transportRequestStats: documentClientException.TransportRequestStats);
                 }
                 else
                 {
@@ -239,7 +247,10 @@ namespace Microsoft.Azure.Documents
                         itemLSN: -1,
                         sessionToken: null,
                         usingLocalLSN: useLocalLSNBasedHeaders,
-                        activityId: null);
+                        activityId: null,
+                        backendRequestDurationInMs: null,
+                        retryAfterInMs: null,
+                        transportRequestStats: null);
                 }
             }
         }
@@ -260,7 +271,10 @@ namespace Microsoft.Azure.Documents
             long itemLSN,
             ISessionToken sessionToken,
             bool usingLocalLSN,
-            string activityId)
+            string activityId,
+            string backendRequestDurationInMs,
+            string retryAfterInMs,
+            TransportRequestStats transportRequestStats)
         {
             if (storeResponse == null && exception == null)
             {
@@ -284,6 +298,9 @@ namespace Microsoft.Azure.Documents
             this.SessionToken = sessionToken;
             this.UsingLocalLSN = usingLocalLSN;
             this.ActivityId = activityId;
+            this.BackendRequestDurationInMs = backendRequestDurationInMs;
+            this.RetryAfterInMs = retryAfterInMs;
+            this.TransportRequestStats = transportRequestStats;
 
             this.StatusCode = (StatusCodes) (this.storeResponse != null ? this.storeResponse.StatusCode :
                 ((this.Exception != null && this.Exception.StatusCode.HasValue) ? this.Exception.StatusCode : 0));
@@ -326,18 +343,11 @@ namespace Microsoft.Azure.Documents
 
         public string ActivityId { get; private set; }
 
-        public bool IsClientCpuOverloaded
-        {
-            get
-            {
-                TransportException transportException = this.Exception?.InnerException as TransportException;
-                if (transportException == null)
-                {
-                    return false;
-                }
-                return transportException.IsClientCpuOverloaded;
-            }
-        }
+        public string BackendRequestDurationInMs { get; private set;}
+
+        public string RetryAfterInMs { get; private set; }
+
+        public TransportRequestStats TransportRequestStats { get; private set; }
 
         public DocumentClientException GetException()
         {
@@ -395,7 +405,7 @@ namespace Microsoft.Azure.Documents
             stringBuilder.AppendFormat(
                 CultureInfo.InvariantCulture,
                 "StorePhysicalAddress: {0}, LSN: {1}, GlobalCommittedLsn: {2}, PartitionKeyRangeId: {3}, IsValid: {4}, StatusCode: {5}, SubStatusCode: {6}, " +
-                "RequestCharge: {7}, ItemLSN: {8}, SessionToken: {9}, UsingLocalLSN: {10}, TransportException: {11}",
+                "RequestCharge: {7}, ItemLSN: {8}, SessionToken: {9}, UsingLocalLSN: {10}, TransportException: {11}, BELatencyMs: {12}, ActivityId: {13}, RetryAfterInMs: {14}",
                 this.StorePhysicalAddress,
                 this.LSN,
                 this.GlobalCommittedLSN,
@@ -407,7 +417,18 @@ namespace Microsoft.Azure.Documents
                 this.ItemLSN,
                 this.SessionToken?.ConvertToString(),
                 this.UsingLocalLSN,
-                this.Exception?.InnerException is TransportException ? this.Exception.InnerException.Message : "null");
+                this.Exception?.InnerException is TransportException ? this.Exception.InnerException.Message : "null",
+                this.BackendRequestDurationInMs,
+                this.ActivityId,
+                this.RetryAfterInMs);
+
+            if (this.TransportRequestStats != null)
+            {
+                stringBuilder.Append(", TransportRequestTimeline: ");
+                this.TransportRequestStats.AppendJsonString(stringBuilder);
+            }
+
+            stringBuilder.Append(";");
         }
 
         private static void SetRequestCharge(StoreResponse response, DocumentClientException documentClientException, double totalRequestCharge)

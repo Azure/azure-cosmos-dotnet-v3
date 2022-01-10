@@ -79,7 +79,6 @@ namespace Microsoft.Azure.Documents
 
         public Task<ShouldRetryResult> ShouldRetryAsync(Exception exception, CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             ShouldRetryResult result = ShouldRetryResult.NoRetry();
 
             if (exception is DocumentClientException dce)
@@ -137,7 +136,6 @@ namespace Microsoft.Azure.Documents
             }
 
             this.durationTimer.Stop();
-            DefaultTrace.TraceInformation("SessionTokenMismatchRetryPolicy not retrying because StatusCode or SubStatusCode not found.");
 
             return ShouldRetryResult.NoRetry();
         }

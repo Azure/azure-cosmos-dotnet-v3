@@ -1,12 +1,11 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+using System;
+using System.Collections.Generic;
+
 namespace Microsoft.Azure.Documents
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-
     internal enum StatusCodes
     {
         // Success
@@ -70,6 +69,9 @@ namespace Microsoft.Azure.Documents
         SharedThroughputOfferGrowNotNeeded = 1011,
         SharedThroughputDatabaseCollectionCountExceeded = 1019,
         SharedThroughputDatabaseCountExceeded = 1020,
+        ComputeInternalError = 1021,
+        ThroughputCapQuotaExceeded = 1028,
+        InvalidThroughputCapValue = 1029,
 
         // 404: LSN in session token is higher
         ReadSessionNotAvailable = 1002,
@@ -78,6 +80,7 @@ namespace Microsoft.Azure.Documents
         ConfigurationPropertyNotFound = 1005,
         CollectionCreateInProgress = 1013,
         StoreNotReady = 1023,
+        AuthTokenNotFoundInCache = 1030,
 
         // 409: Conflict exception
         ConflictWithControlPlane = 1006,
@@ -106,9 +109,11 @@ namespace Microsoft.Azure.Documents
         MergeIsDisabled = 2012,
 		TombstoneRecordsNotFound = 2015, // Tombstone records were not found because they were purged.
         InvalidAccountStatus = 2016,
+        OfferValidationFailed = 2017,
 
         // 500: InternalServerError
         ConfigurationNameNotEmpty = 3001,
+        ConfigurationOperationCancelled = 3002,
 
         // 429: Request Rate Too Large
         PrepareTimeLimitExceeded = 3207,
@@ -147,9 +152,12 @@ namespace Microsoft.Azure.Documents
         FailedToGetAadToken = 5010,
         AadTokenMissingObjectIdentifier = 5011,
 
+        SasTokenAuthDisabled = 5012,
+
         // 401 : Unauthorized Exception (CosmosDB-side errors start with 52)
         AadTokenInvalidSigningKey = 5200,
         AadTokenGroupExpansionError = 5201,
+        LocalAuthDisabled = 5202,
 
         // 403 Forbidden. Blocked by RBAC authorization.
         RbacOperationNotSupported = 5300,
@@ -157,6 +165,8 @@ namespace Microsoft.Azure.Documents
         RbacUnauthorizedNameBasedDataRequest = 5302,
         RbacUnauthorizedRidBasedDataRequest = 5303,
         RbacRidCannotBeResolved = 5304,
+        RbacMissingUserId = 5305,
+        RbacMissingAction = 5306,
 
         // 403 Forbidden. (CosmosDB-side errors start with 54)
         RbacRequestWasNotAuthorized = 5400,
@@ -164,4 +174,43 @@ namespace Microsoft.Azure.Documents
         // 200 OK. List feed throttled response.
         ListResourceFeedThrottled = 5500
     }
+
+    internal static class StatusCodesExtensions
+    {
+        private static readonly Dictionary<int, string> CodeNameMap = new Dictionary<int, string>();
+
+        static StatusCodesExtensions()
+        {
+            StatusCodesExtensions.CodeNameMap[default(int)] = string.Empty;
+            foreach (StatusCodes code in Enum.GetValues(typeof(StatusCodes)))
+            {
+                StatusCodesExtensions.CodeNameMap[(int)code] = code.ToString();
+            }
+        }
+
+        public static string ToStatusCodeString(this StatusCodes code)
+        {
+            return StatusCodesExtensions.CodeNameMap.TryGetValue((int)code, out string value) ? value : code.ToString();
+        }
+    }
+
+    internal static class SubStatusCodesExtensions
+    {
+        private static readonly Dictionary<int, string> CodeNameMap = new Dictionary<int, string>();
+
+        static SubStatusCodesExtensions()
+        {
+            SubStatusCodesExtensions.CodeNameMap[default(int)] = string.Empty;
+            foreach (SubStatusCodes code in Enum.GetValues(typeof(SubStatusCodes)))
+            {
+                SubStatusCodesExtensions.CodeNameMap[(int)code] = code.ToString();
+            }
+        }
+
+        public static string ToSubStatusCodeString(this SubStatusCodes code)
+        {
+            return SubStatusCodesExtensions.CodeNameMap.TryGetValue((int)code, out string value) ? value : code.ToString();
+        }
+    }
+
 }

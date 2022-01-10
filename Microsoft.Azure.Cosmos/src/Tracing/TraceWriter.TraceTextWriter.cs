@@ -345,8 +345,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     }
 
                     stringBuilder.AppendLine("Contacted Replicas");
-                    Dictionary<Uri, int> uriAndCounts = new Dictionary<Uri, int>();
-                    foreach (Uri uri in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
+                    Dictionary<Documents.TransportAddressUri, int> uriAndCounts = new Dictionary<Documents.TransportAddressUri, int>();
+                    foreach (Documents.TransportAddressUri uri in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
                     {
                         if (uri == null)
                         {
@@ -361,19 +361,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
                         uriAndCounts[uri] = ++count;
                     }
 
-                    foreach (KeyValuePair<Uri, int> uriAndCount in uriAndCounts)
+                    foreach (KeyValuePair<Documents.TransportAddressUri, int> uriAndCount in uriAndCounts)
                     {
                         stringBuilder.AppendLine($"{space}{uriAndCount.Key?.ToString() ?? "<null>"}: {uriAndCount.Value}");
                     }
 
                     stringBuilder.AppendLine("Failed to Contact Replicas");
-                    foreach (Uri failedToContactReplica in clientSideRequestStatisticsTraceDatum.FailedReplicas)
+                    foreach (Documents.TransportAddressUri failedToContactReplica in clientSideRequestStatisticsTraceDatum.FailedReplicas)
                     {
                         stringBuilder.AppendLine($"{space}{failedToContactReplica?.ToString() ?? "<null>"}");
                     }
 
                     stringBuilder.AppendLine("Regions Contacted");
-                    foreach (Uri regionContacted in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
+                    foreach (Documents.TransportAddressUri regionContacted in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
                     {
                         stringBuilder.AppendLine($"{space}{regionContacted?.ToString() ?? "<null>"}");
                     }
@@ -382,12 +382,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     stringBuilder.AppendLine(AddressResolutionStatisticsTextTable.Singleton.TopLine);
                     stringBuilder.AppendLine(AddressResolutionStatisticsTextTable.Singleton.Header);
                     stringBuilder.AppendLine(AddressResolutionStatisticsTextTable.Singleton.MiddleLine);
-                    foreach (AddressResolutionStatistics stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics.Values)
+                    foreach (KeyValuePair<string, AddressResolutionStatistics> stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics)
                     {
                         string row = AddressResolutionStatisticsTextTable.Singleton.GetRow(
-                            stat.StartTime.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture),
-                            stat.EndTime.HasValue ? stat.EndTime.Value.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture) : "NO END TIME",
-                            stat.TargetEndpoint);
+                            stat.Value.StartTime.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture),
+                            stat.Value.EndTime.HasValue ? stat.Value.EndTime.Value.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture) : "NO END TIME",
+                            stat.Value.TargetEndpoint);
                         stringBuilder.AppendLine(row);
                     }
 
@@ -427,7 +427,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
                             stringBuilder.AppendLine($"{space}{space}Quorum Info");
                             stringBuilder.AppendLine($"{space}{space}{space}Current Replica Set Size: {stat.StoreResult.CurrentReplicaSetSize}");
                             stringBuilder.AppendLine($"{space}{space}{space}Current Write Quorum: {stat.StoreResult.CurrentWriteQuorum}");
-                            stringBuilder.AppendLine($"{space}{space}Is Client CPU Overloaded: {stat.StoreResult.IsClientCpuOverloaded}");
                             stringBuilder.AppendLine($"{space}{space}Exception");
                             try
                             {
@@ -436,6 +435,35 @@ namespace Microsoft.Azure.Cosmos.Tracing
                             catch (Exception)
                             {
                                 // This method throws if there is no exception.
+                            }
+                        }
+                    }
+
+                    if (clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList.Any())
+                    {
+                        stringBuilder.AppendLine("Http Response Statistics");
+                        foreach (HttpResponseStatistics stat in clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList)
+                        {
+                            stringBuilder.AppendLine($"{space}HttpResponse");
+                            stringBuilder.AppendLine($"{space}{space}RequestStartTime: {stat.RequestStartTime.ToString("o", CultureInfo.InvariantCulture)}");
+                            stringBuilder.AppendLine($"{space}{space}DurationInMs: {stat.Duration.TotalMilliseconds:0.00}");
+                            stringBuilder.AppendLine($"{space}{space}RequestUri: {stat.RequestUri}");
+                            stringBuilder.AppendLine($"{space}{space}ResourceType: {stat.ResourceType}");
+                            stringBuilder.AppendLine($"{space}{space}HttpMethod: {stat.HttpMethod}");
+
+                            if (stat.Exception != null)
+                            {
+                                stringBuilder.AppendLine($"{space}{space}ExceptionType: {stat.Exception.GetType()}");
+                                stringBuilder.AppendLine($"{space}{space}ExceptionMessage: {stat.Exception.Message}");
+                            }
+
+                            if (stat.HttpResponseMessage != null)
+                            {
+                                stringBuilder.AppendLine($"{space}{space}StatusCode: {stat.HttpResponseMessage.StatusCode}");
+                                if (!stat.HttpResponseMessage.IsSuccessStatusCode)
+                                {
+                                    stringBuilder.AppendLine($"{space}{space}ReasonPhrase: {stat.HttpResponseMessage.ReasonPhrase}");
+                                }
                             }
                         }
                     }
@@ -449,6 +477,22 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     stringBuilder.AppendLine(cpuHistoryTraceDatum.Value.ToString());
 
                     // TODO: Expose the raw data so we can custom format the string.
+
+                    this.toStringValue = stringBuilder.ToString();
+                }
+
+                public void Visit(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
+                {
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.AppendLine("Client Configuration");
+                    stringBuilder.AppendLine($"Client Created Time: {clientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture)}");
+                    stringBuilder.AppendLine($"Number Of Clients Created: {CosmosClient.numberOfClientsCreated}");
+                    stringBuilder.AppendLine($"User Agent: {clientConfigurationTraceDatum.UserAgentContainer.UserAgent}");
+                    stringBuilder.AppendLine("Connection Config:");
+                    stringBuilder.AppendLine($"{space}'gw': {clientConfigurationTraceDatum.GatewayConnectionConfig}");
+                    stringBuilder.AppendLine($"{space}'rntbd': {clientConfigurationTraceDatum.RntbdConnectionConfig}");
+                    stringBuilder.AppendLine($"{space}'other': {clientConfigurationTraceDatum.OtherConnectionConfig}");
+                    stringBuilder.AppendLine($"Consistency Config: {clientConfigurationTraceDatum.ConsistencyConfig}");
 
                     this.toStringValue = stringBuilder.ToString();
                 }

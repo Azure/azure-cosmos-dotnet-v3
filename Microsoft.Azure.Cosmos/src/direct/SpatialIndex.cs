@@ -4,9 +4,9 @@
 
 namespace Microsoft.Azure.Documents
 {
+    using System;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
-    using System;
 
     /// <summary>
     /// Specifies an instance of the <see cref="SpatialIndex"/> class in the Azure Cosmos DB service.

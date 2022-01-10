@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace Microsoft.Azure.Documents
+﻿namespace Microsoft.Azure.Documents
 {
     /// <summary>
     /// The formatting policy associated with JSON serialization/de-serialization in the Azure Cosmos DB service.

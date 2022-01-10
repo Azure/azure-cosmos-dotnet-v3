@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Telemetry;
 
     internal class ClientPipelineBuilder
     {
@@ -17,13 +18,16 @@ namespace Microsoft.Azure.Cosmos
         private readonly DiagnosticsHandler diagnosticsHandler;
         private readonly RequestHandler invalidPartitionExceptionRetryHandler;
         private readonly RequestHandler transportHandler;
+        private readonly TelemetryHandler telemetryHandler;
+
         private IReadOnlyCollection<RequestHandler> customHandlers;
         private RequestHandler retryHandler;
 
         public ClientPipelineBuilder(
             CosmosClient client,
             ConsistencyLevel? requestedClientConsistencyLevel,
-            IReadOnlyCollection<RequestHandler> customHandlers)
+            IReadOnlyCollection<RequestHandler> customHandlers,
+            ClientTelemetry telemetry)
         {
             this.client = client ?? throw new ArgumentNullException(nameof(client));
             this.requestedClientConsistencyLevel = requestedClientConsistencyLevel;
@@ -36,8 +40,21 @@ namespace Microsoft.Azure.Cosmos
             this.PartitionKeyRangeHandler = new PartitionKeyRangeHandler(client);
             Debug.Assert(this.PartitionKeyRangeHandler.InnerHandler == null, "The PartitionKeyRangeHandler.InnerHandler must be null to allow other handlers to be linked.");
 
+            // Disable system usage for internal builds. Cosmos DB owns the VMs and already logs
+            // the system information so no need to track it.
+#if !INTERNAL
             this.diagnosticsHandler = new DiagnosticsHandler();
             Debug.Assert(this.diagnosticsHandler.InnerHandler == null, nameof(this.diagnosticsHandler));
+
+            if (telemetry != null)
+            {
+                this.telemetryHandler = new TelemetryHandler(telemetry);
+                Debug.Assert(this.telemetryHandler.InnerHandler == null, nameof(this.telemetryHandler));
+            }
+#else
+            this.diagnosticsHandler = null;
+            this.telemetryHandler = null;
+#endif
 
             this.UseRetryPolicy();
             this.AddCustomHandlers(customHandlers);
@@ -73,6 +90,22 @@ namespace Microsoft.Azure.Cosmos
         ///                                    +-----------------------------+
         ///                                    |                             |
         ///                                    |       UserHandlers          |
+        ///                                    |                             |
+        ///                                    +-----------------------------+
+        ///                                                 |
+        ///                                                 |
+        ///                                                 |
+        ///                                    +-----------------------------+
+        ///                                    |                             |
+        ///                                    |       DiagnosticHandler     |
+        ///                                    |                             |
+        ///                                    +-----------------------------+
+        ///                                                 |
+        ///                                                 |
+        ///                                                 |
+        ///                                    +-----------------------------+
+        ///                                    |                             |
+        ///                                    |       TelemetryHandler      |-> Trigger a thread to monitor system usage/operation information and sends to an API
         ///                                    |                             |
         ///                                    +-----------------------------+
         ///                                                 |
@@ -133,9 +166,21 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
+            // Public SDK should always have the diagnostics handler
+#if !INTERNAL
             Debug.Assert(this.diagnosticsHandler != null, nameof(this.diagnosticsHandler));
-            current.InnerHandler = this.diagnosticsHandler;
-            current = current.InnerHandler;
+#endif
+            if (this.diagnosticsHandler != null)
+            {
+                current.InnerHandler = this.diagnosticsHandler;
+                current = current.InnerHandler;
+            }
+
+            if (this.telemetryHandler != null)
+            {
+                current.InnerHandler = this.telemetryHandler;
+                current = current.InnerHandler;
+            }
 
             Debug.Assert(this.retryHandler != null, nameof(this.retryHandler));
             current.InnerHandler = this.retryHandler;

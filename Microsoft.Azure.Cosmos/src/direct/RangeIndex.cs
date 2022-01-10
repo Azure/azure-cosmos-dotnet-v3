@@ -4,10 +4,10 @@
 
 namespace Microsoft.Azure.Documents
 {
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
     using System;
     using System.Globalization;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// Specifies an instance of the <see cref="RangeIndex"/> class in the Azure Cosmos DB service.

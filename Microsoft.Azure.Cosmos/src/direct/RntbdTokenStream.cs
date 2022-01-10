@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Documents
 #endif
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.IO;
     using Microsoft.Azure.Cosmos.Core.Trace;
 #if COSMOSCLIENT
     using Microsoft.Azure.Cosmos.Rntbd;

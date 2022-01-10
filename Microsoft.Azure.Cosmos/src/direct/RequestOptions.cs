@@ -308,6 +308,36 @@ namespace Microsoft.Azure.Documents.Client
         public bool OfferEnableRUPerMinuteThroughput { get; set; }
 
         /// <summary>
+        /// Gets or sets the <see cref="BackgroundTaskMaxAllowedThroughputPercent "/> for a collection in the Azure Cosmos DB service
+        /// </summary>
+        /// <value>
+        /// Represents customizable maximum allowed throughput budget in percentage chosen by user to run any 
+        /// background task(eg. PK Delete, Creating UniqueIndex policy) for the collection in the Azure Cosmos DB service.
+        /// In the absence of any background task, the whole throughput is available for use by customer for their workload.
+        /// But even in absence of user workload, user background task will not utilize over the allotted percentage of throughput.
+        /// We will have default value of BackgroundTaskMaxAllowedThroughputPercent to be 10 percent if user has not explicitly set it.
+        /// This helps the background tasks to not starve and at the same time impact on user's workload will be minimal.
+        /// User can set the value in range (10,100].
+        /// </value>
+        /// <remarks>
+        /// This option is only valid when creating a document collection.
+        /// </remarks>
+        /// <example>
+        /// The followng example shows how to create a collection with BackgroundTaskMaxAllowedThroughputPercent and throughput offer.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// await client.CreateDocumentCollectionAsync(
+        ///     database.SelfLink,
+        ///     new DocumentCollection { Id = "newcoll" },
+        ///     new RequestOptions { OfferThroughput = 4000, BackgroundTaskMaxAllowedThroughputPercent  = 20 });
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso cref="Microsoft.Azure.Documents.DocumentCollection"/>
+        /// <seealso cref="Microsoft.Azure.Documents.OfferV2"/>
+        internal double? BackgroundTaskMaxAllowedThroughputPercent { get; set; }
+
+        /// <summary>
         /// Gets or sets the <see cref="PartitionKey"/> for the current request in the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
@@ -427,17 +457,43 @@ namespace Microsoft.Azure.Documents.Client
         public bool PopulatePartitionKeyRangeStatistics { get; set; }
 
         /// <summary>
-        ///  Gets or sets the <see cref="PopulateUniqueIndexReIndexProgress"/> for document collection read unique index reindex progres.
+        ///  Gets or sets the <see cref="PopulateUniqueIndexReIndexProgress"/> for document collection read unique index reindex progress.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// <see cref="PopulateUniqueIndexReIndexProgress"/> is used to enable/disable getting unique index reindex progres.
+        /// <see cref="PopulateUniqueIndexReIndexProgress"/> is used to enable/disable getting unique index reindex progress.
         /// </para>
         /// </remarks>
         /// <example>
         /// For usage, please refer to the example in <see cref="Microsoft.Azure.Documents.DocumentCollection.PopulateUniqueIndexReIndexProgress"/>.
         /// </example>
         internal bool PopulateUniqueIndexReIndexProgress { get; set; }
+
+        /// <summary>
+        ///  Gets or sets the <see cref="PopulateAnalyticalMigrationProgress"/> for document collection read requests.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <see cref="PopulateAnalyticalMigrationProgress"/> is used to enable/disable getting analytical migration progress.
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// For usage, please refer to the example in <see cref="Microsoft.Azure.Documents.DocumentCollection.PopulateAnalyticalMigrationProgress"/>.
+        /// </example>
+        internal bool PopulateAnalyticalMigrationProgress { get; set; }
+
+        /// <summary>
+        ///  Gets or sets the <see cref="PopulateBYOKEncryptionProgress"/> for document collection read requests.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <see cref="PopulateBYOKEncryptionProgress"/> is used to enable/disable getting byok reencryption progress.
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// For usage, please refer to the example in <see cref="Microsoft.Azure.Documents.DocumentCollection.PopulateBYOKEncryptionProgress"/>.
+        /// </example>
+        internal bool PopulateBYOKEncryptionProgress { get; set; }
 
         /// <summary>
         /// Gets or sets the Remote storage enablement
@@ -533,6 +589,11 @@ namespace Microsoft.Azure.Documents.Client
         /// Truncate the Collection
         /// </summary>
         internal bool CollectionTruncate { get; set; }
+
+        /// <summary>
+        /// Represents client-side encryption
+        /// </summary>
+        internal bool IsClientEncrypted { get; set; }
 
         /// <summary>
         /// Gets or sets shared offer throughput on a collection.

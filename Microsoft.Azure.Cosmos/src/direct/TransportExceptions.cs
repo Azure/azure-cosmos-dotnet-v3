@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     internal static class TransportExceptions
     {
         internal static GoneException GetGoneException(
-            Uri targetAddress, Guid activityId, Exception inner = null)
+            Uri targetAddress, Guid activityId, Exception inner = null, TransportRequestStats transportRequestStats = null)
         {
             Trace.CorrelationManager.ActivityId = activityId;
 
@@ -64,11 +64,12 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
 
             ex.Headers.Set(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
+            ex.TransportRequestStats = transportRequestStats;
             return ex;
         }
 
         internal static RequestTimeoutException GetRequestTimeoutException(
-            Uri targetAddress, Guid activityId, Exception inner = null)
+            Uri targetAddress, Guid activityId, Exception inner = null, TransportRequestStats transportRequestStats = null)
         {
             Trace.CorrelationManager.ActivityId = activityId;
             RequestTimeoutException timeoutException;
@@ -119,11 +120,12 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
 
             timeoutException.Headers.Add(HttpConstants.HttpHeaders.RequestValidationFailure, "1");
+            timeoutException.TransportRequestStats = transportRequestStats;
             return timeoutException;
         }
 
         internal static ServiceUnavailableException GetServiceUnavailableException(
-            Uri targetAddress, Guid activityId, Exception inner = null)
+            Uri targetAddress, Guid activityId, Exception inner = null, TransportRequestStats transportRequestStats = null)
         {
             Trace.CorrelationManager.ActivityId = activityId;
             ServiceUnavailableException serviceUnavailableException;
@@ -147,6 +149,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
 
             serviceUnavailableException.Headers.Add(HttpConstants.HttpHeaders.RequestValidationFailure, "1");
+            serviceUnavailableException.TransportRequestStats = transportRequestStats;
             return serviceUnavailableException;
         }
 

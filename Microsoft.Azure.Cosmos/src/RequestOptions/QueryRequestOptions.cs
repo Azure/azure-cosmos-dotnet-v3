@@ -93,6 +93,19 @@ namespace Microsoft.Azure.Cosmos
         public PartitionKey? PartitionKey { get; set; }
 
         /// <summary>
+        /// Gets or sets the <see cref="PopulateIndexMetrics"/> request option for document query requests in the Azure Cosmos DB service.
+        /// </summary>
+        /// <remarks>
+        /// <para> 
+        /// PopulateIndexMetrics is used to obtain the index metrics to understand how the query engine used existing indexes 
+        /// and how it could use potential new indexes.
+        /// The results will be displayed in FeedResponse.IndexMetrics. Please note that this options will incur overhead, so it should be 
+        /// enabled only when debugging slow queries.
+        /// </para>
+        /// </remarks>
+        public bool? PopulateIndexMetrics { get; set; }
+
+        /// <summary>
         /// Gets or sets the consistency level required for the request in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -122,13 +135,13 @@ namespace Microsoft.Azure.Cosmos
         /// One of the <see cref="ConsistencyLevel"/> for Azure Cosmos DB is Session. In fact, this is the default level applied to accounts.
         /// <para>
         /// When working with Session consistency, each new write request to Azure Cosmos DB is assigned a new SessionToken.
-        /// The DocumentClient will use this token internally with each read/query request to ensure that the set consistency level is maintained.
+        /// The CosmosClient will use this token internally with each read/query request to ensure that the set consistency level is maintained.
         ///
         /// <para>
         /// In some scenarios you need to manage this Session yourself;
-        /// Consider a web application with multiple nodes, each node will have its own instance of <see cref="DocumentClient"/>
+        /// Consider a web application with multiple nodes, each node will have its own instance of <see cref="CosmosClient"/>
         /// If you wanted these nodes to participate in the same session (to be able read your own writes consistently across web tiers)
-        /// you would have to send the SessionToken from <see cref="QueryResponse{T}"/> of the write action on one node
+        /// you would have to send the SessionToken from <see cref="FeedResponse{T}"/> of the write action on one node
         /// to the client tier, using a cookie or some other mechanism, and have that token flow back to the web tier for subsequent reads.
         /// If you are using a round-robin load balancer which does not maintain session affinity between requests, such as the Azure Load Balancer,
         /// the read could potentially land on a different node to the write request, where the session was created.
@@ -141,6 +154,18 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         public string SessionToken { get; set; }
+
+        /// <summary> 
+        /// Gets or sets the <see cref="DedicatedGatewayRequestOptions"/> for requests against the dedicated gateway. Learn more about dedicated gateway <a href="https://azure.microsoft.com/en-us/services/cosmos-db/">here</a>. 
+        /// These options are only exercised when <see cref="ConnectionMode"/> is set to ConnectionMode.Gateway and the dedicated gateway endpoint is used for sending requests. 
+        /// These options have no effect otherwise.
+        /// </summary>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
 
         internal CosmosElement CosmosElementContinuationToken { get; set; }
 
@@ -229,6 +254,13 @@ namespace Microsoft.Azure.Cosmos
             {
                 request.Headers.Set(HttpConstants.HttpHeaders.EnumerationDirection, this.EnumerationDirection.Value.ToString());
             }
+
+            if (this.PopulateIndexMetrics.HasValue)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.PopulateIndexMetrics, this.PopulateIndexMetrics.ToString());
+            }
+
+            DedicatedGatewayRequestOptions.PopulateMaxIntegratedCacheStalenessOption(this.DedicatedGatewayRequestOptions, request);
 
             request.Headers.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, bool.TrueString);
 

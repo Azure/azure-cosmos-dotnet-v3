@@ -123,7 +123,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
-                hasLogicalPartitionKey: false);
+                hasLogicalPartitionKey: false,
+                allowDCount: true);
 
             tryGetQueryPlan.ThrowIfFailed();
         }

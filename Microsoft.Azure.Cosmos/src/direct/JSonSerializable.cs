@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Documents
         internal JsonSerializerSettings SerializerSettings { get; set; }
 
         //Public Serialization Helpers.
-        /// <summary> 
+        /// <summary>
         /// Saves the object to the specified stream in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="stream">Saves the object to this output stream.</param>
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Documents
             this.SaveTo(stream, formattingPolicy, null);
         }
 
-        /// <summary> 
+        /// <summary>
         /// Saves the object to the specified stream in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="stream">Saves the object to this output stream.</param>
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Documents
             writer.Flush();
         }
 
-        /// <summary> 
+        /// <summary>
         /// Saves the object to the specified string builder
         /// </summary>
         /// <param name="stringBuilder">Saves the object to this output string builder.</param>
@@ -391,6 +391,35 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        /// Get the enum value associated with the specified property name.
+        /// </summary>
+        /// <typeparam name="TEnum"></typeparam>
+        /// <param name="propertyName"></param>
+        /// <returns></returns>
+        internal TEnum? GetEnumValue<TEnum>(string propertyName) where TEnum : struct
+        {
+            if (!typeof(TEnum).IsEnum())
+            {
+                throw new ArgumentException($"{typeof(TEnum)} is not an Enum.");
+            }
+
+            string valueString = this.GetValue<string>(propertyName);
+
+            if (string.IsNullOrWhiteSpace(valueString))
+            {
+                return null;
+            }
+
+            if (!Enum.TryParse<TEnum>(valueString, ignoreCase: true, out TEnum value)
+                || !Enum.IsDefined(typeof(TEnum), value))
+            {
+                throw new BadRequestException($"Could not parse [{valueString}] as a valid enum value for property [{propertyName}].");
+            }
+
+            return value;
+        }
+
+        /// <summary>
         /// Get the value associated with the specified property name.
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -544,7 +573,7 @@ namespace Microsoft.Azure.Documents
                                 this.SerializerSettings == null ?
                                     childToken.ToObject<T>() :
                                     childToken.ToObject<T>(JsonSerializer.Create(this.SerializerSettings)));
-                        } 
+                        }
                         else
                         {
                             valueCollection.Add(default(T));
@@ -624,8 +653,8 @@ namespace Microsoft.Azure.Documents
         /// </param>
         /// <returns>The deserialized child object.</returns>
         internal TSerializable GetObjectWithResolver<TSerializable>(
-            string propertyName, 
-            ITypeResolver<TSerializable> typeResolver, 
+            string propertyName,
+            ITypeResolver<TSerializable> typeResolver,
             bool returnEmptyObject = false) where TSerializable : JsonSerializable
         {
             if (this.propertyBag != null)
@@ -696,7 +725,7 @@ namespace Microsoft.Azure.Documents
             if (this.propertyBag != null)
             {
                 JToken token = this.propertyBag[propertyName];
-                
+
                 if (token != null)
                 {
                     Collection<JObject> jobjectCollection = token.ToObject<Collection<JObject>>();
@@ -705,7 +734,7 @@ namespace Microsoft.Azure.Documents
                     {
                         TSerializable result = typeResolver.Resolve(childObject);
                         result.propertyBag = childObject;
-                        
+
                         objectCollection.Add(result);
                     }
                     return objectCollection;
@@ -752,6 +781,38 @@ namespace Microsoft.Azure.Documents
                     {
                         TSerializable result = typeResolver != null ? typeResolver.Resolve(kvp.Value) : new TSerializable();
                         result.propertyBag = kvp.Value;
+
+                        objectDictionary.Add(kvp.Key, result);
+                    }
+
+                    return objectDictionary;
+                }
+            }
+            return null;
+        }
+
+        internal Dictionary<string, TSerializable> GetObjectDictionaryWithNullableValues<TSerializable>(string propertyName) where TSerializable : JsonSerializable, new()
+        {
+            if (this.propertyBag != null)
+            {
+                JToken token = this.propertyBag[propertyName];
+
+                if (token != null)
+                {
+                    Dictionary<string, JObject> jobjectDictionary = token.ToObject<Dictionary<string, JObject>>();
+                    Dictionary<string, TSerializable> objectDictionary = new Dictionary<string, TSerializable>();
+                    foreach (KeyValuePair<string, JObject> kvp in jobjectDictionary)
+                    {
+                        TSerializable result;
+                        if (kvp.Value == null)
+                        {
+                            result = null;
+                        }
+                        else
+                        {
+                            result = new TSerializable();
+                            result.propertyBag = kvp.Value;
+                        }
 
                         objectDictionary.Add(kvp.Key, result);
                     }

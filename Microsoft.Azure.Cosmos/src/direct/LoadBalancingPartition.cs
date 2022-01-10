@@ -29,6 +29,8 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly List<LbChannelState> openChannels =
             new List<LbChannelState>();  // Guarded by capacityLock.
 
+        private readonly SemaphoreSlim concurrentOpeningChannelSlim;
+
         public LoadBalancingPartition(Uri serverUri, ChannelProperties channelProperties, bool localRegionRequest)
         {
             Debug.Assert(serverUri != null);
@@ -39,13 +41,17 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             this.maxCapacity = checked(channelProperties.MaxChannels *
                 channelProperties.MaxRequestsPerChannel);
+
+            this.concurrentOpeningChannelSlim =
+                new SemaphoreSlim(channelProperties.MaxConcurrentOpeningConnectionCount, channelProperties.MaxConcurrentOpeningConnectionCount);
         }
 
         public async Task<StoreResponse> RequestAsync(
             DocumentServiceRequest request,
             TransportAddressUri physicalAddress,
             ResourceOperation resourceOperation,
-            Guid activityId)
+            Guid activityId,
+            TransportRequestStats transportRequestStats)
         {
             int currentPending = Interlocked.Increment(
                 ref this.requestsPending);
@@ -60,6 +66,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                             "of requests per connection", this.serverUri),
                         SubStatusCodes.ClientTcpChannelFull);
                 }
+
+                transportRequestStats.RecordState(TransportRequestStats.RequestStage.ChannelAcquisitionStarted);
 
                 while (true)
                 {
@@ -105,7 +113,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                                     request,
                                     physicalAddress,
                                     resourceOperation,
-                                    activityId);
+                                    activityId,
+                                    transportRequestStats);
                             }
 
                             // Unhealthy channel
@@ -160,8 +169,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                             }
                             while (this.openChannels.Count < targetChannels)
                             {
-                                Channel newChannel = new Channel(activityId, this.serverUri, this.channelProperties, this.localRegionRequest);
-                                newChannel.Initialize();
+                                Channel newChannel = new Channel(activityId, this.serverUri, this.channelProperties, this.localRegionRequest, this.concurrentOpeningChannelSlim);
                                 this.openChannels.Add(new LbChannelState(newChannel, this.channelProperties.MaxRequestsPerChannel));
                                 this.capacity += this.channelProperties.MaxRequestsPerChannel;
                             }

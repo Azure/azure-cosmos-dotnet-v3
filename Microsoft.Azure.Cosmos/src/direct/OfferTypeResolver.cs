@@ -4,9 +4,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
-    using System.Diagnostics;
     using System.Globalization;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Newtonsoft.Json.Linq;
 

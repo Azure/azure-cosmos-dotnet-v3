@@ -3,11 +3,11 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
-    using Microsoft.Azure.Documents.Collections;
     using System;
     using System.Net;
     using System.Net.Http.Headers;
     using System.Runtime.Serialization;
+    using Microsoft.Azure.Documents.Collections;
 
     [Serializable]
     internal sealed class ConflictException : DocumentClientException

@@ -61,18 +61,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(encryptionKeyWrapMetadata));
             }
 
-            EncryptionCosmosClient encryptionCosmosClient;
-
-            if (database is EncryptionDatabase encryptionDatabase)
-            {
-                encryptionCosmosClient = encryptionDatabase.EncryptionCosmosClient;
-            }
-            else
-            {
-                throw new ArgumentException("Creating a ClientEncryptionKey resource requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
-            }
+            EncryptionCosmosClient encryptionCosmosClient = database is EncryptionDatabase encryptionDatabase
+                ? encryptionDatabase.EncryptionCosmosClient
+                : throw new ArgumentException("Creating a ClientEncryptionKey resource requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
 
             EncryptionKeyStoreProvider encryptionKeyStoreProvider = encryptionCosmosClient.EncryptionKeyStoreProvider;
+
+            if (!string.Equals(encryptionKeyWrapMetadata.Type, encryptionKeyStoreProvider.ProviderName))
+            {
+                throw new ArgumentException("The EncryptionKeyWrapMetadata Type value does not match with the ProviderName of EncryptionKeyStoreProvider configured on the Client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+            }
 
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                 encryptionKeyWrapMetadata.Name,
@@ -84,6 +82,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 keyEncryptionKey);
 
             byte[] wrappedDataEncryptionKey = protectedDataEncryptionKey.EncryptedValue;
+
+            // cache it.
+            ProtectedDataEncryptionKey.GetOrCreate(
+                   clientEncryptionKeyId,
+                   keyEncryptionKey,
+                   wrappedDataEncryptionKey);
 
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = new ClientEncryptionKeyProperties(
                 clientEncryptionKeyId,
@@ -137,18 +141,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ClientEncryptionKey clientEncryptionKey = database.GetClientEncryptionKey(clientEncryptionKeyId);
 
-            EncryptionCosmosClient encryptionCosmosClient;
-
-            if (database is EncryptionDatabase encryptionDatabase)
-            {
-                encryptionCosmosClient = encryptionDatabase.EncryptionCosmosClient;
-            }
-            else
-            {
-                throw new ArgumentException("Rewraping a ClientEncryptionKey requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
-            }
+            EncryptionCosmosClient encryptionCosmosClient = database is EncryptionDatabase encryptionDatabase
+                ? encryptionDatabase.EncryptionCosmosClient
+                : throw new ArgumentException("Rewraping a ClientEncryptionKey requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
 
             EncryptionKeyStoreProvider encryptionKeyStoreProvider = encryptionCosmosClient.EncryptionKeyStoreProvider;
+
+            if (!string.Equals(newEncryptionKeyWrapMetadata.Type, encryptionKeyStoreProvider.ProviderName))
+            {
+                throw new ArgumentException("The EncryptionKeyWrapMetadata Type value does not match with the ProviderName of EncryptionKeyStoreProvider configured on the Client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+            }
 
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await clientEncryptionKey.ReadAsync(cancellationToken: cancellationToken);
 

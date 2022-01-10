@@ -4,15 +4,17 @@
 namespace Microsoft.Azure.Documents.Rntbd
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Diagnostics;
     using System.Threading;
+    using System.Linq;
 
     internal sealed class CpuLoadHistory
     {
-        private readonly ReadOnlyCollection<CpuLoad> cpuLoad;
+        internal ReadOnlyCollection<CpuLoad> CpuLoad { get; }
         private readonly TimeSpan monitoringInterval;
         private readonly Lazy<bool> cpuOverload;
+        private readonly Lazy<string> cpuloadHistory;
 
         public CpuLoadHistory(ReadOnlyCollection<CpuLoad> cpuLoad, TimeSpan monitoringInterval)
         {
@@ -20,7 +22,16 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 throw new ArgumentNullException(nameof(cpuLoad));
             }
-            this.cpuLoad = cpuLoad;
+            this.CpuLoad = cpuLoad;
+
+            this.cpuloadHistory = new Lazy<string>(() =>
+            {
+                if (this.CpuLoad?.Count == 0)
+                {
+                    return "empty";
+                }
+                return string.Join(", ", this.CpuLoad);
+            });
 
             if (monitoringInterval <= TimeSpan.Zero)
             {
@@ -29,11 +40,15 @@ namespace Microsoft.Azure.Documents.Rntbd
                     monitoringInterval,
                     string.Format("{0} must be strictly positive", nameof(monitoringInterval)));
             }
+
             this.monitoringInterval = monitoringInterval;
             this.cpuOverload = new Lazy<bool>(
                 new Func<bool>(this.GetCpuOverload),
                 LazyThreadSafetyMode.ExecutionAndPublication);
         }
+
+        // Currently used only for unit tests.
+        internal DateTime LastTimestamp { get { return this.CpuLoad.Last().Timestamp; } }
 
         public bool IsCpuOverloaded
         {
@@ -43,23 +58,16 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        // Currently used only for unit tests.
-        internal DateTime LastTimestamp { get { return this.cpuLoad[this.cpuLoad.Count - 1].Timestamp; } }
-
         public override string ToString()
         {
-            if (this.cpuLoad?.Count == 0)
-            {
-                return "empty";
-            }
-            return string.Join(", ", this.cpuLoad);
+            return this.cpuloadHistory.Value;
         }
 
         private bool GetCpuOverload()
         {
-            for (int i = 0; i < this.cpuLoad.Count; i++)
+            for (int i = 0; i < this.CpuLoad.Count; i++)
             {
-                if (this.cpuLoad[i].Value > 90.0)
+                if (this.CpuLoad[i].Value > 90.0)
                 {
                     return true;
                 }
@@ -68,15 +76,17 @@ namespace Microsoft.Azure.Documents.Rntbd
             // This signal is fragile, because the timestamps come from
             // a non-monotonic clock that might have gotten adjusted by
             // e.g. NTP.
-            for (int i = 0; i < this.cpuLoad.Count - 1; i++)
+            for (int i = 0; i < this.CpuLoad.Count - 1; i++)
             {
-                if (this.cpuLoad[i + 1].Timestamp.Subtract(
-                        this.cpuLoad[i].Timestamp).TotalMilliseconds >
+                if (this.CpuLoad[i + 1].Timestamp.Subtract(
+                        this.CpuLoad[i].Timestamp).TotalMilliseconds >
                     1.5 * this.monitoringInterval.TotalMilliseconds)
                 {
                     return true;
                 }
+
             }
+
             return false;
         }
     }

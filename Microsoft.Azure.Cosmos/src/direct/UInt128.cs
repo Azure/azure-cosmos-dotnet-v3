@@ -314,11 +314,6 @@ namespace Microsoft.Azure.Documents
         /// <returns>Whether this instance equals another object.</returns>
         public override bool Equals(object obj)
         {
-            if (object.ReferenceEquals(this, obj))
-            {
-                return true;
-            }
-
             if (obj is UInt128)
             {
                 return this.Equals((UInt128)obj);

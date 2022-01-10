@@ -3,7 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
-    using System;
     using Newtonsoft.Json;
 
     internal sealed class Address : Resource

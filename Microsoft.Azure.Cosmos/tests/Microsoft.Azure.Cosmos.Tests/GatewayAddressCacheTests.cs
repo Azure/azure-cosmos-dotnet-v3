@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tests;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Tests for <see cref="GatewayAddressCache"/>.
@@ -25,18 +26,18 @@ namespace Microsoft.Azure.Cosmos
     public class GatewayAddressCacheTests
     {
         private const string DatabaseAccountApiEndpoint = "https://endpoint.azure.com";
-        private Mock<IAuthorizationTokenProvider> mockTokenProvider;
-        private Mock<IServiceConfigurationReader> mockServiceConfigReader;
-        private int targetReplicaSetSize = 4;
-        private PartitionKeyRangeIdentity testPartitionKeyRangeIdentity;
-        private ServiceIdentity serviceIdentity;
-        private Uri serviceName;
+        private readonly Mock<ICosmosAuthorizationTokenProvider> mockTokenProvider;
+        private readonly Mock<IServiceConfigurationReader> mockServiceConfigReader;
+        private readonly int targetReplicaSetSize = 4;
+        private readonly PartitionKeyRangeIdentity testPartitionKeyRangeIdentity;
+        private readonly ServiceIdentity serviceIdentity;
+        private readonly Uri serviceName;
 
         public GatewayAddressCacheTests()
         {
-            this.mockTokenProvider = new Mock<IAuthorizationTokenProvider>();
-            this.mockTokenProvider.Setup(foo => foo.GetUserAuthorizationAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Documents.Collections.INameValueCollection>(), It.IsAny<AuthorizationTokenType>()))
-                .Returns(new ValueTask<(string, string)>(("token!", null)));
+            this.mockTokenProvider = new Mock<ICosmosAuthorizationTokenProvider>();
+            this.mockTokenProvider.Setup(foo => foo.GetUserAuthorizationTokenAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Documents.Collections.INameValueCollection>(), It.IsAny<AuthorizationTokenType>(), It.IsAny<ITrace>()))
+                .Returns(new ValueTask<string>("token!"));
             this.mockServiceConfigReader = new Mock<IServiceConfigurationReader>();
             this.mockServiceConfigReader.Setup(foo => foo.SystemReplicationPolicy).Returns(new ReplicationPolicy() { MaxReplicaSetSize = this.targetReplicaSetSize });
             this.mockServiceConfigReader.Setup(foo => foo.UserReplicationPolicy).Returns(new ReplicationPolicy() { MaxReplicaSetSize = this.targetReplicaSetSize });
@@ -95,25 +96,25 @@ namespace Microsoft.Azure.Cosmos
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2,
                 enableTcpConnectionEndpointRediscovery: true);
 
-            PartitionAddressInformation addresses = cache.TryGetAddressesAsync(
+            PartitionAddressInformation addresses = await cache.TryGetAddressesAsync(
              DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid),
              this.testPartitionKeyRangeIdentity,
              this.serviceIdentity,
              false,
-             CancellationToken.None).Result;
+             CancellationToken.None);
 
             Assert.IsNotNull(addresses.AllAddresses.Select(address => address.PhysicalUri == "https://blabla.com"));
 
             // call updateAddress
-            await cache.TryRemoveAddressesAsync(new Documents.Rntbd.ServerKey(new Uri("https://blabla.com")), CancellationToken.None);
+            cache.TryRemoveAddresses(new Documents.Rntbd.ServerKey(new Uri("https://blabla.com")));
 
             // check if the addresss is updated
-            addresses = cache.TryGetAddressesAsync(
+            addresses = await cache.TryGetAddressesAsync(
              DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid),
              this.testPartitionKeyRangeIdentity,
              this.serviceIdentity,
              false,
-             CancellationToken.None).Result;
+             CancellationToken.None);
 
             Assert.IsNotNull(addresses.AllAddresses.Select(address => address.PhysicalUri == "https://blabla5.com"));
         }
@@ -129,7 +130,7 @@ namespace Microsoft.Azure.Cosmos
                 SynchronizationContext.SetSynchronizationContext(syncContext);
                 syncContext.Post(_ =>
                 {
-                    UserAgentContainer container = new UserAgentContainer();
+                    UserAgentContainer container = new UserAgentContainer(clientId: 0);
                     FakeMessageHandler messageHandler = new FakeMessageHandler();
 
                     AccountProperties databaseAccount = new AccountProperties();
@@ -138,6 +139,7 @@ namespace Microsoft.Azure.Cosmos
                     mockDocumentClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(databaseAccount);
 
                     GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+                    GlobalPartitionEndpointManager partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(globalEndpointManager);
 
                     ConnectionPolicy connectionPolicy = new ConnectionPolicy
                     {
@@ -146,6 +148,7 @@ namespace Microsoft.Azure.Cosmos
 
                     GlobalAddressResolver globalAddressResolver = new GlobalAddressResolver(
                         endpointManager: globalEndpointManager,
+                        partitionKeyRangeLocationCache: partitionKeyRangeLocationCache,
                         protocol: Documents.Client.Protocol.Tcp,
                         tokenProvider: this.mockTokenProvider.Object,
                         collectionCache: null,
@@ -165,15 +168,66 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        [TestMethod]
+        [Owner("aysarkar")]
+        public async Task GatewayAddressCacheInNetworkRequestTestAsync()
+        {
+            FakeMessageHandler messageHandler = new FakeMessageHandler();
+            HttpClient httpClient = new HttpClient(messageHandler);
+            httpClient.Timeout = TimeSpan.FromSeconds(120);
+            GatewayAddressCache cache = new GatewayAddressCache(
+                new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
+                Documents.Client.Protocol.Https,
+                this.mockTokenProvider.Object,
+                this.mockServiceConfigReader.Object,
+                MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
+                suboptimalPartitionForceRefreshIntervalInSeconds: 2,
+                enableTcpConnectionEndpointRediscovery: true);
+
+            // No header should be present.
+            PartitionAddressInformation legacyRequest = await cache.TryGetAddressesAsync(
+                DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid),
+                this.testPartitionKeyRangeIdentity,
+                this.serviceIdentity,
+                false,
+                CancellationToken.None);
+
+
+            Assert.IsFalse(legacyRequest.IsLocalRegion);
+
+            // Header indicates the request is from the same azure region.
+            messageHandler.Headers[HttpConstants.HttpHeaders.LocalRegionRequest] = "true";
+            PartitionAddressInformation inNetworkAddresses = await cache.TryGetAddressesAsync(
+                DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid),
+                this.testPartitionKeyRangeIdentity,
+                this.serviceIdentity,
+                true,
+                CancellationToken.None);
+            Assert.IsTrue(inNetworkAddresses.IsLocalRegion);
+
+            // Header indicates the request is not from the same azure region.
+            messageHandler.Headers[HttpConstants.HttpHeaders.LocalRegionRequest] = "false";
+            PartitionAddressInformation outOfNetworkAddresses = await cache.TryGetAddressesAsync(
+                DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid),
+                this.testPartitionKeyRangeIdentity,
+                this.serviceIdentity,
+                true,
+                CancellationToken.None);
+            Assert.IsFalse(outOfNetworkAddresses.IsLocalRegion);
+        }
+
         private class FakeMessageHandler : HttpMessageHandler
         {
             private bool returnFullReplicaSet;
             private bool returnUpdatedAddresses;
 
+            public Dictionary<string, string> Headers { get; set; }
+
             public FakeMessageHandler()
             {
                 this.returnFullReplicaSet = false;
                 this.returnUpdatedAddresses = false;
+                this.Headers = new Dictionary<string, string>();
             }
 
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -224,13 +278,21 @@ namespace Microsoft.Azure.Cosmos
                     Content = content,
                 };
 
+                if (this.Headers != null)
+                {
+                    foreach (KeyValuePair<string, string> headerPair in this.Headers)
+                    {
+                        responseMessage.Headers.Add(headerPair.Key, headerPair.Value);
+                    }
+                }
+
                 return Task.FromResult<HttpResponseMessage>(responseMessage);
             }
         }
 
         public class TestSynchronizationContext : SynchronizationContext
         {
-            private object locker = new object();
+            private readonly object locker = new object();
             public override void Post(SendOrPostCallback d, object state)
             {
                 lock (this.locker)

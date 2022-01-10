@@ -118,6 +118,20 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public bool? EnableContentResponseOnWrite { get; set; }
 
+        /// <summary> 
+        /// Gets or sets the <see cref="DedicatedGatewayRequestOptions"/> for requests against the dedicated gateway.
+        /// These options are only exercised when <see cref="ConnectionMode"/> is set to ConnectionMode.Gateway and the dedicated gateway endpoint is used for sending requests. 
+        /// </summary>
+        /// <remarks>
+        /// Learn more about dedicated gateway <a href="https://azure.microsoft.com/services/cosmos-db/">here</a>. 
+        /// </remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
+
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
@@ -140,6 +154,8 @@ namespace Microsoft.Azure.Cosmos
                     HttpConstants.HttpHeaders.IndexingDirective,
                     IndexingDirectiveStrings.FromIndexingDirective(this.IndexingDirective.Value));
             }
+
+            DedicatedGatewayRequestOptions.PopulateMaxIntegratedCacheStalenessOption(this.DedicatedGatewayRequestOptions, request);
 
             RequestOptions.SetSessionToken(request, this.SessionToken);
             base.PopulateRequestOptions(request);

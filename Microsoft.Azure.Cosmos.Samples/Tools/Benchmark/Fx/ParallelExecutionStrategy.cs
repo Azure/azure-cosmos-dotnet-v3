@@ -129,13 +129,16 @@ namespace CosmosBenchmark
                     runSummary.Top80PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.8 * summaryCounters.Length)).Average(), 0);
                     runSummary.Top90PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.9 * summaryCounters.Length)).Average(), 0);
                     runSummary.Top95PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.95 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top99PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.99 * summaryCounters.Length)).Average(), 0);
                     runSummary.AverageRps = Math.Round(summaryCounters.Average(), 0);
 
                     runSummary.Top50PercentLatencyInMs = TelemetrySpan.GetLatencyPercentile(50);
                     runSummary.Top75PercentLatencyInMs = TelemetrySpan.GetLatencyPercentile(75);
                     runSummary.Top90PercentLatencyInMs = TelemetrySpan.GetLatencyPercentile(90);
                     runSummary.Top95PercentLatencyInMs = TelemetrySpan.GetLatencyPercentile(95);
+                    runSummary.Top98PercentLatencyInMs = TelemetrySpan.GetLatencyPercentile(98);
                     runSummary.Top99PercentLatencyInMs = TelemetrySpan.GetLatencyPercentile(99);
+                    runSummary.MaxLatencyInMs = TelemetrySpan.GetLatencyPercentile(100);
 
                     string summary = JsonConvert.SerializeObject(runSummary);
                     Utility.TeeTraceInformation(summary);

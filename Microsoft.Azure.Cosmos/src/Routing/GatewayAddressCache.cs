@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Documents.Rntbd;
     using Microsoft.Azure.Documents.Routing;
 
-    internal class GatewayAddressCache : IAddressCache
+    internal class GatewayAddressCache : IAddressCache, IDisposable
     {
         private const string protocolFilterFormat = "{0} eq {1}";
 
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly Uri serviceEndpoint;
         private readonly Uri addressEndpoint;
 
-        private readonly AsyncCache<PartitionKeyRangeIdentity, PartitionAddressInformation> serverPartitionAddressCache;
+        private readonly AsyncCacheNonBlocking<PartitionKeyRangeIdentity, PartitionAddressInformation> serverPartitionAddressCache;
         private readonly ConcurrentDictionary<PartitionKeyRangeIdentity, DateTime> suboptimalServerPartitionTimestamps;
         private readonly ConcurrentDictionary<ServerKey, HashSet<PartitionKeyRangeIdentity>> serverPartitionAddressToPkRangeIdMap;
         private readonly IServiceConfigurationReader serviceConfigReader;
@@ -41,18 +41,19 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private readonly Protocol protocol;
         private readonly string protocolFilter;
-        private readonly IAuthorizationTokenProvider tokenProvider;
+        private readonly ICosmosAuthorizationTokenProvider tokenProvider;
         private readonly bool enableTcpConnectionEndpointRediscovery;
 
-        private CosmosHttpClient httpClient;
+        private readonly CosmosHttpClient httpClient;
 
         private Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterPartitionAddressCache;
         private DateTime suboptimalMasterPartitionTimestamp;
+        private bool disposedValue;
 
         public GatewayAddressCache(
             Uri serviceEndpoint,
             Protocol protocol,
-            IAuthorizationTokenProvider tokenProvider,
+            ICosmosAuthorizationTokenProvider tokenProvider,
             IServiceConfigurationReader serviceConfigReader,
             CosmosHttpClient httpClient,
             long suboptimalPartitionForceRefreshIntervalInSeconds = 600,
@@ -63,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.tokenProvider = tokenProvider;
             this.serviceEndpoint = serviceEndpoint;
             this.serviceConfigReader = serviceConfigReader;
-            this.serverPartitionAddressCache = new AsyncCache<PartitionKeyRangeIdentity, PartitionAddressInformation>();
+            this.serverPartitionAddressCache = new AsyncCacheNonBlocking<PartitionKeyRangeIdentity, PartitionAddressInformation>();
             this.suboptimalServerPartitionTimestamps = new ConcurrentDictionary<PartitionKeyRangeIdentity, DateTime>();
             this.serverPartitionAddressToPkRangeIdMap = new ConcurrentDictionary<ServerKey, HashSet<PartitionKeyRangeIdentity>>();
             this.suboptimalMasterPartitionTimestamp = DateTime.MaxValue;
@@ -80,13 +81,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 GatewayAddressCache.ProtocolString(this.protocol));
         }
 
-        public Uri ServiceEndpoint
-        {
-            get
-            {
-                return this.serviceEndpoint;
-            }
-        }
+        public Uri ServiceEndpoint => this.serviceEndpoint;
 
         [SuppressMessage("", "AsyncFixer02", Justification = "Multi task completed with await")]
         [SuppressMessage("", "AsyncFixer04", Justification = "Multi task completed outside of await")]
@@ -96,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             IReadOnlyList<PartitionKeyRangeIdentity> partitionKeyRangeIdentities,
             CancellationToken cancellationToken)
         {
-            List<Task<FeedResource<Address>>> tasks = new List<Task<FeedResource<Address>>>();
+            List<Task<DocumentServiceResponse>> tasks = new List<Task<DocumentServiceResponse>>();
             int batchSize = GatewayAddressCache.DefaultBatchSize;
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
@@ -105,8 +100,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (System.Reflection.Assembly.GetEntryAssembly() != null)
             {
 #endif
-                int userSpecifiedBatchSize = 0;
-                if (int.TryParse(System.Configuration.ConfigurationManager.AppSettings[GatewayAddressCache.AddressResolutionBatchSize], out userSpecifiedBatchSize))
+                if (int.TryParse(System.Configuration.ConfigurationManager.AppSettings[GatewayAddressCache.AddressResolutionBatchSize], out int userSpecifiedBatchSize))
                 {
                     batchSize = userSpecifiedBatchSize;
                 }
@@ -133,18 +127,25 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
 
-            foreach (FeedResource<Address> response in await Task.WhenAll(tasks))
+            foreach (DocumentServiceResponse response in await Task.WhenAll(tasks))
             {
-                IEnumerable<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> addressInfos =
-                    response.Where(addressInfo => ProtocolFromString(addressInfo.Protocol) == this.protocol)
-                        .GroupBy(address => address.PartitionKeyRangeId, StringComparer.Ordinal)
-                        .Select(group => this.ToPartitionAddressAndRange(collection.ResourceId, @group.ToList()));
-
-                foreach (Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> addressInfo in addressInfos)
+                using (response)
                 {
-                    this.serverPartitionAddressCache.Set(
-                        new PartitionKeyRangeIdentity(collection.ResourceId, addressInfo.Item1.PartitionKeyRangeId),
-                        addressInfo.Item2);
+                    FeedResource<Address> addressFeed = response.GetResource<FeedResource<Address>>();
+
+                    bool inNetworkRequest = this.IsInNetworkRequest(response);
+
+                    IEnumerable<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> addressInfos =
+                        addressFeed.Where(addressInfo => ProtocolFromString(addressInfo.Protocol) == this.protocol)
+                            .GroupBy(address => address.PartitionKeyRangeId, StringComparer.Ordinal)
+                            .Select(group => this.ToPartitionAddressAndRange(collection.ResourceId, @group.ToList(), inNetworkRequest));
+
+                    foreach (Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> addressInfo in addressInfos)
+                    {
+                        this.serverPartitionAddressCache.Set(
+                            new PartitionKeyRangeIdentity(collection.ResourceId, addressInfo.Item1.PartitionKeyRangeId),
+                            addressInfo.Item2);
+                    }
                 }
             }
         }
@@ -173,8 +174,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     return (await this.ResolveMasterAsync(request, forceRefreshPartitionAddresses)).Item2;
                 }
 
-                DateTime suboptimalServerPartitionTimestamp;
-                if (this.suboptimalServerPartitionTimestamps.TryGetValue(partitionKeyRangeIdentity, out suboptimalServerPartitionTimestamp))
+                if (this.suboptimalServerPartitionTimestamps.TryGetValue(partitionKeyRangeIdentity, out DateTime suboptimalServerPartitionTimestamp))
                 {
                     bool forceRefreshDueToSuboptimalPartitionReplicaSet =
                         DateTime.UtcNow.Subtract(suboptimalServerPartitionTimestamp) > TimeSpan.FromSeconds(this.suboptimalPartitionForceRefreshIntervalInSeconds);
@@ -189,30 +189,26 @@ namespace Microsoft.Azure.Cosmos.Routing
                 if (forceRefreshPartitionAddresses || request.ForceCollectionRoutingMapRefresh)
                 {
                     addresses = await this.serverPartitionAddressCache.GetAsync(
-                        partitionKeyRangeIdentity,
-                        null,
-                        () => this.GetAddressesForRangeIdAsync(
+                        key: partitionKeyRangeIdentity,
+                        singleValueInitFunc: () => this.GetAddressesForRangeIdAsync(
                             request,
                             partitionKeyRangeIdentity.CollectionRid,
                             partitionKeyRangeIdentity.PartitionKeyRangeId,
                             forceRefresh: forceRefreshPartitionAddresses),
-                        cancellationToken,
                         forceRefresh: true);
 
-                    DateTime ignoreDateTime;
-                    this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out ignoreDateTime);
+                    this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out DateTime ignoreDateTime);
                 }
                 else
                 {
                     addresses = await this.serverPartitionAddressCache.GetAsync(
-                        partitionKeyRangeIdentity,
-                        null,
-                        () => this.GetAddressesForRangeIdAsync(
+                        key: partitionKeyRangeIdentity,
+                        singleValueInitFunc: () => this.GetAddressesForRangeIdAsync(
                             request,
                             partitionKeyRangeIdentity.CollectionRid,
                             partitionKeyRangeIdentity.PartitionKeyRangeId,
                             forceRefresh: false),
-                        cancellationToken);
+                        forceRefresh: false);
                 }
 
                 int targetReplicaSetSize = this.serviceConfigReader.UserReplicationPolicy.MaxReplicaSetSize;
@@ -229,8 +225,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     (ex.StatusCode == HttpStatusCode.Gone && ex.GetSubStatus() == SubStatusCodes.PartitionKeyRangeGone))
                 {
                     //remove from suboptimal cache in case the the collection+pKeyRangeId combo is gone.
-                    DateTime ignoreDateTime;
-                    this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out ignoreDateTime);
+                    this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out _);
 
                     return null;
                 }
@@ -241,24 +236,21 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 if (forceRefreshPartitionAddresses)
                 {
-                    DateTime ignoreDateTime;
-                    this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out ignoreDateTime);
+                    this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out _);
                 }
 
                 throw;
             }
         }
 
-        public Task TryRemoveAddressesAsync(
-            ServerKey serverKey,
-            CancellationToken cancellationToken)
+        public void TryRemoveAddresses(
+            ServerKey serverKey)
         {
             if (serverKey == null)
             {
                 throw new ArgumentNullException(nameof(serverKey));
             }
 
-            List<Task> tasks = new List<Task>();
             if (this.serverPartitionAddressToPkRangeIdMap.TryRemove(serverKey, out HashSet<PartitionKeyRangeIdentity> pkRangeIds))
             {
                 PartitionKeyRangeIdentity[] pkRangeIdsCopy;
@@ -274,11 +266,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                        pkRangeId.PartitionKeyRangeId,
                        this.serviceEndpoint);
 
-                    tasks.Add(this.serverPartitionAddressCache.RemoveAsync(pkRangeId));
+                    this.serverPartitionAddressCache.TryRemove(pkRangeId);
                 }
             }
-
-            return Task.WhenAll(tasks);
         }
 
         public async Task<PartitionAddressInformation> UpdateAsync(
@@ -290,15 +280,15 @@ namespace Microsoft.Azure.Cosmos.Routing
                 throw new ArgumentNullException(nameof(partitionKeyRangeIdentity));
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
+
             return await this.serverPartitionAddressCache.GetAsync(
-                       partitionKeyRangeIdentity,
-                       null,
-                       () => this.GetAddressesForRangeIdAsync(
+                       key: partitionKeyRangeIdentity,
+                       singleValueInitFunc: () => this.GetAddressesForRangeIdAsync(
                            null,
                            partitionKeyRangeIdentity.CollectionRid,
                            partitionKeyRangeIdentity.PartitionKeyRangeId,
                            forceRefresh: true),
-                       cancellationToken,
                        forceRefresh: true);
         }
 
@@ -322,17 +312,22 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 try
                 {
-                    FeedResource<Address> masterAddresses = await this.GetMasterAddressesViaGatewayAsync(
+                    using (DocumentServiceResponse response = await this.GetMasterAddressesViaGatewayAsync(
                         request,
                         ResourceType.Database,
                         null,
                         entryUrl,
                         forceRefresh,
-                        false);
+                        false))
+                    {
+                        FeedResource<Address> masterAddresses = response.GetResource<FeedResource<Address>>();
 
-                    masterAddressAndRange = this.ToPartitionAddressAndRange(string.Empty, masterAddresses.ToList());
-                    this.masterPartitionAddressCache = masterAddressAndRange;
-                    this.suboptimalMasterPartitionTimestamp = DateTime.MaxValue;
+                        bool inNetworkRequest = this.IsInNetworkRequest(response);
+
+                        masterAddressAndRange = this.ToPartitionAddressAndRange(string.Empty, masterAddresses.ToList(), inNetworkRequest);
+                        this.masterPartitionAddressCache = masterAddressAndRange;
+                        this.suboptimalMasterPartitionTimestamp = DateTime.MaxValue;
+                    }
                 }
                 catch (Exception)
                 {
@@ -355,33 +350,38 @@ namespace Microsoft.Azure.Cosmos.Routing
             string partitionKeyRangeId,
             bool forceRefresh)
         {
-            FeedResource<Address> response =
-                await this.GetServerAddressesViaGatewayAsync(request, collectionRid, new[] { partitionKeyRangeId }, forceRefresh);
-
-            IEnumerable<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> addressInfos =
-                response.Where(addressInfo => ProtocolFromString(addressInfo.Protocol) == this.protocol)
-                    .GroupBy(address => address.PartitionKeyRangeId, StringComparer.Ordinal)
-                    .Select(group => this.ToPartitionAddressAndRange(collectionRid, @group.ToList()));
-
-            Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> result =
-                addressInfos.SingleOrDefault(
-                    addressInfo => StringComparer.Ordinal.Equals(addressInfo.Item1.PartitionKeyRangeId, partitionKeyRangeId));
-
-            if (result == null)
+            using (DocumentServiceResponse response =
+                await this.GetServerAddressesViaGatewayAsync(request, collectionRid, new[] { partitionKeyRangeId }, forceRefresh))
             {
-                string errorMessage = string.Format(
-                    CultureInfo.InvariantCulture,
-                    RMResources.PartitionKeyRangeNotFound,
-                    partitionKeyRangeId,
-                    collectionRid);
+                FeedResource<Address> addressFeed = response.GetResource<FeedResource<Address>>();
 
-                throw new PartitionKeyRangeGoneException(errorMessage) { ResourceAddress = collectionRid };
+                bool inNetworkRequest = this.IsInNetworkRequest(response);
+
+                IEnumerable<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> addressInfos =
+                    addressFeed.Where(addressInfo => ProtocolFromString(addressInfo.Protocol) == this.protocol)
+                        .GroupBy(address => address.PartitionKeyRangeId, StringComparer.Ordinal)
+                        .Select(group => this.ToPartitionAddressAndRange(collectionRid, @group.ToList(), inNetworkRequest));
+
+                Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> result =
+                    addressInfos.SingleOrDefault(
+                        addressInfo => StringComparer.Ordinal.Equals(addressInfo.Item1.PartitionKeyRangeId, partitionKeyRangeId));
+
+                if (result == null)
+                {
+                    string errorMessage = string.Format(
+                        CultureInfo.InvariantCulture,
+                        RMResources.PartitionKeyRangeNotFound,
+                        partitionKeyRangeId,
+                        collectionRid);
+
+                    throw new PartitionKeyRangeGoneException(errorMessage) { ResourceAddress = collectionRid };
+                }
+
+                return result.Item2;
             }
-
-            return result.Item2;
         }
 
-        private async Task<FeedResource<Address>> GetMasterAddressesViaGatewayAsync(
+        private async Task<DocumentServiceResponse> GetMasterAddressesViaGatewayAsync(
             DocumentServiceRequest request,
             ResourceType resourceType,
             string resourceAddress,
@@ -415,36 +415,37 @@ namespace Microsoft.Azure.Cosmos.Routing
             string resourceTypeToSign = PathsHelper.GetResourcePath(resourceType);
 
             headers.Set(HttpConstants.HttpHeaders.XDate, DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture));
-            (string token, string _) = await this.tokenProvider.GetUserAuthorizationAsync(
-                resourceAddress,
-                resourceTypeToSign,
-                HttpConstants.HttpMethods.Get,
-                headers,
-                AuthorizationTokenType.PrimaryMasterKey);
-
-            headers.Set(HttpConstants.HttpHeaders.Authorization, token);
-
-            Uri targetEndpoint = UrlUtility.SetQuery(this.addressEndpoint, UrlUtility.CreateQuery(addressQuery));
-
-            string identifier = GatewayAddressCache.LogAddressResolutionStart(request, targetEndpoint);
-            using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
-                uri: targetEndpoint,
-                additionalHeaders: headers,
-                resourceType: resourceType,
-                timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
-                trace: NoOpTrace.Singleton,
-                cancellationToken: default))
+            using (ITrace trace = Trace.GetRootTrace(nameof(GetMasterAddressesViaGatewayAsync), TraceComponent.Authorization, TraceLevel.Info))
             {
-                using (DocumentServiceResponse documentServiceResponse =
-                        await ClientExtensions.ParseResponseAsync(httpResponseMessage))
+                string token = await this.tokenProvider.GetUserAuthorizationTokenAsync(
+                    resourceAddress,
+                    resourceTypeToSign,
+                    HttpConstants.HttpMethods.Get,
+                    headers,
+                    AuthorizationTokenType.PrimaryMasterKey,
+                    trace);
+
+                headers.Set(HttpConstants.HttpHeaders.Authorization, token);
+
+                Uri targetEndpoint = UrlUtility.SetQuery(this.addressEndpoint, UrlUtility.CreateQuery(addressQuery));
+
+                string identifier = GatewayAddressCache.LogAddressResolutionStart(request, targetEndpoint);
+                using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
+                    uri: targetEndpoint,
+                    additionalHeaders: headers,
+                    resourceType: resourceType,
+                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
+                    clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
+                    cancellationToken: default))
                 {
+                    DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
                     GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
-                    return documentServiceResponse.GetResource<FeedResource<Address>>();
+                    return documentServiceResponse;
                 }
             }
         }
 
-        private async Task<FeedResource<Address>> GetServerAddressesViaGatewayAsync(
+        private async Task<DocumentServiceResponse> GetServerAddressesViaGatewayAsync(
             DocumentServiceRequest request,
             string collectionRid,
             IEnumerable<string> partitionKeyRangeIds,
@@ -475,55 +476,57 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             headers.Set(HttpConstants.HttpHeaders.XDate, DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture));
             string token = null;
-            try
-            {
-                token = (await this.tokenProvider.GetUserAuthorizationAsync(
-                    collectionRid,
-                    resourceTypeToSign,
-                    HttpConstants.HttpMethods.Get,
-                    headers,
-                    AuthorizationTokenType.PrimaryMasterKey)).token;
-            }
-            catch (UnauthorizedException)
-            {
-            }
 
-            if (token == null && request != null && request.IsNameBased)
+            using (ITrace trace = Trace.GetRootTrace(nameof(GetMasterAddressesViaGatewayAsync), TraceComponent.Authorization, TraceLevel.Info))
             {
-                // User doesn't have rid based resource token. Maybe he has name based.
-                string collectionAltLink = PathsHelper.GetCollectionPath(request.ResourceAddress);
-                token = (await this.tokenProvider.GetUserAuthorizationAsync(
-                        collectionAltLink,
+                try
+                {
+                    token = await this.tokenProvider.GetUserAuthorizationTokenAsync(
+                        collectionRid,
                         resourceTypeToSign,
                         HttpConstants.HttpMethods.Get,
                         headers,
-                        AuthorizationTokenType.PrimaryMasterKey)).token;
-            }
-
-            headers.Set(HttpConstants.HttpHeaders.Authorization, token);
-
-            Uri targetEndpoint = UrlUtility.SetQuery(this.addressEndpoint, UrlUtility.CreateQuery(addressQuery));
-
-            string identifier = GatewayAddressCache.LogAddressResolutionStart(request, targetEndpoint);
-            using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
-                uri: targetEndpoint,
-                additionalHeaders: headers,
-                resourceType: ResourceType.Document,
-                timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
-                trace: NoOpTrace.Singleton,
-                cancellationToken: default))
-            {
-                using (DocumentServiceResponse documentServiceResponse =
-                        await ClientExtensions.ParseResponseAsync(httpResponseMessage))
+                        AuthorizationTokenType.PrimaryMasterKey,
+                        trace);
+                }
+                catch (UnauthorizedException)
                 {
-                    GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                }
 
-                    return documentServiceResponse.GetResource<FeedResource<Address>>();
+                if (token == null && request != null && request.IsNameBased)
+                {
+                    // User doesn't have rid based resource token. Maybe he has name based.
+                    string collectionAltLink = PathsHelper.GetCollectionPath(request.ResourceAddress);
+                    token = await this.tokenProvider.GetUserAuthorizationTokenAsync(
+                            collectionAltLink,
+                            resourceTypeToSign,
+                            HttpConstants.HttpMethods.Get,
+                            headers,
+                            AuthorizationTokenType.PrimaryMasterKey,
+                            trace);
+                }
+
+                headers.Set(HttpConstants.HttpHeaders.Authorization, token);
+
+                Uri targetEndpoint = UrlUtility.SetQuery(this.addressEndpoint, UrlUtility.CreateQuery(addressQuery));
+
+                string identifier = GatewayAddressCache.LogAddressResolutionStart(request, targetEndpoint);
+                using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
+                    uri: targetEndpoint,
+                    additionalHeaders: headers,
+                    resourceType: ResourceType.Document,
+                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
+                    clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
+                    cancellationToken: default))
+                {
+                    DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
+                    GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                    return documentServiceResponse;
                 }
             }
         }
 
-        internal Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> ToPartitionAddressAndRange(string collectionRid, IList<Address> addresses)
+        internal Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> ToPartitionAddressAndRange(string collectionRid, IList<Address> addresses, bool inNetworkRequest)
         {
             Address address = addresses.First();
 
@@ -551,7 +554,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                        addressInfo.PhysicalUri);
 
                     HashSet<PartitionKeyRangeIdentity> pkRangeIdSet = this.serverPartitionAddressToPkRangeIdMap.GetOrAdd(
-                        new ServerKey(new Uri(addressInfo.PhysicalUri)), new HashSet<PartitionKeyRangeIdentity>());
+                        new ServerKey(new Uri(addressInfo.PhysicalUri)),
+                        (_) => new HashSet<PartitionKeyRangeIdentity>());
                     lock (pkRangeIdSet)
                     {
                         pkRangeIdSet.Add(partitionKeyRangeIdentity);
@@ -561,7 +565,19 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             return Tuple.Create(
                 partitionKeyRangeIdentity,
-                new PartitionAddressInformation(addressInfos));
+                new PartitionAddressInformation(addressInfos, inNetworkRequest));
+        }
+
+        private bool IsInNetworkRequest(DocumentServiceResponse documentServiceResponse)
+        {
+            bool inNetworkRequest = false;
+            string inNetworkHeader = documentServiceResponse.ResponseHeaders.Get(HttpConstants.HttpHeaders.LocalRegionRequest);
+            if (!string.IsNullOrEmpty(inNetworkHeader))
+            {
+                bool.TryParse(inNetworkHeader, out inNetworkRequest);
+            }
+
+            return inNetworkRequest;
         }
 
         private static string LogAddressResolutionStart(DocumentServiceRequest request, Uri targetEndpoint)
@@ -601,6 +617,26 @@ namespace Microsoft.Azure.Cosmos.Routing
                 (int)Protocol.Tcp => RuntimeConstants.Protocols.RNTBD,
                 _ => throw new ArgumentOutOfRangeException("protocol"),
             };
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (this.disposedValue)
+            {
+                return;
+            }
+
+            if (disposing)
+            {
+                this.serverPartitionAddressCache?.Dispose();
+            }
+
+            this.disposedValue = true;
+        }
+
+        public void Dispose()
+        {
+            this.Dispose(disposing: true);
         }
     }
 }

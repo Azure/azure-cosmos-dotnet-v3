@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Documents
         public const string Operations_GetFederationConfigurations = "getfederationconfigurations";
         public const string Operations_GetConfiguration = "getconfiguration";
         public const string Operations_GetDatabaseAccountConfigurations = "getdatabaseaccountconfigurations";
+        public const string Operations_GetGraphDatabaseAccountConfiguration = "getgraphdatabaseaccountconfiguration";
         public const string Operations_GetStorageServiceConfigurations = "getstorageserviceconfigurations";
         public const string Operations_GetStorageAccountKey = "getstorageaccountkey";
         public const string Operations_GetStorageAccountSas = "getstorageaccountsas";
@@ -171,6 +172,10 @@ namespace Microsoft.Azure.Documents
         public const string DatabaseAccountSegment = "databaseaccount";
         public const string DatabaseAccount_Root = Root + "/" + DatabaseAccountSegment + "/";
 
+        // /storageauthtoken
+        public const string StorageAuthTokenPathSegment = "storageauthtoken";
+        public const string StorageAuthToken_Root = Root + "/" + StorageAuthTokenPathSegment + "/";
+
         // /files
         public const string FilesPathSegment = "files";
         public const string Files_Root = Root + "/" + FilesPathSegment + "/";
@@ -295,5 +300,26 @@ namespace Microsoft.Azure.Documents
         // /interopUsers/{id}
         public const string InteropUserId = "interopuserId";
         public const string InteropUser_Root = InteropUsers_Root + "{" + InteropUserId + "}";
+
+        // /localemulator
+        public const string LocalEmulatorPathSegment = "localemulator";
+        public const string LocalEmulator_Root = Root + "/" + LocalEmulatorPathSegment + "/";
+
+        // /emulator/defaultIdentity
+        public const string LocalEmulatorManagedIdentityPathSegment = "managedIdentity";
+        public const string LocalEmulatorManagedIdentity_Root = LocalEmulator_Root + "/" + LocalEmulatorManagedIdentityPathSegment + "/";
+
+        // /retriablewritecachedresponse
+        public const string RetriableWriteCachedResponsePathSegment = "retriablewritecachedresponse";
+        public const string RetriableWriteCachedResponse_Root = Root + "/" + RetriableWriteCachedResponsePathSegment + "/";
+
+        // urls like http://hostname/accounts/{id}/address
+        // /accounts/{id}/
+        public const string AccountsPathSegment = "accounts";
+        public const string AccountId = "accountId";
+        public const string FederationEndpoint_Root = Root + "/" + AccountsPathSegment + "/{" + AccountId + "}/";
+
+        // /accounts/{id}/address
+        public const string FederationEndpoint_Address_Root = FederationEndpoint_Root + "/" + AddressPathSegment + "/";
     }
 }

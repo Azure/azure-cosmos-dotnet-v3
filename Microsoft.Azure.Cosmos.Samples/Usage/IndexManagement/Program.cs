@@ -94,7 +94,7 @@
             catch (Exception e)
             {
                 Exception baseException = e.GetBaseException();
-                Console.WriteLine("Error: {0}, Message: {1}", e.Message, baseException.Message);
+                Console.WriteLine("Error: {0}, Message: {1}", e.ToString(), baseException.Message);
             }
             finally
             {
@@ -344,14 +344,14 @@
             ConsoleColor color = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Red;
 
-            Exception baseException = e.GetBaseException();
             if (e is CosmosException cosmosException)
             {
-                Console.WriteLine("{0} error occurred: {1}, Message: {2}", cosmosException.StatusCode, cosmosException.Message, baseException.Message);
+                Console.WriteLine("{0} error occurred: {1}", cosmosException.StatusCode, cosmosException.ToString());
             }
             else
             {
-                Console.WriteLine("Error: {0}, Message: {1}", e.Message, baseException.Message);
+                Exception baseException = e.GetBaseException();
+                Console.WriteLine("Error: {0}, Message: {1}", e.ToString(), baseException.Message);
             }
 
             Console.ForegroundColor = color;

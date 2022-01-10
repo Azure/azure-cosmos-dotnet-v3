@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.IO;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Newtonsoft.Json;
 
@@ -54,7 +55,8 @@ namespace Microsoft.Azure.Cosmos
         {
             if (sqlQuery == null)
             {
-                throw new ArgumentNullException(nameof(sqlQuery));
+                // It is to support scenarios where all the data needs to be read 
+                return null;
             }
 
             QueryDefinition queryDefinition = new QueryDefinition(sqlQuery.QueryText);
@@ -106,6 +108,37 @@ namespace Microsoft.Azure.Cosmos
             this.parameters.Add(new SqlParameter(name, value));
 
             return this;
+        }
+
+        /// <summary>
+        /// Add parameters with Stream Value to the SQL query.       
+        /// </summary>
+        /// <param name="name">The name of the parameter.</param>
+        /// <param name="valueStream">The stream value for the parameter.</param>
+        /// <remarks>
+        /// UseCase : This is useful in cases like running a Query on Encrypted Values, where the value is generated post serialization and then encrypted 
+        /// and we don't want to change the cipher value due to a call to serializer again.
+        /// If the same name is added again it will replace the original value.
+        /// </remarks>        
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// QueryDefinition query = new QueryDefinition(
+        ///     "select * from t where t.Account = @account")
+        ///     .WithParameterStream("@account", streamValue);
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>An instance of <see cref="QueryDefinition"/>.</returns>
+        public QueryDefinition WithParameterStream(string name, Stream valueStream)
+        {
+            // pack it into an internal type for identification.
+            SerializedParameterValue serializedParameterValue = new SerializedParameterValue
+            {
+                valueStream = valueStream
+            };
+
+            return this.WithParameter(name, serializedParameterValue);
         }
 
         /// <summary>
@@ -163,5 +196,10 @@ namespace Microsoft.Azure.Cosmos
                 return this.GetEnumerator();
             }
         }
+    }
+
+    internal struct SerializedParameterValue
+    {
+        internal Stream valueStream;
     }
 }

@@ -5,12 +5,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
-    using System.Collections.Generic;
-    using System.Dynamic;
     using System.Globalization;
-    using System.Linq;
-    using System.Linq.Expressions;
-    using System.Reflection;
     using Newtonsoft.Json.Linq;
 
     /// <summary>

@@ -5,10 +5,6 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Collections.Concurrent;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Runtime.InteropServices;
 
     internal static class RntbdConstants
     {
@@ -57,6 +53,9 @@ namespace Microsoft.Azure.Documents
             SystemDocument = 0x0029,
             InteropUser = 0x002A,
             TransportControlCommand = 0x002B,
+            AuthPolicyElement = 0x002C,
+            StorageAuthToken = 0x002D,
+            RetriableWriteCachedResponse = 0x002E,
         }
 
         public enum RntbdOperationType : ushort
@@ -111,6 +110,7 @@ namespace Microsoft.Azure.Documents
             MetadataCheckAccess = 0x0031,
             CreateSystemSnapshot = 0x0032,
             UpdateFailoverPriorityList = 0x0033,
+            GetStorageAuthToken = 0x0034,
         }
 
         public enum ConnectionContextRequestTokenIdentifiers : ushort
@@ -118,7 +118,8 @@ namespace Microsoft.Azure.Documents
             ProtocolVersion = 0x0000,
             ClientVersion = 0x0001,
             UserAgent = 0x0002,
-            CallerId = 0x0003
+            CallerId = 0x0003,
+            EnableChannelMultiplexing = 0x0004,
         }
 
         public sealed class ConnectionContextRequest : RntbdTokenStream<ConnectionContextRequestTokenIdentifiers>
@@ -127,6 +128,7 @@ namespace Microsoft.Azure.Documents
             public RntbdToken clientVersion;
             public RntbdToken userAgent;
             public RntbdToken callerId;
+            public RntbdToken enableChannelMultiplexing;
 
             public ConnectionContextRequest()
             {
@@ -134,6 +136,7 @@ namespace Microsoft.Azure.Documents
                 this.clientVersion = new RntbdToken(true, RntbdTokenTypes.SmallString, (ushort)ConnectionContextRequestTokenIdentifiers.ClientVersion);
                 this.userAgent = new RntbdToken(true, RntbdTokenTypes.SmallString, (ushort)ConnectionContextRequestTokenIdentifiers.UserAgent);
                 this.callerId = new RntbdToken(false, RntbdTokenTypes.Byte, (byte)ConnectionContextRequestTokenIdentifiers.CallerId);
+                this.enableChannelMultiplexing = new RntbdToken(false, RntbdTokenTypes.Byte, (byte)ConnectionContextRequestTokenIdentifiers.EnableChannelMultiplexing);
 
                 base.SetTokens(new RntbdToken[]
                 {
@@ -141,6 +144,7 @@ namespace Microsoft.Azure.Documents
                     this.clientVersion,
                     this.userAgent,
                     this.callerId,
+                    this.enableChannelMultiplexing,
                 });
             }
         }
@@ -433,8 +437,19 @@ namespace Microsoft.Azure.Documents
             RequestedCollectionType = 0x00A6,
             // 0x00A7 is unused,
             InteropUserName = 0x00A8,
-            PopulateQueryMetricsIndexUtilization = 0x00A9,
-            PopulateAnalyticalMigrationProgress = 0x00AA
+            PopulateIndexMetrics = 0x00A9,
+            PopulateAnalyticalMigrationProgress = 0x00AA,
+            AuthPolicyElementName = 0x00AB,
+            ShouldReturnCurrentServerDateTime = 0x00AC,
+            RbacUserId = 0x00AD,
+            RbacAction = 0x00AE,
+            RbacResource = 0x00AF,
+            CorrelatedActivityId = 0x00B0,
+            IsThroughputCapRequest = 0x00B1,
+            ChangeFeedWireFormatVersion = 0x00B2,
+            PopulateBYOKEncryptionProgress = 0x00B3,
+            UseUserBackgroundBudget = 0x00B4,
+            IncludePhysicalPartitionThroughputInfo = 0x00B5,
         }
 
         public sealed class Request : RntbdTokenStream<RequestIdentifiers>
@@ -591,8 +606,19 @@ namespace Microsoft.Azure.Documents
             public RntbdToken sourceCollectionIfMatch;
             public RntbdToken requestedCollectionType;
             public RntbdToken interopUserName;
-            public RntbdToken populateQueryMetricsIndexUtilization;
+            public RntbdToken populateIndexMetrics;
             public RntbdToken populateAnalyticalMigrationProgress;
+            public RntbdToken authPolicyElementName;
+            public RntbdToken shouldReturnCurrentServerDateTime;
+            public RntbdToken rbacUserId;
+            public RntbdToken rbacAction;
+            public RntbdToken rbacResource;
+            public RntbdToken correlatedActivityId;
+            public RntbdToken isThroughputCapRequest;
+            public RntbdToken changeFeedWireFormatVersion;
+            public RntbdToken populateBYOKEncryptionProgress;
+            public RntbdToken useUserBackgroundBudget;
+            public RntbdToken includePhysicalPartitionThroughputInfo;
 
             public Request()
             {
@@ -748,9 +774,19 @@ namespace Microsoft.Azure.Documents
                 this.sourceCollectionIfMatch = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.SourceCollectionIfMatch);
                 this.requestedCollectionType = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.RequestedCollectionType);
                 this.interopUserName = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.InteropUserName);
-                this.populateQueryMetricsIndexUtilization = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateQueryMetricsIndexUtilization);
+                this.populateIndexMetrics = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateIndexMetrics);
                 this.populateAnalyticalMigrationProgress = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateAnalyticalMigrationProgress);
-
+                this.authPolicyElementName = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.AuthPolicyElementName);
+                this.shouldReturnCurrentServerDateTime = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.ShouldReturnCurrentServerDateTime);
+                this.rbacUserId = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.RbacUserId);
+                this.rbacAction = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.RbacAction);
+                this.rbacResource = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.RbacResource);
+                this.correlatedActivityId = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.CorrelatedActivityId);
+                this.isThroughputCapRequest = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.IsThroughputCapRequest);
+                this.changeFeedWireFormatVersion = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.ChangeFeedWireFormatVersion);
+                this.populateBYOKEncryptionProgress = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateBYOKEncryptionProgress);
+                this.useUserBackgroundBudget = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.UseUserBackgroundBudget);
+                this.includePhysicalPartitionThroughputInfo = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.IncludePhysicalPartitionThroughputInfo);
                 base.SetTokens(new RntbdToken[]
                 {
                     this.resourceId,
@@ -905,8 +941,19 @@ namespace Microsoft.Azure.Documents
                     this.sourceCollectionIfMatch,
                     this.requestedCollectionType,
                     this.interopUserName,
-                    this.populateQueryMetricsIndexUtilization,
-                    this.populateAnalyticalMigrationProgress
+                    this.populateIndexMetrics,
+                    this.populateAnalyticalMigrationProgress,
+                    this.authPolicyElementName,
+                    this.shouldReturnCurrentServerDateTime,
+                    this.rbacUserId,
+                    this.rbacAction,
+                    this.rbacResource,
+                    this.correlatedActivityId,
+                    this.isThroughputCapRequest,
+                    this.changeFeedWireFormatVersion,
+                    this.populateBYOKEncryptionProgress,
+                    this.useUserBackgroundBudget,
+                    this.includePhysicalPartitionThroughputInfo,
                 });
             }
         }
@@ -990,6 +1037,10 @@ namespace Microsoft.Azure.Documents
             AadAppliedRoleAssignmentId = 0x0056,
             CollectionUniqueIndexReIndexProgress = 0x0057,
             CollectionUniqueKeysUnderReIndex = 0x0058,
+            AnalyticalMigrationProgress = 0x0059,
+            TotalAccountThroughput = 0x005A,
+            BYOKEncryptionProgress = 0x005B,
+            AppliedPolicyElementId = 0x005C
         }
 
         public sealed class Response : RntbdTokenStream<ResponseIdentifiers>
@@ -1064,6 +1115,10 @@ namespace Microsoft.Azure.Documents
             public RntbdToken aadAppliedRoleAssignmentId;
             public RntbdToken collectionUniqueIndexReIndexProgress;
             public RntbdToken collectionUniqueKeysUnderReIndex;
+            public RntbdToken analyticalMigrationProgress;
+            public RntbdToken totalAccountThroughput;
+            public RntbdToken byokEncryptionProgress;
+            public RntbdToken appliedPolicyElementId;
 
             public Response()
             {
@@ -1137,6 +1192,10 @@ namespace Microsoft.Azure.Documents
                 this.aadAppliedRoleAssignmentId = new RntbdToken(false, RntbdTokenTypes.String, (ushort)ResponseIdentifiers.AadAppliedRoleAssignmentId);
                 this.collectionUniqueIndexReIndexProgress = new RntbdToken(false, RntbdTokenTypes.ULong, (ushort)ResponseIdentifiers.CollectionUniqueIndexReIndexProgress);
                 this.collectionUniqueKeysUnderReIndex = new RntbdToken(false, RntbdTokenTypes.String, (ushort)ResponseIdentifiers.CollectionUniqueKeysUnderReIndex);
+                this.analyticalMigrationProgress = new RntbdToken(false, RntbdTokenTypes.ULong, (ushort)ResponseIdentifiers.AnalyticalMigrationProgress);
+                this.totalAccountThroughput = new RntbdToken(false, RntbdTokenTypes.LongLong, (ushort)ResponseIdentifiers.TotalAccountThroughput);
+                this.byokEncryptionProgress = new RntbdToken(false, RntbdTokenTypes.Long, (ushort)ResponseIdentifiers.BYOKEncryptionProgress);
+                this.appliedPolicyElementId = new RntbdToken(false, RntbdTokenTypes.String, (ushort)ResponseIdentifiers.AppliedPolicyElementId);
 
                 base.SetTokens(new RntbdToken[]
                 {
@@ -1208,7 +1267,11 @@ namespace Microsoft.Azure.Documents
                     this.pendingPKDelete,
                     this.aadAppliedRoleAssignmentId,
                     this.collectionUniqueIndexReIndexProgress,
-                    this.collectionUniqueKeysUnderReIndex
+                    this.collectionUniqueKeysUnderReIndex,
+                    this.analyticalMigrationProgress,
+                    this.totalAccountThroughput,
+                    this.byokEncryptionProgress,
+                    this.appliedPolicyElementId
                 });
             }
         }

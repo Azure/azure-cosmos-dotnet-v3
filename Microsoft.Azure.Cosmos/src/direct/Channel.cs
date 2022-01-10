@@ -27,10 +27,12 @@ namespace Microsoft.Azure.Documents.Rntbd
             new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
         private State state = State.New;  // Guarded by stateLock.
         private Task initializationTask = null;  // Guarded by stateLock.
+        private volatile bool isInitializationComplete = false;
 
         private ChannelOpenArguments openArguments;
+        private readonly SemaphoreSlim openingSlim;
 
-        public Channel(Guid activityId, Uri serverUri, ChannelProperties channelProperties, bool localRegionRequest)
+        public Channel(Guid activityId, Uri serverUri, ChannelProperties channelProperties, bool localRegionRequest, SemaphoreSlim openingSlim)
         {
             Debug.Assert(channelProperties != null);
             this.dispatcher = new Dispatcher(serverUri,
@@ -40,7 +42,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 channelProperties.ReceiveHangDetectionTime,
                 channelProperties.SendHangDetectionTime,
                 channelProperties.IdleTimerPool,
-                channelProperties.IdleTimeout);
+                channelProperties.IdleTimeout,
+                channelProperties.EnableChannelMultiplexing);
             this.timerPool = channelProperties.RequestTimerPool;
             this.requestTimeoutSeconds = (int) channelProperties.RequestTimeout.TotalSeconds;
             this.serverUri = serverUri;
@@ -92,6 +95,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                 channelProperties.PortReuseMode,
                 channelProperties.UserPortPool,
                 channelProperties.CallerId);
+
+            this.openingSlim = openingSlim;
+            this.Initialize();
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -110,6 +116,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                         dispatcher = this.dispatcher;
                         break;
 
+
+                    case State.WaitingToOpen:
                     case State.Opening:
                         return true;
 
@@ -135,14 +143,14 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        public void Initialize()
+        private void Initialize()
         {
             this.ThrowIfDisposed();
             this.stateLock.EnterWriteLock();
             try
             {
                 Debug.Assert(this.state == State.New);
-                this.state = State.Opening;
+                this.state = State.WaitingToOpen;
                 Debug.Assert(this.initializationTask == null);
 
                 // Initialization should use a task scheduler internal to the Cosmos DB
@@ -158,6 +166,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                     Debug.Assert(this.openArguments.CommonArguments != null);
                     Trace.CorrelationManager.ActivityId = this.openArguments.CommonArguments.ActivityId;
                     await this.InitializeAsync();
+                    this.isInitializationComplete = true;
+                    this.TestOnInitializeComplete?.Invoke();
                 });
             }
             finally
@@ -168,30 +178,20 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         public async Task<StoreResponse> RequestAsync(
             DocumentServiceRequest request, TransportAddressUri physicalAddress,
-            ResourceOperation resourceOperation, Guid activityId)
+            ResourceOperation resourceOperation, Guid activityId, TransportRequestStats transportRequestStats)
         {
             this.ThrowIfDisposed();
-            Task initTask = null;
-            this.stateLock.EnterReadLock();
-            try
-            {
-                if (this.state != State.Open)
-                {
-                    Debug.Assert(this.initializationTask != null);
-                    initTask = this.initializationTask;
-                }
-            }
-            finally
-            {
-                this.stateLock.ExitReadLock();
-            }
-            if (initTask != null)
+
+            if (!this.isInitializationComplete)
             {
                 DefaultTrace.TraceInformation(
                     "Awaiting RNTBD channel initialization. Request URI: {0}",
                     physicalAddress);
-                await initTask;
+                await this.initializationTask;
             }
+
+            // Waiting for channel initialization to move to Pipelined stage
+            transportRequestStats.RecordState(TransportRequestStats.RequestStage.Pipelined);
 
             // Ideally, we would set up a timer here, and then hand off the rest of the work
             // to the dispatcher. In practice, additional constraints force the interaction to
@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             try
             {
                 callArguments.PreparedCall = this.dispatcher.PrepareCall(
-                    request, physicalAddress, resourceOperation, activityId);
+                    request, physicalAddress, resourceOperation, activityId, transportRequestStats);
             }
             catch (DocumentClientException e)
             {
@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             PooledTimer timer = this.timerPool.GetPooledTimer(this.requestTimeoutSeconds);
             Task[] tasks = new Task[2];
             tasks[0] = timer.StartTimerAsync();
-            Task<StoreResponse> dispatcherCall = this.dispatcher.CallAsync(callArguments);
+            Task<StoreResponse> dispatcherCall = this.dispatcher.CallAsync(callArguments, transportRequestStats);
             TransportClient.GetTransportPerformanceCounters().LogRntbdBytesSentCount(resourceOperation.resourceType, resourceOperation.operationType, callArguments.PreparedCall?.SerializedRequest.Count);
             tasks[1] = dispatcherCall;
             Task completedTask = await Task.WhenAny(tasks);
@@ -348,26 +348,12 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private async Task InitializeAsync()
         {
+            bool slimAcquired = false;
             try
             {
-                PooledTimer timer = this.timerPool.GetPooledTimer(
-                    this.openArguments.OpenTimeout);
-                Task[] tasks = new Task[2];
-
-                // For local region requests the the OpenTimeout could be lower than the TimerPool minSupportedTimerDelayInSeconds,
-                // so use the lower value
-                if (this.localRegionRequest && this.openArguments.OpenTimeout < timer.MinSupportedTimeout)
-                {
-                    tasks[0] = Task.Delay(this.openArguments.OpenTimeout);
-                }
-                else
-                {
-                    tasks[0] = timer.StartTimerAsync();
-                }
-
-                tasks[1] = this.dispatcher.OpenAsync(this.openArguments);
-                Task completedTask = await Task.WhenAny(tasks);
-                if (object.ReferenceEquals(completedTask, tasks[0]))
+                this.openArguments.CommonArguments.SetTimeoutCode(TransportErrorCode.ChannelWaitingToOpenTimeout);
+                slimAcquired = await this.openingSlim.WaitAsync(this.openArguments.OpenTimeout).ConfigureAwait(false);
+                if (!slimAcquired)
                 {
                     // Timed out.
                     TransportErrorCode timeoutCode;
@@ -375,32 +361,71 @@ namespace Microsoft.Azure.Documents.Rntbd
                     this.openArguments.CommonArguments.SnapshotCallState(
                         out timeoutCode, out payloadSent);
                     Debug.Assert(TransportException.IsTimeout(timeoutCode));
-                    Channel.HandleTaskTimeout(
-                        tasks[1],
-                        this.openArguments.CommonArguments.ActivityId);
-                    Exception ex = completedTask.Exception?.InnerException;
                     DefaultTrace.TraceWarning(
-                        "RNTBD open timed out on channel {0}. Error: {1}", this,
-                        timeoutCode);
-                    Debug.Assert(!this.openArguments.CommonArguments.UserPayload);
+                        "RNTBD waiting to open timed out on channel {0}. Error: {1}", this, timeoutCode);
                     throw new TransportException(
-                        timeoutCode, ex, this.openArguments.CommonArguments.ActivityId,
+                        timeoutCode, null, this.openArguments.CommonArguments.ActivityId,
                         this.serverUri, this.ToString(),
                         this.openArguments.CommonArguments.UserPayload, payloadSent);
                 }
                 else
-                {
-                    // Open completed.
-                    Debug.Assert(object.ReferenceEquals(completedTask, tasks[1]));
-                    timer.CancelTimer();
+                {     
+                    this.openArguments.CommonArguments.SetTimeoutCode(TransportErrorCode.ChannelOpenTimeout);
+                    this.state = State.Opening;
 
-                    if (completedTask.IsFaulted)
+                    PooledTimer timer = this.timerPool.GetPooledTimer(
+                        this.openArguments.OpenTimeout);
+                    Task[] tasks = new Task[2];
+
+                    // For local region requests the the OpenTimeout could be lower than the TimerPool minSupportedTimerDelayInSeconds,
+                    // so use the lower value
+                    if (this.localRegionRequest && this.openArguments.OpenTimeout < timer.MinSupportedTimeout)
                     {
-                        await completedTask;
+                        tasks[0] = Task.Delay(this.openArguments.OpenTimeout);
                     }
+                    else
+                    {
+                        tasks[0] = timer.StartTimerAsync();
+                    }
+
+                    tasks[1] = this.dispatcher.OpenAsync(this.openArguments);
+                    Task completedTask = await Task.WhenAny(tasks);
+                    if (object.ReferenceEquals(completedTask, tasks[0]))
+                    {
+                        // Timed out.
+                        TransportErrorCode timeoutCode;
+                        bool payloadSent;
+                        this.openArguments.CommonArguments.SnapshotCallState(
+                            out timeoutCode, out payloadSent);
+                        Debug.Assert(TransportException.IsTimeout(timeoutCode));
+                        Channel.HandleTaskTimeout(
+                            tasks[1],
+                            this.openArguments.CommonArguments.ActivityId);
+                        Exception ex = completedTask.Exception?.InnerException;
+                        DefaultTrace.TraceWarning(
+                            "RNTBD open timed out on channel {0}. Error: {1}", this,
+                            timeoutCode);
+                        Debug.Assert(!this.openArguments.CommonArguments.UserPayload);
+                        throw new TransportException(
+                            timeoutCode, ex, this.openArguments.CommonArguments.ActivityId,
+                            this.serverUri, this.ToString(),
+                            this.openArguments.CommonArguments.UserPayload, payloadSent);
+                    }
+                    else
+                    {
+                        // Open completed.
+                        Debug.Assert(object.ReferenceEquals(completedTask, tasks[1]));
+                        timer.CancelTimer();
+
+                        if (completedTask.IsFaulted)
+                        {
+                            await completedTask;
+                        }
+                    }
+
+                    this.FinishInitialization(State.Open);
                 }
 
-                this.FinishInitialization(State.Open);
             }
             catch (DocumentClientException e)
             {
@@ -447,9 +472,11 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.openArguments.OpenTimeline.WriteTrace();
                 // The open arguments are no longer needed after this point.
                 this.openArguments = null;
+                if (slimAcquired)
+                {
+                    this.openingSlim.Release();
+                }
             }
-
-            this.TestOnInitializeComplete?.Invoke();
         }
 
         private void FinishInitialization(State nextState)
@@ -461,7 +488,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             try
             {
                 // this.state might have become Closed if Dispose was already called.
-                Debug.Assert(this.state == State.Opening || this.state == State.Closed);
+                Debug.Assert(this.state == State.WaitingToOpen || this.state == State.Opening || this.state == State.Closed);
                 if (this.state != State.Closed)
                 {
                     this.state = nextState;
@@ -513,6 +540,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         private enum State
         {
             New,
+            WaitingToOpen,
             Opening,
             Open,
             Closed,

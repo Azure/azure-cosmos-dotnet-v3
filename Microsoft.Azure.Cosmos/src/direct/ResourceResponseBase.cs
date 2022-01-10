@@ -3,7 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents.Client
 {
-    using Microsoft.Azure.Documents.Collections;
     using System;
     using System.Collections.Generic;
     using System.Collections.Specialized;
@@ -11,6 +10,7 @@ namespace Microsoft.Azure.Documents.Client
     using System.Globalization;
     using System.IO;
     using System.Net;
+    using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
     /// Represents the non-resource specific service response headers returned by any request in the Azure Cosmos DB service.
@@ -504,12 +504,13 @@ namespace Microsoft.Azure.Documents.Client
         {
             get
             {
-                if (this.response.RequestStats == null)
+                if (this.response.RequestStats == null ||
+                    !this.response.RequestStats.RequestLatency.HasValue)
                 {
                     return TimeSpan.Zero;
                 }
 
-                return this.response.RequestStats.RequestLatency;
+                return this.response.RequestStats.RequestLatency.Value;
             }
         }
 

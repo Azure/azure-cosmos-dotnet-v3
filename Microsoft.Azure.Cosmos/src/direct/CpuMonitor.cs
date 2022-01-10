@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             Trace.CorrelationManager.ActivityId = Guid.NewGuid();
 
-            CpuReaderBase cpuReader = CpuReaderBase.SingletonInstance;
+            SystemUtilizationReaderBase cpuReader = SystemUtilizationReaderBase.SingletonInstance;
 
             CpuLoad[] buffer = new CpuLoad[CpuMonitor.HistoryLength];
             int clockHand = 0;

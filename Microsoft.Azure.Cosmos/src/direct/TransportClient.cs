@@ -30,7 +30,6 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly TimerPool timerPool;
         private readonly TimerPool idleTimerPool;
         private readonly ChannelDictionary channelDictionary;
-        private readonly CpuMonitor cpuMonitor;
         private bool disposed = false;
 
         #region RNTBD Transition
@@ -84,19 +83,13 @@ namespace Microsoft.Azure.Documents.Rntbd
                     clientOptions.MaxChannels,
                     clientOptions.PartitionCount,
                     clientOptions.MaxRequestsPerChannel,
+                    clientOptions.MaxConcurrentOpeningConnectionCount,
                     clientOptions.ReceiveHangDetectionTime,
                     clientOptions.SendHangDetectionTime,
                     clientOptions.IdleTimeout,
                     this.idleTimerPool,
-                    clientOptions.CallerId));
-
-            // CpuMonitor must be disabled inside compute gateway because it presents unnecessary overhead
-            // CpuMonitor is useful for customer applications that need help debugging timeouts
-            if (clientOptions.EnableCpuMonitor)
-            {
-                this.cpuMonitor = new CpuMonitor();
-                this.cpuMonitor.Start();
-            }
+                    clientOptions.CallerId,
+                    clientOptions.EnableChannelMultiplexing));
         }
 
         internal override Task<StoreResponse> InvokeStoreAsync(
@@ -121,6 +114,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
 
             StoreResponse storeResponse = null;
+            TransportRequestStats transportRequestStats = new TransportRequestStats();
             string operation = "Unknown operation";
             DateTime requestStartTime = DateTime.UtcNow;
             int transportResponseStatusCode = (int)TransportResponseStatusCode.Success;
@@ -138,7 +132,9 @@ namespace Microsoft.Azure.Documents.Rntbd
 
                 operation = "RequestAsync";
                 storeResponse = await channel.RequestAsync(request, physicalAddress,
-                    resourceOperation, activityId);
+                    resourceOperation, activityId, transportRequestStats);
+                transportRequestStats.RecordState(TransportRequestStats.RequestStage.Completed);
+                storeResponse.TransportRequestStats = transportRequestStats;
             }
             catch (TransportException ex)
             {
@@ -166,11 +162,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 // TransportException directly, don't allow TransportException
                 // to escape, and wrap it in an expected DocumentClientException
                 // instead. Tracked in backlog item 303368.
-                if (this.cpuMonitor != null)
-                {
-                    ex.SetCpuLoad(this.cpuMonitor.GetCpuLoad());
-                }
-
+                transportRequestStats.RecordState(TransportRequestStats.RequestStage.Failed);
                 transportResponseStatusCode = (int) ex.ErrorCode;
                 ex.RequestStartTime = requestStartTime;
                 ex.RequestEndTime = DateTime.UtcNow;
@@ -188,23 +180,23 @@ namespace Microsoft.Azure.Documents.Rntbd
                 {
                     DefaultTrace.TraceInformation("Converting to Gone (read-only request)");
                     throw TransportExceptions.GetGoneException(
-                        physicalAddress.Uri, activityId, ex);
+                        physicalAddress.Uri, activityId, ex, transportRequestStats);
                 }
                 if (!ex.UserRequestSent)
                 {
                     DefaultTrace.TraceInformation("Converting to Gone (write request, not sent)");
                     throw TransportExceptions.GetGoneException(
-                        physicalAddress.Uri, activityId, ex);
+                        physicalAddress.Uri, activityId, ex, transportRequestStats);
                 }
                 if (TransportException.IsTimeout(ex.ErrorCode))
                 {
                     DefaultTrace.TraceInformation("Converting to RequestTimeout");
                     throw TransportExceptions.GetRequestTimeoutException(
-                        physicalAddress.Uri, activityId, ex);
+                        physicalAddress.Uri, activityId, ex, transportRequestStats);
                 }
                 DefaultTrace.TraceInformation("Converting to ServiceUnavailable");
                 throw TransportExceptions.GetServiceUnavailableException(
-                    physicalAddress.Uri, activityId, ex);
+                    physicalAddress.Uri, activityId, ex, transportRequestStats);
             }
             catch (DocumentClientException ex)
             {
@@ -212,6 +204,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 DefaultTrace.TraceInformation("{0} failed: RID: {1}, Resource Type: {2}, Op: {3}, Address: {4}, " +
                                               "Exception: {5}", operation, request.ResourceAddress, request.ResourceType, resourceOperation,
                     physicalAddress, ex);
+                transportRequestStats.RecordState(TransportRequestStats.RequestStage.Failed);
+                ex.TransportRequestStats = transportRequestStats;
                 throw;
             }
             catch (Exception ex)
@@ -239,12 +233,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.ThrowIfDisposed();
             this.disposed = true;
             this.channelDictionary.Dispose();
-
-            if (this.cpuMonitor != null)
-            {
-                this.cpuMonitor.Stop();
-                this.cpuMonitor.Dispose();
-            }
 
             if (this.idleTimerPool != null)
             {
@@ -376,10 +364,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.SendHangDetectionTime = TimeSpan.FromSeconds(10.0);
                 this.IdleTimeout = TimeSpan.FromSeconds(1800);
                 this.CallerId = RntbdConstants.CallerId.Anonymous;
-
-                // CPU monitoring is needed for troubleshooting of client-side timeouts as such it is enabled by default
-                // Ability to disable is exposed to internal clients
-                this.EnableCpuMonitor = true;
+                this.EnableChannelMultiplexing = false;
+                this.MaxConcurrentOpeningConnectionCount = ushort.MaxValue;
             }
 
             public TimeSpan RequestTimeout { get; private set; }
@@ -389,8 +375,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             public TimeSpan ReceiveHangDetectionTime { get; set; }
             public TimeSpan SendHangDetectionTime { get; set; }
             public TimeSpan IdleTimeout { get; set; }
-            public bool EnableCpuMonitor { get; set; }
             public RntbdConstants.CallerId CallerId { get; set; }
+            public bool EnableChannelMultiplexing { get; set; }
 
             public UserAgentContainer UserAgent
             {
@@ -453,6 +439,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 set { this.timerPoolResolution = value; }
             }
 
+            public int MaxConcurrentOpeningConnectionCount { get; set; }
+
             public override string ToString()
             {
                 StringBuilder s = new StringBuilder();
@@ -475,8 +463,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                 s.AppendLine(this.SendHangDetectionTime.ToString("c"));
                 s.Append("  IdleTimeout: ");
                 s.AppendLine(this.IdleTimeout.ToString("c"));
-                s.Append("  EnableCpuMonitor: ");
-                s.AppendLine(this.EnableCpuMonitor.ToString());
                 s.Append("  UserAgent: ");
                 s.Append(this.UserAgent.UserAgent);
                 s.Append(" Suffix: ");
@@ -485,6 +471,10 @@ namespace Microsoft.Azure.Documents.Rntbd
                 s.AppendLine(this.CertificateHostNameOverride);
                 s.Append("  LocalRegionTimeout: ");
                 s.AppendLine(this.LocalRegionOpenTimeout.ToString("c"));
+                s.Append("  EnableChannelMultiplexing: ");
+                s.AppendLine(this.EnableChannelMultiplexing.ToString());
+                s.Append("  MaxConcurrentOpeningConnectionCount: ");
+                s.AppendLine(this.MaxConcurrentOpeningConnectionCount.ToString(CultureInfo.InvariantCulture));
                 return s.ToString();
             }
 

@@ -35,10 +35,10 @@ namespace Microsoft.Azure.Documents
 
 #if COSMOSCLIENT
         public const string SDKName = "cosmos-netstandard-sdk";
-        public const string SDKVersion = "3.3.2";
+        public const string SDKVersion = "3.18.0";
 #else
         public const string SDKName = "documentdb-netcore-sdk";
-        public const string SDKVersion = "2.11.0";
+        public const string SDKVersion = "2.14.0";
 #endif
 
         #region Type Extension Methods
@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Documents
         // Bypass query parsing on 32 bit process on Windows and always on non-Windows(Linux/OSX) platforms or if interop assemblies don't exist.
         public static bool ByPassQueryParsing()
         {            
-            if(!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || IntPtr.Size != 8 || !ServiceInteropWrapper.AssembliesExist.Value)
+            if(!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || !ServiceInteropWrapper.Is64BitProcess || !ServiceInteropWrapper.AssembliesExist.Value)
             {
                 DefaultTrace.TraceVerbose($"Bypass query parsing. IsWindowsOSPlatform {RuntimeInformation.IsOSPlatform(OSPlatform.Windows)} IntPtr.Size is {IntPtr.Size} ServiceInteropWrapper.AssembliesExist {ServiceInteropWrapper.AssembliesExist.Value}");
                 return true;

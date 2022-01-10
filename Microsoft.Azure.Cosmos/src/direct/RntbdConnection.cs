@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Documents
     using System.Net.Security;
     using System.Net.Sockets;
     using System.Security.Authentication;
-    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
 #if COSMOSCLIENT
@@ -314,7 +313,7 @@ namespace Microsoft.Azure.Documents
             // build the request byte payload
             BufferProvider.DisposableBuffer requestPayload = default;
             int headerAndMetadataSize = 0;
-            int bodySize = 0;
+            int? bodySize = null;
             try
             {
                 requestPayload = this.BuildRequest(request, physicalAddress.PathAndQuery.TrimEnd(RntbdConnection.UrlTrim), resourceOperation, out headerAndMetadataSize, out bodySize, activityId);
@@ -427,7 +426,7 @@ namespace Microsoft.Azure.Documents
                         requestStartTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
                         requestSendDoneTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
                         headerAndMetadataSize,
-                        bodySize,
+                        bodySize.HasValue ? bodySize.Value : "No body",
                         requestPayload.Buffer.Count,
                         requestEndTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
                         state.ToString());
@@ -641,7 +640,7 @@ namespace Microsoft.Azure.Documents
 
         protected virtual byte[] BuildContextRequest(Guid activityId)
         {
-            return Rntbd.TransportSerialization.BuildContextRequest(activityId, this.userAgent, RntbdConstants.CallerId.Anonymous);
+            return Rntbd.TransportSerialization.BuildContextRequest(activityId, this.userAgent, RntbdConstants.CallerId.Anonymous, enableChannelMultiplexing: false);
         }
 
         private async Task NegotiateRntbdContextAsync(Stream negotiatingStream, Guid activityId, RntbdResponseState state)
@@ -782,7 +781,7 @@ namespace Microsoft.Azure.Documents
             string replicaPath,
             ResourceOperation resourceOperation,
             out int headerAndMetadataSize,
-            out int bodySize,
+            out int? bodySize,
             Guid activityId)
         {
             return Rntbd.TransportSerialization.BuildRequest(request, replicaPath, resourceOperation,

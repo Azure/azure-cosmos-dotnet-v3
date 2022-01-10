@@ -3,12 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
     using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Globalization;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Represents bounding box for geometry spatial path in the Azure Cosmos DB service

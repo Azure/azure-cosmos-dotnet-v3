@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class CosmosExceptionTests
@@ -39,6 +40,61 @@ namespace Microsoft.Azure.Cosmos
                 innerException: null);
 
             Assert.IsNotNull(cosmosException.Headers, "Header should always be created to avoid null refs caused by users always expecting it to be there");
+        }
+
+        [TestMethod]
+        public void VerifyDiagnosticsInTimeoutAndServerError()
+        {
+            ITrace trace = NoOpTrace.Singleton;
+            string diagnosticString = new Diagnostics.CosmosTraceDiagnostics(trace).ToString();
+
+            CosmosException cosmosException = new CosmosException(
+                statusCode: HttpStatusCode.RequestTimeout,
+                message: "Test",
+                stackTrace: null,
+                headers: null,
+                trace: trace,
+                error: null,
+                innerException: null);
+
+            Assert.IsTrue(cosmosException.Message.EndsWith(diagnosticString));
+            Assert.IsTrue(cosmosException.ToString().Contains(diagnosticString));
+
+            cosmosException = new CosmosException(
+                statusCode: HttpStatusCode.InternalServerError,
+                message: "Test",
+                stackTrace: null,
+                headers: null,
+                trace: trace,
+                error: null,
+                innerException: null);
+
+            Assert.IsTrue(cosmosException.Message.EndsWith(diagnosticString));
+            Assert.IsTrue(cosmosException.ToString().Contains(diagnosticString));
+
+            cosmosException = new CosmosException(
+                statusCode: HttpStatusCode.ServiceUnavailable,
+                message: "Test",
+                stackTrace: null,
+                headers: null,
+                trace: trace,
+                error: null,
+                innerException: null);
+
+            Assert.IsTrue(cosmosException.Message.EndsWith(diagnosticString));
+            Assert.IsTrue(cosmosException.ToString().Contains(diagnosticString));
+
+            cosmosException = new CosmosException(
+                statusCode: HttpStatusCode.NotFound,
+                message: "Test",
+                stackTrace: null,
+                headers: null,
+                trace: trace,
+                error: null,
+                innerException: null);
+
+            Assert.IsFalse(cosmosException.Message.Contains(diagnosticString));
+            Assert.IsTrue(cosmosException.ToString().Contains(diagnosticString));
         }
 
         [TestMethod]
@@ -141,6 +197,50 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        public void EnsureSuccessStatusCode_ThrowsOnFailure_ContainsComplexJsonBody()
+        {
+            JObject error = new JObject
+            {
+                { "Code", "code" },
+                { "Message", "TestContent" },
+                { "Error", new JArray { "msg1", "msg2" }},
+                { "Link", "https://www.demolink.com" },
+                { "Path", "/demo/path" },
+                { "EscapedPath", @"/demo/path/with/escape/character" }
+            };
+
+            string testContent = JsonConvert.SerializeObject(error);
+
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                StreamWriter sw = new StreamWriter(memoryStream);
+                sw.Write(testContent);
+                sw.Flush();
+                memoryStream.Seek(0, SeekOrigin.Begin);
+
+                ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.NotFound) { Content = memoryStream };
+                try
+                {
+                    responseMessage.EnsureSuccessStatusCode();
+                    Assert.Fail("Should have thrown");
+                }
+                catch (CosmosException exception)
+                {
+                    Assert.IsTrue(exception.Message.Contains("code"));
+                    Assert.IsTrue(exception.Message.Contains("TestContent"));
+                    Assert.IsTrue(exception.Message.Contains("msg1"));
+                    Assert.IsTrue(exception.Message.Contains("msg2"));
+                    Assert.IsTrue(exception.Message.Contains("https://www.demolink.com"));
+                    Assert.IsTrue(exception.Message.Contains("/demo/path"));
+                    Assert.IsTrue(exception.Message.Contains("/demo/path/with/escape/character"));
+                    Assert.IsFalse(exception.Message.Contains("}"));
+                    Assert.IsFalse(exception.Message.Contains("{"));
+                }
+            }
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
         public void VerifyDocumentClientExceptionWithNullHeader()
         {
             string errorMessage = "Test Exception!";
@@ -152,16 +252,13 @@ namespace Microsoft.Azure.Cosmos
 
             string headerValue = "Test" + Guid.NewGuid();
             dce.Headers.Add(headerValue, null);
-
-            ResponseMessage responseMessage = dce.ToCosmosResponseMessage(null);
-            Assert.IsNull(responseMessage.Headers.Get(headerValue));
         }
 
         [TestMethod]
         public void VerifyDocumentClientExceptionToResponseMessage()
         {
             string errorMessage = "Test Exception!";
-            DocumentClientException dce = null;
+            DocumentClientException dce;
             try
             {
                 throw new DocumentClientException(
@@ -186,7 +283,6 @@ namespace Microsoft.Azure.Cosmos
         public void VerifyTransportExceptionToResponseMessage()
         {
             string errorMessage = "Test Exception!";
-            DocumentClientException dce = null;
             TransportException transportException = new TransportException(
                 errorCode: TransportErrorCode.ConnectionBroken,
                 innerException: null,
@@ -196,6 +292,7 @@ namespace Microsoft.Azure.Cosmos
                 userPayload: true,
                 payloadSent: true);
 
+            DocumentClientException dce;
             try
             {
                 throw new ServiceUnavailableException(
@@ -244,6 +341,16 @@ namespace Microsoft.Azure.Cosmos
                     requestCharge,
                     retryAfter);
             }
+
+            CosmosException cosmosException = CosmosExceptionFactory.CreateNotFoundException(testMessage, new Headers() { SubStatusCodeLiteral = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString(), ActivityId = activityId, RequestCharge = requestCharge, RetryAfterLiteral = retryAfterLiteral });
+            this.ValidateExceptionInfo(
+                    cosmosException,
+                    HttpStatusCode.NotFound,
+                    ((int)SubStatusCodes.ReadSessionNotAvailable).ToString(),
+                    testMessage,
+                    activityId,
+                    requestCharge,
+                    retryAfter);
         }
 
         [TestMethod]
@@ -334,6 +441,14 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(TimeSpan.FromMilliseconds(retryAfter), exception.Headers.RetryAfter);
             Assert.IsTrue(exception.ToString().Contains(message));
             string expectedMessage = $"Response status code does not indicate success: {httpStatusCode} ({(int)httpStatusCode}); Substatus: {substatus}; ActivityId: {exception.ActivityId}; Reason: ({message});";
+
+            if(httpStatusCode == HttpStatusCode.RequestTimeout
+                || httpStatusCode == HttpStatusCode.InternalServerError
+                || httpStatusCode == HttpStatusCode.ServiceUnavailable
+                || (httpStatusCode == HttpStatusCode.NotFound && exception.Headers.SubStatusCode == SubStatusCodes.ReadSessionNotAvailable))
+            {
+                expectedMessage += "; Diagnostics:" + new Diagnostics.CosmosTraceDiagnostics(NoOpTrace.Singleton).ToString();
+            }
 
             Assert.AreEqual(expectedMessage, exception.Message);
 

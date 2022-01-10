@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Documents.Routing
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
 
     using Newtonsoft.Json;

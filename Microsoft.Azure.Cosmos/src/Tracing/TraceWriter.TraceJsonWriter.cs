@@ -7,8 +7,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Linq;
+    using System.Net.Http;
+    using System.Text;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using Microsoft.Azure.Documents;
 
     internal static partial class TraceWriter
     {
@@ -16,7 +20,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             public static void WriteTrace(
                 IJsonWriter writer,
-                ITrace trace)
+                ITrace trace,
+                bool isRootTrace)
             {
                 if (writer == null)
                 {
@@ -30,28 +35,38 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 writer.WriteObjectStart();
 
+                if (isRootTrace)
+                {
+                    writer.WriteFieldName("Summary");
+                    SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
+                    summaryDiagnostics.WriteSummaryDiagnostics(writer);
+                }
+
                 writer.WriteFieldName("name");
                 writer.WriteStringValue(trace.Name);
 
                 writer.WriteFieldName("id");
                 writer.WriteStringValue(trace.Id.ToString());
 
-                writer.WriteFieldName("component");
-                writer.WriteStringValue(trace.Component.ToString());
+                // Request handler use the base class to create the trace.
+                // This makes it pointless to log the caller info because 
+                // it is always just the base class info.
+                if (trace.Component != TraceComponent.RequestHandler)
+                {
+                    writer.WriteFieldName("caller info");
+                    writer.WriteObjectStart();
 
-                writer.WriteFieldName("caller info");
-                writer.WriteObjectStart();
+                    writer.WriteFieldName("member");
+                    writer.WriteStringValue(trace.CallerInfo.MemberName);
 
-                writer.WriteFieldName("member");
-                writer.WriteStringValue(trace.CallerInfo.MemberName);
+                    writer.WriteFieldName("file");
+                    writer.WriteStringValue(GetFileNameFromPath(trace.CallerInfo.FilePath));
 
-                writer.WriteFieldName("file");
-                writer.WriteStringValue(GetFileNameFromPath(trace.CallerInfo.FilePath));
+                    writer.WriteFieldName("line");
+                    writer.WriteNumber64Value(trace.CallerInfo.LineNumber);
 
-                writer.WriteFieldName("line");
-                writer.WriteNumber64Value(trace.CallerInfo.LineNumber);
-
-                writer.WriteObjectEnd();
+                    writer.WriteObjectEnd();
+                }
 
                 writer.WriteFieldName("start time");
                 writer.WriteStringValue(trace.StartTime.ToString("hh:mm:ss:fff"));
@@ -59,30 +74,37 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 writer.WriteFieldName("duration in milliseconds");
                 writer.WriteNumber64Value(trace.Duration.TotalMilliseconds);
 
-                writer.WriteFieldName("data");
-                writer.WriteObjectStart();
-
-                foreach (KeyValuePair<string, object> kvp in trace.Data)
+                if (trace.Data.Any())
                 {
-                    string key = kvp.Key;
-                    object value = kvp.Value;
+                    writer.WriteFieldName("data");
+                    writer.WriteObjectStart();
 
-                    writer.WriteFieldName(key);
-                    WriteTraceDatum(writer, value);
+                    foreach (KeyValuePair<string, object> kvp in trace.Data)
+                    {
+                        string key = kvp.Key;
+                        object value = kvp.Value;
+
+                        writer.WriteFieldName(key);
+                        WriteTraceDatum(writer, value);
+                    }
+
+                    writer.WriteObjectEnd();
                 }
 
-                writer.WriteObjectEnd();
-
-                writer.WriteFieldName("children");
-                writer.WriteArrayStart();
-
-                foreach (ITrace child in trace.Children)
+                if (trace.Children.Any())
                 {
-                    WriteTrace(writer, child);
+                    writer.WriteFieldName("children");
+                    writer.WriteArrayStart();
+
+                    foreach (ITrace child in trace.Children)
+                    {
+                        WriteTrace(writer, 
+                            child, 
+                            isRootTrace: false);
+                    }
+
+                    writer.WriteArrayEnd();
                 }
-
-                writer.WriteArrayEnd();
-
                 writer.WriteObjectEnd();
             }
         }
@@ -159,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.WriteStringValueOrNull(pointOperationStatisticsTraceDatum.ActivityId);
 
                 this.jsonWriter.WriteFieldName("ResponseTimeUtc");
-                this.jsonWriter.WriteStringValue(pointOperationStatisticsTraceDatum.ResponseTimeUtc.ToString("o", CultureInfo.InvariantCulture));
+                this.WriteDateTimeStringValue(pointOperationStatisticsTraceDatum.ResponseTimeUtc);
 
                 this.jsonWriter.WriteFieldName("StatusCode");
                 this.jsonWriter.WriteNumber64Value((int)pointOperationStatisticsTraceDatum.StatusCode);
@@ -182,6 +204,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName("ResponseSessionToken");
                 this.WriteStringValueOrNull(pointOperationStatisticsTraceDatum.ResponseSessionToken);
 
+                this.jsonWriter.WriteFieldName("BELatencyInMs");
+                this.WriteStringValueOrNull(pointOperationStatisticsTraceDatum.BELatencyInMs);
+
                 this.jsonWriter.WriteObjectEnd();
             }
 
@@ -193,15 +218,15 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 this.WriteJsonUriArrayWithDuplicatesCounted("ContactedReplicas", clientSideRequestStatisticsTraceDatum.ContactedReplicas);
 
-                this.WriteRegionsContactedArray("RegionsContacted", clientSideRequestStatisticsTraceDatum.RegionsContactedWithName);
+                this.WriteRegionsContactedArray("RegionsContacted", clientSideRequestStatisticsTraceDatum.RegionsContacted);
                 this.WriteJsonUriArray("FailedReplicas", clientSideRequestStatisticsTraceDatum.FailedReplicas);
 
                 this.jsonWriter.WriteFieldName("AddressResolutionStatistics");
                 this.jsonWriter.WriteArrayStart();
 
-                foreach (ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics.Values)
+                foreach (KeyValuePair<string, ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics> stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics)
                 {
-                    VisitAddressResolutionStatistics(stat, this.jsonWriter);
+                   this.VisitAddressResolutionStatistics(stat.Value);
                 }
 
                 this.jsonWriter.WriteArrayEnd();
@@ -211,108 +236,231 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 foreach (ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics stat in clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList)
                 {
-                    VisitStoreResponseStatistics(stat, this.jsonWriter);
+                    this.VisitStoreResponseStatistics(stat);
                 }
 
                 this.jsonWriter.WriteArrayEnd();
 
+                if (clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList.Count > 0)
+                {
+                    this.jsonWriter.WriteFieldName("HttpResponseStats");
+                    this.jsonWriter.WriteArrayStart();
+
+                    foreach (ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics stat in clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList)
+                    {
+                        this.VisitHttpResponseStatistics(stat, this.jsonWriter);
+                    }
+
+                    this.jsonWriter.WriteArrayEnd();
+                }
+
                 this.jsonWriter.WriteObjectEnd();
             }
 
-            private static void VisitAddressResolutionStatistics(
-                ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics addressResolutionStatistics,
-                IJsonWriter jsonWriter)
+            private void VisitHttpResponseStatistics(ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics stat, IJsonWriter jsonWriter)
             {
                 jsonWriter.WriteObjectStart();
 
                 jsonWriter.WriteFieldName("StartTimeUTC");
-                jsonWriter.WriteStringValue(addressResolutionStatistics.StartTime.ToString("o", CultureInfo.InvariantCulture));
+                this.WriteDateTimeStringValue(stat.RequestStartTime);
 
-                jsonWriter.WriteFieldName("EndTimeUTC");
-                if (addressResolutionStatistics.EndTime.HasValue)
-                {
-                    jsonWriter.WriteStringValue(addressResolutionStatistics.EndTime.Value.ToString("o", CultureInfo.InvariantCulture));
-                }
-                else
-                {
-                    jsonWriter.WriteStringValue("EndTime Never Set.");
-                }
+                jsonWriter.WriteFieldName("DurationInMs");
+                jsonWriter.WriteNumber64Value(stat.Duration.TotalMilliseconds);
 
-                jsonWriter.WriteFieldName("TargetEndpoint");
-                if (addressResolutionStatistics.TargetEndpoint == null)
-                {
-                    jsonWriter.WriteNullValue();
-                }
-                else
-                {
-                    jsonWriter.WriteStringValue(addressResolutionStatistics.TargetEndpoint);
-                }
-
-                jsonWriter.WriteObjectEnd();
-            }
-
-            private static void VisitStoreResponseStatistics(
-                ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics storeResponseStatistics,
-                IJsonWriter jsonWriter)
-            {
-                jsonWriter.WriteObjectStart();
-
-                jsonWriter.WriteFieldName("ResponseTimeUTC");
-                jsonWriter.WriteStringValue(storeResponseStatistics.RequestResponseTime.ToString("o", CultureInfo.InvariantCulture));
+                jsonWriter.WriteFieldName("RequestUri");
+                jsonWriter.WriteStringValue(stat.RequestUri.ToString());
 
                 jsonWriter.WriteFieldName("ResourceType");
-                jsonWriter.WriteStringValue(storeResponseStatistics.RequestResourceType.ToString());
+                jsonWriter.WriteStringValue(stat.ResourceType.ToString());
 
-                jsonWriter.WriteFieldName("OperationType");
-                jsonWriter.WriteStringValue(storeResponseStatistics.RequestOperationType.ToString());
+                jsonWriter.WriteFieldName("HttpMethod");
+                jsonWriter.WriteStringValue(stat.HttpMethod.ToString());
 
-                jsonWriter.WriteFieldName("LocationEndpoint");
-                if (storeResponseStatistics.LocationEndpoint == null)
+                jsonWriter.WriteFieldName("ActivityId");
+                this.WriteStringValueOrNull(stat.ActivityId);
+
+                if (stat.Exception != null)
                 {
-                    jsonWriter.WriteNullValue();
+                    jsonWriter.WriteFieldName("ExceptionType");
+                    jsonWriter.WriteStringValue(stat.Exception.GetType().ToString());
+
+                    jsonWriter.WriteFieldName("ExceptionMessage");
+                    jsonWriter.WriteStringValue(stat.Exception.Message);
                 }
-                else
-                {
-                    jsonWriter.WriteStringValue(storeResponseStatistics.LocationEndpoint.ToString());
-                }
 
-                if (storeResponseStatistics.StoreResult != null)
+                if (stat.HttpResponseMessage != null)
                 {
-                    jsonWriter.WriteFieldName("ActivityId");
-                    if (storeResponseStatistics.StoreResult.ActivityId == null)
-                    {
-                        jsonWriter.WriteNullValue();
-                    }
-                    else
-                    {
-                        jsonWriter.WriteStringValue(storeResponseStatistics.StoreResult.ActivityId);
-                    }
+                    jsonWriter.WriteFieldName("StatusCode");
+                    jsonWriter.WriteStringValue(stat.HttpResponseMessage.StatusCode.ToString());
 
-                    jsonWriter.WriteFieldName("StoreResult");
-                    jsonWriter.WriteStringValue(storeResponseStatistics.StoreResult.ToString());
+                    if (!stat.HttpResponseMessage.IsSuccessStatusCode)
+                    {
+                        jsonWriter.WriteFieldName("ReasonPhrase");
+                        jsonWriter.WriteStringValue(stat.HttpResponseMessage.ReasonPhrase);
+                    }
                 }
 
                 jsonWriter.WriteObjectEnd();
             }
 
-            public void Visit(CpuHistoryTraceDatum cpuHistoryTraceDatum)
+            private void VisitAddressResolutionStatistics(
+                ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics addressResolutionStatistics)
             {
                 this.jsonWriter.WriteObjectStart();
 
-                this.jsonWriter.WriteFieldName("CPU History");
-                this.jsonWriter.WriteStringValue(cpuHistoryTraceDatum.Value.ToString());
+                this.jsonWriter.WriteFieldName("StartTimeUTC");
+                this.WriteDateTimeStringValue(addressResolutionStatistics.StartTime);
+
+                this.jsonWriter.WriteFieldName("EndTimeUTC");
+                if (addressResolutionStatistics.EndTime.HasValue)
+                {
+                    this.WriteDateTimeStringValue(addressResolutionStatistics.EndTime.Value);
+                }
+                else
+                {
+                    this.jsonWriter.WriteStringValue("EndTime Never Set.");
+                }
+
+                this.jsonWriter.WriteFieldName("TargetEndpoint");
+                if (addressResolutionStatistics.TargetEndpoint == null)
+                {
+                    this.jsonWriter.WriteNullValue();
+                }
+                else
+                {
+                    this.jsonWriter.WriteStringValue(addressResolutionStatistics.TargetEndpoint);
+                }
 
                 this.jsonWriter.WriteObjectEnd();
             }
 
-            private void WriteJsonUriArray(string propertyName, IEnumerable<Uri> uris)
+            private void VisitStoreResponseStatistics(
+                ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics storeResponseStatistics)
+            {
+                this.jsonWriter.WriteObjectStart();
+
+                this.jsonWriter.WriteFieldName("ResponseTimeUTC");
+                this.WriteDateTimeStringValue(storeResponseStatistics.RequestResponseTime);
+
+                this.jsonWriter.WriteFieldName("ResourceType");
+                this.jsonWriter.WriteStringValue(storeResponseStatistics.RequestResourceType.ToString());
+
+                this.jsonWriter.WriteFieldName("OperationType");
+                this.jsonWriter.WriteStringValue(storeResponseStatistics.RequestOperationType.ToString());
+
+                this.jsonWriter.WriteFieldName("LocationEndpoint");
+                this.WriteStringValueOrNull(storeResponseStatistics.LocationEndpoint?.ToString());
+
+                if (storeResponseStatistics.StoreResult != null)
+                {
+                    this.jsonWriter.WriteFieldName("StoreResult");
+                    this.Visit(storeResponseStatistics.StoreResult);
+                }
+
+                this.jsonWriter.WriteObjectEnd();
+            }
+
+            public void Visit(CpuHistoryTraceDatum cpuHistoryTraceDatum)
+            {
+                if (this.jsonWriter is IJsonTextWriterExtensions jsonTextWriter)
+                {
+                    jsonTextWriter.WriteRawJsonValue(Encoding.UTF8.GetBytes(cpuHistoryTraceDatum.Value.ToString()),
+                                                     isFieldName: false);
+                }
+                else
+                {
+                    throw new NotImplementedException("Writing Raw Json directly to the buffer is currently only supported for text and not for binary, hybridrow");
+                }
+            }
+
+            public void Visit(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
+            {
+                if (this.jsonWriter is IJsonTextWriterExtensions jsonTextWriter)
+                {
+                    jsonTextWriter.WriteRawJsonValue(clientConfigurationTraceDatum.SerializedJson,
+                                                     isFieldName: false);
+                }
+                else
+                {
+                    throw new NotImplementedException("Writing Raw Json directly to the buffer is currently only supported for text and not for binary, hybridrow");
+                }
+            }
+
+            public void Visit(StoreResult storeResult)
+            {
+                this.jsonWriter.WriteObjectStart();
+
+                this.jsonWriter.WriteFieldName(nameof(storeResult.ActivityId));
+                this.WriteStringValueOrNull(storeResult.ActivityId);
+
+                this.jsonWriter.WriteFieldName(nameof(storeResult.StatusCode));
+                this.jsonWriter.WriteStringValue(storeResult.StatusCode.ToString());
+
+                this.jsonWriter.WriteFieldName(nameof(storeResult.SubStatusCode));
+                this.jsonWriter.WriteStringValue(storeResult.SubStatusCode.ToString());
+
+                this.jsonWriter.WriteFieldName(nameof(storeResult.LSN));
+                this.jsonWriter.WriteNumber64Value(storeResult.LSN);
+
+                this.jsonWriter.WriteFieldName(nameof(storeResult.PartitionKeyRangeId));
+                this.WriteStringValueOrNull(storeResult.PartitionKeyRangeId);
+
+                this.jsonWriter.WriteFieldName(nameof(storeResult.GlobalCommittedLSN));
+                this.jsonWriter.WriteNumber64Value(storeResult.GlobalCommittedLSN);
+
+                this.jsonWriter.WriteFieldName(nameof(storeResult.ItemLSN));
+                this.jsonWriter.WriteNumber64Value(storeResult.ItemLSN);
+
+                this.jsonWriter.WriteFieldName(nameof(storeResult.UsingLocalLSN));
+                this.jsonWriter.WriteBoolValue(storeResult.UsingLocalLSN);
+
+                this.jsonWriter.WriteFieldName(nameof(storeResult.QuorumAckedLSN));
+                this.jsonWriter.WriteNumber64Value(storeResult.QuorumAckedLSN);
+
+                this.jsonWriter.WriteFieldName(nameof(storeResult.SessionToken));
+                this.WriteStringValueOrNull(storeResult.SessionToken?.ConvertToString());
+
+                this.jsonWriter.WriteFieldName(nameof(storeResult.CurrentWriteQuorum));
+                this.jsonWriter.WriteNumber64Value(storeResult.CurrentWriteQuorum);
+
+                this.jsonWriter.WriteFieldName(nameof(storeResult.CurrentReplicaSetSize));
+                this.jsonWriter.WriteNumber64Value(storeResult.CurrentReplicaSetSize);
+
+                this.jsonWriter.WriteFieldName(nameof(storeResult.NumberOfReadRegions));
+                this.jsonWriter.WriteNumber64Value(storeResult.NumberOfReadRegions);
+
+                this.jsonWriter.WriteFieldName(nameof(storeResult.IsValid));
+                this.jsonWriter.WriteBoolValue(storeResult.IsValid);
+
+                this.jsonWriter.WriteFieldName(nameof(storeResult.StorePhysicalAddress));
+                this.WriteStringValueOrNull(storeResult.StorePhysicalAddress?.ToString());
+
+                this.jsonWriter.WriteFieldName(nameof(storeResult.RequestCharge));
+                this.jsonWriter.WriteNumber64Value(storeResult.RequestCharge);
+
+                this.jsonWriter.WriteFieldName(nameof(storeResult.RetryAfterInMs));
+                this.WriteStringValueOrNull(storeResult.RetryAfterInMs);
+
+                this.jsonWriter.WriteFieldName("BELatencyInMs");
+                this.WriteStringValueOrNull(storeResult.BackendRequestDurationInMs);
+
+                this.VisitTransportRequestStats(storeResult.TransportRequestStats);
+
+                this.jsonWriter.WriteFieldName("TransportException");
+                TransportException transportException = storeResult.Exception?.InnerException as TransportException;
+                this.WriteStringValueOrNull(transportException?.Message);
+
+                this.jsonWriter.WriteObjectEnd();
+            }
+
+            private void WriteJsonUriArray(string propertyName, IEnumerable<TransportAddressUri> uris)
             {
                 this.jsonWriter.WriteFieldName(propertyName);
                 this.jsonWriter.WriteArrayStart();
 
                 if (uris != null)
                 {
-                    foreach (Uri contactedReplica in uris)
+                    foreach (TransportAddressUri contactedReplica in uris)
                     {
                         this.WriteStringValueOrNull(contactedReplica?.ToString());
                     }
@@ -328,13 +476,33 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 if (uris != null)
                 {
-                    foreach ((string _, Uri uri) contactedRegion in uris)
+                    foreach ((string _, Uri uri) in uris)
                     {
-                        this.WriteStringValueOrNull(contactedRegion.uri?.ToString());
+                        this.WriteStringValueOrNull(uri?.ToString());
                     }
                 }
 
                 this.jsonWriter.WriteArrayEnd();
+            }
+
+            private void VisitTransportRequestStats(TransportRequestStats transportRequestStats)
+            {
+                this.jsonWriter.WriteFieldName("transportRequestTimeline");
+                if (transportRequestStats == null)
+                {
+                    this.jsonWriter.WriteNullValue();
+                    return;
+                }
+
+                if (this.jsonWriter is IJsonTextWriterExtensions jsonTextWriter)
+                {
+                    jsonTextWriter.WriteRawJsonValue(Encoding.UTF8.GetBytes(transportRequestStats.ToString()),
+                                                     isFieldName: false);
+                }
+                else
+                {
+                    throw new NotImplementedException("Writing Raw Json directly to the buffer is currently only supported for text and not for binary, hybridrow");
+                }
             }
 
             /// <summary>
@@ -342,19 +510,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
             /// Sequential duplicates are counted and written as a single object to prevent
             /// writing the same URI multiple times.
             /// </summary>
-            private void WriteJsonUriArrayWithDuplicatesCounted(string propertyName, IReadOnlyList<Uri> uris)
+            private void WriteJsonUriArrayWithDuplicatesCounted(string propertyName, IReadOnlyList<TransportAddressUri> uris)
             {
                 this.jsonWriter.WriteFieldName(propertyName);
                 this.jsonWriter.WriteArrayStart();
 
                 if (uris != null)
                 {
-                    Uri previous = null;
+                    TransportAddressUri previous = null;
                     int duplicateCount = 1;
                     int totalCount = uris.Count;
                     for (int i = 0; i < totalCount; i++)
                     {
-                        Uri contactedReplica = uris[i];
+                        TransportAddressUri contactedReplica = uris[i];
                         if (contactedReplica == null)
                         {
                             continue;
@@ -400,6 +568,18 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 else
                 {
                     this.jsonWriter.WriteStringValue(value);
+                }
+            }
+
+            private void WriteDateTimeStringValue(DateTime value)
+            {
+                if (value == null)
+                {
+                    this.jsonWriter.WriteNullValue();
+                }
+                else
+                {
+                    this.jsonWriter.WriteStringValue(value.ToString("o", CultureInfo.InvariantCulture));
                 }
             }
         }

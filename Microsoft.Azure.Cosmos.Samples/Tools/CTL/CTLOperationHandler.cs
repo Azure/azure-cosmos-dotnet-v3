@@ -5,7 +5,6 @@
 namespace CosmosCTL
 {
     using System;
-    using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
     using App.Metrics.Timer;
@@ -18,8 +17,6 @@ namespace CosmosCTL
         /// <summary>
         /// Waits until the synchronization semaphore is available, creates a new operation and handles resolution.
         /// </summary>
-        /// <param name="semaphoreSlim">Synchronization semaphore that defines maximum degree of parallelism.</param>
-        /// <param name="diagnosticsLoggingThreshold">Latency threshold above which <paramref name="logDiagnostics"/> will be called.</param>
         /// <param name="createTimerContext">Creates a <see cref="TimerContext"/> to measure operation latency.</param>
         /// <param name="resultProducer">Producer to generate operation calls as a producer-consumer.</param>
         /// <param name="onSuccess">Event handler for operation success.</param>
@@ -28,32 +25,26 @@ namespace CosmosCTL
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         public static async Task PerformOperationAsync(
-            SemaphoreSlim semaphoreSlim,
-            long diagnosticsLoggingThreshold,
             Func<TimerContext> createTimerContext,
             ICTLResultProducer<T> resultProducer,
             Action onSuccess,
             Action<Exception> onFailure,
-            Action<T> logDiagnostics,
-            CancellationToken cancellationToken)
+            Action<T, TimeSpan> logDiagnostics)
         {
             while (resultProducer.HasMoreResults)
             {
-                await semaphoreSlim.WaitAsync(cancellationToken);
                 using (TimerContext timerContext = createTimerContext())
                 {
                     await resultProducer.GetNextAsync().ContinueWith(task =>
                     {
-                        semaphoreSlim.Release();
-                        long latency = (long)timerContext.Elapsed.TotalMilliseconds;
                         if (task.IsCompletedSuccessfully)
                         {
-                            if (latency > diagnosticsLoggingThreshold)
-                            {
-                                logDiagnostics(task.Result);
-                            }
+                            logDiagnostics(task.Result, timerContext.Elapsed);
 
-                            onSuccess();
+                            if (!resultProducer.HasMoreResults)
+                            {
+                                onSuccess();
+                            }
                         }
                         else
                         {

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Metadata that a key wrapping provider can use to wrap/unwrap data encryption keys.
@@ -25,12 +26,15 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Creates a new instance of key wrap metadata.
-        /// </summary>
+        /// </summary> 
+        /// <param name="type">ProviderName of KeyStoreProvider.</param>
         /// <param name="name">Name of the metadata.</param>
         /// <param name="value">Value of the metadata.</param>
-        public EncryptionKeyWrapMetadata(string name, string value)
-            : this(type: "custom", name: name, value: value)
+        public EncryptionKeyWrapMetadata(string type, string name, string value)
         {
+            this.Type = type ?? throw new ArgumentNullException(nameof(type));
+            this.Name = name ?? throw new ArgumentNullException(nameof(name));
+            this.Value = value ?? throw new ArgumentNullException(nameof(value));
         }
 
         /// <summary>
@@ -38,23 +42,17 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="source">Existing instance from which to initialize.</param>
         public EncryptionKeyWrapMetadata(EncryptionKeyWrapMetadata source)
-            : this(source?.Type, source?.Name, source?.Value, source?.Algorithm)
+            : this(source?.Type, source?.Name, source?.Value)
         {
         }
 
-        internal EncryptionKeyWrapMetadata(string type, string name, string value, string algorithm = null)
-        {
-            this.Type = type ?? throw new ArgumentNullException(nameof(type));
-            this.Name = name ?? throw new ArgumentNullException(nameof(name));
-            this.Value = value ?? throw new ArgumentNullException(nameof(value));
-            this.Algorithm = algorithm;
-        }
-
+        /// <summary>
+        /// Serialized form of metadata.
+        /// Note: This value is saved in the Cosmos DB service.
+        /// Implementors of derived implementations should ensure that this does not have (private) key material or credential information.
+        /// </summary>
         [JsonProperty(PropertyName = "type", NullValueHandling = NullValueHandling.Ignore)]
-        internal string Type { get; private set; }
-
-        [JsonProperty(PropertyName = "algorithm", NullValueHandling = NullValueHandling.Ignore)]
-        internal string Algorithm { get; private set; }
+        public string Type { get; private set; }
 
         /// <summary>
         /// Serialized form of metadata.
@@ -72,6 +70,13 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = "value", NullValueHandling = NullValueHandling.Ignore)]
         public string Value { get; private set; }
 
+        /// <summary>
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+        /// </summary>
+        [JsonExtensionData]
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+
         /// <inheritdoc/>
         public override bool Equals(object obj)
         {
@@ -84,7 +89,6 @@ namespace Microsoft.Azure.Cosmos
         {
             int hashCode = 1265339359;
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Type);
-            hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Algorithm);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Name);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Value);
             return hashCode;
@@ -101,9 +105,9 @@ namespace Microsoft.Azure.Cosmos
         {
             return other != null &&
                    this.Type == other.Type &&
-                   this.Algorithm == other.Algorithm &&
                    this.Name == other.Name &&
-                   this.Value == other.Value;
+                   this.Value == other.Value &&
+                   this.AdditionalProperties.EqualsTo(other.AdditionalProperties);
         }
     }
 }

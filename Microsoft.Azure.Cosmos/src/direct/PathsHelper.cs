@@ -41,6 +41,26 @@ namespace Microsoft.Azure.Documents
             string databaseName = string.Empty;
             string collectionName = string.Empty;
 
+            if (!string.IsNullOrEmpty(resourceUrl) && resourceUrl.Contains(Paths.OperationsPathSegment) &&
+                (resourceUrl.Contains(Paths.PartitionKeyDeletePathSegment) || resourceUrl.Contains(Paths.CollectionTruncatePathsegment)))
+            {
+                isFeed = false;
+                string resourceName = PathsHelper.GetCollectionPath(resourceUrl);
+
+                if(resourceName == null || resourceName.Length < 1)
+                {
+                    resourcePath = string.Empty;
+                    resourceIdOrFullName = string.Empty;
+                    isNameBased = false;
+                    return false;
+                }
+
+                resourceIdOrFullName = resourceName[0] == '/' ? resourceName.Substring(1) : resourceName; //ResourceName is expected in the format "dbs/dbname/colls/collname"
+                resourcePath = Paths.CollectionsPathSegment;
+                isNameBased = true;
+                return true;
+            }
+
             return PathsHelper.TryParsePathSegmentsWithDatabaseAndCollectionNames(resourceUrl, out isFeed, out resourcePath, out resourceIdOrFullName, out isNameBased, out databaseName, out collectionName, clientVersion, false);
         }
 
@@ -123,7 +143,7 @@ namespace Microsoft.Azure.Documents
             if (uriSegmentsCount >= 2)
             {
                 segmentTwo = new StringSegment(segments[uriSegmentsCount - 2]).Trim(PathsHelper.PathSeparatorArray);
-            } 
+            }
 
             // handle control operations
             if (PathsHelper.IsRootOperation(segmentTwo, segmentOne)
@@ -139,6 +159,18 @@ namespace Microsoft.Azure.Documents
             // handle name based operation
             if (uriSegmentsCount >= 2)
             {
+                if (segments[segments.Length - 1].Equals(Paths.RetriableWriteCachedResponsePathSegment, StringComparison.OrdinalIgnoreCase))
+                {
+                    isNameBased = true;
+                    isFeed = false;
+                    resourcePath = segments[segments.Length - 1];
+                    StringSegment trimmedSegment = resourceUrl;
+                    resourceIdOrFullName = Uri.UnescapeDataString(UrlUtility.RemoveTrailingSlashes(UrlUtility.RemoveLeadingSlashes(trimmedSegment)).GetString());
+                    PathsHelper.ParseDatabaseNameAndCollectionAndDocumentNameFromUrlSegments(segments, out databaseName, out collectionName, out _);
+
+                    return true;
+                }
+
                 // parse the databaseId or snapshotId as RID. If failed, it is name based routing
                 // mediaId is special, we will treat it always as RID based.
                 ResourceId rid;
@@ -164,6 +196,11 @@ namespace Microsoft.Azure.Documents
                 }
                 else if (segments[0].Equals(Paths.InteropUsersPathSegment, StringComparison.OrdinalIgnoreCase) &&
                          (!ResourceId.TryParse(segments[1], out rid) || !rid.IsInteropUserId))
+                {
+                    isNameBased = true;
+                }
+                else if (segments[0].Equals(Paths.AuthPolicyElementsPathSegment, StringComparison.OrdinalIgnoreCase) &&
+                         (!ResourceId.TryParse(segments[1], out rid) || !rid.IsAuthPolicyElementId))
                 {
                     isNameBased = true;
                 }
@@ -485,6 +522,9 @@ namespace Microsoft.Azure.Documents
                 case Paths.RoleAssignmentsPathSegment:
                     return ResourceType.RoleAssignment;
 
+                case Paths.AuthPolicyElementsPathSegment:
+                    return ResourceType.AuthPolicyElement;
+
                 case Paths.SystemDocumentsPathSegment:
                     return ResourceType.SystemDocument;
 
@@ -564,7 +604,7 @@ namespace Microsoft.Azure.Documents
 
                 case ResourceType.RoleAssignment:
                     return Paths.RoleAssignmentsPathSegment;
-                
+
                 case ResourceType.Transaction:
                     return Paths.TransactionsPathSegment;
 
@@ -574,10 +614,19 @@ namespace Microsoft.Azure.Documents
                 case ResourceType.InteropUser:
                     return Paths.InteropUsersPathSegment;
 
+                case ResourceType.AuthPolicyElement:
+                    return Paths.AuthPolicyElementsPathSegment;
+
+                case ResourceType.RetriableWriteCachedResponse:
+                    return Paths.RetriableWriteCachedResponsePathSegment;
+
 #if !COSMOSCLIENT
                 case ResourceType.MasterPartition:
                 case ResourceType.ServerPartition:
                     return Paths.PartitionsPathSegment;
+
+                case ResourceType.StorageAuthToken:
+                    return Paths.StorageAuthTokenPathSegment;
 
                 case ResourceType.RidRange:
                     return Paths.RidRangePathSegment;
@@ -761,6 +810,7 @@ namespace Microsoft.Azure.Documents
                 ResourceType.RoleAssignment => Paths.RoleAssignmentsPathSegment + "/" + resourceName,
                 ResourceType.RoleDefinition => Paths.RoleDefinitionsPathSegment + "/" + resourceName,
                 ResourceType.InteropUser    => Paths.InteropUsersPathSegment    + "/" + resourceName,
+                ResourceType.AuthPolicyElement => Paths.AuthPolicyElementsPathSegment + "/" + resourceName,
                 _ => null
             };
         }
@@ -781,7 +831,8 @@ namespace Microsoft.Azure.Documents
                 resourceType != ResourceType.Snapshot &&
                 resourceType != ResourceType.RoleDefinition &&
                 resourceType != ResourceType.RoleAssignment &&
-                resourceType != ResourceType.InteropUser)
+                resourceType != ResourceType.InteropUser &&
+                resourceType != ResourceType.AuthPolicyElement)
             {
                 string errorMessage = string.Format(CultureInfo.InvariantCulture, RMResources.UnexpectedResourceType, resourceType);
                 throw new BadRequestException(errorMessage);
@@ -905,6 +956,10 @@ namespace Microsoft.Azure.Documents
             {
                 return Paths.InteropUsersPathSegment;
             }
+            else if (resourceType == ResourceType.AuthPolicyElement)
+            {
+                return Paths.AuthPolicyElementsPathSegment;
+            }
             else
             {
                 string errorMessage = string.Format(CultureInfo.CurrentUICulture, RMResources.UnknownResourceType, resourceType.ToString());
@@ -933,13 +988,15 @@ namespace Microsoft.Azure.Documents
                 resourceType != ResourceType.Snapshot &&
                 resourceType != ResourceType.RoleAssignment &&
                 resourceType != ResourceType.RoleDefinition &&
-                resourceType != ResourceType.InteropUser
+                resourceType != ResourceType.InteropUser &&
+                resourceType != ResourceType.AuthPolicyElement
 #if !COSMOSCLIENT
                 && resourceType != ResourceType.MasterPartition &&
                 resourceType != ResourceType.ServerPartition &&
                 resourceType != ResourceType.Topology &&
                 resourceType != ResourceType.RidRange &&
-                resourceType != ResourceType.VectorClock
+                resourceType != ResourceType.VectorClock &&
+                resourceType != ResourceType.StorageAuthToken
 #endif
                 )
             {
@@ -1200,6 +1257,10 @@ namespace Microsoft.Azure.Documents
             {
                 return Paths.RoleDefinitionsPathSegment;
             }
+            else if (isFeed && resourceType == ResourceType.AuthPolicyElement)
+            {
+                return Paths.AuthPolicyElementsPathSegment;
+            }
             else if (resourceType == ResourceType.RoleAssignment)
             {
                 return Paths.RoleAssignmentsPathSegment + "/" + ownerOrResourceId.ToString();
@@ -1207,6 +1268,10 @@ namespace Microsoft.Azure.Documents
             else if (resourceType == ResourceType.RoleDefinition)
             {
                 return Paths.RoleDefinitionsPathSegment + "/" + ownerOrResourceId.ToString();
+            }
+            else if (resourceType == ResourceType.AuthPolicyElement)
+            {
+                return Paths.AuthPolicyElementsPathSegment + "/" + ownerOrResourceId.ToString();
             }
             else if (isFeed && resourceType == ResourceType.SystemDocument)
             {
@@ -1283,6 +1348,14 @@ namespace Microsoft.Azure.Documents
             {
                 return Paths.VectorClockPathSegment + "/" + ownerOrResourceId;
             }
+            else if (isFeed && resourceType ==  ResourceType.StorageAuthToken)
+            {
+                return Paths.StorageAuthTokenPathSegment;
+            }
+            else if (resourceType == ResourceType.StorageAuthToken)
+            {
+                return Paths.StorageAuthTokenPathSegment + "/" + ownerOrResourceId;
+            }
 #endif
 
             string errorMessage = string.Format(CultureInfo.CurrentUICulture, RMResources.UnknownResourceType, resourceType.ToString());
@@ -1321,7 +1394,9 @@ namespace Microsoft.Azure.Documents
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetFederationConfigurations;
                 case OperationType.GetDatabaseAccountConfigurations:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetDatabaseAccountConfigurations;
-                case OperationType.GetStorageConfigurations:
+                case OperationType.GetGraphDatabaseAccountConfiguration:
+                    return Paths.OperationsPathSegment + "/" + Paths.Operations_GetGraphDatabaseAccountConfiguration;
+                case OperationType.GetStorageServiceConfigurations:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetStorageServiceConfigurations;
                 case OperationType.GetStorageAccountKey:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetStorageAccountKey;
@@ -1358,6 +1433,7 @@ namespace Microsoft.Azure.Documents
                    resourcePathSegment.Equals(Paths.PermissionsPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.UsersPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.ClientEncryptionKeysPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.StorageAuthTokenPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.UserDefinedTypesPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.DocumentsPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.StoredProceduresPathSegment, StringComparison.OrdinalIgnoreCase) ||
@@ -1382,7 +1458,10 @@ namespace Microsoft.Azure.Documents
                    resourcePathSegment.Equals(Paths.RoleAssignmentsPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.TransactionsPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.SystemDocumentsPathSegment, StringComparison.OrdinalIgnoreCase) ||
-                   resourcePathSegment.Equals(Paths.InteropUsersPathSegment, StringComparison.OrdinalIgnoreCase);
+                   resourcePathSegment.Equals(Paths.InteropUsersPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.AuthPolicyElementsPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.SystemDocumentsPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.RetriableWriteCachedResponsePathSegment, StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsRootOperation(in StringSegment operationSegment, in StringSegment operationTypeSegment)
@@ -1509,6 +1588,12 @@ namespace Microsoft.Azure.Documents
             if (resourceType == ResourceType.RoleAssignment)
             {
                 segments.Add(Paths.RoleAssignmentsPathSegment);
+                return segments.ToArray();
+            }
+
+            if (resourceType == ResourceType.AuthPolicyElement)
+            {
+                segments.Add(Paths.AuthPolicyElementsPathSegment);
                 return segments.ToArray();
             }
 
@@ -1682,6 +1767,10 @@ namespace Microsoft.Azure.Documents
             {
                 return PathsHelper.ValidateInteropUserId(resourceId);
             }
+            if (resourceType == ResourceType.AuthPolicyElement)
+            {
+                return PathsHelper.ValidateAuthPolicyElementId(resourceId);
+            }
             else
             {
                 Debug.Assert(false,
@@ -1785,6 +1874,12 @@ namespace Microsoft.Azure.Documents
         {
             ResourceId resourceId = null;
             return ResourceId.TryParse(resourceIdString, out resourceId) && resourceId.RoleDefinition > 0;
+        }
+
+        internal static bool ValidateAuthPolicyElementId(string resourceIdString)
+        {
+            ResourceId resourceId = null;
+            return ResourceId.TryParse(resourceIdString, out resourceId) && resourceId.AuthPolicyElement > 0;
         }
 
         internal static bool ValidateSystemDocumentId(string resourceIdString)

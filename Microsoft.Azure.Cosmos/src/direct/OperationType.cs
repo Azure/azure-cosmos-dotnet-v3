@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Globalization;
 
     internal enum OperationType
@@ -100,6 +99,12 @@ namespace Microsoft.Azure.Documents
         UpdateFailoverPriorityList = 58,
 #endif
 
+#if !COSMOSCLIENT
+        GetStorageAuthToken = 59,
+        CreateClientEncryptionKey = 60,
+        ReplaceClientEncryptionKey = 61,
+#endif
+
         // These names make it unclear what they map to in RequestOperationType.
         ExecuteJavaScript = -2,
 #if !COSMOSCLIENT
@@ -118,7 +123,8 @@ namespace Microsoft.Azure.Documents
         MasterInitiatedProgressCoordination = -15,
         GetAadGroups = -16,
         GetStorageAccountSas = -17,
-        GetStorageConfigurations = -18,
+        GetStorageServiceConfigurations = -18,
+        GetGraphDatabaseAccountConfiguration = -19,
 #endif
     }
 
@@ -202,102 +208,10 @@ namespace Microsoft.Azure.Documents
                    type == OperationType.QueryPlan
 #if !COSMOSCLIENT
                    ||
-                   type == OperationType.MetadataCheckAccess
+                   type == OperationType.MetadataCheckAccess ||
+                   type == OperationType.GetStorageAuthToken
 #endif
                    ;
-        }
-
-        /// <summary>
-        /// Mapping the given operation type to the corresponding HTTP verb.
-        /// </summary>
-        /// <param name="operationType">The operation type.</param>
-        /// <returns>The corresponding HTTP verb.</returns>
-        public static string GetHttpMethod(this OperationType operationType)
-        {
-            switch (operationType)
-            {
-                case OperationType.Create:
-                case OperationType.ExecuteJavaScript:
-                case OperationType.Query:
-                case OperationType.SqlQuery:
-                case OperationType.Upsert:
-                case OperationType.BatchApply:
-                case OperationType.Batch:
-                case OperationType.QueryPlan:
-                case OperationType.CompleteUserTransaction:
-                    return HttpConstants.HttpMethods.Post;
-
-                case OperationType.Delete:
-                    return HttpConstants.HttpMethods.Delete;
-
-                case OperationType.Read:
-                case OperationType.ReadFeed:
-                
-                    return HttpConstants.HttpMethods.Get;
-
-                case OperationType.Replace:
-                case OperationType.CollectionTruncate:
-                    return HttpConstants.HttpMethods.Put;
-
-                case OperationType.Patch:
-                    return HttpConstants.HttpMethods.Patch;
-
-                case OperationType.Head:
-                case OperationType.HeadFeed:
-                    return HttpConstants.HttpMethods.Head;
-
-#if !COSMOSCLIENT
-                // Control operations
-                case OperationType.Pause:
-                case OperationType.Recycle:
-                case OperationType.Resume:
-                case OperationType.Stop:
-                case OperationType.Crash:
-                case OperationType.ForceConfigRefresh:
-                case OperationType.Throttle:
-                case OperationType.PreCreateValidation:
-                case OperationType.Recreate:
-                case OperationType.GetSplitPoint:
-                case OperationType.AbortSplit:
-                case OperationType.CompleteSplit:
-                case OperationType.CompleteMergeOnMaster:
-                case OperationType.CompleteMergeOnTarget:
-                case OperationType.OfferUpdateOperation:
-                case OperationType.OfferPreGrowValidation:
-                case OperationType.BatchReportThroughputUtilization:
-                case OperationType.AbortPartitionMigration:
-                case OperationType.CompletePartitionMigration:
-                case OperationType.PreReplaceValidation:
-                case OperationType.MigratePartition:
-                case OperationType.MasterReplaceOfferOperation:
-                case OperationType.InitiateDatabaseOfferPartitionShrink:
-                case OperationType.CompleteDatabaseOfferPartitionShrink:
-                case OperationType.ServiceReservation:
-                case OperationType.GetSplitPoints:
-                case OperationType.GetUnwrappedDek:
-                case OperationType.GetDatabaseAccountConfigurations:
-                case OperationType.GetStorageConfigurations:
-                case OperationType.ForcePartitionBackup:
-                case OperationType.MasterInitiatedProgressCoordination:
-                case OperationType.MetadataCheckAccess:
-                case OperationType.CreateSystemSnapshot:
-                case OperationType.GetAadGroups:
-                case OperationType.UpdateFailoverPriorityList:
-                    return HttpConstants.HttpMethods.Post;
-
-                case OperationType.EnsureSnapshotOperation:
-                    return HttpConstants.HttpMethods.Put;
-
-                case OperationType.ReadReplicaFromMasterPartition:
-                case OperationType.ReadReplicaFromServerPartition:
-                    return HttpConstants.HttpMethods.Get;
-#endif
-
-                default:
-                    string message = string.Format(CultureInfo.InvariantCulture, "Unsupported operation type: {0}.", operationType);
-                    Debug.Assert(false, message);
-                    throw new NotImplementedException(message);
-            }
         }
     }
 }

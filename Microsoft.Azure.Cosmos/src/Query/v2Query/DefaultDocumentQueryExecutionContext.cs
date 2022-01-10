@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Query
                                 {
                                     partitionIdentifier,
                                     new QueryMetrics(
-                                        BackendMetrics.ParseFromDelimitedString(response.ResponseHeaders[HttpConstants.HttpHeaders.QueryMetrics]),
+                                        response.ResponseHeaders[HttpConstants.HttpHeaders.QueryMetrics],
                                         IndexUtilizationInfo.CreateFromString(response.ResponseHeaders[HttpConstants.HttpHeaders.IndexUtilization]),
                                         new ClientSideMetrics(
                                             this.retries,
@@ -308,15 +308,17 @@ namespace Microsoft.Azure.Cosmos.Query
                     }
 
                     providedRanges = PartitionRoutingHelper.GetProvidedPartitionKeyRanges(
-                        this.QuerySpec,
-                        enableCrossPartitionQuery,
-                        false,
-                        this.isContinuationExpected,
-                        false, //haslogicalpartitionkey
-                        partitionKeyDefinition,
-                        queryPartitionProvider,
-                        version,
-                        out QueryInfo queryInfo);
+                        querySpec: this.QuerySpec,
+                        enableCrossPartitionQuery: enableCrossPartitionQuery,
+                        parallelizeCrossPartitionQuery: false,
+                        isContinuationExpected: this.isContinuationExpected,
+                        hasLogicalPartitionKey: false,
+                        allowDCount: false,
+                        allowNonValueAggregates: false,
+                        partitionKeyDefinition: partitionKeyDefinition,
+                        queryPartitionProvider: queryPartitionProvider,
+                        clientApiVersion: version,
+                        out QueryInfo _);
                 }
                 else if (request.Properties != null && request.Properties.TryGetValue(
                     WFConstants.BackendHeaders.EffectivePartitionKeyString,

@@ -4,13 +4,12 @@
 
 namespace Microsoft.Azure.Documents.Routing
 {
-    using Microsoft.Azure.Documents.Collections;
     using System;
-    using System.Collections.Specialized;
     using System.Globalization;
     using System.Net;
     using System.Net.Http.Headers;
     using System.Runtime.Serialization;
+    using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
     /// This exception is thrown when DocumentServiceRequest contains x-ms-documentdb-partitionkeyrangeid

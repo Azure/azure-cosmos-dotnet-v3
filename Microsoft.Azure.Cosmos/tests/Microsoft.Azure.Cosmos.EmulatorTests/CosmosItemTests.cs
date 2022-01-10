@@ -32,6 +32,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using JsonSerializer = Json.JsonSerializer;
     using JsonWriter = Json.JsonWriter;
     using PartitionKey = Documents.PartitionKey;
+    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
+    using System.Reflection;
+    using System.Text.RegularExpressions;
+    using Microsoft.Azure.Cosmos.Diagnostics;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -45,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            await base.TestInit();
+            await base.TestInit(validateSinglePartitionKeyRangeCacheCall: true);
             string PartitionKey = "/pk";
             this.containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
             ContainerResponse response = await this.database.CreateContainerAsync(
@@ -86,6 +90,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 string message = ce.ToString();
                 Assert.IsNotNull(message);
+                CosmosItemTests.ValidateCosmosException(ce);
             }
 
             // Get a container reference that use RID values
@@ -130,14 +135,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Resource);
             Assert.IsNotNull(response.Diagnostics);
-            Assert.IsTrue(!string.IsNullOrEmpty(response.Diagnostics.ToString()));
-            Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
+            CosmosTraceDiagnostics diagnostics = (CosmosTraceDiagnostics)response.Diagnostics;
+            Assert.IsFalse(diagnostics.IsGoneExceptionHit());
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics.ToString()));
+            Assert.IsTrue(diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
 
             response = await this.Container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Resource);
             Assert.IsNotNull(response.Diagnostics);
-            Assert.IsTrue(!string.IsNullOrEmpty(response.Diagnostics.ToString()));
+            Assert.IsFalse(string.IsNullOrEmpty(response.Diagnostics.ToString()));
             Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
 
             Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.MaxResourceQuota));
@@ -145,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.pk), id: testItem.id);
             Assert.IsNotNull(deleteResponse);
             Assert.IsNotNull(response.Diagnostics);
-            Assert.IsTrue(!string.IsNullOrEmpty(response.Diagnostics.ToString()));
+            Assert.IsFalse(string.IsNullOrEmpty(response.Diagnostics.ToString()));
             Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
         }
 
@@ -153,16 +160,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ClientConsistencyTestAsync()
         {
             List<Cosmos.ConsistencyLevel> cosmosLevels = Enum.GetValues(typeof(Cosmos.ConsistencyLevel)).Cast<Cosmos.ConsistencyLevel>().ToList();
-           
-            foreach(Cosmos.ConsistencyLevel consistencyLevel in cosmosLevels)
+
+            foreach (Cosmos.ConsistencyLevel consistencyLevel in cosmosLevels)
             {
                 RequestHandlerHelper handlerHelper = new RequestHandlerHelper();
-                using CosmosClient cosmosClient = TestCommon.CreateCosmosClient(x => 
+                using CosmosClient cosmosClient = TestCommon.CreateCosmosClient(x =>
                     x.WithConsistencyLevel(consistencyLevel).AddCustomHandlers(handlerHelper));
                 Container consistencyContainer = cosmosClient.GetContainer(this.database.Id, this.Container.Id);
 
                 int requestCount = 0;
-                handlerHelper.UpdateRequestMessage = (request) => 
+                handlerHelper.UpdateRequestMessage = (request) =>
                 {
                     Assert.AreEqual(consistencyLevel.ToString(), request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel]);
                     requestCount++;
@@ -175,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(2, requestCount);
             }
         }
-        
+
         [TestMethod]
         public async Task NegativeCreateItemTest()
         {
@@ -214,6 +221,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(exception.StartsWith("Microsoft.Azure.Cosmos.CosmosException : Response status code does not indicate success: Forbidden (403); Substatus: 999999; "));
                 string diagnostics = ce.Diagnostics.ToString();
                 Assert.IsTrue(diagnostics.Contains("999999"));
+                CosmosItemTests.ValidateCosmosException(ce);
             }
         }
 
@@ -349,6 +357,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (CosmosException ex)
             {
                 Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
+                CosmosItemTests.ValidateCosmosException(ex);
             }
         }
 
@@ -389,6 +398,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (CosmosException ex)
             {
                 Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
+                CosmosItemTests.ValidateCosmosException(ex);
             }
         }
 
@@ -436,7 +446,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Debugger.Break();
                     }
                 });
-            });
+            },
+            validatePartitionKeyRangeCalls: false);
 
             string dbName = Guid.NewGuid().ToString();
             string containerName = Guid.NewGuid().ToString();
@@ -475,7 +486,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             count = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetCachedRIDAsync(forceRefresh:false, NoOpTrace.Singleton, cancellationToken: default);
+                await testContainer.GetCachedRIDAsync(forceRefresh: false, NoOpTrace.Singleton, cancellationToken: default);
             }
 
             // Already cached by GetNonePartitionKeyValueAsync before
@@ -549,6 +560,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Assert.IsNotNull(response);
                     Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                    Assert.IsNotNull(response.Headers.Session);
                     using (StreamReader str = new StreamReader(response.Content))
                     {
                         string responseContentAsString = await str.ReadToEndAsync();
@@ -564,12 +576,36 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Assert.IsNotNull(response);
                     Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                    Assert.IsNotNull(response.Headers.Session);
                 }
             }
             using (ResponseMessage deleteResponse = await this.Container.DeleteItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.pk), id: testItem.id))
             {
                 Assert.IsNotNull(deleteResponse);
                 Assert.AreEqual(deleteResponse.StatusCode, HttpStatusCode.NoContent);
+            }
+        }
+
+        [TestMethod]
+        public async Task UpsertItemTest()
+        {
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+
+            {
+                ItemResponse<ToDoActivity> response = await this.Container.UpsertItemAsync(testItem, partitionKey: new Cosmos.PartitionKey(testItem.pk));
+                Assert.IsNotNull(response);
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                Assert.IsNotNull(response.Headers.Session);
+            }
+
+            {
+                //Updated the taskNum field
+                testItem.taskNum = 9001;
+                ItemResponse<ToDoActivity> response = await this.Container.UpsertItemAsync(testItem, partitionKey: new Cosmos.PartitionKey(testItem.pk));
+
+                Assert.IsNotNull(response);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                Assert.IsNotNull(response.Headers.Session);
             }
         }
 
@@ -692,9 +728,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             ContainerInternal containerInternal = (ContainerInternal)this.Container;
-            ItemResponse<dynamic> itemResponse = await this.Container.CreateItemAsync<dynamic>(testItem1);
-            ItemResponse<dynamic> itemResponse2 = await this.Container.CreateItemAsync<dynamic>(testItem2);
-            ItemResponse<dynamic> itemResponse3 = await this.Container.CreateItemAsync<dynamic>(testItem3);
+            await this.Container.CreateItemAsync<dynamic>(testItem1);
+            await this.Container.CreateItemAsync<dynamic>(testItem2);
+            await this.Container.CreateItemAsync<dynamic>(testItem3);
             Cosmos.PartitionKey partitionKey1 = new Cosmos.PartitionKey(pKString);
             Cosmos.PartitionKey partitionKey2 = new Cosmos.PartitionKey(pKString2);
             using (ResponseMessage pKDeleteResponse = await containerInternal.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey1))
@@ -848,6 +884,193 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 int parameterCount = queryDefinition.ToSqlQuerySpec().Parameters.Count;
                 Assert.AreEqual(parameterCount, toStreamCount, $"missing to stream call. Expected: {parameterCount}, Actual: {toStreamCount} for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
                 Assert.AreEqual(pageCount, fromStreamCount);
+            }
+        }
+
+        [TestMethod]
+        public async Task QueryStreamValueTest()
+        {
+            DateTime createDateTime = DateTime.UtcNow;
+
+            dynamic testItem1 = new
+            {
+                id = "testItem1",
+                cost = (double?)null,
+                totalCost = 98.2789,
+                pk = "MyCustomStatus",
+                taskNum = 4909,
+                createdDateTime = createDateTime,
+                statusCode = HttpStatusCode.Accepted,
+                itemIds = new int[] { 1, 5, 10 },
+                itemcode = new byte?[5] { 0x16, (byte)'\0', 0x3, null, (byte)'}' },
+            };
+
+            dynamic testItem2 = new
+            {
+                id = "testItem2",
+                cost = (double?)null,
+                totalCost = 98.2789,
+                pk = "MyCustomStatus",
+                taskNum = 4909,
+                createdDateTime = createDateTime,
+                statusCode = HttpStatusCode.Accepted,
+                itemIds = new int[] { 1, 5, 10 },
+                itemcode = new byte?[5] { 0x16, (byte)'\0', 0x3, null, (byte)'}' },
+            };
+
+            //with Custom Serializer.
+            JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
+            {
+                Converters = new List<JsonConverter>() { new CosmosSerializerHelper.FormatNumbersAsTextConverter() }
+            };
+
+            int toStreamCount = 0;
+            int fromStreamCount = 0;
+            CosmosSerializerHelper cosmosSerializerHelper = new CosmosSerializerHelper(
+                jsonSerializerSettings,
+                toStreamCallBack: (itemValue) =>
+                {
+                    Type itemType = itemValue?.GetType();
+                    if (itemValue == null
+                        || itemType == typeof(int)
+                        || itemType == typeof(double)
+                        || itemType == typeof(string)
+                        || itemType == typeof(DateTime)
+                        || itemType == typeof(HttpStatusCode)
+                        || itemType == typeof(int[])
+                        || itemType == typeof(byte))
+                    {
+                        toStreamCount++;
+                    }
+                },
+                fromStreamCallback: (item) => fromStreamCount++);
+
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                Serializer = cosmosSerializerHelper
+            };
+
+            CosmosClient clientSerializer = TestCommon.CreateCosmosClient(options);
+            Container containerSerializer = clientSerializer.GetContainer(this.database.Id, this.Container.Id);
+
+            List<QueryDefinition> queryDefinitions = new List<QueryDefinition>()
+            {
+                new QueryDefinition("select * from t where t.pk = @pk" )
+                .WithParameterStream("@pk", cosmosSerializerHelper.ToStream<dynamic>(testItem1.pk)),
+                new QueryDefinition("select * from t where t.cost = @cost" )
+                .WithParameterStream("@cost", cosmosSerializerHelper.ToStream<dynamic>(testItem1.cost)),
+                new QueryDefinition("select * from t where t.taskNum = @taskNum" )
+                .WithParameterStream("@taskNum", cosmosSerializerHelper.ToStream<dynamic>(testItem1.taskNum)),
+                new QueryDefinition("select * from t where t.totalCost = @totalCost" )
+                .WithParameterStream("@totalCost", cosmosSerializerHelper.ToStream<dynamic>(testItem1.totalCost)),
+                new QueryDefinition("select * from t where t.createdDateTime = @createdDateTime" )
+                .WithParameterStream("@createdDateTime", cosmosSerializerHelper.ToStream<dynamic>(testItem1.createdDateTime)),
+                new QueryDefinition("select * from t where t.statusCode = @statusCode" )
+                .WithParameterStream("@statusCode", cosmosSerializerHelper.ToStream<dynamic>(testItem1.statusCode)),
+                new QueryDefinition("select * from t where t.itemIds = @itemIds" )
+                .WithParameterStream("@itemIds", cosmosSerializerHelper.ToStream<dynamic>(testItem1.itemIds)),
+                new QueryDefinition("select * from t where t.itemcode = @itemcode" )
+                .WithParameterStream("@itemcode", cosmosSerializerHelper.ToStream<dynamic>(testItem1.itemcode)),
+                new QueryDefinition("select * from t where t.pk = @pk and t.cost = @cost" )
+                    .WithParameterStream("@pk", cosmosSerializerHelper.ToStream<dynamic>(testItem1.pk))
+                    .WithParameterStream("@cost", cosmosSerializerHelper.ToStream<dynamic>(testItem1.cost)),
+            };
+
+            try
+            {
+                await containerSerializer.CreateItemAsync<dynamic>(testItem1);
+                await containerSerializer.CreateItemAsync<dynamic>(testItem2);
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
+            {
+                // Ignore conflicts since the object already exists
+            }
+
+            foreach (QueryDefinition queryDefinition in queryDefinitions)
+            {
+                toStreamCount = 0;
+                fromStreamCount = 0;
+
+                List<dynamic> allItems = new List<dynamic>();
+                int pageCount = 0;
+                using (FeedIterator<dynamic> feedIterator = containerSerializer.GetItemQueryIterator<dynamic>(
+                    queryDefinition: queryDefinition))
+                {
+                    while (feedIterator.HasMoreResults)
+                    {
+                        // Only need once to verify correct serialization of the query definition
+                        FeedResponse<dynamic> response = await feedIterator.ReadNextAsync(this.cancellationToken);
+                        Assert.AreEqual(response.Count, response.Count());
+                        allItems.AddRange(response);
+                        pageCount++;
+                    }
+                }
+
+                Assert.AreEqual(2, allItems.Count, $"missing query results. Only found: {allItems.Count} items for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
+
+                // There should be no call to custom serializer since the parameter values are already serialized.
+                Assert.AreEqual(0, toStreamCount, $"missing to stream call. Expected: 0 , Actual: {toStreamCount} for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
+                Assert.AreEqual(pageCount, fromStreamCount);
+            }
+
+            // Standard Cosmos Serializer Used
+
+            CosmosClient clientStandardSerializer = TestCommon.CreateCosmosClient(useCustomSeralizer: false);
+            Container containerStandardSerializer = clientStandardSerializer.GetContainer(this.database.Id, this.Container.Id);
+
+            testItem1 = ToDoActivity.CreateRandomToDoActivity();
+            testItem1.pk = "myPk";
+            await containerStandardSerializer.CreateItemAsync(testItem1, new Cosmos.PartitionKey(testItem1.pk));
+
+            testItem2 = ToDoActivity.CreateRandomToDoActivity();
+            testItem2.pk = "myPk";
+            await containerStandardSerializer.CreateItemAsync(testItem2, new Cosmos.PartitionKey(testItem2.pk));
+            CosmosSerializer cosmosSerializer = containerStandardSerializer.Database.Client.ClientOptions.Serializer;
+
+            queryDefinitions = new List<QueryDefinition>()
+            {
+                new QueryDefinition("select * from t where t.pk = @pk" )
+                .WithParameterStream("@pk", cosmosSerializer.ToStream(testItem1.pk)),
+                new QueryDefinition("select * from t where t.cost = @cost" )
+                .WithParameterStream("@cost", cosmosSerializer.ToStream(testItem1.cost)),
+                new QueryDefinition("select * from t where t.taskNum = @taskNum" )
+                .WithParameterStream("@taskNum", cosmosSerializer.ToStream(testItem1.taskNum)),
+                new QueryDefinition("select * from t where t.CamelCase = @CamelCase" )
+                .WithParameterStream("@CamelCase", cosmosSerializer.ToStream(testItem1.CamelCase)),
+                new QueryDefinition("select * from t where t.valid = @valid" )
+                .WithParameterStream("@valid", cosmosSerializer.ToStream(testItem1.valid)),
+                new QueryDefinition("select * from t where t.description = @description" )
+                .WithParameterStream("@description", cosmosSerializer.ToStream(testItem1.description)),
+                new QueryDefinition("select * from t where t.pk = @pk and t.cost = @cost" )
+                    .WithParameterStream("@pk", cosmosSerializer.ToStream(testItem1.pk))
+                    .WithParameterStream("@cost", cosmosSerializer.ToStream(testItem1.cost)),
+            };
+
+            foreach (QueryDefinition queryDefinition in queryDefinitions)
+            {
+                List<ToDoActivity> allItems = new List<ToDoActivity>();
+                int pageCount = 0;
+                using (FeedIterator<ToDoActivity> feedIterator = containerStandardSerializer.GetItemQueryIterator<ToDoActivity>(
+                    queryDefinition: queryDefinition))
+                {
+                    while (feedIterator.HasMoreResults)
+                    {
+                        // Only need once to verify correct serialization of the query definition
+                        FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync(this.cancellationToken);
+                        Assert.AreEqual(response.Count, response.Count());
+                        allItems.AddRange(response);
+                        pageCount++;
+                    }
+                }
+
+                Assert.AreEqual(2, allItems.Count, $"missing query results. Only found: {allItems.Count} items for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
+                Assert.AreEqual(pageCount, 1);
+
+
+                IReadOnlyList<(string Name, object Value)> parameters1 = queryDefinition.GetQueryParameters();
+                IReadOnlyList<(string Name, object Value)> parameters2 = queryDefinition.GetQueryParameters();
+
+                Assert.AreSame(parameters1, parameters2);
             }
         }
 
@@ -1202,7 +1425,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemEpkQuerySingleKeyRangeValidation()
         {
-            IList<ToDoActivity> deleteList = new List<ToDoActivity>();
             ContainerInternal container = null;
             try
             {
@@ -1248,7 +1470,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (container != null)
                 {
-                    await container.DeleteContainerAsync();
+                    await container.DeleteContainerStreamAsync();
                 }
             }
         }
@@ -1372,7 +1594,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task NegativeQueryTest()
         {
-            IList<ToDoActivity> items = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 10, perPKItemCount: 20, randomPartitionKey: true);
+            await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 10, perPKItemCount: 20, randomPartitionKey: true);
 
             try
             {
@@ -1448,8 +1670,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.PreconditionFailed, e.StatusCode, e.Message);
                 Assert.AreNotEqual(e.ActivityId, Guid.Empty);
                 Assert.IsTrue(e.RequestCharge > 0);
-                Assert.AreEqual($"{{{Environment.NewLine}  \"Errors\": [{Environment.NewLine}    \"One of the specified pre-condition is not met\"{Environment.NewLine}  ]{Environment.NewLine}}}", e.ResponseBody);
-                string expectedMessage = $"Response status code does not indicate success: PreconditionFailed (412); Substatus: 0; ActivityId: {e.ActivityId}; Reason: ({{{Environment.NewLine}  \"Errors\": [{Environment.NewLine}    \"One of the specified pre-condition is not met\"{Environment.NewLine}  ]{Environment.NewLine}}});";
+                string expectedResponseBody = $"{Environment.NewLine}Errors : [{Environment.NewLine}  \"One of the specified pre-condition is not met\"{Environment.NewLine}]{Environment.NewLine}";
+                Assert.AreEqual(expectedResponseBody, e.ResponseBody);
+                string expectedMessage = $"Response status code does not indicate success: PreconditionFailed (412); Substatus: 0; ActivityId: {e.ActivityId}; Reason: ({expectedResponseBody});";
                 Assert.AreEqual(expectedMessage, e.Message);
             }
             finally
@@ -1499,9 +1722,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity testItem = (await ToDoActivity.CreateRandomItems(this.Container, 1, randomPartitionKey: true)).First();
             ContainerInternal containerInternal = (ContainerInternal)this.Container;
 
-            List<PatchOperation> patchOperations = new List<PatchOperation>();
-            patchOperations.Add(PatchOperation.Add("/nonExistentParent/Child", "bar"));
-            patchOperations.Add(PatchOperation.Remove("/cost"));
+            List<PatchOperation> patchOperations = new List<PatchOperation>
+            {
+                PatchOperation.Add("/nonExistentParent/Child", "bar"),
+                PatchOperation.Remove("/cost")
+            };
 
             // item does not exist - 404 Resource Not Found error
             try
@@ -1517,6 +1742,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
                 Assert.IsTrue(ex.Message.Contains("Resource Not Found"));
+                Assert.IsTrue(ex.Message.Contains("https://aka.ms/cosmosdb-tsg-not-found"));
+                CosmosItemTests.ValidateCosmosException(ex);
             }
 
             // adding a child when parent / ancestor does not exist - 400 BadRequest response
@@ -1532,7 +1759,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (CosmosException ex)
             {
                 Assert.AreEqual(HttpStatusCode.BadRequest, ex.StatusCode);
-                Assert.IsTrue(ex.Message.Contains("Add Operation only support adding a leaf node of an existing node(array or object), no path found beyond: 'nonExistentParent'"), ex.Message);
+                Assert.IsTrue(ex.Message.Contains(@"For Operation(1): Add Operation can only create a child object of an existing node(array or object) and cannot create path recursively, no path found beyond: 'nonExistentParent'. Learn more: https:\/\/aka.ms\/cosmosdbpatchdocs"), ex.Message);
+                CosmosItemTests.ValidateCosmosException(ex);
             }
 
             // precondition failure - 412 response
@@ -1555,6 +1783,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.AreEqual(HttpStatusCode.PreconditionFailed, ex.StatusCode);
                 Assert.IsTrue(ex.Message.Contains("One of the specified pre-condition is not met"));
+                CosmosItemTests.ValidateCosmosException(ex);
             }
         }
 
@@ -1680,6 +1909,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(deleteResponse);
                 Assert.AreEqual(deleteResponse.StatusCode, HttpStatusCode.NoContent);
             }
+        }
+
+        [TestMethod]
+        public async Task ContainerRecreateScenarioGatewayTest()
+        {
+            ContainerResponse response = await this.database.CreateContainerAsync(
+                        new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/pk"));
+
+            Container createdContainer = (ContainerInlineCore)response;
+
+            CosmosClient client1 = TestCommon.CreateCosmosClient(useGateway: true);
+            CosmosClient client2 = TestCommon.CreateCosmosClient(useGateway: true);
+
+            Container container1 = client1.GetContainer(this.database.Id, createdContainer.Id);
+            Container container2 = client2.GetContainer(this.database.Id, createdContainer.Id);
+            Cosmos.Database database2 = client2.GetDatabase(this.database.Id);
+
+            ToDoActivity item = ToDoActivity.CreateRandomToDoActivity("pk2002", "id2002");
+            await container1.CreateItemAsync<ToDoActivity>(item);
+
+            await container2.DeleteContainerAsync();
+            await database2.CreateContainerAsync(createdContainer.Id, "/pk");
+
+            container2 = database2.GetContainer(this.Container.Id);
+            await container2.CreateItemAsync<ToDoActivity>(item);
+
+            // should not throw exception
+            await this.Container.ReadItemAsync<ToDoActivity>("id2002", new Cosmos.PartitionKey("pk2002"));
         }
 
         [Ignore]
@@ -1901,7 +2158,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task ItemPatchCustomSerilizerTest()
+        public async Task ItemPatchCustomSerializerTest()
         {
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
@@ -1924,9 +2181,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             DateTime patchDate = new DateTime(2020, 07, 01, 01, 02, 03);
+            Stream patchDateStreamInput = new CosmosJsonDotNetSerializer().ToStream(patchDate);
+            string streamDateJson;
+            using (Stream stream = new MemoryStream())
+            {
+                patchDateStreamInput.CopyTo(stream);
+                stream.Position = 0;
+                patchDateStreamInput.Position = 0;
+                using (StreamReader streamReader = new StreamReader(stream))
+                {
+                    streamDateJson = streamReader.ReadToEnd();
+                }
+            }
+
             List<PatchOperation> patchOperations = new List<PatchOperation>()
             {
-                PatchOperation.Add("/date", patchDate)
+                PatchOperation.Add("/date", patchDate),
+                PatchOperation.Add("/dateStream", patchDateStreamInput)
             };
 
             ItemResponse<dynamic> response = await containerInternal.PatchItemAsync<dynamic>(
@@ -1949,6 +2220,60 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             Assert.IsNotNull(response.Resource);
             Assert.IsTrue(dateJson.Contains(response.Resource["date"].ToString()));
+            Assert.AreEqual(patchDate.ToString(), response.Resource["dateStream"].ToString());
+            Assert.AreNotEqual(response.Resource["date"], response.Resource["dateStream"]);
+        }
+
+        [TestMethod]
+        public async Task ItemPatchStreamInputTest()
+        {
+            dynamic testItem = new
+            {
+                id = "test",
+                cost = (double?)null,
+                totalCost = 98.2789,
+                pk = "MyCustomStatus",
+                taskNum = 4909,
+                itemIds = new int[] { 1, 5, 10 },
+                itemCode = new byte?[5] { 0x16, (byte)'\0', 0x3, null, (byte)'}' },
+            };
+
+            // Create item
+            await this.Container.CreateItemAsync<dynamic>(item: testItem);
+            ContainerInternal containerInternal = (ContainerInternal)this.Container;
+
+            dynamic testItemUpdated = new
+            {
+                cost = 100,
+                totalCost = 198.2789,
+                taskNum = 4910,
+                itemCode = new byte?[3] { 0x14, (byte)'\0', (byte)'{' }
+            };
+
+            CosmosJsonDotNetSerializer cosmosJsonDotNetSerializer = new CosmosJsonDotNetSerializer();
+
+            List<PatchOperation> patchOperations = new List<PatchOperation>()
+            {
+                PatchOperation.Replace("/cost", cosmosJsonDotNetSerializer.ToStream(testItemUpdated.cost)),
+                PatchOperation.Replace("/totalCost", cosmosJsonDotNetSerializer.ToStream(testItemUpdated.totalCost)),
+                PatchOperation.Replace("/taskNum", cosmosJsonDotNetSerializer.ToStream(testItemUpdated.taskNum)),
+                PatchOperation.Replace("/itemCode", cosmosJsonDotNetSerializer.ToStream(testItemUpdated.itemCode)),
+            };
+
+            ItemResponse<dynamic> response = await containerInternal.PatchItemAsync<dynamic>(
+                id: testItem.id,
+                partitionKey: new Cosmos.PartitionKey(testItem.pk),
+                patchOperations: patchOperations);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsNotNull(response.Resource);
+
+            Assert.AreEqual(testItemUpdated.cost.ToString(), response.Resource.cost.ToString());
+            Assert.AreEqual(testItemUpdated.totalCost.ToString(), response.Resource.totalCost.ToString());
+            Assert.AreEqual(testItemUpdated.taskNum.ToString(), response.Resource.taskNum.ToString());
+            Assert.AreEqual(testItemUpdated.itemCode[0].ToString(), response.Resource.itemCode[0].ToString());
+            Assert.AreEqual(testItemUpdated.itemCode[1].ToString(), response.Resource.itemCode[1].ToString());
+            Assert.AreEqual(testItemUpdated.itemCode[2].ToString(), response.Resource.itemCode[2].ToString());
         }
 
         // Read write non partition Container item.
@@ -2084,7 +2409,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (fixedContainer != null)
                 {
-                    await fixedContainer.DeleteContainerAsync();
+                    await fixedContainer.DeleteContainerStreamAsync();
                 }
             }
         }
@@ -2172,7 +2497,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (fixedContainer != null)
                 {
-                    await fixedContainer.DeleteContainerAsync();
+                    await fixedContainer.DeleteContainerStreamAsync();
                 }
             }
         }
@@ -2223,7 +2548,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                await db.DeleteAsync();
+                await db.DeleteStreamAsync();
             }
         }
 
@@ -2273,7 +2598,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                await database.Database.DeleteAsync();
+                await database.Database.DeleteStreamAsync();
             }
         }
 
@@ -2297,7 +2622,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataTestMethod]
         public async Task ContainterReCreateStatelessTest(bool operationBetweenRecreate, bool isQuery)
         {
-            Func<Container, HttpStatusCode, Task> operation = null;
+            Func<Container, HttpStatusCode, Task> operation;
             if (isQuery)
             {
                 operation = ExecuteQueryAsync;
@@ -2347,7 +2672,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                await db1.DeleteAsync();
+                await db1.DeleteStreamAsync();
                 cc1.Dispose();
                 cc2.Dispose();
             }
@@ -2394,22 +2719,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string customHeaderValue = "value1";
 
             CosmosClient clientWithIntercepter = TestCommon.CreateCosmosClient(
-               builder =>
-               {
-                   builder.WithTransportClientHandlerFactory(transportClient => new TransportClientHelper.TransportClientWrapper(
-                       transportClient,
-                       (uri, resourceOperation, request) =>
-                           {
-                               if (resourceOperation.resourceType == ResourceType.Document &&
-                                    resourceOperation.operationType == OperationType.Create)
-                               {
-                                   bool customHeaderExists = request.Properties.TryGetValue(customHeaderName, out object value);
+               builder => builder.WithTransportClientHandlerFactory(transportClient => new TransportClientHelper.TransportClientWrapper(
+                transportClient,
+                (uri, resourceOperation, request) =>
+                    {
+                        if (resourceOperation.resourceType == ResourceType.Document &&
+                             resourceOperation.operationType == OperationType.Create)
+                        {
+                            bool customHeaderExists = request.Properties.TryGetValue(customHeaderName, out object value);
 
-                                   Assert.IsTrue(customHeaderExists);
-                                   Assert.AreEqual(customHeaderValue, value);
-                               }
-                           }));
-               });
+                            Assert.IsTrue(customHeaderExists);
+                            Assert.AreEqual(customHeaderValue, value);
+                        }
+                    })));
 
             Container container = clientWithIntercepter.GetContainer(this.database.Id, this.Container.Id);
 
@@ -2443,6 +2765,57 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(regionsContacted.Count, 1);
             Assert.AreEqual(regionsContacted[0].region, Regions.SouthCentralUS);
             Assert.IsNotNull(regionsContacted[0].uri);
+        }
+
+        [TestMethod]
+        public async Task HaLayerDoesNotThrowNullOnGoneExceptionTest()
+        {
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                TransportClientHandlerFactory = (x) =>
+                    new TransportClientWrapper(client: x, interceptor: (uri, resource, dsr) =>
+                    {
+                        dsr.RequestContext.ClientRequestStatistics.GetType().GetField("systemUsageHistory", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(
+                            dsr.RequestContext.ClientRequestStatistics,
+                            new Documents.Rntbd.SystemUsageHistory(new List<Documents.Rntbd.SystemUsageLoad>()
+                            {
+                                new Documents.Rntbd.SystemUsageLoad(
+                                    DateTime.UtcNow,
+                                    Documents.Rntbd.ThreadInformation.Get(),
+                                    80,
+                                    9000),
+                                new Documents.Rntbd.SystemUsageLoad(
+                                    DateTime.UtcNow - TimeSpan.FromSeconds(10),
+                                    Documents.Rntbd.ThreadInformation.Get(),
+                                    95,
+                                    9000)
+                            }.AsReadOnly(),
+                            TimeSpan.FromMinutes(1)));
+                        if (resource.operationType.IsReadOperation())
+                        {
+                            throw Documents.Rntbd.TransportExceptions.GetGoneException(
+                                uri,
+                                Guid.NewGuid());
+                        }
+                    })
+            };
+
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(clientOptions);
+            Container container = cosmosClient.GetContainer(this.database.Id, this.Container.Id);
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            await container.CreateItemAsync<ToDoActivity>(testItem);
+
+            try
+            {
+                await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
+            }
+            catch (CosmosException ex)
+            {
+                Assert.AreEqual(ex.StatusCode, HttpStatusCode.ServiceUnavailable);
+                CosmosTraceDiagnostics diagnostics = (CosmosTraceDiagnostics)ex.Diagnostics;
+                Assert.IsTrue(diagnostics.IsGoneExceptionHit());
+                Assert.IsFalse(string.IsNullOrEmpty(diagnostics.ToString()));
+            }
         }
 
 #if PREVIEW
@@ -2588,6 +2961,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     return;
                 }
             }
+        }
+
+        private static void ValidateCosmosException(CosmosException exception)
+        {
+            if (exception.StatusCode == HttpStatusCode.RequestTimeout ||
+                exception.StatusCode == HttpStatusCode.InternalServerError ||
+                exception.StatusCode == HttpStatusCode.ServiceUnavailable)
+            {
+                Assert.IsTrue(exception.Message.Contains("Diagnostics"));
+            }
+            else
+            {
+                Assert.IsFalse(exception.Message.Contains("Diagnostics"));
+            }
+
+            string toString = exception.ToString();
+            Assert.AreEqual(1, Regex.Matches(toString, "Client Configuration").Count, $"The Cosmos Diagnostics does not exists or multiple instance are in the ToString(). {toString}");
         }
 
         private static async Task ExecuteQueryAsync(Container container, HttpStatusCode expected)
