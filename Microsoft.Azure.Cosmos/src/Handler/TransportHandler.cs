@@ -37,21 +37,17 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 ResponseMessage response = await this.ProcessMessageAsync(request, cancellationToken, trace, clientSideRequestStatisticsTraceDatum);
                 Debug.Assert(System.Diagnostics.Trace.CorrelationManager.ActivityId != Guid.Empty, "Trace activity id is missing");
-                
-                request.Trace.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum);
 
                 return response;
             }
             //catch DocumentClientException and exceptions that inherit it. Other exception types happen before a backend request
             catch (DocumentClientException ex)
             {
-                request.Trace.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum);
                 Debug.Assert(System.Diagnostics.Trace.CorrelationManager.ActivityId != Guid.Empty, "Trace activity id is missing");
                 return ex.ToCosmosResponseMessage(request);
             }
             catch (CosmosException ce)
             {
-                request.Trace.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum);
                 Debug.Assert(System.Diagnostics.Trace.CorrelationManager.ActivityId != Guid.Empty, "Trace activity id is missing");
                 return ce.ToCosmosResponseMessage(request);
             }
@@ -64,7 +60,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     throw;
                 }
 
-                request.Trace.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum);
                 Debug.Assert(System.Diagnostics.Trace.CorrelationManager.ActivityId != Guid.Empty, "Trace activity id is missing");
                 CosmosException cosmosException = CosmosExceptionFactory.CreateRequestTimeoutException(
                                                             message: ex.Data?["Message"].ToString(),
@@ -78,7 +73,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
             catch (AggregateException ex)
             {
-                request.Trace.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum);
                 Debug.Assert(System.Diagnostics.Trace.CorrelationManager.ActivityId != Guid.Empty, "Trace activity id is missing");
                 // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
                 // in order to ensure that underlying DocumentClientExceptions get propagated up correctly. Once all ContinueWith and .Result 
@@ -90,6 +84,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
 
                 throw;
+            }
+            finally
+            {
+                request.Trace.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum);
             }
         }
 
