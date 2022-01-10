@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.Resource = resource;
             this.Consistency = consistency;
             this.StatusCode = statusCode;
-            this.SubStatusCode= subStatusCode;
+            this.SubStatusCode = subStatusCode;
             this.MetricInfo = metricInfo;
         }
 
