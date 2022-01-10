@@ -146,10 +146,15 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             if (!this.isInitializationComplete)
             {
+                transportRequestStats.RequestWaitingForConnectionInitialization = true;
                 DefaultTrace.TraceInformation(
                     "Awaiting RNTBD channel initialization. Request URI: {0}",
                     physicalAddress);
                 await this.initializationTask;
+            }
+            else
+            {
+                transportRequestStats.RequestWaitingForConnectionInitialization = false;
             }
 
             // Waiting for channel initialization to move to Pipelined stage

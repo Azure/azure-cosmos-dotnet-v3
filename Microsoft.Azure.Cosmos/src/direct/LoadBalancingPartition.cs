@@ -55,6 +55,8 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             int currentPending = Interlocked.Increment(
                 ref this.requestsPending);
+            transportRequestStats.NumberOfInflightRequestsToEndpoint = currentPending;
+
             try
             {
                 if (currentPending > this.maxCapacity)
@@ -79,6 +81,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     this.capacityLock.EnterReadLock();
                     try
                     {
+                        transportRequestStats.NumberOfOpenConnectionsToEndpoint = this.openChannels.Count; // Lock has already been acquired for openChannels
                         if (currentPending <= this.capacity)
                         {
                             // Enough capacity is available, pick a channel.

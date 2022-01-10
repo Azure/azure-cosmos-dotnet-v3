@@ -299,9 +299,17 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
 
         // This method is thread safe.
-        public async Task WriteRequestAsync(ChannelCommonArguments args, ArraySegment<byte> messagePayload)
+        public async Task WriteRequestAsync(ChannelCommonArguments args, ArraySegment<byte> messagePayload, TransportRequestStats transportRequestStats)
         {
             this.ThrowIfDisposed();
+
+            if (transportRequestStats != null)
+            {
+                this.SnapshotConnectionTimestamps(out DateTime lastSendAttempt, out DateTime lastSend, out DateTime lastReceive);
+                transportRequestStats.ConnectionLastSendAttemptTime = lastSendAttempt;
+                transportRequestStats.ConnectionLastSendTime = lastSend;
+                transportRequestStats.ConnectionLastReceiveTime = lastReceive;
+            }
 
             args.SetTimeoutCode(TransportErrorCode.SendLockTimeout);
             await this.writeSemaphore.WaitAsync();

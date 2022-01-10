@@ -302,6 +302,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 Debug.Assert(!Monitor.IsEntered(this.callLock));
                 lock (this.callLock)
                 {
+                    transportRequestStats.NumberOfInflightRequestsInConnection = this.calls.Count;
                     if (!this.callsAllowed)
                     {
                         Debug.Assert(args.CommonArguments.UserPayload);
@@ -319,7 +320,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                     {
                         await this.connection.WriteRequestAsync(
                             args.CommonArguments,
-                            args.PreparedCall.SerializedRequest);
+                            args.PreparedCall.SerializedRequest,
+                            transportRequestStats);
                         transportRequestStats.RecordState(TransportRequestStats.RequestStage.Sent);
                     }
                     catch (Exception e)
@@ -613,7 +615,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             byte[] contextMessage = TransportSerialization.BuildContextRequest(
                 args.CommonArguments.ActivityId, this.userAgent, args.CallerId, this.enableChannelMultiplexing);
 
-            await this.connection.WriteRequestAsync(args.CommonArguments, new ArraySegment<byte>(contextMessage, 0, contextMessage.Length));
+            await this.connection.WriteRequestAsync(args.CommonArguments, new ArraySegment<byte>(contextMessage, 0, contextMessage.Length), transportRequestStats: null);
 
             // Read the response.
             using Connection.ResponseMetadata responseMd =
