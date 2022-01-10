@@ -683,12 +683,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
                 ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(testItem);
-                Console.WriteLine(createResponse.Diagnostics.ToString());
                 Assert.Fail("Request should throw exception.");
             }
             catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.Forbidden)
             {
-                Console.WriteLine(ce.Diagnostics.ToString());
                 Assert.AreEqual(999999, ce.SubStatusCode);  
             }
 
