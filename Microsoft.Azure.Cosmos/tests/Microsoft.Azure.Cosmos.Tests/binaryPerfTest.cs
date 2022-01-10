@@ -11,12 +11,12 @@
     public class BinaryPerfTest
     {
         [TestMethod]
-        public async Task TestMethod1()
+        public void BinaryFormat()
         {
-            FeedOptions feedOptions = new FeedOptions();
+            FeedOptions feedOptions = new FeedOptions()
             {
-                ContentSerializationFormat = CosmosBinary;
-            }
+                ContentSerializationFormat = ContentSerializationFormat.CosmosBinary
+            };
         }
     }
 }
