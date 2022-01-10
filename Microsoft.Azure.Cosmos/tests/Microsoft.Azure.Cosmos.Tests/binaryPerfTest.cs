@@ -1,22 +1,22 @@
-﻿using Microsoft.Azure.Documents.Client;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Microsoft.Azure.Cosmos;
-using System;
-
-namespace BinaryVsTextTest
+﻿namespace Microsoft.Azure.Cosmos.Tests
 {
+    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.Azure.Cosmos;
+    using System;
+    using System.Threading.Tasks;
+
     [TestClass]
-    public class UnitTest1
+    public class BinaryPerfTest
     {
         [TestMethod]
-        public void TestMethod1()
+        public async Task TestMethod1()
         {
-            Microsoft.Azure.Cosmos.FeedOptions feedOptions = new FeedOptions()
+            FeedOptions feedOptions = new FeedOptions();
             {
-                ContentSerializationOptions = CosmosBinary
-            };
-            
-
+                ContentSerializationFormat = CosmosBinary;
+            }
         }
     }
 }
