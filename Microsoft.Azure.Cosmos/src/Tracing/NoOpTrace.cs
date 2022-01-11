@@ -40,14 +40,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public IReadOnlyDictionary<string, object> Data => NoOpData;
 
-        public IReadOnlyList<(string, Uri)> RegionsContacted
-        {
-            get => NoOpRegionsContacted;
-            set
-            {
-                //NoOps
-            }
-        }
+        public IReadOnlyList<(string, Uri)> RegionsContacted => NoOpRegionsContacted;
 
         public void Dispose()
         {

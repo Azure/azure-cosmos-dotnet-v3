@@ -1365,14 +1365,7 @@
 
             public IReadOnlyDictionary<string, object> Data => this.data;
 
-            public IReadOnlyList<(string, Uri)> RegionsContacted
-            {
-                get => new List<(string, Uri)>();
-                set
-                {
-                    //NoImplementation
-                }
-            }
+            public IReadOnlyList<(string, Uri)> RegionsContacted => new List<(string, Uri)>();
 
             public void AddDatum(string key, TraceDatum traceDatum)
             {

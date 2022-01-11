@@ -16,13 +16,15 @@ namespace Microsoft.Azure.Cosmos.Tracing
         private readonly List<ITrace> children;
         private readonly Dictionary<string, object> data;
         private readonly Stopwatch stopwatch;
+        private readonly ISet<(string, Uri)> regionContactedInternal;
 
         private Trace(
             string name,
             CallerInfo callerInfo,
             TraceLevel level,
             TraceComponent component,
-            Trace parent)
+            Trace parent,
+            ISet<(string, Uri)> regionContactedInternal)
         {
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Id = Guid.NewGuid();
@@ -34,6 +36,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.Parent = parent;
             this.children = new List<ITrace>();
             this.data = new Dictionary<string, object>();
+
+            this.regionContactedInternal = regionContactedInternal;
         }
 
         public string Name { get; }
@@ -56,35 +60,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public IReadOnlyDictionary<string, object> Data => this.data;
 
-        private ISet<(string, Uri)> RegionsContactedTemporary { get; set; }
-
-        /// <summary>
-        /// Consolidated Region contacted Information of all children nodes to the Root node 
-        /// </summary>
-        public IReadOnlyList<(string, Uri)> RegionsContacted
-        {
-            get => this.RegionsContactedTemporary?.ToList();
-            set
+        public IReadOnlyList<(string, Uri)> RegionsContacted 
+        { 
+            get
             {
-                if (this.Parent != null)
+                lock (this.regionContactedInternal)
                 {
-                    this.Parent.RegionsContacted = value;
-                }
-                else
-                {
-                    // Once root is found, collect region contacted information
-                    if (this.RegionsContactedTemporary == null)
-                    {
-                        this.RegionsContactedTemporary = new HashSet<(string, Uri)>(value);
-                    }
-                    else
-                    {
-                        // Thread Safe if multiple child are updating same parent
-                        lock (this.RegionsContactedTemporary)
-                        {
-                            this.RegionsContactedTemporary.UnionWith(value);
-                        }
-                    }
+                    return this.regionContactedInternal.ToList();
                 }
             }
         }
@@ -97,11 +79,16 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
             {
-                if (clientSideRequestStatisticsTraceDatum.RegionsContacted == null || clientSideRequestStatisticsTraceDatum.RegionsContacted.Count == 0)
+                if (clientSideRequestStatisticsTraceDatum.RegionsContacted == null || 
+                            clientSideRequestStatisticsTraceDatum.RegionsContacted.Count == 0)
                 {
                     return;
                 }
-                this.RegionsContacted = clientSideRequestStatisticsTraceDatum.RegionsContacted?.ToList();
+               
+                lock (this.regionContactedInternal)
+                {
+                    this.regionContactedInternal.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
+                }
             }
         }
 
@@ -138,7 +125,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 callerInfo: new CallerInfo(memberName, sourceFilePath, sourceLineNumber),
                 level: level,
                 component: component,
-                parent: this);
+                parent: this,
+                regionContactedInternal: this.regionContactedInternal);
 
             this.AddChild(child);
 
@@ -174,7 +162,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 callerInfo: new CallerInfo(memberName, sourceFilePath, sourceLineNumber),
                 level: level,
                 component: component,
-                parent: null);
+                parent: null,
+                regionContactedInternal: new HashSet<(string, Uri)>());
         }
 
         public void AddDatum(string key, TraceDatum traceDatum)
