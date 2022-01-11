@@ -72,15 +72,15 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 }
                 else
                 {
-                    // Thread Safe if multiple child are updating same parent
-                    lock (this.RegionsContactedTemporary) 
+                    // Once root is found, collect region contacted information
+                    if (this.RegionsContactedTemporary == null)
                     {
-                        // Once root is found, collect region contacted information
-                        if (this.RegionsContactedTemporary == null)
-                        {
-                            this.RegionsContactedTemporary = new HashSet<(string, Uri)>(value);
-                        }
-                        else
+                        this.RegionsContactedTemporary = new HashSet<(string, Uri)>(value);
+                    }
+                    else
+                    {
+                        // Thread Safe if multiple child are updating same parent
+                        lock (this.RegionsContactedTemporary)
                         {
                             this.RegionsContactedTemporary.UnionWith(value);
                         }
