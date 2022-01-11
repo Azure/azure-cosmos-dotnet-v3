@@ -966,7 +966,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 return new TraceForBaselineTesting("Trace For Baseline Testing", TraceLevel.Info, TraceComponent.Unknown, parent: null);
             }
 
-            public void UpdateRegionContacted(IClientSideRequestStatistics traceDatum)
+            public void UpdateRegionContacted(TraceDatum traceDatum)
             {
                //NoImplementation
             }

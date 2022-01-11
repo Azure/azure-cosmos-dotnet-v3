@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System;
     using System.Collections.Generic;
     using System.Runtime.CompilerServices;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Interface to represent a single node in a trace tree.
@@ -130,6 +129,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// Update region contacted information to the parent Itrace
         /// </summary>
         /// <param name="traceDatum"></param>
-        void UpdateRegionContacted(IClientSideRequestStatistics traceDatum);
+        void UpdateRegionContacted(TraceDatum traceDatum);
     }
 }
