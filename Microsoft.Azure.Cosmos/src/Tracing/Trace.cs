@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         private ISet<(string, Uri)> RegionsContactedTemporary { get; set; }
 
         /// <summary>
-        /// Consolidated Region contacted Information of this and children nodes
+        /// Consolidated Region contacted Information of all children nodes to the Root node 
         /// </summary>
         public IReadOnlyList<(string, Uri)> RegionsContacted
         {
@@ -72,21 +72,25 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 }
                 else
                 {
-                    // Once root is found, collect region contacted information
-                    if (this.RegionsContactedTemporary == null)
+                    // Thread Safe if multiple child are updating same parent
+                    lock (this.RegionsContactedTemporary) 
                     {
-                        this.RegionsContactedTemporary = new HashSet<(string, Uri)>(value);
-                    }
-                    else
-                    {
-                        this.RegionsContactedTemporary.UnionWith(value);
+                        // Once root is found, collect region contacted information
+                        if (this.RegionsContactedTemporary == null)
+                        {
+                            this.RegionsContactedTemporary = new HashSet<(string, Uri)>(value);
+                        }
+                        else
+                        {
+                            this.RegionsContactedTemporary.UnionWith(value);
+                        }
                     }
                 }
             }
         }
 
         /// <summary>
-        /// Update region contacted information to the parent Itrace
+        /// Update region contacted information to this node
         /// </summary>
         /// <param name="traceDatum"></param>
         public void UpdateRegionContacted(TraceDatum traceDatum)
