@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Text;
+    using Microsoft.Azure.Documents;
 
     internal static class TraceJoiner
     {
@@ -106,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.children.Add(trace);
             }
 
-            public void UpdateRegionContacted(TraceDatum traceDatum)
+            public void UpdateRegionContacted(IClientSideRequestStatistics traceDatum)
             {
                 //NoImplementation
             }

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 {
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Documents;
 
     internal sealed class NoOpTrace : ITrace
     {
@@ -92,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             // NoOp
         }
 
-        public void UpdateRegionContacted(TraceDatum traceDatum)
+        public void UpdateRegionContacted(IClientSideRequestStatistics traceDatum)
         {
             // NoOp
         }

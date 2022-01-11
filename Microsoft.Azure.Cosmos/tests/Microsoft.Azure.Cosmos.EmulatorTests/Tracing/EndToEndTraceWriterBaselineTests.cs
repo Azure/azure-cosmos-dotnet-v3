@@ -14,6 +14,7 @@
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
@@ -22,7 +23,7 @@
     public sealed class EndToEndTraceWriterBaselineTests : BaselineTests<EndToEndTraceWriterBaselineTests.Input, EndToEndTraceWriterBaselineTests.Output>
     {
         public static CosmosClient client;
-        public static Database database;
+        public static Microsoft.Azure.Cosmos.Database database;
         public static Container container;
 
         [ClassInitialize()]
@@ -544,7 +545,7 @@
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
                 ItemResponse<JToken> itemResponse = await container.DeleteItemAsync<JToken>(
                     id: "9001",
-                    partitionKey: new PartitionKey("9001"),
+                    partitionKey: new Microsoft.Azure.Cosmos.PartitionKey("9001"),
                     requestOptions: requestOptions);
 
                 ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
@@ -660,7 +661,7 @@
                 ContainerInternal containerInternal = (ContainerInternal)container;
                 ResponseMessage itemResponse = await containerInternal.DeleteItemStreamAsync(
                     id: "9001",
-                    partitionKey: new PartitionKey("9001"),
+                    partitionKey: new Microsoft.Azure.Cosmos.PartitionKey("9001"),
                     requestOptions: requestOptions);
 
                 ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
@@ -902,7 +903,7 @@
             {
                 startLineNumber = GetLineNumber();
                 string pkValue = "DiagnosticTestPk";
-                TransactionalBatch batch = container.CreateTransactionalBatch(new PartitionKey(pkValue));
+                TransactionalBatch batch = container.CreateTransactionalBatch(new Microsoft.Azure.Cosmos.PartitionKey(pkValue));
                 BatchCore batchCore = (BatchCore)batch;
                 List<PatchOperation> patch = new List<PatchOperation>()
                 {
@@ -957,7 +958,7 @@
                 for (int i = 0; i < 10; i++)
                 {
                     ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
-                    createItemsTasks.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.id)));
+                    createItemsTasks.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, new Microsoft.Azure.Cosmos.PartitionKey(item.id)));
                 }
 
                 await Task.WhenAll(createItemsTasks);
@@ -1013,7 +1014,7 @@
                 {
                     ItemResponse<ToDoActivity> createResponse = await containerWithThrottleException.CreateItemAsync<ToDoActivity>(
                       item: testItem,
-                      partitionKey: new PartitionKey(testItem.id),
+                      partitionKey: new Microsoft.Azure.Cosmos.PartitionKey(testItem.id),
                       requestOptions: requestOptions);
                     Assert.Fail("Should have thrown a throttling exception");
                 }
@@ -1095,10 +1096,10 @@
                 await container.CreateItemAsync(item);
             }
 
-            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
+            List<(string, Microsoft.Azure.Cosmos.PartitionKey)> itemList = new List<(string, Microsoft.Azure.Cosmos.PartitionKey)>();
             for (int i = 0; i < 5; i++)
             {
-                itemList.Add(("id" + i, new PartitionKey(i.ToString())));
+                itemList.Add(("id" + i, new Microsoft.Azure.Cosmos.PartitionKey(i.ToString())));
             }
 
             //----------------------------------------------------------------
@@ -1416,7 +1417,7 @@
                 return new TraceForBaselineTesting("Trace For Baseline Testing", TraceLevel.Info, TraceComponent.Unknown, parent: null);
             }
 
-            public void UpdateRegionContacted(TraceDatum traceDatum)
+            public void UpdateRegionContacted(IClientSideRequestStatistics traceDatum)
             {
                 //NoImplementation
             }

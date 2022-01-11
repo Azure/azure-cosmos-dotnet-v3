@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Linq;
     using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using Microsoft.Azure.Documents;
 
     internal sealed class Trace : ITrace
     {
@@ -88,17 +89,14 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <summary>
         /// Update region contacted information to the parent Itrace
         /// </summary>
-        /// <param name="traceDatum"></param>
-        public void UpdateRegionContacted(TraceDatum traceDatum)
+        /// <param name="clientSideRequestStatisticsTraceDatum"></param>
+        public void UpdateRegionContacted(IClientSideRequestStatistics clientSideRequestStatisticsTraceDatum)
         {
-            if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+            if (clientSideRequestStatisticsTraceDatum.RegionsContacted == null || clientSideRequestStatisticsTraceDatum.RegionsContacted.Count == 0)
             {
-                if (clientSideRequestStatisticsTraceDatum.RegionsContacted == null || clientSideRequestStatisticsTraceDatum.RegionsContacted.Count == 0)
-                {
-                    return;
-                }
-                this.RegionsContacted = clientSideRequestStatisticsTraceDatum.RegionsContacted?.ToList();
+                return;
             }
+            this.RegionsContacted = clientSideRequestStatisticsTraceDatum.RegionsContacted?.ToList();
         }
 
         public void Dispose()
@@ -176,7 +174,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public void AddDatum(string key, TraceDatum traceDatum)
         {
             this.data.Add(key, traceDatum);
-            this.UpdateRegionContacted(traceDatum);
+            if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+            {
+                this.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum);
+            }
         }
 
         public void AddDatum(string key, object value)
