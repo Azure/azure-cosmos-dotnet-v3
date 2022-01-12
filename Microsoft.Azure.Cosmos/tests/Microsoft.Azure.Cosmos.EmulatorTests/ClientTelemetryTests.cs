@@ -710,7 +710,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <param name="expectedConsistencyLevel"> Expected Consistency level of the operation recorded by telemetry</param>
         /// <param name="expectedOperationRecordCountMap"> Expected number of requests recorded for each operation </param>
         /// <returns></returns>
-        private async Task WaitAndAssert(int expectedOperationCount = 0,
+        private async Task WaitAndAssert(
+            int expectedOperationCount = 0,
             Microsoft.Azure.Cosmos.ConsistencyLevel? expectedConsistencyLevel = null,
             IDictionary<string, long> expectedOperationRecordCountMap = null,
             string expectedSubstatuscode = null)
@@ -754,7 +755,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<SystemInfo> actualSystemInformation = new List<SystemInfo>();
 
             ClientTelemetryTests.AssertAccountLevelInformation(localCopyOfActualInfo, actualOperationList, actualSystemInformation);
-            ClientTelemetryTests.AssertOperationLevelInformation(expectedConsistencyLevel, expectedOperationRecordCountMap, actualOperationList);
+            ClientTelemetryTests.AssertOperationLevelInformation(expectedConsistencyLevel, expectedOperationRecordCountMap, actualOperationList, expectedSubstatuscode);
             ClientTelemetryTests.AssertSystemLevelInformation(actualSystemInformation);
         }
 
@@ -799,7 +800,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         }
 
-        private static void AssertOperationLevelInformation(ConsistencyLevel? expectedConsistencyLevel, IDictionary<string, long> expectedOperationRecordCountMap, List<OperationInfo> actualOperationList)
+        private static void AssertOperationLevelInformation(
+            Microsoft.Azure.Cosmos.ConsistencyLevel? expectedConsistencyLevel, 
+            IDictionary<string, long> expectedOperationRecordCountMap, 
+            List<OperationInfo> actualOperationList,
+            string expectedSubstatuscode = null)
         {
             IDictionary<string, long> actualOperationRecordCountMap = new Dictionary<string, long>();
 
