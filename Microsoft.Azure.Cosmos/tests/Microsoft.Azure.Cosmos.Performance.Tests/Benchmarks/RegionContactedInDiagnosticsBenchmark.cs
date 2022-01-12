@@ -5,16 +5,11 @@
 namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 {
     using System;
-    using System.Collections.Concurrent;
-    using System.Net;
     using BenchmarkDotNet.Attributes;
-    using HdrHistogram;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Collections;
 
     [MemoryDiagnoser]
     public class RegionContactedInDiagnosticsBenchmark
@@ -34,8 +29,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             ITrace trace;
             using (trace = Trace.GetRootTrace("Root Trace", TraceComponent.Unknown, TraceLevel.Info))
             using (ITrace firstLevel = trace.StartChild("First level Node", TraceComponent.Unknown, TraceLevel.Info))
-            using (ITrace secondLevel = trace.StartChild("Second level Node", TraceComponent.Unknown, TraceLevel.Info))
-            using (ITrace thirdLevel = trace.StartChild("Third level Node", TraceComponent.Unknown, TraceLevel.Info))
+            using (ITrace secondLevel = firstLevel.StartChild("Second level Node", TraceComponent.Unknown, TraceLevel.Info))
+            using (ITrace thirdLevel = secondLevel.StartChild("Third level Node", TraceComponent.Unknown, TraceLevel.Info))
                 thirdLevel.AddDatum("Client Side Request Stats", this.GetDatumObject(Regions.CentralUS));
             using (ITrace secondLevel = trace.StartChild("Second level Node", TraceComponent.Unknown, TraceLevel.Info))
                 secondLevel.AddDatum("Client Side Request Stats", this.GetDatumObject(Regions.CentralIndia, Regions.EastUS2));
@@ -79,7 +74,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
 
             ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics);
-
         }
     }
 }
