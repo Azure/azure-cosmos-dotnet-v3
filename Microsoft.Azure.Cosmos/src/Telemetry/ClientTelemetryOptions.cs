@@ -35,23 +35,38 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const string RequestChargeName = "RequestCharge";
         internal const string RequestChargeUnit = "RU";
 
-        internal const long SystemUsageMax = Int64.MaxValue;
-        internal const long SystemUsageMin = 1;
-        internal const int SystemUsagePrecision = 2;
         // Expecting histogram to have Minimum CPU Usage of .001% and Maximum CPU Usage of 999.99%
+        internal const long CpuMax = 99999;
+        internal const long CpuMin = 1;
+        internal const int CpuPrecision = 2;
         internal const String CpuName = "CPU";
         internal const String CpuUnit = "Percentage";
 
         // Expecting histogram to have Minimum Memory Remaining of 1 MB and Maximum Memory Remaining of Long Max Value
+        internal const long MemoryMax = Int64.MaxValue;
+        internal const long MemoryMin = 1;
+        internal const int MemoryPrecision = 2;
         internal const String MemoryName = "MemoryRemaining";
         internal const String MemoryUnit = "MB";
 
+        // Expecting histogram to have Minimum Available Threads = 0 and Maximum Available Threads = it can be any anything depends on the machine
+        internal const long AvailableThreadsMax = Int64.MaxValue;
+        internal const long AvailableThreadsMin = 1;
+        internal const int AvailableThreadsPrecision = 2;
         internal const String AvailableThreadsName = "SystemPool_AvailableThreads";
         internal const String AvailableThreadsUnit = "ThreadCount";
 
+        // Expecting histogram to have Minimum Thread Count configured as Single digit
+        internal const long MinThreadsMax = 100;
+        internal const long MinThreadsMin = 1;
+        internal const int MinThreadsPrecision = 1;
         internal const String MinThreadsName = "SystemPool_MinThreads";
         internal const String MinThreadsUnit = "ThreadCount";
 
+        // Expecting histogram to have Maximum Thread Count can be any number
+        internal const long MaxThreadsMax = Int64.MaxValue;
+        internal const long MaxThreadsMin = 1;
+        internal const int MaxThreadsPrecision = 2;
         internal const String MaxThreadsName = "SystemPool_MaxThreads";
         internal const String MaxThreadsUnit = "ThreadCount";
 

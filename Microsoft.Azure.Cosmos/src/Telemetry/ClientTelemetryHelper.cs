@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Threading.Tasks;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Telemetry.SystemUsage;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 
@@ -98,12 +97,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         /// <param name="systemUsageHistory"></param>
         /// <param name="systemInfoCollection"></param>
-        internal static void RecordSystemUsage(SystemUsageHistory systemUsageHistory, List<SystemInfo> systemInfoCollection)
+        internal static void RecordSystemUsage(
+                SystemUsageHistory systemUsageHistory, 
+                List<SystemInfo> systemInfoCollection)
         {
-            LongConcurrentHistogram systemUsageHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.SystemUsageMin,
-                                                        ClientTelemetryOptions.SystemUsageMax,
-                                                        ClientTelemetryOptions.SystemUsagePrecision);
-
             if (systemUsageHistory.Values == null)
             {
                 return;
@@ -111,22 +108,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             DefaultTrace.TraceInformation("System Usage recorded by telemetry is : {0}", systemUsageHistory);
 
-            systemInfoCollection.Add(
-                new CpuUsage(systemUsageHistogram, systemUsageHistory.Values)
-                        .GetSystemInfo());
-            systemInfoCollection.Add(
-                new MemoryRemaining(systemUsageHistogram, systemUsageHistory.Values)
-                        .GetSystemInfo());
-            systemInfoCollection.Add(
-                new AvailableThreads(systemUsageHistogram, systemUsageHistory.Values)
-                        .GetSystemInfo());
-            systemInfoCollection.Add(
-                new MinThreads(systemUsageHistogram, systemUsageHistory.Values)
-                        .GetSystemInfo());
-            systemInfoCollection.Add(
-                new MaxThreads(systemUsageHistogram, systemUsageHistory.Values)
-                        .GetSystemInfo());
-
+            systemInfoCollection.Add(TelemetrySystemUsage.GetCpuInfo(systemUsageHistory.Values));
+            systemInfoCollection.Add(TelemetrySystemUsage.GetMemoryRemainingInfo(systemUsageHistory.Values));
+            systemInfoCollection.Add(TelemetrySystemUsage.GetAvailableThreadsInfo(systemUsageHistory.Values));
+            systemInfoCollection.Add(TelemetrySystemUsage.GetMaxThreadsInfo(systemUsageHistory.Values));
+            systemInfoCollection.Add(TelemetrySystemUsage.GetMinThreadsInfo(systemUsageHistory.Values));
         }
 
         /// <summary>
@@ -134,7 +120,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         /// <param name="metrics"></param>
         /// <returns>Collection of ReportPayload</returns>
-        internal static List<OperationInfo> ToListWithMetricsInfo(IDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> metrics)
+        internal static List<OperationInfo> ToListWithMetricsInfo(
+                IDictionary<OperationInfo, 
+                (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> metrics)
         {
             DefaultTrace.TraceInformation("Aggregating operation information to list started");
 
