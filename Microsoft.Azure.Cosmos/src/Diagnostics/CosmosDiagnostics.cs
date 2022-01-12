@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         ///  This represent the count of failed requests.
         /// </summary>
         /// <returns>The integer field returns the count of failed requests.</returns>
-        public abstract int FailedRequestCount();
+        public abstract int GetFailedRequestCount();
 
         /// <summary>
         /// Gets the string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.

@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return this.Value.StartTime;
         }
 
-        public override int FailedRequestCount()
+        public override int GetFailedRequestCount()
         {
             return this.WalkTraceTreeForFailedRequestCount(this.Value);
         }
