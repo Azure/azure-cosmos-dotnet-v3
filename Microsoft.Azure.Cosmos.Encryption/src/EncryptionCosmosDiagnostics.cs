@@ -86,5 +86,74 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             return stringWriter.ToString();
         }
+
+#if SDKPROJECTREF
+
+        public EncryptionCosmosDiagnostics(ITrace trace)
+        {
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            // Need to set to the root trace, since we don't know which layer of the stack the response message was returned from.
+            ITrace rootTrace = trace;
+            while (rootTrace.Parent != null)
+            {
+                rootTrace = rootTrace.Parent;
+            }
+
+            this.Value = rootTrace;
+        }
+        
+        public ITrace Value { get; }
+
+        public override DateTime GetStartTimeUtc()
+        {
+            if (this.Value == null)
+            {
+                return DateTime.MinValue;
+            }
+
+            return this.Value.StartTime;
+        }
+
+        public override int FailedRequestCount()
+        {
+            return this.WalkTraceTreeForFailedRequestCount(this.Value);
+        }
+
+        private int WalkTraceTreeForFailedRequestCount(ITrace currentTrace)
+        {
+            if (currentTrace == null)
+            {
+                return this.failedRequestCount;
+            }
+
+            foreach (object datums in currentTrace.Data.Values)
+            {
+                if (datums is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                {
+                    foreach (StoreResponseStatistics responseStatistics in clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList)
+                    {
+                        if (responseStatistics.StoreResult != null && !((HttpStatusCode)responseStatistics.StoreResult.StatusCode).IsSuccess())
+                        {
+                            this.failedRequestCount++;
+                        }
+                    }
+                }
+            }
+
+            foreach (ITrace childTrace in currentTrace.Children)
+            {
+                this.failedRequestCount += this.WalkTraceTreeForFailedRequestCount(childTrace);
+            }
+
+            return this.failedRequestCount;
+        }
+
+        private int failedRequestCount;
+#endif
+
     }
 }

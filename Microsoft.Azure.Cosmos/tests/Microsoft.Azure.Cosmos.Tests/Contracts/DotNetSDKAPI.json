@@ -2622,7 +2622,7 @@
         "Int32 FailedRequestCount()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Int32 FailedRequestCount();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Int32 FailedRequestCount();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,System.Uri]] GetContactedRegions()": {
           "Type": "Method",
@@ -2632,7 +2632,7 @@
         "System.DateTime GetStartTimeUtc()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.DateTime GetStartTimeUtc();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.DateTime GetStartTimeUtc();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String ToString()": {
           "Type": "Method",
