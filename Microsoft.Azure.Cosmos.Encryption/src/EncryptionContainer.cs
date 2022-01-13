@@ -730,15 +730,46 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cancellationToken: cancellationToken);
         }
 
-#if PREVIEW
-        public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
-               Cosmos.PartitionKey partitionKey,
-               RequestOptions requestOptions = null,
-               CancellationToken cancellationToken = default)
+        /// <summary>
+        /// This function handles the scenario where a container is deleted(say from different Client) and recreated with same Id but with different client encryption policy.
+        /// The idea is to have the container Rid cached and sent out as part of RequestOptions with Container Rid set in "x-ms-cosmos-intended-collection-rid" header.
+        /// So when the container being referenced here gets recreated we would end up with a stale encryption settings and container Rid and this would result in BadRequest( and a substatus 1024).
+        /// This would allow us to refresh the encryption settings and Container Rid, on the premise that the container recreated could possibly be configured with a new encryption policy.
+        /// </summary>
+        /// <param name="responseMessage"> Response message to validate. </param>
+        /// <param name="encryptionSettings"> Current cached encryption settings to refresh if required. </param>
+        /// <param name="encryptionDiagnosticsContext"> Encryption specific diagnostics. </param>
+        /// <param name="cancellationToken"> Cancellation token. </param>
+        internal async Task ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(
+            ResponseMessage responseMessage,
+            EncryptionSettings encryptionSettings,
+            EncryptionDiagnosticsContext encryptionDiagnosticsContext,
+            CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            if (responseMessage.StatusCode == HttpStatusCode.BadRequest &&
+                string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
+            {
+                // get the latest encryption settings.
+                await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                   obsoleteEncryptionSettings: encryptionSettings,
+                   cancellationToken: cancellationToken);
+
+                if (encryptionDiagnosticsContext == null)
+                {
+                    throw new ArgumentNullException(nameof(encryptionDiagnosticsContext));
+                }
+
+                encryptionDiagnosticsContext.AddEncryptionDiagnosticsToResponseMessage(responseMessage);
+
+                throw new EncryptionCosmosException(
+                    "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Retrying may fix the issue. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + responseMessage.ErrorMessage,
+                    HttpStatusCode.BadRequest,
+                    int.Parse(Constants.IncorrectContainerRidSubStatus),
+                    responseMessage.Headers.ActivityId,
+                    responseMessage.Headers.RequestCharge,
+                    responseMessage.Diagnostics);
+            }
         }
-#endif
 
         internal async Task<List<PatchOperation>> EncryptPatchOperationsAsync(
             IReadOnlyList<PatchOperation> patchOperations,
@@ -818,7 +849,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="itemRequestOptions"> Original ItemRequestOptions.</param>
         /// <returns> ItemRequestOptions.</returns>
-        private static ItemRequestOptions GetClonedItemRequestOptions(ItemRequestOptions itemRequestOptions)
+        private static ItemRequestOptions EncryptionContainerGetClonedItemRequestOptions(ItemRequestOptions itemRequestOptions)
         {
             ItemRequestOptions clonedRequestOptions = itemRequestOptions != null ? (ItemRequestOptions)itemRequestOptions.ShallowCopy() : new ItemRequestOptions();
 
@@ -829,8 +860,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Stream streamPayload,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions,
-            CancellationToken cancellationToken,
-            bool isRetry = false)
+            CancellationToken cancellationToken)
         {
             EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
             if (!encryptionSettings.PropertiesToEncrypt.Any())
@@ -849,13 +879,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 encryptionDiagnosticsContext,
                 cancellationToken);
 
-            ItemRequestOptions clonedRequestOptions = requestOptions;
-
-            // Clone(once) the request options since we modify it to set AddRequestHeaders to add additional headers.
-            if (!isRetry)
-            {
-                clonedRequestOptions = GetClonedItemRequestOptions(requestOptions);
-            }
+            // Clone the request options since we modify it to set AddRequestHeaders to add additional headers.
+            ItemRequestOptions clonedRequestOptions = EncryptionContainerGetClonedItemRequestOptions(requestOptions);
 
             encryptionSettings.SetRequestHeaders(clonedRequestOptions);
 
@@ -865,35 +890,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            // This handles the scenario where a container is deleted(say from different Client) and recreated with same Id but with different client encryption policy.
-            // The idea is to have the container Rid cached and sent out as part of RequestOptions with Container Rid set in "x-ms-cosmos-intended-collection-rid" header.
-            // So when the container being referenced here gets recreated we would end up with a stale encryption settings and container Rid and this would result in BadRequest( and a substatus 1024).
-            // This would allow us to refresh the encryption settings and Container Rid, on the premise that the container recreated could possibly be configured with a new encryption policy.
-            if (!isRetry &&
-                responseMessage.StatusCode == HttpStatusCode.BadRequest &&
-                string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
-            {
-                // Even though the streamPayload position is expected to be 0,
-                // because for MemoryStream we just use the underlying buffer to send over the wire rather than using the Stream APIs
-                // resetting it 0 to be on a safer side.
-                streamPayload.Position = 0;
-
-                // Now the streamPayload itself is not disposed off(and hence safe to use it in the below call) since the stream that is passed to CreateItemStreamAsync is a MemoryStream and not the original Stream
-                // that the user has passed. The call to EncryptAsync reads out the stream(and processes it) and returns a MemoryStream which is eventually cloned in the
-                // Cosmos SDK and then used. This stream however is to be disposed off as part of ResponseMessage when this gets returned.
-                streamPayload = await this.DecryptStreamPayloadAndUpdateEncryptionSettingsAsync(
-                    streamPayload,
-                    encryptionSettings,
-                    cancellationToken);
-
-                // we try to recreate the item with the StreamPayload(to be encrypted) now that the encryptionSettings would have been updated with latest values if any.
-                return await this.CreateItemHelperAsync(
-                       streamPayload,
-                       partitionKey,
-                       clonedRequestOptions,
-                       cancellationToken,
-                       isRetry: true);
-            }
+            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, encryptionDiagnosticsContext, cancellationToken);
 
             responseMessage.Content = await EncryptionProcessor.DecryptAsync(
                 responseMessage.Content,
@@ -909,8 +906,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string id,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions,
-            CancellationToken cancellationToken,
-            bool isRetry = false)
+            CancellationToken cancellationToken)
         {
             EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
             if (!encryptionSettings.PropertiesToEncrypt.Any())
@@ -922,13 +918,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     cancellationToken);
             }
 
-            ItemRequestOptions clonedRequestOptions = requestOptions;
-
-            // Clone(once) the request options since we modify it to set AddRequestHeaders to add additional headers.
-            if (!isRetry)
-            {
-                clonedRequestOptions = GetClonedItemRequestOptions(requestOptions);
-            }
+            // Clone the request options since we modify it to set AddRequestHeaders to add additional headers.
+            ItemRequestOptions clonedRequestOptions = EncryptionContainerGetClonedItemRequestOptions(requestOptions);
 
             encryptionSettings.SetRequestHeaders(clonedRequestOptions);
 
@@ -938,24 +929,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            if (!isRetry &&
-                responseMessage.StatusCode == HttpStatusCode.BadRequest &&
-                string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
-            {
-                // get the latest encryption settings.
-                await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                    obsoleteEncryptionSettings: encryptionSettings,
-                    cancellationToken: cancellationToken);
-
-                return await this.ReadItemHelperAsync(
-                    id,
-                    partitionKey,
-                    clonedRequestOptions,
-                    cancellationToken,
-                    isRetry: true);
-            }
-
             EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
+
+            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, encryptionDiagnosticsContext, cancellationToken);
+
             responseMessage.Content = await EncryptionProcessor.DecryptAsync(
                 responseMessage.Content,
                 encryptionSettings,
@@ -971,8 +948,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string id,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions,
-            CancellationToken cancellationToken,
-            bool isRetry = false)
+            CancellationToken cancellationToken)
         {
             if (partitionKey == null)
             {
@@ -999,11 +975,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ItemRequestOptions clonedRequestOptions = requestOptions;
 
-            // Clone(once) the request options since we modify it to set AddRequestHeaders to add additional headers.
-            if (!isRetry)
-            {
-                clonedRequestOptions = GetClonedItemRequestOptions(requestOptions);
-            }
+            // Clone the request options since we modify it to set AddRequestHeaders to add additional headers.
+            clonedRequestOptions = EncryptionContainerGetClonedItemRequestOptions(requestOptions);
 
             encryptionSettings.SetRequestHeaders(clonedRequestOptions);
 
@@ -1014,24 +987,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            if (!isRetry &&
-                responseMessage.StatusCode == HttpStatusCode.BadRequest &&
-                string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
-            {
-                streamPayload.Position = 0;
-                streamPayload = await this.DecryptStreamPayloadAndUpdateEncryptionSettingsAsync(
-                    streamPayload,
-                    encryptionSettings,
-                    cancellationToken);
-
-                return await this.ReplaceItemHelperAsync(
-                    streamPayload,
-                    id,
-                    partitionKey,
-                    clonedRequestOptions,
-                    cancellationToken,
-                    isRetry: true);
-            }
+            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, encryptionDiagnosticsContext, cancellationToken);
 
             responseMessage.Content = await EncryptionProcessor.DecryptAsync(
                 responseMessage.Content,
@@ -1047,8 +1003,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Stream streamPayload,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions,
-            CancellationToken cancellationToken,
-            bool isRetry = false)
+            CancellationToken cancellationToken)
         {
             if (partitionKey == null)
             {
@@ -1074,11 +1029,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ItemRequestOptions clonedRequestOptions = requestOptions;
 
-            // Clone(once) the request options since we modify it to set AddRequestHeaders to add additional headers.
-            if (!isRetry)
-            {
-                clonedRequestOptions = GetClonedItemRequestOptions(requestOptions);
-            }
+            // Clone the request options since we modify it to set AddRequestHeaders to add additional headers.
+            clonedRequestOptions = EncryptionContainerGetClonedItemRequestOptions(requestOptions);
 
             encryptionSettings.SetRequestHeaders(clonedRequestOptions);
 
@@ -1088,23 +1040,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            if (!isRetry &&
-                responseMessage.StatusCode == HttpStatusCode.BadRequest &&
-                string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
-            {
-                streamPayload.Position = 0;
-                streamPayload = await this.DecryptStreamPayloadAndUpdateEncryptionSettingsAsync(
-                    streamPayload,
-                    encryptionSettings,
-                    cancellationToken);
-
-                return await this.UpsertItemHelperAsync(
-                    streamPayload,
-                    partitionKey,
-                    clonedRequestOptions,
-                    cancellationToken,
-                    isRetry: true);
-            }
+            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, encryptionDiagnosticsContext, cancellationToken);
 
             responseMessage.Content = await EncryptionProcessor.DecryptAsync(
                 responseMessage.Content,
@@ -1153,6 +1089,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
+            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, encryptionDiagnosticsContext, cancellationToken);
+
             responseMessage.Content = await EncryptionProcessor.DecryptAsync(
                 responseMessage.Content,
                 encryptionSettings,
@@ -1161,35 +1099,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             encryptionDiagnosticsContext.AddEncryptionDiagnosticsToResponseMessage(responseMessage);
             return responseMessage;
-        }
-
-        /// <summary>
-        /// This method takes in an encrypted stream payload.
-        /// The streamPayload is decrypted with the same policy which was used to encrypt and then the original plain stream payload is
-        /// returned which can be used to re-encrypt after the latest encryption settings is retrieved.
-        /// The method also updates the cached Encryption Settings with the latest value if any.
-        /// </summary>
-        /// <param name="streamPayload"> Data encrypted with wrong encryption policy. </param>
-        /// <param name="encryptionSettings"> EncryptionSettings which was used to encrypt the payload. </param>
-        /// <param name="cancellationToken"> Cancellation token. </param>
-        /// <returns> Returns the decrypted stream payload and diagnostics content. </returns>
-        private async Task<Stream> DecryptStreamPayloadAndUpdateEncryptionSettingsAsync(
-           Stream streamPayload,
-           EncryptionSettings encryptionSettings,
-           CancellationToken cancellationToken)
-        {
-            streamPayload = await EncryptionProcessor.DecryptAsync(
-                streamPayload,
-                encryptionSettings,
-                operationDiagnostics: null,
-                cancellationToken);
-
-            // get the latest encryption settings.
-            await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-               obsoleteEncryptionSettings: encryptionSettings,
-               cancellationToken: cancellationToken);
-
-            return streamPayload;
         }
 
         private async Task<List<T>> DecryptChangeFeedDocumentsAsync<T>(
@@ -1218,8 +1127,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private async Task<ResponseMessage> ReadManyItemsHelperAsync(
             IReadOnlyList<(string id, PartitionKey partitionKey)> items,
             ReadManyRequestOptions readManyRequestOptions = null,
-            CancellationToken cancellationToken = default,
-            bool isRetry = false)
+            CancellationToken cancellationToken = default)
         {
             EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
                obsoleteEncryptionSettings: null,
@@ -1233,13 +1141,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     cancellationToken);
             }
 
-            ReadManyRequestOptions clonedRequestOptions = readManyRequestOptions;
-
-            // Clone(once) the request options since we modify it to set AddRequestHeaders to add additional headers.
-            if (!isRetry)
-            {
-                clonedRequestOptions = readManyRequestOptions != null ? (ReadManyRequestOptions)readManyRequestOptions.ShallowCopy() : new ReadManyRequestOptions();
-            }
+            // Clone the request options since we modify it to set AddRequestHeaders to add additional headers.
+            ReadManyRequestOptions clonedRequestOptions = readManyRequestOptions != null ? (ReadManyRequestOptions)readManyRequestOptions.ShallowCopy() : new ReadManyRequestOptions();
 
             encryptionSettings.SetRequestHeaders(clonedRequestOptions);
 
@@ -1248,33 +1151,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            if (!isRetry &&
-                responseMessage.StatusCode == HttpStatusCode.BadRequest &&
-                string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
-            {
-                // get the latest encryption settings.
-                await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                    obsoleteEncryptionSettings: encryptionSettings,
-                    cancellationToken: cancellationToken);
+            EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
 
-                return await this.ReadManyItemsHelperAsync(
-                    items,
-                    clonedRequestOptions,
-                    cancellationToken,
-                    isRetry: true);
-            }
+            await this.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, encryptionDiagnosticsContext, cancellationToken);
 
             if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
             {
-                EncryptionDiagnosticsContext decryptDiagnostics = new EncryptionDiagnosticsContext();
-
                 Stream decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                     responseMessage.Content,
                     encryptionSettings,
-                    decryptDiagnostics,
+                    encryptionDiagnosticsContext,
                     cancellationToken);
 
-                decryptDiagnostics.AddEncryptionDiagnosticsToResponseMessage(responseMessage);
+                encryptionDiagnosticsContext.AddEncryptionDiagnosticsToResponseMessage(responseMessage);
                 return new DecryptedResponseMessage(responseMessage, decryptedContent);
             }
 

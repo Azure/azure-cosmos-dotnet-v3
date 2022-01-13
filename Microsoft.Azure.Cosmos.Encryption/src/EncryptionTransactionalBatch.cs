@@ -202,19 +202,27 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 response = await this.transactionalBatch.ExecuteAsync(clonedRequestOptions, cancellationToken);
             }
 
-            // FIXME this should check for BadRequest StatusCode too, requires a service fix to return 400 instead of -1 which is currently returned.
-            if (string.Equals(response.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
+            if (response.StatusCode == HttpStatusCode.BadRequest && string.Equals(response.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
             {
                 await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(
                     obsoleteEncryptionSettings: encryptionSettings,
                     cancellationToken: cancellationToken);
 
-                throw new CosmosException(
-                    "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + response.ErrorMessage,
+                // no access to the encryption diagnostics. Just pass empty encryption diagnostics for now.
+                EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
+                EncryptionCosmosDiagnostics encryptionDiagnostics = new EncryptionCosmosDiagnostics(
+                    response.Diagnostics,
+                    encryptionDiagnosticsContext.EncryptContent,
+                    encryptionDiagnosticsContext.DecryptContent,
+                    encryptionDiagnosticsContext.TotalProcessingDuration);
+
+                throw new EncryptionCosmosException(
+                    "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Retrying may fix the issue. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + response.ErrorMessage,
                     HttpStatusCode.BadRequest,
                     int.Parse(Constants.IncorrectContainerRidSubStatus),
                     response.Headers.ActivityId,
-                    response.Headers.RequestCharge);
+                    response.Headers.RequestCharge,
+                    encryptionDiagnostics);
             }
 
             return await this.DecryptTransactionalBatchResponseAsync(
