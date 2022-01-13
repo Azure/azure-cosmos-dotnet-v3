@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsFalse(diagnostics.IsGoneExceptionHit());
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics.ToString()));
             Assert.IsTrue(diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
-            Assert.AreEqual(0, response.Diagnostics.FailedRequestCount());
+            Assert.AreEqual(0, response.Diagnostics.GetFailedRequestCount());
 
             response = await this.Container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
             Assert.IsNotNull(response);
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Diagnostics);
             Assert.IsFalse(string.IsNullOrEmpty(response.Diagnostics.ToString()));
             Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
-            Assert.AreEqual(0, response.Diagnostics.FailedRequestCount());
+            Assert.AreEqual(0, response.Diagnostics.GetFailedRequestCount());
             Assert.IsNotNull(response.Diagnostics.GetStartTimeUtc());
 
             Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.MaxResourceQuota));
@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response);
             Assert.IsNull(response.Content);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.AreNotEqual(0, response.Diagnostics.FailedRequestCount());
+            Assert.AreNotEqual(0, response.Diagnostics.GetFailedRequestCount());
         }
 
         [TestMethod]
@@ -2822,7 +2822,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsFalse(string.IsNullOrEmpty(diagnosticString));
                 Assert.IsTrue(diagnosticString.Contains("ForceAddressRefresh"));
                 Assert.IsTrue(diagnosticString.Contains("No change to cache"));
-                Assert.AreNotEqual(0, diagnostics.FailedRequestCount());
+                Assert.AreNotEqual(0, diagnostics.GetFailedRequestCount());
             }
         }
 
