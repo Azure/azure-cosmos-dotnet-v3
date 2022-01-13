@@ -3,7 +3,7 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### <a name="1.0.0-previewV19"/> [1.0.0-previewV19](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV19) - 2022-01-10
+### <a name="1.0.0-previewV19"/> [1.0.0-previewV19](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV19) - 2022-01-13
 
 #### Added
 - [#2906](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2906) Adds an abstraction layer to hide the underlying usage of Microsoft Data Encryption(MDE) library.
