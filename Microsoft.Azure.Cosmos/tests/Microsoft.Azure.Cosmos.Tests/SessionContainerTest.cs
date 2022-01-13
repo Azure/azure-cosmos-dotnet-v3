@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos
     using Client;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Tests for <see cref="SessionContainer"/> class.
@@ -806,5 +807,122 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(string.IsNullOrEmpty(sessionContainer.GetSessionToken(string.Format("dbs/{0}/colls/{1}", dbResourceId, oldCollectionResourceId))));
             Assert.IsFalse(string.IsNullOrEmpty(sessionContainer.GetSessionToken(string.Format("dbs/{0}/colls/{1}", dbResourceId, newCollectionResourceId))));
         }
+
+        /// <summary>
+        /// Use the session token of the parent if request comes for a child
+        /// </summary>
+        [TestMethod]
+        public void TestResolveSessionTokenFromParent_AfterSplit()
+        {
+            SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
+
+            string collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionFullname = "dbs/db1/colls/collName";
+
+            // Set token for the parent
+            string parentPKRangeId = "0";
+            string parentSession = "1#100#4=90#5=1";
+            sessionContainer.SetSessionToken(
+                collectionResourceId,
+                collectionFullname,
+                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, $"{parentPKRangeId}:{parentSession}" } }
+            );
+
+            // We send requests for the children
+
+            string childPKRangeId = "1";
+            string childPKRangeId2 = "1";
+
+            DocumentServiceRequest documentServiceRequestToChild1 = DocumentServiceRequest.CreateFromName(OperationType.Read, "dbs/db1/colls/collName/docs/42", ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null);
+
+            documentServiceRequestToChild1.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange()
+            {
+                Id = childPKRangeId,
+                MinInclusive = "",
+                MaxExclusive = "AA",
+                Parents = new Collection<string>() { parentPKRangeId } // PartitionKeyRange says who is the parent
+            };
+
+            string resolvedToken = sessionContainer.ResolvePartitionLocalSessionTokenForGateway(
+                documentServiceRequestToChild1,
+                childPKRangeId);// For one of the children
+
+            Assert.AreEqual($"{childPKRangeId}:{parentSession}", resolvedToken);
+
+            DocumentServiceRequest documentServiceRequestToChild2 = DocumentServiceRequest.CreateFromName(OperationType.Read, "dbs/db1/colls/collName/docs/42", ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null);
+
+            documentServiceRequestToChild2.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange()
+            {
+                Id = childPKRangeId2,
+                MinInclusive = "AA",
+                MaxExclusive = "FF",
+                Parents = new Collection<string>() { parentPKRangeId } // PartitionKeyRange says who is the parent
+            };
+
+            resolvedToken = sessionContainer.ResolvePartitionLocalSessionTokenForGateway(
+                documentServiceRequestToChild2,
+                childPKRangeId2);// For the other child
+
+            Assert.AreEqual($"{childPKRangeId2}:{parentSession}", resolvedToken);
+        }
+
+        // <summary>
+        /// Use the session token of the parent if request comes for a child when 2 parents are present
+        /// </summary>
+        [TestMethod]
+        public void TestResolveSessionTokenFromParent_AfterMerge()
+        {
+            SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
+
+            string collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionFullname = "dbs/db1/colls/collName";
+
+            // Set tokens for the parents
+            string parentPKRangeId = "0";
+            int maxGlobalLsn = 100;
+            int maxLsnRegion1 = 200;
+            int maxLsnRegion2 = 300;
+            int maxLsnRegion3 = 400;
+
+            // Generate 2 tokens, one has max global but lower regional, the other lower global but higher regional
+            // Expect the merge to contain all the maxes
+            string parentSession = $"1#{maxGlobalLsn}#1={maxLsnRegion1 - 1}#2={maxLsnRegion2}#3={maxLsnRegion3 - 1}";
+            sessionContainer.SetSessionToken(
+                collectionResourceId,
+                collectionFullname,
+                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, $"{parentPKRangeId}:{parentSession}" } }
+            );
+
+            string parent2PKRangeId = "1";
+            string parent2Session = $"1#{maxGlobalLsn - 1}#1={maxLsnRegion1}#2={maxLsnRegion2 - 1}#3={maxLsnRegion3}";
+            sessionContainer.SetSessionToken(
+                collectionResourceId,
+                collectionFullname,
+                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, $"{parent2PKRangeId}:{parent2Session}" } }
+            );
+
+            string tokenWithAllMax = $"1#{maxGlobalLsn}#1={maxLsnRegion1}#2={maxLsnRegion2}#3={maxLsnRegion3}";
+
+            // Request for a child from both parents
+            string childPKRangeId = "2";
+
+            DocumentServiceRequest documentServiceRequestToChild1 = DocumentServiceRequest.CreateFromName(OperationType.Read, "dbs/db1/colls/collName/docs/42", ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null);
+
+            documentServiceRequestToChild1.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange()
+            {
+                Id = childPKRangeId,
+                MinInclusive = "",
+                MaxExclusive = "FF",
+                Parents = new Collection<string>() { parentPKRangeId, parent2PKRangeId } // PartitionKeyRange says who are the parents
+            };
+
+            string resolvedToken = sessionContainer.ResolvePartitionLocalSessionTokenForGateway(
+                documentServiceRequestToChild1,
+                childPKRangeId);// For one of the children
+
+            // Expect the resulting token is for the child partition but containing all maxes of the lsn of the parents
+            Assert.AreEqual($"{childPKRangeId}:{tokenWithAllMax}", resolvedToken);
+        }
+
     }
 }
