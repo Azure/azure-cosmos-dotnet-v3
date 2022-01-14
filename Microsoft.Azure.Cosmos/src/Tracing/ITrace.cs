@@ -69,6 +69,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         IReadOnlyDictionary<string, object> Data { get; }
 
         /// <summary>
+        /// Consolidated Region contacted Information of this and children nodes
+        /// </summary>
+        IReadOnlyList<(string, Uri)> RegionsContacted { get; }
+
+        /// <summary>
         /// Starts a Trace and adds it as a child to this instance.
         /// </summary>
         /// <param name="name">The name of the child.</param>
@@ -119,5 +124,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// </summary>
         /// <param name="trace">Existing trace.</param>
         void AddChild(ITrace trace);
+
+        /// <summary>
+        /// Update region contacted information to the parent Itrace
+        /// </summary>
+        /// <param name="traceDatum"></param>
+        void UpdateRegionContacted(TraceDatum traceDatum);
     }
 }
