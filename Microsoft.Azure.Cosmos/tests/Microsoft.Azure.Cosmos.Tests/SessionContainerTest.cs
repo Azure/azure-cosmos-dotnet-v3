@@ -812,7 +812,7 @@ namespace Microsoft.Azure.Cosmos
         /// Use the session token of the parent if request comes for a child
         /// </summary>
         [TestMethod]
-        public void TestResolveSessionTokenFromParent_AfterSplit()
+        public void TestResolveSessionTokenFromParent_Gateway_AfterSplit()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
@@ -870,7 +870,7 @@ namespace Microsoft.Azure.Cosmos
         /// Use the session token of the parent if request comes for a child when 2 parents are present
         /// </summary>
         [TestMethod]
-        public void TestResolveSessionTokenFromParent_AfterMerge()
+        public void TestResolveSessionTokenFromParent_Gateway_AfterMerge()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
