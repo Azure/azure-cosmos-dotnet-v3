@@ -730,7 +730,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cancellationToken: cancellationToken);
         }
 
-#if PREVIEW
+#if SDKPROJECTREF
         public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
                Cosmos.PartitionKey partitionKey,
                RequestOptions requestOptions = null,
