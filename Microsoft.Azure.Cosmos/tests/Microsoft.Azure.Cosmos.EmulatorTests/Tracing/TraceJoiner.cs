@@ -67,6 +67,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             public IReadOnlyDictionary<string, object> Data => this.data;
 
+            public IReadOnlyList<(string, Uri)> RegionsContacted => new List<(string, Uri)>();
+
             public void AddDatum(string key, TraceDatum traceDatum)
             {
                 this.data[key] = traceDatum;
@@ -96,6 +98,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
             public void AddChild(ITrace trace)
             {
                 this.children.Add(trace);
+            }
+
+            public void UpdateRegionContacted(TraceDatum traceDatum)
+            {
+                //NoImplementation
             }
 
             public void AddOrUpdateDatum(string key, object value)

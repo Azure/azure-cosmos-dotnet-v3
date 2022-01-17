@@ -18,6 +18,11 @@ namespace Microsoft.Azure.Cosmos.Linq
     internal sealed class TranslationContext
     {
         /// <summary>
+        /// Member names for special mapping cases
+        /// </summary>
+        internal readonly MemberNames memberNames;
+
+        /// <summary>
         /// Set of parameters in scope at any point; used to generate fresh parameter names if necessary.
         /// </summary>
         public HashSet<ParameterExpression> InScope;
@@ -53,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         private Stack<SubqueryBinding> subqueryBindingStack;
 
-        public TranslationContext()
+        public TranslationContext(CosmosLinqSerializerOptions linqSerializerOptions, IDictionary<object, string> parameters = null)
         {
             this.InScope = new HashSet<ParameterExpression>();
             this.substitutions = new ParameterSubstitution();
@@ -62,13 +67,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.collectionStack = new List<Collection>();
             this.currentQuery = new QueryUnderConstruction(this.GetGenFreshParameterFunc());
             this.subqueryBindingStack = new Stack<SubqueryBinding>();
-        }
-
-        public TranslationContext(CosmosLinqSerializerOptions linqSerializerOptions, IDictionary<object, string> parameters = null)
-            : this()
-        {
             this.linqSerializerOptions = linqSerializerOptions;
             this.parameters = parameters;
+            this.memberNames = new MemberNames(linqSerializerOptions);
         }
 
         public CosmosLinqSerializerOptions linqSerializerOptions;
@@ -337,6 +338,28 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         public const string InputParameterName = "root";
+    }
+
+    /// <summary>
+    /// Special member names for mapping
+    /// </summary>
+    internal sealed class MemberNames
+    {
+        internal MemberNames(CosmosLinqSerializerOptions options)
+        {
+            this.Value = CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(options, nameof(this.Value));
+            this.HasValue = CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(options, nameof(this.HasValue));
+        }
+
+        /// <summary>
+        /// HasValue for mapping <see cref="Nullable{T}.Value"/>
+        /// </summary>
+        public string Value { get; }
+
+        /// <summary>
+        /// HasValue for mapping <see cref="Nullable{T}.HasValue"/>
+        /// </summary>
+        public string HasValue { get; }
     }
 
     /// <summary>

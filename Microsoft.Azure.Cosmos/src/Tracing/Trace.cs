@@ -7,20 +7,24 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Runtime.CompilerServices;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     internal sealed class Trace : ITrace
     {
         private readonly List<ITrace> children;
         private readonly Dictionary<string, object> data;
         private readonly Stopwatch stopwatch;
+        private readonly ISet<(string, Uri)> regionContactedInternal;
 
         private Trace(
             string name,
             CallerInfo callerInfo,
             TraceLevel level,
             TraceComponent component,
-            Trace parent)
+            Trace parent,
+            ISet<(string, Uri)> regionContactedInternal)
         {
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Id = Guid.NewGuid();
@@ -32,6 +36,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.Parent = parent;
             this.children = new List<ITrace>();
             this.data = new Dictionary<string, object>();
+
+            this.regionContactedInternal = regionContactedInternal;
         }
 
         public string Name { get; }
@@ -53,6 +59,38 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public IReadOnlyList<ITrace> Children => this.children;
 
         public IReadOnlyDictionary<string, object> Data => this.data;
+
+        public IReadOnlyList<(string, Uri)> RegionsContacted 
+        { 
+            get
+            {
+                lock (this.regionContactedInternal)
+                {
+                    return this.regionContactedInternal.ToList();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Update region contacted information to this node
+        /// </summary>
+        /// <param name="traceDatum"></param>
+        public void UpdateRegionContacted(TraceDatum traceDatum)
+        {
+            if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+            {
+                if (clientSideRequestStatisticsTraceDatum.RegionsContacted == null || 
+                            clientSideRequestStatisticsTraceDatum.RegionsContacted.Count == 0)
+                {
+                    return;
+                }
+               
+                lock (this.regionContactedInternal)
+                {
+                    this.regionContactedInternal.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
+                }
+            }
+        }
 
         public void Dispose()
         {
@@ -87,7 +125,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 callerInfo: new CallerInfo(memberName, sourceFilePath, sourceLineNumber),
                 level: level,
                 component: component,
-                parent: this);
+                parent: this,
+                regionContactedInternal: this.regionContactedInternal);
 
             this.AddChild(child);
 
@@ -123,12 +162,14 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 callerInfo: new CallerInfo(memberName, sourceFilePath, sourceLineNumber),
                 level: level,
                 component: component,
-                parent: null);
+                parent: null,
+                regionContactedInternal: new HashSet<(string, Uri)>());
         }
 
         public void AddDatum(string key, TraceDatum traceDatum)
         {
             this.data.Add(key, traceDatum);
+            this.UpdateRegionContacted(traceDatum);
         }
 
         public void AddDatum(string key, object value)
