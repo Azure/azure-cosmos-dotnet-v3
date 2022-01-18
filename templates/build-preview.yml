@@ -118,17 +118,17 @@ jobs:
   pool:
     vmImage: ${{ parameters.VmImage }}
 
+  steps:
+  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
   # Add this Command to Include the .NET 6 SDK
   - task: UseDotNet@2
     displayName: Use .NET 6.0
     inputs:
       packageType: 'sdk'
       version: '6.x'
-
-  steps:
-  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
-    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
-
+      
   - task: DotNetCoreCLI@2
     displayName: Build Microsoft.Azure.CosmosBenchmark 
     inputs: 
