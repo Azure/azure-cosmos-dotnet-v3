@@ -163,6 +163,7 @@ namespace Microsoft.Azure.Cosmos.Common
                         if (partitionKeyRangeIdToTokenMap.TryGetValue(request.RequestContext.ResolvedPartitionKeyRange.Parents[parentIndex], 
                                                                       out sessionToken))
                         {
+                            // A partition can have more than 1 parent (merge). In that case, we apply Merge to generate a token with both parent's max LSNs
                             parentSessionToken = parentSessionToken != null ? parentSessionToken.Merge(sessionToken) : sessionToken;
                         }
                     }
