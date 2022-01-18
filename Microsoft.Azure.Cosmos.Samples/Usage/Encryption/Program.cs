@@ -8,8 +8,6 @@
     using Cosmos.Samples.Shared;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Encryption;
-    using Microsoft.Data.Encryption.Cryptography;
-    using Microsoft.Data.Encryption.AzureKeyVaultProvider;
     using Microsoft.Extensions.Configuration;
 
     // ----------------------------------------------------------------------------------------------------------
@@ -56,11 +54,11 @@
 
                 // Get the Token Credential that is capable of providing an OAuth Token.
                 TokenCredential tokenCredential = GetTokenCredential(configuration);
-                AzureKeyVaultKeyStoreProvider azureKeyVaultKeyStoreProvider = new AzureKeyVaultKeyStoreProvider(tokenCredential);
+                AzureKeyVaultKeyWrapProvider azureKeyVaultKeyWrapProvider = new AzureKeyVaultKeyWrapProvider(tokenCredential);
 
-                Program.client = Program.CreateClientInstance(configuration, azureKeyVaultKeyStoreProvider);
+                Program.client = Program.CreateClientInstance(configuration, azureKeyVaultKeyWrapProvider);
 
-                await Program.AdminSetupAsync(client, azureKeyVaultKeyStoreProvider);
+                await Program.AdminSetupAsync(client, azureKeyVaultKeyWrapProvider);
                 await Program.RunDemoAsync();
             }
             catch (CosmosException cre)
@@ -81,7 +79,7 @@
         }
         // </Main>
 
-        private static CosmosClient CreateClientInstance(IConfigurationRoot configuration, AzureKeyVaultKeyStoreProvider azureKeyVaultKeyStoreProvider)
+        private static CosmosClient CreateClientInstance(IConfigurationRoot configuration, AzureKeyVaultKeyWrapProvider azureKeyVaultKeyWrapProvider)
         {
             string endpoint = configuration["EndPointUrl"];
             if (string.IsNullOrEmpty(endpoint))
@@ -98,7 +96,7 @@
             CosmosClient encryptionCosmosClient = new CosmosClient(endpoint, authKey);
 
             // enable encryption support on the cosmos client.
-            return encryptionCosmosClient.WithEncryption(azureKeyVaultKeyStoreProvider);
+            return encryptionCosmosClient.WithEncryption(azureKeyVaultKeyWrapProvider);
         }
 
         private static X509Certificate2 GetCertificate(string clientCertThumbprint)
@@ -148,7 +146,7 @@
         /// Administrative operations - create the database, container, and generate the necessary client encryption keys.
         /// These are initializations and are expected to be invoked only once - do not invoke these before every item request.
         /// </summary>
-        private static async Task AdminSetupAsync(CosmosClient client, AzureKeyVaultKeyStoreProvider azureKeyVaultKeyStoreProvider)
+        private static async Task AdminSetupAsync(CosmosClient client, AzureKeyVaultKeyWrapProvider azureKeyVaultKeyWrapProvider)
         {
             Database database = await client.CreateDatabaseIfNotExistsAsync(Program.encryptedDatabaseId);
 
@@ -162,21 +160,21 @@
             // Create the Client Encryption Keys for Encrypting the configured Paths.
             await database.CreateClientEncryptionKeyAsync(
                     "key1",
-                    DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
-                    new EncryptionKeyWrapMetadata(azureKeyVaultKeyStoreProvider.ProviderName, "akvMasterKey", MasterKeyUrl));
+                    DataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256,
+                    new EncryptionKeyWrapMetadata(azureKeyVaultKeyWrapProvider.ProviderName, "akvMasterKey", MasterKeyUrl));
 
             await database.CreateClientEncryptionKeyAsync(
                     "key2",
-                    DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
-                    new EncryptionKeyWrapMetadata(azureKeyVaultKeyStoreProvider.ProviderName, "akvMasterKey", MasterKeyUrl));
+                    DataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256,
+                    new EncryptionKeyWrapMetadata(azureKeyVaultKeyWrapProvider.ProviderName, "akvMasterKey", MasterKeyUrl));
 
             // Configure the required Paths to be Encrypted with appropriate settings.
             ClientEncryptionIncludedPath path1 = new ClientEncryptionIncludedPath()
             {
                 Path = "/SubTotal",
                 ClientEncryptionKeyId = "key1",
-                EncryptionType = EncryptionType.Deterministic.ToString(),
-                EncryptionAlgorithm = DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256.ToString()
+                EncryptionType = EncryptionType.Deterministic,
+                EncryptionAlgorithm = DataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256
             };
 
             // non primitive data type.Leaves get encrypted.
@@ -184,16 +182,16 @@
             {
                 Path = "/Items",
                 ClientEncryptionKeyId = "key2",
-                EncryptionType = EncryptionType.Deterministic.ToString(),
-                EncryptionAlgorithm = DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256.ToString()
+                EncryptionType = EncryptionType.Deterministic,
+                EncryptionAlgorithm = DataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256
             };
 
             ClientEncryptionIncludedPath path3 = new ClientEncryptionIncludedPath()
             {
                 Path = "/OrderDate",
                 ClientEncryptionKeyId = "key1",
-                EncryptionType = EncryptionType.Deterministic.ToString(),
-                EncryptionAlgorithm = DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256.ToString()
+                EncryptionType = EncryptionType.Deterministic,
+                EncryptionAlgorithm = DataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256
             };
 
             // Create a container with the appropriate partition key definition (we choose the "AccountNumber" property here) and throughput (we choose 1000 here).
