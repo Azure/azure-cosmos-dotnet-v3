@@ -23,9 +23,9 @@
   <ItemGroup>
     <AdditionalFiles Include="..\..\Microsoft.Azure.Cosmos\src\stylecop.json" Link="stylecop.json" />
   </ItemGroup>
-
+	
 	<ItemGroup Condition=" '$(SdkProjectRef)' != 'True' ">
-		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.22.0-preview" />
+		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.23.0-preview" />
 	</ItemGroup>
 
 	<ItemGroup Condition=" '$(SdkProjectRef)' == 'True' ">
