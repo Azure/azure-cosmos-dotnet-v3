@@ -26,7 +26,7 @@
                 .Build();
 
             Cosmos.FeedRange expected = Cosmos.FeedRange.FromPartitionKey(partitionKey: partitionkey);
-            Cosmos.FeedRange actual = await Cosmos.FeedRange.FromPartitionKeyAsync(container: container, partitionKey: partitionkey);
+            Cosmos.FeedRange actual = await Cosmos.FeedRange.CreateFromPartitionKeyAsync(container: container, partitionKey: partitionkey);
 
             Console.WriteLine(actual);
             Assert.IsNotNull(value: actual);
@@ -54,7 +54,7 @@
                 .Build();
 
             // Cosmos.FeedRange expected = Cosmos.FeedRange.FromPartitionKey(container: container, partitionKey: partitionkey);
-            Cosmos.FeedRange actual = await Cosmos.FeedRange.FromPartitionKeyAsync(container: container, partitionKey: partitionkey);
+            Cosmos.FeedRange actual = await Cosmos.FeedRange.CreateFromPartitionKeyAsync(container: container, partitionKey: partitionkey);
 
             Console.WriteLine(actual);
             Assert.IsNotNull(value: actual);

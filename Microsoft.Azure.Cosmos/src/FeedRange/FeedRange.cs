@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKey">The partition key.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-        public async static Task<FeedRange> FromPartitionKeyAsync(
+        public async static Task<FeedRange> CreateFromPartitionKeyAsync(
             Container container,
             PartitionKey partitionKey,
             CancellationToken cancellationToken = default)
@@ -63,9 +63,9 @@ namespace Microsoft.Azure.Cosmos
 
             return partitionKeyDefinition.Kind switch
             {
-                Documents.PartitionKind.Hash => FeedRange.FromPartitionKey(partitionKey),
-                Documents.PartitionKind.MultiHash => FeedRangeEpk.FromPartitionKey(partitionKeyDefinition: partitionKeyDefinition, partitionKey: partitionKey),
-                _ => throw new ArgumentOutOfRangeException(paramName: "PartitionKind", message: $"Argument '{partitionKeyDefinition.Kind}' was not found.")
+                Documents.PartitionKind.Hash => FeedRangePartitionKey.CreateFromPartitionKey(partitionKey: partitionKey),
+                Documents.PartitionKind.MultiHash => FeedRangeEpk.CreateFromPartitionKey(partitionKeyDefinition: partitionKeyDefinition, partitionKey: partitionKey),
+                _ => throw new ArgumentOutOfRangeException(paramName: "PartitionKind", message: $"Argument '{partitionKeyDefinition.Kind}' was not supported.")
             };
         }
     }
