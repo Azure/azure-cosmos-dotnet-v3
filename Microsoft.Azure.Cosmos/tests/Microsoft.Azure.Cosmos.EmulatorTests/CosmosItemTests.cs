@@ -704,6 +704,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(itemIds.Count, 0);
         }
 
+        [Ignore] // https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2981
         [TestMethod]
         public async Task PartitionKeyDeleteTest()
         {
