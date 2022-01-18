@@ -43,6 +43,13 @@ jobs:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
 
+  # Add this Command to Include the .NET 6 SDK
+  - task: UseDotNet@2
+    displayName: Use .NET 6.0
+    inputs:
+      packageType: 'sdk'
+      version: '6.x'
+      
   - task: DotNetCoreCLI@2
     displayName: Build Microsoft.Azure.Cosmos.Encryption Project Ref
     inputs: 
@@ -61,6 +68,13 @@ jobs:
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
+  # Add this Command to Include the .NET 6 SDK
+  - task: UseDotNet@2
+    displayName: Use .NET 6.0
+    inputs:
+      packageType: 'sdk'
+      version: '6.x'
 
   - task: DotNetCoreCLI@2
     displayName: Build Microsoft.Azure.Cosmos.Encryption.Custom Project Ref
@@ -81,6 +95,13 @@ jobs:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
 
+  # Add this Command to Include the .NET 6 SDK
+  - task: UseDotNet@2
+    displayName: Use .NET 6.0
+    inputs:
+      packageType: 'sdk'
+      version: '6.x'
+
   - task: DotNetCoreCLI@2
     displayName: PREVIEW Microsoft.Azure.Cosmos.Tests
     condition: succeeded()
@@ -96,6 +117,13 @@ jobs:
   displayName: Preview CosmosBenchmark ${{ parameters.BuildConfiguration }} 
   pool:
     vmImage: ${{ parameters.VmImage }}
+
+  # Add this Command to Include the .NET 6 SDK
+  - task: UseDotNet@2
+    displayName: Use .NET 6.0
+    inputs:
+      packageType: 'sdk'
+      version: '6.x'
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
