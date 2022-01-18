@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Threading;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Represents a unit of feed consumption that can be used as unit of parallelism.
@@ -42,6 +44,29 @@ namespace Microsoft.Azure.Cosmos
         public static FeedRange FromPartitionKey(PartitionKey partitionKey)
         {
             return new FeedRangePartitionKey(partitionKey);
+        }
+
+        /// <summary>
+        /// Creates a partition key or effective partition key feed range.
+        /// </summary>
+        /// <param name="container">The container.</param>
+        /// <param name="partitionKey">The partition key.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
+        public async static Task<FeedRange> FromPartitionKeyAsync(
+            Container container,
+            PartitionKey partitionKey,
+            CancellationToken cancellationToken = default)
+        {
+            ContainerCore containerCore = (container as ContainerCore) ?? throw new ArgumentNullException(paramName: "container", message: $"The container is not of type ContainerCore.");
+            Documents.PartitionKeyDefinition partitionKeyDefinition = await containerCore.GetPartitionKeyDefinitionAsync(cancellationToken: cancellationToken);
+
+            return partitionKeyDefinition.Kind switch
+            {
+                Documents.PartitionKind.Hash => FeedRange.FromPartitionKey(partitionKey),
+                Documents.PartitionKind.MultiHash => FeedRangeEpk.FromPartitionKey(partitionKeyDefinition: partitionKeyDefinition, partitionKey: partitionKey),
+                _ => throw new ArgumentOutOfRangeException(paramName: "PartitionKind", message: $"Argument '{partitionKeyDefinition.Kind}' was not found.")
+            };
         }
     }
 }

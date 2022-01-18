@@ -109,5 +109,22 @@ namespace Microsoft.Azure.Cosmos
                 ^ this.Range.IsMinInclusive.GetHashCode()
                 ^ this.Range.IsMaxInclusive.GetHashCode();
         }
+
+        internal static FeedRangeEpk FromPartitionKey(
+            Documents.PartitionKeyDefinition partitionKeyDefinition,
+            PartitionKey partitionKey)
+        {
+            // Srinkihil will create a new method that creates the Range ...
+            string min = partitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition: partitionKeyDefinition, strict: false);
+            string max = default; // Srinkihil is putting in a PR for this ...
+
+            Documents.Routing.Range<string> range = new (
+                min: min,
+                max: max,
+                isMinInclusive: true,
+                isMaxInclusive: false);
+
+            return new FeedRangeEpk(range: range);
+        }
     }
 }
