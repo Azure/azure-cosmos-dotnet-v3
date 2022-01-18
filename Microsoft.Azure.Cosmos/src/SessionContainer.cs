@@ -168,6 +168,7 @@ namespace Microsoft.Azure.Cosmos.Common
                         }
                     }
 
+                    // When we don't have the session token for a partition, we can leverage the session token of the parent(s)
                     if (parentSessionToken != null)
                     {
                         return partitionKeyRangeId + SessionContainer.sessionTokenSeparator + parentSessionToken.ConvertToString();
