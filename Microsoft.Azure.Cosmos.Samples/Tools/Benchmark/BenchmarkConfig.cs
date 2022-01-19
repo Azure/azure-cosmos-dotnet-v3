@@ -156,8 +156,8 @@ namespace CosmosBenchmark
                 settings.AutoHelp = true;
             });
             parser.ParseArguments<BenchmarkConfig>(args)
-                .WithParsed<BenchmarkConfig>(e => options = e);
-            //    .WithNotParsed<BenchmarkConfig>(e => BenchmarkConfig.HandleParseError(e));
+                .WithParsed<BenchmarkConfig>(e => options = e)
+                .WithNotParsed<BenchmarkConfig>(e => BenchmarkConfig.HandleParseError(e));
 
             if (options.PublishResults)
             {
