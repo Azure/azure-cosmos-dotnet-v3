@@ -1,11 +1,12 @@
-﻿# Script to update all the csproj .NET target framework version
-$projFiles = Get-ChildItem . *.csproj -rec
+﻿$projFiles = Get-ChildItem . *.csproj -rec
 
+$oldVersion = "<TargetFramework>netcoreapp3.1</TargetFramework>";
+$newVersion = "net6.0</TargetFramework>"
 foreach ($file in $projFiles)
 {
     $content = (Get-Content $file.PSPath)
-    if($content -match "<TargetFramework>netcoreapp3.1</TargetFramework>"){
+    if($content -match $oldVersion){
     
-        $content -replace "<TargetFramework>netcoreapp3.1</TargetFramework>", "<TargetFramework>net6.0</TargetFramework>" | Set-Content $file.PSPath
+        $content -replace $oldVersion, $newVersion | Set-Content $file.PSPath
     }
 }
