@@ -145,6 +145,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="connectionString">The connection string to the cosmos account. ex: https://mycosmosaccount.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
         /// <param name="clientOptions">(Optional) client options</param>
+        /// <param name="listener"></param>
         /// <example>
         /// The CosmosClient is created with the connection string and configured to use "East US 2" region.
         /// <code language="c#">
@@ -169,11 +170,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk">Diagnose and troubleshoot issues</seealso>
         public CosmosClient(
             string connectionString,
-            CosmosClientOptions clientOptions = null)
+            CosmosClientOptions clientOptions = null,
+            IDictionary<string, IObserver<KeyValuePair<string, object>>> listener = null)
             : this(
                   CosmosClientOptions.GetAccountEndpoint(connectionString),
                   CosmosClientOptions.GetAccountKey(connectionString),
-                  clientOptions)
+                  clientOptions,
+                  listener)
         {
         }
 
@@ -187,6 +190,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="accountEndpoint">The cosmos service endpoint to use</param>
         /// <param name="authKeyOrResourceToken">The cosmos account key or resource token to use to create the client.</param>
         /// <param name="clientOptions">(Optional) client options</param>
+        /// <param name="listener"></param>
         /// <example>
         /// The CosmosClient is created with the AccountEndpoint, AccountKey or ResourceToken and configured to use "East US 2" region.
         /// <code language="c#">
@@ -212,10 +216,12 @@ namespace Microsoft.Azure.Cosmos
         public CosmosClient(
             string accountEndpoint,
             string authKeyOrResourceToken,
-            CosmosClientOptions clientOptions = null)
+            CosmosClientOptions clientOptions = null,
+            IDictionary<string, IObserver<KeyValuePair<string, object>>> listener = null)
              : this(accountEndpoint,
                      AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken),
-                     clientOptions)
+                     clientOptions,
+                     listener)
         {
         }
 
@@ -229,16 +235,19 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="accountEndpoint">The cosmos service endpoint to use.</param>
         /// <param name="tokenCredential"><see cref="TokenCredential"/>The token to provide AAD token for authorization.</param>
         /// <param name="clientOptions">(Optional) client options</param>
+        /// <param name="listener"></param>
         public CosmosClient(
             string accountEndpoint,
             TokenCredential tokenCredential,
-            CosmosClientOptions clientOptions = null)
+            CosmosClientOptions clientOptions = null,
+            IDictionary<string, IObserver<KeyValuePair<string, object>>> listener = null)
             : this(accountEndpoint,
                     new AuthorizationTokenProviderTokenCredential(
                         tokenCredential,
                         new Uri(accountEndpoint),
                         clientOptions?.TokenCredentialBackgroundRefreshInterval),
-                    clientOptions)
+                    clientOptions,
+                    listener)
         {
         }
 
@@ -249,7 +258,8 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosClient(
              string accountEndpoint,
              AuthorizationTokenProvider authorizationTokenProvider,
-             CosmosClientOptions clientOptions)
+             CosmosClientOptions clientOptions,
+             IDictionary<string, IObserver<KeyValuePair<string, object>>> listener = null)
         {
             if (string.IsNullOrEmpty(accountEndpoint))
             {
@@ -264,7 +274,8 @@ namespace Microsoft.Azure.Cosmos
             this.ClientId = this.IncrementNumberOfClientsCreated();
             this.ClientContext = ClientContextCore.Create(
                 this,
-                clientOptions);
+                clientOptions,
+                listener);
 
             this.ClientConfigurationTraceDatum = new ClientConfigurationTraceDatum(this.ClientContext, DateTime.UtcNow);
         }
@@ -282,6 +293,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
         /// <param name="cosmosClientOptions">(Optional) client options</param>
         /// <param name="cancellationToken">(Optional) Cancellation Token</param>
+        /// <param name="listener"></param>
         /// <returns>
         /// A CosmosClient object.
         /// </returns>
@@ -305,7 +317,8 @@ namespace Microsoft.Azure.Cosmos
                                                                         string authKeyOrResourceToken,
                                                                         IReadOnlyList<(string databaseId, string containerId)> containers,
                                                                         CosmosClientOptions cosmosClientOptions = null,
-                                                                        CancellationToken cancellationToken = default)
+                                                                        CancellationToken cancellationToken = default,
+                                                                        IDictionary<string, IObserver<KeyValuePair<string, object>>> listener = null)
         {
             if (containers == null)
             {
@@ -314,7 +327,8 @@ namespace Microsoft.Azure.Cosmos
 
             CosmosClient cosmosClient = new CosmosClient(accountEndpoint,
                                                          authKeyOrResourceToken,
-                                                         cosmosClientOptions);
+                                                         cosmosClientOptions,
+                                                         listener);
 
             await cosmosClient.InitializeContainersAsync(containers, cancellationToken);
             return cosmosClient;
@@ -332,6 +346,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
         /// <param name="cosmosClientOptions">(Optional) client options</param>
         /// <param name="cancellationToken">(Optional) Cancellation Token</param>
+        /// <param name="listener"></param>
         /// <returns>
         /// A CosmosClient object.
         /// </returns>
@@ -353,7 +368,8 @@ namespace Microsoft.Azure.Cosmos
         public static async Task<CosmosClient> CreateAndInitializeAsync(string connectionString,
                                                                         IReadOnlyList<(string databaseId, string containerId)> containers,
                                                                         CosmosClientOptions cosmosClientOptions = null,
-                                                                        CancellationToken cancellationToken = default)
+                                                                        CancellationToken cancellationToken = default,
+                                                                        IDictionary<string, IObserver<KeyValuePair<string, object>>> listener = null)
         {
             if (containers == null)
             {
@@ -361,7 +377,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             CosmosClient cosmosClient = new CosmosClient(connectionString,
-                                                         cosmosClientOptions);
+                                                         cosmosClientOptions,
+                                                         listener);
 
             await cosmosClient.InitializeContainersAsync(containers, cancellationToken);
             return cosmosClient;
@@ -380,6 +397,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
         /// <param name="cosmosClientOptions">(Optional) client options</param>
         /// <param name="cancellationToken">(Optional) Cancellation Token</param>
+        /// <param name="listener"></param>
         /// <returns>
         /// A CosmosClient object.
         /// </returns>
@@ -387,7 +405,8 @@ namespace Microsoft.Azure.Cosmos
                                                                         TokenCredential tokenCredential,
                                                                         IReadOnlyList<(string databaseId, string containerId)> containers,
                                                                         CosmosClientOptions cosmosClientOptions = null,
-                                                                        CancellationToken cancellationToken = default)
+                                                                        CancellationToken cancellationToken = default,
+                                                                        IDictionary<string, IObserver<KeyValuePair<string, object>>> listener = null)
         {
             if (containers == null)
             {
@@ -396,7 +415,8 @@ namespace Microsoft.Azure.Cosmos
 
             CosmosClient cosmosClient = new CosmosClient(accountEndpoint,
                                                          tokenCredential,
-                                                         cosmosClientOptions);
+                                                         cosmosClientOptions,
+                                                         listener);
 
             await cosmosClient.InitializeContainersAsync(containers, cancellationToken);
             return cosmosClient;
@@ -410,7 +430,8 @@ namespace Microsoft.Azure.Cosmos
             string accountEndpoint,
             string authKeyOrResourceToken,
             CosmosClientOptions cosmosClientOptions,
-            DocumentClient documentClient)
+            DocumentClient documentClient,
+            IDictionary<string, IObserver<KeyValuePair<string, object>>> listener = null)
         {
             if (string.IsNullOrEmpty(accountEndpoint))
             {
@@ -439,7 +460,9 @@ namespace Microsoft.Azure.Cosmos
             this.ClientContext = ClientContextCore.Create(
                  this,
                  documentClient,
-                 cosmosClientOptions);
+                 cosmosClientOptions,
+                 null,
+                 listener);
 
             this.ClientConfigurationTraceDatum = new ClientConfigurationTraceDatum(this.ClientContext, DateTime.UtcNow);
         }

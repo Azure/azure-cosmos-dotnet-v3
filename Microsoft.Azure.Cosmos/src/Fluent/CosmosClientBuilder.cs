@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private readonly string accountEndpoint;
         private readonly string accountKey;
         private readonly TokenCredential tokenCredential;
+        private IDictionary<string, IObserver<KeyValuePair<string, object>>> listener;
 
         /// <summary>
         /// Initialize a new CosmosConfiguration class that holds all the properties the CosmosClient requires.
@@ -126,8 +127,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         {
             DefaultTrace.TraceInformation($"CosmosClientBuilder.Build with configuration: {this.clientOptions.GetSerializedConfiguration()}");
             return this.tokenCredential == null ?
-                new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions) :
-                new CosmosClient(this.accountEndpoint, this.tokenCredential, this.clientOptions);
+                new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions, this.listener) :
+                new CosmosClient(this.accountEndpoint, this.tokenCredential, this.clientOptions, this.listener);
         }
 
         /// <summary>
@@ -139,7 +140,18 @@ namespace Microsoft.Azure.Cosmos.Fluent
         internal virtual CosmosClient Build(DocumentClient documentClient)
         {
             DefaultTrace.TraceInformation($"CosmosClientBuilder.Build(DocumentClient) with configuration: {this.clientOptions.GetSerializedConfiguration()}");
-            return new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions, documentClient);
+            return new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions, documentClient, this.listener);
+        }
+
+        /// <summary>
+        /// Listener
+        /// </summary>
+        /// <param name="listener"></param>
+        /// <returns>builder</returns>
+        public CosmosClientBuilder AddListener(IDictionary<string, IObserver<KeyValuePair<string, object>>> listener)
+        {
+            this.listener = listener;
+            return this;
         }
 
         /// <summary>

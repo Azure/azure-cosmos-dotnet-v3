@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
@@ -58,7 +59,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal static CosmosClientContext Create(
             CosmosClient cosmosClient,
-            CosmosClientOptions clientOptions)
+            CosmosClientOptions clientOptions,
+            IDictionary<string, IObserver<KeyValuePair<string, object>>> listener = null)
         {
             if (cosmosClient == null)
             {
@@ -86,14 +88,17 @@ namespace Microsoft.Azure.Cosmos
             return ClientContextCore.Create(
                 cosmosClient,
                 documentClient,
-                clientOptions);
+                clientOptions,
+                null,
+                listener);
         }
 
         internal static CosmosClientContext Create(
             CosmosClient cosmosClient,
             DocumentClient documentClient,
             CosmosClientOptions clientOptions,
-            RequestInvokerHandler requestInvokerHandler = null)
+            RequestInvokerHandler requestInvokerHandler = null,
+            IDictionary<string, IObserver<KeyValuePair<string, object>>> telemetryListener = null)
         {
             if (cosmosClient == null)
             {
@@ -108,6 +113,12 @@ namespace Microsoft.Azure.Cosmos
             clientOptions = ClientContextCore.CreateOrCloneClientOptions(clientOptions);
 
             ConnectionPolicy connectionPolicy = clientOptions.GetConnectionPolicy(cosmosClient.ClientId);
+
+            if (telemetryListener != null)
+            {
+                DiagnosticListener.AllListeners.Subscribe(new Subscriber(telemetryListener));
+            }
+
             ClientTelemetry telemetry = null;
             if (connectionPolicy.EnableClientTelemetry)
             {

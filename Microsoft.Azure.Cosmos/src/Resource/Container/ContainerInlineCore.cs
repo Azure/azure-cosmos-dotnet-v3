@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Threading;
@@ -172,15 +173,28 @@ namespace Microsoft.Azure.Cosmos
                 func);
         }
 
-        public override Task<ItemResponse<T>> CreateItemAsync<T>(T item,
+        public override async Task<ItemResponse<T>> CreateItemAsync<T>(T item,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return this.ClientContext.OperationHelperAsync(
-                nameof(CreateItemAsync),
-                requestOptions,
-                (trace) => base.CreateItemAsync<T>(item, trace, partitionKey, requestOptions, cancellationToken));
+            DiagnosticSource diagnosticSource = new DiagnosticListener("AppInsight");
+            ItemResponse<T> response = null;
+            try
+            {
+                response = await this.ClientContext.OperationHelperAsync(
+                               nameof(CreateItemAsync),
+                               requestOptions,
+                               (trace) => base.CreateItemAsync<T>(item, trace, partitionKey, requestOptions, cancellationToken));
+
+                return response;
+
+            } 
+            finally
+            {
+              //  if (diagnosticSource.IsEnabled("AppInsight"))
+                    diagnosticSource.Write($"CreateItemAsync.Diagnostics", response.Diagnostics);
+            }
         }
 
         public override Task<ResponseMessage> ReadItemStreamAsync(
