@@ -590,15 +590,15 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Now(Microsoft.Azure.Cosmos.FeedRange);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime, Microsoft.Azure.Cosmos.FeedRange)": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime, Microsoft.Azure.Cosmos.FeedRange);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -3552,15 +3552,15 @@
     "Microsoft.Azure.Cosmos.Fluent.CompositeIndexDefinition`1;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:True;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.Fluent.CompositeIndexDefinition`1[T] Path(System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CompositeIndexDefinition`1[T] Path(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "Microsoft.Azure.Cosmos.Fluent.CompositeIndexDefinition`1[T] Path(System.String, Microsoft.Azure.Cosmos.CompositePathSortOrder)": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CompositeIndexDefinition`1[T] Path(System.String, Microsoft.Azure.Cosmos.CompositePathSortOrder);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.CompositeIndexDefinition`1[T] Path(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CompositeIndexDefinition`1[T] Path(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "T Attach()": {
           "Type": "Method",
@@ -3774,11 +3774,6 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithThrottlingRetryOptions(System.TimeSpan, Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void .ctor(System.String)": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "[Void .ctor(System.String), Void .ctor(System.String)]"
-        },
         "Void .ctor(System.String, Azure.Core.TokenCredential)": {
           "Type": "Constructor",
           "Attributes": [],
@@ -3788,6 +3783,11 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(System.String, System.String), Void .ctor(System.String, System.String)]"
+        },
+        "Void .ctor(System.String)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(System.String), Void .ctor(System.String)]"
         }
       },
       "NestedTypes": {}
@@ -3857,15 +3857,15 @@
     "Microsoft.Azure.Cosmos.Fluent.SpatialIndexDefinition`1;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:True;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.Fluent.SpatialIndexDefinition`1[T] Path(System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.SpatialIndexDefinition`1[T] Path(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "Microsoft.Azure.Cosmos.Fluent.SpatialIndexDefinition`1[T] Path(System.String, Microsoft.Azure.Cosmos.SpatialType[])": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.SpatialIndexDefinition`1[T] Path(System.String, Microsoft.Azure.Cosmos.SpatialType[]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.SpatialIndexDefinition`1[T] Path(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.SpatialIndexDefinition`1[T] Path(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "T Attach()": {
           "Type": "Method",
@@ -4000,11 +4000,6 @@
           "Attributes": [],
           "MethodInfo": "System.String ETag;CanRead:True;CanWrite:True;System.String get_ETag();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String Get(System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.String Get(System.String);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "System.String get_ActivityId()": {
           "Type": "Method",
           "Attributes": [],
@@ -4044,6 +4039,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.String get_Session();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String Get(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String Get(System.String);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String GetValueOrDefault(System.String)": {
           "Type": "Method",
@@ -4095,11 +4095,6 @@
           "Attributes": [],
           "MethodInfo": "Void Remove(System.String);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void Set(System.String, System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void Set(System.String, System.String);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "Void set_ContentLength(System.String)": {
           "Type": "Method",
           "Attributes": [],
@@ -4109,6 +4104,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_Item(System.String, System.String);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void Set(System.String, System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void Set(System.String, System.String);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -8215,15 +8215,15 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.Spatial.CrsType Type;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.Spatial.CrsType get_Type();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.Spatial.LinkedCrs Linked(System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Spatial.LinkedCrs Linked(System.String);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "Microsoft.Azure.Cosmos.Spatial.LinkedCrs Linked(System.String, System.String)": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Spatial.LinkedCrs Linked(System.String, System.String);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Spatial.LinkedCrs Linked(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Spatial.LinkedCrs Linked(System.String);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.Spatial.NamedCrs Named(System.String)": {
           "Type": "Method",
@@ -8294,15 +8294,15 @@
               ],
               "MethodInfo": "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.Position] Positions;CanRead:True;CanWrite:True;System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.Position] get_Positions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position])": {
-              "Type": "Constructor",
-              "Attributes": [],
-              "MethodInfo": "[Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position]), Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position])]"
-            },
             "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position], Microsoft.Azure.Cosmos.Spatial.GeometryParams)": {
               "Type": "Constructor",
               "Attributes": [],
               "MethodInfo": "[Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position], Microsoft.Azure.Cosmos.Spatial.GeometryParams), Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position], Microsoft.Azure.Cosmos.Spatial.GeometryParams)]"
+            },
+            "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position])": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "[Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position]), Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position])]"
             }
           },
           "NestedTypes": {}
@@ -8340,15 +8340,15 @@
               ],
               "MethodInfo": "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] Polygons;CanRead:True;CanWrite:True;System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] get_Polygons();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates])": {
-              "Type": "Constructor",
-              "Attributes": [],
-              "MethodInfo": "[Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates]), Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates])]"
-            },
             "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates], Microsoft.Azure.Cosmos.Spatial.GeometryParams)": {
               "Type": "Constructor",
               "Attributes": [],
               "MethodInfo": "[Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates], Microsoft.Azure.Cosmos.Spatial.GeometryParams), Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates], Microsoft.Azure.Cosmos.Spatial.GeometryParams)]"
+            },
+            "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates])": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "[Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates]), Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates])]"
             }
           },
           "NestedTypes": {}
@@ -8391,15 +8391,15 @@
               "Attributes": [],
               "MethodInfo": "[Void .ctor(Double, Double), Void .ctor(Double, Double)]"
             },
-            "Void .ctor(Microsoft.Azure.Cosmos.Spatial.Position)": {
-              "Type": "Constructor",
-              "Attributes": [],
-              "MethodInfo": "[Void .ctor(Microsoft.Azure.Cosmos.Spatial.Position), Void .ctor(Microsoft.Azure.Cosmos.Spatial.Position)]"
-            },
             "Void .ctor(Microsoft.Azure.Cosmos.Spatial.Position, Microsoft.Azure.Cosmos.Spatial.GeometryParams)": {
               "Type": "Constructor",
               "Attributes": [],
               "MethodInfo": "[Void .ctor(Microsoft.Azure.Cosmos.Spatial.Position, Microsoft.Azure.Cosmos.Spatial.GeometryParams), Void .ctor(Microsoft.Azure.Cosmos.Spatial.Position, Microsoft.Azure.Cosmos.Spatial.GeometryParams)]"
+            },
+            "Void .ctor(Microsoft.Azure.Cosmos.Spatial.Position)": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "[Void .ctor(Microsoft.Azure.Cosmos.Spatial.Position), Void .ctor(Microsoft.Azure.Cosmos.Spatial.Position)]"
             }
           },
           "NestedTypes": {}
@@ -8437,15 +8437,15 @@
               ],
               "MethodInfo": "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.LinearRing] Rings;CanRead:True;CanWrite:True;System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.LinearRing] get_Rings();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing])": {
-              "Type": "Constructor",
-              "Attributes": [],
-              "MethodInfo": "[Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing]), Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing])]"
-            },
             "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing], Microsoft.Azure.Cosmos.Spatial.GeometryParams)": {
               "Type": "Constructor",
               "Attributes": [],
               "MethodInfo": "[Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing], Microsoft.Azure.Cosmos.Spatial.GeometryParams), Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing], Microsoft.Azure.Cosmos.Spatial.GeometryParams)]"
+            },
+            "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing])": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "[Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing]), Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing])]"
             },
             "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position])": {
               "Type": "Constructor",
@@ -8831,15 +8831,15 @@
           ],
           "MethodInfo": "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.Position] Positions;CanRead:True;CanWrite:True;System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.Position] get_Positions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position])": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "[Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position]), Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position])]"
-        },
         "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position], Microsoft.Azure.Cosmos.Spatial.GeometryParams)": {
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position], Microsoft.Azure.Cosmos.Spatial.GeometryParams), Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position], Microsoft.Azure.Cosmos.Spatial.GeometryParams)]"
+        },
+        "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position])": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position]), Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position])]"
         }
       },
       "NestedTypes": {}
@@ -8926,15 +8926,15 @@
           ],
           "MethodInfo": "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] Polygons;CanRead:True;CanWrite:True;System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] get_Polygons();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates])": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "[Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates]), Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates])]"
-        },
         "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates], Microsoft.Azure.Cosmos.Spatial.GeometryParams)": {
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates], Microsoft.Azure.Cosmos.Spatial.GeometryParams), Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates], Microsoft.Azure.Cosmos.Spatial.GeometryParams)]"
+        },
+        "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates])": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates]), Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates])]"
         }
       },
       "NestedTypes": {}
@@ -9012,15 +9012,15 @@
           "Attributes": [],
           "MethodInfo": "[Void .ctor(Double, Double), Void .ctor(Double, Double)]"
         },
-        "Void .ctor(Microsoft.Azure.Cosmos.Spatial.Position)": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "[Void .ctor(Microsoft.Azure.Cosmos.Spatial.Position), Void .ctor(Microsoft.Azure.Cosmos.Spatial.Position)]"
-        },
         "Void .ctor(Microsoft.Azure.Cosmos.Spatial.Position, Microsoft.Azure.Cosmos.Spatial.GeometryParams)": {
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(Microsoft.Azure.Cosmos.Spatial.Position, Microsoft.Azure.Cosmos.Spatial.GeometryParams), Void .ctor(Microsoft.Azure.Cosmos.Spatial.Position, Microsoft.Azure.Cosmos.Spatial.GeometryParams)]"
+        },
+        "Void .ctor(Microsoft.Azure.Cosmos.Spatial.Position)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(Microsoft.Azure.Cosmos.Spatial.Position), Void .ctor(Microsoft.Azure.Cosmos.Spatial.Position)]"
         }
       },
       "NestedTypes": {}
@@ -9058,15 +9058,15 @@
           ],
           "MethodInfo": "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.LinearRing] Rings;CanRead:True;CanWrite:True;System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.LinearRing] get_Rings();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing])": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "[Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing]), Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing])]"
-        },
         "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing], Microsoft.Azure.Cosmos.Spatial.GeometryParams)": {
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing], Microsoft.Azure.Cosmos.Spatial.GeometryParams), Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing], Microsoft.Azure.Cosmos.Spatial.GeometryParams)]"
+        },
+        "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing])": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing]), Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.LinearRing])]"
         },
         "Void .ctor(System.Collections.Generic.IList`1[Microsoft.Azure.Cosmos.Spatial.Position])": {
           "Type": "Constructor",
@@ -9178,15 +9178,15 @@
           "Attributes": [],
           "MethodInfo": "System.Nullable`1[System.Double] get_Altitude();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void .ctor(Double, Double)": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "[Void .ctor(Double, Double), Void .ctor(Double, Double)]"
-        },
         "Void .ctor(Double, Double, System.Nullable`1[System.Double])": {
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(Double, Double, System.Nullable`1[System.Double]), Void .ctor(Double, Double, System.Nullable`1[System.Double])]"
+        },
+        "Void .ctor(Double, Double)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(Double, Double), Void .ctor(Double, Double)]"
         },
         "Void .ctor(System.Collections.Generic.IList`1[System.Double])": {
           "Type": "Constructor",
@@ -10224,15 +10224,15 @@
     }
   },
   "Members": {
-    "Boolean Equals(System.Object)": {
-      "Type": "Method",
-      "Attributes": [],
-      "MethodInfo": "Boolean Equals(System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-    },
     "Boolean Equals(System.Object, System.Object)": {
       "Type": "Method",
       "Attributes": [],
       "MethodInfo": "Boolean Equals(System.Object, System.Object);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+    },
+    "Boolean Equals(System.Object)": {
+      "Type": "Method",
+      "Attributes": [],
+      "MethodInfo": "Boolean Equals(System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
     },
     "Boolean ReferenceEquals(System.Object, System.Object)": {
       "Type": "Method",
@@ -10249,9 +10249,10 @@
       "Attributes": [],
       "MethodInfo": "System.String ToString();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
     },
-    "System.Type GetType()[System.Runtime.CompilerServices.NullableContextAttribute((Byte)1)]": {
+    "System.Type GetType()[System.Runtime.CompilerServices.NullableContextAttribute((Byte)1)]-[System.Runtime.CompilerServices.IntrinsicAttribute()]": {
       "Type": "Method",
       "Attributes": [
+        "IntrinsicAttribute",
         "NullableContextAttribute"
       ],
       "MethodInfo": "System.Type GetType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"

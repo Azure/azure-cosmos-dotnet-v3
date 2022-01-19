@@ -170,7 +170,9 @@ namespace Microsoft.Azure.Cosmos
                 CosmosOperationCanceledException ex = await Assert.ThrowsExceptionAsync<CosmosOperationCanceledException>(() => client.GetContainer("test", "test").ReadItemAsync<dynamic>("id", partitionKey: new Cosmos.PartitionKey("id"), cancellationToken: cancellationToken),
                     "Should have surfaced OperationCanceledException because the token was canceled.");
                 Assert.IsTrue(ex.CancellationToken.IsCancellationRequested);
-                Assert.ReferenceEquals(cancellationToken, ex.CancellationToken);
+                Assert.AreEqual(cancellationToken.IsCancellationRequested, ex.CancellationToken.IsCancellationRequested);
+                Assert.AreEqual(cancellationToken.CanBeCanceled, ex.CancellationToken.CanBeCanceled);
+                Assert.AreEqual(cancellationToken.WaitHandle, ex.CancellationToken.WaitHandle);
 
                 ((MockDocumentClient)client.DocumentClient).MockGlobalEndpointManager.Verify(gep => gep.MarkEndpointUnavailableForRead(It.IsAny<Uri>()), Times.Once, "Should had marked the endpoint unavailable");
                 ((MockDocumentClient)client.DocumentClient).MockGlobalEndpointManager.Verify(gep => gep.RefreshLocationAsync(false), Times.Once, "Should had refreshed the account information");
