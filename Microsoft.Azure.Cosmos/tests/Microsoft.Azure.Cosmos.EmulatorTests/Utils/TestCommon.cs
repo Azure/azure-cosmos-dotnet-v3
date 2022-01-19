@@ -371,12 +371,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             EncryptionKeyWrapMetadata metadata = new EncryptionKeyWrapMetadata("custom", dekId, "tempMetadata");
 
-            byte[] wrappedDataEncryptionKey = new byte[32];
             // Generate random bytes cryptographically.
-            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
-            {
-                rngCsp.GetBytes(wrappedDataEncryptionKey);
-            }
+            byte[] wrappedDataEncryptionKey =  RandomNumberGenerator.GetBytes(32);
 
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = new ClientEncryptionKeyProperties(
                 dekId,

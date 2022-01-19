@@ -447,12 +447,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static async Task<ClientEncryptionKeyProperties> CreateCekAsync(DatabaseInlineCore databaseCore, string cekId)
         {
-            byte[] rawCek = new byte[32];
             // Generate random bytes cryptographically.
-            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
-            {
-                rngCsp.GetBytes(rawCek);
-            }
+            byte[] rawCek = RandomNumberGenerator.GetBytes(32);
 
             ClientEncryptionKeyProperties cekProperties = new ClientEncryptionKeyProperties(cekId, "AEAD_AES_256_CBC_HMAC_SHA256", rawCek, new EncryptionKeyWrapMetadata("custom", "metadataName", "metadataValue"));
 
@@ -475,12 +471,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             ClientEncryptionKeyCore cek = (ClientEncryptionKeyInlineCore)databaseCore.GetClientEncryptionKey(cekId);
 
-            byte[] rawCek = new byte[32];
             // Generate random bytes cryptographically.
-            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
-            {
-                rngCsp.GetBytes(rawCek);
-            }
+            byte[] rawCek = RandomNumberGenerator.GetBytes(32);
 
             ClientEncryptionKeyProperties cekProperties = new ClientEncryptionKeyProperties(cekId, "AEAD_AES_256_CBC_HMAC_SHA256", rawCek, new EncryptionKeyWrapMetadata("custom", "metadataName", "updatedMetadataValue"));
 
@@ -506,12 +498,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string cekId = "Cek1";
 
-            byte[] rawCek1 = new byte[32];
             // Generate random bytes cryptographically.
-            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
-            {
-                rngCsp.GetBytes(rawCek1);
-            }
+            byte[] rawCek1 = RandomNumberGenerator.GetBytes(32);
 
             ClientEncryptionKeyProperties cekProperties = new ClientEncryptionKeyProperties(cekId, "AEAD_AES_256_CBC_HMAC_SHA256", rawCek1, new EncryptionKeyWrapMetadata("custom", "metadataName", "metadataValue"));
 
@@ -521,12 +509,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             cekId = "Cek2";
 
-            byte[] rawCek2 = new byte[32];
             // Generate random bytes cryptographically.
-            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
-            {
-                rngCsp.GetBytes(rawCek2);
-            }
+            byte[] rawCek2 = RandomNumberGenerator.GetBytes(32);
 
             cekProperties = new ClientEncryptionKeyProperties(cekId, "AEAD_AES_256_CBC_HMAC_SHA256", rawCek2, new EncryptionKeyWrapMetadata("custom", "metadataName", "metadataValue"));
 

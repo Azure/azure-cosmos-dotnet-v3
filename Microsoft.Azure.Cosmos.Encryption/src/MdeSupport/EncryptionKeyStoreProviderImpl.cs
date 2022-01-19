@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// <remark>
     /// The call hierarchy is as follows. Note, all core MDE API's used in internal cosmos encryption code are passed an EncryptionKeyStoreProviderImpl object.
     /// ProtectedDataEncryptionKey -> KeyEncryptionKey(containing EncryptionKeyStoreProviderImpl object) -> EncryptionKeyStoreProviderImpl.WrapKey -> this.EncryptionKeyWrapProvider.WrapKeyAsync
-    /// ProtectedDataEncryptionKey -> KeyEncryptionKey(containing EncryptionKeyStoreProviderImpl object) -> EncryptionKeyStoreProviderImpl.UnWrapKey -> this.EncryptionKeyWrapProvider.UnwrapKeyAsync 
+    /// ProtectedDataEncryptionKey -> KeyEncryptionKey(containing EncryptionKeyStoreProviderImpl object) -> EncryptionKeyStoreProviderImpl.UnWrapKey -> this.EncryptionKeyWrapProvider.UnwrapKeyAsync
     /// </remark>
     /// </summary>
     internal class EncryptionKeyStoreProviderImpl : EncryptionKeyStoreProvider
