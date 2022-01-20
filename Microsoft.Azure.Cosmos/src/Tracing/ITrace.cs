@@ -29,11 +29,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
         Guid Id { get; }
 
         /// <summary>
-        /// Gets the information for what line of source code this trace was called on.
-        /// </summary>
-        CallerInfo CallerInfo { get; }
-
-        /// <summary>
         /// Gets the time when the trace was started.
         /// </summary>
         DateTime StartTime { get; }
@@ -69,18 +64,17 @@ namespace Microsoft.Azure.Cosmos.Tracing
         IReadOnlyDictionary<string, object> Data { get; }
 
         /// <summary>
+        /// Consolidated Region contacted Information of this and children nodes
+        /// </summary>
+        IReadOnlyList<(string, Uri)> RegionsContacted { get; }
+
+        /// <summary>
         /// Starts a Trace and adds it as a child to this instance.
         /// </summary>
         /// <param name="name">The name of the child.</param>
-        /// <param name="memberName">The member name of the child.</param>
-        /// <param name="sourceFilePath">The path to the source file of the child.</param>
-        /// <param name="sourceLineNumber">The line number of the child.</param>
         /// <returns>A reference to the initialized child (that needs to be disposed to stop the timing).</returns>
         ITrace StartChild(
-            string name,
-            [CallerMemberName] string memberName = "",
-            [CallerFilePath] string sourceFilePath = "",
-            [CallerLineNumber] int sourceLineNumber = 0);
+            string name);
 
         /// <summary>
         /// Starts a trace and adds it as a child to this instance.
@@ -88,17 +82,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <param name="name">The name of the child.</param>
         /// <param name="component">The component that governs the child.</param>
         /// <param name="level">The level (of information) of the child.</param>
-        /// <param name="memberName">The member name of the child.</param>
-        /// <param name="sourceFilePath">The path to the source file of the child.</param>
-        /// <param name="sourceLineNumber">The line number of the child.</param>
         /// <returns>A reference to the initialized child (that needs to be disposed to stop the timing).</returns>
         ITrace StartChild(
             string name,
             TraceComponent component,
-            TraceLevel level,
-            [CallerMemberName] string memberName = "",
-            [CallerFilePath] string sourceFilePath = "",
-            [CallerLineNumber] int sourceLineNumber = 0);
+            TraceLevel level);
 
         /// <summary>
         /// Adds a datum to the this trace instance.
@@ -126,5 +114,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// </summary>
         /// <param name="trace">Existing trace.</param>
         void AddChild(ITrace trace);
+
+        /// <summary>
+        /// Update region contacted information to the parent Itrace
+        /// </summary>
+        /// <param name="traceDatum"></param>
+        void UpdateRegionContacted(TraceDatum traceDatum);
     }
 }

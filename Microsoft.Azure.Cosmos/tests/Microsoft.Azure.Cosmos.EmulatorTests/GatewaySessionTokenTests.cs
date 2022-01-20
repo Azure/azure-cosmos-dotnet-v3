@@ -91,7 +91,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                                            Cosmos.ConsistencyLevel.Session,
                                                            sessionContainer,
                                                            await this.cosmosClient.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton),
-                                                           await this.cosmosClient.DocumentClient.GetCollectionCacheAsync(NoOpTrace.Singleton));
+                                                           await this.cosmosClient.DocumentClient.GetCollectionCacheAsync(NoOpTrace.Singleton),
+                                                           this.cosmosClient.DocumentClient.GlobalEndpointManager);
 
             string sessionToken = request.Headers[HttpConstants.HttpHeaders.SessionToken];
             Assert.IsTrue(!string.IsNullOrEmpty(sessionToken) && sessionToken.Split(',').Length == 1);
@@ -139,7 +140,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                                                Cosmos.ConsistencyLevel.Session,
                                                                client.DocumentClient.sessionContainer,
                                                                await client.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton),
-                                                               await client.DocumentClient.GetCollectionCacheAsync(NoOpTrace.Singleton));
+                                                               await client.DocumentClient.GetCollectionCacheAsync(NoOpTrace.Singleton),
+                                                               client.DocumentClient.GlobalEndpointManager);
 
                 string readSessionToken = request.Headers[HttpConstants.HttpHeaders.SessionToken];
                 Assert.AreEqual(readSessionToken, createSessionToken);

@@ -12,8 +12,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public static readonly NoOpTrace Singleton = new NoOpTrace();
 
         private static readonly IReadOnlyList<ITrace> NoOpChildren = new List<ITrace>();
+        private static readonly IReadOnlyList<(string, Uri)> NoOpRegionsContacted = new List<(string, Uri)>();
+
         private static readonly IReadOnlyDictionary<string, object> NoOpData = new Dictionary<string, object>();
-        private static readonly CallerInfo NoOpCallerInfo = new CallerInfo(memberName: "NoOp", filePath: "NoOp", lineNumber: 9001);
 
         private NoOpTrace()
         {
@@ -22,8 +23,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public string Name => "NoOp";
 
         public Guid Id => default;
-
-        public CallerInfo CallerInfo => NoOpCallerInfo;
 
         public DateTime StartTime => default;
 
@@ -39,16 +38,15 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public IReadOnlyDictionary<string, object> Data => NoOpData;
 
+        public IReadOnlyList<(string, Uri)> RegionsContacted => NoOpRegionsContacted;
+
         public void Dispose()
         {
             // NoOp
         }
 
         public ITrace StartChild(
-            string name,
-            string memberName = "",
-            string sourceFilePath = "",
-            int sourceLineNumber = 0)
+            string name)
         {
             return this.StartChild(
                 name,
@@ -59,10 +57,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public ITrace StartChild(
             string name,
             TraceComponent component,
-            TraceLevel level,
-            string memberName = "",
-            string sourceFilePath = "",
-            int sourceLineNumber = 0)
+            TraceLevel level)
         {
             return this;
         }
@@ -78,6 +73,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         }
 
         public void AddChild(ITrace trace)
+        {
+            // NoOp
+        }
+
+        public void UpdateRegionContacted(TraceDatum traceDatum)
         {
             // NoOp
         }

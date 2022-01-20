@@ -17,11 +17,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         private const string CurrentBenchmarkResultsFileName = "CurrentBenchmarkResults.json";
 
 #if DEBUG
-        private const string DirectoryPath = @"\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Performance.Tests\bin\Debug\netcoreapp3.1\Contracts\";
+        private const string DirectoryPath = @"\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Performance.Tests\bin\Debug\net6.0\Contracts\";
 #else
-        private const string DirectoryPath =  @"\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Performance.Tests\bin\Release\netcoreapp3.1\Contracts\";
+        private const string DirectoryPath =  @"\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Performance.Tests\bin\Release\net6.0\Contracts\";
 #endif
-        
+
 
         private static readonly string UpdateMessage = $"Please update the Microsoft.Azure.Cosmos.Performance.Tests\\Contracts\\{PerformanceValidation.BaselineBenchmarkResultsFileName} " +
             $" file by using the following results found at {PerformanceValidation.DirectoryPath}\\{PerformanceValidation.CurrentBenchmarkResultsFileName} or by using: ";
