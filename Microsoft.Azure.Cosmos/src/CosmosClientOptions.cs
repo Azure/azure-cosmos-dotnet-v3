@@ -56,6 +56,7 @@ namespace Microsoft.Azure.Cosmos
         /// Default request timeout
         /// </summary>
         private int gatewayModeMaxConnectionLimit;
+        private TimeSpan requestTimeout;
         private CosmosSerializationOptions serializerOptions;
         private CosmosSerializer serializerInternal;
 
@@ -156,9 +157,22 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the request timeout in seconds when connecting to the Azure Cosmos DB service.
         /// The number specifies the time to wait for response to come back from network peer.
         /// </summary>
-        /// <value>Default value is 1 minute.</value>
+        /// <value>Default value is 10 seconds.</value>
         /// <seealso cref="CosmosClientBuilder.WithRequestTimeout(TimeSpan)"/>
-        public TimeSpan RequestTimeout { get; set; }
+        public TimeSpan RequestTimeout 
+        {
+            get => this.requestTimeout;
+
+            set
+            {
+                if (value != null && value < TimeSpan.FromSeconds(1))
+                {
+                    throw new ArgumentException($"{nameof(this.requestTimeout)} can not be set less than 1 second. This must be set in the Timespan of seconds.");
+                }
+
+                this.requestTimeout = value;
+            }
+        }
 
         /// <summary>
         /// The SDK does a background refresh based on the time interval set to refresh the token credentials.
