@@ -7,7 +7,6 @@
     using Azure.Identity;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Encryption;
-    using Microsoft.Data.Encryption.AzureKeyVaultProvider;
     using Microsoft.Extensions.Configuration;
     using System.Collections.Generic;
     using System.Net;
@@ -88,9 +87,9 @@
 
                 // Get the Token Credential that is capable of providing an OAuth Token.
                 TokenCredential tokenCredential = Program.GetTokenCredential(configuration);
-                AzureKeyVaultKeyStoreProvider azureKeyVaultKeyStoreProvider = new AzureKeyVaultKeyStoreProvider(tokenCredential);
+                AzureKeyVaultKeyWrapProvider azureKeyVaultWrapProvider = new AzureKeyVaultKeyWrapProvider(tokenCredential);
 
-                Program.client = Program.CreateClientInstance(configuration, azureKeyVaultKeyStoreProvider);
+                Program.client = Program.CreateClientInstance(configuration, azureKeyVaultWrapProvider);
 
                 await Program.CreateAndRunReEncryptionTasks();
             }
@@ -113,7 +112,7 @@
 
         private static CosmosClient CreateClientInstance(
             IConfigurationRoot configuration,
-            AzureKeyVaultKeyStoreProvider azureKeyVaultKeyStoreProvider)
+            AzureKeyVaultKeyWrapProvider azureKeyVaultKeyWrapProvider)
         {
             string endpoint = configuration["EndPointUrl"];
             if (string.IsNullOrEmpty(endpoint))
@@ -134,7 +133,7 @@
             CosmosClient encryptionCosmosClient = new CosmosClient(endpoint, authKey, options);
 
             // enable encryption support on the cosmos client.
-            return encryptionCosmosClient.WithEncryption(azureKeyVaultKeyStoreProvider);
+            return encryptionCosmosClient.WithEncryption(azureKeyVaultKeyWrapProvider);
         }
 
         private static X509Certificate2 GetCertificate(string clientCertThumbprint)

@@ -1465,11 +1465,6 @@
 
         public override bool Equals(object obj)
         {
-            if (object.ReferenceEquals(this, obj))
-            {
-                return true;
-            }
-
             if (obj is GetPartitionedQueryExecutionInfoOptions other)
             {
                 return this.AllowNonValueAggregateQuery == other.AllowNonValueAggregateQuery

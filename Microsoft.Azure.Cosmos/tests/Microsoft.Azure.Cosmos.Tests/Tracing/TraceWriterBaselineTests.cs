@@ -849,9 +849,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 .Select(x => x != string.Empty ? x.Substring("            ".Length) : string.Empty))
                     + Environment.NewLine;
                 }
-                catch(Exception ex)
+                catch(Exception)
                 {
-                    throw ex;
+                    throw;
                 }
                 xmlWriter.WriteCData(setup ?? "asdf");
                 xmlWriter.WriteEndElement();
@@ -905,8 +905,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
             public Guid Id => Guid.Empty;
 
-            public CallerInfo CallerInfo => new CallerInfo("MemberName", "FilePath", 42);
-
             public DateTime StartTime => DateTime.MinValue;
 
             public TimeSpan Duration => TimeSpan.Zero;
@@ -937,12 +935,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             {
             }
 
-            public ITrace StartChild(string name, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
+            public ITrace StartChild(string name)
             {
-                return this.StartChild(name, TraceComponent.Unknown, TraceLevel.Info, memberName, sourceFilePath, sourceLineNumber);
+                return this.StartChild(name, TraceComponent.Unknown, TraceLevel.Info);
             }
 
-            public ITrace StartChild(string name, TraceComponent component, TraceLevel level, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
+            public ITrace StartChild(string name, TraceComponent component, TraceLevel level)
             {
                 TraceForBaselineTesting child = new TraceForBaselineTesting(name, level, component, parent: this);
                 this.AddChild(child);
@@ -961,7 +959,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
             public void UpdateRegionContacted(TraceDatum traceDatum)
             {
-               //NoImplementation
+                //NoImplementation
             }
 
             public void AddOrUpdateDatum(string key, object value)

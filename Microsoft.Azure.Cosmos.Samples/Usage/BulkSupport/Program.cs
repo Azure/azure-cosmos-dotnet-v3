@@ -287,7 +287,7 @@
             catch (Exception ex)
             {
                 Console.WriteLine("Error in reading collection: {0}", ex.Message);
-                throw ex;
+                throw;
             }
 
             Console.WriteLine("Running demo for container {0} with a Bulk enabled CosmosClient.", containerName);
