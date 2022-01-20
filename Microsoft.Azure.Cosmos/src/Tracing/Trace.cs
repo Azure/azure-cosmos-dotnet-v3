@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public void AddOrUpdateDatum(string key, object value)
         {
-            this.data[key] = value;
+            this.data.Value[key] = value;
         }
     }
 }
