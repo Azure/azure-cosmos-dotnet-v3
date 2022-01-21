@@ -1293,9 +1293,9 @@
                                 .Select(x => x != string.Empty ? x.Substring("            ".Length) : string.Empty))
                     + Environment.NewLine;
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    throw ex;
+                    throw;
                 }
                 xmlWriter.WriteCData(setup ?? "asdf");
                 xmlWriter.WriteEndElement();
@@ -1349,8 +1349,6 @@
 
             public Guid Id => Guid.Empty;
 
-            public CallerInfo CallerInfo => new CallerInfo("MemberName", "FilePath", 42);
-
             public DateTime StartTime => DateTime.MinValue;
 
             public TimeSpan Duration => TimeSpan.Zero;
@@ -1364,6 +1362,8 @@
             public IReadOnlyList<ITrace> Children => this.children;
 
             public IReadOnlyDictionary<string, object> Data => this.data;
+
+            public IReadOnlyList<(string, Uri)> RegionsContacted => new List<(string, Uri)>();
 
             public void AddDatum(string key, TraceDatum traceDatum)
             {
@@ -1385,12 +1385,12 @@
             {
             }
 
-            public ITrace StartChild(string name, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
+            public ITrace StartChild(string name)
             {
-                return this.StartChild(name, TraceComponent.Unknown, TraceLevel.Info, memberName, sourceFilePath, sourceLineNumber);
+                return this.StartChild(name, TraceComponent.Unknown, TraceLevel.Info);
             }
 
-            public ITrace StartChild(string name, TraceComponent component, TraceLevel level, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
+            public ITrace StartChild(string name, TraceComponent component, TraceLevel level)
             {
                 TraceForBaselineTesting child = new TraceForBaselineTesting(name, level, component, parent: this);
                 this.AddChild(child);
@@ -1405,6 +1405,11 @@
             public static TraceForBaselineTesting GetRootTrace()
             {
                 return new TraceForBaselineTesting("Trace For Baseline Testing", TraceLevel.Info, TraceComponent.Unknown, parent: null);
+            }
+
+            public void UpdateRegionContacted(TraceDatum traceDatum)
+            {
+                //NoImplementation
             }
         }
 
