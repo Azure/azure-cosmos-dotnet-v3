@@ -341,7 +341,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
-        public async Task SingleOperationMultipleTimes(ConnectionMode mode)
+        public async Task SingleOperationMultipleTimesTest(ConnectionMode mode)
         {
             Container container = await this.CreateClientAndContainer(mode);
 
@@ -600,7 +600,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
-        public async Task QueryOperationInvalidContinuationToken(ConnectionMode mode)
+        public async Task QueryOperationInvalidContinuationTokenTest(ConnectionMode mode)
         {
             Container container = await this.CreateClientAndContainer(mode);
 
@@ -765,9 +765,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 { ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit },
                 { ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit },
-                { ClientTelemetryOptions.AvailableThreadsName, ClientTelemetryOptions.AvailableThreadsUnit },
-                { ClientTelemetryOptions.MinThreadsName, ClientTelemetryOptions.MinThreadsUnit },
-                { ClientTelemetryOptions.MaxThreadsName, ClientTelemetryOptions.MaxThreadsUnit }
+                { ClientTelemetryOptions.AvailableThreadsName, ClientTelemetryOptions.AvailableThreadsUnit }
             };
 
             Dictionary<string, string> actualMetricNameUnitMap = new Dictionary<string, string>();
@@ -853,7 +851,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 actualOperationList.AddRange(telemetryInfo.OperationInfo);
                 actualSystemInformation.AddRange(telemetryInfo.SystemInfo);
 
-                Assert.AreEqual(5, telemetryInfo.SystemInfo.Count, $"System Information Count doesn't Match; {JsonConvert.SerializeObject(telemetryInfo.SystemInfo)}");
+                Assert.AreEqual(3, telemetryInfo.SystemInfo.Count, $"System Information Count doesn't Match; {JsonConvert.SerializeObject(telemetryInfo.SystemInfo)}");
 
                 Assert.IsNotNull(telemetryInfo.GlobalDatabaseAccountName, "GlobalDatabaseAccountName is null");
                 Assert.IsNotNull(telemetryInfo.DateTimeUtc, "Timestamp is null");
