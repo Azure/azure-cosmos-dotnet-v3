@@ -56,20 +56,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const String AvailableThreadsName = "SystemPool_AvailableThreads";
         internal const String AvailableThreadsUnit = "ThreadCount";
 
-        // Expecting histogram to have Minimum Thread Count configured as Single digit
-        internal const long MinThreadsMax = 100;
-        internal const long MinThreadsMin = 1;
-        internal const int MinThreadsPrecision = 1;
-        internal const String MinThreadsName = "SystemPool_MinThreads";
-        internal const String MinThreadsUnit = "ThreadCount";
-
-        // Expecting histogram to have Maximum Thread Count can be any number
-        internal const long MaxThreadsMax = Int64.MaxValue;
-        internal const long MaxThreadsMin = 1;
-        internal const int MaxThreadsPrecision = 2;
-        internal const String MaxThreadsName = "SystemPool_MaxThreads";
-        internal const String MaxThreadsUnit = "ThreadCount";
-
         internal const string DefaultVmMetadataUrL = "http://169.254.169.254/metadata/instance?api-version=2020-06-01";
         internal const double DefaultTimeStampInSeconds = 600;
         internal const double Percentile50 = 50.0;

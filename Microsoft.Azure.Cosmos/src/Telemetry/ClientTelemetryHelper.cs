@@ -91,8 +91,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// 1) CPU Usage
         /// 2) Memory Remaining
         /// 3) Available Threads
-        /// 4) Min Threads
-        /// 5) Max Threads
         /// 
         /// </summary>
         /// <param name="systemUsageHistory"></param>
