@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         public void OnNext(DiagnosticListener listener)
         {
-            foreach (KeyValuePair<string, IObserver<KeyValuePair<string, object>>> entry in listenerToSubscribe)
+            foreach (KeyValuePair<string, IObserver<KeyValuePair<string, object>>> entry in this.listenerToSubscribe)
             {
                 if (listener.Name == entry.Key)
                     listener.Subscribe(entry.Value);

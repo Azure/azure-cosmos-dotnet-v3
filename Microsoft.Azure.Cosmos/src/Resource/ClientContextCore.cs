@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Handlers;
@@ -23,6 +24,8 @@ namespace Microsoft.Azure.Cosmos
 
     internal class ClientContextCore : CosmosClientContext
     {
+        private readonly static CosmosDiagnosticSource diagnosticsource = new CosmosDiagnosticSource();
+
         private readonly BatchAsyncContainerExecutorCache batchExecutorCache;
         private readonly CosmosClient client;
         private readonly DocumentClient documentClient;
@@ -232,8 +235,7 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentClient.ValidateResource(resourceId);
         }
 
-        internal override Task<TResult> 
-            OperationHelperAsync<TResult>(
+        internal override Task<TResult> OperationHelperAsync<TResult>(
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
@@ -569,6 +571,71 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ObjectDisposedException($"Accessing {nameof(CosmosClient)} after it is disposed is invalid.");
             }
+        }
+
+        internal override async Task<U> ExecuteAsync<T, U>(
+            string operationName, 
+            RequestOptions requestOptions, 
+            Func<ITrace, Task<U>> task,
+            TraceComponent traceComponent = TraceComponent.Transport,
+            Tracing.TraceLevel traceLevel = Tracing.TraceLevel.Info)
+        {
+            U response = null;
+            try
+            {
+                response = await this.OperationHelperAsync(
+                      operationName,
+                      requestOptions,
+                      task,
+                      traceComponent,
+                      traceLevel);
+
+                diagnosticsource.Write($"{operationName}.Diagnostics", response);
+            } 
+            catch (Exception unhandledException)
+            {
+                diagnosticsource.Write($"{operationName}.Exception.Diagnostics", unhandledException);
+            }
+
+            return response;
+        }
+
+        internal override async Task<U> ExecuteIEnumerableAsync<T, U>(
+            string operationName,
+            RequestOptions requestOptions,
+            Func<ITrace, Task<U>> task,
+            TraceComponent traceComponent = TraceComponent.Transport,
+            Tracing.TraceLevel traceLevel = Tracing.TraceLevel.Info)
+        {
+            U response = await this.OperationHelperAsync(
+                       operationName,
+                       requestOptions,
+                       task,
+                       traceComponent,
+                       traceLevel);
+
+            diagnosticsource.Write($"{operationName}.Diagnostics", response);
+
+            return response;
+        }
+
+        internal override async Task<T> ExecuteAsync<T>(
+            string operationName,
+            RequestOptions requestOptions,
+            Func<ITrace, Task<T>> task,
+            TraceComponent traceComponent = TraceComponent.Transport,
+            Tracing.TraceLevel traceLevel = Tracing.TraceLevel.Info)
+        {
+            T response = await this.OperationHelperAsync(
+                       operationName,
+                       requestOptions,
+                       task,
+                       traceComponent,
+                       traceLevel);
+
+            diagnosticsource.Write($"{operationName}.Diagnostics", response);
+
+            return response;
         }
     }
 }

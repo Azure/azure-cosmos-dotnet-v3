@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.ApplicationInsights.Extensibility;
     using Microsoft.Azure.Cosmos.ApplicationInsights;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -22,8 +23,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             IDictionary<string, IObserver<KeyValuePair<string, object>>> listener = new Dictionary<string, IObserver<KeyValuePair<string, object>>>
             {
-                { "AppInsight", TelemetryInitializer.Initialize("2fabff39-6a32-42da-9e8f-9fcff7d99c6b") }
+                { "abc", TelemetryInitializer.Initialize("2fabff39-6a32-42da-9e8f-9fcff7d99c6b") }
             };
+
             this.cosmosClientBuilder = TestCommon.GetDefaultConfiguration()
                                                  .AddListener(listener);
         }

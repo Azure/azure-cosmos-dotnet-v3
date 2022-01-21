@@ -29,9 +29,11 @@ namespace Microsoft.Azure.Cosmos.ApplicationInsights
 
         public void OnNext(KeyValuePair<string, object> value)
         {
-            if (value.Key == "CreateItemAsync.Diagnostics")
+            if (value.Key.Contains("Diagnostics"))
             {
                 CosmosDiagnostics diagnostics = (CosmosDiagnostics)value.Value;
+
+                Console.WriteLine(value.Key + " => " + value.Value);
 
                 DependencyTelemetry dependencyTelemetry = new DependencyTelemetry(
                                             dependencyTypeName: "CosmosDB-listener-1",
