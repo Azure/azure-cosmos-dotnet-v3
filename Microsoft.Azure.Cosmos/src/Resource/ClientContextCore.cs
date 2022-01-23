@@ -12,13 +12,13 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Azure;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.DiagnosticSource;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
         internal static CosmosClientContext Create(
             CosmosClient cosmosClient,
             CosmosClientOptions clientOptions,
-            IDictionary<string, IObserver<KeyValuePair<string, object>>> listener = null)
+            IList<ICosmosDiagnosticListener> listener = null)
         {
             if (cosmosClient == null)
             {
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
             DocumentClient documentClient,
             CosmosClientOptions clientOptions,
             RequestInvokerHandler requestInvokerHandler = null,
-            IDictionary<string, IObserver<KeyValuePair<string, object>>> telemetryListener = null)
+            IList<ICosmosDiagnosticListener> telemetryListener = null)
         {
             if (cosmosClient == null)
             {
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
 
             ConnectionPolicy connectionPolicy = clientOptions.GetConnectionPolicy(cosmosClient.ClientId);
 
-            if (telemetryListener != null)
+            if (telemetryListener != null && telemetryListener.Count > 0)
             {
                 DiagnosticListener.AllListeners.Subscribe(new Subscriber(telemetryListener));
             }
@@ -269,6 +269,7 @@ namespace Microsoft.Azure.Cosmos
                 trace.AddDatum("Client Configuration", this.client.ClientConfigurationTraceDatum);
 
                 return await this.RunWithDiagnosticsHelperAsync(
+                    operationName,
                     trace,
                     task);
             }
@@ -295,6 +296,7 @@ namespace Microsoft.Azure.Cosmos
                     trace.AddDatum("Synchronization Context", syncContextVirtualAddress);
 
                     return await this.RunWithDiagnosticsHelperAsync(
+                        operationName,
                         trace,
                         task);
                 }
@@ -469,21 +471,25 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private async Task<TResult> RunWithDiagnosticsHelperAsync<TResult>(
+            string operationName,
             ITrace trace,
             Func<ITrace, Task<TResult>> task)
         {
             using (new ActivityScope(Guid.NewGuid()))
             {
+                string prefix = $"{operationName}";
                 try
                 {
                     return await task(trace).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                 {
+                    prefix = $"{prefix}.OperationCanceled{DiagnosticSourceFilterType.Exception}";
                     throw new CosmosOperationCanceledException(oe, trace);
                 }
                 catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
                 {
+                    prefix = $"{prefix}.ObjectDisposed{DiagnosticSourceFilterType.Exception}";
                     throw new CosmosObjectDisposedException(
                         objectDisposed, 
                         this.client, 
@@ -491,9 +497,14 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
                 {
+                    prefix = $"{prefix}.NullReference{DiagnosticSourceFilterType.Exception}";
                     throw new CosmosNullReferenceException(
                         nullRefException,
                         trace);
+                }
+                finally
+                {
+                    diagnosticsource.Emit($"{prefix}.Diagnostics", trace);
                 }
             }
         }
@@ -571,71 +582,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ObjectDisposedException($"Accessing {nameof(CosmosClient)} after it is disposed is invalid.");
             }
-        }
-
-        internal override async Task<U> ExecuteAsync<T, U>(
-            string operationName, 
-            RequestOptions requestOptions, 
-            Func<ITrace, Task<U>> task,
-            TraceComponent traceComponent = TraceComponent.Transport,
-            Tracing.TraceLevel traceLevel = Tracing.TraceLevel.Info)
-        {
-            U response = null;
-            try
-            {
-                response = await this.OperationHelperAsync(
-                      operationName,
-                      requestOptions,
-                      task,
-                      traceComponent,
-                      traceLevel);
-
-                diagnosticsource.Write($"{operationName}.Diagnostics", response);
-            } 
-            catch (Exception unhandledException)
-            {
-                diagnosticsource.Write($"{operationName}.Exception.Diagnostics", unhandledException);
-            }
-
-            return response;
-        }
-
-        internal override async Task<U> ExecuteIEnumerableAsync<T, U>(
-            string operationName,
-            RequestOptions requestOptions,
-            Func<ITrace, Task<U>> task,
-            TraceComponent traceComponent = TraceComponent.Transport,
-            Tracing.TraceLevel traceLevel = Tracing.TraceLevel.Info)
-        {
-            U response = await this.OperationHelperAsync(
-                       operationName,
-                       requestOptions,
-                       task,
-                       traceComponent,
-                       traceLevel);
-
-            diagnosticsource.Write($"{operationName}.Diagnostics", response);
-
-            return response;
-        }
-
-        internal override async Task<T> ExecuteAsync<T>(
-            string operationName,
-            RequestOptions requestOptions,
-            Func<ITrace, Task<T>> task,
-            TraceComponent traceComponent = TraceComponent.Transport,
-            Tracing.TraceLevel traceLevel = Tracing.TraceLevel.Info)
-        {
-            T response = await this.OperationHelperAsync(
-                       operationName,
-                       requestOptions,
-                       task,
-                       traceComponent,
-                       traceLevel);
-
-            diagnosticsource.Write($"{operationName}.Diagnostics", response);
-
-            return response;
         }
     }
 }

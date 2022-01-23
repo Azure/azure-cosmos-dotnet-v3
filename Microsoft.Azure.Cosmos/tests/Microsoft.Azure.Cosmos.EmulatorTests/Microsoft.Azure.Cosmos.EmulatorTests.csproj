@@ -266,7 +266,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos.AppIicationInsights\Microsoft.Azure.Cosmos.ApplicationInsights.csproj" />
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.csproj" />
   </ItemGroup>
   <ItemGroup>

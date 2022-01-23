@@ -116,28 +116,5 @@ namespace Microsoft.Azure.Cosmos
            CancellationToken cancellationToken);
 
         public abstract void Dispose();
-
-        internal abstract Task<U> ExecuteAsync<T, U>(
-            string operationName,
-            RequestOptions requestOptions,
-            Func<ITrace, Task<U>> task,
-            TraceComponent traceComponent = TraceComponent.Transport,
-            Tracing.TraceLevel traceLevel = Tracing.TraceLevel.Info)
-            where U : Response<T>;
-
-        internal abstract Task<U> ExecuteIEnumerableAsync<T, U>(
-            string operationName,
-            RequestOptions requestOptions,
-            Func<ITrace, Task<U>> task,
-            TraceComponent traceComponent = TraceComponent.Transport,
-            Tracing.TraceLevel traceLevel = Tracing.TraceLevel.Info)
-            where U : Response<IEnumerable<T>>, IEnumerable<T>;
-
-        internal abstract Task<T> ExecuteAsync<T>(
-           string operationName,
-           RequestOptions requestOptions,
-           Func<ITrace, Task<T>> task,
-           TraceComponent traceComponent = TraceComponent.Transport,
-           Tracing.TraceLevel traceLevel = Tracing.TraceLevel.Info);
     }
 }

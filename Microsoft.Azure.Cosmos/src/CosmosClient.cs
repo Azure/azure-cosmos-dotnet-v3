@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.DiagnosticSource;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos
         public CosmosClient(
             string connectionString,
             CosmosClientOptions clientOptions = null,
-            IDictionary<string, IObserver<KeyValuePair<string, object>>> listener = null)
+            IList<ICosmosDiagnosticListener> listener = null)
             : this(
                   CosmosClientOptions.GetAccountEndpoint(connectionString),
                   CosmosClientOptions.GetAccountKey(connectionString),
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos
             string accountEndpoint,
             string authKeyOrResourceToken,
             CosmosClientOptions clientOptions = null,
-            IDictionary<string, IObserver<KeyValuePair<string, object>>> listener = null)
+            IList<ICosmosDiagnosticListener> listener = null)
              : this(accountEndpoint,
                      AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken),
                      clientOptions,
@@ -240,7 +240,7 @@ namespace Microsoft.Azure.Cosmos
             string accountEndpoint,
             TokenCredential tokenCredential,
             CosmosClientOptions clientOptions = null,
-            IDictionary<string, IObserver<KeyValuePair<string, object>>> listener = null)
+            IList<ICosmosDiagnosticListener> listener = null)
             : this(accountEndpoint,
                     new AuthorizationTokenProviderTokenCredential(
                         tokenCredential,
@@ -259,7 +259,7 @@ namespace Microsoft.Azure.Cosmos
              string accountEndpoint,
              AuthorizationTokenProvider authorizationTokenProvider,
              CosmosClientOptions clientOptions,
-             IDictionary<string, IObserver<KeyValuePair<string, object>>> listener = null)
+             IList<ICosmosDiagnosticListener> listener = null)
         {
             if (string.IsNullOrEmpty(accountEndpoint))
             {
@@ -318,7 +318,7 @@ namespace Microsoft.Azure.Cosmos
                                                                         IReadOnlyList<(string databaseId, string containerId)> containers,
                                                                         CosmosClientOptions cosmosClientOptions = null,
                                                                         CancellationToken cancellationToken = default,
-                                                                        IDictionary<string, IObserver<KeyValuePair<string, object>>> listener = null)
+                                                                        IList<ICosmosDiagnosticListener> listener = null)
         {
             if (containers == null)
             {
@@ -369,7 +369,7 @@ namespace Microsoft.Azure.Cosmos
                                                                         IReadOnlyList<(string databaseId, string containerId)> containers,
                                                                         CosmosClientOptions cosmosClientOptions = null,
                                                                         CancellationToken cancellationToken = default,
-                                                                        IDictionary<string, IObserver<KeyValuePair<string, object>>> listener = null)
+                                                                        IList<ICosmosDiagnosticListener> listener = null)
         {
             if (containers == null)
             {
@@ -406,7 +406,7 @@ namespace Microsoft.Azure.Cosmos
                                                                         IReadOnlyList<(string databaseId, string containerId)> containers,
                                                                         CosmosClientOptions cosmosClientOptions = null,
                                                                         CancellationToken cancellationToken = default,
-                                                                        IDictionary<string, IObserver<KeyValuePair<string, object>>> listener = null)
+                                                                        IList<ICosmosDiagnosticListener> listener = null)
         {
             if (containers == null)
             {
@@ -431,7 +431,7 @@ namespace Microsoft.Azure.Cosmos
             string authKeyOrResourceToken,
             CosmosClientOptions cosmosClientOptions,
             DocumentClient documentClient,
-            IDictionary<string, IObserver<KeyValuePair<string, object>>> listener = null)
+            IList<ICosmosDiagnosticListener> listener = null)
         {
             if (string.IsNullOrEmpty(accountEndpoint))
             {

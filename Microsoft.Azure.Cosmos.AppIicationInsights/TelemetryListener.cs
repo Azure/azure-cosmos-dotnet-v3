@@ -12,8 +12,12 @@ namespace Microsoft.Azure.Cosmos.ApplicationInsights
 
     public class TelemetryListener : IObserver<KeyValuePair<string, object>>
     {
-        private readonly TelemetryClient telemetryClient;
-         
+        private readonly TelemetryClient? telemetryClient;
+
+        public TelemetryListener()
+        {
+        }
+
         public TelemetryListener(TelemetryClient client)
         {
             this.telemetryClient = client;
@@ -29,11 +33,13 @@ namespace Microsoft.Azure.Cosmos.ApplicationInsights
 
         public void OnNext(KeyValuePair<string, object> value)
         {
-            if (value.Key.Contains("Diagnostics"))
+            Console.WriteLine($"{value.Key} => {(CosmosDiagnostics)value.Value}");
+
+          /*  if (value.Key.Contains("Diagnostics"))
             {
                 CosmosDiagnostics diagnostics = (CosmosDiagnostics)value.Value;
 
-                Console.WriteLine(value.Key + " => " + value.Value);
+                //Console.WriteLine(value.Key + " => " + value.Value);
 
                 DependencyTelemetry dependencyTelemetry = new DependencyTelemetry(
                                             dependencyTypeName: "CosmosDB-listener-1",
@@ -57,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.ApplicationInsights
             // which is tracked here: https://github.com/microsoft/ApplicationInsights-dotnet/issues/407
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
             Task.Delay(5000).Wait();
-#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
+#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits*/
         }
     }
 }

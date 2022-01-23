@@ -2,10 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Telemetry
+namespace Microsoft.Azure.Cosmos.Telemetry.DiagnosticSource
 {
     using System.Diagnostics;
-    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal class CosmosDiagnosticSource : DiagnosticListener
     {
@@ -16,12 +17,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
         }
 
-        public void Write<T>(string name, Response<T> response)
+        public void Emit(string name, ITrace trace)
         {
-            if (base.IsEnabled())
+            CosmosTraceDiagnostics cosmosTraceDiagnostics = new CosmosTraceDiagnostics(trace);
+
+            if (base.IsEnabled(name, cosmosTraceDiagnostics))
             {
-                base.Write(name, response.Diagnostics);
+                base.Write(name, cosmosTraceDiagnostics);
             }
         }
+
     }
 }

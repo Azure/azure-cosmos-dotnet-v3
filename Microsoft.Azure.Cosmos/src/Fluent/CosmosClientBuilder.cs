@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using System.Net.Http;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.DiagnosticSource;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -22,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private readonly string accountEndpoint;
         private readonly string accountKey;
         private readonly TokenCredential tokenCredential;
-        private IDictionary<string, IObserver<KeyValuePair<string, object>>> listener;
+        private IList<ICosmosDiagnosticListener> listener;
 
         /// <summary>
         /// Initialize a new CosmosConfiguration class that holds all the properties the CosmosClient requires.
@@ -148,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="listener"></param>
         /// <returns>builder</returns>
-        public CosmosClientBuilder AddListener(IDictionary<string, IObserver<KeyValuePair<string, object>>> listener)
+        public CosmosClientBuilder AddListeners(IList<ICosmosDiagnosticListener> listener)
         {
             this.listener = listener;
             return this;
