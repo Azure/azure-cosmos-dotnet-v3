@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// List of listeners to log Request Diagnostics
         /// </summary>
-        public IReadOnlyList<ICosmosDiagnosticListener> DiagnosticLogListeners { get; set; }
+        public IReadOnlyList<IObserver<KeyValuePair<string, CosmosDiagnostics>>> DiagnosticLogListeners { get; set; }
 
         /// <summary>
         /// Get or set user-agent suffix to include with every Azure Cosmos DB service interaction.

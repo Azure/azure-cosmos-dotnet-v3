@@ -8,13 +8,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry.DiagnosticSource
     using System.Collections.Generic;
     using System.Diagnostics;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Diagnostics;
 
     internal class Subscriber : IObserver<DiagnosticListener>
     {
-        private readonly IReadOnlyList<ICosmosDiagnosticListener> listenersToSubscribe;
+        private readonly IReadOnlyList<IObserver<KeyValuePair<string, CosmosDiagnostics>>> listenersToSubscribe;
 
-        public Subscriber(IReadOnlyList<ICosmosDiagnosticListener> listenersToSubscribe)
+        public Subscriber(IReadOnlyList<IObserver<KeyValuePair<string, CosmosDiagnostics>>> listenersToSubscribe)
         {
             this.listenersToSubscribe = listenersToSubscribe;
         }
@@ -33,26 +32,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.DiagnosticSource
         {
             if (source.Name == CosmosDiagnosticSource.DiagnosticSourceName && this.listenersToSubscribe.Count > 0)
             {
-                foreach (ICosmosDiagnosticListener listenerToSubscribe in this.listenersToSubscribe)
+                foreach (IObserver<KeyValuePair<string, CosmosDiagnostics>> listenerToSubscribe in this.listenersToSubscribe)
                 {
-                    source
-                        .Subscribe(
-                        observer: listenerToSubscribe.Listener,
-                        (name, diagnostics, optionalObject) =>
-                        {
-                            if (listenerToSubscribe.DefaultFilter != null &&
-                                    !name.Contains(listenerToSubscribe.DefaultFilter.ToString()))
-                            {
-                                return false;
-                            }
-
-                            if (listenerToSubscribe.Filter != null)
-                            {
-                                return listenerToSubscribe.Filter.Invoke((CosmosTraceDiagnostics)diagnostics);
-                            }
-
-                            return true;
-                        });
+                    source.Subscribe((IObserver<KeyValuePair<string, object>>)listenerToSubscribe);
                     
                 }
             }

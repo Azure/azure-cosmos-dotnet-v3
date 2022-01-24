@@ -19,11 +19,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.DiagnosticSource
 
         public void Emit(string name, ITrace trace)
         {
-            CosmosTraceDiagnostics cosmosTraceDiagnostics = new CosmosTraceDiagnostics(trace);
-
-            if (base.IsEnabled(name, cosmosTraceDiagnostics))
+            if (base.IsEnabled())
             {
-                base.Write(name, cosmosTraceDiagnostics);
+                base.Write(name, new CosmosTraceDiagnostics(trace));
             }
         }
 

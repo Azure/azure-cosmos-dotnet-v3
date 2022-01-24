@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
-    using Microsoft.Azure.Cosmos.Telemetry.DiagnosticSource;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -19,12 +18,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public void TestInitialize()
         {
-            IReadOnlyList<ICosmosDiagnosticListener> listeners = new List<ICosmosDiagnosticListener>
-            {
-                new ListenerWithDefaultFilter(),
-                new ListenerWithCustomFilter(),
-                new ListenerWithBothFilter()
-            };
+            IReadOnlyList<IObserver<KeyValuePair<string, CosmosDiagnostics>>> listeners = 
+                new List<IObserver<KeyValuePair<string, CosmosDiagnostics>>>
+                {
+                    new TelemetryListener()
+                };
 
             this.cosmosClientBuilder = TestCommon.GetDefaultConfiguration()
                 .AddListeners(listeners);
@@ -46,7 +44,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
             await container.CreateItemAsync<ToDoActivity>(testItem);
             await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
-
         }
 
         private async Task<Container> CreateClientAndContainer(ConnectionMode mode)
@@ -60,64 +57,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return await this.database.CreateContainerAsync(
                 id: Guid.NewGuid().ToString(),
                 partitionKeyPath: "/id");
-
         }
-    }
-
-    class ListenerWithDefaultFilter : ICosmosDiagnosticListener
-    {
-        public IObserver<KeyValuePair<string, object>> Listener => new TelemetryListener("ListenerWithDefaultFilter");
-
-        public DiagnosticSourceFilterType? DefaultFilter => DiagnosticSourceFilterType.Create;
-
-        Func<CosmosDiagnostics, bool> ICosmosDiagnosticListener.Filter => null;
-    }
-
-    class ListenerWithCustomFilter : ICosmosDiagnosticListener
-    {
-        public IObserver<KeyValuePair<string, object>> Listener => new TelemetryListener("ListenerWithCustomFilter");
-
-        public DiagnosticSourceFilterType? DefaultFilter => null;
-
-        Func<CosmosDiagnostics, bool> ICosmosDiagnosticListener.Filter => (diagnostics) => {
-
-            //Return all the requests with latancy more than 10 milliseconds
-            if (diagnostics.GetClientElapsedTime() > TimeSpan.FromMilliseconds(10))
-            {
-                return true;
-            }
-            return false;
-        };
-    }
-
-    class ListenerWithBothFilter : ICosmosDiagnosticListener
-    {
-        public IObserver<KeyValuePair<string, object>> Listener => new TelemetryListener("ListenerWithBothFilter");
-
-        public DiagnosticSourceFilterType? DefaultFilter => DiagnosticSourceFilterType.Create;
-
-        Func<CosmosDiagnostics, bool> ICosmosDiagnosticListener.Filter => (diagnostics) => {
-
-            //Return all the requests with latency more than 10 milliseconds
-            if (diagnostics.GetClientElapsedTime() > TimeSpan.FromMilliseconds(150))
-            {
-                return true;
-            }
-            return false;
-        };
     }
 
     /// <summary>
     /// Telemetry Listener will receive the diagnostic logs
     /// </summary>
-    public class TelemetryListener : IObserver<KeyValuePair<string, object>>
+    public class TelemetryListener : IObserver<KeyValuePair<string, CosmosDiagnostics>>
     {
-        private readonly string name;
-        public TelemetryListener(string listenerName)
-        {
-            this.name = listenerName;
-        }
-
         public void OnCompleted()
         {
             Console.WriteLine("completed");
@@ -128,9 +75,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Console.WriteLine("error " + error.ToString());
         }
 
-        public void OnNext(KeyValuePair<string, object> value)
+        public void OnNext(KeyValuePair<string, CosmosDiagnostics> value)
         {
-            Console.WriteLine($"{this.name} : {value.Key} => {(CosmosDiagnostics)value.Value}");
+            Console.WriteLine($"{value.Key} => {value.Value}");
         }
     }
 }

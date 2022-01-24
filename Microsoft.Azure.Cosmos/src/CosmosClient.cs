@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos.Telemetry.DiagnosticSource;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -169,31 +168,6 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk">Diagnose and troubleshoot issues</seealso>
         public CosmosClient(
             string connectionString,
-            CosmosClientOptions clientOptions = null)
-            : this(
-                  CosmosClientOptions.GetAccountEndpoint(connectionString),
-                  CosmosClientOptions.GetAccountKey(connectionString),
-                  clientOptions)
-        {
-        }
-
-        /// <summary>
-        /// Creates a new CosmosClient with the connection string.
-        /// 
-        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
-        /// of the application which enables efficient connection management and performance. Please refer to the
-        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
-        /// </summary>
-        /// <param name="connectionString">The connection string to the cosmos account. ex: https://mycosmosaccount.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
-        /// <param name="clientOptions">(Optional) client options</param>
-        /// <param name="listeners">(Optional) Diagnostic Log Listener</param>
-        /// <seealso cref="CosmosClientOptions"/>
-        /// <seealso cref="Fluent.CosmosClientBuilder"/>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">Performance Tips</seealso>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk">Diagnose and troubleshoot issues</seealso>
-        public CosmosClient(
-            string connectionString,
-            IReadOnlyList<ICosmosDiagnosticListener> listeners,
             CosmosClientOptions clientOptions = null)
             : this(
                   CosmosClientOptions.GetAccountEndpoint(connectionString),

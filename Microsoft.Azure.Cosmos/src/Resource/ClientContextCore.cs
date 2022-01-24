@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
@@ -62,8 +61,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static CosmosClientContext Create(
             CosmosClient cosmosClient,
-            CosmosClientOptions clientOptions,
-            IReadOnlyList<ICosmosDiagnosticListener> listener = null)
+            CosmosClientOptions clientOptions)
         {
             if (cosmosClient == null)
             {
@@ -475,19 +473,16 @@ namespace Microsoft.Azure.Cosmos
         {
             using (new ActivityScope(Guid.NewGuid()))
             {
-                string prefix = $"{operationName}";
                 try
                 {
                     return await task(trace).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                 {
-                    prefix = $"{prefix}.OperationCanceled{DiagnosticSourceFilterType.Exception}";
                     throw new CosmosOperationCanceledException(oe, trace);
                 }
                 catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
                 {
-                    prefix = $"{prefix}.ObjectDisposed{DiagnosticSourceFilterType.Exception}";
                     throw new CosmosObjectDisposedException(
                         objectDisposed, 
                         this.client, 
@@ -495,14 +490,13 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
                 {
-                    prefix = $"{prefix}.NullReference{DiagnosticSourceFilterType.Exception}";
                     throw new CosmosNullReferenceException(
                         nullRefException,
                         trace);
                 }
                 finally
                 {
-                    diagnosticsource.Emit($"{prefix}.Diagnostics", trace);
+                    diagnosticsource.Emit($"{operationName}.Diagnostics", trace);
                 }
             }
         }
