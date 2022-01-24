@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
         internal static CosmosClientContext Create(
             CosmosClient cosmosClient,
             CosmosClientOptions clientOptions,
-            IList<ICosmosDiagnosticListener> listener = null)
+            IReadOnlyList<ICosmosDiagnosticListener> listener = null)
         {
             if (cosmosClient == null)
             {
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
             DocumentClient documentClient,
             CosmosClientOptions clientOptions,
             RequestInvokerHandler requestInvokerHandler = null,
-            IList<ICosmosDiagnosticListener> telemetryListener = null)
+            IReadOnlyList<ICosmosDiagnosticListener> telemetryListener = null)
         {
             if (cosmosClient == null)
             {

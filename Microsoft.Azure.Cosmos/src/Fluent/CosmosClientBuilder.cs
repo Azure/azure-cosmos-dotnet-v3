@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private readonly string accountEndpoint;
         private readonly string accountKey;
         private readonly TokenCredential tokenCredential;
-        private IList<ICosmosDiagnosticListener> listener;
+        private IReadOnlyList<ICosmosDiagnosticListener> listener;
 
         /// <summary>
         /// Initialize a new CosmosConfiguration class that holds all the properties the CosmosClient requires.
@@ -129,8 +129,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         {
             DefaultTrace.TraceInformation($"CosmosClientBuilder.Build with configuration: {this.clientOptions.GetSerializedConfiguration()}");
             return this.tokenCredential == null ?
-                new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions, this.listener) :
-                new CosmosClient(this.accountEndpoint, this.tokenCredential, this.clientOptions, this.listener);
+                new CosmosClient(this.accountEndpoint, this.accountKey, this.listener, this.clientOptions) :
+                new CosmosClient(this.accountEndpoint, this.tokenCredential, this.listener, this.clientOptions);
         }
 
         /// <summary>
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="listener"></param>
         /// <returns>builder</returns>
-        public CosmosClientBuilder AddListeners(IList<ICosmosDiagnosticListener> listener)
+        public CosmosClientBuilder AddListeners(IReadOnlyList<ICosmosDiagnosticListener> listener)
         {
             this.listener = listener;
             return this;

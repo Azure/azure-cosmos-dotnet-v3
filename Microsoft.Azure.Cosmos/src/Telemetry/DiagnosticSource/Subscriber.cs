@@ -12,9 +12,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.DiagnosticSource
 
     internal class Subscriber : IObserver<DiagnosticListener>
     {
-        private readonly IList<ICosmosDiagnosticListener> listenersToSubscribe;
+        private readonly IReadOnlyList<ICosmosDiagnosticListener> listenersToSubscribe;
 
-        public Subscriber(IList<ICosmosDiagnosticListener> listenersToSubscribe)
+        public Subscriber(IReadOnlyList<ICosmosDiagnosticListener> listenersToSubscribe)
         {
             this.listenersToSubscribe = listenersToSubscribe;
         }

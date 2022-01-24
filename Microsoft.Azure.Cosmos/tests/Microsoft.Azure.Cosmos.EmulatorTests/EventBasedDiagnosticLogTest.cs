@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public void TestInitialize()
         {
-            IList<ICosmosDiagnosticListener> listeners = new List<ICosmosDiagnosticListener>
+            IReadOnlyList<ICosmosDiagnosticListener> listeners = new List<ICosmosDiagnosticListener>
             {
                 new ListenerWithDefaultFilter(),
                 new ListenerWithCustomFilter(),
