@@ -32,10 +32,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Encr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Encryption.Custom.Tests", "Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests.csproj", "{B5B3631D-AC2F-4257-855D-D6FE12F20B60}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AppInsightListener", "AppInsightListener", "{540BB748-C68C-43DF-8ACF-D5FBFDCAA6C7}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.Cosmos.ApplicationInsights", "Microsoft.Azure.Cosmos.AppIicationInsights\Microsoft.Azure.Cosmos.ApplicationInsights.csproj", "{18D90EF1-6D7A-419B-9241-BE0355B5D285}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Cover|Any CPU = Cover|Any CPU
@@ -166,18 +162,6 @@ Global
 		{B5B3631D-AC2F-4257-855D-D6FE12F20B60}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B5B3631D-AC2F-4257-855D-D6FE12F20B60}.Release|x64.ActiveCfg = Release|Any CPU
 		{B5B3631D-AC2F-4257-855D-D6FE12F20B60}.Release|x64.Build.0 = Release|Any CPU
-		{18D90EF1-6D7A-419B-9241-BE0355B5D285}.Cover|Any CPU.ActiveCfg = Debug|Any CPU
-		{18D90EF1-6D7A-419B-9241-BE0355B5D285}.Cover|Any CPU.Build.0 = Debug|Any CPU
-		{18D90EF1-6D7A-419B-9241-BE0355B5D285}.Cover|x64.ActiveCfg = Debug|Any CPU
-		{18D90EF1-6D7A-419B-9241-BE0355B5D285}.Cover|x64.Build.0 = Debug|Any CPU
-		{18D90EF1-6D7A-419B-9241-BE0355B5D285}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{18D90EF1-6D7A-419B-9241-BE0355B5D285}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{18D90EF1-6D7A-419B-9241-BE0355B5D285}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{18D90EF1-6D7A-419B-9241-BE0355B5D285}.Debug|x64.Build.0 = Debug|Any CPU
-		{18D90EF1-6D7A-419B-9241-BE0355B5D285}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{18D90EF1-6D7A-419B-9241-BE0355B5D285}.Release|Any CPU.Build.0 = Release|Any CPU
-		{18D90EF1-6D7A-419B-9241-BE0355B5D285}.Release|x64.ActiveCfg = Release|Any CPU
-		{18D90EF1-6D7A-419B-9241-BE0355B5D285}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -189,7 +173,6 @@ Global
 		{D7C78D76-A740-4129-BAAE-894640F95D74} = {51F858D8-707E-4F21-BCC6-4D6123832E4F}
 		{F87719DB-BB52-4B12-9D9C-F6AE30BAB3D7} = {51F858D8-707E-4F21-BCC6-4D6123832E4F}
 		{B5B3631D-AC2F-4257-855D-D6FE12F20B60} = {51F858D8-707E-4F21-BCC6-4D6123832E4F}
-		{18D90EF1-6D7A-419B-9241-BE0355B5D285} = {540BB748-C68C-43DF-8ACF-D5FBFDCAA6C7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C6A1D820-CB03-4DE6-87D1-46EF476F0040}
