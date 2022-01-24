@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             public void UpdateRegionContacted(TraceDatum traceDatum)
             {
-                //No Implementation
+                //NoImplementation
             }
 
             public void AddOrUpdateDatum(string key, object value)
