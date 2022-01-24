@@ -18,8 +18,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public void TestInitialize()
         {
-            IReadOnlyList<IObserver<KeyValuePair<string, CosmosDiagnostics>>> listeners = 
-                new List<IObserver<KeyValuePair<string, CosmosDiagnostics>>>
+            IReadOnlyList<IObserver<KeyValuePair<string, object>>> listeners = 
+                new List<IObserver<KeyValuePair<string, object>>>
                 {
                     new TelemetryListener()
                 };
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// <summary>
     /// Telemetry Listener will receive the diagnostic logs
     /// </summary>
-    public class TelemetryListener : IObserver<KeyValuePair<string, CosmosDiagnostics>>
+    public class TelemetryListener : IObserver<KeyValuePair<string, object>>
     {
         public void OnCompleted()
         {
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Console.WriteLine("error " + error.ToString());
         }
 
-        public void OnNext(KeyValuePair<string, CosmosDiagnostics> value)
+        public void OnNext(KeyValuePair<string, object> value)
         {
             Console.WriteLine($"{value.Key} => {value.Value}");
         }

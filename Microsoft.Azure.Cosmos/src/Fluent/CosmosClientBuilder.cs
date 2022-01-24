@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="listeners"></param>
         /// <returns>builder</returns>
-        public CosmosClientBuilder AddListeners(IReadOnlyList<IObserver<KeyValuePair<string, CosmosDiagnostics>>> listeners)
+        public CosmosClientBuilder AddListeners(IReadOnlyList<IObserver<KeyValuePair<string, object>>> listeners)
         {
             this.clientOptions.DiagnosticLogListeners = listeners;
             return this;

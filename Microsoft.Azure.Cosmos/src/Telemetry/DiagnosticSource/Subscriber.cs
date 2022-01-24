@@ -11,16 +11,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry.DiagnosticSource
 
     internal class Subscriber : IObserver<DiagnosticListener>
     {
-        private readonly IReadOnlyList<IObserver<KeyValuePair<string, CosmosDiagnostics>>> listenersToSubscribe;
+        private readonly IReadOnlyList<IObserver<KeyValuePair<string, object>>> listenersToSubscribe;
 
-        public Subscriber(IReadOnlyList<IObserver<KeyValuePair<string, CosmosDiagnostics>>> listenersToSubscribe)
+        public Subscriber(IReadOnlyList<IObserver<KeyValuePair<string, object>>> listenersToSubscribe)
         {
             this.listenersToSubscribe = listenersToSubscribe;
         }
 
         public void OnCompleted()
         {
-            DefaultTrace.TraceInformation("Successfully Subscribed");
+            DefaultTrace.TraceInformation("Completed Successfully");
         }
 
         public void OnError(Exception error)
@@ -32,10 +32,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.DiagnosticSource
         {
             if (source.Name == CosmosDiagnosticSource.DiagnosticSourceName && this.listenersToSubscribe.Count > 0)
             {
-                foreach (IObserver<KeyValuePair<string, CosmosDiagnostics>> listenerToSubscribe in this.listenersToSubscribe)
+                foreach (IObserver<KeyValuePair<string, object>> listenerToSubscribe in this.listenersToSubscribe)
                 {
-                    source.Subscribe((IObserver<KeyValuePair<string, object>>)listenerToSubscribe);
-                    
+                    source.Subscribe(listenerToSubscribe); 
                 }
             }
         }

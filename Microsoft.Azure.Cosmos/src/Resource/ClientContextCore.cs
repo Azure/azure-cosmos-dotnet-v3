@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly RequestInvokerHandler requestHandler;
         private readonly CosmosClientOptions clientOptions;
         private readonly ClientTelemetry telemetry;
+        private readonly IDisposable subscription;
 
         private readonly string userAgent;
         private bool isDisposed = false;
@@ -46,7 +47,8 @@ namespace Microsoft.Azure.Cosmos
             DocumentClient documentClient,
             string userAgent,
             BatchAsyncContainerExecutorCache batchExecutorCache,
-            ClientTelemetry telemetry)
+            ClientTelemetry telemetry,
+            IDisposable subscription)
         {
             this.client = client;
             this.clientOptions = clientOptions;
@@ -57,6 +59,7 @@ namespace Microsoft.Azure.Cosmos
             this.userAgent = userAgent;
             this.batchExecutorCache = batchExecutorCache;
             this.telemetry = telemetry;
+            this.subscription = subscription;
         }
 
         internal static CosmosClientContext Create(
@@ -113,9 +116,11 @@ namespace Microsoft.Azure.Cosmos
 
             ConnectionPolicy connectionPolicy = clientOptions.GetConnectionPolicy(cosmosClient.ClientId);
 
+            IDisposable subscription = null;
             if (clientOptions.DiagnosticLogListeners != null && clientOptions.DiagnosticLogListeners.Count > 0)
             {
-                DiagnosticListener.AllListeners.Subscribe(new Subscriber(clientOptions.DiagnosticLogListeners));
+                subscription = DiagnosticListener.AllListeners
+                                                 .Subscribe(new Subscriber(clientOptions.DiagnosticLogListeners));
             }
 
             ClientTelemetry telemetry = null;
@@ -174,7 +179,8 @@ namespace Microsoft.Azure.Cosmos
                 documentClient: documentClient,
                 userAgent: documentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
                 batchExecutorCache: new BatchAsyncContainerExecutorCache(),
-                telemetry: telemetry);
+                telemetry: telemetry,
+                subscription: subscription);
         }
 
         /// <summary>
@@ -457,6 +463,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (disposing)
                 {
+                    this.subscription?.Dispose();
                     this.telemetry?.Dispose();
                     this.batchExecutorCache.Dispose();
                     this.DocumentClient.Dispose();
