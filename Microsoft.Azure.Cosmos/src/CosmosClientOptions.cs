@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Net.Http;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Telemetry.DiagnosticSource;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
@@ -82,6 +83,11 @@ namespace Microsoft.Azure.Cosmos
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
         }
+
+        /// <summary>
+        /// List of listeners to log Request Diagnostics
+        /// </summary>
+        public IReadOnlyList<ICosmosDiagnosticListener> DiagnosticLogListeners { get; set; }
 
         /// <summary>
         /// Get or set user-agent suffix to include with every Azure Cosmos DB service interaction.

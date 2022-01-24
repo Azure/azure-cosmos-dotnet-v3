@@ -198,7 +198,6 @@ namespace Microsoft.Azure.Cosmos
             : this(
                   CosmosClientOptions.GetAccountEndpoint(connectionString),
                   CosmosClientOptions.GetAccountKey(connectionString),
-                  listeners,
                   clientOptions)
         {
         }
@@ -246,33 +245,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Creates a new CosmosClient with the account endpoint URI string and account key.
-        /// 
-        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
-        /// of the application which enables efficient connection management and performance. Please refer to the
-        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
-        /// </summary>
-        /// <param name="accountEndpoint">The cosmos service endpoint to use</param>
-        /// <param name="authKeyOrResourceToken">The cosmos account key or resource token to use to create the client.</param>
-        /// <param name="clientOptions">(Optional) client options</param>
-        /// <param name="listeners">(Optional) Diagnostic Log Listener</param>
-        /// <seealso cref="CosmosClientOptions"/>
-        /// <seealso cref="Fluent.CosmosClientBuilder"/>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">Performance Tips</seealso>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk">Diagnose and troubleshoot issues</seealso>
-        public CosmosClient(
-            string accountEndpoint,
-            string authKeyOrResourceToken,
-            IReadOnlyList<ICosmosDiagnosticListener> listeners,
-            CosmosClientOptions clientOptions = null)
-             : this(accountEndpoint,
-                     AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken),
-                     clientOptions,
-                     listeners)
-        {
-        }
-
-        /// <summary>
         /// Creates a new CosmosClient with the account endpoint URI string and TokenCredential.
         /// 
         /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
@@ -296,40 +268,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Creates a new CosmosClient with the account endpoint URI string and TokenCredential.
-        /// 
-        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
-        /// of the application which enables efficient connection management and performance. Please refer to the
-        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
-        /// </summary>
-        /// <param name="accountEndpoint">The cosmos service endpoint to use.</param>
-        /// <param name="tokenCredential"><see cref="TokenCredential"/>The token to provide AAD token for authorization.</param>
-        /// <param name="clientOptions">(Optional) client options</param>
-        /// <param name="listeners">(Optional) Diagnostic Log Listener</param>
-        public CosmosClient(
-            string accountEndpoint,
-            TokenCredential tokenCredential,
-            IReadOnlyList<ICosmosDiagnosticListener> listeners,
-            CosmosClientOptions clientOptions = null)
-            : this(accountEndpoint,
-                    new AuthorizationTokenProviderTokenCredential(
-                        tokenCredential,
-                        new Uri(accountEndpoint),
-                        clientOptions?.TokenCredentialBackgroundRefreshInterval),
-                    clientOptions,
-                    listeners)
-        {
-        }
-
-        /// <summary>
         /// Used by Compute
         /// Creates a new CosmosClient with the AuthorizationTokenProvider
         /// </summary>
         internal CosmosClient(
              string accountEndpoint,
              AuthorizationTokenProvider authorizationTokenProvider,
-             CosmosClientOptions clientOptions,
-             IReadOnlyList<ICosmosDiagnosticListener> listeners = null)
+             CosmosClientOptions clientOptions)
         {
             if (string.IsNullOrEmpty(accountEndpoint))
             {
@@ -344,8 +289,7 @@ namespace Microsoft.Azure.Cosmos
             this.ClientId = this.IncrementNumberOfClientsCreated();
             this.ClientContext = ClientContextCore.Create(
                 this,
-                clientOptions,
-                listeners);
+                clientOptions);
 
             this.ClientConfigurationTraceDatum = new ClientConfigurationTraceDatum(this.ClientContext, DateTime.UtcNow);
         }
@@ -409,44 +353,6 @@ namespace Microsoft.Azure.Cosmos
         /// of the application which enables efficient connection management and performance. Please refer to the
         /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
         /// </summary>
-        /// <param name="accountEndpoint">The cosmos service endpoint to use</param>
-        /// <param name="authKeyOrResourceToken">The cosmos account key or resource token to use to create the client.</param>
-        /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
-        /// <param name="listeners">(Optional) Diagnostic Log Listeners</param>
-        /// <param name="cosmosClientOptions">(Optional) client options</param>
-        /// <param name="cancellationToken">(Optional) Cancellation Token</param>
-        /// <returns>
-        /// A CosmosClient object.
-        /// </returns>
-        public static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint,
-                                                                        string authKeyOrResourceToken,
-                                                                        IReadOnlyList<(string databaseId, string containerId)> containers,
-                                                                        IReadOnlyList<ICosmosDiagnosticListener> listeners,
-                                                                        CosmosClientOptions cosmosClientOptions = null,
-                                                                        CancellationToken cancellationToken = default)
-        {
-            if (containers == null)
-            {
-                throw new ArgumentNullException(nameof(containers));
-            }
-
-            CosmosClient cosmosClient = new CosmosClient(accountEndpoint,
-                                                         authKeyOrResourceToken,
-                                                         listeners,
-                                                         cosmosClientOptions);
-
-            await cosmosClient.InitializeContainersAsync(containers, cancellationToken);
-            return cosmosClient;
-        }
-
-        /// <summary>
-        /// Creates a new CosmosClient with the account endpoint URI string and TokenCredential.
-        /// In addition to that it initializes the client with containers provided i.e The SDK warms up the caches and 
-        /// connections before the first call to the service is made. Use this to obtain lower latency while startup of your application.
-        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
-        /// of the application which enables efficient connection management and performance. Please refer to the
-        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
-        /// </summary>
         /// <param name="connectionString">The connection string to the cosmos account. ex: https://mycosmosaccount.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
         /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
         /// <param name="cosmosClientOptions">(Optional) client options</param>
@@ -494,41 +400,6 @@ namespace Microsoft.Azure.Cosmos
         /// of the application which enables efficient connection management and performance. Please refer to the
         /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
         /// </summary>
-        /// <param name="connectionString">The connection string to the cosmos account. ex: https://mycosmosaccount.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
-        /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
-        /// <param name="listeners">Diagnostic Log Listeners</param>
-        /// <param name="cosmosClientOptions">(Optional) client options</param>
-        /// <param name="cancellationToken">(Optional) Cancellation Token</param>
-        /// <returns>
-        /// A CosmosClient object.
-        /// </returns>
-        public static async Task<CosmosClient> CreateAndInitializeAsync(string connectionString,
-                                                                        IReadOnlyList<(string databaseId, string containerId)> containers,
-                                                                        IReadOnlyList<ICosmosDiagnosticListener> listeners,
-                                                                        CosmosClientOptions cosmosClientOptions = null,
-                                                                        CancellationToken cancellationToken = default)
-        {
-            if (containers == null)
-            {
-                throw new ArgumentNullException(nameof(containers));
-            }
-
-            CosmosClient cosmosClient = new CosmosClient(connectionString,
-                                                            listeners,
-                                                            cosmosClientOptions);
-
-            await cosmosClient.InitializeContainersAsync(containers, cancellationToken);
-            return cosmosClient;
-        }
-        
-        /// <summary>
-        /// Creates a new CosmosClient with the account endpoint URI string and TokenCredential.
-        /// In addition to that it initializes the client with containers provided i.e The SDK warms up the caches and 
-        /// connections before the first call to the service is made. Use this to obtain lower latency while startup of your application.
-        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
-        /// of the application which enables efficient connection management and performance. Please refer to the
-        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
-        /// </summary>
         /// <param name="accountEndpoint">The cosmos service endpoint to use.</param>
         /// <param name="tokenCredential"><see cref="TokenCredential"/>The token to provide AAD token for authorization.</param>
         /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
@@ -556,43 +427,6 @@ namespace Microsoft.Azure.Cosmos
             return cosmosClient;
         }
 
-        /// <summary>
-        /// Creates a new CosmosClient with the account endpoint URI string and TokenCredential.
-        /// In addition to that it initializes the client with containers provided i.e The SDK warms up the caches and 
-        /// connections before the first call to the service is made. Use this to obtain lower latency while startup of your application.
-        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
-        /// of the application which enables efficient connection management and performance. Please refer to the
-        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
-        /// </summary>
-        /// <param name="accountEndpoint">The cosmos service endpoint to use.</param>
-        /// <param name="tokenCredential"><see cref="TokenCredential"/>The token to provide AAD token for authorization.</param>
-        /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
-        /// <param name="listeners"> Diagnostic Log Listener</param>
-        /// <param name="cosmosClientOptions">(Optional) client options</param>
-        /// <param name="cancellationToken">(Optional) Cancellation Token</param>
-        /// <returns>
-        /// A CosmosClient object.
-        /// </returns>
-        public static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint,
-                                                                        TokenCredential tokenCredential,
-                                                                        IReadOnlyList<(string databaseId, string containerId)> containers,
-                                                                        IReadOnlyList<ICosmosDiagnosticListener> listeners,
-                                                                        CosmosClientOptions cosmosClientOptions = null,
-                                                                        CancellationToken cancellationToken = default)
-        {
-            if (containers == null)
-            {
-                throw new ArgumentNullException(nameof(containers));
-            }
-
-            CosmosClient cosmosClient = new CosmosClient(accountEndpoint,
-                                                         tokenCredential,
-                                                         listeners,
-                                                         cosmosClientOptions);
-
-            await cosmosClient.InitializeContainersAsync(containers, cancellationToken);
-            return cosmosClient;
-        }
         /// <summary>
         /// Used for unit testing only.
         /// </summary>
@@ -601,8 +435,7 @@ namespace Microsoft.Azure.Cosmos
             string accountEndpoint,
             string authKeyOrResourceToken,
             CosmosClientOptions cosmosClientOptions,
-            DocumentClient documentClient,
-            IReadOnlyList<ICosmosDiagnosticListener> listeners = null)
+            DocumentClient documentClient)
         {
             if (string.IsNullOrEmpty(accountEndpoint))
             {
@@ -632,8 +465,7 @@ namespace Microsoft.Azure.Cosmos
                  this,
                  documentClient,
                  cosmosClientOptions,
-                 null,
-                 listeners);
+                 null);
 
             this.ClientConfigurationTraceDatum = new ClientConfigurationTraceDatum(this.ClientContext, DateTime.UtcNow);
         }

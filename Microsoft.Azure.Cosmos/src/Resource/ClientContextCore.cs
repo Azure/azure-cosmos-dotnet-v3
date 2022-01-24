@@ -92,16 +92,14 @@ namespace Microsoft.Azure.Cosmos
                 cosmosClient,
                 documentClient,
                 clientOptions,
-                null,
-                listener);
+                null);
         }
 
         internal static CosmosClientContext Create(
             CosmosClient cosmosClient,
             DocumentClient documentClient,
             CosmosClientOptions clientOptions,
-            RequestInvokerHandler requestInvokerHandler = null,
-            IReadOnlyList<ICosmosDiagnosticListener> telemetryListener = null)
+            RequestInvokerHandler requestInvokerHandler = null)
         {
             if (cosmosClient == null)
             {
@@ -117,9 +115,9 @@ namespace Microsoft.Azure.Cosmos
 
             ConnectionPolicy connectionPolicy = clientOptions.GetConnectionPolicy(cosmosClient.ClientId);
 
-            if (telemetryListener != null && telemetryListener.Count > 0)
+            if (clientOptions.DiagnosticLogListeners != null && clientOptions.DiagnosticLogListeners.Count > 0)
             {
-                DiagnosticListener.AllListeners.Subscribe(new Subscriber(telemetryListener));
+                DiagnosticListener.AllListeners.Subscribe(new Subscriber(clientOptions.DiagnosticLogListeners));
             }
 
             ClientTelemetry telemetry = null;

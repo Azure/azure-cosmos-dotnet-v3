@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using System.Net.Http;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Telemetry.DiagnosticSource;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -24,7 +23,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private readonly string accountEndpoint;
         private readonly string accountKey;
         private readonly TokenCredential tokenCredential;
-        private IReadOnlyList<ICosmosDiagnosticListener> listener;
 
         /// <summary>
         /// Initialize a new CosmosConfiguration class that holds all the properties the CosmosClient requires.
@@ -129,8 +127,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         {
             DefaultTrace.TraceInformation($"CosmosClientBuilder.Build with configuration: {this.clientOptions.GetSerializedConfiguration()}");
             return this.tokenCredential == null ?
-                new CosmosClient(this.accountEndpoint, this.accountKey, this.listener, this.clientOptions) :
-                new CosmosClient(this.accountEndpoint, this.tokenCredential, this.listener, this.clientOptions);
+                new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions) :
+                new CosmosClient(this.accountEndpoint, this.tokenCredential, this.clientOptions);
         }
 
         /// <summary>
@@ -142,17 +140,17 @@ namespace Microsoft.Azure.Cosmos.Fluent
         internal virtual CosmosClient Build(DocumentClient documentClient)
         {
             DefaultTrace.TraceInformation($"CosmosClientBuilder.Build(DocumentClient) with configuration: {this.clientOptions.GetSerializedConfiguration()}");
-            return new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions, documentClient, this.listener);
+            return new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions, documentClient);
         }
 
         /// <summary>
         /// Listener
         /// </summary>
-        /// <param name="listener"></param>
+        /// <param name="listeners"></param>
         /// <returns>builder</returns>
-        public CosmosClientBuilder AddListeners(IReadOnlyList<ICosmosDiagnosticListener> listener)
+        public CosmosClientBuilder AddListeners(IReadOnlyList<ICosmosDiagnosticListener> listeners)
         {
-            this.listener = listener;
+            this.clientOptions.DiagnosticLogListeners = listeners;
             return this;
         }
 
