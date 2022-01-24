@@ -14,36 +14,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class EventBasedDiagnosticLogTest : BaseCosmosClientHelper
     {
         private CosmosClientBuilder cosmosClientBuilder;
-
-        [TestInitialize]
-        public void TestInitialize()
-        {
-            IReadOnlyList<IObserver<KeyValuePair<string, object>>> listeners = 
-                new List<IObserver<KeyValuePair<string, object>>>
-                {
-                    new TelemetryListener()
-                };
-
-            this.cosmosClientBuilder = TestCommon.GetDefaultConfiguration()
-                .AddListeners(listeners);
-        }
-
-        [TestCleanup]
-        public async Task Cleanup()
-        {
-            await base.TestCleanup();
-        }
+        private static readonly TelemetryListener actualListener = new TelemetryListener();
+        private readonly IReadOnlyList<IObserver<KeyValuePair<string, object>>> listeners =
+            new List<IObserver<KeyValuePair<string, object>>>{ actualListener };
 
         [TestMethod]
         [DataRow(ConnectionMode.Direct)]
         public async Task PointSuccessOperationsTest(ConnectionMode mode)
-        { 
+        {
+            this.cosmosClientBuilder = TestCommon.GetDefaultConfiguration().AddListeners(this.listeners);
+
             Container container = await this.CreateClientAndContainer(mode);
 
             // Create an item
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
             await container.CreateItemAsync<ToDoActivity>(testItem);
             await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
+
+            await base.TestCleanup();
+
+            Assert.AreEqual(5, actualListener.actualCosmosDiagnostics.Count);
         }
 
         private async Task<Container> CreateClientAndContainer(ConnectionMode mode)
@@ -65,19 +55,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// </summary>
     public class TelemetryListener : IObserver<KeyValuePair<string, object>>
     {
+        public readonly IList<CosmosDiagnostics> actualCosmosDiagnostics = new List<CosmosDiagnostics>();
+
         public void OnCompleted()
         {
-            Console.WriteLine("completed");
         }
 
         public void OnError(Exception error)
         {
-            Console.WriteLine("error " + error.ToString());
         }
 
         public void OnNext(KeyValuePair<string, object> value)
         {
-            Console.WriteLine($"{value.Key} => {value.Value}");
+            this.actualCosmosDiagnostics.Add((CosmosDiagnostics)value.Value);
         }
     }
 }
