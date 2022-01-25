@@ -438,8 +438,7 @@ namespace Microsoft.Azure.Cosmos
             this.ClientContext = ClientContextCore.Create(
                  this,
                  documentClient,
-                 cosmosClientOptions,
-                 null);
+                 cosmosClientOptions);
 
             this.ClientConfigurationTraceDatum = new ClientConfigurationTraceDatum(this.ClientContext, DateTime.UtcNow);
         }
