@@ -41,6 +41,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public string Name { get; }
 
+        public Guid Id { get; }
+
         public DateTime StartTime { get; }
 
         public TimeSpan Duration => this.stopwatch.Elapsed;

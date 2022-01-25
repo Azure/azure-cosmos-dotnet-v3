@@ -166,6 +166,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 WriteIndents(writer, indentStack, asciiTreeIndents, isLastChild);
 
                 writer.Write(trace.Name);
+                writer.Write('(');
+                writer.Write(trace.Id);
+                writer.Write(')');
                 writer.Write(space);
 
                 writer.Write(trace.Component);

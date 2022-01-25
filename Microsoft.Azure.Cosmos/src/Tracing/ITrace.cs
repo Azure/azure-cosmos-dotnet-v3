@@ -24,6 +24,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         string Name { get; }
 
         /// <summary>
+        /// Gets the ID of the node.
+        /// </summary>
+        Guid Id { get; }
+
+        /// <summary>
         /// Gets the time when the trace was started.
         /// </summary>
         DateTime StartTime { get; }

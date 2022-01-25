@@ -26,6 +26,7 @@
                 Assert.IsNotNull(rootTrace.Children);
                 Assert.AreEqual(0, rootTrace.Children.Count);
                 Assert.AreEqual(rootTrace.Component, TraceComponent.Unknown);
+                Assert.AreNotEqual(rootTrace.Id, Guid.Empty);
                 Assert.IsNotNull(rootTrace.Data);
                 Assert.AreEqual(0, rootTrace.Data.Count);
                 Assert.AreEqual(rootTrace.Level, TraceLevel.Verbose);

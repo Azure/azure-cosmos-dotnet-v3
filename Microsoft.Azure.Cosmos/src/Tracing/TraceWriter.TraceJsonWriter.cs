@@ -45,15 +45,14 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 writer.WriteFieldName("name");
                 writer.WriteStringValue(trace.Name);
 
-                if (isRootTrace)
-                {
-                    // Record Start time and Duration only for Root trace.
-                    writer.WriteFieldName("start time");
-                    writer.WriteStringValue(trace.StartTime.ToString("hh:mm:ss:fff"));
+                writer.WriteFieldName("id");
+                writer.WriteStringValue(trace.Id.ToString());
 
-                    writer.WriteFieldName("duration in milliseconds");
-                    writer.WriteNumber64Value(trace.Duration.TotalMilliseconds);
-                }
+                writer.WriteFieldName("start time");
+                writer.WriteStringValue(trace.StartTime.ToString("hh:mm:ss:fff"));
+
+                writer.WriteFieldName("duration in milliseconds");
+                writer.WriteNumber64Value(trace.Duration.TotalMilliseconds);
 
                 if (trace.Data.Any())
                 {

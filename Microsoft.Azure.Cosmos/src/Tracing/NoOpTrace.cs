@@ -22,6 +22,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public string Name => "NoOp";
 
+        public Guid Id => default;
+
         public DateTime StartTime => default;
 
         public TimeSpan Duration => default;
