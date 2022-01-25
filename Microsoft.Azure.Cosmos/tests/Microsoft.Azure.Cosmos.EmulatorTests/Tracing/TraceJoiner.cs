@@ -47,8 +47,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             public string Name => "Trace Forest";
 
-            public Guid Id => Guid.Empty;
-
             public DateTime StartTime => DateTime.MinValue;
 
             public TimeSpan Duration => TimeSpan.MaxValue;

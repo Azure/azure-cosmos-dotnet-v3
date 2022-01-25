@@ -903,8 +903,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
             public string Name { get; }
 
-            public Guid Id => Guid.Empty;
-
             public DateTime StartTime => DateTime.MinValue;
 
             public TimeSpan Duration => TimeSpan.Zero;
