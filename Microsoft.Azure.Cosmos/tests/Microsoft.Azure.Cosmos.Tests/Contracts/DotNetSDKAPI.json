@@ -2273,6 +2273,20 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosSerializer Serializer;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.CosmosSerializer get_Serializer();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Serializer(Microsoft.Azure.Cosmos.CosmosSerializer);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Collections.Generic.IReadOnlyList`1[System.IObserver`1[System.Collections.Generic.KeyValuePair`2[System.String,System.Object]]] DiagnosticLogListeners[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonIgnoreAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.IObserver`1[System.Collections.Generic.KeyValuePair`2[System.String,System.Object]]] DiagnosticLogListeners;CanRead:True;CanWrite:True;System.Collections.Generic.IReadOnlyList`1[System.IObserver`1[System.Collections.Generic.KeyValuePair`2[System.String,System.Object]]] get_DiagnosticLogListeners();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DiagnosticLogListeners(System.Collections.Generic.IReadOnlyList`1[System.IObserver`1[System.Collections.Generic.KeyValuePair`2[System.String,System.Object]]]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.IReadOnlyList`1[System.IObserver`1[System.Collections.Generic.KeyValuePair`2[System.String,System.Object]]] get_DiagnosticLogListeners()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.IObserver`1[System.Collections.Generic.KeyValuePair`2[System.String,System.Object]]] get_DiagnosticLogListeners();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Collections.Generic.IReadOnlyList`1[System.String] ApplicationPreferredRegions": {
           "Type": "Property",
           "Attributes": [],
@@ -2513,6 +2527,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_DiagnosticLogListeners(System.Collections.Generic.IReadOnlyList`1[System.IObserver`1[System.Collections.Generic.KeyValuePair`2[System.String,System.Object]]])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_DiagnosticLogListeners(System.Collections.Generic.IReadOnlyList`1[System.IObserver`1[System.Collections.Generic.KeyValuePair`2[System.String,System.Object]]]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_EnableContentResponseOnWrite(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -3698,6 +3719,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder AddCustomHandlers(Microsoft.Azure.Cosmos.RequestHandler[]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder AddListeners(System.Collections.Generic.IReadOnlyList`1[System.IObserver`1[System.Collections.Generic.KeyValuePair`2[System.String,System.Object]]])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder AddListeners(System.Collections.Generic.IReadOnlyList`1[System.IObserver`1[System.Collections.Generic.KeyValuePair`2[System.String,System.Object]]]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationName(System.String)": {
           "Type": "Method",

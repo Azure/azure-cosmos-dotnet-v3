@@ -468,7 +468,7 @@ namespace Microsoft.Azure.Cosmos
                 if (disposing)
                 {
                     this.subscription?.Dispose();
-                    this.diagnosticsource.Dispose();
+                    this.diagnosticsource?.Dispose();
                     this.telemetry?.Dispose();
                     this.batchExecutorCache.Dispose();
                     this.DocumentClient.Dispose();

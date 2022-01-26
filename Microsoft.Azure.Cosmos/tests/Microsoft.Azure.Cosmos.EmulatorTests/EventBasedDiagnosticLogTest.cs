@@ -19,12 +19,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <param name="mode"></param>
         /// <returns></returns>
         [TestMethod]
-        public async Task ListenerWithMultipleClientsTest()
+        public void ListenerWithMultipleClientsTest()
         {
             TelemetryListener actualListener1 = new();
-            IReadOnlyList<IObserver<KeyValuePair<string, object>>> listeners = new List<IObserver<KeyValuePair<string, object>>> 
-            { 
-                actualListener1 
+            this.ClientWithListener(actualListener1);
+            TelemetryListener actualListener2 = new();
+            this.ClientWithListener(actualListener2);
+
+            Assert.AreEqual(4, actualListener1.actualCosmosDiagnostics.Count);
+            Assert.AreEqual(4, actualListener2.actualCosmosDiagnostics.Count);
+        }
+
+        private async void ClientWithListener(TelemetryListener actualListener1)
+        {
+            IReadOnlyList<IObserver<KeyValuePair<string, object>>> listeners = new List<IObserver<KeyValuePair<string, object>>>
+            {
+                actualListener1
             };
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
 
@@ -40,28 +50,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await container1.CreateItemAsync<ToDoActivity>(testItem);
                 await container1.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
             }
-
-            TelemetryListener actualListener2 = new();
-            IReadOnlyList<IObserver<KeyValuePair<string, object>>> listeners1 = new List<IObserver<KeyValuePair<string, object>>> 
-            { 
-                actualListener2 
-            };
-
-            CosmosClientBuilder cosmosClientBuilder2 = TestCommon.GetDefaultConfiguration()
-                                                                 .AddListeners(listeners1);
-            using (CosmosClient cosmosClient2 = cosmosClientBuilder2.Build())
-            {
-                Database database2 = await cosmosClient2.CreateDatabaseAsync(Guid.NewGuid().ToString());
-                Container container2 = await database2.CreateContainerAsync(
-                    id: Guid.NewGuid().ToString(),
-                    partitionKeyPath: "/id");
-                // Create an item
-                await container2.CreateItemAsync<ToDoActivity>(testItem);
-                await container2.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
-            }
-
-            Assert.AreEqual(4, actualListener1.actualCosmosDiagnostics.Count);
-            Assert.AreEqual(4, actualListener2.actualCosmosDiagnostics.Count);
         }
     }
 
