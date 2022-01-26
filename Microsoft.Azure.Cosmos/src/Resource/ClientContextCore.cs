@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal class ClientContextCore : CosmosClientContext
     {
-        private readonly static CosmosDiagnosticSource diagnosticsource = new CosmosDiagnosticSource();
+        private readonly CosmosDiagnosticSource diagnosticsource;
 
         private readonly BatchAsyncContainerExecutorCache batchExecutorCache;
         private readonly CosmosClient client;
@@ -48,6 +48,7 @@ namespace Microsoft.Azure.Cosmos
             string userAgent,
             BatchAsyncContainerExecutorCache batchExecutorCache,
             ClientTelemetry telemetry,
+            CosmosDiagnosticSource diagnosticsource,
             IDisposable subscription)
         {
             this.client = client;
@@ -59,6 +60,7 @@ namespace Microsoft.Azure.Cosmos
             this.userAgent = userAgent;
             this.batchExecutorCache = batchExecutorCache;
             this.telemetry = telemetry;
+            this.diagnosticsource = diagnosticsource;
             this.subscription = subscription;
         }
 
@@ -117,10 +119,11 @@ namespace Microsoft.Azure.Cosmos
             ConnectionPolicy connectionPolicy = clientOptions.GetConnectionPolicy(cosmosClient.ClientId);
 
             IDisposable subscription = null;
-            if (clientOptions.DiagnosticLogListeners != null && clientOptions.DiagnosticLogListeners.Count > 0)
+            CosmosDiagnosticSource diagnosticsource = null;
+            if (clientOptions.DiagnosticLogListeners != null)
             {
-                subscription = DiagnosticListener.AllListeners
-                                                 .Subscribe(new Subscriber(clientOptions.DiagnosticLogListeners));
+                diagnosticsource = new CosmosDiagnosticSource();
+                subscription = new Subscriber(clientOptions.DiagnosticLogListeners);
             }
 
             ClientTelemetry telemetry = null;
@@ -180,6 +183,7 @@ namespace Microsoft.Azure.Cosmos
                 userAgent: documentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
                 batchExecutorCache: new BatchAsyncContainerExecutorCache(),
                 telemetry: telemetry,
+                diagnosticsource: diagnosticsource,
                 subscription: subscription);
         }
 
@@ -464,6 +468,7 @@ namespace Microsoft.Azure.Cosmos
                 if (disposing)
                 {
                     this.subscription?.Dispose();
+                    this.diagnosticsource.Dispose();
                     this.telemetry?.Dispose();
                     this.batchExecutorCache.Dispose();
                     this.DocumentClient.Dispose();
@@ -503,7 +508,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 finally
                 {
-                    diagnosticsource.Emit($"{operationName}.Diagnostics", trace);
+                    diagnosticsource?.Emit($"{operationName}.Diagnostics", trace);
                 }
             }
         }

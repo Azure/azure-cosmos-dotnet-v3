@@ -87,6 +87,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// List of listeners to log Request Diagnostics
         /// </summary>
+        [JsonIgnore]
         public IReadOnlyList<IObserver<KeyValuePair<string, object>>> DiagnosticLogListeners { get; set; }
 
         /// <summary>
