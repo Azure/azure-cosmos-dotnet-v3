@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.DiagnosticSource
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal class Subscriber : IObserver<DiagnosticListener>, IDisposable
     {
@@ -23,37 +22,32 @@ namespace Microsoft.Azure.Cosmos.Telemetry.DiagnosticSource
             this.allDiagnosticListenersSubscription = DiagnosticListener.AllListeners.Subscribe(this);
         }
 
+        public void Dispose()
+        {
+            foreach (IDisposable subscription in this.diagnosticListeners)
+            {
+                subscription.Dispose();
+            }
+            this.allDiagnosticListenersSubscription?.Dispose();
+        }
+
         public void OnCompleted()
         {
+            this.Dispose();
         }
 
         public void OnError(Exception error)
         {
-        }
-
-        /// <summary>
-        /// Dispose of this instance.
-        /// </summary>
-        public void Dispose()
-        {
-            if (this.diagnosticListeners != null)
-            {
-                foreach (IDisposable subscription in this.diagnosticListeners)
-                {
-                    subscription.Dispose();
-                }
-            }
-
-            this.allDiagnosticListenersSubscription?.Dispose();
+            throw error;
         }
 
         public void OnNext(DiagnosticListener source)
         {
-            if (source.Name == CosmosDiagnosticSource.DiagnosticSourceName && this.listenersToSubscribe.Count > 0)
+            if (source.Name == CosmosDiagnosticSource.DiagnosticSourceName)
             {
                 foreach (IObserver<KeyValuePair<string, object>> listenerToSubscribe in this.listenersToSubscribe)
                 {
-                    this.diagnosticListeners.Add(source.Subscribe(listenerToSubscribe)); 
+                    this.diagnosticListeners.Add(source.Subscribe(listenerToSubscribe));
                 }
             }
         }
