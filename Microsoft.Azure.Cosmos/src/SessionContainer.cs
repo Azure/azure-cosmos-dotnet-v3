@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Common
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.Text;
     using System.Threading;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -15,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Common
 
     internal sealed class SessionContainer : ISessionContainer
     {
+        private static readonly string sessionTokenSeparator = ":";
         private volatile SessionContainerState state;
 
         public SessionContainer(string hostName)
@@ -153,17 +153,25 @@ namespace Microsoft.Azure.Cosmos.Common
             {
                 if (partitionKeyRangeIdToTokenMap.TryGetValue(partitionKeyRangeId, out ISessionToken sessionToken))
                 {
-                    return partitionKeyRangeId + ":" + sessionToken.ConvertToString();
+                    return partitionKeyRangeId + SessionContainer.sessionTokenSeparator + sessionToken.ConvertToString();
                 }
                 else if (request.RequestContext.ResolvedPartitionKeyRange.Parents != null)
                 {
+                    ISessionToken parentSessionToken = null;
                     for (int parentIndex = request.RequestContext.ResolvedPartitionKeyRange.Parents.Count - 1; parentIndex >= 0; parentIndex--)
                     {
                         if (partitionKeyRangeIdToTokenMap.TryGetValue(request.RequestContext.ResolvedPartitionKeyRange.Parents[parentIndex], 
                                                                       out sessionToken))
                         {
-                            return partitionKeyRangeId + ":" + sessionToken.ConvertToString();
+                            // A partition can have more than 1 parent (merge). In that case, we apply Merge to generate a token with both parent's max LSNs
+                            parentSessionToken = parentSessionToken != null ? parentSessionToken.Merge(sessionToken) : sessionToken;
                         }
+                    }
+
+                    // When we don't have the session token for a partition, we can leverage the session token of the parent(s)
+                    if (parentSessionToken != null)
+                    {
+                        return partitionKeyRangeId + SessionContainer.sessionTokenSeparator + parentSessionToken.ConvertToString();
                     }
                 }
             }
@@ -391,7 +399,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 }
 
                 sb.Append(pair.Key);
-                sb.Append(":");
+                sb.Append(SessionContainer.sessionTokenSeparator);
                 sb.Append(pair.Value.ConvertToString());
             }
 
