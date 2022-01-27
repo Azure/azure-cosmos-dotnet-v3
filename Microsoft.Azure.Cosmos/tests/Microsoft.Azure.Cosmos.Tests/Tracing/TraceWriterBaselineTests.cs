@@ -961,11 +961,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             {
                 //NoImplementation
             }
-
-            public void AddOrUpdateDatum(string key, object value)
-            {
-                this.data[key] = value;
-            }
         }
     }
 }
