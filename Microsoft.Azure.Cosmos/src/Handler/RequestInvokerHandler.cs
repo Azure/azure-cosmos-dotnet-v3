@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -122,6 +123,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ITrace trace,
             CancellationToken cancellationToken)
         {
+            ResponseMessage response = null;
             if (resourceUriString == null)
             {
                 throw new ArgumentNullException(nameof(resourceUriString));
@@ -177,11 +179,23 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 }
                                 catch (DocumentClientException dce)
                                 {
-                                    return dce.ToCosmosResponseMessage(request);
+                                    response = dce.ToCosmosResponseMessage(request);
+
+                                    this.RecordFromResponse(operationType, response, childTrace);
+
+                                    childTrace.CosmosInstrumentation.MarkFailed(dce);
+
+                                    return response;
                                 }
                                 catch (CosmosException ce)
                                 {
-                                    return ce.ToCosmosResponseMessage(request);
+                                    response = ce.ToCosmosResponseMessage(request);
+
+                                    this.RecordFromResponse(operationType, response, childTrace);
+
+                                    childTrace.CosmosInstrumentation.MarkFailed(ce);
+
+                                    return response;
                                 }
                             }
                             else
@@ -206,7 +220,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             }
                             catch (CosmosException ex)
                             {
-                                return ex.ToCosmosResponseMessage(request);
+                                response = ex.ToCosmosResponseMessage(request);
+
+                                this.RecordFromResponse(operationType, response, childTrace);
+
+                                childTrace.CosmosInstrumentation.MarkFailed(ex);
+
+                                return response;
                             }
 
                             PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync(childTrace);
@@ -223,7 +243,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                     subStatusCode: default,
                                     activityId: Guid.Empty.ToString(),
                                     requestCharge: default);
-                                return notFound.ToCosmosResponseMessage(request);
+                                response = notFound.ToCosmosResponseMessage(request);
+
+                                this.RecordFromResponse(operationType, response, childTrace);
+
+                                childTrace.CosmosInstrumentation.MarkFailed(notFound);
+
+                                return response;
                             }
 
                             // For epk range filtering we can end up in one of 3 cases:
@@ -239,7 +265,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                     activityId: Guid.NewGuid().ToString(),
                                     requestCharge: default);
 
-                                return goneException.ToCosmosResponseMessage(request);
+                                response = goneException.ToCosmosResponseMessage(request);
+
+                                this.RecordFromResponse(operationType, response, childTrace);
+
+                                childTrace.CosmosInstrumentation.MarkFailed(goneException);
+
+                                return response;
                             }
                             // overlappingRanges.Count == 1
                             else
@@ -284,16 +316,86 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     {
                         request.ContainerId = cosmosContainerCore?.Id;
                         request.DatabaseId = cosmosContainerCore?.Database.Id;
+
+                        childTrace.CosmosInstrumentation.Record(OTelAttributes.ContainerName, cosmosContainerCore?.Id);
+                        childTrace.CosmosInstrumentation.Record(OTelAttributes.DbName, cosmosContainerCore?.Database.Id);
+
                     }
+
                     requestEnricher?.Invoke(request);
 
-                    return await this.SendAsync(request, cancellationToken);
+                    childTrace.CosmosInstrumentation.Record(OTelAttributes.RequestContentLength, this.GetPayloadSize(request));
+
+                    response = await this.SendAsync(request, cancellationToken);
+
+                    this.RecordFromResponse(operationType, response, childTrace);
+
+                    return response;
+
                 }
                 finally
                 {
                     activityScope?.Dispose();
                 }
             }
+        }
+
+        private void RecordFromResponse(OperationType operationType, ResponseMessage response, ITrace childTrace)
+        {
+            childTrace.CosmosInstrumentation.Record(OTelAttributes.RequestCharge, response?.Headers?.RequestCharge);
+            childTrace.CosmosInstrumentation.Record(OTelAttributes.StatusCode, response.StatusCode);
+            childTrace.CosmosInstrumentation.Record(OTelAttributes.DbOperation, operationType.ToOperationTypeString());
+            childTrace.CosmosInstrumentation.Record(OTelAttributes.ResponseContentLength, this.GetPayloadSize(response));
+        }
+
+        /// <summary>
+        /// It returns the payload size after reading it from the Response content stream. 
+        /// To avoid blocking IO calls to get the stream length, it will return response content length if stream is of Memory Type
+        /// otherwise it will return the content length from the response header (if it is there)
+        /// </summary>
+        /// <param name="response"></param>
+        /// <returns>Size of Payload</returns>
+        private long GetPayloadSize(ResponseMessage response)
+        {
+            if (response != null)
+            {
+                if (response.Content != null && response.Content is MemoryStream)
+                {
+                    return response.Content.Length;
+                }
+
+                if (response.Headers != null && response.Headers.ContentLength != null)
+                {
+                    return long.Parse(response.Headers.ContentLength);
+                }
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// It returns the payload size after reading it from the Response content stream. 
+        /// To avoid blocking IO calls to get the stream length, it will return response content length if stream is of Memory Type
+        /// otherwise it will return the content length from the response header (if it is there)
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns>Size of Payload</returns>
+        private long GetPayloadSize(RequestMessage request)
+        {
+            if (request != null)
+            {
+                if (request.Content != null && request.Content is MemoryStream)
+                {
+                    return request.Content.Length;
+                }
+
+                if (request.Headers != null && request.Headers.ContentLength != null)
+                {
+                    return long.Parse(request.Headers.ContentLength);
+                }
+            }
+
+            return 0;
         }
 
         internal static HttpMethod GetHttpMethod(

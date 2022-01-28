@@ -14,8 +14,11 @@ namespace CosmosBenchmark
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure.Monitor.OpenTelemetry.Exporter;
     using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json.Linq;
+    using OpenTelemetry;
+    using OpenTelemetry.Trace;
 
     /// <summary>
     /// This sample demonstrates how to achieve high performance writes using Azure Comsos DB.
@@ -45,7 +48,30 @@ namespace CosmosBenchmark
 
                 Program program = new Program();
 
-                RunSummary runSummary = await program.ExecuteAsync(config);
+                TracerProvider openTelemetry = null;
+                if (config.EnableOpenTelemetry)
+                {
+                    AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
+                    TracerProviderBuilder traceBuilder = Sdk.CreateTracerProviderBuilder()
+                                            .AddSource("Azure.*"); // Collect all traces from Azure SDKs
+                    if (!string.IsNullOrWhiteSpace(config.AppInsightConnectionString))
+                    {
+                        traceBuilder
+                            .AddAzureMonitorTraceExporter(
+                                    options =>
+                                    options.ConnectionString = config.AppInsightConnectionString); // Export traces to Azure Monitor
+                    }
+                    if (config.SamplingRatio is > 0)
+                    {
+                        traceBuilder.SetSampler(new TraceIdRatioBasedSampler(config.SamplingRatio.Value));
+                    }
+
+                    openTelemetry = traceBuilder.Build();
+                }
+                using (openTelemetry)
+                {
+                    RunSummary runSummary = await program.ExecuteAsync(config);
+                }
             }
             finally
             {

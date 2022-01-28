@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -8,8 +8,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using Telemetry.Diagnostics;
 
     internal sealed class Trace : ITrace
     {
@@ -118,8 +118,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 level: level,
                 component: component,
                 parent: this,
-                regionContactedInternal: this.regionContactedInternal);           
-            
+                regionContactedInternal: this.regionContactedInternal);
+
             this.AddChild(child);
             return child;
         }

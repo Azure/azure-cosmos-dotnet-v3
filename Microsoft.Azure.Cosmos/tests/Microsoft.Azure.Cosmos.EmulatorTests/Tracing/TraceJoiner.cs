@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Text;
+    using Telemetry.Diagnostics;
 
     internal static class TraceJoiner
     {
@@ -64,12 +65,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
             public IReadOnlyDictionary<string, object> Data => this.data;
 
             public IReadOnlyList<(string, Uri)> RegionsContacted => new List<(string, Uri)>();
-
+ 
             public void AddDatum(string key, TraceDatum traceDatum)
             {
                 this.data[key] = traceDatum;
             }
-
+            
             public void AddDatum(string key, object value)
             {
                 this.data[key] = value;
@@ -83,6 +84,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
             {
                 return this.StartChild(name, TraceComponent.Unknown, TraceLevel.Info);
             }
+
+            public ICosmosInstrumentation CosmosInstrumentation { get; }
 
             public ITrace StartChild(string name, TraceComponent component, TraceLevel level)
             {

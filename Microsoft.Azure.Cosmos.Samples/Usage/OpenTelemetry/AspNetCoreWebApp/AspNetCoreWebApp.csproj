@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ApplicationInsights" Version="2.21.0-beta1-build00217" />
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.21.0-beta1-build00217" />
+    <PackageReference Include="Microsoft.ApplicationInsights.DependencyCollector" Version="2.21.0-beta1-build00217" />
+    <PackageReference Include="Microsoft.ApplicationInsights.EventCounterCollector" Version="2.21.0-beta1-build00217" />
+    <PackageReference Include="Microsoft.ApplicationInsights.PerfCounterCollector" Version="2.21.0-beta1-build00217" />
+    <PackageReference Include="Microsoft.ApplicationInsights.WindowsServer" Version="2.21.0-beta1-build00217" />
+    <PackageReference Include="Microsoft.ApplicationInsights.WindowsServer.TelemetryChannel" Version="2.21.0-beta1-build00217" />
+    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.21.0-beta1-build00217" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.26.234" />
+    <PackageReference Include="Microsoft.Extensions.Logging.ApplicationInsights" Version="2.21.0-beta1-build00217" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--This file enables self-diagnostics (https://github.com/microsoft/ApplicationInsights-dotnet/tree/develop/troubleshooting/ETW#self-diagnostics)-->
+    <Content Update="ApplicationInsightsDiagnostics.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

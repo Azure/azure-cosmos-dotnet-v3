@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
+    using Telemetry.Diagnostics;
     using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     [TestClass]
@@ -935,7 +936,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             public IReadOnlyDictionary<string, object> Data => this.data;
 
             public IReadOnlyList<(string, Uri)> RegionsContacted => new List<(string, Uri)>();
-
+           
             public void AddDatum(string key, TraceDatum traceDatum)
             {
                 this.data[key] = traceDatum;
@@ -954,6 +955,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             {
                 return this.StartChild(name, TraceComponent.Unknown, TraceLevel.Info);
             }
+
+            public ICosmosInstrumentation CosmosInstrumentation { get; }
 
             public ITrace StartChild(string name, TraceComponent component, TraceLevel level)
             {

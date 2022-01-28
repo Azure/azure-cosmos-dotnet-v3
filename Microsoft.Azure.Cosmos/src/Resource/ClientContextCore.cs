@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
@@ -19,6 +20,8 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using Telemetry.Diagnostics;
+    using TraceLevel = Tracing.TraceLevel;
 
     internal class ClientContextCore : CosmosClientContext
     {
@@ -222,13 +225,11 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentClient.ValidateResource(resourceId);
         }
 
-        internal override Task<TResult> 
-            OperationHelperAsync<TResult>(
-            string operationName,
+        internal override Task<TResult> OperationHelperAsync<TResult>(string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
             TraceComponent traceComponent = TraceComponent.Transport,
-            Tracing.TraceLevel traceLevel = Tracing.TraceLevel.Info)
+            TraceLevel traceLevel = TraceLevel.Info)
         {
             return SynchronizationContext.Current == null ?
                 this.OperationHelperWithRootTraceAsync(operationName, 
@@ -252,22 +253,22 @@ namespace Microsoft.Azure.Cosmos
         {
             bool disableDiagnostics = requestOptions != null && requestOptions.DisablePointOperationDiagnostics;
 
+            TResult result;
             using (ITrace trace = disableDiagnostics ? NoOpTrace.Singleton : (ITrace)Tracing.Trace.GetRootTrace(operationName, traceComponent, traceLevel))
             {
                 trace.AddDatum("Client Configuration", this.client.ClientConfigurationTraceDatum);
-
-                return await this.RunWithDiagnosticsHelperAsync(
+                result = await this.RunWithDiagnosticsHelperAsync(
                     trace,
                     task);
             }
+            return result;
         }
 
-        private Task<TResult> OperationHelperWithRootTraceWithSynchronizationContextAsync<TResult>(
-            string operationName,
+        private Task<TResult> OperationHelperWithRootTraceWithSynchronizationContextAsync<TResult>(string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
             TraceComponent traceComponent,
-            Tracing.TraceLevel traceLevel)
+            TraceLevel traceLevel)
         {
             Debug.Assert(SynchronizationContext.Current != null, "This should only be used when a SynchronizationContext is specified");
 
@@ -281,7 +282,7 @@ namespace Microsoft.Azure.Cosmos
                 using (ITrace trace = disableDiagnostics ? NoOpTrace.Singleton : (ITrace)Tracing.Trace.GetRootTrace(operationName, traceComponent, traceLevel))
                 {
                     trace.AddDatum("Synchronization Context", syncContextVirtualAddress);
-
+   
                     return await this.RunWithDiagnosticsHelperAsync(
                         trace,
                         task);
@@ -464,21 +465,39 @@ namespace Microsoft.Azure.Cosmos
             {
                 try
                 {
+                    AccountProperties account = await this.Client.DocumentClient.GetDatabaseAccountAsync();
+
+                    //instrumentation.Record(accountName: this.client?.Endpoint);
+                    trace.CosmosInstrumentation.Record(OTelAttributes.UserAgent, this.UserAgent);
+                    trace.CosmosInstrumentation.Record(OTelAttributes.ConnectionMode, this.ClientOptions.ConnectionMode);
+                    trace.CosmosInstrumentation.Record(OTelAttributes.NetPeerName, account.Id);
+                    trace.CosmosInstrumentation.Record(OTelAttributes.ClientId, this.client.ClientId);
+
+                    //dummy values
+                    trace.CosmosInstrumentation.Record(OTelAttributes.RetryCount, 10);
+                    trace.CosmosInstrumentation.Record(OTelAttributes.ItemCount, 1000);
+                    trace.CosmosInstrumentation.Record(OTelAttributes.ServiceEndpointsContacted, "[{ \"Uri\": \"https://www.regional_enpoint_url.com\", \"Summary\": [{ \"400/1000\": 2}, { \"410/1002\": 3}]}]");
+
                     return await task(trace).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                 {
+                    trace.CosmosInstrumentation.MarkFailed(oe);
                     throw new CosmosOperationCanceledException(oe, trace);
                 }
-                catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
+                catch (ObjectDisposedException objectDisposed) when
+                    (!(objectDisposed is CosmosObjectDisposedException))
                 {
+                    trace.CosmosInstrumentation.MarkFailed(objectDisposed);
                     throw new CosmosObjectDisposedException(
-                        objectDisposed, 
-                        this.client, 
+                        objectDisposed,
+                        this.client,
                         trace);
                 }
-                catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
+                catch (NullReferenceException nullRefException) when
+                    (!(nullRefException is CosmosNullReferenceException))
                 {
+                    trace.CosmosInstrumentation.MarkFailed(nullRefException);
                     throw new CosmosNullReferenceException(
                         nullRefException,
                         trace);
@@ -497,6 +516,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             this.ThrowIfDisposed();
+
             ItemRequestOptions itemRequestOptions = requestOptions as ItemRequestOptions;
             TransactionalBatchItemRequestOptions batchItemRequestOptions = TransactionalBatchItemRequestOptions.FromItemRequestOptions(itemRequestOptions);
             ItemBatchOperation itemBatchOperation = new ItemBatchOperation(
@@ -514,7 +534,9 @@ namespace Microsoft.Azure.Cosmos
                 itemRequestOptions,
                 cancellationToken);
 
-            return batchOperationResult.ToResponseMessage();
+            ResponseMessage response = batchOperationResult.ToResponseMessage();
+
+            return response;
         }
 
         private bool IsBulkOperationSupported(

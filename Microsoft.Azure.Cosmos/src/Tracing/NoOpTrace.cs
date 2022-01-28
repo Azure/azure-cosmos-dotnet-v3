@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 {
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
 
     internal sealed class NoOpTrace : ITrace
     {
@@ -39,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public IReadOnlyDictionary<string, object> Data => NoOpData;
 
         public IReadOnlyList<(string, Uri)> RegionsContacted => NoOpRegionsContacted;
-
+        
         public void Dispose()
         {
             // NoOp
@@ -53,6 +54,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 component: this.Component,
                 level: TraceLevel.Info);
         }
+
+        public ICosmosInstrumentation CosmosInstrumentation => new CosmosInstrumentationNoOp();
 
         public ITrace StartChild(
             string name,
