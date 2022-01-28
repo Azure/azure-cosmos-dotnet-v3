@@ -11,7 +11,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
@@ -257,6 +259,7 @@ namespace Microsoft.Azure.Cosmos
                 trace.AddDatum("Client Configuration", this.client.ClientConfigurationTraceDatum);
 
                 return await this.RunWithDiagnosticsHelperAsync(
+                    operationName,
                     trace,
                     task);
             }
@@ -283,6 +286,7 @@ namespace Microsoft.Azure.Cosmos
                     trace.AddDatum("Synchronization Context", syncContextVirtualAddress);
 
                     return await this.RunWithDiagnosticsHelperAsync(
+                        operationName,
                         trace,
                         task);
                 }
@@ -457,13 +461,19 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private async Task<TResult> RunWithDiagnosticsHelperAsync<TResult>(
+            string operationName,
             ITrace trace,
             Func<ITrace, Task<TResult>> task)
         {
             using (new ActivityScope(Guid.NewGuid()))
             {
+                DiagnosticScopeFactory clientDiagnostics = new DiagnosticScopeFactory("Azure.Cosmos", "Microsoft.Azure.Cosmos", true);
+
+                DiagnosticScope scope = clientDiagnostics.CreateScope(operationName);
                 try
                 {
+                    scope.Start();
+
                     return await task(trace).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
@@ -482,6 +492,12 @@ namespace Microsoft.Azure.Cosmos
                     throw new CosmosNullReferenceException(
                         nullRefException,
                         trace);
+                }
+                finally
+                {
+                    scope.AddAttribute("Diagnostics", new CosmosTraceDiagnostics(trace));
+
+                    scope.Dispose();
                 }
             }
         }
