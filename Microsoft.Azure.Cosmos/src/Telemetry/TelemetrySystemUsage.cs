@@ -106,6 +106,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return systemInfo;
         }
 
+        /// <summary>
+        /// Collecting Thread Starvation Flags Count
+        /// </summary>
+        /// <param name="systemUsageCollection"></param>
+        /// <returns>SystemInfo</returns>
         public static SystemInfo GetIsThreadStarving(IReadOnlyCollection<SystemUsageLoad> systemUsageCollection)
         {
             int counter = 0;
@@ -126,6 +131,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return systemInfo;
         }
 
+        /// <summary>
+        /// Collecting Thread Wait Interval in Millisecond and aggregating using Histogram
+        /// </summary>
+        /// <param name="systemUsageCollection"></param>
+        /// <returns>SystemInfo</returns>
         public static SystemInfo GetThreadWaitIntervalInMs(IReadOnlyCollection<SystemUsageLoad> systemUsageCollection)
         {
             LongConcurrentHistogram histogram = new LongConcurrentHistogram(ClientTelemetryOptions.ThreadWaitIntervalInMsMin,
@@ -144,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             if (histogram.TotalCount > 0)
             {
-                systemInfo.SetAggregators(histogram);
+                systemInfo.SetAggregators(histogram, ClientTelemetryOptions.TicksToMsFactor);
             }
 
             return systemInfo;
