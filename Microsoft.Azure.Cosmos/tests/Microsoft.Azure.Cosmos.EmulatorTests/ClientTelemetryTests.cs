@@ -765,7 +765,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 { ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit },
                 { ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit },
-                { ClientTelemetryOptions.AvailableThreadsName, ClientTelemetryOptions.AvailableThreadsUnit }
+                { ClientTelemetryOptions.AvailableThreadsName, ClientTelemetryOptions.AvailableThreadsUnit },
+                { ClientTelemetryOptions.IsThreadStarvingName, ClientTelemetryOptions.IsThreadStarvingUnit },
+                { ClientTelemetryOptions.ThreadWaitIntervalInMsName, ClientTelemetryOptions.ThreadWaitIntervalInMsUnit }
             };
 
             Dictionary<string, string> actualMetricNameUnitMap = new Dictionary<string, string>();
@@ -851,7 +853,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 actualOperationList.AddRange(telemetryInfo.OperationInfo);
                 actualSystemInformation.AddRange(telemetryInfo.SystemInfo);
 
-                Assert.AreEqual(3, telemetryInfo.SystemInfo.Count, $"System Information Count doesn't Match; {JsonConvert.SerializeObject(telemetryInfo.SystemInfo)}");
+                Assert.AreEqual(5, telemetryInfo.SystemInfo.Count, $"System Information Count doesn't Match; {JsonConvert.SerializeObject(telemetryInfo.SystemInfo)}");
 
                 Assert.IsNotNull(telemetryInfo.GlobalDatabaseAccountName, "GlobalDatabaseAccountName is null");
                 Assert.IsNotNull(telemetryInfo.DateTimeUtc, "Timestamp is null");
