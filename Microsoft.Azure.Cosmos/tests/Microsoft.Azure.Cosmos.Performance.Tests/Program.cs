@@ -24,11 +24,20 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             // The following flag is passed in via the gates to run the validation. This way local runs do not get blocked
             // on performance changes
             List<string> argsList = args != null ? new List<string>(args) : new List<string>();
-            bool validateBaseline = argsList.Remove("--BaselineValidation");
+            // bool validateBaseline = argsList.Remove("--BaselineValidation");
+
+            argsList.Add("-j");
+            argsList.Add("medium");
+            argsList.Add("-f");
+            argsList.Add("Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks.MockedItemBenchmark.CreateItem");
+            argsList.Add("-m");
+            argsList.Add("--allStats");
+            argsList.Add("--join");
+                
             string[] updatedArgs = argsList.ToArray();
 
-            if (validateBaseline)
-            {
+           // if (validateBaseline)
+            //{
                 SortedDictionary<string, double> operationToAllocatedMemory = new SortedDictionary<string, double>();
 
                 // Run the test 3 times and average the results to help reduce any random variance in the results
@@ -45,14 +54,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 }
 
                 return PerformanceValidation.ValidateSummaryResultsAgainstBaseline(operationToAllocatedMemory);
-            }
+          /*  }
             else
             {
                 BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly)
                     .Run(updatedArgs);
             }
 
-            return 0;
+            return 0;*/
         }
     }
 }

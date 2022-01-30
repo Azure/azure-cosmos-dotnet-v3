@@ -43,10 +43,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 foreach (BenchmarkReport report in summary.Reports)
                 {
                     double allocatedMemory = report.Metrics["Allocated Memory"].Value;
+                    Console.WriteLine(allocatedMemory);
+
                     string operationName = report.BenchmarkCase.Descriptor.ToString() + ";" + string.Join(';', report.BenchmarkCase.Parameters.ValueInfo);
-                    
+                    Console.WriteLine(operationName);
                     // Average if the operation name already is in the dictionary
-                    if(operationToMemoryAllocated.TryGetValue(operationName, out double value))
+                    if (operationToMemoryAllocated.TryGetValue(operationName, out double value))
                     {
                         operationToMemoryAllocated[operationName] = (allocatedMemory + value)/2;
                     }

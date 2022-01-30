@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         private IItemBenchmark CurrentBenchmark => MockedItemBenchmark.IterParameters[(int)this.Type];
 
         [Benchmark]
-        [BenchmarkCategory("GateBenchmark")]
+        [BenchmarkCategory("CreateGateBenchmark")]
         public async Task CreateItem()
         {
             await this.CurrentBenchmark.CreateItem();
