@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
                         Assert.Fail("There should only be 1 TCP request that triggers an address resolution.");
                     }
 
-                    throw new GoneException(new TransportException(TransportErrorCode.ConnectFailed, null, Guid.NewGuid(), new Uri("http://one.com"), "description", true, true));
+                    throw new GoneException(new TransportException(TransportErrorCode.ConnectFailed, null, Guid.NewGuid(), new Uri("http://one.com"), "description", true, true), SubStatusCodes.Unknown);
                 }
 
                 using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();

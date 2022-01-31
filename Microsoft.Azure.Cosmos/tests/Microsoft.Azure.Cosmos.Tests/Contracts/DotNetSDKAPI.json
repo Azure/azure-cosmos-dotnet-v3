@@ -5832,6 +5832,11 @@
           "Attributes": [],
           "MethodInfo": "System.String NorwayWest;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String QatarCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String QatarCentral;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String SouthAfricaNorth": {
           "Type": "Field",
           "Attributes": [],
