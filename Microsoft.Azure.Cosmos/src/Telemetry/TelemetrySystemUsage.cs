@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         /// <param name="systemUsageCollection"></param>
         /// <returns>SystemInfo</returns>
-        public static SystemInfo GetIsThreadStarving(IReadOnlyCollection<SystemUsageLoad> systemUsageCollection)
+        public static SystemInfo GetThreadStarvationSignalCount(IReadOnlyCollection<SystemUsageLoad> systemUsageCollection)
         {
             int counter = 0;
             foreach (SystemUsageLoad load in systemUsageCollection)
