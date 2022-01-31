@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             TransportAddressUri physicalUri)
         {
             mockTransportClient.Setup(x => x.InvokeResourceOperationAsync(physicalUri, It.IsAny<DocumentServiceRequest>()))
-                .Returns(() => throw new ServiceUnavailableException($"Mock write forbidden exception on URI:{physicalUri}", physicalUri.Uri));
+                .Returns(() => throw new ServiceUnavailableException($"Mock write forbidden exception on URI:{physicalUri}", SubStatusCodes.Unknown, physicalUri.Uri));
         }
 
         internal static void SetupRequestTimeoutException(

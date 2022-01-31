@@ -754,6 +754,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
             field = transportRequestStats.GetType().GetField("requestCompletedTime", BindingFlags.NonPublic | BindingFlags.Instance);
             field.SetValue(transportRequestStats, TimeSpan.FromMilliseconds(1));
+
+            transportRequestStats.RequestSizeInBytes = 2;
+            transportRequestStats.RequestBodySizeInBytes = 1;
+            transportRequestStats.ResponseBodySizeInBytes = 1;
+            transportRequestStats.ResponseMetadataSizeInBytes = 1;
+
+            transportRequestStats.NumberOfInflightRequestsToEndpoint = 2;
+            transportRequestStats.NumberOfOpenConnectionsToEndpoint = 1;
+            transportRequestStats.NumberOfInflightRequestsInConnection = 1;
+            transportRequestStats.RequestWaitingForConnectionInitialization = true;
+            transportRequestStats.ConnectionLastSendTime = defaultDateTime;
+            transportRequestStats.ConnectionLastSendAttemptTime = defaultDateTime;
+            transportRequestStats.ConnectionLastReceiveTime = defaultDateTime;
             return transportRequestStats;
         }
 
