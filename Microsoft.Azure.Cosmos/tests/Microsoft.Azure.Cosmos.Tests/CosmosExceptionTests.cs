@@ -297,7 +297,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ServiceUnavailableException(
                     message: errorMessage,
-                    innerException: transportException);
+                    innerException: transportException,
+                    SubStatusCodes.Unknown);
             }
             catch (DocumentClientException exception)
             {
