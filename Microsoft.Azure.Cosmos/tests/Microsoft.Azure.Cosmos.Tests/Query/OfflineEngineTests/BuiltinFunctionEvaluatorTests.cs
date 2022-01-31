@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
     using System;
+    using System.Globalization;
     using System.Linq;
 
     [TestClass]
@@ -410,6 +411,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
         }
 
         [TestMethod]
+        [Ignore]
         public void UPPER()
         {
             // UPPER("\u00B5")
