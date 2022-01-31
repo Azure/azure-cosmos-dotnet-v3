@@ -1411,6 +1411,17 @@
             {
                 //NoImplementation
             }
+
+            public void AddOrUpdateDatum(string key, object value)
+            {
+                if (key.Contains("CPU"))
+                {
+                    // Redacted To Not Change The Baselines From Run To Run
+                    return;
+                }
+
+                this.data[key] = "Redacted To Not Change The Baselines From Run To Run";
+            }
         }
 
         private sealed class RequestHandlerSleepHelper : RequestHandler
