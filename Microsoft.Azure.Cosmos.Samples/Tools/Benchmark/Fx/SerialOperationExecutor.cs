@@ -7,10 +7,7 @@ namespace CosmosBenchmark
     using System;
     using System.Diagnostics;
     using System.Threading.Tasks;
-    using Azure.Monitor.OpenTelemetry.Exporter;
     using Microsoft.Azure.Cosmos;
-    using OpenTelemetry;
-    using OpenTelemetry.Trace;
 
     internal class SerialOperationExecutor : IExecutor
     {
@@ -36,7 +33,7 @@ namespace CosmosBenchmark
         public async Task ExecuteAsync(
                 int iterationCount,
                 bool isWarmup,
-                BenchmarkConfig benchmarkConfig,
+                bool traceFailures,
                 Action completionCallback)
         {
             Trace.TraceInformation($"Executor {this.executorId} started");
@@ -56,25 +53,7 @@ namespace CosmosBenchmark
                     {
                         try
                         {
-                            TracerProvider openTelemetry = null;
-                            if (benchmarkConfig.EnableOpenTelemetry)
-                            {
-                                AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
-                                TracerProviderBuilder traceBuilder = Sdk.CreateTracerProviderBuilder()
-                                                        .AddSource("Azure.*"); // Collect all traces from Azure SDKs
-                                if(benchmarkConfig.AppInsightConnectionString != null)
-                                {
-                                    traceBuilder
-                                        .AddAzureMonitorTraceExporter(
-                                                options => 
-                                                options.ConnectionString = benchmarkConfig.AppInsightConnectionString); // Export traces to Azure Monitor
-                                }
-                                openTelemetry = traceBuilder.Build();
-                            }
-                            using (openTelemetry)
-                            {
-                                operationResult = await this.operation.ExecuteOnceAsync();
-                            }
+                            operationResult = await this.operation.ExecuteOnceAsync();
 
                             // Success case
                             this.SuccessOperationCount++;
@@ -87,7 +66,7 @@ namespace CosmosBenchmark
                         }
                         catch (Exception ex)
                         {
-                            if (benchmarkConfig.TraceFailures)
+                            if (traceFailures)
                             {
                                 Console.WriteLine(ex.ToString());
                             }
