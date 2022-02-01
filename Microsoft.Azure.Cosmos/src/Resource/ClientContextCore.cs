@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -467,38 +468,38 @@ namespace Microsoft.Azure.Cosmos
         {
             using (new ActivityScope(Guid.NewGuid()))
             {
-                DiagnosticScopeFactory clientDiagnostics = new DiagnosticScopeFactory("Azure.Cosmos", "Microsoft.Azure.Cosmos", true);
-
-                DiagnosticScope scope = clientDiagnostics.CreateScope(operationName);
-                try
+                using (DiagnosticScope scope = CosmosDbInstrumentation.ScopeFactory.CreateScope($"Cosmos.{operationName}"))
                 {
-                    scope.Start();
-
-                    return await task(trace).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
-                {
-                    throw new CosmosOperationCanceledException(oe, trace);
-                }
-                catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
-                {
-                    throw new CosmosObjectDisposedException(
-                        objectDisposed, 
-                        this.client, 
-                        trace);
-                }
-                catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
-                {
-                    throw new CosmosNullReferenceException(
-                        nullRefException,
-                        trace);
-                }
-                finally
-                {
-                    scope.AddAttribute("Diagnostics", new CosmosTraceDiagnostics(trace));
-
-                    scope.Dispose();
-                }
+                    try
+                    {
+                        scope.Start();
+                        return await task(trace).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
+                    {
+                        scope.Failed(oe);
+                        throw new CosmosOperationCanceledException(oe, trace);
+                    }
+                    catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
+                    {
+                        scope.Failed(objectDisposed);
+                        throw new CosmosObjectDisposedException(
+                            objectDisposed,
+                            this.client,
+                            trace);
+                    }
+                    catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
+                    {
+                        scope.Failed(nullRefException);
+                        throw new CosmosNullReferenceException(
+                            nullRefException,
+                            trace);
+                    }
+                    finally
+                    {
+                        scope.AddAttribute("Diagnostics", new CosmosTraceDiagnostics(trace));
+                    }
+                }  
             }
         }
 

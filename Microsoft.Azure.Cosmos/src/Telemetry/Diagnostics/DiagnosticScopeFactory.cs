@@ -22,9 +22,11 @@ namespace Azure.Core.Pipeline
         {
             this.resourceProviderNamespace = resourceProviderNamespace;
             this.IsActivityEnabled = isActivityEnabled;
-            if (this.IsActivityEnabled && DiagnosticScopeFactory.listeners != null)
+            if (this.IsActivityEnabled)
             {
+#pragma warning disable CS8601 // Possible null reference assignment.
                 var listeners = LazyInitializer.EnsureInitialized<Dictionary<string, DiagnosticListener>>(ref DiagnosticScopeFactory.listeners);
+#pragma warning restore CS8601 // Possible null reference assignment.
 
                 lock (listeners!)
                 {
