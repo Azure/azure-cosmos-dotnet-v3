@@ -64,8 +64,10 @@ namespace CosmosBenchmark
                                                         .AddSource("Azure.*"); // Collect all traces from Azure SDKs
                                 if(benchmarkConfig.AppInsightConnectionString != null)
                                 {
-                                    traceBuilder.AddAzureMonitorTraceExporter(options => options.ConnectionString =
-                                                                                                benchmarkConfig.AppInsightConnectionString); // Export traces to Azure Monitor
+                                    traceBuilder
+                                        .AddAzureMonitorTraceExporter(
+                                                options => 
+                                                options.ConnectionString = benchmarkConfig.AppInsightConnectionString); // Export traces to Azure Monitor
                                 }
                                 openTelemetry = traceBuilder.Build();
                             }
