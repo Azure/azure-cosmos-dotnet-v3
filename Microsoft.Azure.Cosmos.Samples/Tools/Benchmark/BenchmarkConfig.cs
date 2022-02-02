@@ -123,8 +123,11 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Enable Open Telemetry")]
         public bool EnableOpenTelemetry { get; set; }
 
-        [Option(Required = false, HelpText = "AppInsights Connection String")]
+        [Option(Required = false, HelpText = "Open Telemetry AppInsights Connection String")]
         public string AppInsightConnectionString { get; set; }
+
+        [Option(Required = false, HelpText = "Open Telemetry Sample Allowed Ratio")]
+        public double SampleAllowedRatio { get; set; }
 
         internal int GetTaskCount(int containerThroughput)
         {
