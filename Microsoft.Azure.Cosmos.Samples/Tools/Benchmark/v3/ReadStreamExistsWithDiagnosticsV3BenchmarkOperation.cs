@@ -6,8 +6,10 @@ namespace CosmosBenchmark
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.Tracing;
     using System.IO;
     using System.Net;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
@@ -22,6 +24,9 @@ namespace CosmosBenchmark
 
         private string nextExecutionItemPartitionKey;
         private string nextExecutionItemId;
+
+        private static readonly TimeSpan LoggingThresholdSpan = TimeSpan.FromSeconds(1);
+        private static readonly OptimisticLimiter optimisticLimiter = new OptimisticLimiter();
 
         public ReadStreamExistsWithDiagnosticsV3BenchmarkOperation(
             CosmosClient cosmosClient,
@@ -50,10 +55,10 @@ namespace CosmosBenchmark
                     throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
                 }
 
-                string diagnostics = itemResponse.Diagnostics.ToString();
-                if (string.IsNullOrEmpty(diagnostics))
+                if (itemResponse.Diagnostics.GetClientElapsedTime() > LoggingThresholdSpan)
                 {
-                    throw new Exception();
+                    string diagnostics = itemResponse.Diagnostics.ToString();
+                    optimisticLimiter.TryLogMessage(diagnostics);
                 }
 
                 return new OperationResult()
@@ -93,6 +98,43 @@ namespace CosmosBenchmark
                         }
                     }
                 }
+            }
+        }
+
+        public class OptimisticLimiter 
+        {
+            private long counter = 0;
+            private const long MaxCocncurrentLogs = 100;
+
+            public void TryLogMessage(string message)
+            {
+                long counterValue = Interlocked.Read(ref this.counter);
+                if (counterValue < OptimisticLimiter.MaxCocncurrentLogs)
+                {
+                    counterValue = Interlocked.Increment(ref this.counter);
+
+                    try
+                    {
+                        if(counterValue < OptimisticLimiter.MaxCocncurrentLogs)
+                        {
+                            HighLatencyEventSource.Instance.LogMessage(message);
+                        }
+                    }
+                    finally
+                    {
+                        Interlocked.Decrement(ref this.counter);
+                    }
+                }
+            }
+        }
+
+        public class HighLatencyEventSource : EventSource
+        {
+            public static HighLatencyEventSource Instance = new HighLatencyEventSource();
+
+            public void LogMessage(string message) 
+            { 
+                this.WriteEvent(1, message); 
             }
         }
     }
