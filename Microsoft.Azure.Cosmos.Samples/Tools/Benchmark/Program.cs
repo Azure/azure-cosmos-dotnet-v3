@@ -31,7 +31,7 @@ namespace CosmosBenchmark
             try
             {
                 BenchmarkConfig config = BenchmarkConfig.From(args);
-                await Program.AddAzureInfoToRunSummary();
+                //await Program.AddAzureInfoToRunSummary();
                 
                 ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
 

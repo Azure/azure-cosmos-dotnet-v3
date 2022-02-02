@@ -25,7 +25,7 @@ namespace CosmosBenchmark
         private string nextExecutionItemPartitionKey;
         private string nextExecutionItemId;
 
-        private static readonly TimeSpan LoggingThresholdSpan = TimeSpan.FromSeconds(1);
+        private static readonly TimeSpan LoggingThresholdSpan = TimeSpan.FromMilliseconds(100);
         private static readonly OptimisticLimiter optimisticLimiter = new OptimisticLimiter();
 
         public ReadStreamExistsWithDiagnosticsV3BenchmarkOperation(
@@ -101,6 +101,9 @@ namespace CosmosBenchmark
             }
         }
 
+        /// <summary>
+        /// SemaphoreSlim is a great alternativ with WaitAsync(0)
+        /// </summary>
         public class OptimisticLimiter 
         {
             private long counter = 0;
@@ -108,6 +111,7 @@ namespace CosmosBenchmark
 
             public void TryLogMessage(string message)
             {
+                // Extra read is to cover for rare high concurrency always resulting in elevated usage
                 long counterValue = Interlocked.Read(ref this.counter);
                 if (counterValue < OptimisticLimiter.MaxCocncurrentLogs)
                 {
@@ -128,6 +132,9 @@ namespace CosmosBenchmark
             }
         }
 
+        /// <summary>
+        /// https://docs.microsoft.com/en-us/azure/azure-monitor/app/asp-net-trace-logs#use-eventsource-events
+        /// </summary>
         public class HighLatencyEventSource : EventSource
         {
             public static HighLatencyEventSource Instance = new HighLatencyEventSource();
