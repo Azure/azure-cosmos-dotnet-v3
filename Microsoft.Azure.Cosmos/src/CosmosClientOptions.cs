@@ -159,15 +159,15 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <value>Default value is 10 seconds.</value>
         /// <seealso cref="CosmosClientBuilder.WithRequestTimeout(TimeSpan)"/>
-        public TimeSpan RequestTimeout 
+        public TimeSpan RequestTimeout
         {
             get => this.requestTimeout;
 
             set
             {
-                if (value != null && value < TimeSpan.FromSeconds(1))
+                if (value.Seconds < 0)
                 {
-                    throw new ArgumentException($"{nameof(this.requestTimeout)} can not be set less than 1 second. This must be set in the Timespan of seconds.");
+                    throw new ArgumentOutOfRangeException($"{nameof(this.RequestTimeout)} can not be set less than 1 second. This must be set in the Timespan of seconds.");
                 }
 
                 this.requestTimeout = value;
