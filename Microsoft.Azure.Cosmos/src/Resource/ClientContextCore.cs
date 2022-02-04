@@ -472,7 +472,11 @@ namespace Microsoft.Azure.Cosmos
                 {
                     try
                     {
-                        scope.Start();
+                        if (scope.IsEnabled)
+                        {
+                            scope.Start();
+                        }
+
                         return await task(trace).ConfigureAwait(false);
                     }
                     catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
@@ -497,13 +501,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                     finally
                     {
-                        CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
-
-                        if (diagnostics.GetClientElapsedTime() > TimeSpan.FromMilliseconds(1))
-                        {
-                            scope.AddAttribute("Diagnostics", diagnostics);
-                        }
-                        
+                        scope.AddAttribute(".Request Diagnostics", new CosmosTraceDiagnostics(trace));
                     }
                 }  
             }
