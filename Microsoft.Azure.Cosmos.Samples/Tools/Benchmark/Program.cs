@@ -62,11 +62,11 @@ namespace CosmosBenchmark
                                     options.ConnectionString = config.AppInsightConnectionString); // Export traces to Azure Monitor
                     }
 
-/*                    if(config.SampleAllowedRatio > 0)
+                    if (config.SampleAllowedRatio > 0)
                     {
                         traceBuilder.SetSampler(new TraceIdRatioBasedSampler(config.SampleAllowedRatio));
                     }
-                    */
+
                     openTelemetry = traceBuilder.Build();
                 }
                 using (openTelemetry)
