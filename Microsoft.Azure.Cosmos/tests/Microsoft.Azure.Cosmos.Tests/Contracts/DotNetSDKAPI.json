@@ -2457,11 +2457,9 @@
           ],
           "MethodInfo": "System.String get_ApplicationRegion();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.TimeSpan get_RequestTimeout()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.TimeSpan get_RequestTimeout()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.TimeSpan get_RequestTimeout();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.TimeSpan RequestTimeout": {
@@ -2584,11 +2582,9 @@
           "Attributes": [],
           "MethodInfo": "Void set_PortReuseMode(System.Nullable`1[Microsoft.Azure.Cosmos.PortReuseMode]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_RequestTimeout(System.TimeSpan)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_RequestTimeout(System.TimeSpan)": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Void set_RequestTimeout(System.TimeSpan);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_Serializer(Microsoft.Azure.Cosmos.CosmosSerializer)": {
