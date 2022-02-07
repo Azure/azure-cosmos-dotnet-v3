@@ -476,7 +476,6 @@ namespace Microsoft.Azure.Cosmos
                         {
                             scope.Start();
                         }
-
                         return await task(trace).ConfigureAwait(false);
                     }
                     catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
@@ -485,6 +484,7 @@ namespace Microsoft.Azure.Cosmos
                         {
                             scope.Failed(oe);
                         }
+
                         throw new CosmosOperationCanceledException(oe, trace);
                     }
                     catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
@@ -493,6 +493,7 @@ namespace Microsoft.Azure.Cosmos
                         {
                             scope.Failed(objectDisposed);
                         }
+
                         throw new CosmosObjectDisposedException(
                             objectDisposed,
                             this.client,
@@ -504,6 +505,7 @@ namespace Microsoft.Azure.Cosmos
                         {
                             scope.Failed(nullRefException);
                         }
+
                         throw new CosmosNullReferenceException(
                             nullRefException,
                             trace);
@@ -512,7 +514,11 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (Activity.Current != null && scope.IsEnabled && Activity.Current.IsAllDataRequested)
                         {
-                            scope.AddAttribute("Request Diagnostics", new CosmosTraceDiagnostics(trace));
+                            CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
+                            if (diagnostics.GetClientElapsedTime() > TimeSpan.FromMilliseconds(1))
+                            {
+                                scope.AddAttribute("Request Diagnostics", diagnostics.ToString());
+                            }
                         }
                     }
                 }  
