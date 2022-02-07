@@ -64,19 +64,19 @@ namespace Azure.Core.Pipeline
             return ActivitySources.GetOrAdd(clientName, static n => ActivityExtensions.CreateActivitySource(n));
         }
 
-        public void AddAttribute(string name, string value)
+        public void AddAttribute(string name, object? value)
         {
             this.activityAdapter?.AddTag(name, value);
         }
 
-        public void AddAttribute<T>(string name,
+/*        public void AddAttribute<T>(string name,
 #if AZURE_NULLABLE
             [AllowNull]
 #endif
             T value)
         {
             this.AddAttribute(name, value, static v => Convert.ToString(v, CultureInfo.InvariantCulture) ?? string.Empty);
-        }
+        }*/
 
         public void AddAttribute<T>(string name, T value, Func<T, string> format)
         {
@@ -95,6 +95,11 @@ namespace Azure.Core.Pipeline
         public void Start()
         {
             this.activityAdapter?.Start();
+        }
+
+        public void Write(object objectToWrite)
+        {
+            this.activityAdapter?.Write(objectToWrite);
         }
 
         public void SetStartTime(DateTime dateTime)
@@ -159,12 +164,12 @@ namespace Azure.Core.Pipeline
 
         private class ActivityAdapter : IDisposable
         {
-            private readonly object? activitySource;
             private readonly DiagnosticSource diagnosticSource;
+            private readonly object? activitySource;
             private readonly string activityName;
             private readonly ActivityKind kind;
-            private readonly object? diagnosticSourceArgs;
-
+            private object? diagnosticSourceArgs;
+            
             private Activity? currentActivity;
             private ICollection<KeyValuePair<string, object>>? tagCollection;
             private DateTimeOffset startTime;
@@ -198,7 +203,7 @@ namespace Azure.Core.Pipeline
                 }
             }
 
-            public void AddTag(string name, string value)
+            public void AddTag(string name, object? value)
             {
                 if (this.currentActivity == null)
                 {
@@ -300,6 +305,11 @@ namespace Azure.Core.Pipeline
                 }
 
                 this.diagnosticSource.Write(this.activityName + ".Start", this.diagnosticSourceArgs ?? this.currentActivity);
+            }
+
+            public void Write(object objectToWrite)
+            {
+                this.diagnosticSourceArgs = objectToWrite;
             }
 
             private Activity? StartActivitySourceActivity()
