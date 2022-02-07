@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly RequestInvokerHandler requestHandler;
         private readonly CosmosClientOptions clientOptions;
         private readonly ClientTelemetry telemetry;
+        private readonly Random random = new Random();
 
         private readonly string userAgent;
         private bool isDisposed = false;
@@ -514,9 +515,10 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (Activity.Current != null && scope.IsEnabled && Activity.Current.IsAllDataRequested)
                         {
-                            CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
-                            if (diagnostics.GetClientElapsedTime() > TimeSpan.FromMilliseconds(1))
+                            int randomNumber = this.random.Next(1, 2000000);
+                            if (randomNumber <= 1000000)
                             {
+                                CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
                                 scope.AddAttribute("Request Diagnostics", diagnostics.ToString());
                             }
                         }

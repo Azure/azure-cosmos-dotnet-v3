@@ -63,10 +63,10 @@ namespace CosmosBenchmark
                     }
 
 
-                    if (config.SampleAllowedRatio > 0)
+                   /* if (config.SampleAllowedRatio > 0)
                     {
                         traceBuilder.SetSampler(new TraceIdRatioBasedSampler(config.SampleAllowedRatio));
-                    }
+                    }*/
 
                     openTelemetry = traceBuilder.Build();
                 }
