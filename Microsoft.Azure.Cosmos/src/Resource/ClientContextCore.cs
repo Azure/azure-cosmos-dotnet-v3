@@ -471,7 +471,7 @@ namespace Microsoft.Azure.Cosmos
                 using (DiagnosticScope scope = CosmosDbInstrumentation.ScopeFactory.CreateScope($"Cosmos.{operationName}"))
                 {
                     try
-                    {
+                    { 
                         if (scope.IsEnabled)
                         {
                             scope.Start();
@@ -481,7 +481,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                     catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                     {
-                        if (scope.IsEnabled)
+                        if (Activity.Current != null && scope.IsEnabled && Activity.Current.IsAllDataRequested)
                         {
                             scope.Failed(oe);
                         }
@@ -489,7 +489,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                     catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
                     {
-                        if (scope.IsEnabled)
+                        if (Activity.Current != null && scope.IsEnabled && Activity.Current.IsAllDataRequested)
                         {
                             scope.Failed(objectDisposed);
                         }
@@ -500,7 +500,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                     catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
                     {
-                        if (scope.IsEnabled)
+                        if (Activity.Current != null && scope.IsEnabled && Activity.Current.IsAllDataRequested)
                         {
                             scope.Failed(nullRefException);
                         }
@@ -510,9 +510,9 @@ namespace Microsoft.Azure.Cosmos
                     }
                     finally
                     {
-                        if (scope.IsEnabled)
+                        if (Activity.Current != null && scope.IsEnabled && Activity.Current.IsAllDataRequested)
                         {
-                            scope.AddAttribute(".Request Diagnostics", new CosmosTraceDiagnostics(trace));
+                            scope.AddAttribute("Request Diagnostics", new CosmosTraceDiagnostics(trace));
                         }
                     }
                 }  
