@@ -515,8 +515,11 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (Activity.Current != null && scope.IsEnabled && Activity.Current.IsAllDataRequested)
                         {
-                            int randomNumber = this.random.Next(1, 2000000);
-                            if (randomNumber <= 100000)
+                            int percentToAllow = 0;
+                            int totalItems = 2000000;
+                            int allowedItems = percentToAllow * totalItems / 100;
+                            int randomNumber = this.random.Next(1, totalItems);
+                            if (randomNumber <= allowedItems)
                             {
                                 scope.AddAttribute("Request Diagnostics", new CosmosTraceDiagnostics(trace));
                             }
