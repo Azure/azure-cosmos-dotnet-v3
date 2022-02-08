@@ -515,7 +515,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (Activity.Current != null && scope.IsEnabled && Activity.Current.IsAllDataRequested)
                         {
-                            int percentToAllow = 1;
+                            int percentToAllow = 2;
                             int totalItems = 2000000;
                             int allowedItems = percentToAllow * totalItems / 100;
                             int randomNumber = this.random.Next(1, totalItems);
