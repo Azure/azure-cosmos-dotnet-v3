@@ -22,6 +22,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.MetricInfo = new MetricInfo(metricsName, unitName);
         }
 
+        internal SystemInfo(string metricsName, string unitName, int count)
+        {
+            this.MetricInfo = new MetricInfo(metricsName, unitName, count: count);
+        }
+
         public SystemInfo(MetricInfo metricInfo)
         {
             this.MetricInfo = metricInfo;

@@ -13,6 +13,39 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.24.0-preview"/> [3.24.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.24.0-preview) - 2022-01-31
+
+#### Added
+- [#2960](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2960) UserAgent: Adds flag to user agent string to differentiate SDK version.
+
+### <a name="3.24.0"/> [3.24.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.24.0) - 2022-01-31
+
+> :warning: 3.24.0 removes the DefaultTraceListener from the SDK TraceSource for [performance reasons](https://docs.microsoft.com/azure/cosmos-db/sql/performance-tips?tabs=trace-net-core#logging-and-tracing) by default when not running in Debug mode.
+
+#### Added
+- [#2926](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2926) Performance: Removes DefaultTraceListener by default.
+- [#3008](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3008) Performance: Adds buffer optimizations to Direct mode.
+- [#2875](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2875) Query: Adds Index Metrics to Stream API.
+- [#2401](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2401) Query: Adds Correlated ActivityId wiring through query.
+- [#2917](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2917) LINQ: Adds support for `Nullable<T>.Value` or `Nullable<T>.HasValue` when using camelCase serialization.
+- [#2893](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2893) Diagnostics: Adds address info to diagnostics on force cache refresh.
+- [#3008](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3008) Diagnostics: Adds diagnostics for splits and timeouts.
+- [#2907](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2907) Diagnostics: Adds performance improvement to GetContactedRegions().
+- [#2988](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2988) Diagnostics: Adds performance improvement by reducing size and removing irrelevant information (caller info).
+- [#3008](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3008) Diagnostics: Adds ServiceEndpoint and Connection Stats to the diagnostics.
+- [#3008](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3008) Availability: Direct mode removes blocking call on broken connection exception.
+- [#3008](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3008) Supportability: Adds SDK generated substatus codes for 503's to separate from server side 503.
+
+
+#### Fixed
+- [#3008](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3008) Availability: Fixes the SDK to ensure it does not retry on replica that previously failed with 410, 408 and >= 500 status codes.
+- [#2869](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2869) Performance: Fixes query improvement to load values lazily. Introduced in 3.14.0 PR [#1812](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1812)
+- [#2883](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2883) Change Feed Processor: Fixes diagnostics on Estimator and ChangeFeedProcessorContext. Introduced in 3.15.0 PR [#1933](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1933)
+- [#2900](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2900), [#2899](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2899), [#2915](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2915), [#2912](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2912), [#2925](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2925), [#3000](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3000) Documentation: Improvements in code samples within xml documentation.
+- [#2937](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2937), [#2975](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2975) Session: Improvements on session token handling for Gateway mode across splits and merges.
+- [#2965](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2965) Session: Fixes operations sending the session token on Gateway mode when the operation reduced consistency to lower than Session.
+- [#2975](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2975) Session: Fixes session token too large exception in Gateway mode if the client had no previous cache entry.
+
 ### <a name="3.23.0"/> [3.23.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.23.0) - 2021-11-12
 ### <a name="3.23.0-preview"/> [3.23.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.23.0-preview) - 2021-11-12
 

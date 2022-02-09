@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Net;
     using System.Net.Http;
     using System.Text;
@@ -147,6 +146,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     if (this.cancellationTokenSource.IsCancellationRequested)
                     {
                         DefaultTrace.TraceInformation("Observer Task Cancelled.");
+
                         break;
                     }
 
@@ -182,6 +182,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="resourceType"></param>
         /// <param name="consistencyLevel"></param>
         /// <param name="requestCharge"></param>
+        /// <param name="subStatusCode"></param>
         internal void Collect(CosmosDiagnostics cosmosDiagnostics,
                             HttpStatusCode statusCode,
                             long responseSizeInBytes,
@@ -190,7 +191,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             OperationType operationType,
                             ResourceType resourceType,
                             string consistencyLevel,
-                            double requestCharge)
+                            double requestCharge,
+                            string subStatusCode)
         {
             DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
 
@@ -209,7 +211,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                             containerName: containerId,
                                             operation: operationType,
                                             resource: resourceType,
-                                            statusCode: (int)statusCode);
+                                            statusCode: (int)statusCode,
+                                            subStatusCode: subStatusCode);
 
             (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
                     .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
@@ -247,22 +250,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 DefaultTrace.TraceVerbose("Started Recording System Usage for telemetry.");
 
-                SystemUsageHistory systemUsageHistory = this.diagnosticsHelper.GetClientTelemtrySystemHistory();
+                SystemUsageHistory systemUsageHistory = this.diagnosticsHelper.GetClientTelemetrySystemHistory();
 
                 if (systemUsageHistory != null )
                 {
-                    (SystemInfo cpuUsagePayload, SystemInfo memoryUsagePayload) = ClientTelemetryHelper.RecordSystemUsage(systemUsageHistory);
-                    if (cpuUsagePayload != null)
-                    {
-                        this.clientTelemetryInfo.SystemInfo.Add(cpuUsagePayload);
-                        DefaultTrace.TraceVerbose("Recorded CPU Usage for telemetry.");
-                    }
-
-                    if (memoryUsagePayload != null)
-                    {
-                        this.clientTelemetryInfo.SystemInfo.Add(memoryUsagePayload);
-                        DefaultTrace.TraceVerbose("Recorded Memory Usage for telemetry.");
-                    }
+                    ClientTelemetryHelper.RecordSystemUsage(systemUsageHistory, this.clientTelemetryInfo.SystemInfo);
+                } 
+                else
+                {
+                    DefaultTrace.TraceWarning("System Usage History not available");
                 }
             }
             catch (Exception ex)

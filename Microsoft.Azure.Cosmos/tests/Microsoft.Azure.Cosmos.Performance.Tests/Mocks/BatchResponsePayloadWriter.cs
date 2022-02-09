@@ -95,13 +95,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 }
             }
 
-            if (result.RetryAfter != null)
+            r = writer.WriteUInt32("retryAfterMilliseconds", (uint)result.RetryAfter.TotalMilliseconds);
+            if (r != Result.Success)
             {
-                r = writer.WriteUInt32("retryAfterMilliseconds", (uint)result.RetryAfter.TotalMilliseconds);
-                if (r != Result.Success)
-                {
-                    return r;
-                }
+                return r;
             }
 
             r = writer.WriteFloat64("requestCharge", result.RequestCharge);

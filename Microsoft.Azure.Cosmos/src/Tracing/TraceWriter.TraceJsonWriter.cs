@@ -48,26 +48,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 writer.WriteFieldName("id");
                 writer.WriteStringValue(trace.Id.ToString());
 
-                // Request handler use the base class to create the trace.
-                // This makes it pointless to log the caller info because 
-                // it is always just the base class info.
-                if (trace.Component != TraceComponent.RequestHandler)
-                {
-                    writer.WriteFieldName("caller info");
-                    writer.WriteObjectStart();
-
-                    writer.WriteFieldName("member");
-                    writer.WriteStringValue(trace.CallerInfo.MemberName);
-
-                    writer.WriteFieldName("file");
-                    writer.WriteStringValue(GetFileNameFromPath(trace.CallerInfo.FilePath));
-
-                    writer.WriteFieldName("line");
-                    writer.WriteNumber64Value(trace.CallerInfo.LineNumber);
-
-                    writer.WriteObjectEnd();
-                }
-
                 writer.WriteFieldName("start time");
                 writer.WriteStringValue(trace.StartTime.ToString("hh:mm:ss:fff"));
 
@@ -220,6 +200,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 this.WriteRegionsContactedArray("RegionsContacted", clientSideRequestStatisticsTraceDatum.RegionsContacted);
                 this.WriteJsonUriArray("FailedReplicas", clientSideRequestStatisticsTraceDatum.FailedReplicas);
+
+                clientSideRequestStatisticsTraceDatum.WriteAddressCachRefreshContent(this.jsonWriter);
 
                 this.jsonWriter.WriteFieldName("AddressResolutionStatistics");
                 this.jsonWriter.WriteArrayStart();

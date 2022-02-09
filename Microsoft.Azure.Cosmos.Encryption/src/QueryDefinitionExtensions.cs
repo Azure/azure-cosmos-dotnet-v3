@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     return queryDefinitionwithEncryptedValues;
                 }
 
-                if (settingsForProperty.EncryptionType == EncryptionType.Randomized)
+                if (settingsForProperty.EncryptionType == Data.Encryption.Cryptography.EncryptionType.Randomized)
                 {
                     throw new ArgumentException($"Unsupported argument with Path: {path} for query. For executing queries on encrypted path requires the use of deterministic encryption type. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
                 }

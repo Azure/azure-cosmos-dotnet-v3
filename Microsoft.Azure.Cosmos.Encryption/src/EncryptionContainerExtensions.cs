@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosClient cosmosClient = new CosmosClient();
-        /// cosmosClient.WithEncryption(azureKeyVaultKeyStoreProvider);
+        /// cosmosClient.WithEncryption(azureKeyVaultKeyWrapProvider);
         /// containerWithEncryption = await this.cosmosDatabase.GetContainer("id").InitializeEncryptionAsync();
         /// ]]>
         /// </code>
