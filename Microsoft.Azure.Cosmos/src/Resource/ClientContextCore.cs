@@ -471,17 +471,21 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (DiagnosticScope scope = CosmosDbInstrumentation.ScopeFactory.CreateScope($"Cosmos.{operationName}"))
                 {
+                    bool isEnabled = false;
                     try
                     { 
                         if (scope.IsEnabled)
                         {
                             scope.Start();
                         }
+
+                        isEnabled = Activity.Current != null && scope.IsEnabled && Activity.Current.IsAllDataRequested;
+                        
                         return await task(trace).ConfigureAwait(false);
                     }
                     catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                     {
-                        if (Activity.Current != null && scope.IsEnabled && Activity.Current.IsAllDataRequested)
+                        if (isEnabled)
                         {
                             scope.Failed(oe);
                         }
@@ -490,7 +494,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                     catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
                     {
-                        if (Activity.Current != null && scope.IsEnabled && Activity.Current.IsAllDataRequested)
+                        if (isEnabled)
                         {
                             scope.Failed(objectDisposed);
                         }
@@ -502,7 +506,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                     catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
                     {
-                        if (Activity.Current != null && scope.IsEnabled && Activity.Current.IsAllDataRequested)
+                        if (isEnabled)
                         {
                             scope.Failed(nullRefException);
                         }
@@ -513,16 +517,16 @@ namespace Microsoft.Azure.Cosmos
                     }
                     finally
                     {
-                        if (Activity.Current != null && scope.IsEnabled && Activity.Current.IsAllDataRequested)
+                        if (isEnabled)
                         {
-                            int percentToAllow = 3;
+                            /*int percentToAllow = 3;
                             int totalItems = 2000000;
                             int allowedItems = percentToAllow * totalItems / 100;
                             int randomNumber = this.random.Next(1, totalItems);
                             if (randomNumber <= allowedItems)
-                            {
-                                scope.AddAttribute("Request Diagnostics", new CosmosTraceDiagnostics(trace));
-                            }
+                            {*/
+                            scope.AddAttribute("Request Diagnostics", new CosmosTraceDiagnostics(trace).ToString());
+                            //}
                         }
                     }
                 }  
