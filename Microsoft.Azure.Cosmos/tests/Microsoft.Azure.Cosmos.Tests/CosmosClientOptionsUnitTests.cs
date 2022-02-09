@@ -407,6 +407,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             cosmosClientOptions = new CosmosClientOptions { ConnectionMode = ConnectionMode.Direct };
             Assert.AreEqual(Protocol.Tcp, cosmosClientOptions.ConnectionProtocol);
         }
+        [TestMethod]
+        public void VerifyRequestTimeoutToEndpointSettings()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ConnectionMode = ConnectionMode.Gateway };
+            cosmosClientOptions = new CosmosClientOptions { RequestTimeout = TimeSpan.FromSeconds(1) };
+            Assert.AreEqual(TimeSpan.FromSeconds(1), cosmosClientOptions.RequestTimeout);
+
+            cosmosClientOptions = new CosmosClientOptions { RequestTimeout = TimeSpan.FromMilliseconds(500) };
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => new Cosmos.CosmosClientOptions() { RequestTimeout = TimeSpan.FromSeconds(-10) });
+        }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentException))]
