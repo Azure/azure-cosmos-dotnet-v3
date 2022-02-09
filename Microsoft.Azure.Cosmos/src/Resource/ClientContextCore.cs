@@ -525,7 +525,7 @@ namespace Microsoft.Azure.Cosmos
                             int randomNumber = this.random.Next(1, totalItems);
                             if (randomNumber <= allowedItems)
                             {*/
-                            scope.AddAttribute("Request Diagnostics", new CosmosTraceDiagnostics(trace).ToString());
+                            scope.AddAttribute("Request Diagnostics", new CosmosTraceDiagnostics(trace));
                             //}
                         }
                     }
