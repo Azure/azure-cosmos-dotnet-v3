@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     internal static class ClientTelemetryOptions
     {
         // ConversionFactor used in Histogram calculation to maintain precision or to collect data in desired unit
-        internal const double HistogramPrecisionFactor = 100;
+        internal const int HistogramPrecisionFactor = 100;
         internal const double TicksToMsFactor = TimeSpan.TicksPerMillisecond;
         internal const int KbToMbFactor = 1024;
 
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         // Expecting histogram to have Minimum CPU Usage of .001% and Maximum CPU Usage of 999.99%
         internal const long CpuMax = 99999;
         internal const long CpuMin = 1;
-        internal const int CpuPrecision = 2; 
+        internal const int CpuPrecision = 2;
         internal const String CpuName = "CPU";
         internal const String CpuUnit = "Percentage";
 
@@ -48,6 +48,23 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const int MemoryPrecision = 2;
         internal const String MemoryName = "MemoryRemaining";
         internal const String MemoryUnit = "MB";
+
+        // Expecting histogram to have Minimum Available Threads = 0 and Maximum Available Threads = it can be any anything depends on the machine
+        internal const long AvailableThreadsMax = Int64.MaxValue;
+        internal const long AvailableThreadsMin = 1;
+        internal const int AvailableThreadsPrecision = 2;
+        internal const String AvailableThreadsName = "SystemPool_AvailableThreads";
+        internal const String AvailableThreadsUnit = "ThreadCount";
+
+        // Expecting histogram to have Minimum ThreadWaitIntervalInMs of 1 and Maximum ThreadWaitIntervalInMs of 1 second
+        internal const long ThreadWaitIntervalInMsMax = TimeSpan.TicksPerSecond;
+        internal const long ThreadWaitIntervalInMsMin = 1;
+        internal const int ThreadWaitIntervalInMsPrecision = 2;
+        internal const string ThreadWaitIntervalInMsName = "SystemPool_ThreadWaitInterval";
+        internal const string ThreadWaitIntervalInMsUnit = "MilliSecond";
+
+        internal const string IsThreadStarvingName = "SystemPool_IsThreadStarving_True";
+        internal const string IsThreadStarvingUnit = "Count";
 
         internal const string DefaultVmMetadataUrL = "http://169.254.169.254/metadata/instance?api-version=2020-06-01";
         internal const double DefaultTimeStampInSeconds = 600;

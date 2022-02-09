@@ -87,57 +87,30 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         /// <summary>
-        /// Record System Usage and return recorded metrics
+        /// Record System Usage and update passed system Info collection. Right now, it collects following metrics
+        /// 1) CPU Usage
+        /// 2) Memory Remaining
+        /// 3) Available Threads
+        /// 
         /// </summary>
         /// <param name="systemUsageHistory"></param>
-        /// <returns>ReportPayload</returns>
-        internal static (SystemInfo cpuInfo, SystemInfo memoryInfo) RecordSystemUsage(SystemUsageHistory systemUsageHistory)
+        /// <param name="systemInfoCollection"></param>
+        internal static void RecordSystemUsage(
+                SystemUsageHistory systemUsageHistory, 
+                List<SystemInfo> systemInfoCollection)
         {
-            LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.CpuMin,
-                                                        ClientTelemetryOptions.CpuMax,
-                                                        ClientTelemetryOptions.CpuPrecision);
-
-            LongConcurrentHistogram memoryHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.MemoryMin,
-                                                           ClientTelemetryOptions.MemoryMax,
-                                                           ClientTelemetryOptions.MemoryPrecision);
-
             if (systemUsageHistory.Values == null)
             {
-                return (null, null);
+                return;
             }
 
             DefaultTrace.TraceInformation("System Usage recorded by telemetry is : {0}", systemUsageHistory);
 
-            foreach (SystemUsageLoad systemUsage in systemUsageHistory.Values)
-            {
-                float? cpuValue = systemUsage.CpuUsage;
-                if (cpuValue.HasValue && !float.IsNaN(cpuValue.Value))
-                {
-                    cpuHistogram.RecordValue((long)(cpuValue * ClientTelemetryOptions.HistogramPrecisionFactor));
-                }
-
-                long? memoryLoad = systemUsage.MemoryAvailable;
-                if (memoryLoad.HasValue)
-                {
-                    memoryHistogram.RecordValue(memoryLoad.Value);
-                }
-            }
-
-            SystemInfo memoryInfoPayload = null;
-            if (memoryHistogram.TotalCount > 0)
-            {
-                memoryInfoPayload = new SystemInfo(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit);
-                memoryInfoPayload.SetAggregators(memoryHistogram, ClientTelemetryOptions.KbToMbFactor);
-            }
-
-            SystemInfo cpuInfoPayload = null;
-            if (cpuHistogram.TotalCount > 0)
-            {
-                cpuInfoPayload = new SystemInfo(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit);
-                cpuInfoPayload.SetAggregators(cpuHistogram, ClientTelemetryOptions.HistogramPrecisionFactor);
-            }
-
-            return (cpuInfoPayload, memoryInfoPayload);
+            systemInfoCollection.Add(TelemetrySystemUsage.GetCpuInfo(systemUsageHistory.Values));
+            systemInfoCollection.Add(TelemetrySystemUsage.GetMemoryRemainingInfo(systemUsageHistory.Values));
+            systemInfoCollection.Add(TelemetrySystemUsage.GetAvailableThreadsInfo(systemUsageHistory.Values));
+            systemInfoCollection.Add(TelemetrySystemUsage.GetThreadWaitIntervalInMs(systemUsageHistory.Values));
+            systemInfoCollection.Add(TelemetrySystemUsage.GetThreadStarvationSignalCount(systemUsageHistory.Values));
         }
 
         /// <summary>
@@ -145,7 +118,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         /// <param name="metrics"></param>
         /// <returns>Collection of ReportPayload</returns>
-        internal static List<OperationInfo> ToListWithMetricsInfo(IDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> metrics)
+        internal static List<OperationInfo> ToListWithMetricsInfo(
+                IDictionary<OperationInfo, 
+                (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> metrics)
         {
             DefaultTrace.TraceInformation("Aggregating operation information to list started");
 

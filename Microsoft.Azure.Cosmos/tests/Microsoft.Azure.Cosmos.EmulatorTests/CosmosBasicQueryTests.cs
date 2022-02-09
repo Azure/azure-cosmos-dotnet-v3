@@ -6,14 +6,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Cosmos.Scripts;
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -683,6 +686,136 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             );
 
             // There is no way to simulate MM conflicts on the emulator but the list operations should work
+        }
+
+        [TestMethod]
+        public async Task QueryActivityIdTests()
+        {
+            RequestHandler[] requestHandlers = new RequestHandler[1];
+            requestHandlers[0] = new CustomHandler();
+
+            CosmosClientBuilder builder = TestCommon.GetDefaultConfiguration();
+            builder.AddCustomHandlers(requestHandlers);
+
+            CosmosClient cosmosClient = builder.Build();
+            Database database = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(),
+                                                                      "/pk",
+                                                                      throughput: 12000);
+
+            // Create items
+            for (int i = 0; i < 500; i++)
+            {
+                await container.CreateItemAsync<ToDoActivity>(ToDoActivity.CreateRandomToDoActivity());
+            }
+
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+            {
+                MaxItemCount = 50
+            };
+
+            FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>(
+                "select * from c",
+                null,
+                queryRequestOptions);
+
+            while (feedIterator.HasMoreResults)
+            {
+                await feedIterator.ReadNextAsync();
+            }
+
+            await database.DeleteAsync();
+            cosmosClient.Dispose();
+        }
+
+        [TestMethod]
+        public async Task QueryActivityIdWithContinuationTokenAndTraceTest()
+        {
+            using (ITrace rootTrace = Trace.GetRootTrace("Root Trace"))
+            {
+                CosmosClient client = DirectCosmosClient;
+                Container container = client.GetContainer(DatabaseId, ContainerId);
+                // Create items
+                for (int i = 0; i < 500; i++)
+                {
+                    await container.CreateItemAsync<ToDoActivity>(ToDoActivity.CreateRandomToDoActivity());
+                }
+
+                QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+                {
+                    MaxItemCount = 50
+                };
+
+                FeedIteratorInternal feedIterator = 
+                    (FeedIteratorInternal)container.GetItemQueryStreamIterator(
+                    "select * from c",
+                    null,
+                    queryRequestOptions);
+
+                string continuationToken = (await feedIterator.ReadNextAsync(rootTrace, CancellationToken.None)).ContinuationToken;
+                rootTrace.Data.TryGetValue("Query Correlated ActivityId",
+                                            out object firstCorrelatedActivityId);
+
+                // use Continuation Token to create new iterator and use same trace
+                FeedIteratorInternal feedIteratorNew =
+                    (FeedIteratorInternal)container.GetItemQueryStreamIterator(
+                    "select * from c",
+                    continuationToken,
+                    queryRequestOptions);
+
+                while (feedIteratorNew.HasMoreResults)
+                {
+                    await feedIteratorNew.ReadNextAsync(rootTrace, CancellationToken.None);
+                }
+
+                // Test trace has 2 correlated ActivityIds
+                rootTrace.Data.TryGetValue("Query Correlated ActivityId",
+                                            out object correlatedActivityIds);
+                List<string> correlatedIdList = correlatedActivityIds.ToString().Split(',').ToList();
+                Assert.AreEqual(correlatedIdList.Count, 2);
+                Assert.AreEqual(correlatedIdList[0], firstCorrelatedActivityId.ToString());
+            }
+
+        }
+
+        private class CustomHandler : RequestHandler
+        {
+            string correlatedActivityId;
+
+            public CustomHandler()
+            {
+                this.correlatedActivityId = null;
+            }
+
+            public override async Task<ResponseMessage> SendAsync(RequestMessage requestMessage,
+                                                                CancellationToken cancellationToken)
+            {
+                if (requestMessage.OperationType == Documents.OperationType.Query)
+                {
+                    bool headerPresent = requestMessage.Headers.CosmosMessageHeaders.TryGetValue(Microsoft.Azure.Documents.WFConstants.BackendHeaders.CorrelatedActivityId, out string requestActivityId);
+                    if (!headerPresent)
+                    {
+                        Assert.Fail("Correlated ActivityId header not present in request");
+                    }
+
+                    if (this.correlatedActivityId == null)
+                    {
+                        if (requestActivityId == Guid.Empty.ToString())
+                        {
+                            Assert.Fail("Request has empty guid as correlated activity id");
+                        }
+
+                        this.correlatedActivityId = requestActivityId;
+                    }
+
+                    if (this.correlatedActivityId != requestActivityId)
+                    {
+                        Assert.Fail("Correlated ActivityId is different between query requests");
+                    }
+                }
+
+                return await base.SendAsync(requestMessage, cancellationToken);
+            }
         }
 
         private delegate FeedIterator<T> Query<T>(string querytext, string continuationToken, QueryRequestOptions options);

@@ -13,14 +13,14 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
     internal sealed class Trace : ITrace
     {
+        private static readonly IReadOnlyDictionary<string, object> EmptyDictionary = new Dictionary<string, object>();
         private readonly List<ITrace> children;
-        private readonly Dictionary<string, object> data;
+        private readonly Lazy<Dictionary<string, object>> data;
         private readonly Stopwatch stopwatch;
         private readonly ISet<(string, Uri)> regionContactedInternal;
 
         private Trace(
             string name,
-            CallerInfo callerInfo,
             TraceLevel level,
             TraceComponent component,
             Trace parent,
@@ -28,14 +28,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Id = Guid.NewGuid();
-            this.CallerInfo = callerInfo;
             this.StartTime = DateTime.UtcNow;
             this.stopwatch = Stopwatch.StartNew();
             this.Level = level;
             this.Component = component;
             this.Parent = parent;
             this.children = new List<ITrace>();
-            this.data = new Dictionary<string, object>();
+            this.data = new Lazy<Dictionary<string, object>>();
 
             this.regionContactedInternal = regionContactedInternal;
         }
@@ -43,8 +42,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public string Name { get; }
 
         public Guid Id { get; }
-
-        public CallerInfo CallerInfo { get; }
 
         public DateTime StartTime { get; }
 
@@ -58,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public IReadOnlyList<ITrace> Children => this.children;
 
-        public IReadOnlyDictionary<string, object> Data => this.data;
+        public IReadOnlyDictionary<string, object> Data => this.data.IsValueCreated ? this.data.Value : Trace.EmptyDictionary;
 
         public IReadOnlyList<(string, Uri)> RegionsContacted 
         { 
@@ -98,31 +95,21 @@ namespace Microsoft.Azure.Cosmos.Tracing
         }
 
         public ITrace StartChild(
-            string name,
-            [CallerMemberName] string memberName = "",
-            [CallerFilePath] string sourceFilePath = "",
-            [CallerLineNumber] int sourceLineNumber = 0)
+            string name)
         {
             return this.StartChild(
                 name,
                 level: TraceLevel.Verbose,
-                component: this.Component,
-                memberName: memberName,
-                sourceFilePath: sourceFilePath,
-                sourceLineNumber: sourceLineNumber);
+                component: this.Component);
         }
 
         public ITrace StartChild(
             string name,
             TraceComponent component,
-            TraceLevel level,
-            [CallerMemberName] string memberName = "",
-            [CallerFilePath] string sourceFilePath = "",
-            [CallerLineNumber] int sourceLineNumber = 0)
+            TraceLevel level)
         {
             Trace child = new Trace(
                 name: name,
-                callerInfo: new CallerInfo(memberName, sourceFilePath, sourceLineNumber),
                 level: level,
                 component: component,
                 parent: this,
@@ -152,14 +139,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public static Trace GetRootTrace(
             string name,
             TraceComponent component,
-            TraceLevel level,
-            [CallerMemberName] string memberName = "",
-            [CallerFilePath] string sourceFilePath = "",
-            [CallerLineNumber] int sourceLineNumber = 0)
+            TraceLevel level)
         {
             return new Trace(
                 name: name,
-                callerInfo: new CallerInfo(memberName, sourceFilePath, sourceLineNumber),
                 level: level,
                 component: component,
                 parent: null,
@@ -168,13 +151,18 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public void AddDatum(string key, TraceDatum traceDatum)
         {
-            this.data.Add(key, traceDatum);
+            this.data.Value.Add(key, traceDatum);
             this.UpdateRegionContacted(traceDatum);
         }
 
         public void AddDatum(string key, object value)
         {
-            this.data.Add(key, value);
+            this.data.Value.Add(key, value);
+        }
+
+        public void AddOrUpdateDatum(string key, object value)
+        {
+            this.data.Value[key] = value;
         }
     }
 }

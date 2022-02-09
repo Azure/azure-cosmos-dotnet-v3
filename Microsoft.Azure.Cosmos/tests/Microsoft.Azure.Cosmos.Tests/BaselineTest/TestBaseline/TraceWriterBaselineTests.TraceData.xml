@@ -24,7 +24,7 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
         (
             [Point Operation Statistics]
             Activity ID: 00000000-0000-0000-0000-000000000000
@@ -39,11 +39,6 @@
   "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "caller info": {
-    "member": "MemberName",
-    "file": "FilePath",
-    "line": 42
-  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -89,7 +84,7 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
         (
             [Point Operation Statistics Default]
             Activity ID: <null>
@@ -104,11 +99,6 @@
   "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "caller info": {
-    "member": "MemberName",
-    "file": "FilePath",
-    "line": 42
-  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -147,7 +137,7 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
         (
             [Query Metrics]
             Retrieved Document Count                 :           2,000             
@@ -185,11 +175,6 @@
   "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "caller info": {
-    "member": "MemberName",
-    "file": "FilePath",
-    "line": 42
-  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -263,7 +248,7 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
         (
             [Client Side Request Stats]
             Start Time: 12:00:00:000
@@ -316,11 +301,6 @@
   },
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "caller info": {
-    "member": "MemberName",
-    "file": "FilePath",
-    "line": 42
-  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -409,7 +389,22 @@
                   "startTimeUtc": "2021-12-31T23:59:59.06Z",
                   "durationInMs": 0
                 }
-              ]
+              ],
+              "serviceEndpointStats": {
+                "inflightRequests": 2,
+                "openConnections": 1
+              },
+              "connectionStats": {
+                "waitforConnectionInit": "True",
+                "callsPendingReceive": 1,
+                "lastSendAttempt": "2021-12-31T23:59:59.059Z",
+                "lastSend": "2021-12-31T23:59:59.059Z",
+                "lastReceive": "2021-12-31T23:59:59.059Z"
+              },
+              "requestSizeInBytes": 2,
+              "requestBodySizeInBytes": 1,
+              "responseMetadataSizeInBytes": 1,
+              "responseBodySizeInBytes": 1
             },
             "TransportException": null
           }
@@ -473,7 +468,7 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
         (
             [Client Side Request Stats Default]
             Start Time: 12:00:00:000
@@ -521,11 +516,6 @@
   },
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "caller info": {
-    "member": "MemberName",
-    "file": "FilePath",
-    "line": 42
-  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -607,7 +597,22 @@
                   "startTimeUtc": "2021-12-31T23:59:59.06Z",
                   "durationInMs": 0
                 }
-              ]
+              ],
+              "serviceEndpointStats": {
+                "inflightRequests": 2,
+                "openConnections": 1
+              },
+              "connectionStats": {
+                "waitforConnectionInit": "True",
+                "callsPendingReceive": 1,
+                "lastSendAttempt": "2021-12-31T23:59:59.059Z",
+                "lastSend": "2021-12-31T23:59:59.059Z",
+                "lastReceive": "2021-12-31T23:59:59.059Z"
+              },
+              "requestSizeInBytes": 2,
+              "requestBodySizeInBytes": 1,
+              "responseMetadataSizeInBytes": 1,
+              "responseBodySizeInBytes": 1
             },
             "TransportException": null
           }
@@ -655,7 +660,7 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
         (
             [Client Side Request Stats]
             Start Time: 12:00:00:000
@@ -696,11 +701,6 @@
   },
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "caller info": {
-    "member": "MemberName",
-    "file": "FilePath",
-    "line": 42
-  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -767,7 +767,7 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
         (
             [System Info]
             {"systemHistory":[{"dateUtc":"0001-01-01T00:00:00.0000000","cpu":42.000,"memory":1000.000,"threadInfo":{"isThreadStarving":"no info"}},{"dateUtc":"0001-01-01T00:00:00.0000000","cpu":23.000,"memory":9000.000,"threadInfo":{"isThreadStarving":"no info"}}]}
@@ -777,11 +777,6 @@
   "Summary": {},
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "caller info": {
-    "member": "MemberName",
-    "file": "FilePath",
-    "line": 42
-  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {

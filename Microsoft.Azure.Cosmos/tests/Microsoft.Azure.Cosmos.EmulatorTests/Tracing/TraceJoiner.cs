@@ -35,8 +35,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         private sealed class TraceForest : ITrace
         {
-            private static readonly CallerInfo EmptyInfo = new CallerInfo(string.Empty, string.Empty, 0);
-
             private readonly Dictionary<string, object> data;
 
             private readonly List<ITrace> children;
@@ -50,8 +48,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
             public string Name => "Trace Forest";
 
             public Guid Id => Guid.Empty;
-
-            public CallerInfo CallerInfo => EmptyInfo;
 
             public DateTime StartTime => DateTime.MinValue;
 
@@ -83,14 +79,14 @@ namespace Microsoft.Azure.Cosmos.Tracing
             {
             }
 
-            public ITrace StartChild(string name, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
+            public ITrace StartChild(string name)
             {
-                return this.StartChild(name, TraceComponent.Unknown, TraceLevel.Info, memberName, sourceFilePath, sourceLineNumber);
+                return this.StartChild(name, TraceComponent.Unknown, TraceLevel.Info);
             }
 
-            public ITrace StartChild(string name, TraceComponent component, TraceLevel level, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
+            public ITrace StartChild(string name, TraceComponent component, TraceLevel level)
             {
-                ITrace child = Trace.GetRootTrace(name, component, level, memberName, sourceFilePath, sourceLineNumber);
+                ITrace child = Trace.GetRootTrace(name, component, level);
                 this.AddChild(child);
                 return child;
             }
@@ -103,6 +99,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
             public void UpdateRegionContacted(TraceDatum traceDatum)
             {
                 //NoImplementation
+            }
+
+            public void AddOrUpdateDatum(string key, object value)
+            {
+                this.data[key] = value;
             }
         }
     }
