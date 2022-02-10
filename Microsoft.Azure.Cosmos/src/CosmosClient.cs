@@ -889,7 +889,6 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// This method creates a query for databases under an Cosmos DB Account using a SQL statement. It returns a FeedIterator.
-        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
@@ -942,7 +941,6 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// This method creates a query for databases under an Cosmos DB Account using a SQL statement. It returns a FeedIterator.
-        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
