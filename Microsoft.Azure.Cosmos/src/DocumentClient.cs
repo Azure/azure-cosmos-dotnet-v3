@@ -167,6 +167,7 @@ namespace Microsoft.Azure.Cosmos
 
         private DocumentClientEventSource eventSource;
         internal Task initializeTask;
+        internal Func<Task> initializeTaskFactory;
 
         private JsonSerializerSettings serializerSettings;
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
@@ -918,24 +919,24 @@ namespace Microsoft.Azure.Cosmos
 
             this.eventSource = DocumentClientEventSource.Instance;
 
-            this.initializeTask = TaskHelper.InlineIfPossibleAsync(
-                () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
-                new ResourceThrottleRetryPolicy(
-                    this.ConnectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests,
-                    this.ConnectionPolicy.RetryOptions.MaxRetryWaitTimeInSeconds));
-
-            // ContinueWith on the initialization task is needed for handling the UnobservedTaskException
-            // if this task throws for some reason. Awaiting inside a constructor is not supported and
-            // even if we had to await inside GetInitializationTask to catch the exception, that will
-            // be a blocking call. In such cases, the recommended approach is to "handle" the
-            // UnobservedTaskException by using ContinueWith method w/ TaskContinuationOptions.OnlyOnFaulted
-            // and accessing the Exception property on the target task.
-#pragma warning disable VSTHRD110 // Observe result of async calls
-            this.initializeTask.ContinueWith(t =>
-#pragma warning restore VSTHRD110 // Observe result of async calls
+            this.initializeTaskFactory = () =>
             {
-                DefaultTrace.TraceWarning("initializeTask failed {0}", t.Exception);
-            }, TaskContinuationOptions.OnlyOnFaulted);
+                Task task = TaskHelper.InlineIfPossibleAsync(() => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
+                    new ResourceThrottleRetryPolicy(
+                        this.ConnectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests,
+                        this.ConnectionPolicy.RetryOptions.MaxRetryWaitTimeInSeconds));
+
+                // ContinueWith on the initialization task is needed for handling the UnobservedTaskException
+                // if this task throws for some reason. Awaiting inside a constructor is not supported and
+                // even if we had to await inside GetInitializationTask to catch the exception, that will
+                // be a blocking call. In such cases, the recommended approach is to "handle" the
+                // UnobservedTaskException by using ContinueWith method w/ TaskContinuationOptions.OnlyOnFaulted
+                // and accessing the Exception property on the target task.
+#pragma warning disable VSTHRD110 // Observe result of async calls
+                task.ContinueWith(t => DefaultTrace.TraceWarning("initializeTask failed {0}", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+#pragma warning restore VSTHRD110 // Observe result of async calls
+                return task;
+            };
 
             this.traceId = Interlocked.Increment(ref DocumentClient.idCounter);
             DefaultTrace.TraceInformation(string.Format(
@@ -1431,15 +1432,9 @@ namespace Microsoft.Azure.Cosmos
                 // client which is unusable and can resume working if it failed initialization once.
                 // If we have to reinitialize the client, it needs to happen in thread safe manner so that
                 // we dont re-initalize the task again for each incoming call.
-                Task initTask = null;
-
-                lock (this.initializationSyncLock)
-                {
-                    initTask = this.initializeTask;
-                }
-
                 try
                 {
+                    Task initTask = this.GetOrCreateInitializationTaskAsync();
                     await initTask;
                     this.isSuccessfullyInitialized = true;
                     return;
@@ -1452,23 +1447,13 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (Exception e)
                 {
-                    DefaultTrace.TraceWarning("initializeTask failed {0}", e.ToString());
-                    childTrace.AddDatum("initializeTask failed", e.ToString());
-                }
-
-                lock (this.initializationSyncLock)
-                {
-                    // if the task has not been updated by another caller, update it
-                    if (object.ReferenceEquals(this.initializeTask, initTask))
-                    {
-                        this.initializeTask = this.GetInitializationTaskAsync(storeClientFactory: null);
-                    }
-
-                    initTask = this.initializeTask;
+                    DefaultTrace.TraceWarning("initializeTask failed {0}", e);
+                    childTrace.AddDatum("initializeTask failed", e);
                 }
 
                 try
                 {
+                    Task initTask = this.GetOrCreateInitializationTaskAsync();
                     await initTask;
                     this.isSuccessfullyInitialized = true;
                 }
@@ -1478,7 +1463,6 @@ namespace Microsoft.Azure.Cosmos
                          dce: ex,
                          trace: trace);
                 }
-                
             }
         }
 
@@ -6338,6 +6322,32 @@ namespace Microsoft.Azure.Cosmos
         Task<AccountProperties> IDocumentClientInternal.GetDatabaseAccountInternalAsync(Uri serviceEndpoint, CancellationToken cancellationToken)
         {
             return this.GetDatabaseAccountPrivateAsync(serviceEndpoint, cancellationToken);
+        }
+
+        private Task GetOrCreateInitializationTaskAsync()
+        {
+            Task task = this.initializeTask;
+            if (task != null && !task.IsCanceled && !task.IsFaulted)
+            {
+                return task;
+            }
+
+            lock (this.initializationSyncLock)
+            {
+                if (this.initializeTask == null)
+                {
+                    this.initializeTask = this.initializeTaskFactory();
+                    return this.initializeTask;
+                }
+
+                if (!this.initializeTask.IsFaulted && !this.initializeTask.IsCanceled)
+                {
+                    return this.initializeTask;
+                }
+
+                this.initializeTask = this.initializeTaskFactory();
+                return this.initializeTask;
+            }
         }
 
         private async Task<AccountProperties> GetDatabaseAccountPrivateAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default)
