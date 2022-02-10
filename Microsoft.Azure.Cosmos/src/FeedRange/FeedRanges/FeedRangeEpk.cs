@@ -114,17 +114,14 @@ namespace Microsoft.Azure.Cosmos
             Documents.PartitionKeyDefinition partitionKeyDefinition,
             PartitionKey partitionKey)
         {
-            // Srinkihil will create a new method that creates the Range ...
-            string min = partitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition: partitionKeyDefinition, strict: false);
-            string max = default; // Srinkihil is putting in a PR for this ...
+            return new FeedRangeEpk(partitionKey.InternalKey.GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition));
+        }
 
-            Documents.Routing.Range<string> range = new (
-                min: min,
-                max: max,
-                isMinInclusive: true,
-                isMaxInclusive: false);
-
-            return new FeedRangeEpk(range: range);
+        internal static bool IsPrefixPartitionKey(
+            PartitionKey partitionKey,
+            Documents.PartitionKeyDefinition partitionKeyDefinition)
+        {
+            return !(partitionKey.InternalKey?.Components?.Count >= partitionKeyDefinition.Paths?.Count);
         }
     }
 }

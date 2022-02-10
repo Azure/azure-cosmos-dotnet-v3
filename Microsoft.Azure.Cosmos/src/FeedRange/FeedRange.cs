@@ -46,6 +46,7 @@ namespace Microsoft.Azure.Cosmos
             return new FeedRangePartitionKey(partitionKey);
         }
 
+#if PREVIEW
         /// <summary>
         /// Creates a partition key or effective partition key feed range.
         /// </summary>
@@ -53,19 +54,22 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKey">The partition key.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-        public async static Task<FeedRange> CreateFromPartitionKeyAsync(
+        public
+#else
+        internal
+#endif
+            async static Task<FeedRange> CreateFromPartitionKeyAsync(
             Container container,
             PartitionKey partitionKey,
             CancellationToken cancellationToken = default)
         {
-            ContainerCore containerCore = (container as ContainerCore) ?? throw new ArgumentNullException(paramName: "container", message: $"The container is not of type ContainerCore.");
-            Documents.PartitionKeyDefinition partitionKeyDefinition = await containerCore.GetPartitionKeyDefinitionAsync(cancellationToken: cancellationToken);
+            ContainerProperties containerProperties = await container.ReadContainerAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+            Documents.PartitionKeyDefinition partitionKeyDefinition = containerProperties.PartitionKey;
 
-            return partitionKeyDefinition.Kind switch
+            return FeedRangeEpk.IsPrefixPartitionKey(partitionKey: partitionKey, partitionKeyDefinition: partitionKeyDefinition) switch
             {
-                Documents.PartitionKind.Hash => FeedRangePartitionKey.CreateFromPartitionKey(partitionKey: partitionKey),
-                Documents.PartitionKind.MultiHash => FeedRangeEpk.CreateFromPartitionKey(partitionKeyDefinition: partitionKeyDefinition, partitionKey: partitionKey),
-                _ => throw new ArgumentOutOfRangeException(paramName: "PartitionKind", message: $"Argument '{partitionKeyDefinition.Kind}' was not supported.")
+                true => FeedRangeEpk.CreateFromPartitionKey(partitionKey: partitionKey, partitionKeyDefinition: partitionKeyDefinition),
+                false => FeedRangePartitionKey.CreateFromPartitionKey(partitionKey),
             };
         }
     }
