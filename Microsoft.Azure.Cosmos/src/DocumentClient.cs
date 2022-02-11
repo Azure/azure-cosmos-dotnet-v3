@@ -166,8 +166,8 @@ namespace Microsoft.Azure.Cosmos
         private AsyncLazy<QueryPartitionProvider> queryPartitionProvider;
 
         private DocumentClientEventSource eventSource;
-        private Func<Task> initializeTaskFactory;
-        internal Task initializeTask;
+        private Func<Task<bool>> initializeTaskFactory;
+        internal AsyncCacheNonBlocking<string, bool> initTaskCache = new AsyncCacheNonBlocking<string, bool>();
 
         private JsonSerializerSettings serializerSettings;
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
@@ -921,7 +921,8 @@ namespace Microsoft.Azure.Cosmos
 
             this.initializeTaskFactory = () =>
             {
-                Task task = TaskHelper.InlineIfPossibleAsync(() => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
+                Task<bool> task = TaskHelper.InlineIfPossible<bool>(
+                    () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
                     new ResourceThrottleRetryPolicy(
                         this.ConnectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests,
                         this.ConnectionPolicy.RetryOptions.MaxRetryWaitTimeInSeconds));
@@ -938,11 +939,6 @@ namespace Microsoft.Azure.Cosmos
                 return task;
             };
 
-            lock (this.initializationSyncLock)
-            {
-                this.initializeTask = this.initializeTaskFactory();
-            }
-
             this.traceId = Interlocked.Increment(ref DocumentClient.idCounter);
             DefaultTrace.TraceInformation(string.Format(
                 CultureInfo.InvariantCulture,
@@ -957,7 +953,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         // Always called from under the lock except when called from Intilialize method during construction.
-        private async Task GetInitializationTaskAsync(IStoreClientFactory storeClientFactory)
+        private async Task<bool> GetInitializationTaskAsync(IStoreClientFactory storeClientFactory)
         {
             await this.InitializeGatewayConfigurationReaderAsync();
 
@@ -990,6 +986,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.InitializeDirectConnectivity(storeClientFactory);
             }
+
+            return true;
         }
 
         private async Task InitializeCachesAsync(string databaseName, DocumentCollection collection, CancellationToken cancellationToken)
@@ -1439,10 +1437,11 @@ namespace Microsoft.Azure.Cosmos
                 // we dont re-initalize the task again for each incoming call.
                 try
                 {
-                    Task initTask = this.GetOrCreateInitializationTaskAsync();
-                    await initTask;
-                    this.isSuccessfullyInitialized = true;
-                    return;
+                    this.isSuccessfullyInitialized = await this.initTaskCache.GetAsync(
+                        key: "InitTask",
+                        singleValueInitFunc: this.initializeTaskFactory,
+                        forceRefresh: false,
+                        callBackOnForceRefresh: null);
                 }
                 catch (DocumentClientException ex)
                 {
@@ -1454,19 +1453,6 @@ namespace Microsoft.Azure.Cosmos
                 {
                     DefaultTrace.TraceWarning("initializeTask failed {0}", e);
                     childTrace.AddDatum("initializeTask failed", e);
-                }
-
-                try
-                {
-                    Task initTask = this.GetOrCreateInitializationTaskAsync();
-                    await initTask;
-                    this.isSuccessfullyInitialized = true;
-                }
-                catch (DocumentClientException ex)
-                {
-                    throw Resource.CosmosExceptions.CosmosExceptionFactory.Create(
-                         dce: ex,
-                         trace: trace);
                 }
             }
         }
@@ -6329,31 +6315,31 @@ namespace Microsoft.Azure.Cosmos
             return this.GetDatabaseAccountPrivateAsync(serviceEndpoint, cancellationToken);
         }
 
-        private Task GetOrCreateInitializationTaskAsync()
-        {
-            Task task = this.initializeTask;
-            if (task != null && !task.IsCanceled && !task.IsFaulted)
-            {
-                return task;
-            }
+        //private Task GetOrCreateInitializationTaskAsync()
+        //{
+        //    Task task = this.initializeTask;
+        //    if (task != null && !task.IsCanceled && !task.IsFaulted)
+        //    {
+        //        return task;
+        //    }
 
-            lock (this.initializationSyncLock)
-            {
-                if (this.initializeTask == null)
-                {
-                    this.initializeTask = this.initializeTaskFactory();
-                    return this.initializeTask;
-                }
+        //    lock (this.initializationSyncLock)
+        //    {
+        //        if (this.initializeTask == null)
+        //        {
+        //            this.initializeTask = this.initializeTaskFactory();
+        //            return this.initializeTask;
+        //        }
 
-                if (!this.initializeTask.IsFaulted && !this.initializeTask.IsCanceled)
-                {
-                    return this.initializeTask;
-                }
+        //        if (!this.initializeTask.IsFaulted && !this.initializeTask.IsCanceled)
+        //        {
+        //            return this.initializeTask;
+        //        }
 
-                this.initializeTask = this.initializeTaskFactory();
-                return this.initializeTask;
-            }
-        }
+        //        this.initializeTask = this.initializeTaskFactory();
+        //        return this.initializeTask;
+        //    }
+        //}
 
         private async Task<AccountProperties> GetDatabaseAccountPrivateAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default)
         {
@@ -6737,7 +6723,7 @@ namespace Microsoft.Azure.Cosmos
         private INameValueCollection GetRequestHeaders(Documents.Client.RequestOptions options)
         {
             Debug.Assert(
-                this.initializeTask.IsCompleted,
+                this.isSuccessfullyInitialized,
                 "GetRequestHeaders should be called after initialization task has been awaited to avoid blocking while accessing ConsistencyLevel property");
 
             INameValueCollection headers = new StoreRequestNameValueCollection();
