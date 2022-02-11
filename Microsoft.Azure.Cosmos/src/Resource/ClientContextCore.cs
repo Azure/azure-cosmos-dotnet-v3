@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using TraceLevel = Tracing.TraceLevel;
 
     internal class ClientContextCore : CosmosClientContext
     {
@@ -226,13 +227,11 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentClient.ValidateResource(resourceId);
         }
 
-        internal override Task<TResult> 
-            OperationHelperAsync<TResult>(
-            string operationName,
+        internal override Task<TResult> OperationHelperAsync<TResult>(string operationName,
             RequestOptions requestOptions,
-            Func<ITrace, Task<TResult>> task,
+            Func<ITrace, DiagnosticAttributes, Task<TResult>> task,
             TraceComponent traceComponent = TraceComponent.Transport,
-            Tracing.TraceLevel traceLevel = Tracing.TraceLevel.Info)
+            TraceLevel traceLevel = TraceLevel.Info)
         {
             return SynchronizationContext.Current == null ?
                 this.OperationHelperWithRootTraceAsync(operationName, 
@@ -250,7 +249,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task<TResult> OperationHelperWithRootTraceAsync<TResult>(
             string operationName,
             RequestOptions requestOptions,
-            Func<ITrace, Task<TResult>> task,
+            Func<ITrace, DiagnosticAttributes, Task<TResult>> task,
             TraceComponent traceComponent,
             Tracing.TraceLevel traceLevel)
         {
@@ -267,12 +266,11 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private Task<TResult> OperationHelperWithRootTraceWithSynchronizationContextAsync<TResult>(
-            string operationName,
+        private Task<TResult> OperationHelperWithRootTraceWithSynchronizationContextAsync<TResult>(string operationName,
             RequestOptions requestOptions,
-            Func<ITrace, Task<TResult>> task,
+            Func<ITrace, DiagnosticAttributes, Task<TResult>> task,
             TraceComponent traceComponent,
-            Tracing.TraceLevel traceLevel)
+            TraceLevel traceLevel)
         {
             Debug.Assert(SynchronizationContext.Current != null, "This should only be used when a SynchronizationContext is specified");
 
@@ -465,39 +463,34 @@ namespace Microsoft.Azure.Cosmos
         private async Task<TResult> RunWithDiagnosticsHelperAsync<TResult>(
             string operationName,
             ITrace trace,
-            Func<ITrace, Task<TResult>> task)
+            Func<ITrace, DiagnosticAttributes, Task<TResult>> task)
         {
+            DiagnosticAttributes diagnosticAttributes = new DiagnosticAttributes
+            {
+                AccountName = this.client.Endpoint,
+                UserAgent = this.UserAgent
+            };
+            
             using (new ActivityScope(Guid.NewGuid()))
             {
-                using (DiagnosticScope scope = CosmosDbInstrumentation.ScopeFactory.CreateScope($"Cosmos.{operationName}"))
+                using (CosmosDbInstrumentation cosmosDbInstrumentation = new CosmosDbInstrumentation(operationName))
                 {
-                    bool isEnabled = false;
                     try
-                    { 
-                        if (scope.IsEnabled)
-                        {
-                            scope.Start();
-                        }
-
-                        isEnabled = Activity.Current != null && scope.IsEnabled && Activity.Current.IsAllDataRequested;
+                    {
+                        cosmosDbInstrumentation.CreateAndStartScope();
+                        TResult result = await task(trace, diagnosticAttributes).ConfigureAwait(false);
                         
-                        return await task(trace).ConfigureAwait(false);
+                        return result;
                     }
                     catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                     {
-                        if (isEnabled)
-                        {
-                            scope.Failed(oe);
-                        }
+                        cosmosDbInstrumentation?.MarkFailed(oe);
 
                         throw new CosmosOperationCanceledException(oe, trace);
                     }
                     catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
                     {
-                        if (isEnabled)
-                        {
-                            scope.Failed(objectDisposed);
-                        }
+                        cosmosDbInstrumentation?.MarkFailed(objectDisposed);
 
                         throw new CosmosObjectDisposedException(
                             objectDisposed,
@@ -506,28 +499,15 @@ namespace Microsoft.Azure.Cosmos
                     }
                     catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
                     {
-                        if (isEnabled)
-                        {
-                            scope.Failed(nullRefException);
-                        }
-
+                        cosmosDbInstrumentation?.MarkFailed(nullRefException);
+                       
                         throw new CosmosNullReferenceException(
                             nullRefException,
                             trace);
                     }
                     finally
                     {
-                        if (isEnabled)
-                        {
-                            /*int percentToAllow = 3;
-                            int totalItems = 2000000;
-                            int allowedItems = percentToAllow * totalItems / 100;
-                            int randomNumber = this.random.Next(1, totalItems);
-                            if (randomNumber <= allowedItems)
-                            {*/
-                            scope.AddAttribute("Request Diagnostics", new CosmosTraceDiagnostics(trace));
-                            //}
-                        }
+                        cosmosDbInstrumentation?.MarkDone(trace, diagnosticAttributes);
                     }
                 }  
             }

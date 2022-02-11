@@ -29,9 +29,9 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReadAsync),
+                nameof(this.ReadAsync),
                 requestOptions,
-                (trace) => base.ReadAsync(requestOptions, cancellationToken));
+                (trace, diagnosticAttributes) => base.ReadAsync(requestOptions, cancellationToken));
         }
 
         public override Task<ClientEncryptionKeyResponse> ReplaceAsync(
@@ -40,9 +40,9 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReplaceAsync),
+                nameof(this.ReplaceAsync),
                 requestOptions,
-                (trace) => base.ReplaceAsync(clientEncryptionKeyProperties, requestOptions, cancellationToken));
+                (trace, diagnosticAttributes) => base.ReplaceAsync(clientEncryptionKeyProperties, requestOptions, cancellationToken));
         }
     }
 }

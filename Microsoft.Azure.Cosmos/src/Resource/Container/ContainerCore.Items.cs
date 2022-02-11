@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
+    using Telemetry.Diagnostics;
 
     /// <summary>
     /// Used to perform operations on items. There are two different types of operations.
@@ -70,6 +71,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
             ITrace trace,
+            DiagnosticAttributes diagnosticAttributes,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
@@ -88,7 +90,15 @@ namespace Microsoft.Azure.Cosmos
                 trace: trace,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
+            ItemResponse<T> itemResponse = this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
+            
+            this.RecordDiagnosticAttributes(
+                diagnosticAttributes: diagnosticAttributes,
+                requestCharge: itemResponse.Headers.RequestCharge,
+                operationType: OperationType.Create,
+                statusCode: itemResponse.StatusCode);
+
+            return itemResponse;
         }
 
         public async Task<ResponseMessage> ReadItemStreamAsync(

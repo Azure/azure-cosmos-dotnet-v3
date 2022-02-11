@@ -96,12 +96,7 @@ namespace Azure.Core.Pipeline
         {
             this.activityAdapter?.Start();
         }
-
-        public void Write(object objectToWrite)
-        {
-            this.activityAdapter?.Write(objectToWrite);
-        }
-
+        
         public void SetStartTime(DateTime dateTime)
         {
             this.activityAdapter?.SetStartTime(dateTime);
@@ -305,11 +300,6 @@ namespace Azure.Core.Pipeline
                 }
 
                 this.diagnosticSource.Write(this.activityName + ".Start", this.diagnosticSourceArgs ?? this.currentActivity);
-            }
-
-            public void Write(object objectToWrite)
-            {
-                this.diagnosticSourceArgs = objectToWrite;
             }
 
             private Activity? StartActivitySourceActivity()

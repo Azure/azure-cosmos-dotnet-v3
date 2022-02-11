@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
@@ -18,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using Telemetry.Diagnostics;
 
     internal abstract class ContainerInternal : Container
     {
@@ -157,6 +159,19 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default);
 
 #endif
+
+        public void RecordDiagnosticAttributes(
+            DiagnosticAttributes diagnosticAttributes,
+            double requestCharge,
+            OperationType operationType,
+            HttpStatusCode statusCode)
+        {
+            diagnosticAttributes.RequestCharge = requestCharge;
+            diagnosticAttributes.OperationType = operationType;
+            diagnosticAttributes.StatusCode = statusCode;
+            diagnosticAttributes.ContainerId = this.Id;
+            diagnosticAttributes.DatabaseId = this.Database.Id;
+        }
 
         public abstract class TryExecuteQueryResult
         {

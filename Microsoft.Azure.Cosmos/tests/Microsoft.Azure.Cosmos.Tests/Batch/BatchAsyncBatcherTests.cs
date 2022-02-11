@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Telemetry.Diagnostics;
 
     [TestClass]
     public class BatchAsyncBatcherTests
@@ -757,7 +758,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.OperationHelperAsync<object>(
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<Func<ITrace, Task<object>>>(),
+                It.IsAny<Func<ITrace, DiagnosticAttributes, Task<object>>>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
                .Returns<string, RequestOptions, Func<ITrace, Task<object>>, TraceComponent, TraceLevel>(

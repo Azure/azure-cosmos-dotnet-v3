@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             return this.monitoredContainer.ClientContext.OperationHelperAsync("Change Feed Estimator Read Next Async",
                                 requestOptions: null,
-                                task: (trace) => this.ReadNextAsync(trace, cancellationToken),
+                                task: (trace, diagnosticAttributes) => this.ReadNextAsync(trace, cancellationToken),
                                 traceComponent: TraceComponent.ChangeFeed,
                                 traceLevel: TraceLevel.Info);
         }

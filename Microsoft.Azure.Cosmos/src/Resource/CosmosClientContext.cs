@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using Telemetry.Diagnostics;
 
     /// <summary>
     /// This class is used to get access to different client level operations without directly referencing the client object.
@@ -57,10 +58,9 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellationToken);
 
-        internal abstract Task<TResult> OperationHelperAsync<TResult>(
-            string operationName,
+        internal abstract Task<TResult> OperationHelperAsync<TResult>(string operationName,
             RequestOptions requestOptions,
-            Func<ITrace, Task<TResult>> task,
+            Func<ITrace, DiagnosticAttributes, Task<TResult>> task,
             TraceComponent traceComponent = TraceComponent.Transport,
             TraceLevel traceLevel = TraceLevel.Info);
 

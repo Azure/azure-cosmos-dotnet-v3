@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Telemetry.Diagnostics;
 
     [TestClass]
     [TestCategory("ChangeFeed")]
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.Is<string>(str => str.Contains("Change Feed Processor")),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
+                It.IsAny<Func<ITrace, DiagnosticAttributes, Task<ResponseMessage>>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
                .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, TraceComponent, TraceLevel>(
@@ -114,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.Is<string>(str => str.Contains("Change Feed Processor")),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
+                It.IsAny<Func<ITrace, DiagnosticAttributes, Task<ResponseMessage>>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
                .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, TraceComponent, TraceLevel>(
@@ -177,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.Is<string>(str => str.Contains("Change Feed Processor")),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
+                It.IsAny<Func<ITrace, DiagnosticAttributes, Task<ResponseMessage>>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
                .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, TraceComponent, TraceLevel>(
@@ -252,7 +253,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.Is<string>(str => str.Contains("Change Feed Processor")),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
+                It.IsAny<Func<ITrace, DiagnosticAttributes, Task<ResponseMessage>>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
                .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, TraceComponent, TraceLevel>(
