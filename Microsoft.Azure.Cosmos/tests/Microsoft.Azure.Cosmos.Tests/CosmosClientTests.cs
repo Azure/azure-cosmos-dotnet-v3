@@ -10,14 +10,12 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class CosmosClientTests
@@ -65,8 +63,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     await asyncFunc();
                     Assert.Fail("Should throw ObjectDisposedException");
                 }
-                catch (CosmosObjectDisposedException e) 
-                { 
+                catch (CosmosObjectDisposedException e)
+                {
                     string expectedMessage = $"Cannot access a disposed 'CosmosClient'. Follow best practices and use the CosmosClient as a singleton." +
                         $" CosmosClient was disposed at: {cosmosClient.DisposedDateTimeUtc.Value.ToString("o", CultureInfo.InvariantCulture)}; CosmosClient Endpoint: https://localtestcosmos.documents.azure.com/; Created at: {cosmosClient.ClientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture)}; UserAgent: {userAgent};";
                     Assert.IsTrue(e.Message.Contains(expectedMessage));
@@ -162,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Exception exceptionToThrow = new Exception("TestException");
             Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>();
             mockHttpHandler.Setup(x => x.SendAsync(
-                It.IsAny<HttpRequestMessage>(), 
+                It.IsAny<HttpRequestMessage>(),
                 It.IsAny<CancellationToken>()))
                 .Callback<HttpRequestMessage, CancellationToken>(
                 (request, cancellationToken) =>
@@ -187,9 +185,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 await container.ReadItemAsync<ToDoActivity>(Guid.NewGuid().ToString(), new PartitionKey(Guid.NewGuid().ToString()));
             }
             catch (Exception e) when (object.ReferenceEquals(e, exceptionToThrow))
-            { 
+            {
             }
-            
+
             Assert.IsTrue(validAuth);
         }
 

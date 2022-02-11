@@ -12,8 +12,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Net.Http.Headers;
-    using System.Runtime.CompilerServices;
     using System.Security;
     using System.Text;
     using System.Threading;
@@ -144,7 +142,6 @@ namespace Microsoft.Azure.Cosmos
         //Private state.
         private bool isSuccessfullyInitialized;
         private bool isDisposed;
-        private object initializationSyncLock;  // guards initializeTask
 
         // creator of TransportClient is responsible for disposing it.
         private IStoreClientFactory storeClientFactory;
@@ -915,8 +912,6 @@ namespace Microsoft.Azure.Cosmos
             // Setup the proxy to be  used based on connection mode.
             // For gateway: GatewayProxy.
             // For direct: WFStoreProxy [set in OpenAsync()].
-            this.initializationSyncLock = new object();
-
             this.eventSource = DocumentClientEventSource.Instance;
 
             this.initializeTaskFactory = () =>
