@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract Task<TResult> OperationHelperAsync<TResult>(string operationName,
             RequestOptions requestOptions,
-            Func<ITrace, DiagnosticAttributes, Task<TResult>> task,
+            Func<ITrace, Task<TResult>> task,
             TraceComponent traceComponent = TraceComponent.Transport,
             TraceLevel traceLevel = TraceLevel.Info);
 

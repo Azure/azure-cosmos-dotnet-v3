@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateStoredProcedureAsync),
                 requestOptions,
-                (trace, diagnosticAttributes) => base.CreateStoredProcedureAsync(storedProcedureProperties, requestOptions, trace, cancellationToken));
+                (trace) => base.CreateStoredProcedureAsync(storedProcedureProperties, requestOptions, trace, cancellationToken));
         }
 
         public override FeedIterator<T> GetStoredProcedureQueryIterator<T>(
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadStoredProcedureAsync),
                 requestOptions,
-                (trace, diagnosticAttributes) => base.ReadStoredProcedureAsync(id, requestOptions, trace, cancellationToken));
+                (trace) => base.ReadStoredProcedureAsync(id, requestOptions, trace, cancellationToken));
         }
 
         public override Task<StoredProcedureResponse> ReplaceStoredProcedureAsync(
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReplaceStoredProcedureAsync),
                 requestOptions,
-                (trace, diagnosticAttributes) => base.ReplaceStoredProcedureAsync(storedProcedureProperties, requestOptions, trace, cancellationToken));
+                (trace) => base.ReplaceStoredProcedureAsync(storedProcedureProperties, requestOptions, trace, cancellationToken));
         }
 
         public override Task<StoredProcedureResponse> DeleteStoredProcedureAsync(
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ClientContext.OperationHelperAsync(
                 nameof(DeleteStoredProcedureAsync),
                 requestOptions,
-                (trace, diagnosticAttributes) => base.DeleteStoredProcedureAsync(id, requestOptions, trace, cancellationToken));
+                (trace) => base.DeleteStoredProcedureAsync(id, requestOptions, trace, cancellationToken));
         }
 
         public override Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TOutput>(
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ClientContext.OperationHelperAsync(
                 nameof(ExecuteStoredProcedureAsync),
                 requestOptions,
-                (trace, diagnosticAttributes) => base.ExecuteStoredProcedureAsync<TOutput>(storedProcedureId, partitionKey, parameters, requestOptions, trace, cancellationToken));
+                (trace) => base.ExecuteStoredProcedureAsync<TOutput>(storedProcedureId, partitionKey, parameters, requestOptions, trace, cancellationToken));
         }
 
         public override Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ClientContext.OperationHelperAsync(
                 nameof(ExecuteStoredProcedureStreamAsync),
                 requestOptions,
-                (trace, diagnosticAttributes) => base.ExecuteStoredProcedureStreamAsync(storedProcedureId, partitionKey, parameters, requestOptions, trace, cancellationToken));
+                (trace) => base.ExecuteStoredProcedureStreamAsync(storedProcedureId, partitionKey, parameters, requestOptions, trace, cancellationToken));
         }
 
         public override Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ClientContext.OperationHelperAsync(
                 nameof(ExecuteStoredProcedureStreamAsync),
                 requestOptions,
-                (trace, diagnosticAttributes) => base.ExecuteStoredProcedureStreamAsync(storedProcedureId, streamPayload, partitionKey, requestOptions, trace, cancellationToken));
+                (trace) => base.ExecuteStoredProcedureStreamAsync(storedProcedureId, streamPayload, partitionKey, requestOptions, trace, cancellationToken));
         }
 
         public override Task<TriggerResponse> CreateTriggerAsync(
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateTriggerAsync),
                 requestOptions,
-                (trace, diagnosticAttributes) => base.CreateTriggerAsync(triggerProperties, requestOptions, trace, cancellationToken));
+                (trace) => base.CreateTriggerAsync(triggerProperties, requestOptions, trace, cancellationToken));
         }
 
         public override FeedIterator<T> GetTriggerQueryIterator<T>(
@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadTriggerAsync),
                 requestOptions,
-                (trace, diagnosticAttributes) => base.ReadTriggerAsync(id, requestOptions, trace, cancellationToken));
+                (trace) => base.ReadTriggerAsync(id, requestOptions, trace, cancellationToken));
         }
 
         public override Task<TriggerResponse> ReplaceTriggerAsync(
@@ -230,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReplaceTriggerAsync),
                 requestOptions,
-                (trace, diagnosticAttributes) => base.ReplaceTriggerAsync(triggerProperties, requestOptions, trace, cancellationToken));
+                (trace) => base.ReplaceTriggerAsync(triggerProperties, requestOptions, trace, cancellationToken));
         }
 
         public override Task<TriggerResponse> DeleteTriggerAsync(
@@ -241,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ClientContext.OperationHelperAsync(
                 nameof(DeleteTriggerAsync),
                 requestOptions,
-                (trace, diagnosticAttributes) => base.DeleteTriggerAsync(id, requestOptions, trace, cancellationToken));
+                (trace) => base.DeleteTriggerAsync(id, requestOptions, trace, cancellationToken));
         }
 
         public override Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateUserDefinedFunctionAsync),
                 requestOptions,
-                (trace, diagnosticAttributes) => base.CreateUserDefinedFunctionAsync(userDefinedFunctionProperties, requestOptions, trace, cancellationToken));
+                (trace) => base.CreateUserDefinedFunctionAsync(userDefinedFunctionProperties, requestOptions, trace, cancellationToken));
         }
 
         public override FeedIterator<T> GetUserDefinedFunctionQueryIterator<T>(
@@ -311,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadUserDefinedFunctionAsync),
                 requestOptions,
-                (trace, diagnosticAttributes) => base.ReadUserDefinedFunctionAsync(id, requestOptions, trace, cancellationToken));
+                (trace) => base.ReadUserDefinedFunctionAsync(id, requestOptions, trace, cancellationToken));
         }
 
         public override Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
@@ -322,7 +322,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReplaceUserDefinedFunctionAsync),
                 requestOptions,
-                (trace, diagnosticAttributes) => base.ReplaceUserDefinedFunctionAsync(userDefinedFunctionProperties, requestOptions, trace, cancellationToken));
+                (trace) => base.ReplaceUserDefinedFunctionAsync(userDefinedFunctionProperties, requestOptions, trace, cancellationToken));
         }
 
         public override Task<UserDefinedFunctionResponse> DeleteUserDefinedFunctionAsync(
@@ -333,7 +333,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ClientContext.OperationHelperAsync(
                 nameof(DeleteUserDefinedFunctionAsync),
                 requestOptions,
-                (trace, diagnosticAttributes) => base.DeleteUserDefinedFunctionAsync(id, requestOptions, trace, cancellationToken));
+                (trace) => base.DeleteUserDefinedFunctionAsync(id, requestOptions, trace, cancellationToken));
         }
     }
 }

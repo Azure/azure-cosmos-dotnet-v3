@@ -503,9 +503,9 @@ namespace Microsoft.Azure.Cosmos
         public virtual Task<AccountProperties> ReadAccountAsync()
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(this.ReadAccountAsync),
+                nameof(ReadAccountAsync),
                 null,
-                (trace, diagnosticAttributes) => ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.Endpoint));
+                (trace) => ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.Endpoint));
         }
 
         /// <summary>
@@ -591,7 +591,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateDatabaseAsync),
                 requestOptions,
-                (trace, diagnosticAttributes) =>
+                (trace) =>
                 {
                     DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
                     ThroughputProperties throughputProperties = ThroughputProperties.CreateManualThroughput(throughput);
@@ -637,7 +637,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateDatabaseAsync),
                 requestOptions,
-                (trace, diagnosticAttributes) =>
+                (trace) =>
                 {
                     DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
                     return this.CreateDatabaseInternalAsync(
@@ -692,53 +692,53 @@ namespace Microsoft.Azure.Cosmos
                 : this.ClientContext.OperationHelperAsync(
                 nameof(CreateDatabaseIfNotExistsAsync),
                 requestOptions,
-                async (trace, diagnosticAttributes) =>
+                async (trace) =>
+            {
+                double totalRequestCharge = 0;
+                // Doing a Read before Create will give us better latency for existing databases
+                DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
+                DatabaseCore database = (DatabaseCore)this.GetDatabase(id);
+                using (ResponseMessage readResponse = await database.ReadStreamAsync(
+                    requestOptions: requestOptions,
+                    trace: trace,
+                    cancellationToken: cancellationToken))
                 {
-                    double totalRequestCharge = 0;
-                    // Doing a Read before Create will give us better latency for existing databases
-                    DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
-                    DatabaseCore database = (DatabaseCore)this.GetDatabase(id);
-                    using (ResponseMessage readResponse = await database.ReadStreamAsync(
-                               requestOptions: requestOptions,
-                               trace: trace,
-                               cancellationToken: cancellationToken))
+                    totalRequestCharge = readResponse.Headers.RequestCharge;
+                    if (readResponse.StatusCode != HttpStatusCode.NotFound)
                     {
-                        totalRequestCharge = readResponse.Headers.RequestCharge;
-                        if (readResponse.StatusCode != HttpStatusCode.NotFound)
-                        {
-                            return this.ClientContext.ResponseFactory.CreateDatabaseResponse(database, readResponse);
-                        }
+                        return this.ClientContext.ResponseFactory.CreateDatabaseResponse(database, readResponse);
                     }
+                }
 
-                    using (ResponseMessage createResponse = await this.CreateDatabaseStreamInternalAsync(
-                               databaseProperties,
-                               throughputProperties,
-                               requestOptions,
-                               trace,
-                               cancellationToken))
+                using (ResponseMessage createResponse = await this.CreateDatabaseStreamInternalAsync(
+                    databaseProperties,
+                    throughputProperties,
+                    requestOptions,
+                    trace,
+                    cancellationToken))
+                {
+                    totalRequestCharge += createResponse.Headers.RequestCharge;
+                    createResponse.Headers.RequestCharge = totalRequestCharge;
+
+                    if (createResponse.StatusCode != HttpStatusCode.Conflict)
                     {
-                        totalRequestCharge += createResponse.Headers.RequestCharge;
-                        createResponse.Headers.RequestCharge = totalRequestCharge;
-
-                        if (createResponse.StatusCode != HttpStatusCode.Conflict)
-                        {
-                            return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), createResponse);
-                        }
+                        return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), createResponse);
                     }
+                }
 
-                    // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
-                    // so for the remaining ones we should do a Read instead of throwing Conflict exception
-                    using (ResponseMessage readResponseAfterConflict = await database.ReadStreamAsync(
-                               requestOptions: requestOptions,
-                               trace: trace,
-                               cancellationToken: cancellationToken))
-                    {
-                        totalRequestCharge += readResponseAfterConflict.Headers.RequestCharge;
-                        readResponseAfterConflict.Headers.RequestCharge = totalRequestCharge;
+                // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
+                // so for the remaining ones we should do a Read instead of throwing Conflict exception
+                using (ResponseMessage readResponseAfterConflict = await database.ReadStreamAsync(
+                    requestOptions: requestOptions,
+                    trace: trace,
+                    cancellationToken: cancellationToken))
+                {
+                    totalRequestCharge += readResponseAfterConflict.Headers.RequestCharge;
+                    readResponseAfterConflict.Headers.RequestCharge = totalRequestCharge;
 
-                        return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), readResponseAfterConflict);
-                    }
-                });
+                    return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), readResponseAfterConflict);
+                }
+            });
         }
 
         /// <summary>
@@ -1029,7 +1029,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                  nameof(CreateDatabaseStreamAsync),
                  requestOptions,
-                 (trace, diagnosticAttributes) =>
+                 (trace) =>
                  {
                      this.ClientContext.ValidateResource(databaseProperties.Id);
                      return this.CreateDatabaseStreamInternalAsync(
@@ -1123,7 +1123,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateDatabaseIfNotExistsAsync),
                 requestOptions,
-                (trace, diagnosticAttributes) =>
+                (trace) =>
                 {
                     this.ClientContext.ValidateResource(databaseProperties.Id);
                     return this.CreateDatabaseStreamInternalAsync(

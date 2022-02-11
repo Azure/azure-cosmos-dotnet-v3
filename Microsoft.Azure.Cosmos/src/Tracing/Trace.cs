@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Linq;
     using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using Telemetry.Diagnostics;
 
     internal sealed class Trace : ITrace
     {
@@ -24,7 +25,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
             TraceLevel level,
             TraceComponent component,
             Trace parent,
-            ISet<(string, Uri)> regionContactedInternal)
+            ISet<(string, Uri)> regionContactedInternal,
+            DiagnosticAttributes diagnosticAttributes)
         {
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Id = Guid.NewGuid();
@@ -36,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.children = new List<ITrace>();
             this.data = new Lazy<Dictionary<string, object>>();
 
+            this.DiagnosticAttributes = diagnosticAttributes;
             this.regionContactedInternal = regionContactedInternal;
         }
 
@@ -103,6 +106,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 component: this.Component);
         }
 
+        public DiagnosticAttributes DiagnosticAttributes { get; }
+
         public ITrace StartChild(
             string name,
             TraceComponent component,
@@ -113,7 +118,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 level: level,
                 component: component,
                 parent: this,
-                regionContactedInternal: this.regionContactedInternal);
+                regionContactedInternal: this.regionContactedInternal,
+                diagnosticAttributes: this.DiagnosticAttributes);
 
             this.AddChild(child);
 
@@ -146,13 +152,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 level: level,
                 component: component,
                 parent: null,
-                regionContactedInternal: new HashSet<(string, Uri)>());
+                regionContactedInternal: new HashSet<(string, Uri)>(),
+                diagnosticAttributes: new DiagnosticAttributes());
         }
 
         public void AddDatum(string key, TraceDatum traceDatum)
         {
             this.data.Value.Add(key, traceDatum);
             this.UpdateRegionContacted(traceDatum);
+        }
+
+        public void AddDiagnosticAttributes(string key, object value)
+        {
+            throw new NotImplementedException();
         }
 
         public void AddDatum(string key, object value)

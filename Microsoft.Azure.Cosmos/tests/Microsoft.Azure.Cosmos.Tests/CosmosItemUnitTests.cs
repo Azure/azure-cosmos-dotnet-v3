@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json.Linq;
-    using Telemetry.Diagnostics;
 
     [TestClass]
     public class CosmosItemUnitTests
@@ -712,7 +711,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<Func<ITrace, DiagnosticAttributes, Task<ResponseMessage>>>(),
+                It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
                .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, TraceComponent, TraceLevel>(
@@ -721,7 +720,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.OperationHelperAsync<ItemResponse<dynamic>>(
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<Func<ITrace, DiagnosticAttributes, Task<ItemResponse<dynamic>>>>(),
+                It.IsAny<Func<ITrace, Task<ItemResponse<dynamic>>>>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
                .Returns<string, RequestOptions, Func<ITrace, Task<ItemResponse<dynamic>>>, TraceComponent, TraceLevel>(

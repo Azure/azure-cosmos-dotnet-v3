@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Telemetry.Diagnostics;
 
     [TestClass]
     public class ChangeFeedIteratorCoreTests
@@ -473,7 +472,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<Func<ITrace, DiagnosticAttributes, Task<ResponseMessage>>>(),
+                It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
                .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, TraceComponent, TraceLevel>(

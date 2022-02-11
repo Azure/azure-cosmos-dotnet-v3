@@ -16,8 +16,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
-    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
@@ -29,12 +27,8 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
-    using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Routing;
-    using Telemetry.Diagnostics;
 
     /// <summary>
     /// Used to perform operations on items. There are two different types of operations.
@@ -71,7 +65,6 @@ namespace Microsoft.Azure.Cosmos
         public async Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
             ITrace trace,
-            DiagnosticAttributes diagnosticAttributes,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
@@ -90,15 +83,7 @@ namespace Microsoft.Azure.Cosmos
                 trace: trace,
                 cancellationToken: cancellationToken);
 
-            ItemResponse<T> itemResponse = this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
-            
-            this.RecordDiagnosticAttributes(
-                diagnosticAttributes: diagnosticAttributes,
-                requestCharge: itemResponse.Headers.RequestCharge,
-                operationType: OperationType.Create,
-                statusCode: itemResponse.StatusCode);
-
-            return itemResponse;
+            return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
         public async Task<ResponseMessage> ReadItemStreamAsync(
@@ -1044,6 +1029,12 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: null,
                 trace: trace,
                 cancellationToken: cancellationToken);
+
+            this.RecordDiagnosticAttributes(
+                diagnosticAttributes: trace.DiagnosticAttributes,
+                requestCharge: responseMessage.Headers.RequestCharge,
+                operationType: operationType,
+                statusCode: responseMessage.StatusCode);
 
             return responseMessage;
         }

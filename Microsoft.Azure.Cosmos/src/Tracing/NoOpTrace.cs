@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 {
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
 
     internal sealed class NoOpTrace : ITrace
     {
@@ -39,6 +40,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public IReadOnlyDictionary<string, object> Data => NoOpData;
 
         public IReadOnlyList<(string, Uri)> RegionsContacted => NoOpRegionsContacted;
+
+        public TraceSummary TraceSummary => default;
+
+        public DiagnosticAttributes DiagnosticAttributes => default;
 
         public void Dispose()
         {
@@ -83,6 +88,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         }
 
         public void UpdateRegionContacted(TraceDatum traceDatum)
+        {
+            // NoOp
+        }
+
+        public void AddDiagnosticAttributes(string key, object value)
         {
             // NoOp
         }

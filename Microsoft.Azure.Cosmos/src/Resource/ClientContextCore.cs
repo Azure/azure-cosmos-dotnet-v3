@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override Task<TResult> OperationHelperAsync<TResult>(string operationName,
             RequestOptions requestOptions,
-            Func<ITrace, DiagnosticAttributes, Task<TResult>> task,
+            Func<ITrace, Task<TResult>> task,
             TraceComponent traceComponent = TraceComponent.Transport,
             TraceLevel traceLevel = TraceLevel.Info)
         {
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task<TResult> OperationHelperWithRootTraceAsync<TResult>(
             string operationName,
             RequestOptions requestOptions,
-            Func<ITrace, DiagnosticAttributes, Task<TResult>> task,
+            Func<ITrace, Task<TResult>> task,
             TraceComponent traceComponent,
             Tracing.TraceLevel traceLevel)
         {
@@ -268,7 +268,7 @@ namespace Microsoft.Azure.Cosmos
 
         private Task<TResult> OperationHelperWithRootTraceWithSynchronizationContextAsync<TResult>(string operationName,
             RequestOptions requestOptions,
-            Func<ITrace, DiagnosticAttributes, Task<TResult>> task,
+            Func<ITrace, Task<TResult>> task,
             TraceComponent traceComponent,
             TraceLevel traceLevel)
         {
@@ -463,14 +463,11 @@ namespace Microsoft.Azure.Cosmos
         private async Task<TResult> RunWithDiagnosticsHelperAsync<TResult>(
             string operationName,
             ITrace trace,
-            Func<ITrace, DiagnosticAttributes, Task<TResult>> task)
+            Func<ITrace, Task<TResult>> task)
         {
-            DiagnosticAttributes diagnosticAttributes = new DiagnosticAttributes
-            {
-                AccountName = this.client.Endpoint,
-                UserAgent = this.UserAgent
-            };
-            
+            trace.DiagnosticAttributes.AccountName = this.client.Endpoint;
+            trace.DiagnosticAttributes.UserAgent = this.UserAgent;
+
             using (new ActivityScope(Guid.NewGuid()))
             {
                 using (CosmosDbInstrumentation cosmosDbInstrumentation = new CosmosDbInstrumentation(operationName))
@@ -478,7 +475,7 @@ namespace Microsoft.Azure.Cosmos
                     try
                     {
                         cosmosDbInstrumentation.CreateAndStartScope();
-                        TResult result = await task(trace, diagnosticAttributes).ConfigureAwait(false);
+                        TResult result = await task(trace).ConfigureAwait(false);
                         
                         return result;
                     }
@@ -507,7 +504,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                     finally
                     {
-                        cosmosDbInstrumentation?.MarkDone(trace, diagnosticAttributes);
+                        cosmosDbInstrumentation?.MarkDone(trace, trace.DiagnosticAttributes);
                     }
                 }  
             }
