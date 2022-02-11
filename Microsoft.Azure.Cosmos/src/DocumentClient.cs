@@ -107,6 +107,7 @@ namespace Microsoft.Azure.Cosmos
         private const int DefaultRntbdReceiveHangDetectionTimeSeconds = 65;
         private const int DefaultRntbdSendHangDetectionTimeSeconds = 10;
         private const bool DefaultEnableCpuMonitor = true;
+        private const string DefaultInitTaskKey = "InitTaskKey";
 
         //Auth
         private readonly AuthorizationTokenProvider cosmosAuthorization;
@@ -934,6 +935,14 @@ namespace Microsoft.Azure.Cosmos
                 return task;
             };
 
+            // Create the task to start the initialize task
+            // Task will be awaited on in the EnsureValidClientAsync
+            Task t = this.initTaskCache.GetAsync(
+                       key: DocumentClient.DefaultInitTaskKey,
+                       singleValueInitFunc: this.initializeTaskFactory,
+                       forceRefresh: false,
+                       callBackOnForceRefresh: null);
+
             this.traceId = Interlocked.Increment(ref DocumentClient.idCounter);
             DefaultTrace.TraceInformation(string.Format(
                 CultureInfo.InvariantCulture,
@@ -1435,11 +1444,10 @@ namespace Microsoft.Azure.Cosmos
                 // client which is unusable and can resume working if it failed initialization once.
                 // If we have to reinitialize the client, it needs to happen in thread safe manner so that
                 // we dont re-initalize the task again for each incoming call.
-                const string key = "InitTask";
                 try
                 {
                     this.isSuccessfullyInitialized = await this.initTaskCache.GetAsync(
-                        key: key,
+                        key: DocumentClient.DefaultInitTaskKey,
                         singleValueInitFunc: this.initializeTaskFactory,
                         forceRefresh: false,
                         callBackOnForceRefresh: null);
@@ -1454,21 +1462,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     DefaultTrace.TraceWarning("initializeTask failed {0}", e);
                     childTrace.AddDatum("initializeTask failed", e);
-                }
-
-                try
-                {
-                    this.isSuccessfullyInitialized = await this.initTaskCache.GetAsync(
-                         key: key,
-                         singleValueInitFunc: this.initializeTaskFactory,
-                         forceRefresh: false,
-                         callBackOnForceRefresh: null);
-                }
-                catch (DocumentClientException ex)
-                {
-                    throw Resource.CosmosExceptions.CosmosExceptionFactory.Create(
-                         dce: ex,
-                         trace: trace);
+                    throw;
                 }
             }
         }
