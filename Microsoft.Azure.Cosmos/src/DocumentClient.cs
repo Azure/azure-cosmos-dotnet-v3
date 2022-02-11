@@ -1435,10 +1435,11 @@ namespace Microsoft.Azure.Cosmos
                 // client which is unusable and can resume working if it failed initialization once.
                 // If we have to reinitialize the client, it needs to happen in thread safe manner so that
                 // we dont re-initalize the task again for each incoming call.
+                const string key = "InitTask";
                 try
                 {
                     this.isSuccessfullyInitialized = await this.initTaskCache.GetAsync(
-                        key: "InitTask",
+                        key: key,
                         singleValueInitFunc: this.initializeTaskFactory,
                         forceRefresh: false,
                         callBackOnForceRefresh: null);
@@ -1453,6 +1454,21 @@ namespace Microsoft.Azure.Cosmos
                 {
                     DefaultTrace.TraceWarning("initializeTask failed {0}", e);
                     childTrace.AddDatum("initializeTask failed", e);
+                }
+
+                try
+                {
+                    this.isSuccessfullyInitialized = await this.initTaskCache.GetAsync(
+                         key: key,
+                         singleValueInitFunc: this.initializeTaskFactory,
+                         forceRefresh: false,
+                         callBackOnForceRefresh: null);
+                }
+                catch (DocumentClientException ex)
+                {
+                    throw Resource.CosmosExceptions.CosmosExceptionFactory.Create(
+                         dce: ex,
+                         trace: trace);
                 }
             }
         }
@@ -6314,32 +6330,6 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.GetDatabaseAccountPrivateAsync(serviceEndpoint, cancellationToken);
         }
-
-        //private Task GetOrCreateInitializationTaskAsync()
-        //{
-        //    Task task = this.initializeTask;
-        //    if (task != null && !task.IsCanceled && !task.IsFaulted)
-        //    {
-        //        return task;
-        //    }
-
-        //    lock (this.initializationSyncLock)
-        //    {
-        //        if (this.initializeTask == null)
-        //        {
-        //            this.initializeTask = this.initializeTaskFactory();
-        //            return this.initializeTask;
-        //        }
-
-        //        if (!this.initializeTask.IsFaulted && !this.initializeTask.IsCanceled)
-        //        {
-        //            return this.initializeTask;
-        //        }
-
-        //        this.initializeTask = this.initializeTaskFactory();
-        //        return this.initializeTask;
-        //    }
-        //}
 
         private async Task<AccountProperties> GetDatabaseAccountPrivateAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default)
         {
