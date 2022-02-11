@@ -166,8 +166,8 @@ namespace Microsoft.Azure.Cosmos
         private AsyncLazy<QueryPartitionProvider> queryPartitionProvider;
 
         private DocumentClientEventSource eventSource;
+        private Func<Task> initializeTaskFactory;
         internal Task initializeTask;
-        internal Func<Task> initializeTaskFactory;
 
         private JsonSerializerSettings serializerSettings;
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
@@ -937,6 +937,11 @@ namespace Microsoft.Azure.Cosmos
 #pragma warning restore VSTHRD110 // Observe result of async calls
                 return task;
             };
+
+            lock (this.initializationSyncLock)
+            {
+                this.initializeTask = this.initializeTaskFactory();
+            }
 
             this.traceId = Interlocked.Increment(ref DocumentClient.idCounter);
             DefaultTrace.TraceInformation(string.Format(

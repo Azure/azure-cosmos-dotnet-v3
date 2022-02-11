@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 RequestCallBack = (request, cancellToken) =>
                 {
-                    httpCallCount++;
+                    Interlocked.Increment(ref httpCallCount);
                     return null;
                 }
             };
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 RequestCallBack = async (request, cancellToken) =>
                 {
-                    httpCallCount++;
+                    Interlocked.Increment(ref httpCallCount);
                     while (delayCallBack)
                     {
                         await Task.Delay(TimeSpan.FromMilliseconds(100));
@@ -104,45 +104,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task> tasks = new List<Task>();
 
             Container container = cosmosClient.GetContainer("db", "c");
-            for (int i = 0; i < 10; i++)
+
+            for(int loop = 0; loop < 3; loop++)
             {
-                tasks.Add(this.ReadNotFound(container));
-            }
+                for (int i = 0; i < 10; i++)
+                {
+                    tasks.Add(this.ReadNotFound(container));
+                }
             
-            Stopwatch sw = Stopwatch.StartNew();
-            while(this.TaskStartedCount < 10 && sw.Elapsed.TotalSeconds < 2)
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(50));
+                Stopwatch sw = Stopwatch.StartNew();
+                while(this.TaskStartedCount < 10 && sw.Elapsed.TotalSeconds < 2)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(50));
+                }
+
+                Assert.AreEqual(10, this.TaskStartedCount, "Tasks did not start");
+                delayCallBack = false;
+
+                await Task.WhenAll(tasks);
+
+                Assert.AreEqual(1, httpCallCount, "Only the first task should do the http call. All other should wait on the first task");
+
+                // Reset counters and retry the client to verify a new http call is done for new requests
+                tasks.Clear();
+                delayCallBack = true;
+                this.TaskStartedCount = 0;
+                httpCallCount = 0;
             }
-
-            Assert.AreEqual(10, this.TaskStartedCount, "Tasks did not start");
-            delayCallBack = false;
-
-            await Task.WhenAll(tasks);
-
-            Assert.AreEqual(1, httpCallCount, "Only the first task should do the http call. All other should wait on the first task");
-
-            // Reset counters and retry the client to verify a new http call is done for new requests
-            tasks.Clear();
-            delayCallBack = true;
-            this.TaskStartedCount = 0;
-            for (int i = 0; i < 10; i++)
-            {
-                tasks.Add(this.ReadNotFound(container));
-            }
-
-            sw = Stopwatch.StartNew();
-            while (this.TaskStartedCount < 10 && sw.Elapsed.TotalSeconds < 2)
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(50));
-            }
-
-            Assert.AreEqual(10, this.TaskStartedCount, "Tasks did not start");
-            delayCallBack = false;
-            
-            await Task.WhenAll(tasks);
-
-            Assert.AreEqual(2, httpCallCount, "Should recreate the task after the first failure");
         }
 
         private int TaskStartedCount = 0;
