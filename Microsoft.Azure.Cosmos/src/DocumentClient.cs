@@ -1242,6 +1242,11 @@ namespace Microsoft.Azure.Cosmos
                 this.queryPartitionProvider.Value.Dispose();
             }
 
+            if (this.initTaskCache != null)
+            {
+                this.initTaskCache.Dispose();
+            }
+
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
             DefaultTrace.Flush();
 
