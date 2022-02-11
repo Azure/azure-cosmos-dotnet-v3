@@ -1010,7 +1010,7 @@ namespace Microsoft.Azure.Cosmos
             using (
                 DocumentServiceRequest request = DocumentServiceRequest.Create(
                     OperationType.Query,
-                    Microsoft.Azure.Documents.ResourceType.Document,
+                    ResourceType.Document,
                     collection.SelfLink,
                     AuthorizationTokenType.PrimaryMasterKey))
             {
@@ -1540,7 +1540,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Create,
                 Paths.Databases_Root,
                 database,
-                Microsoft.Azure.Documents.ResourceType.Database,
+                ResourceType.Database,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
                 SerializationFormattingPolicy.None))
@@ -1788,7 +1788,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Create,
                 documentCollectionLink,
                 typedDocument,
-                Microsoft.Azure.Documents.ResourceType.Document,
+                ResourceType.Document,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
                 SerializationFormattingPolicy.None,
@@ -1874,7 +1874,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Create,
                 databaseLink,
                 documentCollection,
-                Microsoft.Azure.Documents.ResourceType.Collection,
+                ResourceType.Collection,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
                 SerializationFormattingPolicy.None))
@@ -2062,7 +2062,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Create,
                 databaseLink,
                 targetDocumentCollection,
-                Microsoft.Azure.Documents.ResourceType.Collection,
+                ResourceType.Collection,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
                 SerializationFormattingPolicy.None))
@@ -2189,7 +2189,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Create,
                 collectionLink,
                 storedProcedure,
-                Microsoft.Azure.Documents.ResourceType.StoredProcedure,
+                ResourceType.StoredProcedure,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
                 SerializationFormattingPolicy.None))
@@ -2284,7 +2284,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Create,
                 collectionLink,
                 trigger,
-                Microsoft.Azure.Documents.ResourceType.Trigger,
+                ResourceType.Trigger,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
                 SerializationFormattingPolicy.None))
@@ -2370,7 +2370,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Create,
                 collectionLink,
                 function,
-                Microsoft.Azure.Documents.ResourceType.UserDefinedFunction,
+                ResourceType.UserDefinedFunction,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
                 SerializationFormattingPolicy.None))
@@ -2443,7 +2443,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Create,
                 databaseLink,
                 userDefinedType,
-                Microsoft.Azure.Documents.ResourceType.UserDefinedType,
+                ResourceType.UserDefinedType,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
                 SerializationFormattingPolicy.None))
@@ -2528,7 +2528,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Create,
                 Paths.Snapshots_Root,
                 snapshot,
-                Microsoft.Azure.Documents.ResourceType.Snapshot,
+                ResourceType.Snapshot,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
                 SerializationFormattingPolicy.None))
@@ -2588,7 +2588,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers = this.GetRequestHeaders(options);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
-                Microsoft.Azure.Documents.ResourceType.Database,
+                ResourceType.Database,
                 databaseLink,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
@@ -2646,7 +2646,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers = this.GetRequestHeaders(options);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
-                Microsoft.Azure.Documents.ResourceType.Document,
+                ResourceType.Document,
                 documentLink,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
@@ -2705,7 +2705,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers = this.GetRequestHeaders(options);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
-                Microsoft.Azure.Documents.ResourceType.Collection,
+                ResourceType.Collection,
                 documentCollectionLink,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
@@ -2762,7 +2762,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers = this.GetRequestHeaders(options);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
-                Microsoft.Azure.Documents.ResourceType.StoredProcedure,
+                ResourceType.StoredProcedure,
                 storedProcedureLink,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
@@ -2819,7 +2819,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers = this.GetRequestHeaders(options);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
-                Microsoft.Azure.Documents.ResourceType.Trigger,
+                ResourceType.Trigger,
                 triggerLink,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
@@ -2876,7 +2876,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers = this.GetRequestHeaders(options);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
-                Microsoft.Azure.Documents.ResourceType.UserDefinedFunction,
+                ResourceType.UserDefinedFunction,
                 functionLink,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
@@ -2933,7 +2933,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers = this.GetRequestHeaders(options);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
-                Microsoft.Azure.Documents.ResourceType.Conflict,
+                ResourceType.Conflict,
                 conflictLink,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
@@ -2991,7 +2991,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers = this.GetRequestHeaders(options);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
-                Microsoft.Azure.Documents.ResourceType.Snapshot,
+                ResourceType.Snapshot,
                 snapshotLink,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
@@ -3036,7 +3036,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Replace,
                 altLink ?? this.GetLinkForRouting(documentCollection),
                 documentCollection,
-                Microsoft.Azure.Documents.ResourceType.Collection,
+                ResourceType.Collection,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
                 SerializationFormattingPolicy.None))
@@ -3217,7 +3217,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Replace,
                 documentLink,
                 document,
-                Microsoft.Azure.Documents.ResourceType.Document,
+                ResourceType.Document,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
                 SerializationFormattingPolicy.None,
@@ -3293,7 +3293,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Replace,
                 altLink ?? this.GetLinkForRouting(storedProcedure),
                 storedProcedure,
-                Microsoft.Azure.Documents.ResourceType.StoredProcedure,
+                ResourceType.StoredProcedure,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
                 SerializationFormattingPolicy.None))
@@ -3363,7 +3363,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Replace,
                 altLink ?? this.GetLinkForRouting(trigger),
                 trigger,
-                Microsoft.Azure.Documents.ResourceType.Trigger,
+                ResourceType.Trigger,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
                 SerializationFormattingPolicy.None))
@@ -3437,7 +3437,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Replace,
                 altLink ?? this.GetLinkForRouting(function),
                 function,
-                Microsoft.Azure.Documents.ResourceType.UserDefinedFunction,
+                ResourceType.UserDefinedFunction,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
                 SerializationFormattingPolicy.None))
@@ -3505,7 +3505,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Replace,
                 offer.SelfLink,
                 offer,
-                Microsoft.Azure.Documents.ResourceType.Offer,
+                ResourceType.Offer,
                 AuthorizationTokenType.PrimaryMasterKey))
             {
                 return new ResourceResponse<Offer>(
@@ -3572,7 +3572,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Replace,
                 altLink ?? this.GetLinkForRouting(userDefinedType),
                 userDefinedType,
-                Microsoft.Azure.Documents.ResourceType.UserDefinedType,
+                ResourceType.UserDefinedType,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
                 SerializationFormattingPolicy.None))
@@ -3651,7 +3651,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers = this.GetRequestHeaders(options);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
-                Microsoft.Azure.Documents.ResourceType.Database,
+                ResourceType.Database,
                 databaseLink,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
@@ -3731,7 +3731,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers = this.GetRequestHeaders(options);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
-                Microsoft.Azure.Documents.ResourceType.Document,
+                ResourceType.Document,
                 documentLink,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
@@ -3813,7 +3813,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers = this.GetRequestHeaders(options);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
-                Microsoft.Azure.Documents.ResourceType.Document,
+                ResourceType.Document,
                 documentLink,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
@@ -3896,7 +3896,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers = this.GetRequestHeaders(options);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
-                Microsoft.Azure.Documents.ResourceType.Collection,
+                ResourceType.Collection,
                 documentCollectionLink,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
@@ -3975,7 +3975,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers = this.GetRequestHeaders(options);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
-                Microsoft.Azure.Documents.ResourceType.StoredProcedure,
+                ResourceType.StoredProcedure,
                 storedProcedureLink,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
@@ -4054,7 +4054,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers = this.GetRequestHeaders(options);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
-                Microsoft.Azure.Documents.ResourceType.Trigger,
+                ResourceType.Trigger,
                 triggerLink,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
@@ -4133,7 +4133,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers = this.GetRequestHeaders(options);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
-                Microsoft.Azure.Documents.ResourceType.UserDefinedFunction,
+                ResourceType.UserDefinedFunction,
                 functionLink,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
@@ -4212,7 +4212,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers = this.GetRequestHeaders(options);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
-                Microsoft.Azure.Documents.ResourceType.Conflict,
+                ResourceType.Conflict,
                 conflictLink,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
@@ -4298,7 +4298,7 @@ namespace Microsoft.Azure.Cosmos
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
-                Microsoft.Azure.Documents.ResourceType.Offer,
+                ResourceType.Offer,
                 offerLink,
                 null,
                 AuthorizationTokenType.PrimaryMasterKey))
@@ -4377,7 +4377,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers = this.GetRequestHeaders(options);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
-                Microsoft.Azure.Documents.ResourceType.Schema,
+                ResourceType.Schema,
                 documentSchemaLink,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
@@ -4457,7 +4457,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers = this.GetRequestHeaders(options);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
-                Microsoft.Azure.Documents.ResourceType.UserDefinedType,
+                ResourceType.UserDefinedType,
                 userDefinedTypeLink,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
@@ -4533,7 +4533,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers = this.GetRequestHeaders(options);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
-                Microsoft.Azure.Documents.ResourceType.Snapshot,
+                ResourceType.Snapshot,
                 snapshotLink,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
@@ -5483,7 +5483,7 @@ namespace Microsoft.Azure.Cosmos
                     INameValueCollection headers = this.GetRequestHeaders(options);
                     using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                         OperationType.ExecuteJavaScript,
-                        Microsoft.Azure.Documents.ResourceType.StoredProcedure,
+                        ResourceType.StoredProcedure,
                         storedProcedureLink,
                         storedProcedureInputStream,
                         AuthorizationTokenType.PrimaryMasterKey,
@@ -5574,7 +5574,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Upsert,
                 Paths.Databases_Root,
                 database,
-                Microsoft.Azure.Documents.ResourceType.Database,
+                ResourceType.Database,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
                 SerializationFormattingPolicy.None))
@@ -5739,7 +5739,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Upsert,
                 documentCollectionLink,
                 typedDocument,
-                Microsoft.Azure.Documents.ResourceType.Document,
+                ResourceType.Document,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
                 SerializationFormattingPolicy.None,
@@ -5881,7 +5881,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Upsert,
                 collectionLink,
                 storedProcedure,
-                Microsoft.Azure.Documents.ResourceType.StoredProcedure,
+                ResourceType.StoredProcedure,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
                 SerializationFormattingPolicy.None))
@@ -5976,7 +5976,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Upsert,
                 collectionLink,
                 trigger,
-                Microsoft.Azure.Documents.ResourceType.Trigger,
+                ResourceType.Trigger,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
                 SerializationFormattingPolicy.None))
@@ -6062,7 +6062,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Upsert,
                 collectionLink,
                 function,
-                Microsoft.Azure.Documents.ResourceType.UserDefinedFunction,
+                ResourceType.UserDefinedFunction,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
                 SerializationFormattingPolicy.None))
@@ -6135,7 +6135,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Upsert,
                 databaseLink,
                 userDefinedType,
-                Microsoft.Azure.Documents.ResourceType.UserDefinedType,
+                ResourceType.UserDefinedType,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
                 SerializationFormattingPolicy.None))
@@ -6381,15 +6381,15 @@ namespace Microsoft.Azure.Cosmos
                 return this.GatewayStoreModel;
             }
 
-            Microsoft.Azure.Documents.ResourceType resourceType = request.ResourceType;
+            ResourceType resourceType = request.ResourceType;
             OperationType operationType = request.OperationType;
 
-            if (resourceType == Microsoft.Azure.Documents.ResourceType.Offer ||
+            if (resourceType == ResourceType.Offer ||
                 (resourceType.IsScript() && operationType != OperationType.ExecuteJavaScript) ||
-                resourceType == Microsoft.Azure.Documents.ResourceType.PartitionKeyRange ||
-                resourceType == Microsoft.Azure.Documents.ResourceType.Snapshot ||
-                resourceType == Microsoft.Azure.Documents.ResourceType.ClientEncryptionKey ||
-                (resourceType == Microsoft.Azure.Documents.ResourceType.PartitionKey && operationType == OperationType.Delete))
+                resourceType == ResourceType.PartitionKeyRange ||
+                resourceType == ResourceType.Snapshot ||
+                resourceType == ResourceType.ClientEncryptionKey ||
+                (resourceType == ResourceType.PartitionKey && operationType == OperationType.Delete))
             {
                 return this.GatewayStoreModel;
             }
@@ -6397,10 +6397,10 @@ namespace Microsoft.Azure.Cosmos
             if (operationType == OperationType.Create
                 || operationType == OperationType.Upsert)
             {
-                if (resourceType == Microsoft.Azure.Documents.ResourceType.Database ||
-                    resourceType == Microsoft.Azure.Documents.ResourceType.User ||
-                    resourceType == Microsoft.Azure.Documents.ResourceType.Collection ||
-                    resourceType == Microsoft.Azure.Documents.ResourceType.Permission)
+                if (resourceType == ResourceType.Database ||
+                    resourceType == ResourceType.User ||
+                    resourceType == ResourceType.Collection ||
+                    resourceType == ResourceType.Permission)
                 {
                     return this.GatewayStoreModel;
                 }
@@ -6411,9 +6411,9 @@ namespace Microsoft.Azure.Cosmos
             }
             else if (operationType == OperationType.Delete)
             {
-                if (resourceType == Microsoft.Azure.Documents.ResourceType.Database ||
-                    resourceType == Microsoft.Azure.Documents.ResourceType.User ||
-                    resourceType == Microsoft.Azure.Documents.ResourceType.Collection)
+                if (resourceType == ResourceType.Database ||
+                    resourceType == ResourceType.User ||
+                    resourceType == ResourceType.Collection)
                 {
                     return this.GatewayStoreModel;
                 }
@@ -6424,7 +6424,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else if ((operationType == OperationType.Replace) || (operationType == OperationType.CollectionTruncate))
             {
-                if (resourceType == Microsoft.Azure.Documents.ResourceType.Collection)
+                if (resourceType == ResourceType.Collection)
                 {
                     return this.GatewayStoreModel;
                 }
@@ -6435,7 +6435,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else if (operationType == OperationType.Read)
             {
-                if (resourceType == Microsoft.Azure.Documents.ResourceType.Collection)
+                if (resourceType == ResourceType.Collection)
                 {
                     return this.GatewayStoreModel;
                 }
@@ -6597,10 +6597,10 @@ namespace Microsoft.Azure.Cosmos
         internal DocumentServiceRequest CreateDocumentServiceRequest(
             OperationType operationType,
             string resourceLink,
-            Microsoft.Azure.Documents.ResourceType resourceType,
+            ResourceType resourceType,
             INameValueCollection headers)
         {
-            if (resourceType == Microsoft.Azure.Documents.ResourceType.Database || resourceType == Microsoft.Azure.Documents.ResourceType.Offer)
+            if (resourceType == ResourceType.Database || resourceType == ResourceType.Offer)
             {
                 return DocumentServiceRequest.Create(
                     operationType,
