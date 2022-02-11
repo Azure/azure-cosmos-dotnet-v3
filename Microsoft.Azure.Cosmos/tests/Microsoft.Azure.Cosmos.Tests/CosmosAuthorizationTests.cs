@@ -8,10 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using System.Net;
-    using System.Net.Http;
     using System.Reflection;
-    using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core;
@@ -44,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
                 (string token, string payload) = await cosmosAuthorization.GetUserAuthorizationAsync(
                     "dbs\\test",
-                    ResourceType.Database.ToResourceTypeString(),
+                    Microsoft.Azure.Documents.ResourceType.Database.ToResourceTypeString(),
                     "GET",
                     headers,
                     AuthorizationTokenType.PrimaryMasterKey);
@@ -57,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
                 (string token, string payload) = await cosmosAuthorization.GetUserAuthorizationAsync(
                     "dbs\\test\\colls\\abc",
-                    ResourceType.Collection.ToResourceTypeString(),
+                    Microsoft.Azure.Documents.ResourceType.Collection.ToResourceTypeString(),
                     "PUT",
                     headers,
                     AuthorizationTokenType.PrimaryMasterKey);
@@ -70,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
                 (string token, string payload) = await cosmosAuthorization.GetUserAuthorizationAsync(
                     "dbs\\test\\colls\\abc\\docs\\1234",
-                    ResourceType.Document.ToResourceTypeString(),
+                    Microsoft.Azure.Documents.ResourceType.Document.ToResourceTypeString(),
                     "GET",
                     headers,
                     AuthorizationTokenType.PrimaryMasterKey);
@@ -96,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
                 (string token, string payload) = await cosmosAuthorization.GetUserAuthorizationAsync(
                     "dbs\\test",
-                    ResourceType.Database.ToResourceTypeString(),
+                    Microsoft.Azure.Documents.ResourceType.Database.ToResourceTypeString(),
                     "GET",
                     headers,
                     AuthorizationTokenType.PrimaryMasterKey);
@@ -111,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
                 (string token, string payload) = await cosmosAuthorization.GetUserAuthorizationAsync(
                     "dbs\\test\\colls\\abc",
-                    ResourceType.Collection.ToResourceTypeString(),
+                    Microsoft.Azure.Documents.ResourceType.Collection.ToResourceTypeString(),
                     "PUT",
                     headers,
                     AuthorizationTokenType.PrimaryMasterKey);
@@ -125,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
                 (string token, string payload) = await cosmosAuthorization.GetUserAuthorizationAsync(
                     "dbs\\test\\colls\\abc\\docs\\1234",
-                    ResourceType.Document.ToResourceTypeString(),
+                    Microsoft.Azure.Documents.ResourceType.Document.ToResourceTypeString(),
                     "GET",
                     headers,
                     AuthorizationTokenType.PrimaryMasterKey);
