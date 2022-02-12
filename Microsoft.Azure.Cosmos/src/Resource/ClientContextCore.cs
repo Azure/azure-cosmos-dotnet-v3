@@ -465,19 +465,17 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             Func<ITrace, Task<TResult>> task)
         {
-            trace.DiagnosticAttributes.AccountName = this.client.Endpoint;
-            trace.DiagnosticAttributes.UserAgent = this.UserAgent;
-
             using (new ActivityScope(Guid.NewGuid()))
             {
-                using (CosmosDbInstrumentation cosmosDbInstrumentation = new CosmosDbInstrumentation(operationName))
+                using (CosmosInstrumentation cosmosDbInstrumentation = new CosmosInstrumentation(operationName))
                 {
                     try
                     {
-                        cosmosDbInstrumentation.CreateAndStartScope();
-                        TResult result = await task(trace).ConfigureAwait(false);
+                        cosmosDbInstrumentation.AddAttribute("Account Name", this.client.Endpoint);
+                        cosmosDbInstrumentation.AddAttribute("User Agent", this.UserAgent);
                         
-                        return result;
+                        return await task(trace).ConfigureAwait(false);
+
                     }
                     catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                     {

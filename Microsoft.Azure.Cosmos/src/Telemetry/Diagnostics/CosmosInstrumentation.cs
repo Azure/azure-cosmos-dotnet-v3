@@ -10,33 +10,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     using global::Azure.Core.Pipeline;
     using Tracing;
 
-    internal class CosmosDbInstrumentation : IDisposable
+    internal class CosmosInstrumentation : ICosmosInstrumentation
     {
-        public const string DiagnosticNamespace = "Azure.Cosmos";
-        public const string ResourceProviderNamespace = "Microsoft.Azure.Cosmos";
-        private readonly string operationName;
-
-        private DiagnosticScope scope;
-        private bool isEnabled = false;
+        private readonly DiagnosticScope scope;
+        private readonly bool isEnabled = false;
       
-        public static DiagnosticScopeFactory ScopeFactory { get; } = new DiagnosticScopeFactory(DiagnosticNamespace, ResourceProviderNamespace, true);
-
-        public CosmosDbInstrumentation(string operationName)
+        public CosmosInstrumentation(DiagnosticScope scope)
         {
-            this.operationName = operationName;
-        }
-
-        public void CreateAndStartScope()
-        {
-            this.scope = CosmosDbInstrumentation.ScopeFactory.CreateScope($"Cosmos.{this.operationName}");
-            if (this.scope.IsEnabled)
-            {
-                this.scope.Start();
-            }
+            this.scope = scope;
+            this.scope.Start();
 
             this.isEnabled = Activity.Current != null && this.scope.IsEnabled && Activity.Current.IsAllDataRequested;
         }
-
+        
         public void MarkFailed(Exception ex)
         {
             if (this.isEnabled)
@@ -54,6 +40,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             {
                 this.AddAttributes(trace, attributes);
             }
+        }
+
+        public void AddAttribute(string key, object value)
+        {
+            this.scope.AddAttribute(key, value);
         }
 
         private void AddAttributes(ITrace trace, DiagnosticAttributes attributes)
