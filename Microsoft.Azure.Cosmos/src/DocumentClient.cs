@@ -1254,6 +1254,7 @@ namespace Microsoft.Azure.Cosmos
             if (this.initTaskCache != null)
             {
                 this.initTaskCache.Dispose();
+                this.initTaskCache = null;
             }
 
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
