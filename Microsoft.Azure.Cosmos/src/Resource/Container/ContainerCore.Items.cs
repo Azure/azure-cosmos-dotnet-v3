@@ -1031,7 +1031,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             this.RecordDiagnosticAttributes(
-                diagnosticAttributes: trace.DiagnosticAttributes,
+                cosmosInstrumentation: trace.CosmosInstrumentation,
                 requestCharge: responseMessage.Headers.RequestCharge,
                 operationType: operationType,
                 statusCode: responseMessage.StatusCode);

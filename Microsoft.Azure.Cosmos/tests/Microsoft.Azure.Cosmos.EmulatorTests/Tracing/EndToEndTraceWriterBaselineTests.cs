@@ -1396,7 +1396,7 @@
                 return this.StartChild(name, TraceComponent.Unknown, TraceLevel.Info);
             }
 
-            public DiagnosticAttributes DiagnosticAttributes { get; }
+            public ICosmosInstrumentation CosmosInstrumentation { get; }
 
             public ITrace StartChild(string name, TraceComponent component, TraceLevel level)
             {

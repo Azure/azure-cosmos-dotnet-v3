@@ -467,42 +467,39 @@ namespace Microsoft.Azure.Cosmos
         {
             using (new ActivityScope(Guid.NewGuid()))
             {
-                using (CosmosInstrumentation cosmosDbInstrumentation = new CosmosInstrumentation(operationName))
+                using (trace.CosmosInstrumentation)
                 {
                     try
                     {
-                        cosmosDbInstrumentation.AddAttribute("Account Name", this.client.Endpoint);
-                        cosmosDbInstrumentation.AddAttribute("User Agent", this.UserAgent);
-                        
+                        trace.CosmosInstrumentation.AddAttribute("db.system", "cosmosdb");
+                        trace.CosmosInstrumentation.AddAttribute("AccountName", this.client.Endpoint);
+                        trace.CosmosInstrumentation.AddAttribute("User Agent", this.UserAgent);
+
                         return await task(trace).ConfigureAwait(false);
 
                     }
                     catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                     {
-                        cosmosDbInstrumentation?.MarkFailed(oe);
-
                         throw new CosmosOperationCanceledException(oe, trace);
                     }
-                    catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
+                    catch (ObjectDisposedException objectDisposed) when
+                        (!(objectDisposed is CosmosObjectDisposedException))
                     {
-                        cosmosDbInstrumentation?.MarkFailed(objectDisposed);
-
                         throw new CosmosObjectDisposedException(
                             objectDisposed,
                             this.client,
                             trace);
                     }
-                    catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
+                    catch (NullReferenceException nullRefException) when
+                        (!(nullRefException is CosmosNullReferenceException))
                     {
-                        cosmosDbInstrumentation?.MarkFailed(nullRefException);
-                       
                         throw new CosmosNullReferenceException(
                             nullRefException,
                             trace);
                     }
                     finally
                     {
-                        cosmosDbInstrumentation?.MarkDone(trace, trace.DiagnosticAttributes);
+                        trace.CosmosInstrumentation.AddAttribute("Request Diagnostics (JSON)", new CosmosTraceDiagnostics(trace));
                     }
                 }  
             }

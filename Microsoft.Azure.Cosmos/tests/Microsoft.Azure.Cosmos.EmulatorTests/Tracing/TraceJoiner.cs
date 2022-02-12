@@ -70,12 +70,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             {
                 this.data[key] = traceDatum;
             }
-
-            public void AddDiagnosticAttributes(string key, object value)
-            {
-                // NoOp
-            }
-
+            
             public void AddDatum(string key, object value)
             {
                 this.data[key] = value;
@@ -90,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 return this.StartChild(name, TraceComponent.Unknown, TraceLevel.Info);
             }
 
-            public DiagnosticAttributes DiagnosticAttributes { get; }
+            public ICosmosInstrumentation CosmosInstrumentation { get; }
 
             public ITrace StartChild(string name, TraceComponent component, TraceLevel level)
             {

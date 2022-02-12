@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <summary>
         /// DiagnosticAttributes
         /// </summary>
-        DiagnosticAttributes DiagnosticAttributes { get; }
+        ICosmosInstrumentation CosmosInstrumentation { get; }
 
         /// <summary>
         /// Starts a trace and adds it as a child to this instance.
@@ -100,13 +100,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <param name="key">The key to associate the datum.</param>
         /// <param name="traceDatum">The datum itself.</param>
         void AddDatum(string key, TraceDatum traceDatum);
-
-        /// <summary>
-        /// Adds a diagnostic attributes to the this trace instance.
-        /// </summary>
-        /// <param name="key">key</param>
-        /// <param name="value">value.</param>
-        void AddDiagnosticAttributes(string key, object value);
 
         /// <summary>
         /// Adds a datum to the this trace instance.

@@ -44,6 +44,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(trace));
             }
 
+            trace.CosmosInstrumentation.MarkFailed(originalException);
+
             this.Diagnostics = new CosmosTraceDiagnostics(trace);
         }
 
