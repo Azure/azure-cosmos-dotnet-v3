@@ -5,10 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
     using System;
-    using System.Diagnostics;
-    using Cosmos.Diagnostics;
     using global::Azure.Core.Pipeline;
-    using Tracing;
 
     internal class CosmosInstrumentation : ICosmosInstrumentation
     {

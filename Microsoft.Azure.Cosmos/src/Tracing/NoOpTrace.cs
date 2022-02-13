@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 level: TraceLevel.Info);
         }
 
-        public ICosmosInstrumentation CosmosInstrumentation { get; }
+        public ICosmosInstrumentation CosmosInstrumentation => new CosmosInstrumentationNoOp();
 
         public ITrace StartChild(
             string name,
