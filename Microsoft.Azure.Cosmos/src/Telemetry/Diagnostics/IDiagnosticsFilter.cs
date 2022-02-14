@@ -5,13 +5,11 @@
 namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
     using System;
+    using System.Collections.Generic;
+    using System.Text;
 
-    internal interface ICosmosInstrumentation : IDisposable
-    {
-        public DiagnosticAttributes Attributes { get; }
-
-        public void MarkFailed(Exception ex);
-
-        public void AddAttributesToScope();
+    internal interface IDiagnosticsFilter
+    { 
+        public bool IsAllowed();
     }
 }

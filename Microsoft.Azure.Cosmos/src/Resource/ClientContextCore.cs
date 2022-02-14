@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using Telemetry.Diagnostics;
     using TraceLevel = Tracing.TraceLevel;
 
     internal class ClientContextCore : CosmosClientContext
@@ -257,7 +258,6 @@ namespace Microsoft.Azure.Cosmos
                 trace.AddDatum("Client Configuration", this.client.ClientConfigurationTraceDatum);
 
                 return await this.RunWithDiagnosticsHelperAsync(
-                    operationName,
                     trace,
                     task);
             }
@@ -283,7 +283,6 @@ namespace Microsoft.Azure.Cosmos
                     trace.AddDatum("Synchronization Context", syncContextVirtualAddress);
 
                     return await this.RunWithDiagnosticsHelperAsync(
-                        operationName,
                         trace,
                         task);
                 }
@@ -458,7 +457,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private async Task<TResult> RunWithDiagnosticsHelperAsync<TResult>(
-            string operationName,
             ITrace trace,
             Func<ITrace, Task<TResult>> task)
         {
@@ -466,14 +464,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (trace.CosmosInstrumentation)
                 {
+                    trace.CosmosInstrumentation.Attributes.AccountName = this.client.Endpoint;
+                    trace.CosmosInstrumentation.Attributes.UserAgent = this.UserAgent;
+
                     try
                     {
-                        trace.CosmosInstrumentation.AddAttribute("db.system", "cosmosdb");
-                        trace.CosmosInstrumentation.AddAttribute("AccountName", this.client.Endpoint);
-                        trace.CosmosInstrumentation.AddAttribute("User Agent", this.UserAgent);
-
                         return await task(trace).ConfigureAwait(false);
-
                     }
                     catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                     {
@@ -496,7 +492,9 @@ namespace Microsoft.Azure.Cosmos
                     }
                     finally
                     {
-                        trace.CosmosInstrumentation.AddAttribute("Request Diagnostics (JSON)", new CosmosTraceDiagnostics(trace));
+                        trace.CosmosInstrumentation.Attributes.RequestDiagnostics = new CosmosTraceDiagnostics(trace);
+
+                        trace.CosmosInstrumentation.AddAttributesToScope();
                     }
                 }  
             }

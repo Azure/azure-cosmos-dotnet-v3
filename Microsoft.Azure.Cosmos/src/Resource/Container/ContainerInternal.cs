@@ -166,12 +166,14 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             HttpStatusCode statusCode)
         {
-            cosmosInstrumentation.AddAttribute("db.name", this.Database.Id);
-            cosmosInstrumentation.AddAttribute("db.operation", operationType);
-            cosmosInstrumentation.AddAttribute("http.status_code", statusCode);
-
-            cosmosInstrumentation.AddAttribute("Container Name", this.Id);
-            cosmosInstrumentation.AddAttribute("Request Charge (RUs)", requestCharge);
+            if (cosmosInstrumentation.Attributes != null)
+            {
+                cosmosInstrumentation.Attributes.DbName = this.Database?.Id;
+                cosmosInstrumentation.Attributes.DbOperation = operationType;
+                cosmosInstrumentation.Attributes.HttpStatusCode = statusCode;
+                cosmosInstrumentation.Attributes.ContainerName = this.Id;
+                cosmosInstrumentation.Attributes.RequestCharge = requestCharge;
+            }
         }
 
         public abstract class TryExecuteQueryResult

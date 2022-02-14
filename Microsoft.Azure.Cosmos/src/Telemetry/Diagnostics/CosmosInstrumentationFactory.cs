@@ -2,28 +2,26 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Telemetry
+namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
-    using Diagnostics;
     using global::Azure.Core.Pipeline;
 
     internal static class CosmosInstrumentationFactory
     {
-        public const string DiagnosticNamespace = "Azure.Cosmos";
-        public const string ResourceProviderNamespace = "Microsoft.Azure.Cosmos";
-        public const string OperationPrefix = "Cosmos";
-
-        public static DiagnosticScopeFactory ScopeFactory { get; } = new DiagnosticScopeFactory(DiagnosticNamespace, ResourceProviderNamespace, true);
+        public static DiagnosticScopeFactory ScopeFactory { get; } = new DiagnosticScopeFactory(
+                                                                                clientNamespace: CosmosInstrumentationConstants.DiagnosticNamespace, 
+                                                                                resourceProviderNamespace: CosmosInstrumentationConstants.ResourceProviderNamespace,
+                                                                                isActivityEnabled: true);
 
         public static ICosmosInstrumentation Get(string operationName)
         {
             DiagnosticScope scope = CosmosInstrumentationFactory
                 .ScopeFactory
-                .CreateScope($"{OperationPrefix}.{operationName}");
+                .CreateScope($"{CosmosInstrumentationConstants.OperationPrefix}.{operationName}");
 
             if (scope.IsEnabled)
             {
-                return new CosmosInstrumentation(scope);
+                return new CosmosInstrumentation(scope, new DiagnosticAttributes());
             }
 
             return new CosmosInstrumentationNoOp();

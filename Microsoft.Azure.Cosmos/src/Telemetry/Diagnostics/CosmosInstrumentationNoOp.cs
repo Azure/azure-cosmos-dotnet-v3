@@ -8,12 +8,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
     internal class CosmosInstrumentationNoOp : ICosmosInstrumentation
     {
+        public DiagnosticAttributes Attributes => default;
+
         public void MarkFailed(Exception ex)
         {
             // NoOp
         }
 
-        public void AddAttribute(string key, object value)
+        public void AddAttributesToScope()
         {
             // NoOp
         }
