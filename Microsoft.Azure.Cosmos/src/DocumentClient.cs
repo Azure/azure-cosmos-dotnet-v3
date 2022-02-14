@@ -937,7 +937,7 @@ namespace Microsoft.Azure.Cosmos
 
             // Create the task to start the initialize task
             // Task will be awaited on in the EnsureValidClientAsync
-            Task t = this.initTaskCache.GetAsync(
+            _ = this.initTaskCache.GetAsync(
                        key: DocumentClient.DefaultInitTaskKey,
                        singleValueInitFunc: this.initializeTaskFactory,
                        forceRefresh: false,
