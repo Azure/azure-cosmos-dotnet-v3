@@ -639,16 +639,20 @@ namespace Microsoft.Azure.Cosmos
         ///     ("Id3", new PartitionKey("pkValue3"))
         /// };
         /// 
-        /// using (ResponseMessage responseMessage = await this.Container.ReadManyItemsStreamAsync(itemList))
+        /// using (ResponseMessage response = await this.Container.ReadManyItemsStreamAsync(itemList))
         /// {
-        ///     using (Stream stream = response.ReadBodyAsync())
+        ///     if (!response.IsSuccessStatusCode)
         ///     {
-        ///         //Read or do other operations with the stream
-        ///         using (StreamReader streamReader = new StreamReader(stream))
-        ///         {
-        ///             string content = streamReader.ReadToEndAsync();
-        ///         }
+        ///         //Handle and log exception
+        ///         return;
         ///     }
+        ///
+        ///     //Read or do other operations with the stream
+        ///     using (StreamReader streamReader = new StreamReader(response.Content))
+        ///     {
+        ///         string content = streamReader.ReadToEndAsync();
+        ///     }
+        ///     
         /// }
         /// ]]>
         /// </code>
