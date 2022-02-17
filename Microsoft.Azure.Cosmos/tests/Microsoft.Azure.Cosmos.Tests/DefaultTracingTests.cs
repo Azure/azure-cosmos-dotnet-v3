@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             // Access cosmos client to cause the static constructor to get called
             Assert.IsTrue(CosmosClient.numberOfClientsCreated >= 0);
-            Assert.IsTrue(CosmosClient.NumberOfActiveClientsCreated >= 0);
+            Assert.IsTrue(CosmosClient.NumberOfActiveClients >= 0);
 
             if (!Debugger.IsAttached)
             {

@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void SingleClientTest()
         {
             CosmosClient cosmosClient = new CosmosClient(ConnectionString);
-            Assert.AreEqual(1, CosmosClient.NumberOfActiveClientsCreated);
+            Assert.AreEqual(1, CosmosClient.NumberOfActiveClients);
             cosmosClient.Dispose();
         }
 
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClient cosmosClient1 = new CosmosClient(ConnectionString); // Initializing 1st time
             CosmosClient cosmosClient2 = new CosmosClient(ConnectionString); // Initializing 2nd time
-            Assert.AreEqual(2, CosmosClient.NumberOfActiveClientsCreated);
+            Assert.AreEqual(2, CosmosClient.NumberOfActiveClients);
             cosmosClient1.Dispose();
             cosmosClient2.Dispose();
         }
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClient cosmosClient2 = new CosmosClient(ConnectionString); // Initializing 2nd time
             CosmosClient cosmosClient3 = new CosmosClient(ConnectionString); // Initializing 3rd time
             cosmosClient2.Dispose(); // Destroying 1 instance
-            Assert.AreEqual(2, CosmosClient.NumberOfActiveClientsCreated);
+            Assert.AreEqual(2, CosmosClient.NumberOfActiveClients);
             cosmosClient1.Dispose();
             cosmosClient3.Dispose();
         }
