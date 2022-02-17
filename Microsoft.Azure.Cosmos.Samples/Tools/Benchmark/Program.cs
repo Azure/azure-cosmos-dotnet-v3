@@ -53,19 +53,18 @@ namespace CosmosBenchmark
                 {
                     AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
                     TracerProviderBuilder traceBuilder = Sdk.CreateTracerProviderBuilder()
-                                            .AddSource("Azure.*"); // Collect all traces from Azure SDKs
-                   /* if (config.AppInsightConnectionString != null)
+                                            .AddSource("Azure.Cosmos"); // Collect all traces from Azure SDKs
+                    if (!string.IsNullOrWhiteSpace(config.AppInsightConnectionString))
                     {
                         traceBuilder
                             .AddAzureMonitorTraceExporter(
                                     options =>
                                     options.ConnectionString = config.AppInsightConnectionString); // Export traces to Azure Monitor
-                    }*/
-                    
-                    /* if (config.SampleAllowedRatio > 0)
+                    }
+                    if (config.SamplingRatio is > 0)
                     {
-                        traceBuilder.SetSampler(new TraceIdRatioBasedSampler(config.SampleAllowedRatio));
-                    }*/
+                        traceBuilder.SetSampler(new TraceIdRatioBasedSampler(config.SamplingRatio.Value));
+                    }
 
                     openTelemetry = traceBuilder.Build();
                 }

@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         /// 3) HTTP status code is not Success
         /// 
         /// </summary>
-        /// <returns></returns>
+        /// <returns>true or false</returns>
         public bool IsAllowed()
         {
             return this.diagnosticAttributes.IsLatencyHigh(TimeSpan.FromMilliseconds(this.latencyThresholdInMs)) || 

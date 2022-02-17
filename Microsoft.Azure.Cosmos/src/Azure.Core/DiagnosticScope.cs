@@ -64,19 +64,19 @@ namespace Azure.Core.Pipeline
             return ActivitySources.GetOrAdd(clientName, static n => ActivityExtensions.CreateActivitySource(n));
         }
 
-        public void AddAttribute(string name, object? value)
+        public void AddAttribute(string name, string? value)
         {
             this.activityAdapter?.AddTag(name, value);
         }
 
-/*        public void AddAttribute<T>(string name,
+        public void AddAttribute<T>(string name,
 #if AZURE_NULLABLE
             [AllowNull]
 #endif
             T value)
         {
             this.AddAttribute(name, value, static v => Convert.ToString(v, CultureInfo.InvariantCulture) ?? string.Empty);
-        }*/
+        }
 
         public void AddAttribute<T>(string name, T value, Func<T, string> format)
         {
@@ -198,7 +198,7 @@ namespace Azure.Core.Pipeline
                 }
             }
 
-            public void AddTag(string name, object? value)
+            public void AddTag(string name, string? value)
             {
                 if (this.currentActivity == null)
                 {
