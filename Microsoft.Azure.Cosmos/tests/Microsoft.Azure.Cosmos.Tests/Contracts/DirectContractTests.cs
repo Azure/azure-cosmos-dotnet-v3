@@ -104,11 +104,11 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 { "System.Configuration.ConfigurationManager", new Version(4, 7, 0) },
                 { "System.Memory", new Version(4, 5, 4) },
                 { "System.Buffers", new Version(4, 5, 1) },
-                { "System.Runtime.CompilerServices.Unsafe", new Version(4, 5, 3) },
+                { "System.Runtime.CompilerServices.Unsafe", new Version(4, 6, 0) },
                 { "System.Threading.Tasks.Extensions", new Version(4, 5, 4) },
                 { "System.ValueTuple", new Version(4, 5, 0) },
                 { "Microsoft.Bcl.HashCode", new Version(1, 1, 0) },
-                { "Azure.Core", new Version(1, 3, 0) },
+                { "Azure.Core", new Version(1, 19, 0) },
             };
 
             Assert.AreEqual(projectDependencies.Count, baselineDependencies.Count);
@@ -119,6 +119,9 @@ namespace Microsoft.Azure.Cosmos.Contracts
             }
         }
 
+        /// <summary>
+        /// Ignoring HybridRow dependency check as it is using System.Runtime.CompilerServices.Unsafe 4.5.3 and Azure.Core 1.19.0 needs >=4.6.0 version of the same
+        /// </summary>
         [TestMethod]
         public void PackageDependenciesTest()
         {
@@ -132,6 +135,11 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 Dictionary<string, Version> nuspecDependencies = DirectContractTests.GetNuspecDependencies(nuspecFile);
                 foreach (KeyValuePair<string, Version> e in nuspecDependencies)
                 {
+                    if (nuspecFile.Contains("hybridrow") && e.Key.Contains("CompilerServices.Unsafe"))
+                    {
+                        continue;
+                    }
+
                     if (!allDependencies.ContainsKey(e.Key))
                     {
                         allDependencies[e.Key] = e.Value;
