@@ -34,11 +34,5 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <returns>The list of tuples containing the Region name and the URI</returns>
         public abstract IReadOnlyList<(string regionName, Uri uri)> GetContactedRegions();
-
-        /// <summary>
-        /// Number of active clients at a moment
-        /// </summary>
-        /// <returns>Number of Active Client Instances</returns>
-        public abstract int NumberOfActiveClients();
     }
 }
