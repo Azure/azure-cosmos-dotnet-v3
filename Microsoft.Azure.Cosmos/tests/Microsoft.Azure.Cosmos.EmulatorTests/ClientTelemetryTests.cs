@@ -152,6 +152,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(testItem);
             ToDoActivity testItemCreated = createResponse.Resource;
 
+            Console.WriteLine(createResponse.Diagnostics.ToString());
             // Read an Item
             await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
 

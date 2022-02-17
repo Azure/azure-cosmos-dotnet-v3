@@ -102,6 +102,9 @@ namespace Microsoft.Azure.Cosmos
         private bool isDisposed = false;
 
         internal static int numberOfClientsCreated;
+
+        internal static int NumberOfActiveClientsCreated;
+
         internal DateTime? DisposedDateTimeUtc { get; private set; } = null;
 
         static CosmosClient()
@@ -262,6 +265,8 @@ namespace Microsoft.Azure.Cosmos
             clientOptions ??= new CosmosClientOptions();
 
             this.ClientId = this.IncrementNumberOfClientsCreated();
+            
+            this.IncrementNumberOfActiveClientsCreated();
             this.ClientContext = ClientContextCore.Create(
                 this,
                 clientOptions);
@@ -1235,6 +1240,16 @@ namespace Microsoft.Azure.Cosmos
             return Interlocked.Increment(ref numberOfClientsCreated);
         }
 
+        private int IncrementNumberOfActiveClientsCreated()
+        {
+            return Interlocked.Increment(ref NumberOfActiveClientsCreated);
+        }
+
+        private int DecrementNumberOfActiveClientsCreated()
+        {
+            return Interlocked.Decrement(ref NumberOfActiveClientsCreated);
+        }
+
         private async Task InitializeContainerAsync(string databaseId, string containerId, CancellationToken cancellationToken = default)
         {
             ContainerInternal container = (ContainerInternal)this.GetContainer(databaseId, containerId);
@@ -1287,6 +1302,7 @@ namespace Microsoft.Azure.Cosmos
                 if (disposing)
                 {
                     this.ClientContext.Dispose();
+                    this.DecrementNumberOfActiveClientsCreated();
                 }
 
                 this.isDisposed = true;
