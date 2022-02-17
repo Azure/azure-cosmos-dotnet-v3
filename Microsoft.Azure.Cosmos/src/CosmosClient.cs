@@ -266,7 +266,6 @@ namespace Microsoft.Azure.Cosmos
 
             this.ClientId = this.IncrementNumberOfClientsCreated();
             
-            this.IncrementNumberOfActiveClientsCreated();
             this.ClientContext = ClientContextCore.Create(
                 this,
                 clientOptions);
@@ -1237,6 +1236,8 @@ namespace Microsoft.Azure.Cosmos
 
         private int IncrementNumberOfClientsCreated()
         {
+            this.IncrementNumberOfActiveClientsCreated();
+
             return Interlocked.Increment(ref numberOfClientsCreated);
         }
 
