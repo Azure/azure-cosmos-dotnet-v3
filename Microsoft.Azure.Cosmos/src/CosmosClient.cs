@@ -1248,7 +1248,13 @@ namespace Microsoft.Azure.Cosmos
 
         private int DecrementNumberOfActiveClients()
         {
-            return Interlocked.Decrement(ref NumberOfActiveClients);
+            // In case dispose is called multiple times. Check if at least 1 active client is there
+            if (NumberOfActiveClients > 0)
+            {
+                return Interlocked.Decrement(ref NumberOfActiveClients);
+            }
+
+            return 0;
         }
 
         private async Task InitializeContainerAsync(string databaseId, string containerId, CancellationToken cancellationToken = default)
