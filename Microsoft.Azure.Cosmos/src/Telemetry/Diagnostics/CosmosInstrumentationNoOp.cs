@@ -8,7 +8,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
     internal class CosmosInstrumentationNoOp : ICosmosInstrumentation
     {
-        public DiagnosticAttributes Attributes => default;
+        public DiagnosticAttributes Attributes { get; }
+
+        public CosmosInstrumentationNoOp()
+        {
+            this.Attributes = new DiagnosticAttributes();
+        }
 
         public void MarkFailed(Exception ex)
         {

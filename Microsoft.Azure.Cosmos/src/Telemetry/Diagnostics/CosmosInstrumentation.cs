@@ -13,10 +13,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
         public DiagnosticAttributes Attributes { get; }
 
-        public CosmosInstrumentation(DiagnosticScope scope, DiagnosticAttributes attributes)
+        public CosmosInstrumentation(DiagnosticScope scope)
         {
             this.scope = scope;
-            this.Attributes = attributes;
+            this.Attributes = new DiagnosticAttributes();
 
             this.scope.Start();
         }

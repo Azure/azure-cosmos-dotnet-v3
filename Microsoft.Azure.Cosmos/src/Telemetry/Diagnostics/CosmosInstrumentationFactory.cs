@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
             if (scope.IsEnabled)
             {
-                return new CosmosInstrumentation(scope, new DiagnosticAttributes());
+                return new CosmosInstrumentation(scope);
             }
 
             return new CosmosInstrumentationNoOp();
