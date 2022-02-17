@@ -132,13 +132,14 @@ namespace Microsoft.Azure.Cosmos.Contracts
             Dictionary<string, Version> allDependencies = new Dictionary<string, Version>();
             foreach (string nuspecFile in files)
             {
-                if (nuspecFile.Contains("hybridrow"))
-                {
-                    continue;
-                }
                 Dictionary<string, Version> nuspecDependencies = DirectContractTests.GetNuspecDependencies(nuspecFile);
                 foreach (KeyValuePair<string, Version> e in nuspecDependencies)
                 {
+                    if (nuspecFile.Contains("hybridrow") && e.Key.Contains("CompilerServices.Unsafe"))
+                    {
+                        continue;
+                    }
+
                     if (!allDependencies.ContainsKey(e.Key))
                     {
                         allDependencies[e.Key] = e.Value;
