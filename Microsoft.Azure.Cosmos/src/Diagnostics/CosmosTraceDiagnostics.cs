@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return this.WalkTraceTreeForGoneException(this.Value);
         }
 
-        internal int ActiveClients()
+        public override int NumberOfActiveClients()
         {
             return CosmosClient.NumberOfActiveClientsCreated;
         }
