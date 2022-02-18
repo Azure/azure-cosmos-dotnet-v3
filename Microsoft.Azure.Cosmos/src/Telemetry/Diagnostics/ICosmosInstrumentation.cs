@@ -6,12 +6,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
     using System;
 
-    internal interface ICosmosInstrumentation : IDisposable
-    {
-        public DiagnosticAttributes Attributes { get; }
+#if INTERNAL
+    public
+#else
+    internal
+#endif 
+        interface ICosmosInstrumentation : IDisposable
+        {
+            public DiagnosticAttributes Attributes { get; }
 
-        public void MarkFailed(Exception ex);
+            public void MarkFailed(Exception ex);
 
-        public void AddAttributesToScope();
-    }
+            public void AddAttributesToScope();
+        }
 }
