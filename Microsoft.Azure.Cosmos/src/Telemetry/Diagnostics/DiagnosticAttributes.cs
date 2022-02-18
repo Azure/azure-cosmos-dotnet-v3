@@ -11,7 +11,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     using Cosmos.Diagnostics;
     using Documents;
 
-    internal class DiagnosticAttributes
+#if INTERNAL
+    public
+#else
+    internal
+#endif 
+        class DiagnosticAttributes
     {
         public bool Error { get; set; }
         public string ExceptionStackTrace { get; set; }
