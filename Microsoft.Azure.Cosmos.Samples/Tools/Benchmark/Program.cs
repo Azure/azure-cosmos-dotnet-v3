@@ -53,7 +53,7 @@ namespace CosmosBenchmark
                 {
                     AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
                     TracerProviderBuilder traceBuilder = Sdk.CreateTracerProviderBuilder()
-                                            .AddSource("Azure.Cosmos"); // Collect all traces from Azure SDKs
+                                            .AddSource("Azure.*"); // Collect all traces from Azure SDKs
                     if (!string.IsNullOrWhiteSpace(config.AppInsightConnectionString))
                     {
                         traceBuilder
