@@ -13,6 +13,22 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.25.0-preview"/> [3.25.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.25.0-preview) - 2022-02-18
+### <a name="3.25.0"/> [3.25.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.25.0) - 2022-02-18
+
+#### Added
+- [#3029](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3029) Dependencies: Upgrades to Azure.Core 1.19.0.
+- [#3008](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3008) Diagnostics: Adds substatus codes for 503 Service Unavailable to identify the root cause.
+
+#### Fixed
+- [#3034](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3034), [#3024](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3024), [#3018](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3018), [#3000](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3000) Documentation: Improvements in code samples within xml documentation.
+- [#3027](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3027) Initialization: Fixes the SDK to retry if the initialization fails due to transient errors.
+- [#3008](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3008) Performance: Reduces the size of the TCP buffer.
+- [#3008](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3008) Availability: Direct mode removes blocking call on broken connection exception.
+- [#3008](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3008) Availability: Fixes the SDK to ensure it does not retry on replica that previously failed with 410, 408 and >= 500 status codes.
+- [#3008](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3008) Diagnostics: Resetting thread starvation status once it is detected.
+- [#3008](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3008) Diagnostics: Fixes capture of HTTP 410s due to partition splits and timeouts.
+
 ### <a name="3.24.0-preview"/> [3.24.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.24.0-preview) - 2022-01-31
 
 #### Added
