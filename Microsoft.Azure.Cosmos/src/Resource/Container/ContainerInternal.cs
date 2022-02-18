@@ -160,22 +160,6 @@ namespace Microsoft.Azure.Cosmos
 
 #endif
 
-        public void RecordDiagnosticAttributes(
-            ICosmosInstrumentation cosmosInstrumentation,
-            double requestCharge,
-            OperationType operationType,
-            HttpStatusCode statusCode)
-        {
-            if (cosmosInstrumentation.Attributes != null)
-            {
-                cosmosInstrumentation.Attributes.DbName = this.Database?.Id;
-                cosmosInstrumentation.Attributes.DbOperation = operationType;
-                cosmosInstrumentation.Attributes.HttpStatusCode = statusCode;
-                cosmosInstrumentation.Attributes.ContainerName = this.Id;
-                cosmosInstrumentation.Attributes.RequestCharge = requestCharge;
-            }
-        }
-
         public abstract class TryExecuteQueryResult
         {
         }

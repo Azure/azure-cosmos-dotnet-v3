@@ -5,13 +5,15 @@
 namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
     using System;
+    using System.Net;
+    using Documents;
     using global::Azure.Core.Pipeline;
 
     internal class CosmosInstrumentation : ICosmosInstrumentation
     {
         private readonly DiagnosticScope scope;
 
-        public DiagnosticAttributes Attributes { get; }
+        private DiagnosticAttributes Attributes { get; }
 
         public CosmosInstrumentation(DiagnosticScope scope)
         {
@@ -29,6 +31,50 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             this.scope.Failed(ex);
         }
 
+        public void Record(double requestCharge,
+            OperationType operationType,
+            HttpStatusCode statusCode, 
+            string databaseId = null, 
+            string containerId = null,
+            string queryText = null)
+        {
+            if (this.Attributes != null)
+            {
+                if (!string.IsNullOrEmpty(databaseId))
+                {
+                    this.Attributes.DbName = databaseId;
+                }
+
+                if (!string.IsNullOrEmpty(containerId))
+                {
+                    this.Attributes.ContainerName = containerId;
+                }
+
+                if (!string.IsNullOrEmpty(queryText))
+                {
+                    this.Attributes.QueryText = queryText;
+                }
+                this.Attributes.DbOperation = operationType;
+                this.Attributes.HttpStatusCode = statusCode;
+                this.Attributes.RequestCharge = requestCharge;
+            }
+        }
+        
+        public void Record(Uri accountName, string userAgent, ConnectionMode connectionMode)
+        {
+            if (this.Attributes != null)
+            {
+                this.Attributes.AccountName = accountName;
+                this.Attributes.UserAgent = userAgent;
+                this.Attributes.ConnectionMode = connectionMode;
+            }
+        }
+
+        public void Record(CosmosDiagnostics diagnostics)
+        {
+            this.Attributes.RequestDiagnostics = diagnostics;
+        }
+
         public void AddAttributesToScope()
         {
             this.scope.AddAttribute(CosmosInstrumentationConstants.AccountNameKey, this.Attributes.AccountName.ToString());
@@ -36,9 +82,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             this.scope.AddAttribute(CosmosInstrumentationConstants.DbNameKey, this.Attributes.DbName);
             this.scope.AddAttribute(CosmosInstrumentationConstants.DbOperationKey, this.Attributes.DbOperation);
             this.scope.AddAttribute(CosmosInstrumentationConstants.DbSystemKey, this.Attributes.DbSystem);
-            this.scope.AddAttribute(CosmosInstrumentationConstants.HttpStatusCodeKey, this.Attributes.HttpStatusCode);
+            this.scope.AddAttribute(CosmosInstrumentationConstants.HttpStatusCodeKey, (int)this.Attributes.HttpStatusCode);
             this.scope.AddAttribute(CosmosInstrumentationConstants.RequestChargeKey, this.Attributes.RequestCharge);
             this.scope.AddAttribute(CosmosInstrumentationConstants.UserAgentKey, this.Attributes.UserAgent);
+            this.scope.AddAttribute(CosmosInstrumentationConstants.Region, this.Attributes.Region);
+            this.scope.AddAttribute(CosmosInstrumentationConstants.ConnectionMode, this.Attributes.ConnectionMode);
             if (this.Attributes.Error)
             {
                 this.scope.AddAttribute(CosmosInstrumentationConstants.ErrorKey, this.Attributes.Error);

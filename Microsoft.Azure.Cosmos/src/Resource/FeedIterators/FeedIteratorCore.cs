@@ -123,6 +123,12 @@ namespace Microsoft.Azure.Cosmos
                 await RewriteStreamAsTextAsync(responseMessage, this.requestOptions, trace);
             }
 
+            trace.CosmosInstrumentation.Record(
+                requestCharge: responseMessage.Headers.RequestCharge, 
+                operationType: operation, 
+                statusCode: responseMessage.StatusCode,
+                queryText: this.querySpec?.QueryText);
+            
             return responseMessage;
         }
 
@@ -244,6 +250,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ResponseMessage response = await this.feedIterator.ReadNextAsync(trace, cancellationToken);
+
             using (ITrace childTrace = trace.StartChild("POCO Materialization", TraceComponent.Poco, TraceLevel.Info))
             {
                 return this.responseCreator(response);

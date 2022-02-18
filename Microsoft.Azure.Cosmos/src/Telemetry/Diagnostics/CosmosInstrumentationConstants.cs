@@ -13,6 +13,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         public const string DbSystemKey = "db.system";
         public const string AccountNameKey = "Account Name";
         public const string UserAgentKey = "User Agent";
+        public const string Region = "Region";
+        public const string ConnectionMode = "Connection Mode";
 
         public const string DbNameKey = "db.name";
         public const string DbOperationKey = "db.operation";

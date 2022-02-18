@@ -1030,11 +1030,11 @@ namespace Microsoft.Azure.Cosmos
                 trace: trace,
                 cancellationToken: cancellationToken);
 
-            this.RecordDiagnosticAttributes(
-                cosmosInstrumentation: trace.CosmosInstrumentation,
-                requestCharge: responseMessage.Headers.RequestCharge,
+            trace.CosmosInstrumentation.Record(requestCharge: responseMessage.Headers.RequestCharge,
                 operationType: operationType,
-                statusCode: responseMessage.StatusCode);
+                statusCode: responseMessage.StatusCode,
+                containerId: this.Id,
+                databaseId: this.Database.Id);
 
             return responseMessage;
         }

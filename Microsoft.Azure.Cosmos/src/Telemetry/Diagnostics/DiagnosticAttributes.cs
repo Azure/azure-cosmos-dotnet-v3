@@ -5,18 +5,11 @@
 namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
     using System;
-    using System.Collections.Generic;
     using System.Net;
-    using System.Text;
     using Cosmos.Diagnostics;
     using Documents;
 
-#if INTERNAL
-    public
-#else
-    internal
-#endif 
-        class DiagnosticAttributes
+    internal class DiagnosticAttributes
     {
         public bool Error { get; set; }
         public string ExceptionStackTrace { get; set; }
@@ -28,7 +21,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         public HttpStatusCode HttpStatusCode { get; set; }
         public string ContainerName { get; set; }
         public double RequestCharge { get; set; }
-        public CosmosTraceDiagnostics RequestDiagnostics { get; set; }
+        public string Region { get; set; }
+        public string QueryText { get; set; }
+
+        public ConnectionMode ConnectionMode { get; set; }
+        public CosmosDiagnostics RequestDiagnostics { get; set; }
 
         public bool IsRequestChargeHigh(double thresholdRequestCharge)
         {

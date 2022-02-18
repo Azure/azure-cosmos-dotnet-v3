@@ -463,8 +463,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 try
                 {
-                    trace.CosmosInstrumentation.Attributes.AccountName = this.client?.Endpoint;
-                    trace.CosmosInstrumentation.Attributes.UserAgent = this.UserAgent;
+                    trace.CosmosInstrumentation.Record(this.client?.Endpoint, this.UserAgent, this.ClientOptions.ConnectionMode);
 
                     return await task(trace).ConfigureAwait(false);
                 }
@@ -489,7 +488,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 finally
                 {
-                    trace.CosmosInstrumentation.Attributes.RequestDiagnostics = new CosmosTraceDiagnostics(trace);
+                    trace.CosmosInstrumentation.Record(new CosmosTraceDiagnostics(trace));
 
                     trace.CosmosInstrumentation.AddAttributesToScope();
                     trace.CosmosInstrumentation.Dispose();
