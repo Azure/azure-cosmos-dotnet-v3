@@ -1370,12 +1370,7 @@
             {
                 this.data[key] = traceDatum;
             }
-
-            public void AddDiagnosticAttributes(string key, object value)
-            {
-                throw new NotImplementedException();
-            }
-
+            
             public void AddDatum(string key, object value)
             {
                 if (key.Contains("CPU"))
