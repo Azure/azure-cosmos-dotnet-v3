@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             // NoOp
         }
 
-        public void Record(double requestCharge, OperationType operationType, HttpStatusCode statusCode, string databaseId = null,
+        public void Record(double requestCharge, string operationType, HttpStatusCode statusCode, string databaseId = null,
             string containerId = null, string queryText = null)
         {
             // NoOp

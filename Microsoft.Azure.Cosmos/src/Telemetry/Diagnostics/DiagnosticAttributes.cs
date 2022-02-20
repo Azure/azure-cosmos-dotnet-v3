@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         public Uri AccountName { get; set; }
         public string UserAgent { get; set; }
         public string DbName { get; set; }
-        public OperationType DbOperation { get; set; }
+        public string DbOperation { get; set; }
         public HttpStatusCode HttpStatusCode { get; set; }
         public string ContainerName { get; set; }
         public double RequestCharge { get; set; }

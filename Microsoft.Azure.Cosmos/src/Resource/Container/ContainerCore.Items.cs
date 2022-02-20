@@ -1031,7 +1031,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             trace.CosmosInstrumentation.Record(requestCharge: responseMessage.Headers.RequestCharge,
-                operationType: operationType,
+                operationType: operationType.ToOperationTypeString(),
                 statusCode: responseMessage.StatusCode,
                 containerId: this.Id,
                 databaseId: this.Database.Id);

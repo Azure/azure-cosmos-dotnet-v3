@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos
 
             trace.CosmosInstrumentation.Record(
                 requestCharge: responseMessage.Headers.RequestCharge, 
-                operationType: operation, 
+                operationType: operation.ToOperationTypeString(), 
                 statusCode: responseMessage.StatusCode,
                 queryText: this.querySpec?.QueryText);
             

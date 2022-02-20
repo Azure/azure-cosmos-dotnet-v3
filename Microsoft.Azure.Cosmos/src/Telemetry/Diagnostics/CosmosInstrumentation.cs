@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         }
 
         public void Record(double requestCharge,
-            OperationType operationType,
+            string operationType,
             HttpStatusCode statusCode, 
             string databaseId = null, 
             string containerId = null,
