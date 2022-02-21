@@ -6,23 +6,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
-    using System.Text;
-    using System.Threading.Tasks;
     using System.Net;
-    using System.Net.Http;
-    using System.Diagnostics;
-    using System.Reflection;
-    using Microsoft.Azure.Cosmos.Fluent;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Cosmos.Telemetry;
-    using Microsoft.Azure.Cosmos.Handler;
-    using Microsoft.Azure.Documents;
-    using Newtonsoft.Json.Linq;
-    using Newtonsoft.Json;
-    using Documents.Rntbd;
-    using System.Globalization;
+    using System.Threading.Tasks;
     using global::Azure.Monitor.OpenTelemetry.Exporter;
+    using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using OpenTelemetry;
     using OpenTelemetry.Resources;
     using OpenTelemetry.Trace;
@@ -36,13 +25,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [ClassInitialize]
         public static void ClassInitialize(TestContext context)
         {
+           // using var testListener = new ClientDiagnosticListener("Azure.Cosmos");
+
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
 
             OpenTelemetryTests.Provider = Sdk.CreateTracerProviderBuilder()
                 .AddSource("Azure.*") // Collect all traces from Cosmos Db
                 .SetResourceBuilder(
                     ResourceBuilder.CreateDefault()
-                        .AddService(serviceName: "Cosmos SDK Emulator Test", serviceVersion: "1.0"))
+                        .AddService(serviceName: "Cosmos SDK Test Point Create Item", serviceVersion: "1.0"))
                 .AddAzureMonitorTraceExporter(options => options.ConnectionString =
                     "InstrumentationKey=2fabff39-6a32-42da-9e8f-9fcff7d99c6b;IngestionEndpoint=https://westus2-2.in.applicationinsights.azure.com/") // Export traces to Azure Monitor
                 .AddHttpClientInstrumentation()
@@ -100,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Delete an Item
             await container.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
         }
-
+/*
         [TestMethod]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
@@ -238,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             var testItem = new { id = itemId, Status = itemId };
             return new ItemBatchOperation(Documents.OperationType.Create, 0, new Cosmos.PartitionKey(itemId), itemId, TestCommon.SerializerCore.ToStream(testItem));
         }
-
+*/
         private async Task<Container> CreateClientAndContainer(ConnectionMode mode,
             Microsoft.Azure.Cosmos.ConsistencyLevel? consistency = null,
             bool isLargeContainer = false)

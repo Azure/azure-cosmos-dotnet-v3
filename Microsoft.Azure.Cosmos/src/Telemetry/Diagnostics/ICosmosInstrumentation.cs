@@ -38,11 +38,29 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             /// <param name="databaseId"></param>
             /// <param name="containerId"></param>
             /// <param name="queryText"></param>
-            public void Record(double requestCharge,
-                string operationType,
-                HttpStatusCode statusCode, 
+            public void Record(double? requestCharge = null,
+                string operationType = null,
+                HttpStatusCode? statusCode = null, 
                 string databaseId = null, 
                 string containerId = null,
+                string queryText = null);
+
+             /// <summary>
+             /// Record with exception
+             /// </summary>
+             /// <param name="requestCharge"></param>
+             /// <param name="operationType"></param>
+             /// <param name="statusCode"></param>
+             /// <param name="databaseId"></param>
+             /// <param name="containerId"></param>
+             /// <param name="exception"></param>
+             /// <param name="queryText"></param>
+            public void RecordWithException(double? requestCharge,
+                string operationType,
+                HttpStatusCode? statusCode,
+                string databaseId,
+                string containerId,
+                Exception exception,
                 string queryText = null);
 
             /// <summary>

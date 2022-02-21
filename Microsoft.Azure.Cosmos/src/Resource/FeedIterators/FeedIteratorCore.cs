@@ -122,12 +122,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 await RewriteStreamAsTextAsync(responseMessage, this.requestOptions, trace);
             }
-
-            trace.CosmosInstrumentation.Record(
-                requestCharge: responseMessage.Headers.RequestCharge, 
-                operationType: operation.ToOperationTypeString(), 
-                statusCode: responseMessage.StatusCode,
-                queryText: this.querySpec?.QueryText);
             
             return responseMessage;
         }

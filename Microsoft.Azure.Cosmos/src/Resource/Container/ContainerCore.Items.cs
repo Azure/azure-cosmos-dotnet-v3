@@ -1017,7 +1017,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerInternal.ValidatePartitionKey(partitionKey, requestOptions);
             string resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
-            ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
+            return await this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: ResourceType.Document,
                 operationType: operationType,
@@ -1029,14 +1029,6 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: null,
                 trace: trace,
                 cancellationToken: cancellationToken);
-
-            trace.CosmosInstrumentation.Record(requestCharge: responseMessage.Headers.RequestCharge,
-                operationType: operationType.ToOperationTypeString(),
-                statusCode: responseMessage.StatusCode,
-                containerId: this.Id,
-                databaseId: this.Database.Id);
-
-            return responseMessage;
         }
 
         public override async Task<PartitionKey> GetPartitionKeyValueFromStreamAsync(

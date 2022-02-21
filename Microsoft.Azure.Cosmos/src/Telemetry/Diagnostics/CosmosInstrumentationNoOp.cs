@@ -20,12 +20,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             // NoOp
         }
 
-        public void Record(double requestCharge, string operationType, HttpStatusCode statusCode, string databaseId = null,
-            string containerId = null, string queryText = null)
-        {
-            // NoOp
-        }
-
         public void Record(Uri accountName, string userAgent, ConnectionMode connectionMode)
         {
             // NoOp
@@ -37,6 +31,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         }
 
         public void Dispose()
+        {
+            // NoOp
+        }
+
+        void ICosmosInstrumentation.RecordWithException(double? requestCharge, string operationType, HttpStatusCode? statusCode, string databaseId, string containerId, Exception exception, string queryText)
+        {
+            // NoOp
+        }
+
+        void ICosmosInstrumentation.Record(double? requestCharge, string operationType, HttpStatusCode? statusCode, string databaseId, string containerId, string queryText)
         {
             // NoOp
         }

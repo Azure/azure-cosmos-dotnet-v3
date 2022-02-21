@@ -1142,6 +1142,8 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellationToken)
         {
+            trace.CosmosInstrumentation.Record(databaseId: databaseProperties.Id);
+
             ResponseMessage response = await this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.DatabaseRootUri,
                 resourceType: ResourceType.Database,
@@ -1153,7 +1155,7 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputPropertiesHeader(throughputProperties),
                 trace,
                 cancellationToken: cancellationToken);
-
+            
             return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), response);
         }
 

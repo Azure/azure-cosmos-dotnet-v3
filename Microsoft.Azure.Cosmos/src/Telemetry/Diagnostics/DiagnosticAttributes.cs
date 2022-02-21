@@ -18,9 +18,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         public string UserAgent { get; set; }
         public string DbName { get; set; }
         public string DbOperation { get; set; }
-        public HttpStatusCode HttpStatusCode { get; set; }
+        public HttpStatusCode? HttpStatusCode { get; set; }
         public string ContainerName { get; set; }
-        public double RequestCharge { get; set; }
+        public double? RequestCharge { get; set; }
         public string Region { get; set; }
         public string QueryText { get; set; }
 
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
         public bool IsSuccessHttpStatusCode()
         {
-            return this.HttpStatusCode.IsSuccess();
+            return this.HttpStatusCode.HasValue && this.HttpStatusCode.Value.IsSuccess();
         }
     }
 }

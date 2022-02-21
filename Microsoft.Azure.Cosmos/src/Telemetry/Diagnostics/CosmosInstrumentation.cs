@@ -31,9 +31,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             this.scope.Failed(ex);
         }
 
-        public void Record(double requestCharge,
-            string operationType,
-            HttpStatusCode statusCode, 
+        public void Record(double? requestCharge = null,
+            string operationType = null,
+            HttpStatusCode? statusCode = null, 
             string databaseId = null, 
             string containerId = null,
             string queryText = null)
@@ -54,12 +54,40 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                 {
                     this.Attributes.QueryText = queryText;
                 }
-                this.Attributes.DbOperation = operationType;
-                this.Attributes.HttpStatusCode = statusCode;
-                this.Attributes.RequestCharge = requestCharge;
+
+                if (!string.IsNullOrEmpty(operationType))
+                {
+                    this.Attributes.DbOperation = operationType;
+                }
+
+                if (statusCode != null)
+                {
+                    this.Attributes.HttpStatusCode = statusCode;
+                }
+
+                if (requestCharge.HasValue)
+                {
+                    this.Attributes.RequestCharge = requestCharge.Value;
+                } 
             }
         }
-        
+
+        public void RecordWithException(double? requestCharge,
+           string operationType,
+           HttpStatusCode? statusCode,
+           string databaseId,
+           string containerId,
+           Exception exception,
+           string queryText = null)
+        {
+            this.Record(requestCharge, operationType, statusCode, databaseId, containerId, queryText);
+            if (this.Attributes != null)
+            {
+                this.Attributes.Error = true;
+                this.Attributes.ExceptionStackTrace = exception.StackTrace;
+            }
+        }
+
         public void Record(Uri accountName, string userAgent, ConnectionMode connectionMode)
         {
             if (this.Attributes != null)
@@ -82,8 +110,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             this.scope.AddAttribute(CosmosInstrumentationConstants.DbNameKey, this.Attributes.DbName);
             this.scope.AddAttribute(CosmosInstrumentationConstants.DbOperationKey, this.Attributes.DbOperation);
             this.scope.AddAttribute(CosmosInstrumentationConstants.DbSystemKey, this.Attributes.DbSystem);
-            this.scope.AddAttribute(CosmosInstrumentationConstants.HttpStatusCodeKey, (int)this.Attributes.HttpStatusCode);
-            this.scope.AddAttribute(CosmosInstrumentationConstants.RequestChargeKey, this.Attributes.RequestCharge);
+            if (this.Attributes.HttpStatusCode.HasValue)
+            {
+                this.scope.AddAttribute(CosmosInstrumentationConstants.HttpStatusCodeKey, (int)this.Attributes.HttpStatusCode.Value);
+            }
+
+            if (this.Attributes.RequestCharge.HasValue)
+            {
+                this.scope.AddAttribute(CosmosInstrumentationConstants.RequestChargeKey, this.Attributes.RequestCharge.Value);
+
+            }
             this.scope.AddAttribute(CosmosInstrumentationConstants.UserAgentKey, this.Attributes.UserAgent);
             this.scope.AddAttribute(CosmosInstrumentationConstants.Region, this.Attributes.Region);
             this.scope.AddAttribute(CosmosInstrumentationConstants.ConnectionMode, this.Attributes.ConnectionMode);
