@@ -100,9 +100,9 @@ namespace Microsoft.Azure.Cosmos
         private readonly string DatabaseRootUri = Paths.Databases_Root;
         private ConsistencyLevel? accountConsistencyLevel;
         private bool isDisposed = false;
+        private object disposedLock = new object();
 
         internal static int numberOfClientsCreated;
-
         internal static int NumberOfActiveClients;
 
         internal DateTime? DisposedDateTimeUtc { get; private set; } = null;
@@ -1302,18 +1302,22 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="disposing">True if disposing</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (!this.isDisposed)
+            lock (this.disposedLock)
             {
-                this.DisposedDateTimeUtc = DateTime.UtcNow;
-
-                if (disposing)
+                if (this.isDisposed == true)
                 {
-                    this.ClientContext.Dispose();
-                    this.DecrementNumberOfActiveClients();
+                    return;
                 }
-
                 this.isDisposed = true;
             }
+
+            this.DisposedDateTimeUtc = DateTime.UtcNow;
+
+            if (disposing)
+            {
+                this.ClientContext.Dispose();
+                this.DecrementNumberOfActiveClients();
+            }   
         }
     }
 }
