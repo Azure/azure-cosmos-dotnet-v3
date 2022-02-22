@@ -70,6 +70,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                     this.Attributes.RequestCharge = requestCharge.Value;
                 } 
             }
+            else
+            {
+                Console.WriteLine("Record RequestCharge => Attributes are null");
+            }
         }
 
         public void RecordWithException(double? requestCharge,
@@ -86,6 +90,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                 this.Attributes.Error = true;
                 this.Attributes.ExceptionStackTrace = exception.StackTrace;
             }
+            else
+            {
+                Console.WriteLine("RecordWithException => Attributes are null");
+            }
         }
 
         public void Record(Uri accountName, string userAgent, ConnectionMode connectionMode)
@@ -96,16 +104,33 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                 this.Attributes.UserAgent = userAgent;
                 this.Attributes.ConnectionMode = connectionMode;
             }
+            else
+            {
+                Console.WriteLine("Record accountName => Attributes are null");
+            }
         }
 
         public void Record(CosmosDiagnostics diagnostics)
         {
-            this.Attributes.RequestDiagnostics = diagnostics;
+            if (this.Attributes != null)
+            {
+                this.Attributes.RequestDiagnostics = diagnostics;
+            }
+            else
+            {
+                Console.WriteLine("Record diagnostics => Attributes are null");
+            }
         }
 
         public void AddAttributesToScope()
         {
-            this.scope.AddAttribute(CosmosInstrumentationConstants.AccountNameKey, this.Attributes.AccountName.ToString());
+            if (this.Attributes == null)
+            {
+                Console.WriteLine("AddAttributesToScope => Attributes are null");
+                return;
+            }
+
+            this.scope.AddAttribute(CosmosInstrumentationConstants.AccountNameKey, this.Attributes.AccountName?.ToString());
             this.scope.AddAttribute(CosmosInstrumentationConstants.ContainerNameKey, this.Attributes.ContainerName);
             this.scope.AddAttribute(CosmosInstrumentationConstants.DbNameKey, this.Attributes.DbName);
             this.scope.AddAttribute(CosmosInstrumentationConstants.DbOperationKey, this.Attributes.DbOperation);
@@ -121,7 +146,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
             }
             this.scope.AddAttribute(CosmosInstrumentationConstants.UserAgentKey, this.Attributes.UserAgent);
-            this.scope.AddAttribute(CosmosInstrumentationConstants.Region, this.Attributes.Region);
             this.scope.AddAttribute(CosmosInstrumentationConstants.ConnectionMode, this.Attributes.ConnectionMode);
             if (this.Attributes.Error)
             {

@@ -21,7 +21,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         public HttpStatusCode? HttpStatusCode { get; set; }
         public string ContainerName { get; set; }
         public double? RequestCharge { get; set; }
-        public string Region { get; set; }
         public string QueryText { get; set; }
 
         public ConnectionMode ConnectionMode { get; set; }
@@ -34,7 +33,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
         public bool IsLatencyHigh(TimeSpan thresholdLatency)
         {
-            return this.RequestDiagnostics.GetClientElapsedTime() > thresholdLatency;
+            return this.RequestDiagnostics != null && 
+                this.RequestDiagnostics.GetClientElapsedTime() > thresholdLatency;
         }
 
         public bool IsSuccessHttpStatusCode()

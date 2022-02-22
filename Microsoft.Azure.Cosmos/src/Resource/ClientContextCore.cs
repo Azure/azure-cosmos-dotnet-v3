@@ -507,6 +507,9 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             this.ThrowIfDisposed();
+
+            trace.CosmosInstrumentation.Record(this.client?.Endpoint, this.UserAgent, this.ClientOptions.ConnectionMode);
+
             ItemRequestOptions itemRequestOptions = requestOptions as ItemRequestOptions;
             TransactionalBatchItemRequestOptions batchItemRequestOptions = TransactionalBatchItemRequestOptions.FromItemRequestOptions(itemRequestOptions);
             ItemBatchOperation itemBatchOperation = new ItemBatchOperation(
@@ -524,7 +527,17 @@ namespace Microsoft.Azure.Cosmos
                 itemRequestOptions,
                 cancellationToken);
 
-            return batchOperationResult.ToResponseMessage();
+            trace.CosmosInstrumentation.Record(requestCharge: batchOperationResult.RequestCharge,
+                operationType: itemBatchOperation.OperationType.ToOperationTypeString(),
+                statusCode: batchOperationResult.StatusCode,
+                databaseId: itemBatchOperation.ContainerInternal.Database.Id,
+                containerId: itemBatchOperation.ContainerInternal.Id);
+
+            ResponseMessage response = batchOperationResult.ToResponseMessage();
+
+            trace.CosmosInstrumentation.Record(response.Diagnostics);
+
+            return response;
         }
 
         private bool IsBulkOperationSupported(

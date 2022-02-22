@@ -20,14 +20,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class OpenTelemetryTests : BaseCosmosClientHelper
     {
         private CosmosClientBuilder cosmosClientBuilder;
-        private static TracerProvider Provider;
+        //private static TracerProvider Provider;
+        private static ClientDiagnosticListener testListener;
 
         [ClassInitialize]
         public static void ClassInitialize(TestContext context)
         {
-           // using var testListener = new ClientDiagnosticListener("Azure.Cosmos");
+           OpenTelemetryTests.testListener = new ClientDiagnosticListener("Azure.Cosmos");
 
-            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
+           /* AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
 
             OpenTelemetryTests.Provider = Sdk.CreateTracerProviderBuilder()
                 .AddSource("Azure.*") // Collect all traces from Cosmos Db
@@ -37,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .AddAzureMonitorTraceExporter(options => options.ConnectionString =
                     "InstrumentationKey=2fabff39-6a32-42da-9e8f-9fcff7d99c6b;IngestionEndpoint=https://westus2-2.in.applicationinsights.azure.com/") // Export traces to Azure Monitor
                 .AddHttpClientInstrumentation()
-                .Build();
+                .Build();*/
         }
 
         [TestInitialize]
@@ -49,7 +50,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [ClassCleanup]
         public static void FinalCleanup()
         {
-            OpenTelemetryTests.Provider.Dispose();
+            //OpenTelemetryTests.Provider.Dispose();
+
+            OpenTelemetryTests.testListener.Dispose();
         }
         
         [TestCleanup]
@@ -91,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Delete an Item
             await container.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
         }
-/*
+
         [TestMethod]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
@@ -229,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             var testItem = new { id = itemId, Status = itemId };
             return new ItemBatchOperation(Documents.OperationType.Create, 0, new Cosmos.PartitionKey(itemId), itemId, TestCommon.SerializerCore.ToStream(testItem));
         }
-*/
+
         private async Task<Container> CreateClientAndContainer(ConnectionMode mode,
             Microsoft.Azure.Cosmos.ConsistencyLevel? consistency = null,
             bool isLargeContainer = false)
