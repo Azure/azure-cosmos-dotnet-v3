@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         public const string DbSystemKey = "db.system";
         public const string AccountNameKey = "Account Name";
         public const string UserAgentKey = "User Agent";
-        public const string Region = "Region";
         public const string ConnectionMode = "Connection Mode";
 
         public const string DbNameKey = "db.name";
@@ -26,5 +25,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
         public const string ErrorKey = "error";
         public const string ExceptionKey = "Exception StackTrace";
+
+        public const string SubStatusCode = "SubStatusCode";
+        public const string PageSize = "Page Size";
     }
 }

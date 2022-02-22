@@ -77,7 +77,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return await base.SendAsync(request, cancellationToken);
         }
 
-        // from client context core
         public virtual async Task<T> SendAsync<T>(
             string resourceUri,
             ResourceType resourceType,
@@ -110,8 +109,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             return responseCreator(responseMessage);
         }
-        
-        //client context core/excutils/above requestinvoke handler
+
         public virtual async Task<ResponseMessage> SendAsync(
             string resourceUriString,
             ResourceType resourceType,
@@ -187,7 +185,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                                                        statusCode: response.StatusCode,
                                                                        containerId: cosmosContainerCore?.Id,
                                                                        databaseId: cosmosContainerCore?.Database?.Id,
-                                                                       exception: dce);
+                                                                       exception: dce,
+                                                                       subStatusCode: response?.Headers?.SubStatusCode.ToSubStatusCodeString(),
+                                                                       pageSize: request?.Headers?.PageSize);
 
                                     return response;
                                 }
@@ -200,7 +200,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                                                        statusCode: response.StatusCode,
                                                                        containerId: cosmosContainerCore?.Id,
                                                                        databaseId: cosmosContainerCore?.Database?.Id,
-                                                                       exception: ce);
+                                                                       exception: ce,
+                                                                       subStatusCode: response?.Headers?.SubStatusCode.ToSubStatusCodeString(),
+                                                                       pageSize: request?.Headers?.PageSize);
 
                                     return response;
                                 }
@@ -234,7 +236,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                                                    statusCode: response.StatusCode,
                                                                    containerId: cosmosContainerCore?.Id,
                                                                    databaseId: cosmosContainerCore?.Database?.Id,
-                                                                   exception: ex);
+                                                                   exception: ex,
+                                                                   subStatusCode: response?.Headers?.SubStatusCode.ToSubStatusCodeString(),
+                                                                   pageSize: request?.Headers?.PageSize);
 
                                 return response;
                             }
@@ -260,7 +264,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                                                    statusCode: response.StatusCode,
                                                                    containerId: cosmosContainerCore?.Id,
                                                                    databaseId: cosmosContainerCore?.Database?.Id,
-                                                                   exception: notFound);
+                                                                   exception: notFound,
+                                                                   subStatusCode: response?.Headers?.SubStatusCode.ToSubStatusCodeString(),
+                                                                   pageSize: request?.Headers?.PageSize);
 
                                 return response;
                             }
@@ -285,7 +291,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                                                    statusCode: response.StatusCode,
                                                                    containerId: cosmosContainerCore?.Id,
                                                                    databaseId: cosmosContainerCore?.Database?.Id,
-                                                                   exception: goneException);
+                                                                   exception: goneException,
+                                                                   subStatusCode: response?.Headers?.SubStatusCode.ToSubStatusCodeString(),
+                                                                   pageSize: request?.Headers?.PageSize);
 
                                 return response;
                             }
@@ -341,7 +349,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                                        operationType: operationType.ToOperationTypeString(),
                                                        statusCode: response.StatusCode,
                                                        containerId: cosmosContainerCore?.Id,
-                                                       databaseId: cosmosContainerCore?.Database?.Id);
+                                                       databaseId: cosmosContainerCore?.Database?.Id,
+                                                       subStatusCode: response?.Headers?.SubStatusCode.ToSubStatusCodeString(),
+                                                       pageSize: request?.Headers?.PageSize);
 
                     return response;
 

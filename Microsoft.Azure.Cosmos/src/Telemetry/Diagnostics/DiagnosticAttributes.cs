@@ -19,6 +19,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         public string DbName { get; set; }
         public string DbOperation { get; set; }
         public HttpStatusCode? HttpStatusCode { get; set; }
+        public string SubStatusCode { get; set; }
+        public string PageSize { get; set; }
         public string ContainerName { get; set; }
         public double? RequestCharge { get; set; }
         public string QueryText { get; set; }

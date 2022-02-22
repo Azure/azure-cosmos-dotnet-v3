@@ -36,7 +36,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             HttpStatusCode? statusCode = null, 
             string databaseId = null, 
             string containerId = null,
-            string queryText = null)
+            string queryText = null,
+            string subStatusCode = null,
+            string pageSize = null)
         {
             if (this.Attributes != null)
             {
@@ -65,10 +67,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                     this.Attributes.HttpStatusCode = statusCode;
                 }
 
+                if (subStatusCode != null)
+                {
+                    this.Attributes.SubStatusCode = subStatusCode;
+                }
+
+                if (pageSize != null)
+                {
+                    this.Attributes.PageSize = pageSize;
+                }
+
                 if (requestCharge.HasValue)
                 {
                     this.Attributes.RequestCharge = requestCharge.Value;
                 } 
+
             }
             else
             {
@@ -82,9 +95,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
            string databaseId,
            string containerId,
            Exception exception,
-           string queryText = null)
+           string queryText = null,
+           string subStatusCode = null,
+           string pageSize = null)
         {
-            this.Record(requestCharge, operationType, statusCode, databaseId, containerId, queryText);
+            this.Record(
+                requestCharge, 
+                operationType, 
+                statusCode, 
+                databaseId, 
+                containerId, 
+                queryText,
+                subStatusCode,
+                pageSize);
+
             if (this.Attributes != null)
             {
                 this.Attributes.Error = true;
@@ -147,6 +171,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             }
             this.scope.AddAttribute(CosmosInstrumentationConstants.UserAgentKey, this.Attributes.UserAgent);
             this.scope.AddAttribute(CosmosInstrumentationConstants.ConnectionMode, this.Attributes.ConnectionMode);
+            
+            this.scope.AddAttribute(CosmosInstrumentationConstants.PageSize, this.Attributes.PageSize);
+            this.scope.AddAttribute(CosmosInstrumentationConstants.SubStatusCode, this.Attributes.SubStatusCode);
+
             if (this.Attributes.Error)
             {
                 this.scope.AddAttribute(CosmosInstrumentationConstants.ErrorKey, this.Attributes.Error);

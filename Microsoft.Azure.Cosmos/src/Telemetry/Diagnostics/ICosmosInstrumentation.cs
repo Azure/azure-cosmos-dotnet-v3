@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             public void AddAttributesToScope();
 
             /// <summary>
-            /// Record values
+            /// Record Values
             /// </summary>
             /// <param name="requestCharge"></param>
             /// <param name="operationType"></param>
@@ -38,30 +38,38 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             /// <param name="databaseId"></param>
             /// <param name="containerId"></param>
             /// <param name="queryText"></param>
+            /// <param name="subStatusCode"></param>
+            /// <param name="pageSize"></param>
             public void Record(double? requestCharge = null,
                 string operationType = null,
                 HttpStatusCode? statusCode = null, 
                 string databaseId = null, 
                 string containerId = null,
-                string queryText = null);
+                string queryText = null,
+                string subStatusCode = null,
+                string pageSize = null);
 
-             /// <summary>
-             /// Record with exception
-             /// </summary>
-             /// <param name="requestCharge"></param>
-             /// <param name="operationType"></param>
-             /// <param name="statusCode"></param>
-             /// <param name="databaseId"></param>
-             /// <param name="containerId"></param>
-             /// <param name="exception"></param>
-             /// <param name="queryText"></param>
+            /// <summary>
+            /// Record with exception
+            /// </summary>
+            /// <param name="requestCharge"></param>
+            /// <param name="operationType"></param>
+            /// <param name="statusCode"></param>
+            /// <param name="databaseId"></param>
+            /// <param name="containerId"></param>
+            /// <param name="exception"></param>
+            /// <param name="queryText"></param>
+            /// <param name="subStatusCode"></param>
+            /// <param name="pageSize"></param>
             public void RecordWithException(double? requestCharge,
                 string operationType,
                 HttpStatusCode? statusCode,
                 string databaseId,
                 string containerId,
                 Exception exception,
-                string queryText = null);
+                string queryText = null,
+                string subStatusCode = null,
+                string pageSize = null);
 
             /// <summary>
             /// Record Values
