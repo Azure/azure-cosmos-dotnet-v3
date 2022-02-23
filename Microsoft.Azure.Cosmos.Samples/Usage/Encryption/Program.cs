@@ -4,7 +4,9 @@
     using System.Security.Cryptography.X509Certificates;
     using System.Threading.Tasks;
     using Azure.Core;
+    using Azure.Core.Cryptography;
     using Azure.Identity;
+    using Azure.Security.KeyVault.Keys.Cryptography;
     using Cosmos.Samples.Shared;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Encryption;
@@ -54,11 +56,11 @@
 
                 // Get the Token Credential that is capable of providing an OAuth Token.
                 TokenCredential tokenCredential = GetTokenCredential(configuration);
-                AzureKeyVaultKeyWrapProvider azureKeyVaultKeyWrapProvider = new AzureKeyVaultKeyWrapProvider(tokenCredential);
+                KeyResolver keyResolver = new KeyResolver(tokenCredential);
 
-                Program.client = Program.CreateClientInstance(configuration, azureKeyVaultKeyWrapProvider);
+                Program.client = Program.CreateClientInstance(configuration, keyResolver);
 
-                await Program.AdminSetupAsync(client, azureKeyVaultKeyWrapProvider);
+                await Program.AdminSetupAsync(client);
                 await Program.RunDemoAsync();
             }
             catch (CosmosException cre)
@@ -79,7 +81,7 @@
         }
         // </Main>
 
-        private static CosmosClient CreateClientInstance(IConfigurationRoot configuration, AzureKeyVaultKeyWrapProvider azureKeyVaultKeyWrapProvider)
+        private static CosmosClient CreateClientInstance(IConfigurationRoot configuration, IKeyEncryptionKeyResolver keyResolver)
         {
             string endpoint = configuration["EndPointUrl"];
             if (string.IsNullOrEmpty(endpoint))
@@ -96,7 +98,7 @@
             CosmosClient encryptionCosmosClient = new CosmosClient(endpoint, authKey);
 
             // enable encryption support on the cosmos client.
-            return encryptionCosmosClient.WithEncryption(azureKeyVaultKeyWrapProvider);
+            return encryptionCosmosClient.WithEncryption(keyResolver, KeyEncryptionKeyResolverId.AzureKeyVault);
         }
 
         private static X509Certificate2 GetCertificate(string clientCertThumbprint)
@@ -146,7 +148,7 @@
         /// Administrative operations - create the database, container, and generate the necessary client encryption keys.
         /// These are initializations and are expected to be invoked only once - do not invoke these before every item request.
         /// </summary>
-        private static async Task AdminSetupAsync(CosmosClient client, AzureKeyVaultKeyWrapProvider azureKeyVaultKeyWrapProvider)
+        private static async Task AdminSetupAsync(CosmosClient client)
         {
             Database database = await client.CreateDatabaseIfNotExistsAsync(Program.encryptedDatabaseId);
 
@@ -161,12 +163,12 @@
             await database.CreateClientEncryptionKeyAsync(
                     "key1",
                     DataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256,
-                    new EncryptionKeyWrapMetadata(azureKeyVaultKeyWrapProvider.ProviderName, "akvMasterKey", MasterKeyUrl));
+                    new EncryptionKeyWrapMetadata(KeyEncryptionKeyResolverId.AzureKeyVault, "akvMasterKey", MasterKeyUrl));
 
             await database.CreateClientEncryptionKeyAsync(
                     "key2",
                     DataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256,
-                    new EncryptionKeyWrapMetadata(azureKeyVaultKeyWrapProvider.ProviderName, "akvMasterKey", MasterKeyUrl));
+                    new EncryptionKeyWrapMetadata(KeyEncryptionKeyResolverId.AzureKeyVault, "akvMasterKey", MasterKeyUrl));
 
             // Configure the required Paths to be Encrypted with appropriate settings.
             ClientEncryptionIncludedPath path1 = new ClientEncryptionIncludedPath()
