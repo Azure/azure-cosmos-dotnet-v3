@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
     ///                 ApplicationRegion = Regions.EastUS2,
     ///             });
     /// 
-    /// Database db = await client.CreateDatabaseAsync("database-id");
+    /// Database db = await cosmosClient.CreateDatabaseAsync("database-id");
     /// Container container = await db.CreateContainerAsync("container-id");
     /// 
     /// // Dispose cosmosClient at application exit
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
     ///                 ApplicationRegion = Regions.EastUS2,
     ///             });
     /// 
-    /// Database db = await client.CreateDatabaseAsync("database-id");
+    /// Database db = await cosmosClient.CreateDatabaseAsync("database-id");
     /// Container container = await db.CreateContainerAsync("container-id");
     /// 
     /// // Dispose cosmosClient at application exit
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
     ///     .WithApplicationRegion("East US 2")
     ///     .Build();
     /// 
-    /// Database db = await client.CreateDatabaseAsync("database-id")
+    /// Database db = await cosmosClient.CreateDatabaseAsync("database-id")
     /// Container container = await db.CreateContainerAsync("container-id");
     /// 
     /// // Dispose cosmosClient at application exit
