@@ -42,10 +42,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             // delegate that is called by GetOrCreateDataEncryptionKey, which unwraps the key and updates the cache in case of cache miss.
             byte[] UnWrapKeyCore()
             {
-                // todo: abpai - does RSA_OAEP work as algo with AKV impl?
                 return this.keyEncryptionKeyResolver
                     .Resolve(encryptionKeyId)
-                    .UnwrapKey(algorithm.ToString(), encryptedKey);
+                    .UnwrapKey(EncryptionKeyStoreProviderImpl.GetNameForKeyEncryptionKeyAlgorithm(algorithm), encryptedKey);
             }
         }
 
@@ -53,7 +52,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             return this.keyEncryptionKeyResolver
                 .Resolve(encryptionKeyId)
-                .WrapKey("Rsa-Oaep", key);
+                .WrapKey(EncryptionKeyStoreProviderImpl.GetNameForKeyEncryptionKeyAlgorithm(algorithm), key);
+        }
+
+        private static string GetNameForKeyEncryptionKeyAlgorithm(KeyEncryptionKeyAlgorithm algorithm)
+        {
+            if (algorithm == KeyEncryptionKeyAlgorithm.RSA_OAEP)
+            {
+                return "RSA-OAEP";
+            }
+
+            throw new InvalidOperationException(string.Format("Unexpected algorithm {0}", algorithm));
         }
 
         /// <Remark>
