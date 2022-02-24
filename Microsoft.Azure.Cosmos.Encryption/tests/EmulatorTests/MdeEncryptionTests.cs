@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             await database.CreateClientEncryptionKeyAsync(
                 "keywithRevokedKek",
-                DataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256,
+                EncryptionAlgorithm.AeadAes256CbcHmacSha256,
                 revokedKekmetadata);
 
             Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>()
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             ClientEncryptionKeyResponse clientEncrytionKeyResponse = await database.CreateClientEncryptionKeyAsync(
                    cekId,
-                   DataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256,
+                   EncryptionAlgorithm.AeadAes256CbcHmacSha256,
                    encryptionKeyWrapMetadata);
 
             Assert.AreEqual(HttpStatusCode.Created, clientEncrytionKeyResponse.StatusCode);
@@ -446,7 +446,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
                 ClientEncryptionKeyResponse clientEncrytionKeyResponse = await databaseForRestrictedUser.CreateClientEncryptionKeyAsync(
                        cekId,
-                       DataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256,
+                       EncryptionAlgorithm.AeadAes256CbcHmacSha256,
                        metadata1);
                 Assert.Fail("CreateClientEncryptionKeyAsync should have failed due to restrictions");
             }
@@ -1559,7 +1559,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             ClientEncryptionKeyResponse clientEncrytionKeyResponse = await mainDatabase.CreateClientEncryptionKeyAsync(
                    keyWrapMetadata.Name,
-                   DataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256,
+                   EncryptionAlgorithm.AeadAes256CbcHmacSha256,
                    keyWrapMetadata);
 
             Collection<ClientEncryptionIncludedPath> originalPaths = new Collection<ClientEncryptionIncludedPath>()
@@ -1619,7 +1619,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             keyWrapMetadata = MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(TestKeyEncryptionKeyResolver.Id, "myCek", "mymetadata2");
             clientEncrytionKeyResponse = await mainDatabase.CreateClientEncryptionKeyAsync(
                    keyWrapMetadata.Name,
-                   DataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256,
+                   EncryptionAlgorithm.AeadAes256CbcHmacSha256,
                    keyWrapMetadata);
 
             using (await mainDatabase.GetContainer(encryptionContainerToDelete.Id).DeleteContainerStreamAsync())
@@ -2930,7 +2930,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         private static EncryptionKeyWrapMetadata CreateEncryptionKeyWrapMetadata(string type, string name, string value)
         {
 #if SDKPROJECTREF
-            return MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(type, name, value, "algo");
+            return new EncryptionKeyWrapMetadata(type, name, value, "algo");
 #else
             return new  EncryptionKeyWrapMetadata(type, name, value);
 #endif
