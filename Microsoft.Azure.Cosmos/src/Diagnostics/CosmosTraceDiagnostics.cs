@@ -122,25 +122,25 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 return this.failedRequestCount;
             }
 
-            foreach (object datums in currentTrace.Data.Values)
-            {
-                if (datums is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
-                {
-                    foreach (StoreResponseStatistics responseStatistics in clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList)
-                    {
-                        if (responseStatistics.StoreResult != null && !((HttpStatusCode)responseStatistics.StoreResult.StatusCode).IsSuccess())
-                        {
-                            this.failedRequestCount++;
-                        }
-                    }
-                }
-            }
+            //foreach (object datums in currentTrace.Data.Values)
+            //{
+            //    if (datums is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+            //    {
+            //        foreach (StoreResponseStatistics responseStatistics in clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList)
+            //        {
+            //            if (responseStatistics.StoreResult != null && !((HttpStatusCode)responseStatistics.StoreResult.StatusCode).IsSuccess())
+            //            {
+            //                this.failedRequestCount++;
+            //            }
+            //        }
+            //    }
+            //}
 
-            foreach (ITrace childTrace in currentTrace.Children)
-            {
-                this.failedRequestCount += this.WalkTraceTreeForFailedRequestCount(childTrace);
-            }
-
+            //foreach (ITrace childTrace in currentTrace.Children)
+            //{
+            //    this.failedRequestCount += this.WalkTraceTreeForFailedRequestCount(childTrace);
+            //}
+            this.failedRequestCount = currentTrace.Summary.failedRequestCount;
             return this.failedRequestCount;
         }
 

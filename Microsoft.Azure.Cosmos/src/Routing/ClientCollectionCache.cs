@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r");
 
-                    request.RequestContext.ClientRequestStatistics = clientSideRequestStatistics ?? new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+                    request.RequestContext.ClientRequestStatistics = clientSideRequestStatistics ?? new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary);
                     if (clientSideRequestStatistics == null)
                     {
                         childTrace.AddDatum("Client Side Request Stats", request.RequestContext.ClientRequestStatistics);

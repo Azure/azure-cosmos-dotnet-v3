@@ -1355,6 +1355,8 @@
 
             public TraceLevel Level { get; }
 
+            public TraceSummary Summary { get; }
+
             public TraceComponent Component { get; }
 
             public ITrace Parent { get; }
