@@ -45,8 +45,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 DataEncryptionKeyCacheTimeToLive = null
             };
 
-            metadata1 = new EncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, "key1", "tempmetadata1");
-            metadata2 = new EncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, "key2", "tempmetadata2");
+            metadata1 = MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, "key1", "tempmetadata1");
+            metadata2 = MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, "key2", "tempmetadata2");
 
             MdeEncryptionTests.encryptionCosmosClient = MdeEncryptionTests.client.WithEncryption(testEncryptionKeyWrapProvider);
             MdeEncryptionTests.database = await MdeEncryptionTests.encryptionCosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 metadata2);
 
 
-            EncryptionKeyWrapMetadata revokedKekmetadata = new EncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, "revokedKek", "revokedKek-metadata");
+            EncryptionKeyWrapMetadata revokedKekmetadata = MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, "revokedKek", "revokedKek-metadata");
             await database.CreateClientEncryptionKeyAsync(
                 "keywithRevokedKek",
                 DataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256,
@@ -257,18 +257,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             string cekId = "anotherCek";
 			
-            EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, cekId, "testmetadata1");
+            EncryptionKeyWrapMetadata metadata1 = MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, cekId, "testmetadata1");
 			
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await MdeEncryptionTests.CreateClientEncryptionKeyAsync(
                 cekId,
                 metadata1);
 
             Assert.AreEqual(
-                new EncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, name: cekId, value: metadata1.Value),
+                MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, name: cekId, value: metadata1.Value),
                 clientEncryptionKeyProperties.EncryptionKeyWrapMetadata);
 
             // creating another key with same id should fail
-            metadata1 = new EncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, cekId, "testmetadata2");
+            metadata1 = MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, cekId, "testmetadata2");
 
             try
             {
@@ -289,22 +289,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public async Task EncryptionRewrapClientEncryptionKey()
         {
             string cekId = "rewrapkeytest";
-            EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, cekId, "testmetadata1");
+            EncryptionKeyWrapMetadata metadata1 = MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, cekId, "testmetadata1");
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await MdeEncryptionTests.CreateClientEncryptionKeyAsync(
                 cekId,
                 metadata1);
 
             Assert.AreEqual(
-                new EncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, name: cekId, value: metadata1.Value),
+                MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, name: cekId, value: metadata1.Value),
                 clientEncryptionKeyProperties.EncryptionKeyWrapMetadata);
 
-            EncryptionKeyWrapMetadata updatedMetaData = new EncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, cekId, metadata1 + "updatedmetadata");
+            EncryptionKeyWrapMetadata updatedMetaData = MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, cekId, metadata1 + "updatedmetadata");
             clientEncryptionKeyProperties = await MdeEncryptionTests.RewarpClientEncryptionKeyAsync(
                 cekId,
                 updatedMetaData);
 
             Assert.AreEqual(
-                new EncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, name: cekId, value: updatedMetaData.Value),
+                MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, name: cekId, value: updatedMetaData.Value),
                 clientEncryptionKeyProperties.EncryptionKeyWrapMetadata);
 
         }
@@ -435,7 +435,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 string cekId = "testingcekID";
-                EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, cekId, "testmetadata1");
+                EncryptionKeyWrapMetadata metadata1 = MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, cekId, "testmetadata1");
 
                 ClientEncryptionKeyResponse clientEncrytionKeyResponse = await databaseForRestrictedUser.CreateClientEncryptionKeyAsync(
                        cekId,
@@ -450,7 +450,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 string cekId = "testingcekID";
-                EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, cekId, "testmetadata1" + "updated");
+                EncryptionKeyWrapMetadata metadata1 = MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, cekId, "testmetadata1" + "updated");
 
                 ClientEncryptionKeyResponse clientEncrytionKeyResponse = await databaseForRestrictedUser.RewrapClientEncryptionKeyAsync(
                        cekId,
@@ -1549,7 +1549,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 DataEncryptionKeyCacheTimeToLive = TimeSpan.FromMinutes(30),
             };
 
-            EncryptionKeyWrapMetadata keyWrapMetadata = new EncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, "myCek", "mymetadata1");
+            EncryptionKeyWrapMetadata keyWrapMetadata = MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider.ProviderName, "myCek", "mymetadata1");
             CosmosClient encryptionCosmosClient = mainClient.WithEncryption(testEncryptionKeyWrapProvider);
             Database mainDatabase = await encryptionCosmosClient.CreateDatabaseAsync("databaseToBeDeleted");
 
@@ -1615,7 +1615,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             mainDatabase = await encryptionCosmosClient.CreateDatabaseAsync("databaseToBeDeleted");
 
-            keyWrapMetadata = new EncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider2.ProviderName, "myCek", "mymetadata2");
+            keyWrapMetadata = MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(testEncryptionKeyWrapProvider2.ProviderName, "myCek", "mymetadata2");
             clientEncrytionKeyResponse = await mainDatabase.CreateClientEncryptionKeyAsync(
                    keyWrapMetadata.Name,
                    DataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256,
@@ -2981,6 +2981,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Assert.IsTrue(propertiesDecrypted >= expectedPropertiesDecryptedCount);
                 }
             }
+        }
+
+        private static EncryptionKeyWrapMetadata CreateEncryptionKeyWrapMetadata(string type, string name, string value)
+        {
+#if SDKPROJECTREF
+            return new EncryptionKeyWrapMetadata(type, name, value, "algo");
+#else
+            return new  EncryptionKeyWrapMetadata(type, name, value);
+#endif
         }
 
         public class TestDoc
