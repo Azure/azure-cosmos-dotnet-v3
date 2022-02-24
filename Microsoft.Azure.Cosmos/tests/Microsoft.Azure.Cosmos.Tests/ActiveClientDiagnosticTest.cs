@@ -49,5 +49,23 @@ namespace Microsoft.Azure.Cosmos.Tests
             cosmosClient1.Dispose();
             cosmosClient3.Dispose();
         }
+
+        [TestMethod]
+        public void MultiThreadClientDisposeTest()
+        {
+            CosmosClient cosmosClient1 = new CosmosClient(ConnectionString); // Initializing 1st time
+            CosmosClient cosmosClient2 = new CosmosClient(ConnectionString);
+
+            Parallel.Invoke(cosmosClient2.Dispose, 
+                cosmosClient2.Dispose, 
+                cosmosClient2.Dispose, 
+                cosmosClient2.Dispose, 
+                cosmosClient2.Dispose);
+
+            // Initializing 2nd time
+            Assert.AreEqual(1, CosmosClient.NumberOfActiveClients);
+            cosmosClient1.Dispose();
+            cosmosClient2.Dispose();
+        }
     }
 }
