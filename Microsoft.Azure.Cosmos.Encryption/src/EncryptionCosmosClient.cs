@@ -25,14 +25,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public EncryptionCosmosClient(
             CosmosClient cosmosClient,
             IKeyEncryptionKeyResolver keyEncryptionKeyResolver,
-            string keyEncryptionKeyResolverId,
+            string keyEncryptionKeyResolverName,
             TimeSpan? keyCacheTimeToLive)
         {
             this.cosmosClient = cosmosClient ?? throw new ArgumentNullException(nameof(cosmosClient));
             this.KeyEncryptionKeyResolver = keyEncryptionKeyResolver ?? throw new ArgumentNullException(nameof(keyEncryptionKeyResolver));
-            this.KeyEncryptionKeyResolverId = keyEncryptionKeyResolverId ?? throw new ArgumentNullException(nameof(keyEncryptionKeyResolverId));
+            this.KeyEncryptionKeyResolverName = keyEncryptionKeyResolverName ?? throw new ArgumentNullException(nameof(keyEncryptionKeyResolverName));
             this.clientEncryptionKeyPropertiesCacheByKeyId = new AsyncCache<string, ClientEncryptionKeyProperties>();
-            this.EncryptionKeyStoreProviderImpl = new EncryptionKeyStoreProviderImpl(keyEncryptionKeyResolver);
+            this.EncryptionKeyStoreProviderImpl = new EncryptionKeyStoreProviderImpl(keyEncryptionKeyResolver, keyEncryptionKeyResolverName);
 
             keyCacheTimeToLive ??= TimeSpan.FromHours(1);
 
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public IKeyEncryptionKeyResolver KeyEncryptionKeyResolver { get; }
 
-        public string KeyEncryptionKeyResolverId { get; }
+        public string KeyEncryptionKeyResolverName { get; }
 
         public override CosmosClientOptions ClientOptions => this.cosmosClient.ClientOptions;
 

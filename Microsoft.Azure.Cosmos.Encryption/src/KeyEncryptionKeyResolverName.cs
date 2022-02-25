@@ -7,9 +7,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using global::Azure.Core.Cryptography;
 
     /// <summary>
-    /// Has constants for identifiers of well-known implementations of <see cref="IKeyEncryptionKeyResolver" />.
+    /// Has constants for names of well-known implementations of <see cref="IKeyEncryptionKeyResolver" />.
     /// </summary>
-    public static class KeyEncryptionKeyResolverId
+    public static class KeyEncryptionKeyResolverName
     {
         /// <summary>
         /// IKeyEncryptionKeyResolver implementation for keys in Azure Key Vault.

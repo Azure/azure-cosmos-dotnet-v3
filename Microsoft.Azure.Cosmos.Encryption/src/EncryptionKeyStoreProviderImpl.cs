@@ -25,13 +25,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private readonly IKeyEncryptionKeyResolver keyEncryptionKeyResolver;
 
-        public EncryptionKeyStoreProviderImpl(IKeyEncryptionKeyResolver keyEncryptionKeyResolver)
+        public EncryptionKeyStoreProviderImpl(IKeyEncryptionKeyResolver keyEncryptionKeyResolver, string providerName)
         {
             this.keyEncryptionKeyResolver = keyEncryptionKeyResolver;
+            this.ProviderName = providerName;
             this.DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero;
         }
 
-        public override string ProviderName => string.Empty; // unused
+        public override string ProviderName { get; }
 
         public override byte[] UnwrapKey(string encryptionKeyId, KeyEncryptionKeyAlgorithm algorithm, byte[] encryptedKey)
         {
