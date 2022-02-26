@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<PropertyGroup>
-		<ClientOfficialVersion>3.24.0</ClientOfficialVersion>
-		<ClientPreviewVersion>3.24.0</ClientPreviewVersion>
+		<ClientOfficialVersion>3.25.0</ClientOfficialVersion>
+		<ClientPreviewVersion>3.25.0</ClientPreviewVersion>
 		<ClientPreviewSuffixVersion>preview</ClientPreviewSuffixVersion>
 		<DirectVersion>3.24.1</DirectVersion>
 		<EncryptionVersion>1.0.0-previewV19</EncryptionVersion>
