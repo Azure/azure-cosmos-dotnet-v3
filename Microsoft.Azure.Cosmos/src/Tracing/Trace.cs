@@ -96,6 +96,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public void Dispose()
         {
             this.stopwatch.Stop();
+
+            this.CosmosInstrumentation.Record(this);
         }
 
         public ITrace StartChild(

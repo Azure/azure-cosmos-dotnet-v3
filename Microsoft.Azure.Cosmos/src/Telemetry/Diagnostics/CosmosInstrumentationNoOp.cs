@@ -7,15 +7,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     using System;
     using System.Net;
     using Documents;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal class CosmosInstrumentationNoOp : ICosmosInstrumentation
     {
         public void MarkFailed(Exception ex)
-        {
-            // NoOp
-        }
-
-        public void AddAttributesToScope()
         {
             // NoOp
         }
@@ -25,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             // NoOp
         }
 
-        public void Record(CosmosDiagnostics diagnostics)
+        public void Record(ITrace trace)
         {
             // NoOp
         }

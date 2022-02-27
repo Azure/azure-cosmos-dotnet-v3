@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using global::Azure.Monitor.OpenTelemetry.Exporter;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using OpenTelemetry;
@@ -26,18 +27,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [ClassInitialize]
         public static void ClassInitialize(TestContext context)
         {
-           OpenTelemetryTests.testListener = new ClientDiagnosticListener("Azure.Cosmos");
+            OpenTelemetryTests.testListener = new ClientDiagnosticListener("Azure.Cosmos");
 
            /* AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
 
             OpenTelemetryTests.Provider = Sdk.CreateTracerProviderBuilder()
-                .AddSource("Azure.*") // Collect all traces from Cosmos Db
+                .AddSource(CosmosInstrumentationConstants.DiagnosticNamespace) // Collect all traces from Cosmos Db
                 .SetResourceBuilder(
                     ResourceBuilder.CreateDefault()
                         .AddService(serviceName: "Cosmos SDK Test Point Create Item", serviceVersion: "1.0"))
                 .AddAzureMonitorTraceExporter(options => options.ConnectionString =
                     "InstrumentationKey=2fabff39-6a32-42da-9e8f-9fcff7d99c6b;IngestionEndpoint=https://westus2-2.in.applicationinsights.azure.com/") // Export traces to Azure Monitor
-                .AddHttpClientInstrumentation()
                 .Build();*/
         }
 

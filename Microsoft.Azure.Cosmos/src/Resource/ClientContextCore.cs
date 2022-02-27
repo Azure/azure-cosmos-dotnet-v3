@@ -461,38 +461,35 @@ namespace Microsoft.Azure.Cosmos
         {
             using (new ActivityScope(Guid.NewGuid()))
             {
-                try
+                using (ICosmosInstrumentation instrumentation = trace.CosmosInstrumentation)
                 {
-                    trace.CosmosInstrumentation.Record(this.client?.Endpoint, this.UserAgent, this.ClientOptions.ConnectionMode);
+                    try
+                    {
+                        instrumentation.Record(this.client?.Endpoint, this.UserAgent, this.ClientOptions.ConnectionMode);
 
-                    return await task(trace).ConfigureAwait(false);
+                        return await task(trace).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
+                    {
+                        throw new CosmosOperationCanceledException(oe, trace);
+                    }
+                    catch (ObjectDisposedException objectDisposed) when
+                        (!(objectDisposed is CosmosObjectDisposedException))
+                    {
+                        throw new CosmosObjectDisposedException(
+                            objectDisposed,
+                            this.client,
+                            trace);
+                    }
+                    catch (NullReferenceException nullRefException) when
+                        (!(nullRefException is CosmosNullReferenceException))
+                    {
+                        throw new CosmosNullReferenceException(
+                            nullRefException,
+                            trace);
+                    }
                 }
-                catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
-                {
-                    throw new CosmosOperationCanceledException(oe, trace);
-                }
-                catch (ObjectDisposedException objectDisposed) when
-                    (!(objectDisposed is CosmosObjectDisposedException))
-                {
-                    throw new CosmosObjectDisposedException(
-                        objectDisposed,
-                        this.client,
-                        trace);
-                }
-                catch (NullReferenceException nullRefException) when
-                    (!(nullRefException is CosmosNullReferenceException))
-                {
-                    throw new CosmosNullReferenceException(
-                        nullRefException,
-                        trace);
-                }
-                finally
-                {
-                    trace.CosmosInstrumentation.Record(new CosmosTraceDiagnostics(trace));
-
-                    trace.CosmosInstrumentation.AddAttributesToScope();
-                    trace.CosmosInstrumentation.Dispose();
-                }
+               
             }
         }
 

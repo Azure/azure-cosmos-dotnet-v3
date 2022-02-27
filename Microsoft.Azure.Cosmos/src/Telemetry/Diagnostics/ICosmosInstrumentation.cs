@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     using System;
     using System.Net;
     using Documents;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Cosmos Instrumentation Interface
@@ -23,11 +24,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             /// </summary>
             /// <param name="ex"></param>
             public void MarkFailed(Exception ex);
-
-            /// <summary>
-            /// Add attributes to scope
-            /// </summary>
-            public void AddAttributesToScope();
 
             /// <summary>
             /// Record Values
@@ -82,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             /// <summary>
             /// Record Values
             /// </summary>
-            /// <param name="diagnostics"></param>
-            public void Record(CosmosDiagnostics diagnostics);
+            /// <param name="trace"></param>
+            public void Record(ITrace trace);
         }
 }

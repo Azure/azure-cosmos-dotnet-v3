@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     using System.Net;
     using Documents;
     using global::Azure.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal class CosmosInstrumentation : ICosmosInstrumentation
     {
@@ -17,9 +19,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
         public CosmosInstrumentation(DiagnosticScope scope)
         {
-            this.scope = scope;
             this.Attributes = new DiagnosticAttributes();
 
+            this.scope = scope;
             this.scope.Start();
         }
 
@@ -83,10 +85,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                 } 
 
             }
-            else
-            {
-                Console.WriteLine("Record RequestCharge => Attributes are null");
-            }
         }
 
         public void RecordWithException(double? requestCharge,
@@ -100,23 +98,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
            string pageSize = null)
         {
             this.Record(
-                requestCharge, 
-                operationType, 
-                statusCode, 
-                databaseId, 
-                containerId, 
-                queryText,
-                subStatusCode,
-                pageSize);
+                requestCharge: requestCharge,
+                operationType: operationType,
+                statusCode: statusCode,
+                databaseId: databaseId,
+                containerId: containerId,
+                queryText: queryText,
+                subStatusCode: subStatusCode,
+                pageSize: pageSize);
 
             if (this.Attributes != null)
             {
                 this.Attributes.Error = true;
                 this.Attributes.ExceptionStackTrace = exception.StackTrace;
-            }
-            else
-            {
-                Console.WriteLine("RecordWithException => Attributes are null");
             }
         }
 
@@ -128,29 +122,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                 this.Attributes.UserAgent = userAgent;
                 this.Attributes.ConnectionMode = connectionMode;
             }
-            else
-            {
-                Console.WriteLine("Record accountName => Attributes are null");
-            }
         }
 
-        public void Record(CosmosDiagnostics diagnostics)
+        public void Record(ITrace trace)
         {
             if (this.Attributes != null)
             {
-                this.Attributes.RequestDiagnostics = diagnostics;
-            }
-            else
-            {
-                Console.WriteLine("Record diagnostics => Attributes are null");
+                this.Attributes.RequestDiagnostics = new CosmosTraceDiagnostics(trace);
             }
         }
 
-        public void AddAttributesToScope()
+        private void AddAttributesToScope()
         {
             if (this.Attributes == null)
             {
-                Console.WriteLine("AddAttributesToScope => Attributes are null");
                 return;
             }
 
@@ -190,6 +175,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
         public void Dispose()
         {
+            this.AddAttributesToScope();
             this.scope.Dispose();
         }
     }
