@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.FullFidelity;
@@ -11,22 +12,28 @@
     using Newtonsoft.Json.Linq;
 
     [TestClass]
-    [TestCategory("ChangeFeed")]
-    public class GetChangeFeedIteratorOperationsLogTests : BaseCosmosClientHelper
+    public class GetChangeFeedIteratorOperationsLogTests
     {
-        private static readonly string PartitionKey = "/id";
+        private readonly string connectionString = @"AccountEndpoint=;AccountKey=";
+        private readonly string databaseId = "";
+        private readonly string containerId = "";
+        private Container container;
 
         [TestInitialize]
-        public async Task TestInitialize()
+        public async Task Initialize()
         {
-            await base.TestInit();
+            CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: new CosmosClientOptions { ConnectionMode = ConnectionMode.Direct });
+            Database database = cosmosClient.GetDatabase(this.databaseId);
+            ContainerProperties containerProperties = new(id: this.containerId, partitionKeyPath: "/id");
+            containerProperties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
+            this.container = await database.CreateContainerIfNotExistsAsync(containerProperties: containerProperties);
         }
 
-        [TestCleanup]
-        public async Task Cleanup()
-        {
-            await base.TestCleanup();
-        }
+        //[TestCleanup]
+        //public async Task Cleanup()
+        //{
+        //    _ = await this.container.DeleteContainerAsync();
+        //}
 
         private async Task<ContainerInternal> InitializeLargeContainerAsync()
         {
@@ -62,9 +69,9 @@
             ContainerInternal container = (ContainerInternal)response;
             string id = Guid.NewGuid().ToString();
             string otherId = Guid.NewGuid().ToString();
-            using (FeedIterator<ChangeFeedItem<Item>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItem<Item>>(
+            using (FeedIterator<ChangeFeedItem<Item>> feedIterator = this.container.GetChangeFeedIterator<ChangeFeedItem<Item>>(
                 changeFeedStartFrom: ChangeFeedStartFrom.Now(FeedRangeEpk.FromPartitionKey(new PartitionKey(id))),
-            changeFeedMode: ChangeFeedMode.AllOperations))
+            changeFeedMode: ChangeFeedMode.FullFidelity))
             {
                 string continuation = null;
                 while (feedIterator.HasMoreResults)
@@ -80,9 +87,12 @@
                         PartitionKey otherPartitionKey = new(otherId);
                         PartitionKey partitionKey = new(id);
 
-                        _ = await container.UpsertItemAsync<Item>(item: new(Id: otherId, Line1: "87 38floor, Witthayu Rd, Lumphini, Pathum Wan District", City: "Bangkok", State: "Thailand", ZipCode: "10330"), partitionKey: otherPartitionKey).ConfigureAwait(false);
-                        _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "One Microsoft Way", City: "Redmond", State: "WA", ZipCode: "98052"), partitionKey: partitionKey).ConfigureAwait(false);
-                        _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "205 16th St NW", City: "Atlanta", State: "GA", ZipCode: "30363"), partitionKey: partitionKey).ConfigureAwait(false);
+                        _ = await this.container.UpsertItemAsync<Item>(item: new(Id: otherId, Line1: "87 38floor, Witthayu Rd, Lumphini, Pathum Wan District", City: "Bangkok", State: "Thailand", ZipCode: "10330"), partitionKey: otherPartitionKey).ConfigureAwait(false);
+                        _ = await this.container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "One Microsoft Way", City: "Redmond", State: "WA", ZipCode: "98052"), partitionKey: partitionKey).ConfigureAwait(false);
+                        _ = await this.container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "205 16th St NW", City: "Atlanta", State: "GA", ZipCode: "30363"), partitionKey: partitionKey).ConfigureAwait(false);
+                        _ = await this.container.DeleteItemAsync<Item>(id: id, partitionKey: partitionKey);
+
+                        Console.WriteLine("delete happened.");
                     }
                     else
                     {
@@ -90,8 +100,8 @@
                         string diagnostics = feedResponse.Diagnostics.ToString();
                         JToken jToken = JToken.Parse(diagnostics);
 
-                        Assert.IsNotNull(jToken["Summary"]["GatewayCalls"], "UseGateMode is set to false.");
-                        Assert.AreEqual(expected: 2, actual: resources.Count);
+                        resources.ForEach(x => Console.WriteLine(x.Metadata.OperationType));
+                        Assert.AreEqual(expected: 3, actual: resources.Count);
 
                         ChangeFeedItem<Item> createOperation = resources[0];
 
@@ -117,6 +127,20 @@
                         Assert.AreEqual(expected: "WA", actual: replaceOperation.Previous.State);
                         Assert.AreEqual(expected: "98052", actual: replaceOperation.Previous.ZipCode);
 
+                        ChangeFeedItem<Item> deleteOperation = resources[2];
+
+                        Assert.IsNull(deleteOperation.Current.Id);
+                        Assert.IsNull(deleteOperation.Current.Line1);
+                        Assert.IsNull(deleteOperation.Current.City);
+                        Assert.IsNull(deleteOperation.Current.State);
+                        Assert.IsNull(deleteOperation.Current.ZipCode);
+                        Assert.AreEqual(expected: OperationType.Delete, actual: deleteOperation.Metadata.OperationType);
+                        Assert.AreEqual(expected: id, actual: deleteOperation.Previous.Id);
+                        Assert.AreEqual(expected: "205 16th St NW", actual: deleteOperation.Previous.Line1);
+                        Assert.AreEqual(expected: "Atlanta", actual: deleteOperation.Previous.City);
+                        Assert.AreEqual(expected: "GA", actual: deleteOperation.Previous.State);
+                        Assert.AreEqual(expected: "30363", actual: deleteOperation.Previous.ZipCode);
+
                         break;
                     }
                 }
@@ -138,9 +162,9 @@
             ContainerInternal container = (ContainerInternal)response;
             string id = Guid.NewGuid().ToString();
             string otherId = Guid.NewGuid().ToString();
-            using (FeedIterator<ChangeFeedItem<Item>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItem<Item>>(
+            using (FeedIterator<ChangeFeedItem<Item>> feedIterator = this.container.GetChangeFeedIterator<ChangeFeedItem<Item>>(
                 changeFeedStartFrom: ChangeFeedStartFrom.Now(FeedRangeEpk.FullRange),
-                changeFeedMode: ChangeFeedMode.AllOperations))
+                changeFeedMode: ChangeFeedMode.FullFidelity))
             {
                 string continuation = null;
                 while (feedIterator.HasMoreResults)
@@ -156,10 +180,10 @@
                         PartitionKey partitionKey = new(id);
                         PartitionKey otherPartitionKey = new(otherId);
 
-                        _ = await container.UpsertItemAsync<Item>(item: new(Id: otherId, Line1: "87 38floor, Witthayu Rd, Lumphini, Pathum Wan District", City: "Bangkok", State: "Thailand", ZipCode: "10330"), partitionKey: otherPartitionKey).ConfigureAwait(false);
-                        _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "One Microsoft Way", City: "Redmond", State: "WA", ZipCode: "98052"), partitionKey: partitionKey).ConfigureAwait(false);
-                        _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "205 16th St NW", City: "Atlanta", State: "GA", ZipCode: "30363"), partitionKey: partitionKey).ConfigureAwait(false);
-                        _ = await container.DeleteItemAsync<Item>(id: id, partitionKey: partitionKey);
+                        _ = await this.container.UpsertItemAsync<Item>(item: new(Id: otherId, Line1: "87 38floor, Witthayu Rd, Lumphini, Pathum Wan District", City: "Bangkok", State: "Thailand", ZipCode: "10330"), partitionKey: otherPartitionKey).ConfigureAwait(false);
+                        _ = await this.container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "One Microsoft Way", City: "Redmond", State: "WA", ZipCode: "98052"), partitionKey: partitionKey).ConfigureAwait(false);
+                        _ = await this.container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "205 16th St NW", City: "Atlanta", State: "GA", ZipCode: "30363"), partitionKey: partitionKey).ConfigureAwait(false);
+                        _ = await this.container.DeleteItemAsync<Item>(id: id, partitionKey: partitionKey);
                     }
                     else
                     {
@@ -167,7 +191,7 @@
                         string diagnostics = feedResponse.Diagnostics.ToString();
                         JToken jToken = JToken.Parse(diagnostics);
 
-                        Assert.IsNotNull(jToken["Summary"]["GatewayCalls"], "UseGateMode is set to false.");
+                        resources.ForEach(x => Console.WriteLine(x.Metadata.OperationType));
                         Assert.AreEqual(expected: 4, actual: resources.Count);
 
                         ChangeFeedItem<Item> firstCreateOperation = resources[0];
@@ -239,9 +263,9 @@
             ContainerInternal container = (ContainerInternal)response;
             string id = Guid.NewGuid().ToString();
             string otherId = Guid.NewGuid().ToString();
-            using (FeedIterator<ChangeFeedItem<Item>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItem<Item>>(
+            using (FeedIterator<ChangeFeedItem<Item>> feedIterator = this.container.GetChangeFeedIterator<ChangeFeedItem<Item>>(
                 changeFeedStartFrom: ChangeFeedStartFrom.Now(),
-                changeFeedMode: ChangeFeedMode.AllOperations))
+                changeFeedMode: ChangeFeedMode.FullFidelity))
             {
                 string continuation = null;
                 while (feedIterator.HasMoreResults)
@@ -257,10 +281,13 @@
                         PartitionKey partitionKey = new(id);
                         PartitionKey otherPartitionKey = new(otherId);
 
-                        _ = await container.UpsertItemAsync<Item>(item: new(Id: otherId, Line1: "87 38floor, Witthayu Rd, Lumphini, Pathum Wan District", City: "Bangkok", State: "Thailand", ZipCode: "10330"), partitionKey: otherPartitionKey).ConfigureAwait(false);
-                        _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "One Microsoft Way", City: "Redmond", State: "WA", ZipCode: "98052"), partitionKey: partitionKey).ConfigureAwait(false);
-                        _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "205 16th St NW", City: "Atlanta", State: "GA", ZipCode: "30363"), partitionKey: partitionKey).ConfigureAwait(false);
-                        _ = await container.DeleteItemAsync<Item>(id: id, partitionKey: partitionKey);
+                        _ = await this.container.UpsertItemAsync<Item>(item: new(Id: otherId, Line1: "87 38floor, Witthayu Rd, Lumphini, Pathum Wan District", City: "Bangkok", State: "Thailand", ZipCode: "10330"), partitionKey: otherPartitionKey).ConfigureAwait(false);
+
+                        _ = await this.container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "One Microsoft Way", City: "Redmond", State: "WA", ZipCode: "98052"), partitionKey: partitionKey).ConfigureAwait(false);
+
+                        _ = await this.container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "205 16th St NW", City: "Atlanta", State: "GA", ZipCode: "30363"), partitionKey: partitionKey).ConfigureAwait(false);
+
+                        _ = await this.container.DeleteItemAsync<Item>(id: id, partitionKey: partitionKey);
                     }
                     else
                     {
@@ -268,7 +295,7 @@
                         string diagnostics = feedResponse.Diagnostics.ToString();
                         JToken jToken = JToken.Parse(diagnostics);
 
-                        Assert.IsNotNull(jToken["Summary"]["GatewayCalls"], "UseGateMode is set to false.");
+                        resources.ForEach(x => Console.WriteLine(x.Metadata.OperationType));
                         Assert.AreEqual(expected: 4, actual: resources.Count);
 
                         ChangeFeedItem<Item> firstCreateOperation = resources[0];
@@ -340,9 +367,9 @@
             ContainerInternal container = (ContainerInternal)response;
             string id = Guid.NewGuid().ToString();
             string otherId = Guid.NewGuid().ToString();
-            using (FeedIterator<ChangeFeedItem<Item>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItem<Item>>(
+            using (FeedIterator<ChangeFeedItem<Item>> feedIterator = this.container.GetChangeFeedIterator<ChangeFeedItem<Item>>(
                 changeFeedStartFrom: ChangeFeedStartFrom.Now(FeedRangePartitionKeyRange.FromPartitionKey(new PartitionKey(id))),
-                changeFeedMode: ChangeFeedMode.AllOperations))
+                changeFeedMode: ChangeFeedMode.FullFidelity))
             {
                 string continuation = null;
                 while (feedIterator.HasMoreResults)
@@ -360,20 +387,23 @@
                         PartitionKey partitionKey = new(id);
                         PartitionKey otherPartitionKey = new(otherId);
 
-                        _ = await container.UpsertItemAsync<Item>(item: new(Id: otherId, Line1: "87 38floor, Witthayu Rd, Lumphini, Pathum Wan District", City: "Bangkok", State: "Thailand", ZipCode: "10330"), partitionKey: otherPartitionKey).ConfigureAwait(false);
-                        _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "One Microsoft Way", City: "Redmond", State: "WA", ZipCode: "98052"), partitionKey: partitionKey).ConfigureAwait(false);
-                        _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "205 16th St NW", City: "Atlanta", State: "GA", ZipCode: "30363"), partitionKey: partitionKey).ConfigureAwait(false);
+                        _ = await this.container.UpsertItemAsync<Item>(item: new(Id: otherId, Line1: "87 38floor, Witthayu Rd, Lumphini, Pathum Wan District", City: "Bangkok", State: "Thailand", ZipCode: "10330"), partitionKey: otherPartitionKey).ConfigureAwait(false);
+
+                        _ = await this.container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "One Microsoft Way", City: "Redmond", State: "WA", ZipCode: "98052"), partitionKey: partitionKey).ConfigureAwait(false);
+
+                        _ = await this.container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "205 16th St NW", City: "Atlanta", State: "GA", ZipCode: "30363"), partitionKey: partitionKey).ConfigureAwait(false);
+
+                        _ = await this.container.DeleteItemAsync<Item>(id: id, partitionKey: partitionKey);
 
                         Console.WriteLine("after operations!");
                     }
                     else
                     {
                         List<ChangeFeedItem<Item>> resources = feedResponse.Resource.ToList();
-                        string diagnostics = feedResponse.Diagnostics.ToString();
-                        JToken jToken = JToken.Parse(diagnostics);
 
-                        Assert.IsNotNull(jToken["Summary"]["GatewayCalls"], "UseGateMode is set to false.");
-                        Assert.AreEqual(expected: 2, actual: resources.Count);
+                        resources.ForEach(x => Console.WriteLine(x.Metadata.OperationType));
+
+                        Assert.AreEqual(expected: 3, actual: resources.Count);
 
                         ChangeFeedItem<Item> createOperation = resources[0];
 
@@ -398,6 +428,20 @@
                         Assert.AreEqual(expected: "Redmond", actual: replaceOperation.Previous.City);
                         Assert.AreEqual(expected: "WA", actual: replaceOperation.Previous.State);
                         Assert.AreEqual(expected: "98052", actual: replaceOperation.Previous.ZipCode);
+
+                        ChangeFeedItem<Item> deleteOperation = resources[2];
+
+                        Assert.IsNull(deleteOperation.Current.Id);
+                        Assert.IsNull(deleteOperation.Current.Line1);
+                        Assert.IsNull(deleteOperation.Current.City);
+                        Assert.IsNull(deleteOperation.Current.State);
+                        Assert.IsNull(deleteOperation.Current.ZipCode);
+                        Assert.AreEqual(expected: OperationType.Delete, actual: deleteOperation.Metadata.OperationType);
+                        Assert.AreEqual(expected: id, actual: deleteOperation.Previous.Id);
+                        Assert.AreEqual(expected: "205 16th St NW", actual: deleteOperation.Previous.Line1);
+                        Assert.AreEqual(expected: "Atlanta", actual: deleteOperation.Previous.City);
+                        Assert.AreEqual(expected: "GA", actual: deleteOperation.Previous.State);
+                        Assert.AreEqual(expected: "30363", actual: deleteOperation.Previous.ZipCode);
 
                         break;
                     }
@@ -420,9 +464,9 @@
             ContainerInternal container = (ContainerInternal)response;
             string id = Guid.NewGuid().ToString();
             string otherId = Guid.NewGuid().ToString();
-            using (FeedIterator<ChangeFeedItem<Item>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItem<Item>>(
+            using (FeedIterator<ChangeFeedItem<Item>> feedIterator = this.container.GetChangeFeedIterator<ChangeFeedItem<Item>>(
                 changeFeedStartFrom: ChangeFeedStartFrom.Now(FeedRange.FromPartitionKey(new PartitionKey(id))),
-                changeFeedMode: ChangeFeedMode.AllOperations))
+                changeFeedMode: ChangeFeedMode.FullFidelity))
             {
                 string continuation = null;
                 while (feedIterator.HasMoreResults)
@@ -438,9 +482,13 @@
                         PartitionKey partitionKey = new(id);
                         PartitionKey otherPartitionKey = new(otherId);
 
-                        _ = await container.UpsertItemAsync<Item>(item: new(Id: otherId, Line1: "87 38floor, Witthayu Rd, Lumphini, Pathum Wan District", City: "Bangkok", State: "Thailand", ZipCode: "10330"), partitionKey: otherPartitionKey).ConfigureAwait(false);
-                        _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "One Microsoft Way", City: "Redmond", State: "WA", ZipCode: "98052"), partitionKey: partitionKey).ConfigureAwait(false);
-                        _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "205 16th St NW", City: "Atlanta", State: "GA", ZipCode: "30363"), partitionKey: partitionKey).ConfigureAwait(false);
+                        _ = await this.container.UpsertItemAsync<Item>(item: new(Id: otherId, Line1: "87 38floor, Witthayu Rd, Lumphini, Pathum Wan District", City: "Bangkok", State: "Thailand", ZipCode: "10330"), partitionKey: otherPartitionKey).ConfigureAwait(false);
+
+                        _ = await this.container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "One Microsoft Way", City: "Redmond", State: "WA", ZipCode: "98052"), partitionKey: partitionKey).ConfigureAwait(false);
+
+                        _ = await this.container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "205 16th St NW", City: "Atlanta", State: "GA", ZipCode: "30363"), partitionKey: partitionKey).ConfigureAwait(false);
+
+                        _ = await this.container.DeleteItemStreamAsync(id: id, partitionKey: partitionKey);
                     }
                     else
                     {
@@ -448,8 +496,8 @@
                         string diagnostics = feedResponse.Diagnostics.ToString();
                         JToken jToken = JToken.Parse(diagnostics);
 
-                        Assert.IsNotNull(jToken["Summary"]["GatewayCalls"], "UseGateMode is set to false.");
-                        Assert.AreEqual(expected: 2, actual: resources.Count);
+                        resources.ForEach(x => Console.WriteLine(x.Metadata.OperationType));
+                        Assert.AreEqual(expected: 3, actual: resources.Count);
 
                         ChangeFeedItem<Item> createOperation = resources[0];
 
@@ -475,6 +523,20 @@
                         Assert.AreEqual(expected: "WA", actual: replaceOperation.Previous.State);
                         Assert.AreEqual(expected: "98052", actual: replaceOperation.Previous.ZipCode);
 
+                        ChangeFeedItem<Item> deleteOperation = resources[2];
+
+                        Assert.IsNull(deleteOperation.Current.Id);
+                        Assert.IsNull(deleteOperation.Current.Line1);
+                        Assert.IsNull(deleteOperation.Current.City);
+                        Assert.IsNull(deleteOperation.Current.State);
+                        Assert.IsNull(deleteOperation.Current.ZipCode);
+                        Assert.AreEqual(expected: OperationType.Delete, actual: deleteOperation.Metadata.OperationType);
+                        Assert.AreEqual(expected: id, actual: deleteOperation.Previous.Id);
+                        Assert.AreEqual(expected: "205 16th St NW", actual: deleteOperation.Previous.Line1);
+                        Assert.AreEqual(expected: "Atlanta", actual: deleteOperation.Previous.City);
+                        Assert.AreEqual(expected: "GA", actual: deleteOperation.Previous.State);
+                        Assert.AreEqual(expected: "30363", actual: deleteOperation.Previous.ZipCode);
+
                         break;
                     }
                 }
@@ -488,19 +550,13 @@
         [TestMethod]
         public async Task FeedRange_VerifyingWireFormatTests()
         {
-            ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: GetChangeFeedIteratorOperationsLogTests.PartitionKey);
-            properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                properties,
-                cancellationToken: this.cancellationToken);
-            ContainerInternal container = (ContainerInternal)response;
-            IReadOnlyList<FeedRange> ranges = await container.GetFeedRangesAsync();
+            IReadOnlyList<FeedRange> ranges = await this.container.GetFeedRangesAsync();
             string id = Guid.NewGuid().ToString();
             string otherId = Guid.NewGuid().ToString();
             
-            using (FeedIterator<ChangeFeedItem<Item>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItem<Item>>(
+            using (FeedIterator<ChangeFeedItem<Item>> feedIterator = this.container.GetChangeFeedIterator<ChangeFeedItem<Item>>(
                 changeFeedStartFrom: ChangeFeedStartFrom.Now(ranges[0]),
-                changeFeedMode: ChangeFeedMode.AllOperations))
+                changeFeedMode: ChangeFeedMode.FullFidelity))
             {
                 string continuation = null;
                 while (feedIterator.HasMoreResults)
@@ -516,10 +572,13 @@
                         PartitionKey partitionKey = new(id);
                         PartitionKey otherPartitionKey = new(otherId);
 
-                        _ = await container.UpsertItemAsync<Item>(item: new(Id: otherId, Line1: "87 38floor, Witthayu Rd, Lumphini, Pathum Wan District", City: "Bangkok", State: "Thailand", ZipCode: "10330"), partitionKey: otherPartitionKey).ConfigureAwait(false);
-                        _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "One Microsoft Way", City: "Redmond", State: "WA", ZipCode: "98052"), partitionKey: partitionKey).ConfigureAwait(false);
-                        _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "205 16th St NW", City: "Atlanta", State: "GA", ZipCode: "30363"), partitionKey: partitionKey).ConfigureAwait(false);
-                        _ = await container.DeleteItemAsync<Item>(id: id, partitionKey: partitionKey);
+                        _ = await this.container.UpsertItemAsync<Item>(item: new(Id: otherId, Line1: "87 38floor, Witthayu Rd, Lumphini, Pathum Wan District", City: "Bangkok", State: "Thailand", ZipCode: "10330"), partitionKey: otherPartitionKey).ConfigureAwait(false);
+                        
+                        _ = await this.container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "One Microsoft Way", City: "Redmond", State: "WA", ZipCode: "98052"), partitionKey: partitionKey).ConfigureAwait(false);
+                        
+                        _ = await this.container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "205 16th St NW", City: "Atlanta", State: "GA", ZipCode: "30363"), partitionKey: partitionKey).ConfigureAwait(false);
+                        
+                        _ = await this.container.DeleteItemAsync<Item>(id: id, partitionKey: partitionKey);
                     }
                     else
                     {
@@ -527,8 +586,9 @@
                         string diagnostics = feedResponse.Diagnostics.ToString();
                         JToken jToken = JToken.Parse(diagnostics);
 
-                        Assert.IsNotNull(jToken["Summary"]["GatewayCalls"], "UseGateMode is set to false.");
+                        resources.ForEach(x => Console.WriteLine(x.Metadata.OperationType));
                         Assert.AreEqual(expected: 4, actual: resources.Count);
+
 
                         ChangeFeedItem<Item> firstCreateOperation = resources[0];
 
