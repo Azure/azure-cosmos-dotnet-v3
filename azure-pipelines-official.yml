@@ -60,7 +60,6 @@ stages:
       - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
         inputs:
           BuildDropPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
-
       - task: AzureFileCopy@2
         displayName: ' Copy Artifacts to Azure SDK Release blob storage'
         condition: and(succeeded(),ne(variables['BlobVersion'], ''))
