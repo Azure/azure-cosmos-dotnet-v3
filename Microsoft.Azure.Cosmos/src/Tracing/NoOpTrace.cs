@@ -30,6 +30,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public TraceLevel Level => default;
 
+        public TraceSummary Summary => default;
+
         public TraceComponent Component => default;
 
         public ITrace Parent => null;
