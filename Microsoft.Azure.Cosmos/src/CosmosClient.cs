@@ -100,8 +100,11 @@ namespace Microsoft.Azure.Cosmos
         private readonly string DatabaseRootUri = Paths.Databases_Root;
         private ConsistencyLevel? accountConsistencyLevel;
         private bool isDisposed = false;
+        private object disposedLock = new object();
 
         internal static int numberOfClientsCreated;
+        internal static int NumberOfActiveClients;
+
         internal DateTime? DisposedDateTimeUtc { get; private set; } = null;
 
         static CosmosClient()
@@ -262,6 +265,7 @@ namespace Microsoft.Azure.Cosmos
             clientOptions ??= new CosmosClientOptions();
 
             this.ClientId = this.IncrementNumberOfClientsCreated();
+            
             this.ClientContext = ClientContextCore.Create(
                 this,
                 clientOptions);
@@ -1232,7 +1236,25 @@ namespace Microsoft.Azure.Cosmos
 
         private int IncrementNumberOfClientsCreated()
         {
+            this.IncrementNumberOfActiveClients();
+
             return Interlocked.Increment(ref numberOfClientsCreated);
+        }
+
+        private int IncrementNumberOfActiveClients()
+        {
+            return Interlocked.Increment(ref NumberOfActiveClients);
+        }
+
+        private int DecrementNumberOfActiveClients()
+        {
+            // In case dispose is called multiple times. Check if at least 1 active client is there
+            if (NumberOfActiveClients > 0)
+            {
+                return Interlocked.Decrement(ref NumberOfActiveClients);
+            }
+
+            return 0;
         }
 
         private async Task InitializeContainerAsync(string databaseId, string containerId, CancellationToken cancellationToken = default)
@@ -1280,17 +1302,22 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="disposing">True if disposing</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (!this.isDisposed)
+            lock (this.disposedLock)
             {
-                this.DisposedDateTimeUtc = DateTime.UtcNow;
-
-                if (disposing)
+                if (this.isDisposed == true)
                 {
-                    this.ClientContext.Dispose();
+                    return;
                 }
-
                 this.isDisposed = true;
             }
+
+            this.DisposedDateTimeUtc = DateTime.UtcNow;
+
+            if (disposing)
+            {
+                this.ClientContext.Dispose();
+                this.DecrementNumberOfActiveClients();
+            }   
         }
     }
 }
