@@ -8,13 +8,22 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
     internal sealed class ChangeFeedModeFullFidelity : ChangeFeedMode
     {
-        public static readonly string FullFidelityHeader = "Full-Fidelity Feed"; // HttpConstants.A_IMHeaderValues.FullFidelityFeed
+        public static readonly string FullFidelityHeader = HttpConstants.A_IMHeaderValues.FullFidelityFeed;
+#if PREVIEW
+        public
+#else
+        internal
+#endif 
+            static readonly string ChangeFeedWireFormatVersion = Constants.ChangeFeedWireFormatVersions.SeparateMetadataWithCrts;
 
-        public static ChangeFeedMode Instance { get; } = new ChangeFeedModeFullFidelity();
+        internal static ChangeFeedMode Instance { get; } = new ChangeFeedModeFullFidelity();
 
         internal override void Accept(RequestMessage requestMessage)
         {
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.A_IM, ChangeFeedModeFullFidelity.FullFidelityHeader);
+#if PREVIEW
+            requestMessage.Headers.Add(HttpConstants.HttpHeaders.ChangeFeedWireFormatVersion, ChangeFeedModeFullFidelity.ChangeFeedWireFormatVersion);
+#endif
         }
     }
 }

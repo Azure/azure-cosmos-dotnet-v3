@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System.IO;
     using System.Net;
 
     /// <summary>
@@ -16,10 +17,20 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public abstract Headers Headers { get; }
 
+        ///// <summary>
+        ///// The original stream of the response.
+        ///// </summary>
+        //public abstract Stream Content { get; set; }
+
         /// <summary>
         /// The content of the response.
         /// </summary>
         public abstract T Resource { get; }
+
+        ///////// <summary>
+        ///////// The original stream of the response.
+        ///////// </summary>
+        //////public abstract Stream Content { get; set;  }
 
         /// <summary>
         /// Get Resource implicitly from <see cref="Response{T}"/>
