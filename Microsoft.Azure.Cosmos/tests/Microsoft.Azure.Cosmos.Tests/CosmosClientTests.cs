@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Specialized;
     using System.Globalization;
     using System.Linq;
     using System.Net;
@@ -14,8 +15,11 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Tests.Utils;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
 
     [TestClass]
     public class CosmosClientTests
@@ -37,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             FeedIterator<dynamic> feedIterator3 = database.GetContainerQueryIterator<dynamic>(queryText: "select * from T");
 
             string userAgent = cosmosClient.ClientContext.UserAgent;
-            // Dispose should be idempotent 
+            // Dispose should be idempotent
             cosmosClient.Dispose();
             cosmosClient.Dispose();
 
@@ -189,6 +193,77 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             Assert.IsTrue(validAuth);
+        }
+
+        [TestMethod]
+        public async Task ValidateClientKeyUpdateAsync()
+        {
+            const string exKeyField = "UsedKey";
+            string originalKey = TestKeyGenerator.GenerateAuthKey();
+            string newKey = TestKeyGenerator.GenerateAuthKey();
+            string currentKey = originalKey;
+
+            Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>();
+            mockHttpHandler.Setup(x => x.SendAsync(
+                It.IsAny<HttpRequestMessage>(),
+                It.IsAny<CancellationToken>()))
+                .Callback<HttpRequestMessage, CancellationToken>(
+                (request, cancellationToken) =>
+                {
+                    Assert.IsTrue(request.Headers.TryGetValues(Documents.HttpConstants.HttpHeaders.Authorization, out IEnumerable<string> authValues));
+
+                    AuthorizationHelper.GetResourceTypeAndIdOrFullName(request.RequestUri, out _, out string resourceType, out string resourceIdValue);
+
+                    AuthorizationHelper.ParseAuthorizationToken(authValues.First(),
+                        out ReadOnlyMemory<char> _,
+                        out ReadOnlyMemory<char> _,
+                        out ReadOnlyMemory<char> tokenOutput);
+
+                    Assert.IsTrue(AuthorizationHelper.CheckPayloadUsingKey(
+                        tokenOutput,
+                        "GET",
+                        resourceIdValue,
+                        resourceType,
+                        request.Headers.Aggregate(new NameValueCollectionWrapper(), (c, kvp) => { c.Add(kvp.Key, kvp.Value); return c; }),
+                        currentKey));
+
+                    Exception validationEx = new Exception($"Authenticated connection to {request.RequestUri} using {(currentKey == originalKey ? "orignal" : "new")} key.");
+                    validationEx.Data[exKeyField] = currentKey;
+
+                    throw validationEx;
+                });
+
+            using CosmosClient client = new CosmosClient(
+                "https://localhost:8081",
+                originalKey,
+                new CosmosClientOptions()
+                {
+                    HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
+                });
+
+            Container container = client.GetContainer("Test", "MockTest");
+
+            try
+            {
+                await container.ReadItemAsync<ToDoActivity>(Guid.NewGuid().ToString(), new PartitionKey(Guid.NewGuid().ToString()));
+                Assert.Fail("Expected client to throw a post authentication exception");
+            }
+            catch (Exception e)
+            {
+                Assert.AreEqual(originalKey, e.Data[exKeyField].ToString(), $"{e.Message} Expected original key to be used");
+            }
+
+            client.UpdateAuthKeyOrResourceToken(newKey);
+            currentKey = newKey;
+            try
+            {
+                await container.ReadItemAsync<ToDoActivity>(Guid.NewGuid().ToString(), new PartitionKey(Guid.NewGuid().ToString()));
+                Assert.Fail("Expected client to throw a post authentication exception");
+            }
+            catch (Exception e)
+            {
+                Assert.AreEqual(newKey, e.Data[exKeyField].ToString(), $"{e.Message} Expected new key to be used");
+            }
         }
 
         [TestMethod]

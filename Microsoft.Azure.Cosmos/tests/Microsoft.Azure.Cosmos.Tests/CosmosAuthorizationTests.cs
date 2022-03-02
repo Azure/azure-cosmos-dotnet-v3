@@ -8,14 +8,12 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using System.Net;
-    using System.Net.Http;
     using System.Reflection;
-    using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
+    using Microsoft.Azure.Cosmos.Tests.Utils;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -36,47 +34,305 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task ResourceTokenAsync()
+        public async Task AuthKeyAsync()
         {
-            using AuthorizationTokenProvider cosmosAuthorization = new AuthorizationTokenProviderResourceToken("VGhpcyBpcyBhIHNhbXBsZSBzdHJpbmc=");
+            string authKey = TestKeyGenerator.GenerateAuthKey();
+
+            StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection
+            {
+                { HttpConstants.HttpHeaders.XDate, new DateTime(2020, 02, 01, 10, 00, 00).ToString("r") }
+            };
+
+            using AuthorizationTokenProvider cosmosAuthorization = new AuthorizationTokenProviderMasterKey(authKey);
 
             {
-                StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
                 (string token, string payload) = await cosmosAuthorization.GetUserAuthorizationAsync(
-                    "dbs\\test",
+                    "dbs/test",
                     ResourceType.Database.ToResourceTypeString(),
                     "GET",
                     headers,
                     AuthorizationTokenType.PrimaryMasterKey);
 
-                Assert.AreEqual("VGhpcyBpcyBhIHNhbXBsZSBzdHJpbmc%3d", token);
-                Assert.IsNull(payload);
+                AuthorizationHelper.ParseAuthorizationToken(token,
+                    out ReadOnlyMemory<char> _,
+                    out ReadOnlyMemory<char> _,
+                    out ReadOnlyMemory<char> tokenOutput);
+
+                Assert.IsTrue(AuthorizationHelper.CheckPayloadUsingKey(
+                    tokenOutput,
+                    "GET",
+                    "dbs/test",
+                    ResourceType.Database.ToResourceTypeString(),
+                    headers,
+                    authKey));
+
+                Assert.IsNotNull(payload);
+                string[] payloadParts = payload.Split('\n');
+                Assert.AreEqual(6, payloadParts.Length);
+                Assert.AreEqual("get", payloadParts[0]);
+                Assert.AreEqual("database", payloadParts[1]);
+                Assert.AreEqual("dbs/test", payloadParts[2]);
             }
 
             {
-                StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
                 (string token, string payload) = await cosmosAuthorization.GetUserAuthorizationAsync(
-                    "dbs\\test\\colls\\abc",
+                    "dbs/test/colls/abc",
                     ResourceType.Collection.ToResourceTypeString(),
                     "PUT",
                     headers,
                     AuthorizationTokenType.PrimaryMasterKey);
 
-                Assert.AreEqual("VGhpcyBpcyBhIHNhbXBsZSBzdHJpbmc%3d", token);
+                AuthorizationHelper.ParseAuthorizationToken(token,
+                    out ReadOnlyMemory<char> _,
+                    out ReadOnlyMemory<char> _,
+                    out ReadOnlyMemory<char> tokenOutput);
+
+                Assert.IsTrue(AuthorizationHelper.CheckPayloadUsingKey(
+                    tokenOutput,
+                    "PUT",
+                    "dbs/test/colls/abc",
+                    ResourceType.Collection.ToResourceTypeString(),
+                    headers,
+                    authKey));
+
+                Assert.IsNotNull(payload);
+                string[] payloadParts = payload.Split('\n');
+                Assert.AreEqual(6, payloadParts.Length);
+                Assert.AreEqual("put", payloadParts[0]);
+                Assert.AreEqual("collection", payloadParts[1]);
+                Assert.AreEqual("dbs/test/colls/abc", payloadParts[2]);
+            }
+
+            {
+                (string token, string payload) = await cosmosAuthorization.GetUserAuthorizationAsync(
+                    "dbs/test/colls/abc/docs/1234",
+                    ResourceType.Document.ToResourceTypeString(),
+                    "GET",
+                    headers,
+                    AuthorizationTokenType.PrimaryMasterKey);
+
+                AuthorizationHelper.ParseAuthorizationToken(token,
+                    out ReadOnlyMemory<char> _,
+                    out ReadOnlyMemory<char> _,
+                    out ReadOnlyMemory<char> tokenOutput);
+
+                Assert.IsTrue(AuthorizationHelper.CheckPayloadUsingKey(
+                    tokenOutput,
+                    "GET",
+                    "dbs/test/colls/abc/docs/1234",
+                    ResourceType.Document.ToResourceTypeString(),
+                    headers,
+                    authKey));
+
+                Assert.IsNotNull(payload);
+                string[] payloadParts = payload.Split('\n');
+                Assert.AreEqual(6, payloadParts.Length);
+                Assert.AreEqual("get", payloadParts[0]);
+                Assert.AreEqual("document", payloadParts[1]);
+                Assert.AreEqual("dbs/test/colls/abc/docs/1234", payloadParts[2]);
+            }
+        }
+
+        [TestMethod]
+        public async Task AuthKeyUpdateAsync()
+        {
+            string originalAuthKey = TestKeyGenerator.GenerateAuthKey();
+            string newAuthKey = TestKeyGenerator.GenerateAuthKey();
+
+            StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection
+            {
+                { HttpConstants.HttpHeaders.XDate, new DateTime(2020, 02, 01, 10, 00, 00).ToString("r") }
+            };
+
+            using AuthorizationTokenProvider cosmosAuthorization = new AuthorizationTokenProviderMasterKey(originalAuthKey);
+
+            {
+                (string token, string _) = await cosmosAuthorization.GetUserAuthorizationAsync(
+                    "dbs/test",
+                    ResourceType.Database.ToResourceTypeString(),
+                    "GET",
+                    headers,
+                    AuthorizationTokenType.PrimaryMasterKey);
+
+                AuthorizationHelper.ParseAuthorizationToken(token,
+                    out _,
+                    out _,
+                    out ReadOnlyMemory<char> tokenOutput);
+
+                Assert.IsTrue(AuthorizationHelper.CheckPayloadUsingKey(
+                    tokenOutput,
+                    "GET",
+                    "dbs/test",
+                    ResourceType.Database.ToResourceTypeString(),
+                    headers,
+                    originalAuthKey));
+
+                Assert.IsFalse(AuthorizationHelper.CheckPayloadUsingKey(
+                    tokenOutput,
+                    "GET",
+                    "dbs/test",
+                    ResourceType.Database.ToResourceTypeString(),
+                    headers,
+                    newAuthKey));
+            }
+
+            // Update the key
+            (cosmosAuthorization as IDynamicKeyTokenProvider).UpdateKey(newAuthKey);
+
+            {
+                (string token, _) = await cosmosAuthorization.GetUserAuthorizationAsync(
+                    "dbs/test/colls/abc",
+                    ResourceType.Collection.ToResourceTypeString(),
+                    "PUT",
+                    headers,
+                    AuthorizationTokenType.PrimaryMasterKey);
+
+                AuthorizationHelper.ParseAuthorizationToken(token,
+                    out _,
+                    out _,
+                    out ReadOnlyMemory<char> tokenOutput);
+
+                Assert.IsFalse(AuthorizationHelper.CheckPayloadUsingKey(
+                    tokenOutput,
+                    "PUT",
+                    "dbs/test/colls/abc",
+                    ResourceType.Collection.ToResourceTypeString(),
+                    headers,
+                    originalAuthKey));
+
+                Assert.IsTrue(AuthorizationHelper.CheckPayloadUsingKey(
+                    tokenOutput,
+                    "PUT",
+                    "dbs/test/colls/abc",
+                    ResourceType.Collection.ToResourceTypeString(),
+                    headers,
+                    newAuthKey));
+            }
+
+            {
+                (string token, _) = await cosmosAuthorization.GetUserAuthorizationAsync(
+                    "dbs/test/colls/abc/docs/1234",
+                    ResourceType.Document.ToResourceTypeString(),
+                    "GET",
+                    headers,
+                    AuthorizationTokenType.PrimaryMasterKey);
+
+                AuthorizationHelper.ParseAuthorizationToken(token,
+                    out _,
+                    out _,
+                    out ReadOnlyMemory<char> tokenOutput);
+
+                Assert.IsFalse(AuthorizationHelper.CheckPayloadUsingKey(
+                    tokenOutput,
+                    "GET",
+                    "dbs/test/colls/abc/docs/1234",
+                    ResourceType.Document.ToResourceTypeString(),
+                    headers,
+                    originalAuthKey));
+
+                Assert.IsTrue(AuthorizationHelper.CheckPayloadUsingKey(
+                    tokenOutput,
+                    "GET",
+                    "dbs/test/colls/abc/docs/1234",
+                    ResourceType.Document.ToResourceTypeString(),
+                    headers,
+                    newAuthKey));
+            }
+        }
+
+        [TestMethod]
+        public async Task ResourceTokenAsync()
+        {
+            string resourceToken = TestKeyGenerator.GenerateResourceToken();
+            using AuthorizationTokenProvider cosmosAuthorization = new AuthorizationTokenProviderResourceToken(resourceToken);
+
+            {
+                StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
+                (string token, string payload) = await cosmosAuthorization.GetUserAuthorizationAsync(
+                    "dbs/test",
+                    ResourceType.Database.ToResourceTypeString(),
+                    "GET",
+                    headers,
+                    AuthorizationTokenType.PrimaryMasterKey);
+
+                Assert.AreEqual(HttpUtility.UrlEncode(resourceToken), token);
                 Assert.IsNull(payload);
             }
 
             {
                 StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
                 (string token, string payload) = await cosmosAuthorization.GetUserAuthorizationAsync(
-                    "dbs\\test\\colls\\abc\\docs\\1234",
+                    "dbs/test/colls/abc",
+                    ResourceType.Collection.ToResourceTypeString(),
+                    "PUT",
+                    headers,
+                    AuthorizationTokenType.PrimaryMasterKey);
+
+                Assert.AreEqual(HttpUtility.UrlEncode(resourceToken), token);
+                Assert.IsNull(payload);
+            }
+
+            {
+                StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
+                (string token, string payload) = await cosmosAuthorization.GetUserAuthorizationAsync(
+                    "dbs/test/colls/abc/docs/1234",
                     ResourceType.Document.ToResourceTypeString(),
                     "GET",
                     headers,
                     AuthorizationTokenType.PrimaryMasterKey);
 
-                Assert.AreEqual("VGhpcyBpcyBhIHNhbXBsZSBzdHJpbmc%3d", token);
+                Assert.AreEqual(HttpUtility.UrlEncode(resourceToken), token);
                 Assert.IsNull(payload);
+            }
+        }
+
+        [TestMethod]
+        public async Task ResourceTokenUpdateAsync()
+        {
+            string originalResourceToken = TestKeyGenerator.GenerateResourceToken();
+            string newResourceToken = TestKeyGenerator.GenerateResourceToken();
+            using AuthorizationTokenProvider cosmosAuthorization = new AuthorizationTokenProviderResourceToken(originalResourceToken);
+
+            {
+                StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
+                (string token, string payload) = await cosmosAuthorization.GetUserAuthorizationAsync(
+                    "dbs/test",
+                    ResourceType.Database.ToResourceTypeString(),
+                    "GET",
+                    headers,
+                    AuthorizationTokenType.PrimaryMasterKey);
+
+                Assert.AreEqual(HttpUtility.UrlEncode(originalResourceToken), token);
+                Assert.AreNotEqual(HttpUtility.UrlEncode(newResourceToken), token);
+            }
+
+            // Update the resource token
+            (cosmosAuthorization as IDynamicKeyTokenProvider).UpdateKey(newResourceToken);
+
+            {
+                StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
+                (string token, string payload) = await cosmosAuthorization.GetUserAuthorizationAsync(
+                    "dbs/test/colls/abc",
+                    ResourceType.Collection.ToResourceTypeString(),
+                    "PUT",
+                    headers,
+                    AuthorizationTokenType.PrimaryMasterKey);
+
+                Assert.AreNotEqual(HttpUtility.UrlEncode(originalResourceToken), token);
+                Assert.AreEqual(HttpUtility.UrlEncode(newResourceToken), token);
+            }
+
+            {
+                StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
+                (string token, string payload) = await cosmosAuthorization.GetUserAuthorizationAsync(
+                    "dbs/test/colls/abc/docs/1234",
+                    ResourceType.Document.ToResourceTypeString(),
+                    "GET",
+                    headers,
+                    AuthorizationTokenType.PrimaryMasterKey);
+
+                Assert.AreNotEqual(HttpUtility.UrlEncode(originalResourceToken), token);
+                Assert.AreEqual(HttpUtility.UrlEncode(newResourceToken), token);
             }
         }
 
@@ -95,7 +351,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
                 (string token, string payload) = await cosmosAuthorization.GetUserAuthorizationAsync(
-                    "dbs\\test",
+                    "dbs/test",
                     ResourceType.Database.ToResourceTypeString(),
                     "GET",
                     headers,
@@ -110,7 +366,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
                 (string token, string payload) = await cosmosAuthorization.GetUserAuthorizationAsync(
-                    "dbs\\test\\colls\\abc",
+                    "dbs/test/colls/abc",
                     ResourceType.Collection.ToResourceTypeString(),
                     "PUT",
                     headers,
@@ -124,7 +380,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
                 (string token, string payload) = await cosmosAuthorization.GetUserAuthorizationAsync(
-                    "dbs\\test\\colls\\abc\\docs\\1234",
+                    "dbs/test/colls/abc/docs/1234",
                     ResourceType.Document.ToResourceTypeString(),
                     "GET",
                     headers,
@@ -340,7 +596,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 try
                 {
                     await semaphoreSlim.WaitAsync();
-                
+
                     Assert.AreEqual(semaphoreCount-1, semaphoreSlim.CurrentCount, "Only a single refresh should occur at a time.");
                     if (throwExceptionOnGetToken)
                     {
@@ -407,7 +663,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
                     tasks.Add(task);
                 }
-                
+
                 await Task.WhenAll(tasks);
 
                 this.ValidateSemaphoreIsReleased(tokenCredentialCache);

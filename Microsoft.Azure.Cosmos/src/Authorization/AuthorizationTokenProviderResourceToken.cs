@@ -10,20 +10,19 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
-    
-    internal sealed class AuthorizationTokenProviderResourceToken : AuthorizationTokenProvider
+
+    internal sealed class AuthorizationTokenProviderResourceToken : AuthorizationTokenProvider, IDynamicKeyTokenProvider
     {
-        private readonly string urlEncodedAuthKeyResourceToken;
-        private readonly ValueTask<string> urlEncodedAuthKeyResourceTokenValueTask;
-        private readonly ValueTask<(string, string)> urlEncodedAuthKeyResourceTokenValueTaskWithPayload;
         private readonly ValueTask defaultValueTask;
+
+        private string urlEncodedAuthKeyResourceToken;
+        private ValueTask<string> urlEncodedAuthKeyResourceTokenValueTask;
+        private ValueTask<(string, string)> urlEncodedAuthKeyResourceTokenValueTaskWithPayload;
 
         public AuthorizationTokenProviderResourceToken(
             string authKeyResourceToken)
         {
-            this.urlEncodedAuthKeyResourceToken = HttpUtility.UrlEncode(authKeyResourceToken);
-            this.urlEncodedAuthKeyResourceTokenValueTask = new ValueTask<string>(this.urlEncodedAuthKeyResourceToken);
-            this.urlEncodedAuthKeyResourceTokenValueTaskWithPayload = new ValueTask<(string, string)>((this.urlEncodedAuthKeyResourceToken, default));
+            this.SetResourceToken(authKeyResourceToken);
             this.defaultValueTask = new ValueTask();
         }
 
@@ -70,6 +69,18 @@ namespace Microsoft.Azure.Cosmos
 
         public override void Dispose()
         {
+        }
+
+        void IDynamicKeyTokenProvider.UpdateKey(string authKey)
+        {
+            this.SetResourceToken(authKey);
+        }
+
+        private void SetResourceToken(string authKeyResourceToken)
+        {
+            this.urlEncodedAuthKeyResourceToken = HttpUtility.UrlEncode(authKeyResourceToken);
+            this.urlEncodedAuthKeyResourceTokenValueTask = new ValueTask<string>(this.urlEncodedAuthKeyResourceToken);
+            this.urlEncodedAuthKeyResourceTokenValueTaskWithPayload = new ValueTask<(string, string)>((this.urlEncodedAuthKeyResourceToken, default));
         }
     }
 }

@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.Net;
     using System.Security;
@@ -15,30 +16,33 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
-    internal sealed class AuthorizationTokenProviderMasterKey : AuthorizationTokenProvider
+    internal sealed class AuthorizationTokenProviderMasterKey : AuthorizationTokenProvider, IDynamicKeyTokenProvider
     {
         ////The MAC signature found in the HTTP request is not the same as the computed signature.Server used following string to sign
         ////The input authorization token can't serve the request. Please check that the expected payload is built as per the protocol, and check the key being used. Server used the following payload to sign
         private const string MacSignatureString = "to sign";
         private const string EnableAuthFailureTracesConfig = "enableAuthFailureTraces";
         private readonly Lazy<bool> enableAuthFailureTraces;
-        private readonly IComputeHash authKeyHashFunction;
+        private readonly List<IComputeHash> hashFunctionHistory;
+        private IComputeHash authKeyHashFunction;
         private bool isDisposed = false;
 
         public AuthorizationTokenProviderMasterKey(IComputeHash computeHash)
         {
-            this.authKeyHashFunction = computeHash ?? throw new ArgumentNullException(nameof(computeHash));
+            this.hashFunctionHistory = new List<IComputeHash>();
+            this.SetHashFunction(computeHash);
+
             this.enableAuthFailureTraces = new Lazy<bool>(() =>
             {
 #if NETSTANDARD20
                 // GetEntryAssembly returns null when loaded from native netstandard2.0
                 if (System.Reflection.Assembly.GetEntryAssembly() == null)
                 {
-                        return false;
+                    return false;
                 }
 #endif
                 string enableAuthFailureTracesString = System.Configuration.ConfigurationManager.AppSettings[EnableAuthFailureTracesConfig];
-                if (string.IsNullOrEmpty(enableAuthFailureTracesString) || 
+                if (string.IsNullOrEmpty(enableAuthFailureTracesString) ||
                     !bool.TryParse(enableAuthFailureTracesString, out bool enableAuthFailureTracesFlag))
                 {
                     return false;
@@ -144,7 +148,7 @@ namespace Microsoft.Azure.Cosmos
                 && dce.Message.Contains(AuthorizationTokenProviderMasterKey.MacSignatureString))
             {
                 // The following code is added such that we get trace data on unexpected 401/HMAC errors and it is
-                //   disabled by default. The trace will be trigger only when "enableAuthFailureTraces" named configuration 
+                //   disabled by default. The trace will be trigger only when "enableAuthFailureTraces" named configuration
                 //   is set to true (currently true for CTL runs).
                 //   For production we will work directly with specific customers in order to enable this configuration.
                 string normalizedPayload = AuthorizationTokenProviderMasterKey.NormalizeAuthorizationPayload(payload);
@@ -171,9 +175,24 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!this.isDisposed)
             {
-                this.authKeyHashFunction.Dispose();
+                foreach (IComputeHash hashFunction in this.hashFunctionHistory)
+                {
+                    hashFunction.Dispose();
+                }
+
                 this.isDisposed = true;
             }
+        }
+
+        void IDynamicKeyTokenProvider.UpdateKey(string authKey)
+        {
+            this.SetHashFunction(new StringHMACSHA256Hash(authKey));
+        }
+
+        private void SetHashFunction(IComputeHash computeHash)
+        {
+            this.authKeyHashFunction = computeHash ?? throw new ArgumentNullException(nameof(computeHash));
+            this.hashFunctionHistory.Add(computeHash);
         }
 
         private static string NormalizeAuthorizationPayload(string input)

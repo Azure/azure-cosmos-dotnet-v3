@@ -535,7 +535,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal DocumentClient(Uri serviceEndpoint, string authKey)
         {
-            // do nothing 
+            // do nothing
             this.ServiceEndpoint = serviceEndpoint;
             this.ConnectionPolicy = new ConnectionPolicy();
         }
@@ -561,7 +561,7 @@ namespace Microsoft.Azure.Cosmos
         internal GlobalAddressResolver AddressResolver { get; private set; }
 
         internal GlobalEndpointManager GlobalEndpointManager { get; private set; }
-        
+
         internal GlobalPartitionEndpointManager PartitionKeyRangeLocation { get; private set; }
 
         /// <summary>
@@ -588,6 +588,23 @@ namespace Microsoft.Azure.Cosmos
         public Task OpenAsync(CancellationToken cancellationToken = default)
         {
             return TaskHelper.InlineIfPossibleAsync(() => this.OpenPrivateInlineAsync(cancellationToken), null, cancellationToken);
+        }
+
+        /// <summary>
+        /// Updates the cosmos account key or resource token used by this client.
+        /// </summary>
+        /// <param name="authKeyOrResourceToken">The cosmos account key or resource token.</param>
+        /// <exception cref="InvalidOperationException">Thrown if the client was not created using a key or resource token.</exception>
+        public void UpdateAuthKeyOrResourceToken(string authKeyOrResourceToken)
+        {
+            if (this.cosmosAuthorization is not IDynamicKeyTokenProvider dynamicKeyTokenProvider)
+            {
+                throw new InvalidOperationException("Authentication Key or Resource Token may only be updated for clients created using a key or resource token");
+            }
+
+            dynamicKeyTokenProvider.UpdateKey(authKeyOrResourceToken);
+            DefaultTrace.TraceInformation("Updated cosmos account key or resource token for document client with id {0}.",
+                this.traceId);
         }
 
         private async Task OpenPrivateInlineAsync(CancellationToken cancellationToken)
@@ -1741,7 +1758,7 @@ namespace Microsoft.Azure.Cosmos
             if (options?.PartitionKey == null)
             {
                 requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
-                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
+                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton),
                     requestRetryPolicy);
             }
 
@@ -3115,18 +3132,18 @@ namespace Microsoft.Azure.Cosmos
             if ((options == null) || (options.PartitionKey == null))
             {
                 requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
-                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
+                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton),
                     requestRetryPolicy);
             }
 
             return await TaskHelper.InlineIfPossible(
                 () => this.ReplaceDocumentPrivateAsync(
-                    documentLink, 
-                    document, 
-                    options, 
-                    requestRetryPolicy, 
-                    cancellationToken), 
-                requestRetryPolicy, 
+                    documentLink,
+                    document,
+                    options,
+                    requestRetryPolicy,
+                    cancellationToken),
+                requestRetryPolicy,
                 cancellationToken);
         }
 
@@ -4261,9 +4278,9 @@ namespace Microsoft.Azure.Cosmos
         /// For an Offer, id is always generated internally by the system when the linked resource is created. id and _rid are always the same for Offer.
         /// </para>
         /// <para>
-        /// Refer to https://docs.microsoft.com/en-us/azure/cosmos-db/how-to-provision-container-throughput to learn more about 
+        /// Refer to https://docs.microsoft.com/en-us/azure/cosmos-db/how-to-provision-container-throughput to learn more about
         /// minimum throughput of a Cosmos container (or a database)
-        /// To retrieve the minimum throughput for a collection/database, use the following sample 
+        /// To retrieve the minimum throughput for a collection/database, use the following sample
         /// <code language="c#">
         /// <![CDATA[
         /// // Find the offer for the collection by SelfLink
@@ -5693,7 +5710,7 @@ namespace Microsoft.Azure.Cosmos
             if (options?.PartitionKey == null)
             {
                 requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
-                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
+                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton),
                     requestRetryPolicy);
             }
 
