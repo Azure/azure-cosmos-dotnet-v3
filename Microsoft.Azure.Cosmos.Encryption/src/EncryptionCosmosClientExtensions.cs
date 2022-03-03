@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using global::Azure.Core.Cryptography;
     using Microsoft.Data.Encryption.Cryptography;
 
     /// <summary>
@@ -16,15 +17,24 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Get Cosmos Client with Encryption support for performing operations using client-side encryption.
         /// </summary>
         /// <param name="cosmosClient">Regular Cosmos Client.</param>
-        /// <param name="encryptionKeyWrapProvider">EncryptionKeyWrapProvider, provider that allows interaction with the master keys.</param>
+        /// <param name="keyEncryptionKeyResolver">IKeyEncryptionKeyResolver that allows interaction with the key encryption keys.</param>
+        /// <param name="keyEncryptionKeyResolverId">Identifier of the resolver, eg. KeyEncryptionKeyResolverId.AzureKeyVault. </param>
+        /// <param name="keyCacheTimeToLive">Time for which raw keys are cached in-memory. Defaults to 1 hour.</param>
         /// <returns> CosmosClient to perform operations supporting client-side encryption / decryption.</returns>
         public static CosmosClient WithEncryption(
             this CosmosClient cosmosClient,
-            EncryptionKeyWrapProvider encryptionKeyWrapProvider)
+            IKeyEncryptionKeyResolver keyEncryptionKeyResolver,
+            string keyEncryptionKeyResolverId,
+            TimeSpan? keyCacheTimeToLive = null)
         {
-            if (encryptionKeyWrapProvider == null)
+            if (keyEncryptionKeyResolver == null)
             {
-                throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
+                throw new ArgumentNullException(nameof(keyEncryptionKeyResolver));
+            }
+
+            if (keyEncryptionKeyResolverId == null)
+            {
+                throw new ArgumentNullException(nameof(keyEncryptionKeyResolverId));
             }
 
             if (cosmosClient == null)
@@ -32,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(cosmosClient));
             }
 
-            return new EncryptionCosmosClient(cosmosClient, encryptionKeyWrapProvider);
+            return new EncryptionCosmosClient(cosmosClient, keyEncryptionKeyResolver, keyEncryptionKeyResolverId, keyCacheTimeToLive);
         }
     }
 }
