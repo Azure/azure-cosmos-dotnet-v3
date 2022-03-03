@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     {
         public bool Error { get; set; }
         public string ExceptionStackTrace { get; set; }
-        public string DbSystem => "cosmosdb";
+        public string DbSystem => "Cosmos";
         public Uri AccountName { get; set; }
         public string UserAgent { get; set; }
         public string DbName { get; set; }
@@ -24,6 +24,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         public string ContainerName { get; set; }
         public double? RequestCharge { get; set; }
         public string QueryText { get; set; }
+        public long? RequestSize { get; set; }
+        public long? ResponseSize { get; set; }
 
         public ConnectionMode ConnectionMode { get; set; }
         public CosmosDiagnostics RequestDiagnostics { get; set; }

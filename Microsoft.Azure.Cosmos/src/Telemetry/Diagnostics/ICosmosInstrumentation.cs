@@ -36,6 +36,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             /// <param name="queryText"></param>
             /// <param name="subStatusCode"></param>
             /// <param name="pageSize"></param>
+            /// <param name="requestSize"></param>
+            /// <param name="responseSize"></param>
             public void Record(double? requestCharge = null,
                 string operationType = null,
                 HttpStatusCode? statusCode = null, 
@@ -43,7 +45,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                 string containerId = null,
                 string queryText = null,
                 string subStatusCode = null,
-                string pageSize = null);
+                string pageSize = null,
+                long? requestSize = null,
+                long? responseSize = null);
 
             /// <summary>
             /// Record with exception

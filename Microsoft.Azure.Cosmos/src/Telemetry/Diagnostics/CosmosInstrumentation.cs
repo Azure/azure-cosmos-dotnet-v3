@@ -40,7 +40,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             string containerId = null,
             string queryText = null,
             string subStatusCode = null,
-            string pageSize = null)
+            string pageSize = null,
+            long? requestSize = null,
+            long? responseSize = null)
         {
             if (this.Attributes != null)
             {
@@ -82,7 +84,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                 if (requestCharge.HasValue)
                 {
                     this.Attributes.RequestCharge = requestCharge.Value;
-                } 
+                }
+
+                if (requestSize.HasValue)
+                {
+                    this.Attributes.RequestSize = requestSize.Value;
+                }
+
+                if (responseSize.HasValue)
+                {
+                    this.Attributes.ResponseSize = responseSize.Value;
+                }
 
             }
         }
@@ -141,9 +153,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
             this.scope.AddAttribute(CosmosInstrumentationConstants.AccountNameKey, this.Attributes.AccountName?.ToString());
             this.scope.AddAttribute(CosmosInstrumentationConstants.ContainerNameKey, this.Attributes.ContainerName);
+
             this.scope.AddAttribute(CosmosInstrumentationConstants.DbNameKey, this.Attributes.DbName);
             this.scope.AddAttribute(CosmosInstrumentationConstants.DbOperationKey, this.Attributes.DbOperation);
             this.scope.AddAttribute(CosmosInstrumentationConstants.DbSystemKey, this.Attributes.DbSystem);
+            this.scope.AddAttribute(CosmosInstrumentationConstants.DbName, this.Attributes.DbName);
+            this.scope.AddAttribute(CosmosInstrumentationConstants.DbSystemName, "Cosmos");
+            this.scope.AddAttribute(CosmosInstrumentationConstants.NetPeerName, this.Attributes.AccountName);
+            this.scope.AddAttribute(CosmosInstrumentationConstants.NetPeerPort, "8080");
+
             if (this.Attributes.HttpStatusCode.HasValue)
             {
                 this.scope.AddAttribute(CosmosInstrumentationConstants.HttpStatusCodeKey, (int)this.Attributes.HttpStatusCode.Value);

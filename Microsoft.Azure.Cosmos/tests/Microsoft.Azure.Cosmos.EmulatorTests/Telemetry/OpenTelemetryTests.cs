@@ -21,24 +21,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class OpenTelemetryTests : BaseCosmosClientHelper
     {
         private CosmosClientBuilder cosmosClientBuilder;
-        //private static TracerProvider Provider;
-        private static ClientDiagnosticListener testListener;
+        private static TracerProvider Provider;
+        //private static ClientDiagnosticListener testListener;
 
         [ClassInitialize]
         public static void ClassInitialize(TestContext context)
         {
-            OpenTelemetryTests.testListener = new ClientDiagnosticListener("Azure.Cosmos");
+            //OpenTelemetryTests.testListener = new ClientDiagnosticListener("Azure.Cosmos");
 
-           /* AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
+            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
 
             OpenTelemetryTests.Provider = Sdk.CreateTracerProviderBuilder()
-                .AddSource(CosmosInstrumentationConstants.DiagnosticNamespace) // Collect all traces from Cosmos Db
+                .AddSource("Azure.*") // Collect all traces from Cosmos Db
                 .SetResourceBuilder(
                     ResourceBuilder.CreateDefault()
                         .AddService(serviceName: "Cosmos SDK Test Point Create Item", serviceVersion: "1.0"))
                 .AddAzureMonitorTraceExporter(options => options.ConnectionString =
                     "InstrumentationKey=2fabff39-6a32-42da-9e8f-9fcff7d99c6b;IngestionEndpoint=https://westus2-2.in.applicationinsights.azure.com/") // Export traces to Azure Monitor
-                .Build();*/
+                .Build();
         }
 
         [TestInitialize]
@@ -50,9 +50,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [ClassCleanup]
         public static void FinalCleanup()
         {
-            //OpenTelemetryTests.Provider.Dispose();
+            OpenTelemetryTests.Provider.Dispose();
 
-            OpenTelemetryTests.testListener.Dispose();
+            //OpenTelemetryTests.testListener.Dispose();
         }
         
         [TestCleanup]

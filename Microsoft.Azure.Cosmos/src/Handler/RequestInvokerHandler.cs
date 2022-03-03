@@ -351,7 +351,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                                        containerId: cosmosContainerCore?.Id,
                                                        databaseId: cosmosContainerCore?.Database?.Id,
                                                        subStatusCode: response?.Headers?.SubStatusCode.ToSubStatusCodeString(),
-                                                       pageSize: request?.Headers?.PageSize);
+                                                       pageSize: request?.Headers?.PageSize,
+                                                       requestSize: request?.Content?.Length,
+                                                       responseSize: response?.Content?.Length);
 
                     return response;
 

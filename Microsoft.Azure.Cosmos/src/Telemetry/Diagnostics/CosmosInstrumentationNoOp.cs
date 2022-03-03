@@ -31,12 +31,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             // NoOp
         }
 
-        void ICosmosInstrumentation.Record(double? requestCharge, string operationType, HttpStatusCode? statusCode, string databaseId, string containerId, string queryText, string subStatusCode, string pageSize)
+        void ICosmosInstrumentation.RecordWithException(double? requestCharge, string operationType, HttpStatusCode? statusCode, string databaseId, string containerId, Exception exception, string queryText, string subStatusCode, string pageSize)
         {
             // NoOp
         }
 
-        void ICosmosInstrumentation.RecordWithException(double? requestCharge, string operationType, HttpStatusCode? statusCode, string databaseId, string containerId, Exception exception, string queryText, string subStatusCode, string pageSize)
+        void ICosmosInstrumentation.Record(double? requestCharge, string operationType, HttpStatusCode? statusCode, string databaseId, string containerId, string queryText, string subStatusCode, string pageSize, long? requestSize, long? responseSize)
         {
             // NoOp
         }
