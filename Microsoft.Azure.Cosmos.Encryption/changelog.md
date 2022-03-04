@@ -3,6 +3,12 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="1.0.0-previewV20"/> [1.0.0-previewV20](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV20) - 2022-03-07
+
+#### Added
+- [#3063](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3063) Adds dependency on the latest preview SDK version with Algorithm in EncryptionKeyWrapMetadata.
+- [#3050](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3050) Adds the use of Azure.Core interfaces in public surface.
+
 ### <a name="1.0.0-previewV19"/> [1.0.0-previewV19](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV19) - 2022-01-13
 
 #### Added
