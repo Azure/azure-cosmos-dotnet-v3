@@ -3855,6 +3855,20 @@
           "Attributes": [],
           "MethodInfo": "Int32 GetHashCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.String Algorithm[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"algorithm\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "System.String Algorithm;CanRead:True;CanWrite:True;System.String get_Algorithm();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_Algorithm()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_Algorithm();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.String get_Name()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -3902,10 +3916,10 @@
           "Attributes": [],
           "MethodInfo": "[Void .ctor(Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata), Void .ctor(Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata)]"
         },
-        "Void .ctor(System.String, System.String, System.String)": {
+        "Void .ctor(System.String, System.String, System.String, System.String)": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "[Void .ctor(System.String, System.String, System.String), Void .ctor(System.String, System.String, System.String)]"
+          "MethodInfo": "[Void .ctor(System.String, System.String, System.String, System.String), Void .ctor(System.String, System.String, System.String, System.String)]"
         }
       },
       "NestedTypes": {}
