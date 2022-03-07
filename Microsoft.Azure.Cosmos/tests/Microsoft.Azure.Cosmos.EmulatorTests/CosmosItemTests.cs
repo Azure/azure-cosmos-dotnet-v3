@@ -184,6 +184,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ClientEventualWriteStrongReadConsistencyTestAsync()
+        {
+            RequestHandlerHelper handlerHelper = new RequestHandlerHelper();
+            using CosmosClient cosmosClient = TestCommon.CreateCosmosClient(x =>
+                x.WithConsistencyLevel(Cosmos.ConsistencyLevel.Eventual).AddCustomHandlers(handlerHelper));
+
+            Container consistencyContainer = cosmosClient.GetContainer(this.database.Id, this.Container.Id);
+
+
+            int requestCount = 0;
+            handlerHelper.UpdateRequestMessage = (request) =>
+            {
+                if(request.OperationType == OperationType.Read)
+                {
+                    Assert.AreEqual(Cosmos.ConsistencyLevel.Strong.ToString(), request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel]);
+                } 
+                else
+                {
+                    Assert.AreEqual(Cosmos.ConsistencyLevel.Eventual.ToString(), request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel]);
+                }
+                
+                requestCount++;
+            };
+
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            ItemResponse<ToDoActivity> response = await consistencyContainer.CreateItemAsync<ToDoActivity>(item: testItem);
+
+            ItemRequestOptions requestOptions = new();
+            requestOptions.ConsistencyLevel = Cosmos.ConsistencyLevel.Strong;
+
+            response = await consistencyContainer.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk), requestOptions);
+
+            Assert.AreEqual(2, requestCount);
+        }
+
+        [TestMethod]
         public async Task NegativeCreateItemTest()
         {
             HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper();
