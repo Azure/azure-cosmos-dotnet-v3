@@ -269,7 +269,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 if (ex.StatusCode == HttpStatusCode.NotFound)
                 {
-                    throw new InvalidOperationException($"Encryption Based Container without Client Encryption Keys. Please make sure you have created the Client Encryption Keys:{ex.Message}. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                    throw new InvalidOperationException($"Encryption Based Container without Client Encryption Keys. Please make sure you have created the Client Encryption Keys:{ex.Message}. Please refer to https://aka.ms/CosmosClientEncryption for more details.");
                 }
                 else
                 {
