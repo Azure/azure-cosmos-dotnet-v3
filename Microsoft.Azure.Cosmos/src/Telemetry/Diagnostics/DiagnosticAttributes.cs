@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     {
         public bool Error { get; set; }
         public string ExceptionStackTrace { get; set; }
-        public string DbSystem => "Cosmos";
+        public string DbSystem => "CosmosDB";
         public Uri AccountName { get; set; }
         public string UserAgent { get; set; }
         public string DbName { get; set; }

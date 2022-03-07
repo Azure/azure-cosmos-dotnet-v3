@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         .AddService(serviceName: "Cosmos SDK Test Point Create Item", serviceVersion: "1.0"))
                 .AddAzureMonitorTraceExporter(options => options.ConnectionString =
                     "InstrumentationKey=2fabff39-6a32-42da-9e8f-9fcff7d99c6b;IngestionEndpoint=https://westus2-2.in.applicationinsights.azure.com/") // Export traces to Azure Monitor
+                .AddConsoleExporter()
                 .Build();
         }
 

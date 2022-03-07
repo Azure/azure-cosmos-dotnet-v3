@@ -151,16 +151,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                 return;
             }
 
-            this.scope.AddAttribute(CosmosInstrumentationConstants.AccountNameKey, this.Attributes.AccountName?.ToString());
+            //this.scope.AddAttribute(CosmosInstrumentationConstants.AccountNameKey, this.Attributes.AccountName?.ToString());
             this.scope.AddAttribute(CosmosInstrumentationConstants.ContainerNameKey, this.Attributes.ContainerName);
 
-            this.scope.AddAttribute(CosmosInstrumentationConstants.DbNameKey, this.Attributes.DbName);
+            //this.scope.AddAttribute(CosmosInstrumentationConstants.DbNameKey, this.Attributes.DbName);
             this.scope.AddAttribute(CosmosInstrumentationConstants.DbOperationKey, this.Attributes.DbOperation);
-            this.scope.AddAttribute(CosmosInstrumentationConstants.DbSystemKey, this.Attributes.DbSystem);
+            //this.scope.AddAttribute(CosmosInstrumentationConstants.DbSystemKey, this.Attributes.DbSystem);
             this.scope.AddAttribute(CosmosInstrumentationConstants.DbName, this.Attributes.DbName);
-            this.scope.AddAttribute(CosmosInstrumentationConstants.DbSystemName, "Cosmos");
-            this.scope.AddAttribute(CosmosInstrumentationConstants.NetPeerName, this.Attributes.AccountName);
-            this.scope.AddAttribute(CosmosInstrumentationConstants.NetPeerPort, "8080");
+            this.scope.AddAttribute(CosmosInstrumentationConstants.DbSystemName, this.Attributes.DbSystem);
+            this.scope.AddAttribute(CosmosInstrumentationConstants.NetPeerName, this.Attributes.AccountName.Host);
+            this.scope.AddAttribute(CosmosInstrumentationConstants.NetPeerPort, this.Attributes.AccountName.Port);
 
             if (this.Attributes.HttpStatusCode.HasValue)
             {

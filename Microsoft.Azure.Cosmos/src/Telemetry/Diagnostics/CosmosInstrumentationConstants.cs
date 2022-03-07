@@ -10,9 +10,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         public const string ResourceProviderNamespace = "Microsoft.Azure.Cosmos";
         public const string OperationPrefix = "Cosmos";
 
-        public const string DbSystemKey = "db.type";
+/*        public const string DbSystemKey = "db.type";
         public const string AccountNameKey = "db.url";
-        public const string DbNameKey = "db.instance";
+        public const string DbNameKey = "db.instance";*/
         public const string DbOperationKey = "db.statement";
 
         public const string DbName = "db.name";
