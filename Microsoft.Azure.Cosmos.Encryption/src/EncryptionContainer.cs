@@ -719,6 +719,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return this.ResponseFactory.CreateItemFeedResponse<T>(responseMessage);
         }
 
+        public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+               Cosmos.PartitionKey partitionKey,
+               RequestOptions requestOptions = null,
+               CancellationToken cancellationToken = default)
+        {
+            return this.container.DeleteAllItemsByPartitionKeyStreamAsync(
+                partitionKey,
+                requestOptions,
+                cancellationToken);
+        }
+
         public async Task<EncryptionSettings> GetOrUpdateEncryptionSettingsFromCacheAsync(
             EncryptionSettings obsoleteEncryptionSettings,
             CancellationToken cancellationToken)
@@ -729,16 +740,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 singleValueInitFunc: () => EncryptionSettings.CreateAsync(this, cancellationToken),
                 cancellationToken: cancellationToken);
         }
-
-#if SDKPROJECTREF
-        public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
-               Cosmos.PartitionKey partitionKey,
-               RequestOptions requestOptions = null,
-               CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
-#endif
 
         /// <summary>
         /// This function handles the scenario where a container is deleted(say from different Client) and recreated with same Id but with different client encryption policy.

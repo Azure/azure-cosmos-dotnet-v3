@@ -10,35 +10,51 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using Microsoft.Data.Encryption.Cryptography;
 
     /// <summary>
-    /// This class provides extension methods for <see cref="Database"/>.
+    /// Extension methods for <see cref="Database"/> to support client-side encryption.
     /// </summary>
     public static class EncryptionDatabaseExtensions
     {
         /// <summary>
-        /// Create a Client Encryption Key used to Encrypt data.
+        /// Creates a client encryption key.
+        /// This generates a cryptographically random data encryption key, wraps it using
+        /// information provided in the encryptionKeyWrapMetadata using the IKeyEncryptionKeyResolver instance configured on the client,
+        /// and saves the wrapped data encryption key along with the encryptionKeyWrapMetadata at the Cosmos DB service.
         /// </summary>
-        /// <param name="database">Regular cosmos database.</param>
-        /// <param name="clientEncryptionKeyId"> Client Encryption Key id.</param>
-        /// <param name="dataEncryptionKeyAlgorithm"> Encryption Algorthm. </param>
-        /// <param name="encryptionKeyWrapMetadata"> EncryptionKeyWrapMetadata.</param>
-        /// <param name="cancellationToken"> cancellation token </param>
-        /// <returns>Container to perform operations supporting client-side encryption / decryption.</returns>
+        /// <param name="database">Database supporting encryption in which the client encryption key properties will be saved.</param>
+        /// <param name="clientEncryptionKeyId">Identifier for the client encryption key.</param>
+        /// <param name="encryptionAlgorithm">Algorithm which will be used for encryption with this key.</param>
+        /// <param name="encryptionKeyWrapMetadata">Metadata used to wrap the data encryption key with a key encryption key.</param>
+        /// <param name="cancellationToken">Token for request cancellation.</param>
+        /// <returns>Response from the Cosmos DB service with <see cref="ClientEncryptionKeyProperties"/>.</returns>
         /// <example>
-        /// This example shows how to create a new Client Encryption Key.
+        /// This example shows how to create a client encryption key.
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// ClientEncryptionKeyResponse response = await this.cosmosDatabase.CreateClientEncryptionKeyAsync(
-        ///     "testKey",
-        ///     DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
-        ///     new EncryptionKeyWrapMetadata("metadataName", "MetadataValue"));
+        /// Azure.Core.TokenCredential tokenCredential = new Azure.Identity.DefaultAzureCredential();
+        /// Azure.Core.Cryptography.IKeyEncryptionKeyResolver keyResolver = new Azure.Security.KeyVault.Keys.Cryptography.KeyResolver(tokenCredential);
+        /// CosmosClient client = (new CosmosClient(endpoint, authKey)).WithEncryption(keyResolver, KeyEncryptionKeyResolverName.AzureKeyVault);
+        ///
+        /// EncryptionKeyWrapMetadata wrapMetadata = new EncryptionKeyWrapMetadata(
+        ///    type: KeyEncryptionKeyResolverName.AzureKeyVault,
+        ///    name: "myKek",
+        ///    value: "https://contoso.vault.azure.net/keys/myKek/78deebed173b48e48f55abf87ed4cf71",
+        ///    algorithm: Azure.Security.KeyVault.Keys.Cryptography.EncryptionAlgorithm.RsaOaep.ToString());
+        ///
+        ///  ClientEncryptionKeyResponse response = await client.GetDatabase("databaseId").CreateClientEncryptionKeyAsync(
+        ///    "myCek",
+        ///    DataEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+        ///    wrapMetadata);
         /// ]]>
         /// </code>
         /// </example>
+        /// <remarks>
+        /// See <see href="https://aka.ms/CosmosClientEncryption">client-side encryption documentation</see> for more details.
+        /// </remarks>
         public static async Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
             this Database database,
             string clientEncryptionKeyId,
-            string dataEncryptionKeyAlgorithm,
+            string encryptionAlgorithm,
             EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
             CancellationToken cancellationToken = default)
         {
@@ -49,9 +65,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(clientEncryptionKeyId));
             }
 
-            if (!string.Equals(dataEncryptionKeyAlgorithm, EncryptionAlgorithm.AeadAes256CbcHmacSha256))
+            if (!string.Equals(encryptionAlgorithm, DataEncryptionAlgorithm.AeadAes256CbcHmacSha256))
             {
-                throw new ArgumentException($"Invalid Encryption Algorithm '{dataEncryptionKeyAlgorithm}' passed. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                throw new ArgumentException($"Invalid encryption algorithm '{encryptionAlgorithm}' passed. Please refer to https://aka.ms/CosmosClientEncryption for more details.");
             }
 
             if (encryptionKeyWrapMetadata == null)
@@ -59,13 +75,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(encryptionKeyWrapMetadata));
             }
 
+            if (encryptionKeyWrapMetadata.Algorithm != EncryptionKeyStoreProviderImpl.RsaOaepWrapAlgorithm)
+            {
+                throw new ArgumentException($"Invalid key wrap algorithm '{encryptionKeyWrapMetadata.Algorithm}' passed. Please refer to https://aka.ms/CosmosClientEncryption for more details.");
+            }
+
             EncryptionCosmosClient encryptionCosmosClient = database is EncryptionDatabase encryptionDatabase
                 ? encryptionDatabase.EncryptionCosmosClient
-                : throw new ArgumentException("Creating a ClientEncryptionKey resource requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                : throw new ArgumentException("Creating a client encryption key requires the use of an encryption-enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details.");
 
             if (!string.Equals(encryptionKeyWrapMetadata.Type, encryptionCosmosClient.KeyEncryptionKeyResolverName))
             {
-                throw new ArgumentException("The EncryptionKeyWrapMetadata Type value does not match with the ProviderName of EncryptionKeyWrapProvider configured on the Client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                throw new ArgumentException($"The Type of the EncryptionKeyWrapMetadata '{encryptionKeyWrapMetadata.Type}' does not match"
+                    + $" with the keyEncryptionKeyResolverName '{encryptionCosmosClient.KeyEncryptionKeyResolverName}' configured."
+                    + " Please refer to https://aka.ms/CosmosClientEncryption for more details.");
             }
 
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
@@ -87,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = new ClientEncryptionKeyProperties(
                 clientEncryptionKeyId,
-                dataEncryptionKeyAlgorithm,
+                encryptionAlgorithm,
                 wrappedDataEncryptionKey,
                 encryptionKeyWrapMetadata);
 
@@ -99,24 +122,40 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <summary>
-        /// Rewrap an existing Client Encryption Key.
+        /// Rewraps a client encryption key.
+        /// This wraps the existing data encryption key using information provided in the newEncryptionKeyWrapMetadata
+        /// using the IKeyEncryptionKeyResolver instance configured on the client,
+        /// and saves the wrapped data encryption key along with the newEncryptionKeyWrapMetadata at the Cosmos DB service.
         /// </summary>
-        /// <param name="database">Regular cosmos database.</param>
-        /// <param name="clientEncryptionKeyId"> Client Encryption Key id.</param>
-        /// <param name="newEncryptionKeyWrapMetadata"> EncryptionKeyWrapMetadata.</param>
-        /// <param name="cancellationToken"> cancellation token </param>
-        /// <returns>Container to perform operations supporting client-side encryption / decryption.</returns>
+        /// <param name="database">Database supporting encryption in which the client encryption key properties will be updated.</param>
+        /// <param name="clientEncryptionKeyId">Identifier for the client encryption key.</param>
+        /// <param name="newEncryptionKeyWrapMetadata">Metadata used to wrap the data encryption key with a key encryption key.</param>
+        /// <param name="cancellationToken">Token for request cancellation.</param>
+        /// <returns>Response from the Cosmos DB service with updated <see cref="ClientEncryptionKeyProperties"/>.</returns>
         /// <example>
-        /// This example shows how to rewrap a Client Encryption Key.
+        /// This example shows how to rewrap a client encryption key.
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// ClientEncryptionKeyResponse response = await this.cosmosDatabase.RewrapClientEncryptionKeyAsync(
-        ///     "keyToRewrap",
-        ///     new EncryptionKeyWrapMetadata("metadataName", "UpdatedMetadataValue")));
+        /// Azure.Core.TokenCredential tokenCredential = new Azure.Identity.DefaultAzureCredential();
+        /// Azure.Core.Cryptography.IKeyEncryptionKeyResolver keyResolver = new Azure.Security.KeyVault.Keys.Cryptography.KeyResolver(tokenCredential);
+        /// CosmosClient client = (new CosmosClient(endpoint, authKey)).WithEncryption(keyResolver, KeyEncryptionKeyResolverName.AzureKeyVault);
+        ///
+        /// EncryptionKeyWrapMetadata wrapMetadataForNewKeyVersion = new EncryptionKeyWrapMetadata(
+        ///    type: KeyEncryptionKeyResolverName.AzureKeyVault,
+        ///    name: "myKek",
+        ///    value: "https://contoso.vault.azure.net/keys/myKek/0698c2156c1a4e1da5b6bab6f6422fd6",
+        ///    algorithm: Azure.Security.KeyVault.Keys.Cryptography.EncryptionAlgorithm.RsaOaep.ToString());
+        ///
+        ///  ClientEncryptionKeyResponse response = await client.GetDatabase("databaseId").RewrapClientEncryptionKeyAsync(
+        ///    "myCek",
+        ///    wrapMetadataForNewKeyVersion);
         /// ]]>
         /// </code>
         /// </example>
+        /// <remarks>
+        /// See <see href="https://aka.ms/CosmosClientEncryption">client-side encryption documentation</see> for more details.
+        /// </remarks>
         public static async Task<ClientEncryptionKeyResponse> RewrapClientEncryptionKeyAsync(
             this Database database,
             string clientEncryptionKeyId,
@@ -135,15 +174,22 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(newEncryptionKeyWrapMetadata));
             }
 
+            if (newEncryptionKeyWrapMetadata.Algorithm != EncryptionKeyStoreProviderImpl.RsaOaepWrapAlgorithm)
+            {
+                throw new ArgumentException($"Invalid key wrap algorithm '{newEncryptionKeyWrapMetadata.Algorithm}' passed. Please refer to https://aka.ms/CosmosClientEncryption for more details.");
+            }
+
             ClientEncryptionKey clientEncryptionKey = database.GetClientEncryptionKey(clientEncryptionKeyId);
 
             EncryptionCosmosClient encryptionCosmosClient = database is EncryptionDatabase encryptionDatabase
                 ? encryptionDatabase.EncryptionCosmosClient
-                : throw new ArgumentException("Rewraping a ClientEncryptionKey requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                : throw new ArgumentException("Rewrapping a client encryption key requires the use of an encryption-enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details.");
 
             if (!string.Equals(newEncryptionKeyWrapMetadata.Type, encryptionCosmosClient.KeyEncryptionKeyResolverName))
             {
-                throw new ArgumentException("The EncryptionKeyWrapMetadata Type value does not match with the ProviderName of EncryptionKeyWrapProvider configured on the Client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                throw new ArgumentException($"The Type of the EncryptionKeyWrapMetadata '{newEncryptionKeyWrapMetadata.Type}' does not match"
+                    + $" with the keyEncryptionKeyResolverName '{encryptionCosmosClient.KeyEncryptionKeyResolverName}' configured."
+                    + " Please refer to https://aka.ms/CosmosClientEncryption for more details.");
             }
 
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await clientEncryptionKey.ReadAsync(cancellationToken: cancellationToken);
