@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure.Core.Cryptography;
+    using Microsoft.Data.Encryption.Cryptography;
 
     /// <summary>
     /// CosmosClient with Encryption support.
@@ -20,14 +22,43 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private readonly AsyncCache<string, ClientEncryptionKeyProperties> clientEncryptionKeyPropertiesCacheByKeyId;
 
-        public EncryptionCosmosClient(CosmosClient cosmosClient, EncryptionKeyWrapProvider encryptionKeyWrapProvider)
+        public EncryptionCosmosClient(
+            CosmosClient cosmosClient,
+            IKeyEncryptionKeyResolver keyEncryptionKeyResolver,
+            string keyEncryptionKeyResolverName,
+            TimeSpan? keyCacheTimeToLive)
         {
             this.cosmosClient = cosmosClient ?? throw new ArgumentNullException(nameof(cosmosClient));
-            this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
+            this.KeyEncryptionKeyResolver = keyEncryptionKeyResolver ?? throw new ArgumentNullException(nameof(keyEncryptionKeyResolver));
+            this.KeyEncryptionKeyResolverName = keyEncryptionKeyResolverName ?? throw new ArgumentNullException(nameof(keyEncryptionKeyResolverName));
             this.clientEncryptionKeyPropertiesCacheByKeyId = new AsyncCache<string, ClientEncryptionKeyProperties>();
+            this.EncryptionKeyStoreProviderImpl = new EncryptionKeyStoreProviderImpl(keyEncryptionKeyResolver, keyEncryptionKeyResolverName);
+
+            keyCacheTimeToLive ??= TimeSpan.FromHours(1);
+
+            if (EncryptionCosmosClient.EncryptionKeyCacheSemaphore.Wait(-1))
+            {
+                try
+                {
+                    // We pick the minimum between the existing and passed in value given this is a static cache.
+                    // This also means that the maximum cache duration is the originally initialized value for ProtectedDataEncryptionKey.TimeToLive which is 2 hours.
+                    if (keyCacheTimeToLive < ProtectedDataEncryptionKey.TimeToLive)
+                    {
+                        ProtectedDataEncryptionKey.TimeToLive = keyCacheTimeToLive.Value;
+                    }
+                }
+                finally
+                {
+                    EncryptionCosmosClient.EncryptionKeyCacheSemaphore.Release(1);
+                }
+            }
         }
 
-        public EncryptionKeyWrapProvider EncryptionKeyWrapProvider { get; }
+        public EncryptionKeyStoreProviderImpl EncryptionKeyStoreProviderImpl { get; }
+
+        public IKeyEncryptionKeyResolver KeyEncryptionKeyResolver { get; }
+
+        public string KeyEncryptionKeyResolverName { get; }
 
         public override CosmosClientOptions ClientOptions => this.cosmosClient.ClientOptions;
 
