@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             }
 
             //this.scope.AddAttribute(CosmosInstrumentationConstants.AccountNameKey, this.Attributes.AccountName?.ToString());
-            this.scope.AddAttribute(CosmosInstrumentationConstants.ContainerNameKey, this.Attributes.ContainerName);
+           // this.scope.AddAttribute(CosmosInstrumentationConstants.ContainerNameKey, this.Attributes.ContainerName);
 
             //this.scope.AddAttribute(CosmosInstrumentationConstants.DbNameKey, this.Attributes.DbName);
             this.scope.AddAttribute(CosmosInstrumentationConstants.DbOperationKey, this.Attributes.DbOperation);
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             this.scope.AddAttribute(CosmosInstrumentationConstants.DbSystemName, this.Attributes.DbSystem);
             this.scope.AddAttribute(CosmosInstrumentationConstants.NetPeerName, this.Attributes.AccountName.Host);
             this.scope.AddAttribute(CosmosInstrumentationConstants.NetPeerPort, this.Attributes.AccountName.Port);
-
+/*
             if (this.Attributes.HttpStatusCode.HasValue)
             {
                 this.scope.AddAttribute(CosmosInstrumentationConstants.HttpStatusCodeKey, (int)this.Attributes.HttpStatusCode.Value);
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             if (filter.IsAllowed())
             {
                 this.scope.AddAttribute(CosmosInstrumentationConstants.RequestDiagnosticsKey, this.Attributes.RequestDiagnostics);
-            }
+            }*/
         }
 
         public void Dispose()

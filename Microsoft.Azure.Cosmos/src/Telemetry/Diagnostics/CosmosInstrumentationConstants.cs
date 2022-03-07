@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
         public const string UserAgentKey = "User Agent";
         public const string ConnectionMode = "Connection Mode";
-        public const string HttpStatusCodeKey = "http.status_code";
+        public const string HttpStatusCodeKey = "StatusCode";
         public const string ContainerNameKey = "Container Name";
         public const string RequestChargeKey = "Request Charge (RUs)";
         public const string RequestDiagnosticsKey = "Request Diagnostics (JSON)";
