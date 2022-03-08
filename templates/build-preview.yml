@@ -67,7 +67,7 @@ jobs:
       configuration: $(parameters.BuildConfiguration)
       nugetConfigPath: NuGet.config
       projects: Microsoft.Azure.Cosmos.sln 
-      arguments: -p:Optimize=true -p:IsPreview=true;
+      arguments: -p:Optimize=true -p:IsPreview=true
       versioningScheme: OFF
       
 - job:
