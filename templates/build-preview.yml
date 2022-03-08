@@ -61,16 +61,6 @@ jobs:
       versioningScheme: OFF
 
   - task: DotNetCoreCLI@2
-    displayName: Build Microsoft.Azure.Cosmos.Encryption Project Official
-    inputs: 
-      command: build  
-      configuration: $(parameters.BuildConfiguration)
-      nugetConfigPath: NuGet.config
-      projects: Microsoft.Azure.Cosmos.sln 
-      arguments: -p:Optimize=true
-      versioningScheme: OFF
-
-  - task: DotNetCoreCLI@2
     displayName: Build Microsoft.Azure.Cosmos.Encryption Project Preview
     inputs: 
       command: build  
@@ -81,7 +71,7 @@ jobs:
       versioningScheme: OFF
       
 - job:
-  displayName: Encryption Project Ref SDK Official ${{ parameters.BuildConfiguration }} 
+  displayName: Encryption SDK Official ${{ parameters.BuildConfiguration }} 
   pool:
     vmImage: ${{ parameters.VmImage }}
 
