@@ -60,6 +60,26 @@ jobs:
       arguments: -p:Optimize=true -p:IsPreview=true;SdkProjectRef=true
       versioningScheme: OFF
 
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos.Encryption Project Official
+    inputs: 
+      command: build  
+      configuration: $(parameters.BuildConfiguration)
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos.sln 
+      arguments: -p:Optimize=true -p:IsPreview=false;
+      versioningScheme: OFF
+
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos.Encryption Project Preview
+    inputs: 
+      command: build  
+      configuration: $(parameters.BuildConfiguration)
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos.sln 
+      arguments: -p:Optimize=true -p:IsPreview=true;
+      versioningScheme: OFF
+
 - job:
   displayName: Encryption.Custom Project Ref SDK Preview ${{ parameters.BuildConfiguration }} 
   pool:

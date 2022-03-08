@@ -4,13 +4,15 @@
 		<ClientOfficialVersion>3.25.0</ClientOfficialVersion>
 		<ClientPreviewVersion>3.26.0</ClientPreviewVersion>
 		<ClientPreviewSuffixVersion>preview</ClientPreviewSuffixVersion>
+		<EncryptionPreviewSuffixVersion>preview</EncryptionPreviewSuffixVersion>
 		<DirectVersion>3.24.1</DirectVersion>
-		<EncryptionVersion>1.0.0-previewV19</EncryptionVersion>
+		<EncryptionOfficialVersion>1.0.0</EncryptionOfficialVersion>
+		<EncryptionPreviewVersion>1.0.0</EncryptionPreviewVersion>
 		<CustomEncryptionVersion>1.0.0-preview02</CustomEncryptionVersion>
 		<HybridRowVersion>1.1.0-preview3</HybridRowVersion>
 		<LangVersion>9.0</LangVersion>
 		<AboveDirBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</AboveDirBuildProps>
-		<DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW</DefineConstants>
+		<DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW;ENCRYPTIONPREVIEW</DefineConstants>
 	</PropertyGroup>
 	<Import Project="$(AboveDirBuildProps)" Condition=" '$(AboveDirBuildProps)' != '' " />
 </Project>
