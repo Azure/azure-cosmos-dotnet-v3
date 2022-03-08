@@ -2929,7 +2929,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
         private static EncryptionKeyWrapMetadata CreateEncryptionKeyWrapMetadata(string type, string name, string value)
         {
-            return new EncryptionKeyWrapMetadata(type, name, value, "algo");
+            return new EncryptionKeyWrapMetadata(type, name, value, EncryptionKeyStoreProviderImpl.RsaOaepWrapAlgorithm);
         }
 
         public class TestDoc
