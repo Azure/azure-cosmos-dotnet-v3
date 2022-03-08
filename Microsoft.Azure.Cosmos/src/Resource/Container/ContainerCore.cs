@@ -505,11 +505,10 @@ namespace Microsoft.Azure.Cosmos
 
             PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.Client.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
             CollectionRoutingMap collectionRoutingMap = await partitionKeyRangeCache.TryLookupAsync(
-                collectionRid,
-                previousValue: null,
+                collectionRid: collectionRid,
                 request: null,
-                cancellationToken,
-                NoOpTrace.Singleton);
+                forceRefresh: false,
+                trace: NoOpTrace.Singleton);
 
             // Not found.
             if (collectionRoutingMap == null)
@@ -521,10 +520,9 @@ namespace Microsoft.Azure.Cosmos
 
                 collectionRoutingMap = await partitionKeyRangeCache.TryLookupAsync(
                     collectionRid,
-                    previousValue: null,
                     request: null,
-                    cancellationToken,
-                    NoOpTrace.Singleton);
+                    forceRefresh: false,
+                    trace: NoOpTrace.Singleton);
             }
 
             return collectionRoutingMap;

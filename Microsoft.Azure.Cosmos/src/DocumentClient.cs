@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos
         private AsyncLazy<QueryPartitionProvider> queryPartitionProvider;
 
         private DocumentClientEventSource eventSource;
-        private Func<Task<bool>> initializeTaskFactory;
+        private Func<bool, Task<bool>> initializeTaskFactory;
         internal AsyncCacheNonBlocking<string, bool> initTaskCache = new AsyncCacheNonBlocking<string, bool>();
 
         private JsonSerializerSettings serializerSettings;
@@ -915,7 +915,7 @@ namespace Microsoft.Azure.Cosmos
             // For direct: WFStoreProxy [set in OpenAsync()].
             this.eventSource = DocumentClientEventSource.Instance;
 
-            this.initializeTaskFactory = () =>
+            this.initializeTaskFactory = (staleValue) =>
             {
                 Task<bool> task = TaskHelper.InlineIfPossible<bool>(
                     () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),

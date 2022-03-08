@@ -13,9 +13,8 @@ namespace Microsoft.Azure.Cosmos.Common
     {
         Task<CollectionRoutingMap> TryLookupAsync(
             string collectionRid,
-            CollectionRoutingMap previousValue,
             DocumentServiceRequest request,
-            CancellationToken cancellationToken,
-            ITrace trace);
+            ITrace trace,
+            bool forceRefresh);
     }
 }

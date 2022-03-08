@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     {
         private const string PageSizeString = "-1";
 
-        private readonly AsyncCache<string, CollectionRoutingMap> routingMapCache;
+        private readonly AsyncCacheNonBlocking<string, CollectionRoutingMap> routingMapCache;
 
         private readonly ICosmosAuthorizationTokenProvider authorizationTokenProvider;
         private readonly IStoreModel storeModel;
@@ -36,8 +36,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             IStoreModel storeModel,
             CollectionCache collectionCache)
         {
-            this.routingMapCache = new AsyncCache<string, CollectionRoutingMap>(
-                    EqualityComparer<CollectionRoutingMap>.Default,
+            this.routingMapCache = new AsyncCacheNonBlocking<string, CollectionRoutingMap>(
                     StringComparer.Ordinal);
             this.authorizationTokenProvider = authorizationTokenProvider;
             this.storeModel = storeModel;
@@ -54,13 +53,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 Debug.Assert(ResourceId.TryParse(collectionRid, out ResourceId collectionRidParsed), "Could not parse CollectionRid from ResourceId.");
 
-                CollectionRoutingMap routingMap =
-                    await this.TryLookupAsync(collectionRid, null, null, CancellationToken.None, childTrace);
-
-                if (forceRefresh && routingMap != null)
-                {
-                    routingMap = await this.TryLookupAsync(collectionRid, routingMap, null, CancellationToken.None, childTrace);
-                }
+                CollectionRoutingMap routingMap = await this.TryLookupAsync(
+                    collectionRid: collectionRid,
+                    request: null,
+                    forceRefresh: forceRefresh,
+                    trace: childTrace);
 
                 if (routingMap == null)
                 {
@@ -78,16 +75,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             ITrace trace,
             bool forceRefresh = false)
         {
-            ResourceId collectionRidParsed;
-            Debug.Assert(ResourceId.TryParse(collectionResourceId, out collectionRidParsed), "Could not parse CollectionRid from ResourceId.");
+            Debug.Assert(ResourceId.TryParse(collectionResourceId, out ResourceId _), "Could not parse CollectionRid from ResourceId.");
 
-            CollectionRoutingMap routingMap =
-                await this.TryLookupAsync(collectionResourceId, null, null, CancellationToken.None, trace);
-
-            if (forceRefresh && routingMap != null)
-            {
-                routingMap = await this.TryLookupAsync(collectionResourceId, routingMap, null, CancellationToken.None, trace);
-            }
+            CollectionRoutingMap routingMap = await this.TryLookupAsync(
+                    collectionRid: collectionResourceId,
+                    request: null,
+                    forceRefresh: forceRefresh,
+                    trace: trace);
 
             if (routingMap == null)
             {
@@ -100,34 +94,38 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public virtual async Task<CollectionRoutingMap> TryLookupAsync(
             string collectionRid,
-            CollectionRoutingMap previousValue,
             DocumentServiceRequest request,
-            CancellationToken cancellationToken,
-            ITrace trace)
+            ITrace trace,
+            bool forceRefresh)
         {
+            CollectionRoutingMap previousRoutingMap = null;
             try
             {
                 return await this.routingMapCache.GetAsync(
-                    collectionRid,
-                    previousValue,
-                    () => this.GetRoutingMapForCollectionAsync(collectionRid, 
-                                            previousValue, 
-                                            trace,
-                                            request?.RequestContext?.ClientRequestStatistics,
-                                            cancellationToken),
-                    CancellationToken.None);
+                    key: collectionRid,
+                    singleValueInitFunc: (previousValue) =>
+                    {
+                        previousRoutingMap = previousValue;
+                        return this.GetRoutingMapForCollectionAsync(
+                            collectionRid: collectionRid,
+                            previousRoutingMap: previousValue,
+                            trace: trace,
+                            clientSideRequestStatistics: request?.RequestContext?.ClientRequestStatistics);
+                    },
+                    forceRefresh: forceRefresh,
+                    callBackOnForceRefresh: null);
             }
             catch (DocumentClientException ex)
             {
-                if (previousValue != null)
+                if (previousRoutingMap != null)
                 {
                     StringBuilder rangesString = new StringBuilder();
-                    foreach (PartitionKeyRange range in previousValue.OrderedPartitionKeyRanges)
+                    foreach (PartitionKeyRange range in previousRoutingMap.OrderedPartitionKeyRanges)
                     {
                         rangesString.Append(range.ToRange().ToString());
                         rangesString.Append(", ");
                     }
-                    DefaultTrace.TraceInformation(string.Format("DocumentClientException in TryLookupAsync Collection: {0}, previousValue: {1} Exception: {2}", collectionRid, rangesString.ToString(), ex.ToString()));
+                    DefaultTrace.TraceInformation(string.Format("DocumentClientException in TryLookupAsync Collection: {0}, previousValue: {1} Exception: {2}", collectionRid, rangesString, ex));
                 }
 
                 if (ex.StatusCode == HttpStatusCode.NotFound)
@@ -139,18 +137,23 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public async Task<PartitionKeyRange> TryGetRangeByPartitionKeyRangeIdAsync(string collectionRid, 
-                            string partitionKeyRangeId, 
-                            ITrace trace,
-                            IClientSideRequestStatistics clientSideRequestStatistics)
+        public async Task<PartitionKeyRange> TryGetRangeByPartitionKeyRangeIdAsync(
+            string collectionRid,
+            string partitionKeyRangeId, 
+            ITrace trace,
+            IClientSideRequestStatistics clientSideRequestStatistics)
         {
             try
             {
                 CollectionRoutingMap routingMap = await this.routingMapCache.GetAsync(
                     collectionRid,
-                    null,
-                    () => this.GetRoutingMapForCollectionAsync(collectionRid, null, trace, clientSideRequestStatistics, CancellationToken.None),
-                    CancellationToken.None);
+                    (previousValue) => this.GetRoutingMapForCollectionAsync(
+                        collectionRid,
+                        previousValue,
+                        trace,
+                        clientSideRequestStatistics),
+                    forceRefresh: false,
+                    callBackOnForceRefresh: null);
 
                 return routingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId);
             }
@@ -169,11 +172,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             string collectionRid,
             CollectionRoutingMap previousRoutingMap,
             ITrace trace,
-            IClientSideRequestStatistics clientSideRequestStatistics,
-            CancellationToken cancellationToken)
+            IClientSideRequestStatistics clientSideRequestStatistics)
         {
             List<PartitionKeyRange> ranges = new List<PartitionKeyRange>();
-            string changeFeedNextIfNoneMatch = previousRoutingMap == null ? null : previousRoutingMap.ChangeFeedNextIfNoneMatch;
+            string changeFeedNextIfNoneMatch = previousRoutingMap?.ChangeFeedNextIfNoneMatch;
 
             HttpStatusCode lastStatusCode = HttpStatusCode.OK;
             do
@@ -190,8 +192,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 RetryOptions retryOptions = new RetryOptions();
                 using (DocumentServiceResponse response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
                     () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers, trace, clientSideRequestStatistics),
-                    new ResourceThrottleRetryPolicy(retryOptions.MaxRetryAttemptsOnThrottledRequests, retryOptions.MaxRetryWaitTimeInSeconds),
-                    cancellationToken))
+                    new ResourceThrottleRetryPolicy(retryOptions.MaxRetryAttemptsOnThrottledRequests, retryOptions.MaxRetryWaitTimeInSeconds)))
                 {
                     lastStatusCode = response.StatusCode;
                     changeFeedNextIfNoneMatch = response.Headers[HttpConstants.HttpHeaders.ETag];

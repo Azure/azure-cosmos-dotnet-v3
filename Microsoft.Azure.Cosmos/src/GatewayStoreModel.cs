@@ -367,20 +367,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 CollectionRoutingMap collectionRoutingMap = await partitionKeyRangeCache.TryLookupAsync(
                     collectionRid: collection.ResourceId,
-                    previousValue: null,
                     request: request,
-                    cancellationToken: CancellationToken.None,
-                    NoOpTrace.Singleton);
-
-                if (refreshCache && collectionRoutingMap != null)
-                {
-                    collectionRoutingMap = await partitionKeyRangeCache.TryLookupAsync(
-                        collectionRid: collection.ResourceId,
-                        previousValue: collectionRoutingMap,
-                        request: request,
-                        cancellationToken: CancellationToken.None,
-                        NoOpTrace.Singleton);
-                }
+                    trace: NoOpTrace.Singleton,
+                    forceRefresh: refreshCache);
 
                 if (collectionRoutingMap != null)
                 {

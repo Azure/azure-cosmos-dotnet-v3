@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     addresses = await this.serverPartitionAddressCache.GetAsync(
                         key: partitionKeyRangeIdentity,
-                        singleValueInitFunc: () => this.GetAddressesForRangeIdAsync(
+                        singleValueInitFunc: (stale) => this.GetAddressesForRangeIdAsync(
                             request,
                             partitionKeyRangeIdentity.CollectionRid,
                             partitionKeyRangeIdentity.PartitionKeyRangeId,
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     addresses = await this.serverPartitionAddressCache.GetAsync(
                         key: partitionKeyRangeIdentity,
-                        singleValueInitFunc: () => this.GetAddressesForRangeIdAsync(
+                        singleValueInitFunc: (stale) => this.GetAddressesForRangeIdAsync(
                             request,
                             partitionKeyRangeIdentity.CollectionRid,
                             partitionKeyRangeIdentity.PartitionKeyRangeId,
@@ -298,7 +298,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             return await this.serverPartitionAddressCache.GetAsync(
                        key: partitionKeyRangeIdentity,
-                       singleValueInitFunc: () => this.GetAddressesForRangeIdAsync(
+                       singleValueInitFunc: (stale) => this.GetAddressesForRangeIdAsync(
                            null,
                            partitionKeyRangeIdentity.CollectionRid,
                            partitionKeyRangeIdentity.PartitionKeyRangeId,

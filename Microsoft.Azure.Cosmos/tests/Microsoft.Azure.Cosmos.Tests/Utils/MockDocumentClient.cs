@@ -230,10 +230,9 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
             this.partitionKeyRangeCache.Setup(
                         m => m.TryLookupAsync(
                             It.IsAny<string>(),
-                            It.IsAny<CollectionRoutingMap>(),
                             It.IsAny<DocumentServiceRequest>(),
-                            It.IsAny<CancellationToken>(),
-                            It.IsAny<ITrace>()
+                            It.IsAny<ITrace>(),
+                            It.IsAny<bool>()
                         )
                 ).Returns(Task.FromResult<CollectionRoutingMap>(null));
             this.partitionKeyRangeCache.Setup(

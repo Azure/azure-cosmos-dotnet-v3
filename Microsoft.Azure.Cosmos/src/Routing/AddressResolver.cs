@@ -263,7 +263,10 @@ namespace Microsoft.Azure.Cosmos
 
             ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
             CollectionRoutingMap routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
-                collection.ResourceId, null, request, cancellationToken, NoOpTrace.Singleton);
+                collection.ResourceId,
+                request,
+                NoOpTrace.Singleton,
+                false);
 
             if (routingMap != null && request.ForceCollectionRoutingMapRefresh)
             {
@@ -271,7 +274,11 @@ namespace Microsoft.Azure.Cosmos
                     "AddressResolver.ResolveAddressesAndIdentityAsync ForceCollectionRoutingMapRefresh collection.ResourceId = {0}",
                     collection.ResourceId);
 
-                routingMap = await this.collectionRoutingMapCache.TryLookupAsync(collection.ResourceId, routingMap, request, cancellationToken, NoOpTrace.Singleton);
+                routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
+                    collection.ResourceId,
+                    request,
+                    NoOpTrace.Singleton,
+                    forceRefresh: true);
             }
 
             if (request.ForcePartitionKeyRangeRefresh)
@@ -280,7 +287,11 @@ namespace Microsoft.Azure.Cosmos
                 request.ForcePartitionKeyRangeRefresh = false;
                 if (routingMap != null)
                 {
-                    routingMap = await this.collectionRoutingMapCache.TryLookupAsync(collection.ResourceId, routingMap, request, cancellationToken, NoOpTrace.Singleton);
+                    routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
+                        collection.ResourceId,
+                        request,
+                        NoOpTrace.Singleton,
+                        forceRefresh: true);
                 }
             }
 
@@ -294,10 +305,9 @@ namespace Microsoft.Azure.Cosmos
                 collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
                 routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
                         collection.ResourceId,
-                        previousValue: null,
                         request: request,
-                        cancellationToken: cancellationToken,
-                        trace: NoOpTrace.Singleton);
+                        trace: NoOpTrace.Singleton,
+                        forceRefresh: false);
             }
 
             AddressResolver.EnsureRoutingMapPresent(request, routingMap, collection);
@@ -319,7 +329,6 @@ namespace Microsoft.Azure.Cosmos
                 if (!collectionCacheIsUptoDate)
                 {
                     request.ForceNameCacheRefresh = true;
-                    collectionCacheIsUptoDate = true;
                     collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
                     if (collection.ResourceId != routingMap.CollectionUniqueId)
                     {
@@ -328,22 +337,19 @@ namespace Microsoft.Azure.Cosmos
                         collectionRoutingMapCacheIsUptoDate = false;
                         routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
                             collection.ResourceId,
-                            previousValue: null,
                             request: request,
-                            cancellationToken: cancellationToken,
-                            trace: NoOpTrace.Singleton);
+                            trace: NoOpTrace.Singleton,
+                            forceRefresh: false);
                     }
                 }
 
                 if (!collectionRoutingMapCacheIsUptoDate)
                 {
-                    collectionRoutingMapCacheIsUptoDate = true;
                     routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
                         collection.ResourceId,
-                        previousValue: routingMap,
                         request: request,
-                        cancellationToken: cancellationToken,
-                        trace: NoOpTrace.Singleton);
+                        trace: NoOpTrace.Singleton,
+                        forceRefresh: false);
                 }
 
                 AddressResolver.EnsureRoutingMapPresent(request, routingMap, collection);
