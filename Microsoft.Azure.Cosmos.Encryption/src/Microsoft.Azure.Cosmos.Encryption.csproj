@@ -70,5 +70,5 @@
 
   <PropertyGroup Condition=" '$(SdkProjectRef)' == 'True' ">
     <DefineConstants>$(DefineConstants);SDKPROJECTREF</DefineConstants>
-  </PropertyGroup>	
+  </PropertyGroup>
 </Project>
