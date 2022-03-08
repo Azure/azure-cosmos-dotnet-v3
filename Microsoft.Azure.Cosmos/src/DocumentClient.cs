@@ -112,6 +112,9 @@ namespace Microsoft.Azure.Cosmos
         //Auth
         private readonly AuthorizationTokenProvider cosmosAuthorization;
 
+        //Consistency Validator
+        private readonly IConsistencyValidator consistencyValidator;
+
         // Gateway has backoff/retry logic to hide transient errors.
         private RetryPolicy retryPolicy;
         private bool allowOverrideStrongerConsistency = false;
@@ -375,7 +378,8 @@ namespace Microsoft.Azure.Cosmos
                       ISessionContainer sessionContainer = null,
                       bool? enableCpuMonitor = null,
                       Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
-                      IStoreClientFactory storeClientFactory = null)
+                      IStoreClientFactory storeClientFactory = null,
+                      IConsistencyValidator consistencyValidator = null)
             : this(serviceEndpoint,
                 AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken),
                 sendingRequestEventArgs,
@@ -388,7 +392,8 @@ namespace Microsoft.Azure.Cosmos
                 sessionContainer,
                 enableCpuMonitor,
                 transportClientHandlerFactory,
-                storeClientFactory)
+                storeClientFactory,
+                consistencyValidator)
         {
         }
 
@@ -410,6 +415,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="enableCpuMonitor">Flag that indicates whether client-side CPU monitoring is enabled for improved troubleshooting.</param>
         /// <param name="transportClientHandlerFactory">Transport client handler factory.</param>
         /// <param name="storeClientFactory">Factory that creates store clients sharing the same transport client to optimize network resource reuse across multiple document clients in the same process.</param>
+        /// <param name="consistencyValidator">Validator to validate consistencyLevel.</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -433,7 +439,8 @@ namespace Microsoft.Azure.Cosmos
                               ISessionContainer sessionContainer = null,
                               bool? enableCpuMonitor = null,
                               Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
-                              IStoreClientFactory storeClientFactory = null)
+                              IStoreClientFactory storeClientFactory = null,
+                              IConsistencyValidator consistencyValidator = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -454,6 +461,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.cosmosAuthorization = cosmosAuthorization ?? throw new ArgumentNullException(nameof(cosmosAuthorization));
             this.transportClientHandlerFactory = transportClientHandlerFactory;
+            this.consistencyValidator = consistencyValidator;
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -6473,7 +6481,7 @@ namespace Microsoft.Azure.Cosmos
                 return true;
             }
 
-            return ValidationHelpers.IsValidConsistencyLevelOverwrite(backendConsistency, desiredConsistency);
+            return this.consistencyValidator.Validate((Cosmos.ConsistencyLevel)backendConsistency, (Cosmos.ConsistencyLevel)desiredConsistency);
         }
 
         private void InitializeDirectConnectivity(IStoreClientFactory storeClientFactory)

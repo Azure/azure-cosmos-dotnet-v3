@@ -5,39 +5,35 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
-    using System.Text;
 
     internal class DefaultConsistencyValidator : IConsistencyValidator
     {
         public bool Validate(ConsistencyLevel accountLevelConsistency, ConsistencyLevel requestOrClientLevelConsistency)
         {
-            return DefaultConsistencyValidator.IsValidConsistencyLevelOverwrite((Documents.ConsistencyLevel)accountLevelConsistency, (Documents.ConsistencyLevel)requestOrClientLevelConsistency);
-        }
-
-        private static bool IsValidConsistencyLevelOverwrite(Documents.ConsistencyLevel accountLevelConsistency, Documents.ConsistencyLevel requestOrClientLevelConsistency)
-        {
-            switch (accountLevelConsistency)
+            Documents.ConsistencyLevel accountLevelDocumentConsistency = (Documents.ConsistencyLevel)accountLevelConsistency;
+            Documents.ConsistencyLevel requestOrClientLevelDocumentConsistency = (Documents.ConsistencyLevel)requestOrClientLevelConsistency;
+            
+            switch (accountLevelDocumentConsistency)
             {
                 case Documents.ConsistencyLevel.Strong:
-                    return requestOrClientLevelConsistency == Documents.ConsistencyLevel.Strong ||
-                        requestOrClientLevelConsistency == Documents.ConsistencyLevel.BoundedStaleness ||
-                        requestOrClientLevelConsistency == Documents.ConsistencyLevel.Session ||
-                        requestOrClientLevelConsistency == Documents.ConsistencyLevel.Eventual ||
-                        requestOrClientLevelConsistency == Documents.ConsistencyLevel.ConsistentPrefix;
+                    return requestOrClientLevelDocumentConsistency == Documents.ConsistencyLevel.Strong ||
+                        requestOrClientLevelDocumentConsistency == Documents.ConsistencyLevel.BoundedStaleness ||
+                        requestOrClientLevelDocumentConsistency == Documents.ConsistencyLevel.Session ||
+                        requestOrClientLevelDocumentConsistency == Documents.ConsistencyLevel.Eventual ||
+                        requestOrClientLevelDocumentConsistency == Documents.ConsistencyLevel.ConsistentPrefix;
 
                 case Documents.ConsistencyLevel.BoundedStaleness:
-                    return requestOrClientLevelConsistency == Documents.ConsistencyLevel.BoundedStaleness ||
-                        requestOrClientLevelConsistency == Documents.ConsistencyLevel.Session ||
-                        requestOrClientLevelConsistency == Documents.ConsistencyLevel.Eventual ||
-                        requestOrClientLevelConsistency == Documents.ConsistencyLevel.ConsistentPrefix;
+                    return requestOrClientLevelDocumentConsistency == Documents.ConsistencyLevel.BoundedStaleness ||
+                        requestOrClientLevelDocumentConsistency == Documents.ConsistencyLevel.Session ||
+                        requestOrClientLevelDocumentConsistency == Documents.ConsistencyLevel.Eventual ||
+                        requestOrClientLevelDocumentConsistency == Documents.ConsistencyLevel.ConsistentPrefix;
 
                 case Documents.ConsistencyLevel.Session:
                 case Documents.ConsistencyLevel.Eventual:
                 case Documents.ConsistencyLevel.ConsistentPrefix:
-                    return requestOrClientLevelConsistency == Documents.ConsistencyLevel.Session ||
-                        requestOrClientLevelConsistency == Documents.ConsistencyLevel.Eventual ||
-                        requestOrClientLevelConsistency == Documents.ConsistencyLevel.ConsistentPrefix;
+                    return requestOrClientLevelDocumentConsistency == Documents.ConsistencyLevel.Session ||
+                        requestOrClientLevelDocumentConsistency == Documents.ConsistencyLevel.Eventual ||
+                        requestOrClientLevelDocumentConsistency == Documents.ConsistencyLevel.ConsistentPrefix;
 
                 default:
                     throw new ArgumentException("backendConsistency");

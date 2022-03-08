@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     internal interface IConsistencyValidator
     {
-        public bool Validate(ConsistencyLevel accountLevelConsistency, 
-            ConsistencyLevel requestOrClientLevelConsistency);
+        public bool Validate(ConsistencyLevel accountLevelConsistency, ConsistencyLevel requestOrClientLevelConsistency);
     }
 }
