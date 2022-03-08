@@ -59,7 +59,7 @@
   <ItemGroup>
     <PackageReference Include="System.Text.Encoding.CodePages" Version="5.0.0" />
   </ItemGroup>
-
+	
   <PropertyGroup>
     <SigningType>Product</SigningType>
     <SignAssembly>true</SignAssembly>
@@ -67,7 +67,6 @@
     <AssemblyOriginatorKeyFile>..\..\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
-
   <PropertyGroup Condition=" '$(SdkProjectRef)' == 'True' ">
     <DefineConstants>$(DefineConstants);SDKPROJECTREF</DefineConstants>
   </PropertyGroup>
