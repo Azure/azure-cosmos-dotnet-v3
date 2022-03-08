@@ -691,13 +691,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
 #if SDKPROJECTREF
-        public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
-               Cosmos.PartitionKey partitionKey,
-               RequestOptions requestOptions = null,
-               CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
+
 #endif
 
 #if ENCRYPTIONPREVIEW
