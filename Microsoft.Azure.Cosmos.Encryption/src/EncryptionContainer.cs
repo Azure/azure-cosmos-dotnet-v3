@@ -736,7 +736,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                RequestOptions requestOptions = null,
                CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return this.container.DeleteAllItemsByPartitionKeyStreamAsync(
+                partitionKey,
+                requestOptions,
+                cancellationToken);
         }
 #endif
 
