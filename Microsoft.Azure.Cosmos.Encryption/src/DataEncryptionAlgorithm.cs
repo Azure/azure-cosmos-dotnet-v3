@@ -5,9 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     /// <summary>
-    /// Represents the encryption algorithms supported for data encryption.
+    /// Encryption algorithms supported for data encryption.
     /// </summary>
-    public static class EncryptionAlgorithm
+    public static class DataEncryptionAlgorithm
     {
         /// <summary>
         /// Represents the authenticated encryption algorithm with associated data as described in

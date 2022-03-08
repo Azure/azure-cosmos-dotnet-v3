@@ -6,25 +6,39 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using global::Azure.Core.Cryptography;
-    using Microsoft.Data.Encryption.Cryptography;
 
     /// <summary>
-    /// This class provides extension methods for <see cref="CosmosClient"/>.
+    /// Extension methods for <see cref="CosmosClient"/> to support client-side encryption.
     /// </summary>
     public static class EncryptionCosmosClientExtensions
     {
         /// <summary>
-        /// Get Cosmos Client with Encryption support for performing operations using client-side encryption.
+        /// Provides an instance of CosmosClient with support for performing operations involving client-side encryption.
         /// </summary>
-        /// <param name="cosmosClient">Regular Cosmos Client.</param>
-        /// <param name="keyEncryptionKeyResolver">IKeyEncryptionKeyResolver that allows interaction with the key encryption keys.</param>
-        /// <param name="keyEncryptionKeyResolverId">Identifier of the resolver, eg. KeyEncryptionKeyResolverId.AzureKeyVault. </param>
-        /// <param name="keyCacheTimeToLive">Time for which raw keys are cached in-memory. Defaults to 1 hour.</param>
-        /// <returns> CosmosClient to perform operations supporting client-side encryption / decryption.</returns>
+        /// <param name="cosmosClient">CosmosClient instance on which encryption support is needed.</param>
+        /// <param name="keyEncryptionKeyResolver">Resolver that allows interaction with key encryption keys.</param>
+        /// <param name="keyEncryptionKeyResolverName">Name of the resolver, for example <see cref="KeyEncryptionKeyResolverName.AzureKeyVault" />.</param>
+        /// <param name="keyCacheTimeToLive">Time for which raw data encryption keys are cached in-memory. Defaults to 1 hour.</param>
+        /// <returns>CosmosClient instance with support for performing operations involving client-side encryption.</returns>
+        /// <example>
+        /// This example shows how to get instance of CosmosClient with support for performing operations involving client-side encryption.
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Azure.Core.TokenCredential tokenCredential = new Azure.Identity.DefaultAzureCredential();
+        /// Azure.Core.Cryptography.IKeyEncryptionKeyResolver keyResolver = new Azure.Security.KeyVault.Keys.Cryptography.KeyResolver(tokenCredential);
+        /// CosmosClient client = (new CosmosClient(endpoint, authKey)).WithEncryption(keyResolver, KeyEncryptionKeyResolverName.AzureKeyVault);
+        /// Container container = client.GetDatabase("databaseId").GetContainer("containerId");
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// See <see href="https://aka.ms/CosmosClientEncryption">client-side encryption documentation</see> for more details.
+        /// </remarks>
         public static CosmosClient WithEncryption(
             this CosmosClient cosmosClient,
             IKeyEncryptionKeyResolver keyEncryptionKeyResolver,
-            string keyEncryptionKeyResolverId,
+            string keyEncryptionKeyResolverName,
             TimeSpan? keyCacheTimeToLive = null)
         {
             if (keyEncryptionKeyResolver == null)
@@ -32,9 +46,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(keyEncryptionKeyResolver));
             }
 
-            if (keyEncryptionKeyResolverId == null)
+            if (keyEncryptionKeyResolverName == null)
             {
-                throw new ArgumentNullException(nameof(keyEncryptionKeyResolverId));
+                throw new ArgumentNullException(nameof(keyEncryptionKeyResolverName));
             }
 
             if (cosmosClient == null)
@@ -42,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(cosmosClient));
             }
 
-            return new EncryptionCosmosClient(cosmosClient, keyEncryptionKeyResolver, keyEncryptionKeyResolverId, keyCacheTimeToLive);
+            return new EncryptionCosmosClient(cosmosClient, keyEncryptionKeyResolver, keyEncryptionKeyResolverName, keyCacheTimeToLive);
         }
     }
 }
