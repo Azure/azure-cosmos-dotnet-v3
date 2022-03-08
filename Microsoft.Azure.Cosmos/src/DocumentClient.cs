@@ -6474,14 +6474,18 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private bool IsValidConsistency(Documents.ConsistencyLevel backendConsistency, Documents.ConsistencyLevel desiredConsistency)
+        private bool IsValidConsistency(
+            Documents.ConsistencyLevel backendConsistency, 
+            Documents.ConsistencyLevel desiredConsistency)
         {
             if (this.allowOverrideStrongerConsistency)
             {
                 return true;
             }
 
-            return this.consistencyValidator.Validate((Cosmos.ConsistencyLevel)backendConsistency, (Cosmos.ConsistencyLevel)desiredConsistency);
+            return this.consistencyValidator.Validate(
+                accountLevelConsistency: (Cosmos.ConsistencyLevel)backendConsistency, 
+                requestOrClientLevelConsistency: (Cosmos.ConsistencyLevel)desiredConsistency);
         }
 
         private void InitializeDirectConnectivity(IStoreClientFactory storeClientFactory)

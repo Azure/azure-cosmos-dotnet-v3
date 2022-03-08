@@ -5,10 +5,14 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using Microsoft.Azure.Documents;
 
     internal class DefaultConsistencyValidator : IConsistencyValidator
     {
-        public bool Validate(ConsistencyLevel accountLevelConsistency, ConsistencyLevel requestOrClientLevelConsistency)
+        public bool Validate(ConsistencyLevel accountLevelConsistency, 
+            ConsistencyLevel requestOrClientLevelConsistency, 
+            Documents.OperationType? operationType = null,
+            Documents.ResourceType? resourceType = null)
         {
             Documents.ConsistencyLevel accountLevelDocumentConsistency = (Documents.ConsistencyLevel)accountLevelConsistency;
             Documents.ConsistencyLevel requestOrClientLevelDocumentConsistency = (Documents.ConsistencyLevel)requestOrClientLevelConsistency;
