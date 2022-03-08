@@ -690,10 +690,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cancellationToken: cancellationToken);
         }
 
-#if SDKPROJECTREF
-
-#endif
-
 #if ENCRYPTIONPREVIEW
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
            FeedRange feedRange,
