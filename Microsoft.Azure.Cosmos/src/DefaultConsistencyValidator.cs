@@ -5,15 +5,17 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
+    using System.Text;
 
-    internal static class ValidationHelpers
+    internal class DefaultConsistencyValidator : IConsistencyValidator
     {
-        public static bool IsValidConsistencyLevelOverwrite(Cosmos.ConsistencyLevel accountLevelConsistency, Cosmos.ConsistencyLevel requestOrClientLevelConsistency)
+        public bool Validate(ConsistencyLevel accountLevelConsistency, ConsistencyLevel requestOrClientLevelConsistency)
         {
-            return ValidationHelpers.IsValidConsistencyLevelOverwrite((Documents.ConsistencyLevel)accountLevelConsistency, (Documents.ConsistencyLevel)requestOrClientLevelConsistency);
+            return DefaultConsistencyValidator.IsValidConsistencyLevelOverwrite((Documents.ConsistencyLevel)accountLevelConsistency, (Documents.ConsistencyLevel)requestOrClientLevelConsistency);
         }
 
-        public static bool IsValidConsistencyLevelOverwrite(Documents.ConsistencyLevel accountLevelConsistency, Documents.ConsistencyLevel requestOrClientLevelConsistency)
+        private static bool IsValidConsistencyLevelOverwrite(Documents.ConsistencyLevel accountLevelConsistency, Documents.ConsistencyLevel requestOrClientLevelConsistency)
         {
             switch (accountLevelConsistency)
             {
