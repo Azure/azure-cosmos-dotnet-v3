@@ -8,34 +8,34 @@ namespace Microsoft.Azure.Cosmos
 
     internal static class ValidationHelpers
     {
-        public static bool IsValidConsistencyLevelOverwrite(Cosmos.ConsistencyLevel accountLevelConsistency, Cosmos.ConsistencyLevel requestOrClientLevelConsistency)
+        public static bool IsValidConsistencyLevelOverwrite(Cosmos.ConsistencyLevel backendConsistency, Cosmos.ConsistencyLevel desiredConsistency)
         {
-            return ValidationHelpers.IsValidConsistencyLevelOverwrite((Documents.ConsistencyLevel)accountLevelConsistency, (Documents.ConsistencyLevel)requestOrClientLevelConsistency);
+            return ValidationHelpers.IsValidConsistencyLevelOverwrite((Documents.ConsistencyLevel)backendConsistency, (Documents.ConsistencyLevel)desiredConsistency);
         }
 
-        public static bool IsValidConsistencyLevelOverwrite(Documents.ConsistencyLevel accountLevelConsistency, Documents.ConsistencyLevel requestOrClientLevelConsistency)
+        public static bool IsValidConsistencyLevelOverwrite(Documents.ConsistencyLevel backendConsistency, Documents.ConsistencyLevel desiredConsistency)
         {
-            switch (accountLevelConsistency)
+            switch (backendConsistency)
             {
                 case Documents.ConsistencyLevel.Strong:
-                    return requestOrClientLevelConsistency == Documents.ConsistencyLevel.Strong ||
-                        requestOrClientLevelConsistency == Documents.ConsistencyLevel.BoundedStaleness ||
-                        requestOrClientLevelConsistency == Documents.ConsistencyLevel.Session ||
-                        requestOrClientLevelConsistency == Documents.ConsistencyLevel.Eventual ||
-                        requestOrClientLevelConsistency == Documents.ConsistencyLevel.ConsistentPrefix;
+                    return desiredConsistency == Documents.ConsistencyLevel.Strong ||
+                        desiredConsistency == Documents.ConsistencyLevel.BoundedStaleness ||
+                        desiredConsistency == Documents.ConsistencyLevel.Session ||
+                        desiredConsistency == Documents.ConsistencyLevel.Eventual ||
+                        desiredConsistency == Documents.ConsistencyLevel.ConsistentPrefix;
 
                 case Documents.ConsistencyLevel.BoundedStaleness:
-                    return requestOrClientLevelConsistency == Documents.ConsistencyLevel.BoundedStaleness ||
-                        requestOrClientLevelConsistency == Documents.ConsistencyLevel.Session ||
-                        requestOrClientLevelConsistency == Documents.ConsistencyLevel.Eventual ||
-                        requestOrClientLevelConsistency == Documents.ConsistencyLevel.ConsistentPrefix;
+                    return desiredConsistency == Documents.ConsistencyLevel.BoundedStaleness ||
+                        desiredConsistency == Documents.ConsistencyLevel.Session ||
+                        desiredConsistency == Documents.ConsistencyLevel.Eventual ||
+                        desiredConsistency == Documents.ConsistencyLevel.ConsistentPrefix;
 
                 case Documents.ConsistencyLevel.Session:
                 case Documents.ConsistencyLevel.Eventual:
                 case Documents.ConsistencyLevel.ConsistentPrefix:
-                    return requestOrClientLevelConsistency == Documents.ConsistencyLevel.Session ||
-                        requestOrClientLevelConsistency == Documents.ConsistencyLevel.Eventual ||
-                        requestOrClientLevelConsistency == Documents.ConsistencyLevel.ConsistentPrefix;
+                    return desiredConsistency == Documents.ConsistencyLevel.Session ||
+                        desiredConsistency == Documents.ConsistencyLevel.Eventual ||
+                        desiredConsistency == Documents.ConsistencyLevel.ConsistentPrefix;
 
                 default:
                     throw new ArgumentException("backendConsistency");

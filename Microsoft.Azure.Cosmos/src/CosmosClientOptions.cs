@@ -880,23 +880,6 @@ namespace Microsoft.Azure.Cosmos
             return JsonConvert.SerializeObject(this);
         }
 
-        private IConsistencyValidator consistencyValidator { get; set; }
-
-        [JsonIgnore]
-        internal IConsistencyValidator ConsistencyLevelValidator
-        {
-            get
-            {
-                if (this.consistencyValidator == null)
-                {
-                    return new DefaultConsistencyValidator();
-                }
-
-                return this.consistencyValidator;
-            }
-            set => this.consistencyValidator = value;
-        }
-
         /// <summary>
         /// The complex object passed in by the user can contain objects that can not be serialized. Instead just log the types.
         /// </summary>

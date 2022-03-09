@@ -186,11 +186,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ClientEventualWriteStrongReadConsistencyTestAsync()
         {
-            //IConsistencyValidator consistencyValidator = new CustomConsistencyValidator();
-
-            await base.TestInit(validateSinglePartitionKeyRangeCacheCall: true/*, 
-                customizeClientBuilder: (builder) => builder.AddConsistencyValidator(consistencyValidator)*/);
-
             RequestHandlerHelper handlerHelper = new RequestHandlerHelper();
             using CosmosClient cosmosClient = TestCommon.CreateCosmosClient(x =>
                 x.WithConsistencyLevel(Cosmos.ConsistencyLevel.Eventual).AddCustomHandlers(handlerHelper));

@@ -584,17 +584,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
             return this;
         }
 
-        /// <summary>
-        /// COnsistency Level Validator
-        /// </summary>
-        /// <param name="validator"></param>
-        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-        internal CosmosClientBuilder AddConsistencyValidator(IConsistencyValidator validator)
-        {
-            this.clientOptions.ConsistencyLevelValidator = validator;
-            return this;
-        }
-
         internal CosmosClientBuilder WithRetryWithOptions(
             int? initialRetryForRetryWithMilliseconds,
             int? maximumRetryForRetryWithMilliseconds,
