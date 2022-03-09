@@ -354,10 +354,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
 
+        /// <summary>
+        /// Validate the request consistency compatibility with account consistency
+        /// Type based access context for requested consistency preferred for performance
+        /// </summary>
+        /// <param name="requestMessage"></param>
+        /// <exception cref="ArgumentException">In case, Invalid consistency is passed</exception>
         private async Task ValidateAndSetConsistencyLevelAsync(RequestMessage requestMessage)
         {
-            // Validate the request consistency compatibility with account consistency
-            // Type based access context for requested consistency preferred for performance
             Cosmos.ConsistencyLevel? consistencyLevel = null;
             RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
             if (promotedRequestOptions != null && promotedRequestOptions.BaseConsistencyLevel.HasValue)
@@ -376,7 +380,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     this.AccountConsistencyLevel = await this.client.GetAccountConsistencyLevelAsync();
                 }
 
-                if (ValidationHelpers.IsValidConsistencyLevelOverwrite(this.AccountConsistencyLevel.Value, consistencyLevel.Value))
+                bool isStrongReadAllowedOverEventualConsistency = this.client.ClientOptions.IsStrongReadAllowedOverEventualConsistency;
+                if (ValidationHelpers.IsValidConsistencyLevelOverwrite(
+                            backendConsistency: this.AccountConsistencyLevel.Value, 
+                            desiredConsistency: consistencyLevel.Value,
+                            isStrongReadAllowedOverEventualConsistency: isStrongReadAllowedOverEventualConsistency,
+                            operationType: requestMessage.OperationType,
+                            resourceType: requestMessage.ResourceType))
                 {
                     // ConsistencyLevel compatibility with back-end configuration will be done by RequestInvokeHandler
                     requestMessage.Headers.Add(HttpConstants.HttpHeaders.ConsistencyLevel, consistencyLevel.Value.ToString());

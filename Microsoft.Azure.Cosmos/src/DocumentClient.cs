@@ -109,6 +109,7 @@ namespace Microsoft.Azure.Cosmos
         private const bool DefaultEnableCpuMonitor = true;
         private const string DefaultInitTaskKey = "InitTaskKey";
 
+        private readonly bool IsStrongReadAllowedOverEventualConsistency = false;
         //Auth
         private readonly AuthorizationTokenProvider cosmosAuthorization;
 
@@ -410,6 +411,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="enableCpuMonitor">Flag that indicates whether client-side CPU monitoring is enabled for improved troubleshooting.</param>
         /// <param name="transportClientHandlerFactory">Transport client handler factory.</param>
         /// <param name="storeClientFactory">Factory that creates store clients sharing the same transport client to optimize network resource reuse across multiple document clients in the same process.</param>
+        /// <param name="isStrongReadAllowedOverEventualConsistency">Flag to allow Strong Read Over Eventual Consistency</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -433,7 +435,8 @@ namespace Microsoft.Azure.Cosmos
                               ISessionContainer sessionContainer = null,
                               bool? enableCpuMonitor = null,
                               Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
-                              IStoreClientFactory storeClientFactory = null)
+                              IStoreClientFactory storeClientFactory = null,
+                              bool isStrongReadAllowedOverEventualConsistency = false)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -454,6 +457,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.cosmosAuthorization = cosmosAuthorization ?? throw new ArgumentNullException(nameof(cosmosAuthorization));
             this.transportClientHandlerFactory = transportClientHandlerFactory;
+            this.IsStrongReadAllowedOverEventualConsistency = isStrongReadAllowedOverEventualConsistency;
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -6453,10 +6457,17 @@ namespace Microsoft.Azure.Cosmos
             return resource.SelfLink ?? resource.AltLink;
         }
 
-        internal void EnsureValidOverwrite(Documents.ConsistencyLevel desiredConsistencyLevel)
+        internal void EnsureValidOverwrite(
+            Documents.ConsistencyLevel desiredConsistencyLevel,
+            OperationType operationType,
+            ResourceType resourceType)
         {
             Documents.ConsistencyLevel defaultConsistencyLevel = this.accountServiceConfiguration.DefaultConsistencyLevel;
-            if (!this.IsValidConsistency(defaultConsistencyLevel, desiredConsistencyLevel))
+            if (!this.IsValidConsistency(
+                        defaultConsistencyLevel, 
+                        desiredConsistencyLevel,
+                        operationType,
+                        resourceType))
             {
                 throw new ArgumentException(string.Format(
                     CultureInfo.CurrentUICulture,
@@ -6466,14 +6477,23 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private bool IsValidConsistency(Documents.ConsistencyLevel backendConsistency, Documents.ConsistencyLevel desiredConsistency)
+        private bool IsValidConsistency(
+            Documents.ConsistencyLevel backendConsistency, 
+            Documents.ConsistencyLevel desiredConsistency,
+            OperationType operationType,
+            ResourceType resourceType)
         {
             if (this.allowOverrideStrongerConsistency)
             {
                 return true;
             }
 
-            return ValidationHelpers.IsValidConsistencyLevelOverwrite(backendConsistency, desiredConsistency);
+            return ValidationHelpers.IsValidConsistencyLevelOverwrite(
+                backendConsistency: backendConsistency,
+                desiredConsistency: desiredConsistency,
+                isStrongReadAllowedOverEventualConsistency: this.IsStrongReadAllowedOverEventualConsistency,
+                operationType: operationType,
+                resourceType: resourceType);
         }
 
         private void InitializeDirectConnectivity(IStoreClientFactory storeClientFactory)

@@ -584,6 +584,15 @@ namespace Microsoft.Azure.Cosmos.Fluent
             return this;
         }
 
+        /// <summary>
+        /// IsStrongReadAllowedOverEventualConsistency.
+        /// </summary>
+        internal CosmosClientBuilder WithStrongReadAllowedOverEventualConsistency()
+        {
+            this.clientOptions.IsStrongReadAllowedOverEventualConsistency = true;
+            return this;
+        }
+
         internal CosmosClientBuilder WithRetryWithOptions(
             int? initialRetryForRetryWithMilliseconds,
             int? maximumRetryForRetryWithMilliseconds,
