@@ -23,6 +23,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     internal class EncryptionKeyStoreProviderImpl : EncryptionKeyStoreProvider
     {
+        public const string RsaOaepWrapAlgorithm = "RSA-OAEP";
+
         private readonly IKeyEncryptionKeyResolver keyEncryptionKeyResolver;
 
         public EncryptionKeyStoreProviderImpl(IKeyEncryptionKeyResolver keyEncryptionKeyResolver, string providerName)
@@ -60,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             if (algorithm == KeyEncryptionKeyAlgorithm.RSA_OAEP)
             {
-                return "RSA-OAEP";
+                return EncryptionKeyStoreProviderImpl.RsaOaepWrapAlgorithm;
             }
 
             throw new InvalidOperationException(string.Format("Unexpected algorithm {0}", algorithm));
