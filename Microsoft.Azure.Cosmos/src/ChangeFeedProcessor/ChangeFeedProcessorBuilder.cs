@@ -54,13 +54,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Sets the Host name.
+        /// Sets the compute instance name that will host the processor.
         /// </summary>
-        /// <param name="instanceName">Name to be used for the processor instance. When using multiple processor hosts, each host must have a unique name.</param>
+        /// <param name="instanceName">Name of compute instance hosting the processor.</param>
         /// <remarks>
         /// Instance name refers to the unique identifier of the compute that is running the processor. 
         /// Examples could be a VM instance identifier, a machine name, a pod id.
-        /// When sharing the same compute instance for multiple processors, all processors would have the same instance name.
+        /// When distributing a processor across a cluster of compute hosts, each compute host should use a different instance name.
         /// </remarks>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         public ChangeFeedProcessorBuilder WithInstanceName(string instanceName)
