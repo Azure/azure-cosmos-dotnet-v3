@@ -377,10 +377,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
 
                 if (this.client.ClientOptions.ConsistencyLevelValidator.Validate(
-                        accountLevelConsistency: this.AccountConsistencyLevel.Value, 
-                        requestOrClientLevelConsistency: consistencyLevel.Value,
-                        operationType: requestMessage.OperationType,
-                        resourceType: requestMessage.ResourceType))
+                    accountLevelConsistency: this.AccountConsistencyLevel.Value, 
+                    requestOrClientLevelConsistency: consistencyLevel.Value))
                 {
                     // ConsistencyLevel compatibility with back-end configuration will be done by RequestInvokeHandler
                     requestMessage.Headers.Add(HttpConstants.HttpHeaders.ConsistencyLevel, consistencyLevel.Value.ToString());

@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [DataRow(ConnectionMode.Direct)]
-       // [DataRow(ConnectionMode.Gateway)]
+        [DataRow(ConnectionMode.Gateway)]
         public async Task PointSuccessOperationsTest(ConnectionMode mode)
         {
             Container container = await this.CreateClientAndContainer(mode);
