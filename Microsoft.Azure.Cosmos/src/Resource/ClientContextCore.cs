@@ -81,8 +81,7 @@ namespace Microsoft.Azure.Cosmos
                storeClientFactory: clientOptions.StoreClientFactory,
                desiredConsistencyLevel: clientOptions.GetDocumentsConsistencyLevel(),
                handler: httpMessageHandler,
-               sessionContainer: clientOptions.SessionContainer,
-               consistencyValidator: clientOptions.ConsistencyLevelValidator);
+               sessionContainer: clientOptions.SessionContainer);
 
             return ClientContextCore.Create(
                 cosmosClient,
