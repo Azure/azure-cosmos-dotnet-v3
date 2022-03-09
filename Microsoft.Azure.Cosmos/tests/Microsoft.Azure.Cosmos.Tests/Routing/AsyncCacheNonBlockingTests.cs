@@ -21,8 +21,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     [TestClass]
     public class AsyncCacheNonBlockingTests
     {
-       
-
         [TestMethod]
         [DataRow(true)]
         [DataRow(false)]
@@ -32,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
             await asyncCache.GetAsync(
                 "test",
-                async (staleValue) =>
+                async (_) =>
                 {
                     await Task.Delay(TimeSpan.FromMilliseconds(5));
                     throw new NotFoundException("testNotFoundException");
@@ -49,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             string expectedValue = "ResponseValue";
             string response = await asyncCache.GetAsync(
                 "test",
-                async (staleValue) =>
+                async (_) =>
                 {
                     await Task.Delay(TimeSpan.FromMilliseconds(5));
                     return expectedValue;
@@ -63,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             {
                 string forceRefreshResponse = await asyncCache.GetAsync(
                     key: "test",
-                    singleValueInitFunc: async (staleValue) =>
+                    singleValueInitFunc: async (_) =>
                     {
                         await Task.Delay(TimeSpan.FromMilliseconds(5));
                         return expectedValue+i;
@@ -82,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
             Task task1 = asyncCache.GetAsync(
                 "test",
-                async (staleValue) =>
+                async (_) =>
                 {
                     await Task.Delay(TimeSpan.FromMilliseconds(5));
                     throw new NotFoundException("testNotFoundException");
@@ -94,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             {
                 await asyncCache.GetAsync(
                     "test",
-                    (staleValue) => throw new BadRequestException("testBadRequestException"),
+                    (_) => throw new BadRequestException("testBadRequestException"),
                     false,
                     null);
                 Assert.Fail("Should have thrown a NotFoundException");
@@ -114,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
             string response1 = await asyncCache.GetAsync(
                 "test",
-                async (staleValue) =>
+                async (_) =>
                 {
                     await Task.Delay(TimeSpan.FromMilliseconds(5));
                     return value1;
@@ -126,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             string response2 = await asyncCache.GetAsync(
                 "test",
-                async (staleValue) =>
+                async (_) =>
                 {
                     await Task.Delay(TimeSpan.FromMilliseconds(5));
                     throw new Exception("Should use cached value");
@@ -141,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             {
                 await asyncCache.GetAsync(
                     "test",
-                    async (staleValue) =>
+                    async (_) =>
                     {
                         await Task.Delay(TimeSpan.FromMilliseconds(5));
                         throw notFoundException;
@@ -158,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             string valueAfterNotFound = "response4Value";
             string response4 = await asyncCache.GetAsync(
                 "test",
-                async (staleValue) =>
+                async (_) =>
                 {
                     await Task.Delay(TimeSpan.FromMilliseconds(5));
                     return valueAfterNotFound;
@@ -177,6 +175,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 "test",
                 async (staleValue) =>
                 {
+                    Assert.AreEqual(null, staleValue);
                     await Task.Delay(TimeSpan.FromMilliseconds(5));
                     return "test2";
                 },
@@ -185,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             string cachedResults = await asyncCache.GetAsync(
                 "test",
-                async (staleValue) =>
+                async (_) =>
                 {
                     await Task.Delay(TimeSpan.FromMilliseconds(5));
                     throw new Exception("should not refresh");
@@ -197,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             string newValue = null;
             Task<string> updateTask = asyncCache.GetAsync(
                 key: "test",
-                singleValueInitFunc: async (staleValue) =>
+                singleValueInitFunc: async (_) =>
                 {
                     await Task.Delay(TimeSpan.FromSeconds(1));
                     return "Test3";
@@ -208,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             Stopwatch concurrentOperationStopwatch = Stopwatch.StartNew();
             string concurrentUpdateTask = await asyncCache.GetAsync(
                 "test",
-                 async (staleValue) =>
+                 async (_) =>
                  {
                      await Task.Delay(TimeSpan.FromMilliseconds(5));
                      throw new Exception("should not refresh");
@@ -233,14 +232,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
             string result = await asyncCache.GetAsync(
                 "test",
-                (staleValue) => Task.FromResult("test2"),
+                (_) => Task.FromResult("test2"),
                 false,
                 null);
             Assert.AreEqual("test2", result);
 
             string cachedResults = await asyncCache.GetAsync(
                 "test",
-                (staleValue) => throw new Exception("should not refresh"),
+                (_) => throw new Exception("should not refresh"),
                 false,
                 null);
             Assert.AreEqual("test2", cachedResults);
@@ -254,7 +253,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 {
                     await asyncCache.GetAsync(
                         "test",
-                        async (staleValue) =>
+                        async (_) =>
                         {
                             while (delayException)
                             {
@@ -275,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             cachedResults = await asyncCache.GetAsync(
                "test",
-               (staleValue) => throw new Exception("should not refresh"),
+               (_) => throw new Exception("should not refresh"),
                false,
                null);
             Assert.AreEqual("test2", cachedResults);
@@ -298,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             {
                 tasks.Add(Task.Run(() => asyncCache.GetAsync(
                     "key",
-                    (staleValue) =>
+                    (_) =>
                     {
                         Interlocked.Increment(ref totalLazyCalls);
                         return Task.FromResult("Test");
@@ -330,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                     {
                         await asyncCache.GetAsync(
                             "key",
-                            async (staleValue) =>
+                            async (_) =>
                             {
                                 Interlocked.Increment(ref totalLazyCalls);
                                 await Task.Delay(random.Next(0, 3));
@@ -362,7 +361,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             {
                 await asyncCache.GetAsync(
                     "key",
-                    async (staleValue) =>
+                    async (_) =>
                     {
                         // Use a dummy await to make it simulate a real async network call
                         await Task.CompletedTask;
@@ -386,7 +385,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             {
                 await asyncCache.GetAsync(
                     "key",
-                    async (staleValue) =>
+                    async (_) =>
                     {
                         // Use a dummy await to make it simulate a real async network call
                         await Task.CompletedTask;
@@ -407,7 +406,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             totalLazyCalls = 0;
             string result = await asyncCache.GetAsync(
                     "key",
-                    async (staleValue) =>
+                    async (_) =>
                     {
                         // Use a dummy await to make it simulate a real async network call
                         await Task.CompletedTask;

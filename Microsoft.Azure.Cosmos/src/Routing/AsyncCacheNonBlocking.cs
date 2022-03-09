@@ -101,12 +101,13 @@ namespace Microsoft.Azure.Cosmos
                         // called but never awaited.
                         if (initialLazyValue.ShouldRemoveFromCacheThreadSafe())
                         {
-                            DefaultTrace.TraceError(
-                                "AsyncCacheNonBlocking Failed GetAsync. Init task was not removed with key: {0}, Exception: {1}",
-                                key,
-                                e);
+                            bool removed = this.TryRemove(key); 
 
-                            this.TryRemove(key);
+                            DefaultTrace.TraceError(
+                                "AsyncCacheNonBlocking Failed GetAsync. key: {0}, tryRemoved: {1}, Exception: {2}",
+                                key,
+                                removed,
+                                e);
                         }
 
                         throw;
