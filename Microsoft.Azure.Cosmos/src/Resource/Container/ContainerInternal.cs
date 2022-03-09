@@ -156,17 +156,6 @@ namespace Microsoft.Azure.Cosmos
             FeedRange feedRange,
             CancellationToken cancellationToken = default);
 
-        public abstract FeedIterator GetItemQueryStreamIterator(
-            FeedRange feedRange,
-            QueryDefinition queryDefinition,
-            string continuationToken,
-            QueryRequestOptions requestOptions = null);
-
-        public abstract FeedIterator<T> GetItemQueryIterator<T>(
-            FeedRange feedRange,
-            QueryDefinition queryDefinition,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null);
 #endif
 
         public abstract class TryExecuteQueryResult

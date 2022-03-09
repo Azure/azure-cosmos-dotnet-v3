@@ -1083,6 +1083,108 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null);
 
         /// <summary>
+        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
+        ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
+        /// </summary>
+        /// <param name="feedRange">A FeedRange obtained from <see cref="Container.GetFeedRangesAsync(CancellationToken)"/></param>
+        /// <param name="queryDefinition">The Cosmos SQL query definition.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
+        /// <returns>An iterator to go through the items.</returns>
+        /// <remarks>
+        /// Query as a stream only supports single partition queries 
+        /// </remarks>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
+        /// <example>
+        /// Create a query to get all the ToDoActivity that have a cost greater than 9000 for the specified partition
+        /// <code language="c#">
+        /// <![CDATA[
+        /// public class ToDoActivity{
+        ///     public string id {get; set;}
+        ///     public string status {get; set;}
+        ///     public int cost {get; set;}
+        /// }
+        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangesAsync();
+        /// // Distribute feedRanges across multiple compute units and pass each one to a different iterator
+        /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos t where t.cost > @expensive")
+        ///     .WithParameter("@expensive", 9000);
+        /// using (FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
+        ///     feedRanges[0],
+        ///     queryDefinition,
+        ///     null,
+        ///     new QueryRequestOptions() { }))
+        /// {
+        ///     while (feedIterator.HasMoreResults)
+        ///     {
+        ///         using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///         {
+        ///             using (StreamReader sr = new StreamReader(response.Content))
+        ///             using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///             {
+        ///                 JObject result = JObject.Load(jtr);
+        ///             }
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract FeedIterator GetItemQueryStreamIterator(
+            FeedRange feedRange,
+            QueryDefinition queryDefinition,
+            string continuationToken,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
+        ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
+        /// </summary>
+        /// <param name="feedRange">A FeedRange obtained from <see cref="Container.GetFeedRangesAsync(CancellationToken)"/>.</param>
+        /// <param name="queryDefinition">The Cosmos SQL query definition.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
+        /// <returns>An iterator to go through the items.</returns>
+        /// <remarks>
+        /// Query as a stream only supports single partition queries 
+        /// </remarks>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
+        /// <example>
+        /// Create a query to get all the ToDoActivity that have a cost greater than 9000 for the specified partition
+        /// <code language="c#">
+        /// <![CDATA[
+        /// public class ToDoActivity{
+        ///     public string id {get; set;}
+        ///     public string status {get; set;}
+        ///     public int cost {get; set;}
+        /// }
+        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangesAsync();
+        /// // Distribute feedRanges across multiple compute units and pass each one to a different iterator
+        /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos t where t.cost > @expensive")
+        ///     .WithParameter("@expensive", 9000);
+        /// using (FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
+        ///     feedRanges[0],
+        ///     queryDefinition,
+        ///     null,
+        ///     new QueryRequestOptions() { }))
+        /// {
+        ///     while (feedIterator.HasMoreResults)
+        ///     {
+        ///         foreach(var item in await feedIterator.ReadNextAsync())
+        ///         {
+        ///             Console.WriteLine(item.cost); 
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract FeedIterator<T> GetItemQueryIterator<T>(
+            FeedRange feedRange,
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
         /// This method creates a LINQ query for items under a container in an Azure Cosmos DB service.
         /// IQueryable extension method ToFeedIterator() should be use for asynchronous execution with FeedIterator, please refer to example 2.
         /// </summary>
@@ -1561,108 +1663,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default);
-
-        /// <summary>
-        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
-        ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
-        /// </summary>
-        /// <param name="feedRange">A FeedRange obtained from <see cref="Container.GetFeedRangesAsync(CancellationToken)"/></param>
-        /// <param name="queryDefinition">The Cosmos SQL query definition.</param>
-        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
-        /// <returns>An iterator to go through the items.</returns>
-        /// <remarks>
-        /// Query as a stream only supports single partition queries 
-        /// </remarks>
-        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
-        /// <example>
-        /// Create a query to get all the ToDoActivity that have a cost greater than 9000 for the specified partition
-        /// <code language="c#">
-        /// <![CDATA[
-        /// public class ToDoActivity{
-        ///     public string id {get; set;}
-        ///     public string status {get; set;}
-        ///     public int cost {get; set;}
-        /// }
-        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangesAsync();
-        /// // Distribute feedRanges across multiple compute units and pass each one to a different iterator
-        /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos t where t.cost > @expensive")
-        ///     .WithParameter("@expensive", 9000);
-        /// using (FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
-        ///     feedRanges[0],
-        ///     queryDefinition,
-        ///     null,
-        ///     new QueryRequestOptions() { }))
-        /// {
-        ///     while (feedIterator.HasMoreResults)
-        ///     {
-        ///         using (ResponseMessage response = await feedIterator.ReadNextAsync())
-        ///         {
-        ///             using (StreamReader sr = new StreamReader(response.Content))
-        ///             using (JsonTextReader jtr = new JsonTextReader(sr))
-        ///             {
-        ///                 JObject result = JObject.Load(jtr);
-        ///             }
-        ///         }
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract FeedIterator GetItemQueryStreamIterator(
-            FeedRange feedRange,
-            QueryDefinition queryDefinition,
-            string continuationToken,
-            QueryRequestOptions requestOptions = null);
-
-        /// <summary>
-        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
-        ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
-        /// </summary>
-        /// <param name="feedRange">A FeedRange obtained from <see cref="Container.GetFeedRangesAsync(CancellationToken)"/>.</param>
-        /// <param name="queryDefinition">The Cosmos SQL query definition.</param>
-        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
-        /// <returns>An iterator to go through the items.</returns>
-        /// <remarks>
-        /// Query as a stream only supports single partition queries 
-        /// </remarks>
-        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
-        /// <example>
-        /// Create a query to get all the ToDoActivity that have a cost greater than 9000 for the specified partition
-        /// <code language="c#">
-        /// <![CDATA[
-        /// public class ToDoActivity{
-        ///     public string id {get; set;}
-        ///     public string status {get; set;}
-        ///     public int cost {get; set;}
-        /// }
-        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangesAsync();
-        /// // Distribute feedRanges across multiple compute units and pass each one to a different iterator
-        /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos t where t.cost > @expensive")
-        ///     .WithParameter("@expensive", 9000);
-        /// using (FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
-        ///     feedRanges[0],
-        ///     queryDefinition,
-        ///     null,
-        ///     new QueryRequestOptions() { }))
-        /// {
-        ///     while (feedIterator.HasMoreResults)
-        ///     {
-        ///         foreach(var item in await feedIterator.ReadNextAsync())
-        ///         {
-        ///             Console.WriteLine(item.cost); 
-        ///         }
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract FeedIterator<T> GetItemQueryIterator<T>(
-            FeedRange feedRange,
-            QueryDefinition queryDefinition,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null);
 
 #endif
     }
