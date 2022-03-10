@@ -24,15 +24,18 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private readonly ConcurrentDictionary<TKey, AsyncLazyWithRefreshTask<TValue>> values;
+        private readonly Func<Exception, bool> removeFromCacheOnBackgroundRefreshException;
 
         private readonly IEqualityComparer<TKey> keyEqualityComparer;
         private bool isDisposed;
 
         public AsyncCacheNonBlocking(
+            Func<Exception, bool> removeFromCacheOnBackgroundRefreshException = null,
             IEqualityComparer<TKey> keyEqualityComparer = null)
         {
             this.keyEqualityComparer = keyEqualityComparer ?? EqualityComparer<TKey>.Default;
             this.values = new ConcurrentDictionary<TKey, AsyncLazyWithRefreshTask<TValue>>(this.keyEqualityComparer);
+            this.removeFromCacheOnBackgroundRefreshException = removeFromCacheOnBackgroundRefreshException ?? AsyncCacheNonBlocking<TKey, TValue>.RemoveNotFoundFromCacheOnException;
         }
 
         public AsyncCacheNonBlocking()
@@ -124,7 +127,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     // In some scenarios when a background failure occurs like a 404
                     // the initial cache value should be removed.
-                    if (AsyncCacheNonBlocking<TKey, TValue>.RemoveNotFoundFromCacheOnException(e))
+                    if (this.removeFromCacheOnBackgroundRefreshException(e))
                     {
                         if (initialLazyValue.ShouldRemoveFromCacheThreadSafe())
                         {

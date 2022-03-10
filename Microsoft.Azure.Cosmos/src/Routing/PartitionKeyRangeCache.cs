@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             CollectionCache collectionCache)
         {
             this.routingMapCache = new AsyncCacheNonBlocking<string, CollectionRoutingMap>(
-                    StringComparer.Ordinal);
+                   keyEqualityComparer: StringComparer.Ordinal);
             this.authorizationTokenProvider = authorizationTokenProvider;
             this.storeModel = storeModel;
             this.collectionCache = collectionCache;
