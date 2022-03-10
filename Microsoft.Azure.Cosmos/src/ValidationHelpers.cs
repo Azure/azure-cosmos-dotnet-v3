@@ -10,38 +10,38 @@ namespace Microsoft.Azure.Cosmos
     internal static class ValidationHelpers
     {
         /// <summary>
-        /// If isStrongReadAllowedOverEventualConsistency flag is true, it allows only "Strong Read with Eventual Consistency" else 
-        /// It goes through normal validation where it doesn't allow strong consistency over weaker consistency.
+        /// If isStrongReadAllowedOverEventualConsistency flag is true, it allows only "Strong Read with Eventual Consistency Write". 
+        /// It goes through a validation where it doesn't allow strong consistency over weaker consistency.
         /// </summary>
         /// <param name="backendConsistency"> Account Level Consistency </param>
         /// <param name="desiredConsistency"> Request/Client Level Consistency</param>
-        /// <param name="isStrongReadAllowedOverEventualConsistency"> Allows Strong Read with Eventual Write</param>
-        /// <param name="operationType">  <see cref="OperationType"/> </param>
+        /// <param name="isStrongReadWithEventualConsistencyWriteAllowed"> Allows Strong Read with Eventual Write</param>
+        /// <param name="operationType"> <see cref="OperationType"/> </param>
         /// <param name="resourceType"> <see cref="ResourceType"/> </param>
         /// <returns>true/false</returns>
         /// <exception cref="ArgumentException">Invalid Backend Consistency</exception>
         public static bool IsValidConsistencyLevelOverwrite(
                                     Cosmos.ConsistencyLevel backendConsistency, 
                                     Cosmos.ConsistencyLevel desiredConsistency, 
-                                    bool isStrongReadAllowedOverEventualConsistency, 
+                                    bool isStrongReadWithEventualConsistencyWriteAllowed, 
                                     OperationType operationType,
                                     ResourceType resourceType)
         {
             return ValidationHelpers.IsValidConsistencyLevelOverwrite(
                                         backendConsistency: (Documents.ConsistencyLevel)backendConsistency,
                                         desiredConsistency: (Documents.ConsistencyLevel)desiredConsistency,
-                                        isStrongReadAllowedOverEventualConsistency: isStrongReadAllowedOverEventualConsistency,
+                                        isStrongReadWithEventualConsistencyWriteAllowed: isStrongReadWithEventualConsistencyWriteAllowed,
                                         operationType: operationType,
                                         resourceType: resourceType);
         }
 
         /// <summary>
-        /// If isStrongReadAllowedOverEventualConsistency flag is true, it allows only "Strong Read with Eventual Consistency" else 
-        /// It goes through normal validation where it doesn't allow strong consistency over weaker consistency.
+        /// If isStrongReadAllowedOverEventualConsistency flag is true, it allows only "Strong Read with Eventual Consistency Write". 
+        /// It goes through a validation where it doesn't allow strong consistency over weaker consistency.
         /// </summary>
         /// <param name="backendConsistency"> Account Level Consistency </param>
         /// <param name="desiredConsistency"> Request/Client Level Consistency</param>
-        /// <param name="isStrongReadAllowedOverEventualConsistency"> Allows Strong Read with Eventual Write</param>
+        /// <param name="isStrongReadWithEventualConsistencyWriteAllowed"> Allows Strong Read with Eventual Write</param>
         /// <param name="operationType">  <see cref="OperationType"/> </param>
         /// <param name="resourceType"> <see cref="ResourceType"/> </param>
         /// <returns>true/false</returns>
@@ -49,11 +49,11 @@ namespace Microsoft.Azure.Cosmos
         public static bool IsValidConsistencyLevelOverwrite(
                                     Documents.ConsistencyLevel backendConsistency,
                                     Documents.ConsistencyLevel desiredConsistency,
-                                    bool isStrongReadAllowedOverEventualConsistency,
+                                    bool isStrongReadWithEventualConsistencyWriteAllowed,
                                     OperationType? operationType,
                                     ResourceType? resourceType)
         {
-            if (isStrongReadAllowedOverEventualConsistency && 
+            if (isStrongReadWithEventualConsistencyWriteAllowed && 
                     ValidationHelpers.IsStrongReadWithEventualConsistencyAllowed(
                             backendConsistency: backendConsistency,
                             desiredConsistency: desiredConsistency,

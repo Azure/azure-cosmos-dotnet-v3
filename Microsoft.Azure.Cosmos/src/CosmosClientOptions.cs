@@ -533,9 +533,9 @@ namespace Microsoft.Azure.Cosmos
         internal bool EnablePartitionLevelFailover { get; set; } = false;
 
         /// <summary>
-        /// Enable Strong Read Allowed Over Eventual Consistency
+        /// Enable Strong Read Allowed with Eventual Consistency Write
         /// </summary>
-        internal bool IsStrongReadAllowedOverEventualConsistency { get; set; } = false;
+        internal bool EnableStrongReadWithEventualConsistencyWrite { get; set; } = false;
         
         /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.

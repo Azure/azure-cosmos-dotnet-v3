@@ -380,11 +380,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     this.AccountConsistencyLevel = await this.client.GetAccountConsistencyLevelAsync();
                 }
 
-                bool isStrongReadAllowedOverEventualConsistency = this.client.ClientOptions.IsStrongReadAllowedOverEventualConsistency;
+                bool isStrongReadWithEventualConsistencyWriteAllowed = this.client.ClientOptions.EnableStrongReadWithEventualConsistencyWrite;
                 if (ValidationHelpers.IsValidConsistencyLevelOverwrite(
                             backendConsistency: this.AccountConsistencyLevel.Value, 
                             desiredConsistency: consistencyLevel.Value,
-                            isStrongReadAllowedOverEventualConsistency: isStrongReadAllowedOverEventualConsistency,
+                            isStrongReadWithEventualConsistencyWriteAllowed: isStrongReadWithEventualConsistencyWriteAllowed,
                             operationType: requestMessage.OperationType,
                             resourceType: requestMessage.ResourceType))
                 {
