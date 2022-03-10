@@ -915,7 +915,7 @@ namespace Microsoft.Azure.Cosmos
             // For direct: WFStoreProxy [set in OpenAsync()].
             this.eventSource = DocumentClientEventSource.Instance;
 
-            this.initializeTaskFactory = (staleValue) =>
+            this.initializeTaskFactory = (_) =>
             {
                 Task<bool> task = TaskHelper.InlineIfPossible<bool>(
                     () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),

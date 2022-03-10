@@ -263,10 +263,10 @@ namespace Microsoft.Azure.Cosmos
 
             ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
             CollectionRoutingMap routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
-                collection.ResourceId,
-                request,
-                NoOpTrace.Singleton,
-                false);
+                collectionRid: collection.ResourceId,
+                request: request,
+                trace: NoOpTrace.Singleton,
+                forceRefresh: false);
 
             if (routingMap != null && request.ForceCollectionRoutingMapRefresh)
             {
@@ -275,9 +275,9 @@ namespace Microsoft.Azure.Cosmos
                     collection.ResourceId);
 
                 routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
-                    collection.ResourceId,
-                    request,
-                    NoOpTrace.Singleton,
+                    collectionRid: collection.ResourceId,
+                    request: request,
+                    trace: NoOpTrace.Singleton,
                     forceRefresh: true);
             }
 
@@ -288,9 +288,9 @@ namespace Microsoft.Azure.Cosmos
                 if (routingMap != null)
                 {
                     routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
-                        collection.ResourceId,
-                        request,
-                        NoOpTrace.Singleton,
+                        collectionRid: collection.ResourceId,
+                        request: request,
+                        trace: NoOpTrace.Singleton,
                         forceRefresh: true);
                 }
             }
@@ -304,7 +304,7 @@ namespace Microsoft.Azure.Cosmos
                 collectionRoutingMapCacheIsUptoDate = false;
                 collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
                 routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
-                        collection.ResourceId,
+                        collectionRid: collection.ResourceId,
                         request: request,
                         trace: NoOpTrace.Singleton,
                         forceRefresh: false);
@@ -336,7 +336,7 @@ namespace Microsoft.Azure.Cosmos
                         // for this new collection rid. Mark it as such.
                         collectionRoutingMapCacheIsUptoDate = false;
                         routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
-                            collection.ResourceId,
+                            collectionRid: collection.ResourceId,
                             request: request,
                             trace: NoOpTrace.Singleton,
                             forceRefresh: false);

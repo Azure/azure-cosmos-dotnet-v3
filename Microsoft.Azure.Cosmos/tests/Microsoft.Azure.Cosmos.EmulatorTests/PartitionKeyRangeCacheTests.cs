@@ -51,6 +51,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return null;
             };
 
+            int countSplitExceptions = 0;
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 HttpClientFactory = () => new HttpClient(httpHandlerHelper),
@@ -62,6 +63,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             dsr.ResourceType == Documents.ResourceType.Document &&
                             causeSplitExceptionInRntbdCall)
                         {
+                            countSplitExceptions++;
                             causeSplitExceptionInRntbdCall = false;
                             throw new Documents.Routing.PartitionKeyRangeIsSplittingException("Test");
                         }
@@ -70,8 +72,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosClient resourceClient = TestCommon.CreateCosmosClient(clientOptions);
 
-            string dbName = "f7d55b47-1dc8-40b3-8389-dd330e7f08f5";
-            string containerName = "8e5dece5-1e9c-4e54-8da2-33e9cb7b38df";
+            string dbName = Guid.NewGuid().ToString();
+            string containerName = nameof(PartitionKeyRangeCacheTests);
 
             Database db = await resourceClient.CreateDatabaseIfNotExistsAsync(dbName);
             Container container = await db.CreateContainerIfNotExistsAsync(
@@ -80,7 +82,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 400);
 
             // Start a background job that loops forever
-            Task backgroundItemOperatios = Task.Factory.StartNew(() => this.CreateAndReadItemBackgroundLoop(container));
+            List<Exception> exceptions = new();
+            Task backgroundItemOperatios = Task.Factory.StartNew(() => this.CreateAndReadItemBackgroundLoop(container, exceptions));
 
             // Wait for the background job to start
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -115,6 +118,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(4, pkRangeCalls);
 
             Assert.AreEqual(1, ifNoneMatchValues.Count(x => string.IsNullOrEmpty(x)));
+            Assert.AreEqual(3, ifNoneMatchValues.Count(x => x == failedIfNoneMatchValue), $"3 request with same if none value. 1 initial, 2 from the split errors. split exception count: {countSplitExceptions}; {string.Join(';', ifNoneMatchValues)}");
 
             HashSet<string> verifyUniqueIfNoneHeaderValues = new HashSet<string>();
             foreach(string ifNoneValue in ifNoneMatchValues)
@@ -123,16 +127,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     verifyUniqueIfNoneHeaderValues.Add(ifNoneValue);
                 }
-                else
+                else if (ifNoneValue != failedIfNoneMatchValue)
                 {
-                    Assert.AreEqual(failedIfNoneMatchValue, ifNoneValue);
-                    // There should only be 1 duplicate. Reset the value to cause failure if another one fails
-                    failedIfNoneMatchValue = null;
+                    Assert.AreEqual(failedIfNoneMatchValue, ifNoneValue, $"Multiple duplicates; split exception count: {countSplitExceptions}; {string.Join(';', ifNoneMatchValues)}");
                 }
             }
+
+            Assert.AreEqual(0, exceptions.Count, $"Unexpected exceptions: {string.Join(';', exceptions)}");
         }
 
-        private async Task CreateAndReadItemBackgroundLoop(Container container)
+        private async Task CreateAndReadItemBackgroundLoop(Container container, List<Exception> exceptions)
         {
             this.loopBackgroundOperaitons = true;
 
@@ -150,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex);
+                    exceptions.Add(ex);
                 }
             }
         }
