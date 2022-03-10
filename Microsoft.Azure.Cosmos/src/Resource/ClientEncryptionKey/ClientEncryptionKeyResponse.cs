@@ -9,12 +9,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Response from the Cosmos DB service for a <see cref="Cosmos.ClientEncryptionKey"/> related request.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-        class ClientEncryptionKeyResponse : Response<ClientEncryptionKeyProperties>
+    public class ClientEncryptionKeyResponse : Response<ClientEncryptionKeyProperties>
     {
         /// <summary>
         /// Creates a client encryption key response as a no-op for mock testing.

@@ -5,18 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Fluent
 {
     using System;
-    using System.Collections.Generic;
     using System.Collections.ObjectModel;
 
     /// <summary>
     /// <see cref="ClientEncryptionPolicy"/> fluent definition.
     /// </summary>
-#if PREVIEW
-    public 
-#else
-    internal
-#endif
-        sealed class ClientEncryptionPolicyDefinition
+    public sealed class ClientEncryptionPolicyDefinition
     {
         private readonly Collection<ClientEncryptionIncludedPath> clientEncryptionIncludedPaths = new Collection<ClientEncryptionIncludedPath>();
         private readonly ContainerBuilder parent;
