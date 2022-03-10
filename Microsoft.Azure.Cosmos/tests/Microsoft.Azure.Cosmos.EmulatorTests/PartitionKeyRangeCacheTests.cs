@@ -160,6 +160,79 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task VerifyPkRangeCacheRefreshOnThrottlesAsync()
+        {
+            int pkRangeCalls = 0;
+            bool causeSplitExceptionInRntbdCall = false;
+            HttpClientHandlerHelper httpHandlerHelper = new();
+            List<string> ifNoneMatchValues = new();
+            httpHandlerHelper.RequestCallBack = (request, cancellationToken) =>
+            {
+                if (!request.RequestUri.ToString().EndsWith("pkranges"))
+                {
+                    return null;
+                }
+
+                ifNoneMatchValues.Add(request.Headers.IfNoneMatch.ToString());
+
+                pkRangeCalls++;
+
+                // Cause throttle on the init call
+                if (pkRangeCalls <= 3)
+                {
+                    return Task.FromResult(new HttpResponseMessage(HttpStatusCode.TooManyRequests));
+                }
+
+                return null;
+            };
+
+            int countSplitExceptions = 0;
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                HttpClientFactory = () => new HttpClient(httpHandlerHelper),
+                TransportClientHandlerFactory = (transportClient) => new TransportClientWrapper(
+                    transportClient,
+                    (uri, resource, dsr) =>
+                    {
+                        if (dsr.ResourceType == Documents.ResourceType.Document &&
+                            causeSplitExceptionInRntbdCall)
+                        {
+                            countSplitExceptions++;
+                            causeSplitExceptionInRntbdCall = false;
+                            throw new Documents.Routing.PartitionKeyRangeIsSplittingException("Test");
+                        }
+                    })
+            };
+
+            CosmosClient resourceClient = TestCommon.CreateCosmosClient(clientOptions);
+
+            string dbName = Guid.NewGuid().ToString();
+            string containerName = nameof(PartitionKeyRangeCacheTests);
+
+            Database db = await resourceClient.CreateDatabaseIfNotExistsAsync(dbName);
+            Container container = await db.CreateContainerIfNotExistsAsync(
+                containerName,
+                "/pk",
+                400);
+
+            ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
+            await container.CreateItemAsync<ToDoActivity>(toDoActivity);
+            Assert.AreEqual(5, pkRangeCalls);
+
+            Assert.AreEqual(4, ifNoneMatchValues.Count(x => string.IsNullOrEmpty(x)), "First 3 calls are throttled and 4 succeeds");
+
+            string lastIfNoneMatchValue = ifNoneMatchValues.Last();
+            ifNoneMatchValues.Clear();
+
+            pkRangeCalls = 0;
+            causeSplitExceptionInRntbdCall = true;
+            await container.ReadItemAsync<ToDoActivity>(toDoActivity.id, new PartitionKey(toDoActivity.pk));
+            Assert.AreEqual(4, pkRangeCalls);
+
+            Assert.AreEqual(0, ifNoneMatchValues.Count(x => string.IsNullOrEmpty(x)), "The cache is already init. It should never re-initialize the cache.");
+        }
+
+        [TestMethod]
         public async Task TestRidRefreshOnNotFoundAsync()
         {
             CosmosClient resourceClient = TestCommon.CreateCosmosClient();
