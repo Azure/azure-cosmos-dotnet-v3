@@ -262,38 +262,28 @@ namespace Microsoft.Azure.Cosmos
             bool collectionRoutingMapCacheIsUptoDate = false;
 
             ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
-            CollectionRoutingMap routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
-                collectionRid: collection.ResourceId,
-                request: request,
-                trace: NoOpTrace.Singleton,
-                forceRefresh: false);
 
-            if (routingMap != null && request.ForceCollectionRoutingMapRefresh)
+            bool forceRefreshPartitionKeyRangeCache = false;
+            if (request.ForceCollectionRoutingMapRefresh)
             {
+                forceRefreshPartitionKeyRangeCache = true;
                 DefaultTrace.TraceInformation(
                     "AddressResolver.ResolveAddressesAndIdentityAsync ForceCollectionRoutingMapRefresh collection.ResourceId = {0}",
                     collection.ResourceId);
-
-                routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
-                    collectionRid: collection.ResourceId,
-                    request: request,
-                    trace: NoOpTrace.Singleton,
-                    forceRefresh: true);
             }
 
             if (request.ForcePartitionKeyRangeRefresh)
             {
                 collectionRoutingMapCacheIsUptoDate = true;
                 request.ForcePartitionKeyRangeRefresh = false;
-                if (routingMap != null)
-                {
-                    routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
-                        collectionRid: collection.ResourceId,
-                        request: request,
-                        trace: NoOpTrace.Singleton,
-                        forceRefresh: true);
-                }
+                forceRefreshPartitionKeyRangeCache = true;
             }
+
+            CollectionRoutingMap routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
+                collectionRid: collection.ResourceId,
+                request: request,
+                trace: NoOpTrace.Singleton,
+                forceRefresh: forceRefreshPartitionKeyRangeCache);
 
             if (routingMap == null && !collectionCacheIsUptoDate)
             {
