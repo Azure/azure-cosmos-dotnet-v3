@@ -13,6 +13,14 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.26.0"/> [3.26.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.26.0) - 2022-03-10
+
+#### Added
+- [#3037](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3037) Diagnostics: Adds total number of active clients information
+- [#3068](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3068) Query: Adds FeedRange API for Query to GA
+- [#3035](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3035) Client Encryption: Adds Client Encryption APIs to GA SDK
+- [#3072](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3072) Availability: Adds improved cache logic for partition key ranges
+
 ### <a name="3.26.0-preview"/> [3.26.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.26.0-preview) - 2022-02-28
 
 #### Added
