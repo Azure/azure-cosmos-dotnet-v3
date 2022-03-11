@@ -186,12 +186,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ClientEventualWriteStrongReadConsistencyTestAsync()
         {
+            // Making sure account level consistency is always eventual
+            HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
+            {
+                ResponseIntercepter = async (response) =>
+                {
+                    string responseString = await response.Content.ReadAsStringAsync();
+
+                    if(responseString.Contains("databaseAccountEndpoint"))
+                    {
+                        AccountProperties accountProperties = 
+                                    JsonConvert.DeserializeObject<AccountProperties>(responseString);
+                        accountProperties.Consistency.DefaultConsistencyLevel = Cosmos.ConsistencyLevel.Eventual;
+                        response.Content = new StringContent(JsonConvert.SerializeObject(accountProperties), Encoding.UTF8, "application/json");
+                    }
+                    return response;
+                }
+            };
+
             RequestHandlerHelper handlerHelper = new RequestHandlerHelper();
             using CosmosClient cosmosClient = TestCommon.CreateCosmosClient(x =>
-                x.WithConsistencyLevel(Cosmos.ConsistencyLevel.Eventual).AddCustomHandlers(handlerHelper));
+                x.AddCustomHandlers(handlerHelper)
+                .WithHttpClientFactory(() => new HttpClient(httpHandler))
+                .WithStrongReadWithEventualConsistencyWrite());
 
             Container consistencyContainer = cosmosClient.GetContainer(this.database.Id, this.Container.Id);
-
 
             int requestCount = 0;
             handlerHelper.UpdateRequestMessage = (request) =>
@@ -202,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 } 
                 else
                 {
-                    Assert.AreEqual(Cosmos.ConsistencyLevel.Eventual.ToString(), request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel]);
+                    Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel]);
                 }
                 
                 requestCount++;
