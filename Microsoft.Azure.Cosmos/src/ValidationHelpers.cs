@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="backendConsistency"> Account Level Consistency </param>
         /// <param name="desiredConsistency"> Request/Client Level Consistency</param>
-        /// <param name="isStrongReadWithEventualConsistencyWriteAllowed"> Allows Strong Read with Eventual Write</param>
+        /// <param name="isStrongReadWithEventualConsistencyAccountAllowed"> Allows Strong Read with Eventual Write</param>
         /// <param name="operationType"> <see cref="OperationType"/> </param>
         /// <param name="resourceType"> <see cref="ResourceType"/> </param>
         /// <returns>true/false</returns>
@@ -23,14 +23,14 @@ namespace Microsoft.Azure.Cosmos
         public static bool IsValidConsistencyLevelOverwrite(
                                     Cosmos.ConsistencyLevel backendConsistency, 
                                     Cosmos.ConsistencyLevel desiredConsistency, 
-                                    bool isStrongReadWithEventualConsistencyWriteAllowed, 
+                                    bool isStrongReadWithEventualConsistencyAccountAllowed, 
                                     OperationType operationType,
                                     ResourceType resourceType)
         {
             return ValidationHelpers.IsValidConsistencyLevelOverwrite(
                                         backendConsistency: (Documents.ConsistencyLevel)backendConsistency,
                                         desiredConsistency: (Documents.ConsistencyLevel)desiredConsistency,
-                                        isStrongReadWithEventualConsistencyWriteAllowed: isStrongReadWithEventualConsistencyWriteAllowed,
+                                        isStrongReadWithEventualConsistencyAccountAllowed: isStrongReadWithEventualConsistencyAccountAllowed,
                                         operationType: operationType,
                                         resourceType: resourceType);
         }
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="backendConsistency"> Account Level Consistency </param>
         /// <param name="desiredConsistency"> Request/Client Level Consistency</param>
-        /// <param name="isStrongReadWithEventualConsistencyWriteAllowed"> Allows Strong Read with Eventual Write</param>
+        /// <param name="isStrongReadWithEventualConsistencyAccountAllowed"> Allows Strong Read with Eventual Write</param>
         /// <param name="operationType">  <see cref="OperationType"/> </param>
         /// <param name="resourceType"> <see cref="ResourceType"/> </param>
         /// <returns>true/false</returns>
@@ -49,11 +49,11 @@ namespace Microsoft.Azure.Cosmos
         public static bool IsValidConsistencyLevelOverwrite(
                                     Documents.ConsistencyLevel backendConsistency,
                                     Documents.ConsistencyLevel desiredConsistency,
-                                    bool isStrongReadWithEventualConsistencyWriteAllowed,
+                                    bool isStrongReadWithEventualConsistencyAccountAllowed,
                                     OperationType? operationType,
                                     ResourceType? resourceType)
         {
-            if (isStrongReadWithEventualConsistencyWriteAllowed && 
+            if (isStrongReadWithEventualConsistencyAccountAllowed && 
                     ValidationHelpers.IsStrongReadWithEventualConsistencyAllowed(
                             backendConsistency: backendConsistency,
                             desiredConsistency: desiredConsistency,
@@ -119,10 +119,29 @@ namespace Microsoft.Azure.Cosmos
                                 OperationType? operationType,
                                 ResourceType? resourceType)
         {
-            return operationType.HasValue && (operationType == OperationType.Read || operationType == OperationType.ReadFeed) &&
-                    resourceType.HasValue && resourceType == ResourceType.Document &&
-                    backendConsistency == Documents.ConsistencyLevel.Eventual &&
-                    desiredConsistency == Documents.ConsistencyLevel.Strong;
+            if (backendConsistency != Documents.ConsistencyLevel.Eventual)
+            {
+                return false;
+            }
+
+            if (desiredConsistency != Documents.ConsistencyLevel.Strong)
+            {
+                return false;
+            }
+
+            if (!resourceType.HasValue || 
+                    (resourceType.HasValue && resourceType != ResourceType.Document))
+            {
+                return false;
+            }
+
+            if (!operationType.HasValue || 
+                    (operationType.HasValue && !(operationType == OperationType.Read || operationType == OperationType.ReadFeed)))
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }

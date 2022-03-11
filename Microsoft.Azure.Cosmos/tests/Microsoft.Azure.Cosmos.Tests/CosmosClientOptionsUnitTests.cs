@@ -518,20 +518,20 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void WithStrongReadWithEventualConsistencyWrite()
+        public void WithStrongReadWithEventualConsistencyAccount()
         {
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: AccountEndpoint,
                 authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
 
             CosmosClientOptions cosmosClientOptions = cosmosClientBuilder.Build(new MockDocumentClient()).ClientOptions;
-            Assert.IsFalse(cosmosClientOptions.EnableStrongReadWithEventualConsistencyWrite);
+            Assert.IsFalse(cosmosClientOptions.EnableStrongReadWithEventualConsistencyAccount);
 
             cosmosClientBuilder
-                .WithStrongReadWithEventualConsistencyWrite();
+                .WithStrongReadWithEventualConsistencyAccount();
 
             cosmosClientOptions = cosmosClientBuilder.Build(new MockDocumentClient()).ClientOptions;
-            Assert.IsTrue(cosmosClientOptions.EnableStrongReadWithEventualConsistencyWrite);
+            Assert.IsTrue(cosmosClientOptions.EnableStrongReadWithEventualConsistencyAccount);
         }
 
         private class TestWebProxy : IWebProxy

@@ -586,10 +586,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         /// <summary>
         /// Enabled Strong Read with Eventual Consistency Writes
+        /// Use By Compute Only
         /// </summary>
-        internal CosmosClientBuilder WithStrongReadWithEventualConsistencyWrite()
+        internal CosmosClientBuilder WithStrongReadWithEventualConsistencyAccount()
         {
-            this.clientOptions.EnableStrongReadWithEventualConsistencyWrite = true;
+            this.clientOptions.EnableStrongReadWithEventualConsistencyAccount = true;
             return this;
         }
 

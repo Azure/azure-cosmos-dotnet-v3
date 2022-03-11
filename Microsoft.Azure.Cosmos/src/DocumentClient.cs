@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
         private const bool DefaultEnableCpuMonitor = true;
         private const string DefaultInitTaskKey = "InitTaskKey";
 
-        private readonly bool IsStrongReadWithEventualConsistencyWriteAllowed = false;
+        private readonly bool IsStrongReadWithEventualConsistencyAccountAllowed = false;
         //Auth
         private readonly AuthorizationTokenProvider cosmosAuthorization;
 
@@ -411,7 +411,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="enableCpuMonitor">Flag that indicates whether client-side CPU monitoring is enabled for improved troubleshooting.</param>
         /// <param name="transportClientHandlerFactory">Transport client handler factory.</param>
         /// <param name="storeClientFactory">Factory that creates store clients sharing the same transport client to optimize network resource reuse across multiple document clients in the same process.</param>
-        /// <param name="isStrongReadAllowedWithEventualConsistencyWrite">Flag to allow Strong Read Over Eventual Consistency</param>
+        /// <param name="isStrongReadAllowedWithEventualConsistencyAccount">Flag to allow Strong Read Over Eventual Consistency</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -436,7 +436,7 @@ namespace Microsoft.Azure.Cosmos
                               bool? enableCpuMonitor = null,
                               Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
                               IStoreClientFactory storeClientFactory = null,
-                              bool isStrongReadAllowedWithEventualConsistencyWrite = false)
+                              bool isStrongReadAllowedWithEventualConsistencyAccount = false)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -457,7 +457,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.cosmosAuthorization = cosmosAuthorization ?? throw new ArgumentNullException(nameof(cosmosAuthorization));
             this.transportClientHandlerFactory = transportClientHandlerFactory;
-            this.IsStrongReadWithEventualConsistencyWriteAllowed = isStrongReadAllowedWithEventualConsistencyWrite;
+            this.IsStrongReadWithEventualConsistencyAccountAllowed = isStrongReadAllowedWithEventualConsistencyAccount;
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -6491,7 +6491,7 @@ namespace Microsoft.Azure.Cosmos
             return ValidationHelpers.IsValidConsistencyLevelOverwrite(
                 backendConsistency: backendConsistency,
                 desiredConsistency: desiredConsistency,
-                isStrongReadWithEventualConsistencyWriteAllowed: this.IsStrongReadWithEventualConsistencyWriteAllowed,
+                isStrongReadWithEventualConsistencyAccountAllowed: this.IsStrongReadWithEventualConsistencyAccountAllowed,
                 operationType: operationType,
                 resourceType: resourceType);
         }

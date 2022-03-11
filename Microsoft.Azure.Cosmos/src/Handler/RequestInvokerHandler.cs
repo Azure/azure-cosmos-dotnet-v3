@@ -28,6 +28,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         private readonly CosmosClient client;
         private readonly Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
 
+        private bool? IsStrongReadWithEventualConsistencyAccountAllowed;
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
 
         public RequestInvokerHandler(
@@ -35,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Cosmos.ConsistencyLevel? requestedClientConsistencyLevel)
         {
             this.client = client;
-            this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;
+            this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;       
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -380,11 +381,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     this.AccountConsistencyLevel = await this.client.GetAccountConsistencyLevelAsync();
                 }
 
-                bool isStrongReadWithEventualConsistencyWriteAllowed = this.client.ClientOptions.EnableStrongReadWithEventualConsistencyWrite;
+                if (!this.IsStrongReadWithEventualConsistencyAccountAllowed.HasValue)
+                {
+                    this.IsStrongReadWithEventualConsistencyAccountAllowed = this.client.ClientOptions.EnableStrongReadWithEventualConsistencyAccount;
+                }
+
                 if (ValidationHelpers.IsValidConsistencyLevelOverwrite(
                             backendConsistency: this.AccountConsistencyLevel.Value, 
                             desiredConsistency: consistencyLevel.Value,
-                            isStrongReadWithEventualConsistencyWriteAllowed: isStrongReadWithEventualConsistencyWriteAllowed,
+                            isStrongReadWithEventualConsistencyAccountAllowed: this.IsStrongReadWithEventualConsistencyAccountAllowed.Value,
                             operationType: requestMessage.OperationType,
                             resourceType: requestMessage.ResourceType))
                 {

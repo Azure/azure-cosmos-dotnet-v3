@@ -535,7 +535,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Enable Strong Read Allowed with Eventual Consistency Write
         /// </summary>
-        internal bool EnableStrongReadWithEventualConsistencyWrite { get; set; } = false;
+        internal bool EnableStrongReadWithEventualConsistencyAccount { get; set; } = false;
         
         /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
