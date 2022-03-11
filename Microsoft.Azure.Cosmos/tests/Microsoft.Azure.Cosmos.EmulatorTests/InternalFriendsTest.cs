@@ -5,43 +5,53 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
+    using System.Net;
     using System.Net.Http;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
     [TestClass]
-    public class InternalFriendsTest : BaseCosmosClientHelper
+    public class InternalFriendsTest
     {
-        private Container Container = null;
-        private ContainerProperties containerSettings = null;
-
-        [TestInitialize]
-        public async Task TestInitialize()
-        {
-            await base.TestInit(validateSinglePartitionKeyRangeCacheCall: true);
-            string PartitionKey = "/pk";
-            this.containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                this.containerSettings,
-                cancellationToken: this.cancellationToken);
-            Assert.IsNotNull(response);
-            Assert.IsNotNull(response.Container);
-            Assert.IsNotNull(response.Resource);
-            this.Container = response;
-        }
+        private CosmosClient cosmosClient;
 
         [TestCleanup]
-        public async Task Cleanup()
+        public void Cleanup()
         {
-            await base.TestCleanup();
+            this.cosmosClient?.Dispose();
         }
 
         [TestMethod]
-        public async Task ClientEventualWriteStrongReadConsistencyEnabledTestAsync()
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task ClientEventualWriteStrongReadConsistencyEnabledTestAsync(bool isStrongReadWithEventualConsistencyAccount)
         {
-            // Making sure account level consistency is always eventual
+            Container container = await this.CreateContainer(isStrongReadWithEventualConsistencyAccount);
+
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(item: testItem);
+
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+
+            ItemRequestOptions requestOptions = new();
+            requestOptions.ConsistencyLevel = Cosmos.ConsistencyLevel.Strong;
+            
+            if (isStrongReadWithEventualConsistencyAccount)
+            {
+                ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk), requestOptions);
+                Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+            } else
+            {
+                Assert.ThrowsException<ArgumentException>(async () => await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk), requestOptions));
+            }
+        }
+
+        private async Task<Container> CreateContainer(bool isStrongReadWithEventualConsistencyAccount)
+        {
             HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
             {
                 ResponseIntercepter = async (response) =>
@@ -59,85 +69,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             };
 
-            RequestHandlerHelper handlerHelper = new RequestHandlerHelper();
-            using CosmosClient cosmosClient = TestCommon.CreateCosmosClient(x =>
-                x.AddCustomHandlers(handlerHelper)
-                .WithHttpClientFactory(() => new HttpClient(httpHandler))
-                .WithStrongReadWithEventualConsistencyAccount());
-
-            Container consistencyContainer = cosmosClient.GetContainer(this.database.Id, this.Container.Id);
-
-            int requestCount = 0;
-            handlerHelper.UpdateRequestMessage = (request) =>
+            RequestHandlerHelper handlerHelper = new RequestHandlerHelper
             {
-                if (request.OperationType == Documents.OperationType.Read)
+                UpdateRequestMessage = (request) =>
                 {
-                    Assert.AreEqual(Cosmos.ConsistencyLevel.Strong.ToString(), request.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel]);
-                }
-
-                requestCount++;
-            };
-
-            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
-            ItemResponse<ToDoActivity> response = await consistencyContainer.CreateItemAsync<ToDoActivity>(item: testItem);
-
-            ItemRequestOptions requestOptions = new();
-            requestOptions.ConsistencyLevel = Cosmos.ConsistencyLevel.Strong;
-
-            response = await consistencyContainer.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk), requestOptions);
-
-            Assert.AreEqual(2, requestCount);
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentException))]
-        public async Task ClientEventualWriteStrongReadConsistencyDisabledTestAsync()
-        {
-            // Making sure account level consistency is always eventual
-            HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
-            {
-                ResponseIntercepter = async (response) =>
-                {
-                    string responseString = await response.Content.ReadAsStringAsync();
-
-                    if (responseString.Contains("databaseAccountEndpoint"))
+                    if (request.OperationType == Documents.OperationType.Read)
                     {
-                        AccountProperties accountProperties =
-                                    JsonConvert.DeserializeObject<AccountProperties>(responseString);
-                        accountProperties.Consistency.DefaultConsistencyLevel = Cosmos.ConsistencyLevel.Eventual;
-                        response.Content = new StringContent(JsonConvert.SerializeObject(accountProperties), Encoding.UTF8, "application/json");
+                        Assert.AreEqual(Cosmos.ConsistencyLevel.Strong.ToString(), request.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel]);
                     }
-                    return response;
                 }
             };
 
-            RequestHandlerHelper handlerHelper = new RequestHandlerHelper();
-            using CosmosClient cosmosClient = TestCommon.CreateCosmosClient(x =>
-                x.AddCustomHandlers(handlerHelper)
-                .WithHttpClientFactory(() => new HttpClient(httpHandler)));
-
-            Container consistencyContainer = cosmosClient.GetContainer(this.database.Id, this.Container.Id);
-
-            int requestCount = 0;
-            handlerHelper.UpdateRequestMessage = (request) =>
+            this.cosmosClient = TestCommon.CreateCosmosClient(x =>
             {
-                if (request.OperationType == Documents.OperationType.Read)
+                CosmosClientBuilder builder = x.AddCustomHandlers(handlerHelper)
+                                               .WithHttpClientFactory(() => new HttpClient(httpHandler));
+                if (isStrongReadWithEventualConsistencyAccount)
                 {
-                    Assert.AreEqual(Cosmos.ConsistencyLevel.Strong.ToString(), request.Headers[Documents.HttpConstants.HttpHeaders.ConsistencyLevel]);
+                    builder.WithStrongReadWithEventualConsistencyAccount();
                 }
+            });
 
-                requestCount++;
-            };
+            Database database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString(),
+                cancellationToken: new CancellationTokenSource().Token);
 
-            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
-            ItemResponse<ToDoActivity> response = await consistencyContainer.CreateItemAsync<ToDoActivity>(item: testItem);
-
-            ItemRequestOptions requestOptions = new();
-            requestOptions.ConsistencyLevel = Cosmos.ConsistencyLevel.Strong;
-
-            response = await consistencyContainer.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk), requestOptions);
-
-            Assert.AreEqual(2, requestCount);
+            return await database.CreateContainerAsync(id: Guid.NewGuid().ToString(),
+                partitionKeyPath: "/pk");
         }
     }
 }
