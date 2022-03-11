@@ -1,6 +1,6 @@
 ## <a name="recommended-version"></a> Recommended version
 
-The **minimum recommended version is [3.20.1](#3.20.1)**.
+The **minimum recommended version is [3.25.0](#3.25.0)**.
 
 Make sure that your applications, when using the .NET V3 SDK, are using at least the version described here to have all the critical fixes.
 
@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 - [#3029](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3029) Dependencies: Upgrades to Azure.Core 1.19.0.
+- [#3015](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3015) Merge support: Minimum SDK version that includes partition merge support.
 
 #### Fixed
 - [#3034](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3034), [#3024](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3024), [#3018](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3018), [#3000](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3000) Documentation: Improvements in code samples within xml documentation.
