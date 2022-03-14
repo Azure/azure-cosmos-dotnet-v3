@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
-    internal class StoreRequestNameValueCollection : CosmosMessageHeadersInternal, INameValueCollection
+    internal class StoreRequestNameValueCollection : CosmosMessageHeadersInternal, INameValueCollection, IRequestHeaders
     {
         private static readonly StringComparer DefaultStringComparer = StringComparer.OrdinalIgnoreCase;
         private readonly Lazy<Dictionary<string, string>> lazyNotCommonHeaders;
@@ -45,6 +45,128 @@ namespace Microsoft.Azure.Cosmos
         public string TransportRequestID { get; set; }
         public string Version { get; set; }
         public override string XDate { get; set; }
+
+        private string GetFromNotCommonDictionary(string headerName)
+        {
+            if (string.IsNullOrEmpty(headerName))
+            {
+                throw new ArgumentNullException(nameof(headerName));
+            }
+
+            if (this.lazyNotCommonHeaders.IsValueCreated && 
+                this.lazyNotCommonHeaders.Value.TryGetValue(headerName, out string value))
+            {
+                return value;
+            }
+
+            return null;
+        }
+
+
+        // Not Common Headers
+        public string PreTriggerInclude => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.PreTriggerInclude);
+
+        public string PreTriggerExclude => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.PreTriggerExclude);
+
+        public string PostTriggerInclude => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.PostTriggerInclude);
+
+        public string PostTriggerExclude => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.PostTriggerExclude);
+
+        public string FilterBySchemaResourceId => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.FilterBySchemaResourceId);
+
+        public string CollectionPartitionIndex => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.CollectionPartitionIndex);
+
+        public string CollectionServiceIndex => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.CollectionServiceIndex);
+
+        public string ResourceSchemaName => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.ResourceSchemaName);
+
+        public string BindReplicaDirective => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.BindReplicaDirective);
+
+        public string PrimaryMasterKey => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.PrimaryMasterKey);
+
+        public string SecondaryMasterKey => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.SecondaryMasterKey);
+
+        public string PrimaryReadonlyKey => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.PrimaryReadonlyKey);
+
+        public string SecondaryReadonlyKey => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.SecondaryReadonlyKey);
+
+        public string PartitionCount => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.PartitionCount);
+
+        public string GatewaySignature => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.GatewaySignature);
+
+        public string RestoreMetadataFilter => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.RestoreMetadataFilter);
+
+        public string RestoreParams => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.RestoreParams);
+
+        public string PartitionResourceFilter => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.PartitionResourceFilter);
+
+        public string EnableDynamicRidRangeAllocation => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.EnableDynamicRidRangeAllocation);
+
+        public string SchemaOwnerRid => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.SchemaOwnerRid);
+
+        public string SchemaHash => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.SchemaHash);
+
+        public string SchemaId => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.SchemaId);
+
+        public string IsClientEncrypted => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.IsClientEncrypted);
+
+        public string CorrelatedActivityId => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.CorrelatedActivityId);
+
+        public string BinaryPassthroughRequest => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.BinaryPassthroughRequest);
+
+        public string AllowTentativeWrites => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.AllowTentativeWrites);
+
+        public string IncludeTentativeWrites => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.IncludeTentativeWrites);
+
+        public string MaxPollingIntervalMilliseconds => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.MaxPollingIntervalMilliseconds);
+
+        public string PopulateLogStoreInfo => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.PopulateLogStoreInfo);
+
+        public string MergeCheckPointGLSN => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.MergeCheckPointGLSN);
+
+        public string PopulateUnflushedMergeEntryCount => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.PopulateUnflushedMergeEntryCount);
+
+        public string AddResourcePropertiesToResponse => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.AddResourcePropertiesToResponse);
+
+        public string SystemRestoreOperation => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.SystemRestoreOperation);
+
+        public string ChangeFeedStartFullFidelityIfNoneMatch => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.ChangeFeedStartFullFidelityIfNoneMatch);
+
+        public string SkipRefreshDatabaseAccountConfigs => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.SkipRefreshDatabaseAccountConfigs);
+
+        public string IntendedCollectionRid => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.IntendedCollectionRid);
+
+        public string UseArchivalPartition => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.UseArchivalPartition);
+
+        public string CollectionTruncate => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.CollectionTruncate);
+
+        public string SDKSupportedCapabilities => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.SDKSupportedCapabilities);
+
+        public string PopulateUniqueIndexReIndexProgress => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.PopulateUniqueIndexReIndexProgress);
+
+        public string IsMaterializedViewBuild => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.IsMaterializedViewBuild);
+
+        public string BuilderClientIdentifier => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.BuilderClientIdentifier);
+
+        public string SourceCollectionIfMatch => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.SourceCollectionIfMatch);
+
+        public string PopulateAnalyticalMigrationProgress => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.PopulateAnalyticalMigrationProgress);
+
+        public string ShouldReturnCurrentServerDateTime => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.ShouldReturnCurrentServerDateTime);
+
+        public string RbacUserId => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.RbacUserId);
+
+        public string RbacAction => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.RbacAction);
+
+        public string RbacResource => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.RbacResource);
+
+        public string ChangeFeedWireFormatVersion => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.ChangeFeedWireFormatVersion);
+
+        public string PopulateByokEncryptionProgress => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.PopulateByokEncryptionProgress);
+
+        public string UseUserBackgroundBudget => this.GetFromNotCommonDictionary(WFConstants.BackendHeaders.UseUserBackgroundBudget);
+
+        public string IncludePhysicalPartitionThroughputInfo => this.GetFromNotCommonDictionary(HttpConstants.HttpHeaders.IncludePhysicalPartitionThroughputInfo);
 
         public StoreRequestNameValueCollection()
             : this(new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>(StoreRequestNameValueCollection.DefaultStringComparer)))
