@@ -23,23 +23,40 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private readonly ConcurrentDictionary<TKey, AsyncLazyWithRefreshTask<TValue>> values;
+        private readonly Func<Exception, bool> removeFromCacheOnBackgroundRefreshException;
 
-        private readonly IEqualityComparer<TValue> valueEqualityComparer;
         private readonly IEqualityComparer<TKey> keyEqualityComparer;
         private bool isDisposed;
 
         public AsyncCacheNonBlocking(
-            IEqualityComparer<TValue> valueEqualityComparer,
+            Func<Exception, bool> removeFromCacheOnBackgroundRefreshException = null,
             IEqualityComparer<TKey> keyEqualityComparer = null)
         {
             this.keyEqualityComparer = keyEqualityComparer ?? EqualityComparer<TKey>.Default;
             this.values = new ConcurrentDictionary<TKey, AsyncLazyWithRefreshTask<TValue>>(this.keyEqualityComparer);
-            this.valueEqualityComparer = valueEqualityComparer;
+            this.removeFromCacheOnBackgroundRefreshException = removeFromCacheOnBackgroundRefreshException ?? AsyncCacheNonBlocking<TKey, TValue>.RemoveNotFoundFromCacheOnException;
         }
 
         public AsyncCacheNonBlocking()
-            : this(valueEqualityComparer: EqualityComparer<TValue>.Default, keyEqualityComparer: null)
+            : this(removeFromCacheOnBackgroundRefreshException: null, keyEqualityComparer: null)
         {
+        }
+
+        private static bool RemoveNotFoundFromCacheOnException(Exception e)
+        {
+            if (e is Documents.DocumentClientException dce
+                && dce.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return true;
+            }
+
+            if (e is CosmosException cosmosException
+                && cosmosException.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -69,20 +86,62 @@ namespace Microsoft.Azure.Cosmos
         public async Task<TValue> GetAsync(
            TKey key,
            Func<Task<TValue>> singleValueInitFunc,
-           bool forceRefresh,
+           Func<TValue, bool> forceRefresh,
            Action<TValue, TValue> callBackOnForceRefresh)
         {
             if (this.values.TryGetValue(key, out AsyncLazyWithRefreshTask<TValue> initialLazyValue))
             {
-                if (!forceRefresh)
+                try
                 {
-                    return await initialLazyValue.GetValueAsync();
+                    TValue cachedResult = await initialLazyValue.GetValueAsync();
+                    if (forceRefresh == null || !forceRefresh(cachedResult))
+                    {
+                        return cachedResult;
+                    }
+                }
+                catch (Exception e)
+                {
+                    // This is needed for scenarios where the initial GetAsync was
+                    // called but never awaited.
+                    if (initialLazyValue.ShouldRemoveFromCacheThreadSafe())
+                    {
+                        bool removed = this.TryRemove(key);
+
+                        DefaultTrace.TraceError(
+                            "AsyncCacheNonBlocking Failed GetAsync. key: {0}, tryRemoved: {1}, Exception: {2}",
+                            key,
+                            removed,
+                            e);
+                    }
+
+                    throw;
                 }
 
-                return await initialLazyValue.CreateAndWaitForBackgroundRefreshTaskAsync(
-                    singleValueInitFunc,
-                    () => this.TryRemove(key),
-                    callBackOnForceRefresh);
+                try
+                {
+                    return await initialLazyValue.CreateAndWaitForBackgroundRefreshTaskAsync(
+                       createRefreshTask: singleValueInitFunc,
+                       callBackOnForceRefresh: callBackOnForceRefresh);
+                }
+                catch (Exception e)
+                {
+                    if (initialLazyValue.ShouldRemoveFromCacheThreadSafe())
+                    {
+                        DefaultTrace.TraceError(
+                            "AsyncCacheNonBlocking.GetAsync with ForceRefresh Failed. key: {0}, Exception: {1}",
+                            key,
+                            e);
+
+                        // In some scenarios when a background failure occurs like a 404
+                        // the initial cache value should be removed.
+                        if (this.removeFromCacheOnBackgroundRefreshException(e))
+                        {
+                            this.TryRemove(key);
+                        }
+                    }
+
+                    throw;
+                }
             }
 
             // The AsyncLazyWithRefreshTask is lazy and won't create the task until GetValue is called.
@@ -145,6 +204,9 @@ namespace Microsoft.Azure.Cosmos
             private readonly CancellationToken cancellationToken;
             private readonly Func<Task<T>> createValueFunc;
             private readonly object valueLock = new object();
+            private readonly object removedFromCacheLock = new object();
+
+            private bool removedFromCache = false;
             private Task<T> value;
             private Task<T> refreshInProgress;
 
@@ -197,11 +259,10 @@ namespace Microsoft.Azure.Cosmos
 
             public async Task<T> CreateAndWaitForBackgroundRefreshTaskAsync(
                 Func<Task<T>> createRefreshTask,
-                Action callbackOnRefreshFailure,
                 Action<T, T> callBackOnForceRefresh)
             {
                 this.cancellationToken.ThrowIfCancellationRequested();
-                
+
                 // The original task is still being created. Just return the original task.
                 Task<T> valueSnapshot = this.value;
                 if (AsyncLazyWithRefreshTask<T>.IsTaskRunning(valueSnapshot))
@@ -253,26 +314,32 @@ namespace Microsoft.Azure.Cosmos
                 // It's possible multiple callers entered the method at the same time. The lock above ensures
                 // only a single one will create the refresh task. If this caller created the task await for the
                 // result and update the value.
-                try
+                T itemResult = await refresh;
+                lock (this)
                 {
-                    T itemResult = await refresh;
-                    lock (this)
+                    this.value = Task.FromResult(itemResult);
+                }
+
+                callBackOnForceRefresh?.Invoke(originalValue, itemResult);
+                return itemResult;
+            }
+
+            public bool ShouldRemoveFromCacheThreadSafe()
+            {
+                if (this.removedFromCache)
+                {
+                    return false;
+                }
+
+                lock (this.removedFromCacheLock)
+                {
+                    if (this.removedFromCache)
                     {
-                        this.value = Task.FromResult(itemResult);
+                        return false;
                     }
 
-                    callBackOnForceRefresh?.Invoke(originalValue, itemResult);
-                    return itemResult;
-                }
-                catch (Exception e)
-                {
-                    // faulted with exception
-                    DefaultTrace.TraceError(
-                        "AsyncLazyWithRefreshTask Failed with: {0}",
-                        e.ToString());
-
-                    callbackOnRefreshFailure();
-                    throw;
+                    this.removedFromCache = true;
+                    return true;
                 }
             }
 
