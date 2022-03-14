@@ -124,12 +124,48 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void MetricsTesting()
+        {
+            System.Diagnostics.Metrics.MeterListener listener = new System.Diagnostics.Metrics.MeterListener
+            {
+                InstrumentPublished = (instrument, meterListener) =>
+                {
+                    if (instrument.Meter.Name == "ct")
+                    {
+                        Console.WriteLine($"{instrument.Name} : {instrument.Meter.Name}");
+                        meterListener.EnableMeasurementEvents(instrument, null);
+                    }
+                }
+            };
+
+            listener.SetMeasurementEventCallback<long>(
+                (instrument, measurement, tags, state) => {
+                    KeyValuePair<string, object>[] tagsKv = tags.ToArray();
+                    Console.WriteLine($"state => {state}");
+                    foreach (KeyValuePair<string, object> tagKv in tagsKv)
+                    {
+                        Console.WriteLine($"tag => {tagKv.Key} :: {tagKv.Value}");
+                    }
+                    Console.WriteLine($"Instrument: {instrument.Name} has recorded the measurement {measurement}");
+            });
+
+            listener.Start();
+
+            System.Diagnostics.Metrics.Meter meter1 = new System.Diagnostics.Metrics.Meter("ct", "v1.0");
+            System.Diagnostics.Metrics.Histogram<long> hist = meter1.CreateHistogram<long>(
+                name: "Latency", 
+                unit: "Ms");
+            hist.Record(10);
+            hist.Record(20);
+            hist.Record(30);
+        }
+
+        [TestMethod]
         [ExpectedException(typeof(System.FormatException))]
         public void CheckMisconfiguredTelemetry_should_fail()
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "non-boolean");
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
         }
-
     }
 }
