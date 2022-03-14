@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
-        public static bool RemoveNotFoundFromCacheOnException(Exception e)
+        private static bool RemoveNotFoundFromCacheOnException(Exception e)
         {
             if (e is Documents.DocumentClientException dce
                 && dce.StatusCode == System.Net.HttpStatusCode.NotFound)
