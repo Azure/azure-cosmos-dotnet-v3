@@ -154,13 +154,24 @@ namespace Microsoft.Azure.Cosmos.Routing
             CollectionRoutingMap previousValue,
             CollectionRoutingMap currentValue)
         {
-            // No need to refresh because it's a new cache value
-            if (previousValue == null || currentValue == null)
+            // Previous is null then no need to force a refresh
+            // The request didn't access the cache before
+            if (previousValue == null)
             {
                 return false;
             }
 
-            // If none values match so no changes have occurred
+            // currentValue is null then the value just got initialized so
+            // is not possible for it to be stale
+            if (currentValue == null)
+            {
+                return false;
+            }
+
+            // CollectionRoutingMap uses changefeed to update the cache. The ChangeFeedNextIfNoneMatch
+            // is the continuation token for the changefeed operation. If the values do not match
+            // then another operation has already refresh the cache since this request was sent. So
+            // there is no reason to do another refresh.
             return previousValue.ChangeFeedNextIfNoneMatch == currentValue.ChangeFeedNextIfNoneMatch; 
         }
 
