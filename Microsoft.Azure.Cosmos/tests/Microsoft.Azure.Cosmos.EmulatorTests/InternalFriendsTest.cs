@@ -39,14 +39,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ItemRequestOptions requestOptions = new();
             requestOptions.ConsistencyLevel = Cosmos.ConsistencyLevel.Strong;
-            
+
             if (isStrongReadWithEventualConsistencyAccount)
             {
                 ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk), requestOptions);
                 Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
-            } else
+            }
+            else
             {
-                Assert.ThrowsException<ArgumentException>(async () => await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk), requestOptions));
+                try
+                {
+                    await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk), requestOptions);
+                }
+                catch (Exception ex)
+                {
+                    Assert.ReferenceEquals(new ArgumentException(), ex);
+                    Assert.AreEqual("ConsistencyLevel Strong specified in the request is invalid when service is configured with consistency level Eventual. Ensure the request consistency level is not stronger than the service consistency level.", ex.Message);
+                }
             }
         }
 
