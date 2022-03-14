@@ -662,7 +662,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new Mock<ICosmosAuthorizationTokenProvider>().Object,
                 new Mock<IStoreModel>().Object,
                 collectionCache.Object);
-            partitionKeyRangeCache.Setup(c => c.TryLookupAsync(collectionRid, null, It.IsAny<DocumentServiceRequest>(), default, trace))
+            partitionKeyRangeCache.Setup(c => c.TryLookupAsync(collectionRid, null, It.IsAny<DocumentServiceRequest>(), trace))
                 .ReturnsAsync(collectionRoutingMap);
 
             string collectionLink = "dbs/DvZRAA==/colls/DvZRAOvLgDM=/";
