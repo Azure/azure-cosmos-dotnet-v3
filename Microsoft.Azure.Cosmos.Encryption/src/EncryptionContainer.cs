@@ -724,7 +724,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
 #if ENCRYPTIONPREVIEW
-
         public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
             Cosmos.PartitionKey partitionKey,
             RequestOptions requestOptions = null,
@@ -742,7 +741,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             return this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
         }
-
 #endif
 
         /// <summary>
