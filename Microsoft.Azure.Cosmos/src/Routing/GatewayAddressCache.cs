@@ -192,11 +192,15 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     addresses = await this.serverPartitionAddressCache.GetAsync(
                         key: partitionKeyRangeIdentity,
-                        singleValueInitFunc: (staleAddresses) => this.GetAddressesForRangeIdAsync(
-                            request,
-                            partitionKeyRangeIdentity.CollectionRid,
-                            partitionKeyRangeIdentity.PartitionKeyRangeId,
-                            forceRefresh: forceRefreshPartitionAddresses),
+                        singleValueInitFunc: (currentCachedValue) =>
+                        { 
+                            staleAddressInfo = currentCachedValue;
+                            return this.GetAddressesForRangeIdAsync(
+                                request,
+                                partitionKeyRangeIdentity.CollectionRid,
+                                partitionKeyRangeIdentity.PartitionKeyRangeId,
+                                forceRefresh: forceRefreshPartitionAddresses);
+                        },
                         forceRefresh: (_) => true);
 
                     if (staleAddressInfo != null)
