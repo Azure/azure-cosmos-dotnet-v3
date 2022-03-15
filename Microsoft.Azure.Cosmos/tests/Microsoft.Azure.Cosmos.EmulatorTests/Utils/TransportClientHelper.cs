@@ -180,18 +180,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             private readonly Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor;
             private readonly Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> interceptorWithStoreResult;
             private readonly Func<DocumentServiceRequest, StoreResponse, StoreResponse> interceptorAfterResult;
+            private readonly Func<Uri, ResourceOperation, DocumentServiceRequest, Task> interceptorAsync;
 
             internal TransportClientWrapper(
                 TransportClient client,
                 Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor = null,
                 Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> interceptorWithStoreResult = null,
-                Func<DocumentServiceRequest, StoreResponse, StoreResponse> interceptorAfterResult = null)
+                Func<DocumentServiceRequest, StoreResponse, StoreResponse> interceptorAfterResult = null,
+                Func<Uri, ResourceOperation, DocumentServiceRequest, Task> interceptorAsync = null)
             {
                 Debug.Assert(client != null);
                 this.baseClient = client;
                 this.interceptor = interceptor;
                 this.interceptorWithStoreResult = interceptorWithStoreResult;
                 this.interceptorAfterResult = interceptorAfterResult;
+                this.interceptorAsync = interceptorAsync;
             }
 
             internal TransportClientWrapper(
@@ -211,6 +214,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 DocumentServiceRequest request)
             {
                 this.interceptor?.Invoke(physicalAddress, resourceOperation, request);
+                if(this.interceptorAsync != null)
+                {
+                    await this.interceptorAsync(physicalAddress, resourceOperation, request);
+                }
 
                 if (this.interceptorWithStoreResult != null)
                 {

@@ -262,38 +262,28 @@ namespace Microsoft.Azure.Cosmos
             bool collectionRoutingMapCacheIsUptoDate = false;
 
             ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
-            CollectionRoutingMap routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
-                collectionRid: collection.ResourceId,
-                previousValue: null,
-                request: request,
-                trace: NoOpTrace.Singleton);
 
-            if (routingMap != null && request.ForceCollectionRoutingMapRefresh)
+            bool forceRefreshCollectionRoutingMap = false;
+            if (request.ForceCollectionRoutingMapRefresh)
             {
                 DefaultTrace.TraceInformation(
                     "AddressResolver.ResolveAddressesAndIdentityAsync ForceCollectionRoutingMapRefresh collection.ResourceId = {0}",
                     collection.ResourceId);
-
-                routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
-                    collectionRid: collection.ResourceId,
-                    previousValue: routingMap,
-                    request: request,
-                    trace: NoOpTrace.Singleton);
+                forceRefreshCollectionRoutingMap = true;
             }
 
             if (request.ForcePartitionKeyRangeRefresh)
             {
                 collectionRoutingMapCacheIsUptoDate = true;
                 request.ForcePartitionKeyRangeRefresh = false;
-                if (routingMap != null)
-                {
-                    routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
-                        collectionRid: collection.ResourceId,
-                        previousValue: routingMap,
-                        request: request,
-                        trace: NoOpTrace.Singleton);
-                }
+                forceRefreshCollectionRoutingMap = true;
             }
+
+            CollectionRoutingMap routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
+                collectionRid: collection.ResourceId,
+                request: request,
+                trace: NoOpTrace.Singleton,
+                forceRefresh: forceRefreshCollectionRoutingMap);
 
             if (routingMap == null && !collectionCacheIsUptoDate)
             {
@@ -303,11 +293,14 @@ namespace Microsoft.Azure.Cosmos
                 collectionCacheIsUptoDate = true;
                 collectionRoutingMapCacheIsUptoDate = false;
                 collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
+
+                // Don't need to force refresh because the collection id would change
+                // causing a new routing map
                 routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
                         collectionRid: collection.ResourceId,
-                        previousValue: null,
                         request: request,
-                        trace: NoOpTrace.Singleton);
+                        trace: NoOpTrace.Singleton,
+                        forceRefresh: false);
             }
 
             AddressResolver.EnsureRoutingMapPresent(request, routingMap, collection);
@@ -337,9 +330,9 @@ namespace Microsoft.Azure.Cosmos
                         collectionRoutingMapCacheIsUptoDate = false;
                         routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
                             collectionRid: collection.ResourceId,
-                            previousValue: null,
                             request: request,
-                            trace: NoOpTrace.Singleton);
+                            trace: NoOpTrace.Singleton,
+                            forceRefresh: false);
                     }
                 }
 
@@ -347,9 +340,9 @@ namespace Microsoft.Azure.Cosmos
                 {
                     routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
                         collection.ResourceId,
-                        previousValue: routingMap,
                         request: request,
-                        trace: NoOpTrace.Singleton);
+                        trace: NoOpTrace.Singleton,
+                        forceRefresh: true);
                 }
 
                 AddressResolver.EnsureRoutingMapPresent(request, routingMap, collection);

@@ -290,5 +290,15 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.goneRanges.Contains(partitionKeyRangeId);
         }
 
+        public override int GetHashCode()
+        {
+            if (this.CollectionUniqueId == null || this.ChangeFeedNextIfNoneMatch == null)
+            {
+                return base.GetHashCode();
+            }
+
+            return HashCode.Combine(this.CollectionUniqueId, this.ChangeFeedNextIfNoneMatch);
+        }
+
     }
 }

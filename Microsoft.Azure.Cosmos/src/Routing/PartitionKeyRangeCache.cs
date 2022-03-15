@@ -55,18 +55,9 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 CollectionRoutingMap routingMap = await this.TryLookupAsync(
                     collectionRid: collectionRid,
-                    previousValue: null,
                     request: null,
-                    trace: childTrace);
-
-                if (forceRefresh && routingMap != null)
-                {
-                    routingMap = await this.TryLookupAsync(
-                        collectionRid: collectionRid,
-                        previousValue: routingMap,
-                        request: null,
-                        trace: childTrace);
-                }
+                    trace: childTrace,
+                    forceRefresh: forceRefresh);
 
                 if (routingMap == null)
                 {
@@ -88,18 +79,9 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             CollectionRoutingMap routingMap = await this.TryLookupAsync(
                 collectionRid: collectionResourceId,
-                previousValue: null,
                 request: null,
-                trace: trace);
-
-            if (forceRefresh && routingMap != null)
-            {
-                routingMap = await this.TryLookupAsync(
-                    collectionRid: collectionResourceId,
-                    previousValue: routingMap,
-                    request: null,
-                    trace: trace);
-            }
+                trace: trace,
+                forceRefresh: forceRefresh);
 
             if (routingMap == null)
             {
@@ -112,20 +94,35 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public virtual async Task<CollectionRoutingMap> TryLookupAsync(
             string collectionRid,
-            CollectionRoutingMap previousValue,
             DocumentServiceRequest request,
-            ITrace trace)
+            ITrace trace,
+            bool forceRefresh)
         {
+            CollectionRoutingMap previousValue = null;
             try
             {
-                return await this.routingMapCache.GetAsync(
+                CollectionRoutingMap collectionRoutingMap = await this.routingMapCache.GetAsync(
                     key: collectionRid,
-                    singleValueInitFunc: (_) => this.GetRoutingMapForCollectionAsync(
-                        collectionRid, 
-                        previousValue, 
-                        trace,
-                        request?.RequestContext?.ClientRequestStatistics),
-                    forceRefresh: (currentValue) => PartitionKeyRangeCache.ShouldForceRefresh(previousValue, currentValue));
+                    singleValueInitFunc: (cachedValue) =>
+                    {
+                        previousValue = cachedValue;
+                        return this.GetRoutingMapForCollectionAsync(
+                            collectionRid,
+                            cachedValue, 
+                            trace,
+                            request?.RequestContext?.ClientRequestStatistics);
+                    },
+                    forceRefresh: (currentValue) => PartitionKeyRangeCache.ShouldForceRefresh(
+                        forceRefresh: forceRefresh,
+                        previousCacheHashCode: request?.LastCollectionRoutingMapHashCode ?? 0,
+                        currentValue: currentValue));
+
+                if (request != null)
+                {
+                    request.LastCollectionRoutingMapHashCode = collectionRoutingMap.GetHashCode();
+                }
+
+                return collectionRoutingMap;
             }
             catch (DocumentClientException ex)
             {
@@ -150,12 +147,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         private static bool ShouldForceRefresh(
-            CollectionRoutingMap previousValue,
+            bool forceRefresh,
+            int previousCacheHashCode,
             CollectionRoutingMap currentValue)
         {
-            // Previous is null then no need to force a refresh
-            // The request didn't access the cache before
-            if (previousValue == null)
+            // Force request was not requested. No need to do comparison. Just use the cached value.
+            if (!forceRefresh)
             {
                 return false;
             }
@@ -171,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             // is the continuation token for the changefeed operation. If the values do not match
             // then another operation has already refresh the cache since this request was sent. So
             // there is no reason to do another refresh.
-            return previousValue.ChangeFeedNextIfNoneMatch == currentValue.ChangeFeedNextIfNoneMatch; 
+            return previousCacheHashCode == currentValue.GetHashCode(); 
         }
 
         public async Task<PartitionKeyRange> TryGetRangeByPartitionKeyRangeIdAsync(string collectionRid, 

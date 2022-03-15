@@ -84,9 +84,9 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             CollectionRoutingMap routingMap = await this.routingMapProvider.TryLookupAsync(
                     collectionRid: collection.ResourceId,
-                    previousValue: null,
                     request: null,
-                    trace: NoOpTrace.Singleton);
+                    trace: NoOpTrace.Singleton,
+                    forceRefresh: false);
 
             if (routingMap == null)
             {
