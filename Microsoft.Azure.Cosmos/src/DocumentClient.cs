@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos
         private AsyncLazy<QueryPartitionProvider> queryPartitionProvider;
 
         private DocumentClientEventSource eventSource;
-        private Func<Task<bool>> initializeTaskFactory;
+        private Func<bool, Task<bool>> initializeTaskFactory;
         internal AsyncCacheNonBlocking<string, bool> initTaskCache = new AsyncCacheNonBlocking<string, bool>();
 
         private JsonSerializerSettings serializerSettings;
@@ -915,22 +915,18 @@ namespace Microsoft.Azure.Cosmos
             // For direct: WFStoreProxy [set in OpenAsync()].
             this.eventSource = DocumentClientEventSource.Instance;
 
-            this.initializeTaskFactory = () =>
-            {
-                return TaskHelper.InlineIfPossible<bool>(
+            this.initializeTaskFactory = (_) => TaskHelper.InlineIfPossible<bool>(
                     () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
                     new ResourceThrottleRetryPolicy(
                         this.ConnectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests,
                         this.ConnectionPolicy.RetryOptions.MaxRetryWaitTimeInSeconds));
-            };
 
             // Create the task to start the initialize task
             // Task will be awaited on in the EnsureValidClientAsync
             Task initTask = this.initTaskCache.GetAsync(
                        key: DocumentClient.DefaultInitTaskKey,
                        singleValueInitFunc: this.initializeTaskFactory,
-                       forceRefresh: (_) => false,
-                       callBackOnForceRefresh: null);
+                       forceRefresh: (_) => false);
 
             // ContinueWith on the initialization task is needed for handling the UnobservedTaskException
             // if this task throws for some reason. Awaiting inside a constructor is not supported and
@@ -1449,8 +1445,7 @@ namespace Microsoft.Azure.Cosmos
                     this.isSuccessfullyInitialized = await this.initTaskCache.GetAsync(
                         key: DocumentClient.DefaultInitTaskKey,
                         singleValueInitFunc: this.initializeTaskFactory,
-                        forceRefresh: (_) => false,
-                        callBackOnForceRefresh: null);
+                        forceRefresh: (_) => false);
                 }
                 catch (DocumentClientException ex)
                 {

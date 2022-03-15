@@ -187,17 +187,22 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 PartitionAddressInformation addresses;
+                PartitionAddressInformation staleAddressInfo = null;
                 if (forceRefreshPartitionAddresses || request.ForceCollectionRoutingMapRefresh)
                 {
                     addresses = await this.serverPartitionAddressCache.GetAsync(
                         key: partitionKeyRangeIdentity,
-                        singleValueInitFunc: () => this.GetAddressesForRangeIdAsync(
+                        singleValueInitFunc: (staleAddresses) => this.GetAddressesForRangeIdAsync(
                             request,
                             partitionKeyRangeIdentity.CollectionRid,
                             partitionKeyRangeIdentity.PartitionKeyRangeId,
                             forceRefresh: forceRefreshPartitionAddresses),
-                        forceRefresh: (_) => true,
-                        callBackOnForceRefresh: (old, updated) => GatewayAddressCache.LogPartitionCacheRefresh(request.RequestContext.ClientRequestStatistics, old, updated));
+                        forceRefresh: (_) => true);
+
+                    if (staleAddressInfo != null)
+                    {
+                        GatewayAddressCache.LogPartitionCacheRefresh(request.RequestContext.ClientRequestStatistics, staleAddressInfo, addresses);
+                    }
 
                     this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out DateTime ignoreDateTime);
                 }
@@ -205,13 +210,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     addresses = await this.serverPartitionAddressCache.GetAsync(
                         key: partitionKeyRangeIdentity,
-                        singleValueInitFunc: () => this.GetAddressesForRangeIdAsync(
+                        singleValueInitFunc: (_) => this.GetAddressesForRangeIdAsync(
                             request,
                             partitionKeyRangeIdentity.CollectionRid,
                             partitionKeyRangeIdentity.PartitionKeyRangeId,
                             forceRefresh: false),
-                        forceRefresh: (_) => false,
-                        callBackOnForceRefresh: (old, updated) => GatewayAddressCache.LogPartitionCacheRefresh(request.RequestContext.ClientRequestStatistics, old, updated));
+                        forceRefresh: (_) => false);
                 }
 
                 int targetReplicaSetSize = this.serviceConfigReader.UserReplicationPolicy.MaxReplicaSetSize;
@@ -298,13 +302,12 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             return await this.serverPartitionAddressCache.GetAsync(
                        key: partitionKeyRangeIdentity,
-                       singleValueInitFunc: () => this.GetAddressesForRangeIdAsync(
+                       singleValueInitFunc: (_) => this.GetAddressesForRangeIdAsync(
                            null,
                            partitionKeyRangeIdentity.CollectionRid,
                            partitionKeyRangeIdentity.PartitionKeyRangeId,
                            forceRefresh: true),
-                       forceRefresh: (_) => true,
-                       callBackOnForceRefresh: null);
+                       forceRefresh: (_) => true);
         }
 
         private async Task<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> ResolveMasterAsync(DocumentServiceRequest request, bool forceRefresh)

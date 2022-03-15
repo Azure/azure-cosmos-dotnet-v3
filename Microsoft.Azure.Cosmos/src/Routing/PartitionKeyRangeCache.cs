@@ -120,13 +120,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 return await this.routingMapCache.GetAsync(
                     key: collectionRid,
-                    singleValueInitFunc: () => this.GetRoutingMapForCollectionAsync(
+                    singleValueInitFunc: (_) => this.GetRoutingMapForCollectionAsync(
                         collectionRid, 
                         previousValue, 
                         trace,
                         request?.RequestContext?.ClientRequestStatistics),
-                    forceRefresh: (currentValue) => PartitionKeyRangeCache.ShouldForceRefresh(previousValue, currentValue),
-                    callBackOnForceRefresh: null);
+                    forceRefresh: (currentValue) => PartitionKeyRangeCache.ShouldForceRefresh(previousValue, currentValue));
             }
             catch (DocumentClientException ex)
             {
@@ -184,13 +183,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 CollectionRoutingMap routingMap = await this.routingMapCache.GetAsync(
                     key: collectionRid,
-                    singleValueInitFunc: () => this.GetRoutingMapForCollectionAsync(
+                    singleValueInitFunc: (_) => this.GetRoutingMapForCollectionAsync(
                         collectionRid: collectionRid,
                         previousRoutingMap: null,
                         trace: trace,
                         clientSideRequestStatistics: clientSideRequestStatistics),
-                    forceRefresh: (_) => false,
-                    callBackOnForceRefresh: null);
+                    forceRefresh: (_) => false);
 
                 return routingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId);
             }
