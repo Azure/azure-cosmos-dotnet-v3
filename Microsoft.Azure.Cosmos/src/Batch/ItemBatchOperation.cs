@@ -201,6 +201,14 @@ namespace Microsoft.Azure.Cosmos
                                 return r;
                             }
                         }
+                        else if (binaryIdObj is ReadOnlyMemory<byte> binaryIdRom)
+                        {
+                            r = writer.WriteBinary("binaryId", binaryIdRom.Span);
+                            if (r != Result.Success)
+                            {
+                                return r;
+                            }
+                        }
                     }
 
                     if (options.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj))
@@ -303,6 +311,10 @@ namespace Microsoft.Azure.Cosmos
                         if (binaryIdObj is byte[] binaryId)
                         {
                             length += binaryId.Length;
+                        }
+                        else if (binaryIdObj is ReadOnlyMemory<byte> binaryIdRom)
+                        {
+                            length += binaryIdRom.Length;
                         }
                     }
 
