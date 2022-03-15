@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             bool validatePartitionKeyRangeCalls = false)
         {
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
-            CosmosClientBuilder clientBuilder = new CosmosClientBuilder(accountEndpoint: "https://sourabhjaintemp.documents.azure.com:443/", authKeyOrResourceToken: "jKmr6nZeQYXjQzmNAqC6PY0IQviiODAf3tLa2XpZRfzKGt6pMhF0ZULEYF21fiDABKMM41gQXJKTdDxV0TyMGQ==");
+            CosmosClientBuilder clientBuilder = new CosmosClientBuilder(accountEndpoint: endpoint, authKeyOrResourceToken: authKey);
             if (useCustomSeralizer)
             {
                 clientBuilder.WithCustomSerializer(new CosmosJsonDotNetSerializer());
