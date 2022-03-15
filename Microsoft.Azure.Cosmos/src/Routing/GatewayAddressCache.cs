@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             partitionKeyRangeIdentity.CollectionRid,
                             partitionKeyRangeIdentity.PartitionKeyRangeId,
                             forceRefresh: forceRefreshPartitionAddresses),
-                        forceRefresh: true,
+                        forceRefresh: (_) => true,
                         callBackOnForceRefresh: (old, updated) => GatewayAddressCache.LogPartitionCacheRefresh(request.RequestContext.ClientRequestStatistics, old, updated));
 
                     this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out DateTime ignoreDateTime);
@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             partitionKeyRangeIdentity.CollectionRid,
                             partitionKeyRangeIdentity.PartitionKeyRangeId,
                             forceRefresh: false),
-                        forceRefresh: false,
+                        forceRefresh: (_) => false,
                         callBackOnForceRefresh: (old, updated) => GatewayAddressCache.LogPartitionCacheRefresh(request.RequestContext.ClientRequestStatistics, old, updated));
                 }
 
@@ -303,7 +303,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                            partitionKeyRangeIdentity.CollectionRid,
                            partitionKeyRangeIdentity.PartitionKeyRangeId,
                            forceRefresh: true),
-                       forceRefresh: true,
+                       forceRefresh: (_) => true,
                        callBackOnForceRefresh: null);
         }
 

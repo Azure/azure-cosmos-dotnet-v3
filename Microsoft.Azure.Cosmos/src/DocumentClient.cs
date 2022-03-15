@@ -917,31 +917,30 @@ namespace Microsoft.Azure.Cosmos
 
             this.initializeTaskFactory = () =>
             {
-                Task<bool> task = TaskHelper.InlineIfPossible<bool>(
+                return TaskHelper.InlineIfPossible<bool>(
                     () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
                     new ResourceThrottleRetryPolicy(
                         this.ConnectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests,
                         this.ConnectionPolicy.RetryOptions.MaxRetryWaitTimeInSeconds));
-
-                // ContinueWith on the initialization task is needed for handling the UnobservedTaskException
-                // if this task throws for some reason. Awaiting inside a constructor is not supported and
-                // even if we had to await inside GetInitializationTask to catch the exception, that will
-                // be a blocking call. In such cases, the recommended approach is to "handle" the
-                // UnobservedTaskException by using ContinueWith method w/ TaskContinuationOptions.OnlyOnFaulted
-                // and accessing the Exception property on the target task.
-#pragma warning disable VSTHRD110 // Observe result of async calls
-                task.ContinueWith(t => DefaultTrace.TraceWarning("initializeTask failed {0}", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
-#pragma warning restore VSTHRD110 // Observe result of async calls
-                return task;
             };
 
             // Create the task to start the initialize task
             // Task will be awaited on in the EnsureValidClientAsync
-            _ = this.initTaskCache.GetAsync(
+            Task initTask = this.initTaskCache.GetAsync(
                        key: DocumentClient.DefaultInitTaskKey,
                        singleValueInitFunc: this.initializeTaskFactory,
-                       forceRefresh: false,
+                       forceRefresh: (_) => false,
                        callBackOnForceRefresh: null);
+
+            // ContinueWith on the initialization task is needed for handling the UnobservedTaskException
+            // if this task throws for some reason. Awaiting inside a constructor is not supported and
+            // even if we had to await inside GetInitializationTask to catch the exception, that will
+            // be a blocking call. In such cases, the recommended approach is to "handle" the
+            // UnobservedTaskException by using ContinueWith method w/ TaskContinuationOptions.OnlyOnFaulted
+            // and accessing the Exception property on the target task.
+#pragma warning disable VSTHRD110 // Observe result of async calls
+            initTask.ContinueWith(t => DefaultTrace.TraceWarning("initializeTask failed {0}", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+#pragma warning restore VSTHRD110 // Observe result of async calls
 
             this.traceId = Interlocked.Increment(ref DocumentClient.idCounter);
             DefaultTrace.TraceInformation(string.Format(
@@ -1450,7 +1449,7 @@ namespace Microsoft.Azure.Cosmos
                     this.isSuccessfullyInitialized = await this.initTaskCache.GetAsync(
                         key: DocumentClient.DefaultInitTaskKey,
                         singleValueInitFunc: this.initializeTaskFactory,
-                        forceRefresh: false,
+                        forceRefresh: (_) => false,
                         callBackOnForceRefresh: null);
                 }
                 catch (DocumentClientException ex)
@@ -1461,7 +1460,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (Exception e)
                 {
-                    DefaultTrace.TraceWarning("initializeTask failed {0}", e);
+                    DefaultTrace.TraceWarning("EnsureValidClientAsync initializeTask failed {0}", e);
                     childTrace.AddDatum("initializeTask failed", e);
                     throw;
                 }
