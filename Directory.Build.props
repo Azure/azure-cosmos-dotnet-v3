@@ -4,10 +4,10 @@
 		<ClientOfficialVersion>3.26.0</ClientOfficialVersion>
 		<ClientPreviewVersion>3.26.0</ClientPreviewVersion>
 		<ClientPreviewSuffixVersion>preview</ClientPreviewSuffixVersion>
-		<EncryptionPreviewSuffixVersion>preview20</EncryptionPreviewSuffixVersion>
 		<DirectVersion>3.24.1</DirectVersion>
 		<EncryptionOfficialVersion>1.0.0</EncryptionOfficialVersion>
 		<EncryptionPreviewVersion>1.0.0</EncryptionPreviewVersion>
+		<EncryptionPreviewSuffixVersion>preview20</EncryptionPreviewSuffixVersion>
 		<CustomEncryptionVersion>1.0.0-preview02</CustomEncryptionVersion>
 		<HybridRowVersion>1.1.0-preview3</HybridRowVersion>
 		<LangVersion>9.0</LangVersion>
