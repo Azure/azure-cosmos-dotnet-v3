@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
                     cancellationToken: default);
              
-            Assert.AreEqual(HttpStatusCode.RequestTimeout, responseMessage.StatusCode);
+            Assert.AreEqual(HttpStatusCode.RequestTimeout, responseMessage.StatusCode, "Should be a request timeout");
         }
 
         [TestMethod]
