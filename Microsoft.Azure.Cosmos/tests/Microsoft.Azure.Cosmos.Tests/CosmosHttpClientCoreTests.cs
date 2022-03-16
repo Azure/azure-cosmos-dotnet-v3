@@ -122,6 +122,53 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task RetryTransient408sTestAsync()
+        {
+            IReadOnlyList<HttpTimeoutPolicy> timeoutMap = new List<HttpTimeoutPolicy>()
+            {
+                HttpTimeoutPolicyControlPlaneRead.Instance,
+                HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance
+            };
+
+            foreach (HttpTimeoutPolicy currentTimeoutPolicy in timeoutMap)
+            {
+                int count = 0;
+                async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+                {
+                    count++;
+
+                    if (count <= 2)
+                    {
+                        await Task.Delay(TimeSpan.FromMilliseconds(10));
+                        return new HttpResponseMessage(HttpStatusCode.RequestTimeout);
+                    }
+                   
+                    if (count == 3)
+                    {
+                        await Task.Delay(TimeSpan.FromMilliseconds(10));
+                        return new HttpResponseMessage(HttpStatusCode.OK);
+                    }
+
+                    throw new Exception("Should not return after the success");
+                }
+
+                DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+                HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+                using CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
+
+                HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
+                    new ValueTask<HttpRequestMessage>(
+                        result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
+                        resourceType: ResourceType.Collection,
+                        timeoutPolicy: currentTimeoutPolicy,
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
+                        cancellationToken: default);
+
+                Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+            }
+        }
+
+        [TestMethod]
         public async Task RetryTransientIssuesForQueryPlanTestAsync()
         {
             DocumentServiceRequest documentServiceRequest = DocumentServiceRequest.Create(

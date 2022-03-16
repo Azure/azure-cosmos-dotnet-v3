@@ -257,7 +257,16 @@ namespace Microsoft.Azure.Cosmos
                             datum.RecordHttpResponse(requestMessage, responseMessage, resourceType, requestStartTime);
                         }
 
-                        return responseMessage;
+                        if (responseMessage.StatusCode != HttpStatusCode.RequestTimeout)
+                        {
+                            return responseMessage;
+                        }
+                       
+                        bool isOutOfRetries = CosmosHttpClientCore.IsOutOfRetries(timeoutPolicy, startDateTimeUtc, timeoutEnumerator);
+                        if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(requestMessage.Method))
+                        {
+                            return responseMessage;
+                        }
                     }
                     catch (Exception e)
                     {
@@ -265,9 +274,7 @@ namespace Microsoft.Azure.Cosmos
                         {
                             datum.RecordHttpException(requestMessage, e, resourceType, requestStartTime);
                         }
-
-                        bool isOutOfRetries = (DateTime.UtcNow - startDateTimeUtc) > timeoutPolicy.MaximumRetryTimeLimit || // Maximum of time for all retries
-                            !timeoutEnumerator.MoveNext(); // No more retries are configured
+                        bool isOutOfRetries = CosmosHttpClientCore.IsOutOfRetries(timeoutPolicy, startDateTimeUtc, timeoutEnumerator);
 
                         switch (e)
                         {
@@ -308,7 +315,7 @@ namespace Microsoft.Azure.Cosmos
                                 throw;
                         }
                     }
-                    
+
                 }
 
                 if (delayForNextRequest != TimeSpan.Zero)
@@ -316,6 +323,16 @@ namespace Microsoft.Azure.Cosmos
                     await Task.Delay(delayForNextRequest);
                 }
             }
+        }
+
+        private static bool IsOutOfRetries(
+            HttpTimeoutPolicy timeoutPolicy,
+            DateTime startDateTimeUtc,
+            IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator)
+        {
+            bool isOutOfRetries = (DateTime.UtcNow - startDateTimeUtc) > timeoutPolicy.MaximumRetryTimeLimit || // Maximum of time for all retries
+                !timeoutEnumerator.MoveNext(); // No more retries are configured
+            return isOutOfRetries;
         }
 
         private async Task<HttpResponseMessage> ExecuteHttpHelperAsync(
