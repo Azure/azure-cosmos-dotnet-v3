@@ -261,9 +261,20 @@ namespace Microsoft.Azure.Cosmos
                         {
                             return responseMessage;
                         }
-                       
+
+                        if (!timeoutPolicy.IsSafeToRetry(requestMessage.Method))
+                        {
+                            return responseMessage;
+                        }
+
+                        // Limit retry on timeouts to only control plane hot path operations
+                        if (!(timeoutPolicy is HttpTimeoutPolicyControlPlaneRetriableHotPath))
+                        {
+                            return responseMessage;
+                        }
+
                         bool isOutOfRetries = CosmosHttpClientCore.IsOutOfRetries(timeoutPolicy, startDateTimeUtc, timeoutEnumerator);
-                        if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(requestMessage.Method))
+                        if (isOutOfRetries)
                         {
                             return responseMessage;
                         }
