@@ -122,6 +122,31 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void VerifyShouldRetryOnResponseTest()
+        {
+            foreach (HttpStatusCode statusCode in Enum.GetValues(typeof(HttpStatusCode)))
+            {
+                HttpResponseMessage responseMessage = new HttpResponseMessage(statusCode);
+                Assert.IsFalse(HttpTimeoutPolicyDefault.Instance.ShouldRetryBasedOnResponse(HttpMethod.Get, responseMessage));
+                Assert.IsFalse(HttpTimeoutPolicyControlPlaneRead.Instance.ShouldRetryBasedOnResponse(HttpMethod.Get, responseMessage));
+
+                Assert.IsFalse(HttpTimeoutPolicyDefault.Instance.ShouldRetryBasedOnResponse(HttpMethod.Put, responseMessage));
+                Assert.IsFalse(HttpTimeoutPolicyControlPlaneRead.Instance.ShouldRetryBasedOnResponse(HttpMethod.Put, responseMessage));
+
+                if (statusCode == HttpStatusCode.RequestTimeout)
+                {
+                    Assert.IsTrue(HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance.ShouldRetryBasedOnResponse(HttpMethod.Get, responseMessage));
+                    Assert.IsTrue(HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance.ShouldRetryBasedOnResponse(HttpMethod.Put, responseMessage));
+                }
+                else
+                {
+                    Assert.IsFalse(HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance.ShouldRetryBasedOnResponse(HttpMethod.Get, responseMessage));
+                    Assert.IsFalse(HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance.ShouldRetryBasedOnResponse(HttpMethod.Put, responseMessage));
+                }
+            }
+        }
+
+        [TestMethod]
         public async Task RetryTransient408sTestAsync()
         {
             int count = 0;

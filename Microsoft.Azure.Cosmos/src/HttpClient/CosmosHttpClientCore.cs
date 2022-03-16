@@ -257,18 +257,7 @@ namespace Microsoft.Azure.Cosmos
                             datum.RecordHttpResponse(requestMessage, responseMessage, resourceType, requestStartTime);
                         }
 
-                        if (responseMessage.StatusCode != HttpStatusCode.RequestTimeout)
-                        {
-                            return responseMessage;
-                        }
-
-                        if (!timeoutPolicy.IsSafeToRetry(requestMessage.Method))
-                        {
-                            return responseMessage;
-                        }
-
-                        // Limit retry on timeouts to only control plane hot path operations
-                        if (!(timeoutPolicy is HttpTimeoutPolicyControlPlaneRetriableHotPath))
+                        if (!timeoutPolicy.ShouldRetryBasedOnResponse(requestMessage.Method, responseMessage))
                         {
                             return responseMessage;
                         }
@@ -341,9 +330,8 @@ namespace Microsoft.Azure.Cosmos
             DateTime startDateTimeUtc,
             IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator)
         {
-            bool isOutOfRetries = (DateTime.UtcNow - startDateTimeUtc) > timeoutPolicy.MaximumRetryTimeLimit || // Maximum of time for all retries
+            return (DateTime.UtcNow - startDateTimeUtc) > timeoutPolicy.MaximumRetryTimeLimit || // Maximum of time for all retries
                 !timeoutEnumerator.MoveNext(); // No more retries are configured
-            return isOutOfRetries;
         }
 
         private async Task<HttpResponseMessage> ExecuteHttpHelperAsync(
