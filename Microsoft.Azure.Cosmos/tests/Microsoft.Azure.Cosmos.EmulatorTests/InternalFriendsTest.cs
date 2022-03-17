@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                                .WithHttpClientFactory(() => new HttpClient(httpHandler));
                 if (isStrongReadWithEventualConsistencyAccount)
                 {
-                    builder.WithStrongReadWithEventualConsistencyAccount();
+                    builder.AllowUpgradeConsistencyToLocalQuorum();
                 }
             });
 

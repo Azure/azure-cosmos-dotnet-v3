@@ -585,12 +585,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Enabled Strong Read with Eventual Consistency Writes
+        /// To enable LocalQuorum Consistency, i.e. Strong Read Allowed with Eventual Consistency Write
         /// Use By Compute Only
         /// </summary>
-        internal CosmosClientBuilder WithStrongReadWithEventualConsistencyAccount()
+        internal CosmosClientBuilder AllowUpgradeConsistencyToLocalQuorum()
         {
-            this.clientOptions.EnableStrongReadWithEventualConsistencyAccount = true;
+            this.clientOptions.EnableUpgradeConsistencyToLocalQuorum = true;
             return this;
         }
 

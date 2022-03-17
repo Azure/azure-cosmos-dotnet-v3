@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
         private const bool DefaultEnableCpuMonitor = true;
         private const string DefaultInitTaskKey = "InitTaskKey";
 
-        private readonly bool IsStrongReadWithEventualConsistencyAccountAllowed = false;
+        private readonly bool IsLocalQuorumConsistency = false;
         //Auth
         private readonly AuthorizationTokenProvider cosmosAuthorization;
 
@@ -457,7 +457,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.cosmosAuthorization = cosmosAuthorization ?? throw new ArgumentNullException(nameof(cosmosAuthorization));
             this.transportClientHandlerFactory = transportClientHandlerFactory;
-            this.IsStrongReadWithEventualConsistencyAccountAllowed = isStrongReadAllowedWithEventualConsistencyAccount;
+            this.IsLocalQuorumConsistency = isStrongReadAllowedWithEventualConsistencyAccount;
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -6491,7 +6491,7 @@ namespace Microsoft.Azure.Cosmos
             return ValidationHelpers.IsValidConsistencyLevelOverwrite(
                 backendConsistency: backendConsistency,
                 desiredConsistency: desiredConsistency,
-                isStrongReadWithEventualConsistencyAccountAllowed: this.IsStrongReadWithEventualConsistencyAccountAllowed,
+                isLocalQuorumConsistency: this.IsLocalQuorumConsistency,
                 operationType: operationType,
                 resourceType: resourceType);
         }

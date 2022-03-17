@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="backendConsistency"> Account Level Consistency </param>
         /// <param name="desiredConsistency"> Request/Client Level Consistency</param>
-        /// <param name="isStrongReadWithEventualConsistencyAccountAllowed"> Allows Strong Read with Eventual Write</param>
+        /// <param name="isLocalQuorumConsistency"> Allows Strong Read with Eventual Write</param>
         /// <param name="operationType"> <see cref="OperationType"/> </param>
         /// <param name="resourceType"> <see cref="ResourceType"/> </param>
         /// <returns>true/false</returns>
@@ -23,14 +23,14 @@ namespace Microsoft.Azure.Cosmos
         public static bool IsValidConsistencyLevelOverwrite(
                                     Cosmos.ConsistencyLevel backendConsistency, 
                                     Cosmos.ConsistencyLevel desiredConsistency, 
-                                    bool isStrongReadWithEventualConsistencyAccountAllowed, 
+                                    bool isLocalQuorumConsistency, 
                                     OperationType operationType,
                                     ResourceType resourceType)
         {
             return ValidationHelpers.IsValidConsistencyLevelOverwrite(
                                         backendConsistency: (Documents.ConsistencyLevel)backendConsistency,
                                         desiredConsistency: (Documents.ConsistencyLevel)desiredConsistency,
-                                        isStrongReadWithEventualConsistencyAccountAllowed: isStrongReadWithEventualConsistencyAccountAllowed,
+                                        isLocalQuorumConsistency: isLocalQuorumConsistency,
                                         operationType: operationType,
                                         resourceType: resourceType);
         }
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="backendConsistency"> Account Level Consistency </param>
         /// <param name="desiredConsistency"> Request/Client Level Consistency</param>
-        /// <param name="isStrongReadWithEventualConsistencyAccountAllowed"> Allows Strong Read with Eventual Write</param>
+        /// <param name="isLocalQuorumConsistency"> Allows Strong Read with Eventual Write</param>
         /// <param name="operationType">  <see cref="OperationType"/> </param>
         /// <param name="resourceType"> <see cref="ResourceType"/> </param>
         /// <returns>true/false</returns>
@@ -49,11 +49,11 @@ namespace Microsoft.Azure.Cosmos
         public static bool IsValidConsistencyLevelOverwrite(
                                     Documents.ConsistencyLevel backendConsistency,
                                     Documents.ConsistencyLevel desiredConsistency,
-                                    bool isStrongReadWithEventualConsistencyAccountAllowed,
+                                    bool isLocalQuorumConsistency,
                                     OperationType? operationType,
                                     ResourceType? resourceType)
         {
-            if (isStrongReadWithEventualConsistencyAccountAllowed && 
+            if (isLocalQuorumConsistency && 
                     ValidationHelpers.IsStrongReadWithEventualConsistencyAllowed(
                             backendConsistency: backendConsistency,
                             desiredConsistency: desiredConsistency,

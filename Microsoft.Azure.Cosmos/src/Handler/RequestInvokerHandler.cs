@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         private readonly CosmosClient client;
         private readonly Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
 
-        private bool? IsStrongReadWithEventualConsistencyAccountAllowed;
+        private bool? IsLocalQuorumConsistency;
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
 
         public RequestInvokerHandler(
@@ -381,15 +381,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     this.AccountConsistencyLevel = await this.client.GetAccountConsistencyLevelAsync();
                 }
 
-                if (!this.IsStrongReadWithEventualConsistencyAccountAllowed.HasValue)
+                if (!this.IsLocalQuorumConsistency.HasValue)
                 {
-                    this.IsStrongReadWithEventualConsistencyAccountAllowed = this.client.ClientOptions.EnableStrongReadWithEventualConsistencyAccount;
+                    this.IsLocalQuorumConsistency = this.client.ClientOptions.EnableUpgradeConsistencyToLocalQuorum;
                 }
 
                 if (ValidationHelpers.IsValidConsistencyLevelOverwrite(
                             backendConsistency: this.AccountConsistencyLevel.Value, 
                             desiredConsistency: consistencyLevel.Value,
-                            isStrongReadWithEventualConsistencyAccountAllowed: this.IsStrongReadWithEventualConsistencyAccountAllowed.Value,
+                            isLocalQuorumConsistency: this.IsLocalQuorumConsistency.Value,
                             operationType: requestMessage.OperationType,
                             resourceType: requestMessage.ResourceType))
                 {

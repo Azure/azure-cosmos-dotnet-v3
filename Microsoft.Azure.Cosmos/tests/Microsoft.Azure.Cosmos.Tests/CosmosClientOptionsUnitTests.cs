@@ -525,13 +525,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
 
             CosmosClientOptions cosmosClientOptions = cosmosClientBuilder.Build(new MockDocumentClient()).ClientOptions;
-            Assert.IsFalse(cosmosClientOptions.EnableStrongReadWithEventualConsistencyAccount);
+            Assert.IsFalse(cosmosClientOptions.EnableUpgradeConsistencyToLocalQuorum);
 
             cosmosClientBuilder
-                .WithStrongReadWithEventualConsistencyAccount();
+                .AllowUpgradeConsistencyToLocalQuorum();
 
             cosmosClientOptions = cosmosClientBuilder.Build(new MockDocumentClient()).ClientOptions;
-            Assert.IsTrue(cosmosClientOptions.EnableStrongReadWithEventualConsistencyAccount);
+            Assert.IsTrue(cosmosClientOptions.EnableUpgradeConsistencyToLocalQuorum);
         }
 
         private class TestWebProxy : IWebProxy
