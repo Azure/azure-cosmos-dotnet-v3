@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
             this.Path = string.IsNullOrWhiteSpace(path)
                 ? throw new ArgumentNullException(nameof(path))
                 : path;
-            this.Value = value ?? throw new ArgumentNullException(nameof(value));
+            this.Value = value; //?? throw new ArgumentNullException(nameof(value));
         }
 
         public override T Value { get; }
