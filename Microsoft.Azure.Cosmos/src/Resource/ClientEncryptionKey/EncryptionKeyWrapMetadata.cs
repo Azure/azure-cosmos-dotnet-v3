@@ -13,12 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// Metadata that can be used to wrap/unwrap a Data Encryption Key using a Customer Managed Key.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-         class EncryptionKeyWrapMetadata : IEquatable<EncryptionKeyWrapMetadata>
+    public class EncryptionKeyWrapMetadata : IEquatable<EncryptionKeyWrapMetadata>
     {
         // For JSON deserialize
         private EncryptionKeyWrapMetadata()
