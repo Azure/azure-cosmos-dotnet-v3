@@ -56,6 +56,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const String AvailableThreadsName = "SystemPool_AvailableThreads";
         internal const String AvailableThreadsUnit = "ThreadCount";
 
+        // Expecting histogram to have Minimum ThreadWaitIntervalInMs of 1 and Maximum ThreadWaitIntervalInMs of 1 second
+        internal const long ThreadWaitIntervalInMsMax = TimeSpan.TicksPerSecond;
+        internal const long ThreadWaitIntervalInMsMin = 1;
+        internal const int ThreadWaitIntervalInMsPrecision = 2;
+        internal const string ThreadWaitIntervalInMsName = "SystemPool_ThreadWaitInterval";
+        internal const string ThreadWaitIntervalInMsUnit = "MilliSecond";
+
+        internal const string IsThreadStarvingName = "SystemPool_IsThreadStarving_True";
+        internal const string IsThreadStarvingUnit = "Count";
+
         internal const string DefaultVmMetadataUrL = "http://169.254.169.254/metadata/instance?api-version=2020-06-01";
         internal const double DefaultTimeStampInSeconds = 600;
         internal const double Percentile50 = 50.0;

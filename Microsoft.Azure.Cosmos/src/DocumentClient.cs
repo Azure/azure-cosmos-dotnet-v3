@@ -12,8 +12,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Net.Http.Headers;
-    using System.Runtime.CompilerServices;
     using System.Security;
     using System.Text;
     using System.Threading;
@@ -109,6 +107,7 @@ namespace Microsoft.Azure.Cosmos
         private const int DefaultRntbdReceiveHangDetectionTimeSeconds = 65;
         private const int DefaultRntbdSendHangDetectionTimeSeconds = 10;
         private const bool DefaultEnableCpuMonitor = true;
+        private const string DefaultInitTaskKey = "InitTaskKey";
 
         //Auth
         private readonly AuthorizationTokenProvider cosmosAuthorization;
@@ -144,7 +143,6 @@ namespace Microsoft.Azure.Cosmos
         //Private state.
         private bool isSuccessfullyInitialized;
         private bool isDisposed;
-        private object initializationSyncLock;  // guards initializeTask
 
         // creator of TransportClient is responsible for disposing it.
         private IStoreClientFactory storeClientFactory;
@@ -166,7 +164,8 @@ namespace Microsoft.Azure.Cosmos
         private AsyncLazy<QueryPartitionProvider> queryPartitionProvider;
 
         private DocumentClientEventSource eventSource;
-        internal Task initializeTask;
+        private Func<bool, Task<bool>> initializeTaskFactory;
+        internal AsyncCacheNonBlocking<string, bool> initTaskCache = new AsyncCacheNonBlocking<string, bool>();
 
         private JsonSerializerSettings serializerSettings;
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
@@ -914,15 +913,20 @@ namespace Microsoft.Azure.Cosmos
             // Setup the proxy to be  used based on connection mode.
             // For gateway: GatewayProxy.
             // For direct: WFStoreProxy [set in OpenAsync()].
-            this.initializationSyncLock = new object();
-
             this.eventSource = DocumentClientEventSource.Instance;
 
-            this.initializeTask = TaskHelper.InlineIfPossibleAsync(
-                () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
-                new ResourceThrottleRetryPolicy(
-                    this.ConnectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests,
-                    this.ConnectionPolicy.RetryOptions.MaxRetryWaitTimeInSeconds));
+            this.initializeTaskFactory = (_) => TaskHelper.InlineIfPossible<bool>(
+                    () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
+                    new ResourceThrottleRetryPolicy(
+                        this.ConnectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests,
+                        this.ConnectionPolicy.RetryOptions.MaxRetryWaitTimeInSeconds));
+
+            // Create the task to start the initialize task
+            // Task will be awaited on in the EnsureValidClientAsync
+            Task initTask = this.initTaskCache.GetAsync(
+                       key: DocumentClient.DefaultInitTaskKey,
+                       singleValueInitFunc: this.initializeTaskFactory,
+                       forceRefresh: (_) => false);
 
             // ContinueWith on the initialization task is needed for handling the UnobservedTaskException
             // if this task throws for some reason. Awaiting inside a constructor is not supported and
@@ -931,11 +935,8 @@ namespace Microsoft.Azure.Cosmos
             // UnobservedTaskException by using ContinueWith method w/ TaskContinuationOptions.OnlyOnFaulted
             // and accessing the Exception property on the target task.
 #pragma warning disable VSTHRD110 // Observe result of async calls
-            this.initializeTask.ContinueWith(t =>
+            initTask.ContinueWith(t => DefaultTrace.TraceWarning("initializeTask failed {0}", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
 #pragma warning restore VSTHRD110 // Observe result of async calls
-            {
-                DefaultTrace.TraceWarning("initializeTask failed {0}", t.Exception);
-            }, TaskContinuationOptions.OnlyOnFaulted);
 
             this.traceId = Interlocked.Increment(ref DocumentClient.idCounter);
             DefaultTrace.TraceInformation(string.Format(
@@ -951,7 +952,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         // Always called from under the lock except when called from Intilialize method during construction.
-        private async Task GetInitializationTaskAsync(IStoreClientFactory storeClientFactory)
+        private async Task<bool> GetInitializationTaskAsync(IStoreClientFactory storeClientFactory)
         {
             await this.InitializeGatewayConfigurationReaderAsync();
 
@@ -984,6 +985,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.InitializeDirectConnectivity(storeClientFactory);
             }
+
+            return true;
         }
 
         private async Task InitializeCachesAsync(string databaseName, DocumentCollection collection, CancellationToken cancellationToken)
@@ -1243,6 +1246,12 @@ namespace Microsoft.Azure.Cosmos
                 this.queryPartitionProvider.Value.Dispose();
             }
 
+            if (this.initTaskCache != null)
+            {
+                this.initTaskCache.Dispose();
+                this.initTaskCache = null;
+            }
+
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
             DefaultTrace.Flush();
 
@@ -1431,18 +1440,12 @@ namespace Microsoft.Azure.Cosmos
                 // client which is unusable and can resume working if it failed initialization once.
                 // If we have to reinitialize the client, it needs to happen in thread safe manner so that
                 // we dont re-initalize the task again for each incoming call.
-                Task initTask = null;
-
-                lock (this.initializationSyncLock)
-                {
-                    initTask = this.initializeTask;
-                }
-
                 try
                 {
-                    await initTask;
-                    this.isSuccessfullyInitialized = true;
-                    return;
+                    this.isSuccessfullyInitialized = await this.initTaskCache.GetAsync(
+                        key: DocumentClient.DefaultInitTaskKey,
+                        singleValueInitFunc: this.initializeTaskFactory,
+                        forceRefresh: (_) => false);
                 }
                 catch (DocumentClientException ex)
                 {
@@ -1452,33 +1455,10 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (Exception e)
                 {
-                    DefaultTrace.TraceWarning("initializeTask failed {0}", e.ToString());
-                    childTrace.AddDatum("initializeTask failed", e.ToString());
+                    DefaultTrace.TraceWarning("EnsureValidClientAsync initializeTask failed {0}", e);
+                    childTrace.AddDatum("initializeTask failed", e);
+                    throw;
                 }
-
-                lock (this.initializationSyncLock)
-                {
-                    // if the task has not been updated by another caller, update it
-                    if (object.ReferenceEquals(this.initializeTask, initTask))
-                    {
-                        this.initializeTask = this.GetInitializationTaskAsync(storeClientFactory: null);
-                    }
-
-                    initTask = this.initializeTask;
-                }
-
-                try
-                {
-                    await initTask;
-                    this.isSuccessfullyInitialized = true;
-                }
-                catch (DocumentClientException ex)
-                {
-                    throw Resource.CosmosExceptions.CosmosExceptionFactory.Create(
-                         dce: ex,
-                         trace: trace);
-                }
-                
             }
         }
 
@@ -6722,7 +6702,7 @@ namespace Microsoft.Azure.Cosmos
         private INameValueCollection GetRequestHeaders(Documents.Client.RequestOptions options)
         {
             Debug.Assert(
-                this.initializeTask.IsCompleted,
+                this.isSuccessfullyInitialized,
                 "GetRequestHeaders should be called after initialization task has been awaited to avoid blocking while accessing ConsistencyLevel property");
 
             INameValueCollection headers = new StoreRequestNameValueCollection();

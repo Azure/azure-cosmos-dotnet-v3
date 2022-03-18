@@ -966,3 +966,4 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
         }
     }
 }
+

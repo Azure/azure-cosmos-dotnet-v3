@@ -192,7 +192,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 CosmosQueryClientCore queryClient = new CosmosQueryClientCore(client.ClientContext, containerInternal);
                 NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                     containerInternal,
-                    queryClient);
+                    queryClient,
+                    Guid.NewGuid());
 
                 // warm up the caches
                 _ = await containerInternal.ReadItemStreamAsync("doesnotexist", PartitionKey.Null);

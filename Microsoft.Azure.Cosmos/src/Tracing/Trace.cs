@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
         private readonly Lazy<Dictionary<string, object>> data;
         private readonly Stopwatch stopwatch;
         private readonly ISet<(string, Uri)> regionContactedInternal;
-        //private readonly TraceSummary summary;
 
         private Trace(
             string name,
@@ -164,6 +163,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public void AddDatum(string key, object value)
         {
             this.data.Value.Add(key, value);
+        }
+
+        public void AddOrUpdateDatum(string key, object value)
+        {
+            this.data.Value[key] = value;
         }
     }
 }

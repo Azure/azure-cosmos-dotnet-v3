@@ -14,12 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Client encryption policy.
     /// </summary>
-#if PREVIEW
-    public 
-#else
-    internal
-#endif
-        sealed class ClientEncryptionPolicy
+    public sealed class ClientEncryptionPolicy
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientEncryptionPolicy"/> class.

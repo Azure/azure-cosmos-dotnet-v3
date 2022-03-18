@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
     ///                 ApplicationRegion = Regions.EastUS2,
     ///             });
     /// 
-    /// Database db = await client.CreateDatabaseAsync("database-id");
+    /// Database db = await cosmosClient.CreateDatabaseAsync("database-id");
     /// Container container = await db.CreateContainerAsync("container-id");
     /// 
     /// // Dispose cosmosClient at application exit
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
     ///                 ApplicationRegion = Regions.EastUS2,
     ///             });
     /// 
-    /// Database db = await client.CreateDatabaseAsync("database-id");
+    /// Database db = await cosmosClient.CreateDatabaseAsync("database-id");
     /// Container container = await db.CreateContainerAsync("container-id");
     /// 
     /// // Dispose cosmosClient at application exit
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
     ///     .WithApplicationRegion("East US 2")
     ///     .Build();
     /// 
-    /// Database db = await client.CreateDatabaseAsync("database-id")
+    /// Database db = await cosmosClient.CreateDatabaseAsync("database-id")
     /// Container container = await db.CreateContainerAsync("container-id");
     /// 
     /// // Dispose cosmosClient at application exit
@@ -100,8 +100,11 @@ namespace Microsoft.Azure.Cosmos
         private readonly string DatabaseRootUri = Paths.Databases_Root;
         private ConsistencyLevel? accountConsistencyLevel;
         private bool isDisposed = false;
+        private object disposedLock = new object();
 
         internal static int numberOfClientsCreated;
+        internal static int NumberOfActiveClients;
+
         internal DateTime? DisposedDateTimeUtc { get; private set; } = null;
 
         static CosmosClient()
@@ -109,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
 #if PREVIEW
             HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2020_07_15;
 #else
-            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_12_31;
+            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2019_10_14;
 #endif
             HttpConstants.Versions.CurrentVersionUTF8 = Encoding.UTF8.GetBytes(HttpConstants.Versions.CurrentVersion);
 
@@ -262,6 +265,7 @@ namespace Microsoft.Azure.Cosmos
             clientOptions ??= new CosmosClientOptions();
 
             this.ClientId = this.IncrementNumberOfClientsCreated();
+            
             this.ClientContext = ClientContextCore.Create(
                 this,
                 clientOptions);
@@ -457,12 +461,7 @@ namespace Microsoft.Azure.Cosmos
         /// a custom container that modifies the response. For example the client encryption
         /// uses this to decrypt responses before returning to the caller.
         /// </remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        virtual CosmosResponseFactory ResponseFactory => this.ClientContext.ResponseFactory;
+        public virtual CosmosResponseFactory ResponseFactory => this.ClientContext.ResponseFactory;
 
         /// <summary>
         /// Gets the endpoint Uri for the Azure Cosmos DB service.
@@ -889,7 +888,6 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// This method creates a query for databases under an Cosmos DB Account using a SQL statement. It returns a FeedIterator.
-        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
@@ -942,7 +940,6 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// This method creates a query for databases under an Cosmos DB Account using a SQL statement. It returns a FeedIterator.
-        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
@@ -1234,7 +1231,25 @@ namespace Microsoft.Azure.Cosmos
 
         private int IncrementNumberOfClientsCreated()
         {
+            this.IncrementNumberOfActiveClients();
+
             return Interlocked.Increment(ref numberOfClientsCreated);
+        }
+
+        private int IncrementNumberOfActiveClients()
+        {
+            return Interlocked.Increment(ref NumberOfActiveClients);
+        }
+
+        private int DecrementNumberOfActiveClients()
+        {
+            // In case dispose is called multiple times. Check if at least 1 active client is there
+            if (NumberOfActiveClients > 0)
+            {
+                return Interlocked.Decrement(ref NumberOfActiveClients);
+            }
+
+            return 0;
         }
 
         private async Task InitializeContainerAsync(string databaseId, string containerId, CancellationToken cancellationToken = default)
@@ -1282,17 +1297,22 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="disposing">True if disposing</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (!this.isDisposed)
+            lock (this.disposedLock)
             {
-                this.DisposedDateTimeUtc = DateTime.UtcNow;
-
-                if (disposing)
+                if (this.isDisposed == true)
                 {
-                    this.ClientContext.Dispose();
+                    return;
                 }
-
                 this.isDisposed = true;
             }
+
+            this.DisposedDateTimeUtc = DateTime.UtcNow;
+
+            if (disposing)
+            {
+                this.ClientContext.Dispose();
+                this.DecrementNumberOfActiveClients();
+            }   
         }
     }
 }

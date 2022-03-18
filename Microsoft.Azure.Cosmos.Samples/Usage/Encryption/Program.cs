@@ -4,7 +4,9 @@
     using System.Security.Cryptography.X509Certificates;
     using System.Threading.Tasks;
     using Azure.Core;
+    using Azure.Core.Cryptography;
     using Azure.Identity;
+    using Azure.Security.KeyVault.Keys.Cryptography;
     using Cosmos.Samples.Shared;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Encryption;
@@ -54,11 +56,11 @@
 
                 // Get the Token Credential that is capable of providing an OAuth Token.
                 TokenCredential tokenCredential = GetTokenCredential(configuration);
-                AzureKeyVaultKeyWrapProvider azureKeyVaultKeyWrapProvider = new AzureKeyVaultKeyWrapProvider(tokenCredential);
+                KeyResolver keyResolver = new KeyResolver(tokenCredential);
 
-                Program.client = Program.CreateClientInstance(configuration, azureKeyVaultKeyWrapProvider);
+                Program.client = Program.CreateClientInstance(configuration, keyResolver);
 
-                await Program.AdminSetupAsync(client, azureKeyVaultKeyWrapProvider);
+                await Program.AdminSetupAsync(client);
                 await Program.RunDemoAsync();
             }
             catch (CosmosException cre)
@@ -79,7 +81,7 @@
         }
         // </Main>
 
-        private static CosmosClient CreateClientInstance(IConfigurationRoot configuration, AzureKeyVaultKeyWrapProvider azureKeyVaultKeyWrapProvider)
+        private static CosmosClient CreateClientInstance(IConfigurationRoot configuration, IKeyEncryptionKeyResolver keyResolver)
         {
             string endpoint = configuration["EndPointUrl"];
             if (string.IsNullOrEmpty(endpoint))
@@ -96,7 +98,7 @@
             CosmosClient encryptionCosmosClient = new CosmosClient(endpoint, authKey);
 
             // enable encryption support on the cosmos client.
-            return encryptionCosmosClient.WithEncryption(azureKeyVaultKeyWrapProvider);
+            return encryptionCosmosClient.WithEncryption(keyResolver, KeyEncryptionKeyResolverName.AzureKeyVault);
         }
 
         private static X509Certificate2 GetCertificate(string clientCertThumbprint)
@@ -130,7 +132,7 @@
             if (string.IsNullOrEmpty(tenantId))
             {
                 throw new ArgumentNullException("Please specify a valid TenantId in the appSettings.json");
-            }          
+            }
 
             // Certificate's public key must be at least 2048 bits.
             string clientCertThumbprint = configuration["ClientCertThumbprint"];
@@ -146,7 +148,7 @@
         /// Administrative operations - create the database, container, and generate the necessary client encryption keys.
         /// These are initializations and are expected to be invoked only once - do not invoke these before every item request.
         /// </summary>
-        private static async Task AdminSetupAsync(CosmosClient client, AzureKeyVaultKeyWrapProvider azureKeyVaultKeyWrapProvider)
+        private static async Task AdminSetupAsync(CosmosClient client)
         {
             Database database = await client.CreateDatabaseIfNotExistsAsync(Program.encryptedDatabaseId);
 
@@ -160,13 +162,21 @@
             // Create the Client Encryption Keys for Encrypting the configured Paths.
             await database.CreateClientEncryptionKeyAsync(
                     "key1",
-                    DataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256,
-                    new EncryptionKeyWrapMetadata(azureKeyVaultKeyWrapProvider.ProviderName, "akvMasterKey", MasterKeyUrl));
+                    DataEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    new EncryptionKeyWrapMetadata(
+                        KeyEncryptionKeyResolverName.AzureKeyVault, 
+                        "akvMasterKey", 
+                        MasterKeyUrl,
+                        EncryptionAlgorithm.RsaOaep.ToString()));
 
             await database.CreateClientEncryptionKeyAsync(
                     "key2",
-                    DataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256,
-                    new EncryptionKeyWrapMetadata(azureKeyVaultKeyWrapProvider.ProviderName, "akvMasterKey", MasterKeyUrl));
+                    DataEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    new EncryptionKeyWrapMetadata(
+                        KeyEncryptionKeyResolverName.AzureKeyVault, 
+                        "akvMasterKey", 
+                        MasterKeyUrl,
+                        EncryptionAlgorithm.RsaOaep.ToString()));
 
             // Configure the required Paths to be Encrypted with appropriate settings.
             ClientEncryptionIncludedPath path1 = new ClientEncryptionIncludedPath()
@@ -174,7 +184,7 @@
                 Path = "/SubTotal",
                 ClientEncryptionKeyId = "key1",
                 EncryptionType = EncryptionType.Deterministic,
-                EncryptionAlgorithm = DataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256
+                EncryptionAlgorithm = DataEncryptionAlgorithm.AeadAes256CbcHmacSha256
             };
 
             // non primitive data type.Leaves get encrypted.
@@ -183,7 +193,7 @@
                 Path = "/Items",
                 ClientEncryptionKeyId = "key2",
                 EncryptionType = EncryptionType.Deterministic,
-                EncryptionAlgorithm = DataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256
+                EncryptionAlgorithm = DataEncryptionAlgorithm.AeadAes256CbcHmacSha256
             };
 
             ClientEncryptionIncludedPath path3 = new ClientEncryptionIncludedPath()
@@ -191,7 +201,7 @@
                 Path = "/OrderDate",
                 ClientEncryptionKeyId = "key1",
                 EncryptionType = EncryptionType.Deterministic,
-                EncryptionAlgorithm = DataEncryptionKeyAlgorithm.AeadAes256CbcHmacSha256
+                EncryptionAlgorithm = DataEncryptionAlgorithm.AeadAes256CbcHmacSha256
             };
 
             // Create a container with the appropriate partition key definition (we choose the "AccountNumber" property here) and throughput (we choose 1000 here).
@@ -205,7 +215,7 @@
                 .CreateAsync(throughput: 1000);
 
             // gets a Container with Encryption Support.
-            containerWithEncryption = await database.GetContainer(Program.encryptedContainerId).InitializeEncryptionAsync();                               
+            containerWithEncryption = await database.GetContainer(Program.encryptedContainerId).InitializeEncryptionAsync();
         }
 
         private static async Task RunDemoAsync()

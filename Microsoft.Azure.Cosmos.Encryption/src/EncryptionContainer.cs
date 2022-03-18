@@ -719,6 +719,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return this.ResponseFactory.CreateItemFeedResponse<T>(responseMessage);
         }
 
+        public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+               Cosmos.PartitionKey partitionKey,
+               RequestOptions requestOptions = null,
+               CancellationToken cancellationToken = default)
+        {
+            return this.container.DeleteAllItemsByPartitionKeyStreamAsync(
+                partitionKey,
+                requestOptions,
+                cancellationToken);
+        }
+
         public async Task<EncryptionSettings> GetOrUpdateEncryptionSettingsFromCacheAsync(
             EncryptionSettings obsoleteEncryptionSettings,
             CancellationToken cancellationToken)

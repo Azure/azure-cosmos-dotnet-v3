@@ -68,6 +68,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             SqlQuerySpec sqlQuerySpec,
             PartitionKey? partitionKey,
             string supportedQueryFeatures,
+            Guid clientQueryCorrelationId,
             ITrace trace,
             CancellationToken cancellationToken);
 

@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
+    using System;
     using System.Collections.Generic;
     using HdrHistogram;
     using Microsoft.Azure.Documents.Rntbd;
@@ -35,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 long? infoToRecord = (long?)load.CpuUsage * ClientTelemetryOptions.HistogramPrecisionFactor;
                 if (infoToRecord.HasValue)
                 {
-                    histogram.RecordValue((long)infoToRecord);
+                    histogram.RecordValue(infoToRecord.Value);
                 }
             }
 
@@ -64,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 long? infoToRecord = (long?)load.MemoryAvailable;
                 if (infoToRecord.HasValue)
                 {
-                    histogram.RecordValue((long)infoToRecord);
+                    histogram.RecordValue(infoToRecord.Value);
                 }
             }
 
@@ -93,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 long? infoToRecord = (long?)load.ThreadInfo?.AvailableThreads;
                 if (infoToRecord.HasValue)
                 {
-                    histogram.RecordValue((long)infoToRecord);
+                    histogram.RecordValue(infoToRecord.Value);
                 }
             }
 
@@ -105,5 +106,58 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return systemInfo;
         }
 
+        /// <summary>
+        /// Collecting Thread Starvation Flags Count
+        /// </summary>
+        /// <param name="systemUsageCollection"></param>
+        /// <returns>SystemInfo</returns>
+        public static SystemInfo GetThreadStarvationSignalCount(IReadOnlyCollection<SystemUsageLoad> systemUsageCollection)
+        {
+            int counter = 0;
+            foreach (SystemUsageLoad load in systemUsageCollection)
+            {
+                bool? infoToRecord = load.ThreadInfo?.IsThreadStarving;
+                if (infoToRecord.HasValue && infoToRecord.Value)
+                {
+                    counter++;
+                }
+            }
+            SystemInfo systemInfo = 
+                new SystemInfo(
+                    metricsName: ClientTelemetryOptions.IsThreadStarvingName, 
+                    unitName: ClientTelemetryOptions.IsThreadStarvingUnit,
+                    count: counter);
+
+            return systemInfo;
+        }
+
+        /// <summary>
+        /// Collecting Thread Wait Interval in Millisecond and aggregating using Histogram
+        /// </summary>
+        /// <param name="systemUsageCollection"></param>
+        /// <returns>SystemInfo</returns>
+        public static SystemInfo GetThreadWaitIntervalInMs(IReadOnlyCollection<SystemUsageLoad> systemUsageCollection)
+        {
+            LongConcurrentHistogram histogram = new LongConcurrentHistogram(ClientTelemetryOptions.ThreadWaitIntervalInMsMin,
+                                                        ClientTelemetryOptions.ThreadWaitIntervalInMsMax,
+                                                        ClientTelemetryOptions.ThreadWaitIntervalInMsPrecision);
+
+            SystemInfo systemInfo = new SystemInfo(ClientTelemetryOptions.ThreadWaitIntervalInMsName, ClientTelemetryOptions.ThreadWaitIntervalInMsUnit);
+            foreach (SystemUsageLoad load in systemUsageCollection)
+            {
+                double? infoToRecord = load.ThreadInfo?.ThreadWaitIntervalInMs;
+                if (infoToRecord.HasValue)
+                {
+                    histogram.RecordValue(TimeSpan.FromMilliseconds(infoToRecord.Value).Ticks);
+                }
+            }
+
+            if (histogram.TotalCount > 0)
+            {
+                systemInfo.SetAggregators(histogram, ClientTelemetryOptions.TicksToMsFactor);
+            }
+
+            return systemInfo;
+        }
     }
 }

@@ -33,10 +33,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
         private readonly ChangeFeedRequestOptions changeFeedRequestOptions;
         private readonly string resourceLink;
         private readonly ResourceType resourceType;
+        private readonly Guid correlatedActivityId;
 
         public NetworkAttachedDocumentContainer(
             ContainerInternal container,
             CosmosQueryClient cosmosQueryClient,
+            Guid correlatedActivityId,
             QueryRequestOptions queryRequestOptions = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null,
             string resourceLink = null,
@@ -48,6 +50,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             this.changeFeedRequestOptions = changeFeedRequestOptions;
             this.resourceLink = resourceLink ?? this.container.LinkUri;
             this.resourceType = resourceType;
+            this.correlatedActivityId = correlatedActivityId;
         }
 
         public Task<TryCatch> MonadicSplitAsync(
@@ -257,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 this.resourceLink,
                 this.resourceType,
                 Documents.OperationType.Query,
-                Guid.NewGuid(),
+                this.correlatedActivityId,
                 feedRangeState.FeedRange,
                 queryRequestOptions,
                 sqlQuerySpec,

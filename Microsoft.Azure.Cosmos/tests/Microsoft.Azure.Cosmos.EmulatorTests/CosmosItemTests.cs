@@ -705,7 +705,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(itemIds.Count, 0);
         }
 
-        [Ignore] // https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2981
         [TestMethod]
         public async Task PartitionKeyDeleteTest()
         {
@@ -1804,6 +1803,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<PatchOperation> patchOperations = new List<PatchOperation>()
             {
+                PatchOperation.Set("/children/0/description", "testSet"),
                 PatchOperation.Add("/children/1/pk", "patched"),
                 PatchOperation.Remove("/description"),
                 PatchOperation.Replace("/taskNum", newTaskNum),
@@ -1832,6 +1832,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             Assert.IsNotNull(response.Resource);
+            Assert.AreEqual("testSet", response.Resource.children[0].description);
             Assert.AreEqual("patched", response.Resource.children[1].pk);
             Assert.IsNull(response.Resource.description);
             Assert.AreEqual(newTaskNum, response.Resource.taskNum);
