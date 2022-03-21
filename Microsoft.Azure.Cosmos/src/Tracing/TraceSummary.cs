@@ -8,6 +8,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Collections.Generic;
     using System.Text;
 
+    /// <summary>
+    /// The total count of failed requests for an <see cref="ITrace"/>.
+    /// </summary>
 #if INTERNAL
     public
 #else

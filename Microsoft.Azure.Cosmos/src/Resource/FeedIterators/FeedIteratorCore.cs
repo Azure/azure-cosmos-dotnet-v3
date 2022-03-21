@@ -110,6 +110,7 @@ namespace Microsoft.Azure.Cosmos
                    {
                        request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
                        request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
+                       //request.Headers.Add(HttpConstants.QueryStrings, )
                    }
                },
                trace: trace,
