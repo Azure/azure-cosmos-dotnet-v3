@@ -517,6 +517,23 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [TestMethod]
+        public void WithQuorumReadWithEventualConsistencyAccount()
+        {
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: AccountEndpoint,
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+
+            CosmosClientOptions cosmosClientOptions = cosmosClientBuilder.Build(new MockDocumentClient()).ClientOptions;
+            Assert.IsFalse(cosmosClientOptions.EnableUpgradeConsistencyToLocalQuorum);
+
+            cosmosClientBuilder
+                .AllowUpgradeConsistencyToLocalQuorum();
+
+            cosmosClientOptions = cosmosClientBuilder.Build(new MockDocumentClient()).ClientOptions;
+            Assert.IsTrue(cosmosClientOptions.EnableUpgradeConsistencyToLocalQuorum);
+        }
+
         private class TestWebProxy : IWebProxy
         {
             public ICredentials Credentials { get; set; }
