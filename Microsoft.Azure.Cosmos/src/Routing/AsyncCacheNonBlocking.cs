@@ -85,9 +85,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public async Task<TValue> GetAsync(
            TKey key,
-           Func<Task<TValue>> singleValueInitFunc,
-           Func<TValue, bool> forceRefresh,
-           Action<TValue, TValue> callBackOnForceRefresh)
+           Func<TValue, Task<TValue>> singleValueInitFunc,
+           Func<TValue, bool> forceRefresh)
         {
             if (this.values.TryGetValue(key, out AsyncLazyWithRefreshTask<TValue> initialLazyValue))
             {
@@ -120,8 +119,7 @@ namespace Microsoft.Azure.Cosmos
                 try
                 {
                     return await initialLazyValue.CreateAndWaitForBackgroundRefreshTaskAsync(
-                       createRefreshTask: singleValueInitFunc,
-                       callBackOnForceRefresh: callBackOnForceRefresh);
+                       createRefreshTask: singleValueInitFunc);
                 }
                 catch (Exception e)
                 {
@@ -202,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
         private sealed class AsyncLazyWithRefreshTask<T>
         {
             private readonly CancellationToken cancellationToken;
-            private readonly Func<Task<T>> createValueFunc;
+            private readonly Func<T, Task<T>> createValueFunc;
             private readonly object valueLock = new object();
             private readonly object removedFromCacheLock = new object();
 
@@ -221,7 +219,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             public AsyncLazyWithRefreshTask(
-                Func<Task<T>> taskFactory,
+                Func<T, Task<T>> taskFactory,
                 CancellationToken cancellationToken)
             {
                 this.cancellationToken = cancellationToken;
@@ -252,14 +250,13 @@ namespace Microsoft.Azure.Cosmos
                     }
 
                     this.cancellationToken.ThrowIfCancellationRequested();
-                    this.value = this.createValueFunc();
+                    this.value = this.createValueFunc(default);
                     return this.value;
                 }
             }
 
             public async Task<T> CreateAndWaitForBackgroundRefreshTaskAsync(
-                Func<Task<T>> createRefreshTask,
-                Action<T, T> callBackOnForceRefresh)
+                Func<T, Task<T>> createRefreshTask)
             {
                 this.cancellationToken.ThrowIfCancellationRequested();
 
@@ -284,7 +281,6 @@ namespace Microsoft.Azure.Cosmos
                 if (AsyncLazyWithRefreshTask<T>.IsTaskRunning(refresh))
                 {
                     T result = await refresh;
-                    callBackOnForceRefresh?.Invoke(originalValue, result);
                     return result;
                 }
 
@@ -298,7 +294,7 @@ namespace Microsoft.Azure.Cosmos
                     else
                     {
                         createdTask = true;
-                        this.refreshInProgress = createRefreshTask();
+                        this.refreshInProgress = createRefreshTask(originalValue);
                         refresh = this.refreshInProgress;
                     }
                 }
@@ -307,7 +303,6 @@ namespace Microsoft.Azure.Cosmos
                 if (!createdTask)
                 {
                     T result = await refresh;
-                    callBackOnForceRefresh?.Invoke(originalValue, result);
                     return result;
                 }
 
@@ -320,7 +315,6 @@ namespace Microsoft.Azure.Cosmos
                     this.value = Task.FromResult(itemResult);
                 }
 
-                callBackOnForceRefresh?.Invoke(originalValue, itemResult);
                 return itemResult;
             }
 

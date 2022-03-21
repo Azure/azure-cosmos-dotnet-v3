@@ -232,6 +232,55 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task VerifyPkRangeCacheRefreshOnTimeoutsAsync()
+        {
+            int pkRangeCalls = 0;
+            HttpClientHandlerHelper httpHandlerHelper = new();
+            List<string> ifNoneMatchValues = new();
+            httpHandlerHelper.RequestCallBack = (request, cancellationToken) =>
+            {
+                if (!request.RequestUri.ToString().EndsWith("pkranges"))
+                {
+                    return null;
+                }
+
+                ifNoneMatchValues.Add(request.Headers.IfNoneMatch.ToString());
+
+                pkRangeCalls++;
+
+                // Cause timeout on the init
+                if (pkRangeCalls == 1)
+                {
+                    return Task.FromResult(new HttpResponseMessage(HttpStatusCode.RequestTimeout));
+                }
+
+                return null;
+            };
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                HttpClientFactory = () => new HttpClient(httpHandlerHelper),
+            };
+
+            CosmosClient resourceClient = TestCommon.CreateCosmosClient(clientOptions);
+
+            string dbName = Guid.NewGuid().ToString();
+            string containerName = nameof(PartitionKeyRangeCacheTests);
+
+            Database db = await resourceClient.CreateDatabaseIfNotExistsAsync(dbName);
+            Container container = await db.CreateContainerIfNotExistsAsync(
+                containerName,
+                "/pk",
+                400);
+
+            ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
+            await container.CreateItemAsync<ToDoActivity>(toDoActivity);
+            Assert.AreEqual(3, pkRangeCalls);
+
+            Assert.AreEqual(2, ifNoneMatchValues.Count(x => string.IsNullOrEmpty(x)), "First call is a 408");
+        }
+
+        [TestMethod]
         public async Task TestRidRefreshOnNotFoundAsync()
         {
             CosmosClient resourceClient = TestCommon.CreateCosmosClient();
