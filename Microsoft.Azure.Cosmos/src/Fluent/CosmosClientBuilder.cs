@@ -584,6 +584,16 @@ namespace Microsoft.Azure.Cosmos.Fluent
             return this;
         }
 
+        /// <summary>
+        /// To enable LocalQuorum Consistency, i.e. Allow Quorum read with Eventual Consistency Account
+        /// Use By Compute Only
+        /// </summary>
+        internal CosmosClientBuilder AllowUpgradeConsistencyToLocalQuorum()
+        {
+            this.clientOptions.EnableUpgradeConsistencyToLocalQuorum = true;
+            return this;
+        }
+
         internal CosmosClientBuilder WithRetryWithOptions(
             int? initialRetryForRetryWithMilliseconds,
             int? maximumRetryForRetryWithMilliseconds,
