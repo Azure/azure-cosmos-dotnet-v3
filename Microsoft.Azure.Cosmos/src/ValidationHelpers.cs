@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="backendConsistency"> Account Level Consistency </param>
         /// <param name="desiredConsistency"> Request/Client Level Consistency</param>
-        /// <param name="isLocalQuorumConsistency"> Allows Strong Read with Eventual Write</param>
+        /// <param name="isLocalQuorumConsistency"> Allows Quorum Read with Eventual Account</param>
         /// <param name="operationType"> <see cref="OperationType"/> </param>
         /// <param name="resourceType"> <see cref="ResourceType"/> </param>
         /// <returns>true/false</returns>
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="backendConsistency"> Account Level Consistency </param>
         /// <param name="desiredConsistency"> Request/Client Level Consistency</param>
-        /// <param name="isLocalQuorumConsistency"> Allows Strong Read with Eventual Write</param>
+        /// <param name="isLocalQuorumConsistency"> Allows Quorum Read with Eventual Account</param>
         /// <param name="operationType">  <see cref="OperationType"/> </param>
         /// <param name="resourceType"> <see cref="ResourceType"/> </param>
         /// <returns>true/false</returns>
