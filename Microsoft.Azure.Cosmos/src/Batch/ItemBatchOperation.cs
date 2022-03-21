@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Diagnostics;
     using System.IO;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
@@ -189,65 +188,10 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
-                if (options.Properties != null)
+                r = operation.RequestOptions.WriteRequestProperties(ref writer, pkWritten);
+                if (r != Result.Success)
                 {
-                    if (options.Properties.TryGetValue(WFConstants.BackendHeaders.BinaryId, out object binaryIdObj))
-                    {
-                        if (binaryIdObj is byte[] binaryId)
-                        {
-                            r = writer.WriteBinary("binaryId", binaryId);
-                            if (r != Result.Success)
-                            {
-                                return r;
-                            }
-                        }
-                        else if (binaryIdObj is ReadOnlyMemory<byte> binaryIdRom)
-                        {
-                            r = writer.WriteBinary("binaryId", binaryIdRom.Span);
-                            if (r != Result.Success)
-                            {
-                                return r;
-                            }
-                        }
-                    }
-
-                    if (options.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj))
-                    {
-                        if (epkObj is byte[] epk)
-                        {
-                            r = writer.WriteBinary("effectivePartitionKey", epk);
-                            if (r != Result.Success)
-                            {
-                                return r;
-                            }
-                        }
-                    }
-
-                    if (!pkWritten && options.Properties.TryGetValue(
-                            HttpConstants.HttpHeaders.PartitionKey,
-                            out object pkStrObj))
-                    {
-                        if (pkStrObj is string pkString)
-                        {
-                            r = writer.WriteString("partitionKey", pkString);
-                            if (r != Result.Success)
-                            {
-                                return r;
-                            }
-                        }
-                    }
-
-                    if (options.Properties.TryGetValue(WFConstants.BackendHeaders.TimeToLiveInSeconds, out object ttlObj))
-                    {
-                        if (ttlObj is string ttlStr && int.TryParse(ttlStr, out int ttl))
-                        {
-                            r = writer.WriteInt32("timeToLiveInSeconds", ttl);
-                            if (r != Result.Success)
-                            {
-                                return r;
-                            }
-                        }
-                    }
+                    return r;
                 }
             }
 

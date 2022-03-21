@@ -20,7 +20,7 @@
     public class ItemBatchOperationTests
     {
         [TestMethod]
-        public void TestWriteOperationWithBinaryIdReadOnlyMemory()
+        public void TestWriteOperationWithBinaryIdByteArray()
         {
             ISpanResizer<byte> resizer = new MemorySpanResizer<byte>(100);
             RowBuffer row = new RowBuffer(capacity: 100, resizer: resizer);
@@ -30,7 +30,7 @@
             ItemRequestOptions requestOptions = new();
             requestOptions.Properties = new Dictionary<string, object>()
             {
-                { WFConstants.BackendHeaders.BinaryId, new ReadOnlyMemory<byte>(testBinaryId) },
+                { WFConstants.BackendHeaders.BinaryId, testBinaryId },
             };
             TransactionalBatchItemRequestOptions transactionalBatchItemRequestOptions =
                 TransactionalBatchItemRequestOptions.FromItemRequestOptions(requestOptions);
