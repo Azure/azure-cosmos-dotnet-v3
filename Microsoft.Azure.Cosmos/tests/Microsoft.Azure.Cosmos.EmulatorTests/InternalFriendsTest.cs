@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [DataRow(true)]
         [DataRow(false)]
-        public async Task ClientEventualWriteQuorumReadConsistencyEnabledTestAsync(bool isLocalQuorumConsistency)
+        public async Task ClientWithAllowUpgradeConsistencyToLocalQuorumTestAsync(bool isLocalQuorumConsistency)
         {
             Container container = await this.CreateContainer(isLocalQuorumConsistency);
 

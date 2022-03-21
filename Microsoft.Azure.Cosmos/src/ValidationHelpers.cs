@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     internal static class ValidationHelpers
     {
         /// <summary>
-        /// If isStrongReadAllowedOverEventualConsistency flag is true, it allows only "Strong Read with Eventual Consistency Write". 
+        /// If isLocalQuorumConsistency flag is true, it allows only "Quorum Read with Eventual Consistency Account". 
         /// It goes through a validation where it doesn't allow strong consistency over weaker consistency.
         /// </summary>
         /// <param name="backendConsistency"> Account Level Consistency </param>
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// If isStrongReadAllowedOverEventualConsistency flag is true, it allows only "Strong Read with Eventual Consistency Write". 
+        /// If isLocalQuorumConsistency flag is true, it allows only "Quorum Read with Eventual Consistency Account". 
         /// It goes through a validation where it doesn't allow strong consistency over weaker consistency.
         /// </summary>
         /// <param name="backendConsistency"> Account Level Consistency </param>
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Condition to check strong read with eventual write
+        /// Condition to check Quorum(i.e. Strong) read with eventual account
         /// </summary>
         /// <param name="backendConsistency"></param>
         /// <param name="desiredConsistency"></param>
