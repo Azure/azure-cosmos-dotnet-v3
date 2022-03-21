@@ -248,28 +248,7 @@ namespace Microsoft.Azure.Cosmos
                     length += 7; // "Default", "Include", "Exclude" are possible values
                 }
 
-                if (this.RequestOptions.Properties != null)
-                {
-                    if (this.RequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.BinaryId, out object binaryIdObj))
-                    {
-                        if (binaryIdObj is byte[] binaryId)
-                        {
-                            length += binaryId.Length;
-                        }
-                        else if (binaryIdObj is ReadOnlyMemory<byte> binaryIdRom)
-                        {
-                            length += binaryIdRom.Length;
-                        }
-                    }
-
-                    if (this.RequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj))
-                    {
-                        if (epkObj is byte[] epk)
-                        {
-                            length += epk.Length;
-                        }
-                    }
-                }
+                length += this.RequestOptions.GetRequestPropertiesSerializationLength();
             }
 
             return length;

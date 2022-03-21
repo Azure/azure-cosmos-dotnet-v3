@@ -109,5 +109,30 @@ namespace Microsoft.Azure.Cosmos
 
             return Result.Success;
         }
+
+        internal virtual int GetRequestPropertiesSerializationLength()
+        {
+            int length = 0;
+            if (this.Properties != null)
+            {
+                if (this.Properties.TryGetValue(WFConstants.BackendHeaders.BinaryId, out object binaryIdObj))
+                {
+                    if (binaryIdObj is byte[] binaryId)
+                    {
+                        length += binaryId.Length;
+                    }
+                }
+
+                if (this.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj))
+                {
+                    if (epkObj is byte[] epk)
+                    {
+                        length += epk.Length;
+                    }
+                }
+            }
+
+            return length;
+        }
     }
 }
