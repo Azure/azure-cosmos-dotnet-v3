@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
-                r = operation.RequestOptions.WriteRequestProperties(ref writer, pkWritten);
+                r = options.WriteRequestProperties(ref writer, pkWritten);
                 if (r != Result.Success)
                 {
                     return r;
