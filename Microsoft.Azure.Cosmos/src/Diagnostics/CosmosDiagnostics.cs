@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
         ///     if (response.Diagnostics.GetClientElapsedTime() > ConfigurableSlowRequestTimeSpan)
         ///     {
         ///         // Log the diagnostics and add any additional info necessary to correlate to other logs 
-        ///         log.LogInformation("Operation took longer than expected, Diagnostics: {Diagnostics}", response.Diagnostics);
+        ///         logger.LogInformation("Operation took longer than expected, Diagnostics: {Diagnostics}");
         ///     }
         /// }
         /// catch (CosmosException cosmosException)
