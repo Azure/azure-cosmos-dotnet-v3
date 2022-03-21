@@ -30,9 +30,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         private static readonly Uri endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
+        private static readonly string UniqueId = Guid.NewGuid().ToString();
 
         private readonly ClientTelemetryProperties clientTelemetryInfo;
-
         private readonly DocumentClient documentClient;
         private readonly CosmosHttpClient httpClient;
         private readonly AuthorizationTokenProvider tokenProvider;
@@ -136,14 +136,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     }
 
                     // Load host information if not available (it caches the information)
-                    AzureVMMetadata azMetadata = await ClientTelemetryHelper.LoadAzureVmMetaDataAsync(this.httpClient);
+                    AzureVMMetadata azMetadata = await ClientTelemetryHelper.LoadAzureVmMetaDataAsync(this.httpClient, this.cancellationTokenSource);
 
                     Compute vmInformation = azMetadata?.Compute;
                     if (vmInformation != null)
                     {
                         this.clientTelemetryInfo.ApplicationRegion = vmInformation.Location;
                         this.clientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(vmInformation);
+                        this.clientTelemetryInfo.MachineId = vmInformation.VMId;
                         //TODO: Set AcceleratingNetwork flag from instance metadata once it is available.
+                    } 
+                    else
+                    {
+                        this.clientTelemetryInfo.MachineId = ClientTelemetry.UniqueId;
                     }
 
                     await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
@@ -369,7 +374,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             this.cancellationTokenSource.Cancel();
             this.cancellationTokenSource.Dispose();
-
+            
+            this.telemetryTask.Dispose();
             this.telemetryTask = null;
         }
     }

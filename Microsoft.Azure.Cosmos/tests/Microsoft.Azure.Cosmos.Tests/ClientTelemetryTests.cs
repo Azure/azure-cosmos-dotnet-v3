@@ -45,6 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual("AzurePublicCloud", metadata.Compute.AzEnvironment);
             Assert.AreEqual("Linux", metadata.Compute.OSType);
             Assert.AreEqual("Standard_D2s_v3", metadata.Compute.VMSize);
+            Assert.AreEqual("d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd", metadata.Compute.VMId);
         }
 
         [TestMethod]

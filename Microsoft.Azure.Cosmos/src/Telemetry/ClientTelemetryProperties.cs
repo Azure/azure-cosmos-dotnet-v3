@@ -19,6 +19,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         [JsonProperty(PropertyName = "clientId")]
         internal string ClientId { get; }
 
+        [JsonProperty(PropertyName = "machineId")]
+        internal string MachineId { get; set; }
+
         [JsonProperty(PropertyName = "processId")]
         internal string ProcessId { get; }
 

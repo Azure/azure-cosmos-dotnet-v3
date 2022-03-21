@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Collects only application region and environment information
         /// </summary>
         /// <returns>Async Task</returns>
-        internal static async Task<AzureVMMetadata> LoadAzureVmMetaDataAsync(CosmosHttpClient httpClient)
+        internal static async Task<AzureVMMetadata> LoadAzureVmMetaDataAsync(CosmosHttpClient httpClient, CancellationTokenSource cancellationTokenSource)
         {
             if (azMetadata == null)
             {
@@ -72,10 +72,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         resourceType: ResourceType.Telemetry,
                         timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
                         clientSideRequestStatistics: null,
-                        cancellationToken: new CancellationToken()); // Do not want to cancel the whole process if this call fails
+                        cancellationToken: cancellationTokenSource.Token); // Cancel this call if cancel is requested
 
                     azMetadata = await ClientTelemetryOptions.ProcessResponseAsync(httpResponseMessage);
-
                 }
                 catch (Exception ex)
                 {
