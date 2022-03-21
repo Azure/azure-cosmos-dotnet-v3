@@ -54,56 +54,48 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual Result WriteRequestProperties(ref RowWriter writer, bool pkWritten)
         {
-            if (this.Properties != null)
+            if (this.Properties == null)
             {
-                if (this.Properties.TryGetValue(WFConstants.BackendHeaders.BinaryId, out object binaryIdObj))
-                {
-                    if (binaryIdObj is byte[] binaryId)
-                    {
-                        Result r = writer.WriteBinary("binaryId", binaryId);
-                        if (r != Result.Success)
-                        {
-                            return r;
-                        }
-                    }
-                }
+                return Result.Success;
+            }
 
-                if (this.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj))
+            if (this.Properties.TryGetValue(WFConstants.BackendHeaders.BinaryId, out object binaryIdObj)
+                && binaryIdObj is byte[] binaryId)
+            {
+                Result r = writer.WriteBinary("binaryId", binaryId);
+                if (r != Result.Success)
                 {
-                    if (epkObj is byte[] epk)
-                    {
-                        Result r = writer.WriteBinary("effectivePartitionKey", epk);
-                        if (r != Result.Success)
-                        {
-                            return r;
-                        }
-                    }
+                    return r;
                 }
+            }
 
-                if (!pkWritten && this.Properties.TryGetValue(
-                        HttpConstants.HttpHeaders.PartitionKey,
-                        out object pkStrObj))
+            if (this.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj)
+                && epkObj is byte[] epk)
+            {
+                Result r = writer.WriteBinary("effectivePartitionKey", epk);
+                if (r != Result.Success)
                 {
-                    if (pkStrObj is string pkString)
-                    {
-                        Result r = writer.WriteString("partitionKey", pkString);
-                        if (r != Result.Success)
-                        {
-                            return r;
-                        }
-                    }
+                    return r;
                 }
+            }
 
-                if (this.Properties.TryGetValue(WFConstants.BackendHeaders.TimeToLiveInSeconds, out object ttlObj))
+            if (!pkWritten && this.Properties.TryGetValue(HttpConstants.HttpHeaders.PartitionKey, out object pkStrObj)
+                && pkStrObj is string pkString)
+            {
+                Result r = writer.WriteString("partitionKey", pkString);
+                if (r != Result.Success)
                 {
-                    if (ttlObj is string ttlStr && int.TryParse(ttlStr, out int ttl))
-                    {
-                        Result r = writer.WriteInt32("timeToLiveInSeconds", ttl);
-                        if (r != Result.Success)
-                        {
-                            return r;
-                        }
-                    }
+                    return r;
+                }
+            }
+
+            if (this.Properties.TryGetValue(WFConstants.BackendHeaders.TimeToLiveInSeconds, out object ttlObj)
+                && ttlObj is string ttlStr && int.TryParse(ttlStr, out int ttl))
+            {
+                Result r = writer.WriteInt32("timeToLiveInSeconds", ttl);
+                if (r != Result.Success)
+                {
+                    return r;
                 }
             }
 
@@ -112,24 +104,22 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual int GetRequestPropertiesSerializationLength()
         {
-            int length = 0;
-            if (this.Properties != null)
+            if (this.Properties == null)
             {
-                if (this.Properties.TryGetValue(WFConstants.BackendHeaders.BinaryId, out object binaryIdObj))
-                {
-                    if (binaryIdObj is byte[] binaryId)
-                    {
-                        length += binaryId.Length;
-                    }
-                }
+                return 0;
+            }
 
-                if (this.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj))
-                {
-                    if (epkObj is byte[] epk)
-                    {
-                        length += epk.Length;
-                    }
-                }
+            int length = 0;
+            if (this.Properties.TryGetValue(WFConstants.BackendHeaders.BinaryId, out object binaryIdObj)
+                && binaryIdObj is byte[] binaryId)
+            {
+                length += binaryId.Length;
+            }
+
+            if (this.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj)
+                && epkObj is byte[] epk)
+            {
+                length += epk.Length;
             }
 
             return length;
