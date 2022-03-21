@@ -533,7 +533,7 @@ namespace Microsoft.Azure.Cosmos
         internal bool EnablePartitionLevelFailover { get; set; } = false;
 
         /// <summary>
-        /// Enable LocalQuorum Consistency, i.e. Strong Read Allowed with Eventual Consistency Write
+        /// Quorum Read allowed with eventual consistency account
         /// </summary>
         internal bool EnableUpgradeConsistencyToLocalQuorum { get; set; } = false;
         

@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
                                     ResourceType? resourceType)
         {
             if (isLocalQuorumConsistency && 
-                    ValidationHelpers.IsStrongReadWithEventualConsistencyAllowed(
+                    ValidationHelpers.IsLocalQuorumConsistency(
                             backendConsistency: backendConsistency,
                             desiredConsistency: desiredConsistency,
                             operationType: operationType,
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="operationType"></param>
         /// <param name="resourceType"></param>
         /// <returns>true/false</returns>
-        private static bool IsStrongReadWithEventualConsistencyAllowed(Documents.ConsistencyLevel backendConsistency,
+        private static bool IsLocalQuorumConsistency(Documents.ConsistencyLevel backendConsistency,
                                 Documents.ConsistencyLevel desiredConsistency,
                                 OperationType? operationType,
                                 ResourceType? resourceType)

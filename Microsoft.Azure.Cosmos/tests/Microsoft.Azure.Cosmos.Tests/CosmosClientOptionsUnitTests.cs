@@ -518,7 +518,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void WithStrongReadWithEventualConsistencyAccount()
+        public void WithQuorumReadWithEventualConsistencyAccount()
         {
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: AccountEndpoint,

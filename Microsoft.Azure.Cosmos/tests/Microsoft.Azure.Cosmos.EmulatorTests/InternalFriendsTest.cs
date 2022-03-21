@@ -28,9 +28,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [DataRow(true)]
         [DataRow(false)]
-        public async Task ClientEventualWriteStrongReadConsistencyEnabledTestAsync(bool isStrongReadWithEventualConsistencyAccount)
+        public async Task ClientEventualWriteQuorumReadConsistencyEnabledTestAsync(bool isLocalQuorumConsistency)
         {
-            Container container = await this.CreateContainer(isStrongReadWithEventualConsistencyAccount);
+            Container container = await this.CreateContainer(isLocalQuorumConsistency);
 
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(item: testItem);
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemRequestOptions requestOptions = new();
             requestOptions.ConsistencyLevel = Cosmos.ConsistencyLevel.Strong;
 
-            if (isStrongReadWithEventualConsistencyAccount)
+            if (isLocalQuorumConsistency)
             {
                 ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk), requestOptions);
                 Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private async Task<Container> CreateContainer(bool isStrongReadWithEventualConsistencyAccount)
+        private async Task<Container> CreateContainer(bool isLocalQuorumConsistency)
         {
             HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
             {
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 CosmosClientBuilder builder = x.AddCustomHandlers(handlerHelper)
                                                .WithHttpClientFactory(() => new HttpClient(httpHandler));
-                if (isStrongReadWithEventualConsistencyAccount)
+                if (isLocalQuorumConsistency)
                 {
                     builder.AllowUpgradeConsistencyToLocalQuorum();
                 }
