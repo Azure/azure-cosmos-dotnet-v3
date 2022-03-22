@@ -141,14 +141,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     {
                         this.clientTelemetryInfo.ApplicationRegion = vmInformation.Location;
                         this.clientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(vmInformation);
-                        this.clientTelemetryInfo.MachineId = vmInformation.VMId;
+                       
                         //TODO: Set AcceleratingNetwork flag from instance metadata once it is available.
-                    } 
-                    else
-                    {
-                        this.clientTelemetryInfo.MachineId = ClientTelemetry.UniqueId;
                     }
 
+                    this.clientTelemetryInfo.MachineId = ClientTelemetryHelper.GetMachineId();
+                    
                     await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
 
                     // If cancellation is requested after the delay then return from here.

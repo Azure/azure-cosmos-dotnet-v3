@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 systemInfoCollection.Add(TelemetrySystemUsage.GetTcpConnectionCount(systemUsageHistory.Values));
             }
-            
+
         }
 
         /// <summary>
@@ -185,5 +185,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             return regionsContacted.ToString();
         }
+
     }
 }
