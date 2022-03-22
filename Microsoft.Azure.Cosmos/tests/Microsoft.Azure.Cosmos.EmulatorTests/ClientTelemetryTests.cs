@@ -756,7 +756,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Microsoft.Azure.Cosmos.ConsistencyLevel? expectedConsistencyLevel = null,
             IDictionary<string, long> expectedOperationRecordCountMap = null,
             string expectedSubstatuscode = null,
-            bool isAzureInstance = false)
+            bool? isAzureInstance = null)
         {
             Assert.IsNotNull(this.actualInfo, "Telemetry Information not available");
 
@@ -895,10 +895,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private static void AssertAccountLevelInformation(
-            List<ClientTelemetryProperties> localCopyOfActualInfo,
-            List<OperationInfo> actualOperationList,
+            List<ClientTelemetryProperties> localCopyOfActualInfo, 
+            List<OperationInfo> actualOperationList, 
             List<SystemInfo> actualSystemInformation,
-            bool isAzureInstance)
+            bool? isAzureInstance)
         {
             ISet<string> machineId = new HashSet<string>();
 
@@ -937,14 +937,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.AreEqual(1, machineId.Count);
 
-            if(isAzureInstance)
+            if(isAzureInstance.HasValue)
             {
-                Assert.AreEqual("d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd", machineId.ToList()[0]);
+                if (isAzureInstance.Value)
+                {
+                    Assert.AreEqual("vmId:d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd", machineId.ToList()[0]);
+                }
+                else
+                {
+                    Assert.AreNotEqual("vmId:d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd", machineId.ToList()[0]);
+                    Assert.IsTrue(machineId.ToList()[0].Contains("uuid:"), machineId.ToList()[0]);
+                }
             }
-            else
-            {
-                Assert.AreNotEqual("d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd", machineId.ToList()[0]);
-            }
+
         }
 
         private static ItemBatchOperation CreateItem(string itemId)

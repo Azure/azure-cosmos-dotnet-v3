@@ -10,18 +10,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     [Serializable]
     internal sealed class Compute
     {
-        public Compute()
-        {
-        }
-
-        public Compute(string location, string sKU, string azEnvironment, string oSType, string vMSize, string vMId)
+        [JsonConstructor]
+        public Compute(
+            string vMId, 
+            string location, 
+            string sKU, 
+            string azEnvironment, 
+            string oSType, 
+            string vMSize)
         {
             this.Location = location;
             this.SKU = sKU;
             this.AzEnvironment = azEnvironment;
             this.OSType = oSType;
             this.VMSize = vMSize;
-            this.VMId = vMId;
+            this.VMId = "vmId:" + vMId;
         }
 
         [JsonProperty(PropertyName = "location")]
@@ -40,12 +43,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal string VMSize { get; }
 
         [JsonProperty(PropertyName = "vmId")]
-        internal string VMId { get; set; }
-
-        public override string ToString()
-        {
-            return this.VMId;
-        }
+        internal string VMId { get; }
     }
 
 }
