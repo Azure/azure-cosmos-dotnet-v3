@@ -5,9 +5,6 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
-    using System.Collections.Generic;
-    using System.Globalization;
-    using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos;
@@ -16,6 +13,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Diagnostics;
     using System.IO;
     using System.Net;
+    using System.Threading;
+    using Microsoft.Azure.Cosmos.Routing;
 
     [TestClass]
     public class CosmosItemSessionTokenTests : BaseCosmosClientHelper
@@ -235,26 +234,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNull(lsnAfterThrottledRequest);
         }
 
-        private async Task<string> GetPKRangeIdForPartitionKey(
-            PartitionKey pkValue)
+        private async Task<string> GetPKRangeIdForPartitionKey(PartitionKey pkValue)
         {
-            DocumentFeedResponse<PartitionKeyRange> pkRanges = await this.cosmosClient.DocumentClient.ReadPartitionKeyRangeFeedAsync(
-                UriFactory.CreateDocumentCollectionUri(this.Container.Database.Id, this.Container.Id));
-            List<string> maxExclusiveBoundaries = pkRanges.Select(pkRange => pkRange.MaxExclusive).ToList();
+            CollectionRoutingMap collectionRoutingMap = await ((ContainerInternal)this.Container).GetRoutingMapAsync(CancellationToken.None);
+            string effectivePK = pkValue.InternalKey.GetEffectivePartitionKeyString(this.containerSettings.PartitionKey);
 
-            string effectivePK1 = pkValue.InternalKey.GetEffectivePartitionKeyString(this.containerSettings.PartitionKey);
-            int pkIndex = 0;
-            while (pkIndex < maxExclusiveBoundaries.Count && string.Compare(effectivePK1, maxExclusiveBoundaries[pkIndex]) >= 0)
-            {
-                ++pkIndex;
-            }
-
-            if (pkIndex == maxExclusiveBoundaries.Count)
-            {
-                throw new Exception("Failed to find the range");
-            }
-
-            return pkIndex.ToString(CultureInfo.InvariantCulture);
+            return collectionRoutingMap.GetRangeByEffectivePartitionKey(effectivePK).Id;
         }
 
         private async Task<Nullable<long>> GetLSNFromSessionContainer(PartitionKey pkValue)
