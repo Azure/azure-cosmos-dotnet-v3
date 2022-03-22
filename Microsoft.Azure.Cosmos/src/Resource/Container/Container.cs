@@ -629,6 +629,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which wraps a <see cref="Stream"/> containing the response.
         /// </returns>
+        /// <remarks><see cref="Container.ReadManyItemsStreamAsync"/> is meant to perform better latency-wise than a query with IN statements to fetch a large number of independent items.</remarks>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
@@ -671,6 +672,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="FeedResponse{T}"/> which wraps the typed items.
         /// </returns>
+        /// <remarks><see cref="Container.ReadManyItemsAsync"/> is meant to perform better latency-wise than a query with IN statements to fetch a large number of independent items.</remarks>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[

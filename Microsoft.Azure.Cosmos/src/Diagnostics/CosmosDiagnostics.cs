@@ -39,6 +39,33 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.
         /// </summary>
         /// <returns>The string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.</returns>
+        /// <remarks>
+        /// <see cref="CosmosDiagnostics"/> implements lazy materialization and is only materialized when <see cref="CosmosDiagnostics.ToString"/> is called.
+        /// </remarks>
+        /// <example>
+        /// Do not eagerly materialize the diagnostics until the moment of consumption to avoid unnecessary allocations, let the ToString be called only when needed.
+        /// You can capture diagnostics conditionally, based on latency or errors:
+        /// <code language="c#">
+        /// <![CDATA[
+        /// try
+        /// {
+        ///     ItemResponse<Book> response = await container.CreateItemAsync<Book>(item: testItem);
+        ///     if (response.Diagnostics.GetClientElapsedTime() > ConfigurableSlowRequestTimeSpan)
+        ///     {
+        ///         // Log the diagnostics and add any additional info necessary to correlate to other logs 
+        ///         logger.LogInformation("Operation took longer than expected, Diagnostics: {Diagnostics}");
+        ///     }
+        /// }
+        /// catch (CosmosException cosmosException)
+        /// {
+        ///     // Log the full exception including the stack trace 
+        ///     logger.LogError(cosmosException);
+        ///     // The Diagnostics can be logged separately if required.
+        ///     logger.LogError("Cosmos DB call failed with {StatusCode}, {SubStatusCode}, Diagnostics: {Diagnostics}", cosmosException.StatusCode, cosmosException.SubStatusCode, cosmosException.Diagnostics);
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public abstract override string ToString();
 
         /// <summary>
