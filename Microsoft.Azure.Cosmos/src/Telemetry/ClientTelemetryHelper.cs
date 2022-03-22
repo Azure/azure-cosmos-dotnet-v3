@@ -80,6 +80,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     DefaultTrace.TraceError("Exception in LoadAzureVmMetaDataAsync() {0}", ex.Message);
                 }
+                finally
+                {
+                    // If above call failed for any reason
+                    if (azMetadata == null)
+                    {
+                        azMetadata = new AzureVMMetadata(new Compute());
+                    }
+
+                    if (string.IsNullOrEmpty(azMetadata.Compute.VMId))
+                    {
+                        // Assign a random unique Id
+                        azMetadata.Compute.VMId = ClientTelemetry.UniqueId;
+                    }
+                }
             }
 
             return azMetadata;

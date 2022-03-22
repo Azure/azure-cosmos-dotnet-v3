@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         private static readonly Uri endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
-        private static readonly string UniqueId = Guid.NewGuid().ToString();
+        internal static readonly string UniqueId = "vmId:" + Guid.NewGuid().ToString();
 
         private readonly ClientTelemetryProperties clientTelemetryInfo;
         private readonly DocumentClient documentClient;
@@ -145,10 +145,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         this.clientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(vmInformation);
                         this.clientTelemetryInfo.MachineId = vmInformation.VMId;
                         //TODO: Set AcceleratingNetwork flag from instance metadata once it is available.
-                    } 
-                    else
-                    {
-                        this.clientTelemetryInfo.MachineId = ClientTelemetry.UniqueId;
                     }
 
                     await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
@@ -375,7 +371,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.cancellationTokenSource.Cancel();
             this.cancellationTokenSource.Dispose();
             
-            this.telemetryTask.Dispose();
             this.telemetryTask = null;
         }
     }

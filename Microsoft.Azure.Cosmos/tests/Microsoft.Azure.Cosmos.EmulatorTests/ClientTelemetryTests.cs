@@ -182,6 +182,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway, false)]
         public async Task PointSuccessOperationsTest(ConnectionMode mode, bool isAzureInstance)
         {
+            // Clean cached information
+            ClientTelemetryHelper.azMetadata = null;
+
             Container container = await this.CreateClientAndContainer(
                 mode: mode,
                 isAzureInstance: isAzureInstance);
@@ -926,11 +929,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(telemetryInfo.UserAgent);
                 Assert.IsNotNull(telemetryInfo.ConnectionMode);
 
-                machineId.Add(telemetryInfo.MachineId);
+                if(!string.IsNullOrEmpty(telemetryInfo.MachineId))
+                {
+                    machineId.Add(telemetryInfo.MachineId);
+                }
             }
 
             Assert.AreEqual(1, machineId.Count);
-            Console.WriteLine(machineId.ToList()[0]);
+
             if(isAzureInstance)
             {
                 Assert.AreEqual("d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd", machineId.ToList()[0]);
