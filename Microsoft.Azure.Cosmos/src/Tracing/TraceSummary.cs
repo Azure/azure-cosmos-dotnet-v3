@@ -18,6 +18,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
 #endif  
     class TraceSummary
     {
+        /// <summary>
+        ///  The total count of failed requests for an <see cref="ITrace"/>
+        /// </summary>
         public int failedRequestCount { get; set; }
     }
 }
