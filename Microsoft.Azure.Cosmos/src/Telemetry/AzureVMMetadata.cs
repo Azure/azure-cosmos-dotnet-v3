@@ -16,6 +16,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         [JsonProperty(PropertyName = "compute")]
-        internal Compute Compute { get; set; }
+        internal Compute Compute { get; }
     }
 }
