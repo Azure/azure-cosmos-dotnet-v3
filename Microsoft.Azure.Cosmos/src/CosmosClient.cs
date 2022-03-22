@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
 #if PREVIEW
             HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2020_07_15;
 #else
-            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2019_10_14;
+            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_12_31;
 #endif
             HttpConstants.Versions.CurrentVersionUTF8 = Encoding.UTF8.GetBytes(HttpConstants.Versions.CurrentVersion);
 
