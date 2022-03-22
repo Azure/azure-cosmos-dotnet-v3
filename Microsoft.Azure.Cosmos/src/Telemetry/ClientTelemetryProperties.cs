@@ -100,7 +100,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             IReadOnlyList<string> preferredRegions,
             List<SystemInfo> systemInfo,
             List<OperationInfo> cacheRefreshInfo,
-            List<OperationInfo> operationInfo)
+            List<OperationInfo> operationInfo,
+            string machineId)
         {
             this.DateTimeUtc = dateTimeUtc;
             this.ClientId = clientId;
@@ -115,6 +116,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.CacheRefreshInfo = cacheRefreshInfo;
             this.OperationInfo = operationInfo;
             this.PreferredRegions = preferredRegions;
+            this.MachineId = machineId;
         }
     }
 }
