@@ -59,7 +59,7 @@ jobs:
       projects: Microsoft.Azure.Cosmos.sln 
       arguments: -p:Optimize=true -p:IsPreview=true;SdkProjectRef=true
       versioningScheme: OFF
-      
+
 - job:
   displayName: Encryption.Custom Project Ref SDK Preview ${{ parameters.BuildConfiguration }} 
   pool:
