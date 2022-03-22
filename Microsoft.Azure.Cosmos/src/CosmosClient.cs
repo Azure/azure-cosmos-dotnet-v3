@@ -451,6 +451,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The <see cref="Cosmos.CosmosClientOptions"/> used initialize CosmosClient.
         /// </summary>
+        /// <remarks>This property is read-only. Modifying any options after the client has been created has no effect on the existing client instance.</remarks>
         public virtual CosmosClientOptions ClientOptions => this.ClientContext.ClientOptions;
 
         /// <summary>
