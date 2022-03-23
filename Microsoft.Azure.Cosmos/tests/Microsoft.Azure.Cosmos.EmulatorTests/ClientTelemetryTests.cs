@@ -721,7 +721,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.cosmosClientBuilder = this.cosmosClientBuilder
                                         .WithHttpClientFactory(() => new HttpClient(httpHandler));
 
-            Container container = await this.CreateClientAndContainer(mode);
+            Container container = await this.CreateClientAndContainer(
+                                                mode: mode,
+                                                customHandler: httpHandler);
             try
             {
                 ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
@@ -961,7 +963,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task<Container> CreateClientAndContainer(ConnectionMode mode,
             Microsoft.Azure.Cosmos.ConsistencyLevel? consistency = null,
             bool isLargeContainer = false,
-            bool isAzureInstance = false)
+            bool isAzureInstance = false,
+            HttpClientHandlerHelper customHandler = null)
         {
             if (consistency.HasValue)
             {
@@ -969,9 +972,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .WithConsistencyLevel(consistency.Value);
             }
 
+            HttpClientHandlerHelper handlerHelper;
+            if (customHandler == null)
+            {
+                handlerHelper = isAzureInstance ? this.httpHandler : this.httpHandlerForNonAzureInstance;
+            } 
+            else
+            {
+                handlerHelper = customHandler;
+            }
+
             this.cosmosClientBuilder = this.cosmosClientBuilder
-                .WithHttpClientFactory(() =>
-                        isAzureInstance ? new HttpClient(this.httpHandler) : new HttpClient(this.httpHandlerForNonAzureInstance));
+                .WithHttpClientFactory(() => new HttpClient(handlerHelper));
 
             this.cosmosClient = mode == ConnectionMode.Gateway
                 ? this.cosmosClientBuilder.WithConnectionModeGateway().Build()
