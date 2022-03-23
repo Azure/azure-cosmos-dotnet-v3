@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
         /// of the application which enables efficient connection management and performance. Please refer to the
         /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
         /// </summary>
-        /// <param name="connectionString">The connection string to the cosmos account. ex: https://mycosmosaccount.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
+        /// <param name="connectionString">The connection string to the cosmos account. ex: AccountEndpoint=https://XXXXX.documents.azure.com:443/;AccountKey=JJIsXBMd9DXXXXXXXXXXXXXXzdCZuzWNg==; </param>
         /// <param name="clientOptions">(Optional) client options</param>
         /// <example>
         /// The CosmosClient is created with the connection string and configured to use "East US 2" region.
