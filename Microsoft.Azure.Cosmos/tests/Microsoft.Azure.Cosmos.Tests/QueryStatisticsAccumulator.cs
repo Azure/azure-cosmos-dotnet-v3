@@ -15,10 +15,8 @@
         private class RequestTimeline
         {
             public DateTime StartTimeUtc { get; set; }
-
             public EventType Event { get; set; }
             public double DurationInMs { get; set; }
-
             [JsonConverter(typeof(StringEnumConverter))]
             public enum EventType
             {

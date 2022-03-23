@@ -24,7 +24,7 @@
         private readonly List<double> getCosmosElementResponseTimeList = new();
         private const string cosmosDatabaseId = "";
         private const string containerId = "";
-        private const string contentSerialization = "";
+        private const string contentSerialization = "CosmosBinary";
         private const string query = "";
         private const int numberOfIterations = 30;
         private const int warmupIterations = 10;
@@ -34,8 +34,6 @@
         {
             try
             {
-                //string authKey = "";
-                //string endpoint = "";
                 string authKey = System.Configuration.ConfigurationManager.AppSettings["MasterKey"];
                 string endpoint = System.Configuration.ConfigurationManager.AppSettings["GatewayEndpoint"];
 
@@ -65,39 +63,77 @@
                 await this.RunQueryAsync(container, query);
             }
 
-            using (TextWriter file = File.CreateText(filePath))
+            using (TextWriter file = new StreamWriter(filePath, true))
             {
                 this.SerializeAsync(file, this.queryStatisticsAccumulator);
             }
-
-            this.SerializeAsync(Console.Out, this.queryStatisticsAccumulator);
+            using (TextWriter writer = Console.Out)
+            {
+                this.SerializeAsync(writer, this.queryStatisticsAccumulator);
+            }
         }
 
         public async Task RunQueryAsync(Container container, string sql)
         {
-            Stopwatch stopwatch = new Stopwatch();
-            using (FeedIterator<States> iterator = container.GetItemQueryIterator<States>(
-                sql,
-                requestOptions: new QueryRequestOptions()
-                {
-                    MaxConcurrency = -1,
-                    CosmosSerializationFormatOptions = new CosmosSerializationFormatOptions(
-                        contentSerializationFormat: contentSerialization,
-                        createCustomNavigator: (content) => JsonNavigator.Create(content),
-                        createCustomWriter: () => Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Text))
-                }))
+            if (sql.ToLower().Contains("distinct"))
             {
-                while (iterator.HasMoreResults)
-                {
-                    stopwatch.Start();
-                    FeedResponse<States> response = await iterator.ReadNextAsync();
+                Stopwatch distinctQueryStopwatch = new Stopwatch();
+                using (FeedIterator<string> distinctQueryIterator = container.GetItemQueryIterator<string>(
+                    queryText: sql,
+                    requestOptions: new QueryRequestOptions()
                     {
-                        stopwatch.Stop();
-                        this.GetTrace(response);
-                        stopwatch.Start();
+                        MaxConcurrency = -1,
+                        MaxItemCount = -1,
+                        CosmosSerializationFormatOptions = new CosmosSerializationFormatOptions(
+                            contentSerializationFormat: contentSerialization,
+                            createCustomNavigator: (content) => JsonNavigator.Create(content),
+                            createCustomWriter: () => Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Text))
+                    }))
+                {
+                    while (distinctQueryIterator.HasMoreResults)
+                    {
+                        distinctQueryStopwatch.Start();
+                        FeedResponse<string> distinctQueryResponse = await distinctQueryIterator.ReadNextAsync();
+                        {
+                            distinctQueryStopwatch.Stop();
+                            if (distinctQueryResponse.RequestCharge != 0)
+                            {
+                                this.GetDistinctQueryTrace(distinctQueryResponse);
+                            }
+                            distinctQueryStopwatch.Start();
+                        }
+                        distinctQueryStopwatch.Stop();
+                        this.endToEndTimeList.Add(distinctQueryStopwatch.ElapsedMilliseconds);
                     }
-                    stopwatch.Stop();
-                    this.endToEndTimeList.Add(stopwatch.ElapsedMilliseconds);
+                }
+            }
+            else
+            {
+                Stopwatch stopwatch = new Stopwatch();
+                using (FeedIterator<States> iterator = container.GetItemQueryIterator<States>(
+                    queryText: sql,
+                    requestOptions: new QueryRequestOptions()
+                    {
+                        MaxConcurrency = -1,
+                        MaxItemCount = -1,
+                        CosmosSerializationFormatOptions = new CosmosSerializationFormatOptions(
+                            contentSerializationFormat: contentSerialization,
+                            createCustomNavigator: (content) => JsonNavigator.Create(content),
+                            createCustomWriter: () => Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Binary))
+                    }))
+                {
+                    while (iterator.HasMoreResults)
+                    {
+                        stopwatch.Start();
+                        FeedResponse<States> response = await iterator.ReadNextAsync();
+                        {
+                            stopwatch.Stop();
+                            this.GetTrace(response);
+                            stopwatch.Start();
+                        }
+                        stopwatch.Stop();
+                        this.endToEndTimeList.Add(stopwatch.ElapsedMilliseconds);
+                    }
                 }
             }
         }
@@ -147,6 +183,50 @@
             }
         }
 
+        private void GetDistinctQueryTrace(FeedResponse<string> Response)
+        {
+            string backendKeyValue = "Query Metrics";
+            string backendNodeValue = "[,FF) move next";
+            ITrace trace = ((CosmosTraceDiagnostics)Response.Diagnostics).Value;
+            ContentSerializationPerformanceTests contentSerializationPerformanceTests = new();
+            List<ITrace> backendMetrics = contentSerializationPerformanceTests.FindQueryMetrics(trace, backendKeyValue, backendNodeValue);
+            if (backendMetrics != null)
+            {
+                foreach (ITrace node in backendMetrics)
+                {
+                    foreach (KeyValuePair<string, object> kvp in node.Data)
+                    {
+                        this.queryStatisticsAccumulator.Visit((QueryMetricsTraceDatum)kvp.Value);
+                    }
+                }
+            }
+
+            string transportKeyValue = "Client Side Request Stats";
+            string transportNodeValue = "Microsoft.Azure.Documents.ServerStoreModel Transport Request";
+            List<ITrace> transitMetrics = contentSerializationPerformanceTests.FindQueryMetrics(trace, transportKeyValue, transportNodeValue);
+            if (transitMetrics != null)
+            {
+                foreach (ITrace node in transitMetrics)
+                {
+                    foreach (KeyValuePair<string, object> kvp in node.Data)
+                    {
+                        this.queryStatisticsAccumulator.Visit((ClientSideRequestStatisticsTraceDatum)kvp.Value);
+                    }
+                }
+            }
+            string clientParseTimeNode = "POCO Materialization";
+            ITrace poco = contentSerializationPerformanceTests.FindQueryClientMetrics(trace, clientParseTimeNode);
+            if (poco != null)
+            {
+                this.pocoTimeList.Add(poco.Duration.TotalMilliseconds);
+            }
+            string clientDeserializationTimeNode = "Get Cosmos Element Response";
+            ITrace getCosmosElementResponse = contentSerializationPerformanceTests.FindQueryClientMetrics(trace, clientDeserializationTimeNode);
+            if (getCosmosElementResponse != null)
+            {
+                this.getCosmosElementResponseTimeList.Add(getCosmosElementResponse.Duration.TotalMilliseconds);
+            }
+        }
         private List<ITrace> FindQueryMetrics(ITrace trace, string keyName, string nodeName)
         {
             List<ITrace> queryMetricsNodes = new();
@@ -181,7 +261,7 @@
                 foreach (ITrace child in node.Children)
                     queue.Enqueue(child);
             }
-            return null;
+            throw new Exception(name + " not found in Diagnostics");
         }
 
         private double CalculateAverage(List<double> avgList)
@@ -208,208 +288,30 @@
 
         private void SerializeAsync(TextWriter textWriter, QueryStatisticsAccumulator queryStatisticsAccumulator)
         {
+            //print your data here
             if (textWriter == Console.Out)
             {
-                using (TextWriter writer = Console.Out)
-                {
-                    writer.WriteLine(this.CalculateAverage(this.EliminateWarmupIterations(this.endToEndTimeList)));
-                    writer.WriteLine((double)queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.RetrievedDocumentCountList.Count / numberOfIterations);
-                    if (queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.RetrievedDocumentCountList.Count > numberOfIterations)
-                    {
-                        List<double> DistinctList = queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.RetrievedDocumentCountList.Distinct().ToList();
-                        writer.WriteLine();
-                        DistinctList.ForEach(writer.WriteLine);
-                        writer.WriteLine();
-                    }
-
-                    else { writer.WriteLine(this.CalculateAverage(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.RetrievedDocumentCountList))); }
-                    writer.WriteLine(this.CalculateAverage(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.RetrievedDocumentSizeList));
-                    if (queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.OutputDocumentCountList.Count > numberOfIterations)
-                    {
-                        List<double> DistinctList = queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.OutputDocumentCountList.Distinct().ToList();
-                        writer.WriteLine();
-                        DistinctList.ForEach(writer.WriteLine);
-                        writer.WriteLine();
-                    }
-
-                    else { writer.WriteLine(this.CalculateAverage(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.OutputDocumentCountList))); }
-                    writer.WriteLine(this.CalculateAverage(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.OutputDocumentSizeList)));
-                    writer.WriteLine(this.CalculateAverage(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.TotalQueryExecutionTimeList)));
-                    writer.WriteLine(this.CalculateAverage(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.DocumentLoadTimeList)));
-                    writer.WriteLine(this.CalculateAverage(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.DocumentWriteTimeList)));
-                    writer.WriteLine();
-                    writer.WriteLine(this.CalculateAverage(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.CreatedList)));
-                    writer.WriteLine(this.CalculateAverage(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.ChannelAcquisitionStartedList)));
-                    writer.WriteLine(this.CalculateAverage(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.PipelinedList)));
-                    writer.WriteLine(this.CalculateAverage(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.TransitTimeList)));
-                    writer.WriteLine(this.CalculateAverage(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.ReceivedList)));
-                    writer.WriteLine(this.CalculateAverage(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.CompletedList)));
-                    writer.WriteLine();
-                    writer.WriteLine(this.CalculateAverage(this.EliminateWarmupIterations(this.pocoTimeList)));
-                    writer.WriteLine(this.CalculateAverage(this.EliminateWarmupIterations(this.getCosmosElementResponseTimeList)));
-                    writer.WriteLine("\nMedian\n");
-                    writer.WriteLine(this.CalculateMedian(this.EliminateWarmupIterations(this.endToEndTimeList)));
-                    writer.WriteLine((double)queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.TotalQueryExecutionTimeList.Count / numberOfIterations);
-                    writer.WriteLine(this.CalculateMedian(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.RetrievedDocumentCountList)));
-                    writer.WriteLine(this.CalculateMedian(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.RetrievedDocumentSizeList)));
-                    writer.WriteLine(this.CalculateMedian(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.OutputDocumentCountList)));
-                    writer.WriteLine(this.CalculateMedian(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.OutputDocumentSizeList)));
-                    writer.WriteLine(this.CalculateMedian(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.TotalQueryExecutionTimeList)));
-                    writer.WriteLine(this.CalculateMedian(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.DocumentLoadTimeList)));
-                    writer.WriteLine(this.CalculateMedian(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.DocumentWriteTimeList)));
-                    writer.WriteLine();
-                    writer.WriteLine(this.CalculateMedian(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.CreatedList)));
-                    writer.WriteLine(this.CalculateMedian(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.ChannelAcquisitionStartedList)));
-                    writer.WriteLine(this.CalculateMedian(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.PipelinedList)));
-                    writer.WriteLine(this.CalculateMedian(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.TransitTimeList)));
-                    writer.WriteLine(this.CalculateMedian(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.ReceivedList)));
-                    writer.WriteLine(this.CalculateMedian(this.EliminateWarmupIterations(queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.CompletedList)));
-                    writer.WriteLine();
-                    writer.WriteLine(this.CalculateMedian(this.EliminateWarmupIterations(this.pocoTimeList)));
-                    writer.WriteLine(this.CalculateMedian(this.EliminateWarmupIterations(this.getCosmosElementResponseTimeList)));
-                    writer.Flush();
-                    writer.Close();
-                }
+                textWriter.WriteLine(this.CalculateAverage(this.EliminateWarmupIterations(this.endToEndTimeList)));
+                textWriter.WriteLine((double)queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.RetrievedDocumentCountList.Count / numberOfIterations);
+                textWriter.WriteLine("\nMedian\n");
+                textWriter.WriteLine(this.CalculateMedian(this.EliminateWarmupIterations(this.endToEndTimeList)));
+                textWriter.WriteLine((double)queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.TotalQueryExecutionTimeList.Count / numberOfIterations);
+                textWriter.Flush();
+                textWriter.Close();
             }
             else
             {
-                foreach (double arr in this.endToEndTimeList)
-                {
-                    textWriter.WriteLine(arr);
-                }
-                textWriter.WriteLine();
-                textWriter.WriteLine("Retrieved Document Count");
-                foreach (double arr in queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.RetrievedDocumentCountList)
-                {
-                    textWriter.WriteLine(arr);
-                }
-                textWriter.WriteLine();
-                textWriter.WriteLine("Retrieved Document Size");
-                foreach (double arr in queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.RetrievedDocumentSizeList)
-                {
-                    textWriter.WriteLine(arr);
-                }
-                textWriter.WriteLine();
-                textWriter.WriteLine("Output Document Count");
-                foreach (double arr in queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.OutputDocumentCountList)
-                {
-                    textWriter.WriteLine(arr);
-                }
-                textWriter.WriteLine();
-                textWriter.WriteLine("Output Document Size");
-                foreach (double arr in queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.OutputDocumentSizeList)
-                {
-                    textWriter.WriteLine(arr);
-                }
-                textWriter.WriteLine();
-                textWriter.WriteLine("TotalQueryExecutionTime");
-                foreach (double arr in queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.TotalQueryExecutionTimeList)
-                {
-                    textWriter.WriteLine(arr);
-                }
-                textWriter.WriteLine();
-                textWriter.WriteLine("DocumentLoadTime");
-                foreach (double arr in queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.DocumentLoadTimeList)
-                {
-                    textWriter.WriteLine(arr);
-                }
-                textWriter.WriteLine();
-                textWriter.WriteLine("DocumentWriteTime");
-                foreach (double arr in queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.DocumentWriteTimeList)
-                {
-                    textWriter.WriteLine(arr);
-                }
-                textWriter.WriteLine();
-                textWriter.WriteLine("Created");
-                foreach (double arr in queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.CreatedList)
-                {
-                    textWriter.WriteLine(arr);
-                }
-                textWriter.WriteLine();
-                textWriter.WriteLine("ChannelAcquisitionStarted");
-                foreach (double arr in queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.ChannelAcquisitionStartedList)
-                {
-                    textWriter.WriteLine(arr);
-                }
-                textWriter.WriteLine();
-                textWriter.WriteLine("Pipelined");
-                foreach (double arr in queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.PipelinedList)
-                {
-                    textWriter.WriteLine(arr);
-                }
-                textWriter.WriteLine();
-                textWriter.WriteLine("TransitTime");
-                foreach (double arr in queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.TransitTimeList)
-                {
-                    textWriter.WriteLine(arr);
-                }
-                textWriter.WriteLine();
-                textWriter.WriteLine("Received");
-                foreach (double arr in queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.ReceivedList)
-                {
-                    textWriter.WriteLine(arr);
-                }
-                textWriter.WriteLine();
-                textWriter.WriteLine("Completed");
-                foreach (double arr in queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.CompletedList)
-                {
-                    textWriter.WriteLine(arr);
-                }
-                textWriter.WriteLine();
-                textWriter.WriteLine("POCO");
-                foreach (double arr in this.pocoTimeList)
-                {
-                    textWriter.WriteLine(arr);
-                }
-                textWriter.WriteLine();
-                textWriter.WriteLine("GetCosmosElementTime");
-                foreach (double arr in this.getCosmosElementResponseTimeList)
-                {
-                    textWriter.WriteLine(arr);
-                }
-                textWriter.WriteLine();
-                textWriter.WriteLine("BadRequestCreated");
-                foreach (double arr in queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.BadRequestCreatedList)
-                {
-                    textWriter.WriteLine(arr);
-                }
-                textWriter.WriteLine();
-                textWriter.WriteLine("BadRequestChannelAcquisitionStarted");
-                foreach (double arr in queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.BadRequestChannelAcquisitionStartedList)
-                {
-                    textWriter.WriteLine(arr);
-                }
-                textWriter.WriteLine();
-                textWriter.WriteLine("BadRequestPipelined");
-                foreach (double arr in queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.BadRequestPipelinedList)
-                {
-                    textWriter.WriteLine(arr);
-                }
-                textWriter.WriteLine();
-                textWriter.WriteLine("BadRequestTransitTime");
-                foreach (double arr in queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.BadRequestTransitTimeList)
-                {
-                    textWriter.WriteLine(arr);
-                }
-                textWriter.WriteLine();
-                textWriter.WriteLine("BadRequestReceived");
-                foreach (double arr in queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.BadRequestReceivedList)
-                {
-                    textWriter.WriteLine(arr);
-                }
-                textWriter.WriteLine();
-                textWriter.WriteLine("BadRequestCompleted");
-                foreach (double arr in queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.BadRequestCompletedList)
-                {
-                    textWriter.WriteLine(arr);
-                }
+                textWriter.WriteLine(this.CalculateAverage(this.EliminateWarmupIterations(this.endToEndTimeList)));
+                textWriter.WriteLine((double)queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.RetrievedDocumentCountList.Count / numberOfIterations);
+                textWriter.Flush();
                 textWriter.Close();
             }
         }
+
         internal sealed class Tags
         {
             [JsonProperty(PropertyName = "words")]
-            public string[] Words { get; set; }
+            public List<string> Words { get; set; }
             [JsonProperty(PropertyName = "numbers")]
             public string Numbers { get; set; }
         }
@@ -447,11 +349,11 @@
             [JsonProperty(PropertyName = "userDefinedId")]
             public int UserDefinedID { get; set; }
             [JsonProperty(PropertyName = "wordsArray")]
-            public string[] WordsArray { get; set; }
+            public List<string> WordsArray { get; set; }
             [JsonProperty(PropertyName = "tags")]
             public Tags Tags { get; set; }
             [JsonProperty(PropertyName = "recipientList")]
-            public RecipientList[] RecipientList { get; set; }
+            public List<RecipientList> RecipientList { get; set; }
             public static string PartitionKeyPath => "/myPartitionKey";
         }
     }
