@@ -533,6 +533,11 @@ namespace Microsoft.Azure.Cosmos
         internal bool EnablePartitionLevelFailover { get; set; } = false;
 
         /// <summary>
+        /// Quorum Read allowed with eventual consistency account
+        /// </summary>
+        internal bool EnableUpgradeConsistencyToLocalQuorum { get; set; } = false;
+        
+        /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
         /// </summary>
         /// <value>
