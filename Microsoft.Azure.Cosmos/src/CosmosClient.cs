@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos
         /// of the application which enables efficient connection management and performance. Please refer to the
         /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
         /// </summary>
-        /// <param name="connectionString">The connection string to the cosmos account. ex: https://mycosmosaccount.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
+        /// <param name="connectionString">The connection string to the cosmos account. ex: AccountEndpoint=https://XXXXX.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
         /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
         /// <param name="cosmosClientOptions">(Optional) client options</param>
         /// <param name="cancellationToken">(Optional) Cancellation Token</param>
