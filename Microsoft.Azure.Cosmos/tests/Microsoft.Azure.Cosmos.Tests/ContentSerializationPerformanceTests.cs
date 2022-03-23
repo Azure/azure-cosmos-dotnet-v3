@@ -261,7 +261,11 @@
                 foreach (ITrace child in node.Children)
                     queue.Enqueue(child);
             }
+<<<<<<< HEAD
             throw new Exception(name + " not found in Diagnostics");
+=======
+            throw new Exception(name+" not found in Diagnostics");
+>>>>>>> 228a9f426a847ad1a0cd6fd9e769c0997632e29e
         }
 
         private double CalculateAverage(List<double> avgList)
