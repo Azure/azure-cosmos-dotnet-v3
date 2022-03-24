@@ -24,6 +24,7 @@
     ("HttpConstants.HttpHeaders.Prefer", "Prefer", false),
     ("HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest", "x-ms-remaining-time-in-ms-on-client", false),
     ("HttpConstants.HttpHeaders.ResourceTokenExpiry", "x-ms-documentdb-expiry-seconds", false),
+    ("HttpConstants.HttpHeaders.SDKSupportedCapabilities","x-ms-cosmos-sdk-supported-capabilities", false),
     ("HttpConstants.HttpHeaders.SessionToken", "x-ms-session-token", true),
     ("HttpConstants.HttpHeaders.ShouldBatchContinueOnError", "x-ms-cosmos-batch-continue-on-error", false),
     ("HttpConstants.HttpHeaders.TargetGlobalCommittedLsn", "x-ms-target-global-committed-lsn", false),

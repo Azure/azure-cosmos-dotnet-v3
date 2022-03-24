@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         Content = streamPayload,
                     };
 
-                    request.Headers[HttpConstants.HttpHeaders.SDKSupportedCapabilities] = SDKSupportedCapabilitiesHelpers.GetSDKSupportedCapabilities().ToString();
+                    request.Headers[HttpConstants.HttpHeaders.SDKSupportedCapabilities] = Headers.SDKSupportedCapabilities;
 
                     if (feedRange != null)
                     {

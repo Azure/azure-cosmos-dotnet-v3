@@ -185,6 +185,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task TestHeadersPassedinByClient()
+        {
+            int httpCallCount = 0;
+            IEnumerable<string> sdkSupportedCapabilities = null;
+            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
+            {
+                RequestCallBack = (request, cancellToken) =>
+                {
+                    Interlocked.Increment(ref httpCallCount);
+                    request.Headers.TryGetValues(HttpConstants.HttpHeaders.SDKSupportedCapabilities, out sdkSupportedCapabilities);
+                    return null;
+                }
+            };
+
+            using CosmosClient cosmosClient = new CosmosClient(
+                accountEndpoint: "https://localhost:8081",
+                authKeyOrResourceToken: Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
+                clientOptions: new CosmosClientOptions()
+                {
+                    HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
+                });
+
+            CosmosException cosmosException1 = null;
+            try
+            {
+                await cosmosClient.GetContainer("db", "c").ReadItemAsync<JObject>("Random", new Cosmos.PartitionKey("DoesNotExist"));
+            }
+            catch (CosmosException ex)
+            {
+                cosmosException1 = ex;
+                Assert.IsTrue(httpCallCount > 0);
+            }
+
+            Assert.IsNotNull(sdkSupportedCapabilities);
+            Assert.AreEqual(1, sdkSupportedCapabilities.Count());
+
+            string sdkSupportedCapability = sdkSupportedCapabilities.Single();
+            ulong capability = ulong.Parse(sdkSupportedCapability);
+
+            Assert.AreEqual((ulong)SDKSupportedCapabilities.PartitionMerge, capability & (ulong)SDKSupportedCapabilities.PartitionMerge,$" received header value as {sdkSupportedCapability}");
+        }
+
+        [TestMethod]
         public async Task TestEtagOnUpsertOperationForHttpsClient()
         {
             await this.TestEtagOnUpsertOperation(false, Protocol.Https);
