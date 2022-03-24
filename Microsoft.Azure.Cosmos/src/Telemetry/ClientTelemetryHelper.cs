@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal static AzureVMMetadata azMetadata = null;
 
         private static readonly Uri vmMetadataEndpointUrl = ClientTelemetryOptions.GetVmMetadataUrl();
+        private static readonly string UniqueId = "uuid:" + Guid.NewGuid().ToString();
 
         /// <summary>
         /// Task to get Account Properties from cache if available otherwise make a network call.

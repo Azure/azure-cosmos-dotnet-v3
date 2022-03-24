@@ -767,7 +767,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Stopwatch stopwatch = Stopwatch.StartNew();
             do
             {
-                await Task.Delay(TimeSpan.FromMilliseconds(2000)); // wait at least for 1 round of telemetry
+                await Task.Delay(TimeSpan.FromMilliseconds(1500)); // wait at least for 1 round of telemetry
 
                 HashSet<OperationInfo> actualOperationSet = new HashSet<OperationInfo>();
                 lock (this.actualInfo)

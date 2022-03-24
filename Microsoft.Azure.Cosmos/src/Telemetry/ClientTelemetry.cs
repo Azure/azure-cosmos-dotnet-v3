@@ -30,7 +30,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         private static readonly Uri endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
-        internal static readonly string UniqueId = "uuid:" + Guid.NewGuid().ToString();
 
         private readonly ClientTelemetryProperties clientTelemetryInfo;
         private readonly DocumentClient documentClient;

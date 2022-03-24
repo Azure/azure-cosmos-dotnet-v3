@@ -1260,6 +1260,9 @@ namespace Microsoft.Azure.Cosmos
                 this.initTaskCache = null;
             }
 
+            // Clean cached account information
+            ClientTelemetryHelper.azMetadata = null;
+
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
             DefaultTrace.Flush();
 
