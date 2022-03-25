@@ -479,7 +479,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     StringBuilder stringBuilder = new StringBuilder();
                     stringBuilder.AppendLine("Client Configuration");
                     stringBuilder.AppendLine($"Client Created Time: {clientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture)}");
-                    stringBuilder.AppendLine($"Machine Id: {ClientTelemetryHelper.GetMachineId()}");
+                    stringBuilder.AppendLine($"Machine Id: {VmMetadataApiHandler.GetMachineId()}");
                     stringBuilder.AppendLine($"Number Of Clients Created: {CosmosClient.numberOfClientsCreated}");
                     stringBuilder.AppendLine($"Number Of Active Clients: {CosmosClient.NumberOfActiveClients}");
                     stringBuilder.AppendLine($"User Agent: {clientConfigurationTraceDatum.UserAgentContainer.UserAgent}");

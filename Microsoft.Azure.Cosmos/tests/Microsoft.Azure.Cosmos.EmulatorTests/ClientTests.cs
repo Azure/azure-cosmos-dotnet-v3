@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -88,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         await Task.Delay(TimeSpan.FromMilliseconds(100));
                     }
-                    
+
                     return null;
                 }
             };
@@ -105,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Container container = cosmosClient.GetContainer("db", "c");
 
-            for(int loop = 0; loop < 3; loop++)
+            for (int loop = 0; loop < 3; loop++)
             {
                 for (int i = 0; i < 10; i++)
                 {
@@ -123,7 +124,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 await Task.WhenAll(tasks);
 
-                Assert.AreEqual(1, httpCallCount, "Only the first task should do the http call. All other should wait on the first task");
+                if(loop == 0)
+                {
+                    Assert.AreEqual(2, httpCallCount, "Only first call VM Metadata call with be made along with, Only the first task should do the http call. All other should wait on the first task");
+                } 
+                else
+                {
+                    Assert.AreEqual(1, httpCallCount, "Only the first task should do the http call. All other should wait on the first task");
+                }
 
                 // Reset counters and retry the client to verify a new http call is done for new requests
                 tasks.Clear();

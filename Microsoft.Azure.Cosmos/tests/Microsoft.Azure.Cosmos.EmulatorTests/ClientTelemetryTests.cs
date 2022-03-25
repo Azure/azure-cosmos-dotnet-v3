@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         return Task.FromResult(result);
                     }
-                    else if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetVmMetadataUrl().AbsoluteUri))
+                    else if (request.RequestUri.AbsoluteUri.Equals(VmMetadataApiHandler.GetVmMetadataUrl().AbsoluteUri))
                     {
                         HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await base.TestCleanup();
         }
-
+            
         [TestMethod]
         [DataRow(ConnectionMode.Direct, true)]
         [DataRow(ConnectionMode.Gateway, true)]
@@ -182,9 +182,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway, false)]
         public async Task PointSuccessOperationsTest(ConnectionMode mode, bool isAzureInstance)
         {
-            // Clean cached information
-            ClientTelemetryHelper.azMetadata = null;
-
             Container container = await this.CreateClientAndContainer(
                 mode: mode,
                 isAzureInstance: isAzureInstance);
@@ -691,7 +688,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     return Task.FromResult(result);
                 }
-                else if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetVmMetadataUrl().AbsoluteUri))
+                else if (request.RequestUri.AbsoluteUri.Equals(VmMetadataApiHandler.GetVmMetadataUrl().AbsoluteUri))
                 {
                     HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 

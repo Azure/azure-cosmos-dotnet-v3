@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             jsonTextWriter.WriteFieldName("Client Created Time Utc");
             jsonTextWriter.WriteStringValue(this.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture));
             jsonTextWriter.WriteFieldName("MachineId");
-            jsonTextWriter.WriteStringValue(ClientTelemetryHelper.GetMachineId());
+            jsonTextWriter.WriteStringValue(VmMetadataApiHandler.GetMachineId());
             jsonTextWriter.WriteFieldName("NumberOfClientsCreated");
             jsonTextWriter.WriteNumber64Value(this.cachedNumberOfClientCreated);
             jsonTextWriter.WriteFieldName("NumberOfActiveClients");

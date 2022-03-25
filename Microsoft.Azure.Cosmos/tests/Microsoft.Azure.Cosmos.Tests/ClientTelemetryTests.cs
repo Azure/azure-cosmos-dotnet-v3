@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string payload = JsonConvert.SerializeObject(jsonObject);
             result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
 
-            AzureVMMetadata metadata = await ClientTelemetryOptions.ProcessResponseAsync(result);
+            AzureVMMetadata metadata = await VmMetadataApiHandler.ProcessResponseAsync(result);
 
             Assert.AreEqual("eastus", metadata.Compute.Location);
             Assert.AreEqual("18.04-LTS", metadata.Compute.SKU);

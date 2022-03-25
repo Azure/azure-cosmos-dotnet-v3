@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     }
 
                     // Load host information from cache
-                    Compute vmInformation = ClientTelemetryHelper.azMetadata?.Compute;
+                    Compute vmInformation = VmMetadataApiHandler.GetMachineInfo();
                     if (vmInformation != null)
                     {
                         this.clientTelemetryInfo.ApplicationRegion = vmInformation.Location;
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         //TODO: Set AcceleratingNetwork flag from instance metadata once it is available.
                     }
 
-                    this.clientTelemetryInfo.MachineId = ClientTelemetryHelper.GetMachineId();
+                    this.clientTelemetryInfo.MachineId = VmMetadataApiHandler.GetMachineId();
                     
                     await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
 

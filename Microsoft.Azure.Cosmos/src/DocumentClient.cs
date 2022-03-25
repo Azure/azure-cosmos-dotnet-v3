@@ -174,6 +174,8 @@ namespace Microsoft.Azure.Cosmos
         private event EventHandler<ReceivedResponseEventArgs> receivedResponse;
         private Func<TransportClient, TransportClient> transportClientHandlerFactory;
 
+        private VmMetadataApiHandler vmMetadataApiHandler;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
         /// specified Azure Cosmos DB service endpoint, key, and connection policy for the Azure Cosmos DB service.
@@ -898,6 +900,9 @@ namespace Microsoft.Azure.Cosmos
                 this.sendingRequest,
                 this.receivedResponse);
 
+            // Loading VM Information (non blocking call and initialization won't fail if this call fails)
+            this.vmMetadataApiHandler = VmMetadataApiHandler.Initialize(this.httpClient);
+
             if (sessionContainer != null)
             {
                 this.sessionContainer = sessionContainer;
@@ -959,9 +964,6 @@ namespace Microsoft.Azure.Cosmos
         // Always called from under the lock except when called from Intilialize method during construction.
         private async Task<bool> GetInitializationTaskAsync(IStoreClientFactory storeClientFactory)
         {
-            // Loading VM Information (non blocking call and initialization won't fail if this call fails)
-            await ClientTelemetryHelper.LoadAzureVmMetaDataAsync(this.httpClient, new CancellationTokenSource());
-
             await this.InitializeGatewayConfigurationReaderAsync();
 
             if (this.desiredConsistencyLevel.HasValue)
@@ -1261,7 +1263,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Clean cached account information
-            ClientTelemetryHelper.azMetadata = null;
+            this.vmMetadataApiHandler.Dispose();
 
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
             DefaultTrace.Flush();

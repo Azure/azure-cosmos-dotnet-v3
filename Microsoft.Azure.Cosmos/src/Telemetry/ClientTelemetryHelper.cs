@@ -16,11 +16,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
     internal static class ClientTelemetryHelper
     {
-        internal static AzureVMMetadata azMetadata = null;
-
-        private static readonly Uri vmMetadataEndpointUrl = ClientTelemetryOptions.GetVmMetadataUrl();
-        private static readonly string UniqueId = "uuid:" + Guid.NewGuid().ToString();
-
         /// <summary>
         /// Task to get Account Properties from cache if available otherwise make a network call.
         /// </summary>
@@ -41,49 +36,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
 
             return null;
-        }
-
-        /// <summary>
-        /// Task to collect virtual machine metadata information. using instance metedata service API.
-        /// ref: https://docs.microsoft.com/en-us/azure/virtual-machines/windows/instance-metadata-service?tabs=windows
-        /// Collects only application region and environment information
-        /// </summary>
-        /// <returns>Async Task</returns>
-        internal static async Task<AzureVMMetadata> LoadAzureVmMetaDataAsync(CosmosHttpClient httpClient, CancellationTokenSource cancellationTokenSource)
-        {
-            if (azMetadata == null)
-            {
-                DefaultTrace.TraceVerbose("Getting VM Metadata Information for Telemetry.");
-                try
-                {
-                    static ValueTask<HttpRequestMessage> CreateRequestMessage()
-                    {
-                        HttpRequestMessage request = new HttpRequestMessage()
-                        {
-                            RequestUri = vmMetadataEndpointUrl,
-                            Method = HttpMethod.Get,
-                        };
-                        request.Headers.Add("Metadata", "true");
-
-                        return new ValueTask<HttpRequestMessage>(request);
-                    }
-
-                    using HttpResponseMessage httpResponseMessage = await httpClient
-                        .SendHttpAsync(createRequestMessageAsync: CreateRequestMessage,
-                        resourceType: ResourceType.Telemetry,
-                        timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
-                        clientSideRequestStatistics: null,
-                        cancellationToken: cancellationTokenSource.Token); // Cancel this call if cancel is requested
-
-                    azMetadata = await ClientTelemetryOptions.ProcessResponseAsync(httpResponseMessage);
-                }
-                catch (Exception ex)
-                {
-                    DefaultTrace.TraceError("Exception in LoadAzureVmMetaDataAsync() {0}", ex.Message);
-                }
-            }
-
-            return azMetadata;
         }
 
         /// <summary>
