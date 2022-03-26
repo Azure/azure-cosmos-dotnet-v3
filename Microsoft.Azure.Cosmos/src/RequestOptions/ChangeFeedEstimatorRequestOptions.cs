@@ -17,9 +17,5 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public int? MaxItemCount { get; set; }
 
-        /// <summary>
-        /// Gets or sets the query for filter the pull API.
-        /// </summary>
-        public string FilterQuery { get; set; }
     }
 }
