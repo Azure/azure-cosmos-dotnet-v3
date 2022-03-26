@@ -329,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 using HttpResponseMessage response = await this.httpClient.SendHttpAsync(CreateRequestMessage,
                                                     ResourceType.Telemetry,
-                                                    HttpTimeoutPolicyDefault.Instance,
+                                                    HttpTimeoutPolicyNoRetry.Instance,
                                                     null,
                                                     this.cancellationTokenSource.Token);
 
