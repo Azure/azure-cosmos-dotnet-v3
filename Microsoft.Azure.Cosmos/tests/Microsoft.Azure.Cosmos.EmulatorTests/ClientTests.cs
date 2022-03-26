@@ -79,12 +79,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task InitTaskThreadSafe()
         {
             int httpCallCount = 0;
+            int metadataCallCount = 0;
             bool delayCallBack = true;
             HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
             {
                 RequestCallBack = async (request, cancellToken) =>
                 {
-                    Interlocked.Increment(ref httpCallCount);
+                    if(request.RequestUri.AbsoluteUri ==  VmMetadataApiHandler.GetVmMetadataUrl().AbsoluteUri)
+                    {
+                        Interlocked.Increment(ref metadataCallCount);
+                    } 
+                    else
+                    {
+                        Interlocked.Increment(ref httpCallCount);
+                    }
+                    
                     while (delayCallBack)
                     {
                         await Task.Delay(TimeSpan.FromMilliseconds(100));
@@ -124,14 +133,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 await Task.WhenAll(tasks);
 
-                if(loop == 0)
-                {
-                    Assert.AreEqual(2, httpCallCount, "Only first call VM Metadata call with be made along with, Only the first task should do the http call. All other should wait on the first task");
-                } 
-                else
-                {
-                    Assert.AreEqual(1, httpCallCount, "Only the first task should do the http call. All other should wait on the first task");
-                }
+                Assert.AreEqual(1, metadataCallCount, "Only one call for VM Metadata call with be made");
+                Assert.AreEqual(1, httpCallCount, "Only the first task should do the http call. All other should wait on the first task");
 
                 // Reset counters and retry the client to verify a new http call is done for new requests
                 tasks.Clear();
