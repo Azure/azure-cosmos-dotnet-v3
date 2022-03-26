@@ -1263,7 +1263,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Clean cached account information
-            this.vmMetadataApiHandler.Dispose();
+            this.vmMetadataApiHandler?.Dispose();
 
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
             DefaultTrace.Flush();
