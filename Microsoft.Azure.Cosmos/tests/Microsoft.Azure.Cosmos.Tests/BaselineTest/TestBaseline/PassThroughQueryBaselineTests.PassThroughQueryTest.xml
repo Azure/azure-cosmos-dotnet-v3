@@ -1,0 +1,15 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>Aggregate Partition Key Field</Description>
+      <Query>SELECT c.key FROM c</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal />
+    </Output>
+  </Result>
+</Results>

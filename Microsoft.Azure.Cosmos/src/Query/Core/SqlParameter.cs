@@ -47,20 +47,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SqlParameter"/> class with the name, value and isPassThrough of the parameter for the Azure Cosmos DB service.
-        /// </summary>
-        /// <param name="name">The name of the parameter.</param>
-        /// <param name="value">The value of the parameter.</param>
-        /// <param name="isPassThrough">If the query should skip rewrite and go to the backend straightaway.</param>
-        /// <remarks>Names of parameters must begin with '@' and be a valid SQL identifier. The value and isPassThrough gets serialized and passed in as JSON to the document query.</remarks>
-        public SqlParameter(string name, object value, bool isPassThrough)
-        {
-            this.Name = name;
-            this.Value = value;
-            this.IsPassThrough = isPassThrough;
-        }
-
-        /// <summary>
         /// Gets or sets the name of the parameter for the Azure Cosmos DB service.
         /// </summary>
         /// <value>The name of the parameter.</value>
@@ -75,14 +61,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// <remarks>The value gets serialized and passed in as JSON to the document query.</remarks>
         [DataMember(Name = "value")]
         public object Value { get; set; }
-
-        /// <summary>
-        /// Gets or sets the value of the parameter for the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>The boolean value to tell the SDK if query should go straight to the Backend without rewrite.</value>
-        /// <remarks>The value gets serialized and passed in as JSON to the document query.</remarks>
-        [DataMember(Name = "isPassThrough")]
-        public object IsPassThrough { get; set; }
 
         /// <summary>
         /// Checking for equality between two Sql parameter objects.
@@ -102,8 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             }
 
             return this.Name == other.Name
-                && other.Value == null ? this.Value == null : other.Value.Equals(this.Value)
-                && other.IsPassThrough == null ? this.IsPassThrough == null : other.IsPassThrough == this.IsPassThrough;
+                && other.Value == null ? this.Value == null : other.Value.Equals(this.Value);
         }
 
         /// <summary>
@@ -117,7 +94,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 int hash = 17;
                 hash = (hash * 233) + (this.Name == null ? 0 : this.Name.GetHashCode());
                 hash = (hash * 233) + (this.Value == null ? 0 : this.Value.GetHashCode());
-                hash = (hash * 233) + (this.IsPassThrough == null ? 0 : this.IsPassThrough.GetHashCode());
                 return hash;
             }
         }

@@ -132,11 +132,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     cancellationToken);
                 cosmosQueryContext.ContainerResourceId = containerQueryProperties.ResourceId;
 
-                // need to get collection and number of physical partitions in it and Partition Key Range Id
-                bool singleLogicalPartitionKeyQuery = inputParameters.PartitionKey.HasValue
-                || ((queryPlanFromContinuationToken.QueryRanges.Count == 1)
-                    && queryPlanFromContinuationToken.QueryRanges[0].IsSingleValue);
-
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
                 if (inputParameters.ForcePassthrough)
                 {
@@ -212,53 +207,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         }
                     }
 
-                    // If query needs to go to Gateway or ServiceInterop, check if it is single partition.
-                    // If yes, short circuit the need to go to either service and send to Backend
-                    if (singleLogicalPartitionKeyQuery)
-                    {
-                        bool parsed;
-                        SqlQuery sqlQuery;
-                        using (ITrace queryParseTrace = createQueryPipelineTrace.StartChild("Parse Query", TraceComponent.Query, Tracing.TraceLevel.Info))
-                        {
-                            parsed = SqlQueryParser.TryParse(inputParameters.SqlQuerySpec.QueryText, out sqlQuery);
-                        }
-
-                        if (parsed)
-                        {
-                            bool hasDistinct = sqlQuery.SelectClause.HasDistinct;
-                            bool hasGroupBy = sqlQuery.GroupByClause != default;
-                            bool hasAggregates = AggregateProjectionDetector.HasAggregate(sqlQuery.SelectClause.SelectSpec);
-                            bool createPassthroughQuery = !hasAggregates && !hasDistinct && !hasGroupBy;
-
-                            if (createPassthroughQuery)
-                            {
-                                TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
-                                if (responseStats != null)
-                                {
-                                    responseStats.PipelineType = TestInjections.PipelineType.Passthrough;
-                                }
-
-                                // Set the IsPassThrough check in SqlQuerySpec to be true
-                                inputParameters.SqlQuerySpec.Parameters.First().IsPassThrough = true;
-
-                                // Only thing that matters is that we target the correct range.
-                                Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
-                                List<Documents.PartitionKeyRange> targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
-                                    cosmosQueryContext.ResourceLink,
-                                    containerQueryProperties.ResourceId,
-                                    inputParameters.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition),
-                                    forceRefresh: false,
-                                    createQueryPipelineTrace);
-                                
-                                return CosmosQueryExecutionContextFactory.TryCreateTryExecutePassthroughQueryExecutionContext(
-                                    documentContainer,
-                                    inputParameters,
-                                    targetRanges,
-                                    cancellationToken);
-                            }
-                        }
-                    }
-
                     if (cosmosQueryContext.QueryClient.ByPassQueryParsing())
                     {
                         // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
@@ -317,8 +265,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                    trace);
 
             bool singleLogicalPartitionKeyQuery = inputParameters.PartitionKey.HasValue
-                || ((partitionedQueryExecutionInfo.QueryRanges.Count == 1)
-                    && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
+                 || ((partitionedQueryExecutionInfo.QueryRanges.Count == 1)
+                     && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
             bool serverStreamingQuery = !partitionedQueryExecutionInfo.QueryInfo.HasAggregates
                 && !partitionedQueryExecutionInfo.QueryInfo.HasDistinct
                 && !partitionedQueryExecutionInfo.QueryInfo.HasGroupBy;
@@ -356,29 +304,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                     if (createPassthroughQuery)
                     {
-                        TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
-                        if (responseStats != null)
-                        {
-                            responseStats.PipelineType = TestInjections.PipelineType.TryExecuteOnBE;
-                        }
-
                         // Set the IsPassThrough check in SqlQuerySpec to be true
-                        inputParameters.SqlQuerySpec.Parameters.First().IsPassThrough = true;
-
-                        // Only thing that matters is that we target the correct range.
-                        Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
-                        targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
-                            cosmosQueryContext.ResourceLink,
-                            containerQueryProperties.ResourceId,
-                            inputParameters.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition),
-                            forceRefresh: false,
-                            createQueryPipelineTrace);
-
-                        return CosmosQueryExecutionContextFactory.TryCreateTryExecutePassthroughQueryExecutionContext(
-                            documentContainer,
-                            inputParameters,
-                            targetRanges,
-                            cancellationToken);
+                        inputParameters.SqlQuerySpec.Options.SetIsPassThrough(true);
                     }
                 }
             }
@@ -468,30 +395,32 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 continuationToken: inputParameters.InitialUserContinuationToken);
         }
 
-        private static TryCatch<IQueryPipelineStage> TryCreateTryExecutePassthroughQueryExecutionContext(
+        private static TryCatch<IQueryPipelineStage> TryCreateAndExecutePassthroughQueryExecutionContext(
             DocumentContainer documentContainer,
             InputParameters inputParameters,
             List<Documents.PartitionKeyRange> targetRanges,
             CancellationToken cancellationToken)
         {
             // Return a single context
-            return SinglePartitionQueryPipelineStage.MonadicCreate(
-                documentContainer: documentContainer,
-                sqlQuerySpec: inputParameters.SqlQuerySpec,
-                targetRanges: targetRanges
+            List<FeedRangeEpk> list = (targetRanges ?? Enumerable.Empty<Documents.PartitionKeyRange>())
                     .Select(range => new FeedRangeEpk(
                         new Documents.Routing.Range<string>(
                             min: range.MinInclusive,
                             max: range.MaxExclusive,
                             isMinInclusive: true,
                             isMaxInclusive: false)))
-                    .ToList(),
+                    .ToList();
+            TryCatch<IQueryPipelineStage> result = TryExecuteQueryPipelineStage.MonadicCreate(
+                documentContainer: documentContainer,
+                sqlQuerySpec: inputParameters.SqlQuerySpec,
+                targetRanges: list,
                 queryPaginationOptions: new QueryPaginationOptions(
                     pageSizeHint: inputParameters.MaxItemCount),
                 partitionKey: inputParameters.PartitionKey,
                 maxConcurrency: inputParameters.MaxConcurrency,
                 cancellationToken: cancellationToken,
                 continuationToken: inputParameters.InitialUserContinuationToken);
+            return result;  
         } 
 
         private static TryCatch<IQueryPipelineStage> TryCreateSpecializedDocumentQueryExecutionContext(

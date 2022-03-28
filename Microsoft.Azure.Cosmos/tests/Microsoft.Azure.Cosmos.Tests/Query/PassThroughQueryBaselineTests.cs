@@ -14,6 +14,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -24,10 +25,27 @@
     using Moq;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using System.Threading;
 
     [TestClass]
     public class PassThroughQueryBaselineTests : BaselineTests<PassThroughQueryTestInput, PassThroughQueryTestOutput>
     {
+        private string query = "";
+        [TestMethod]
+        [Owner("akotalwar")]
+        public void PassThroughQueryTest()
+        {
+            this.query = "SELECT c.key FROM c";
+            List<PassThroughQueryTestInput> testVariations = new List<PassThroughQueryTestInput>
+            {
+                Hash( // dont use hash (maketest)
+                @"Aggregate Partition Key Field",
+                this.@query,
+                @"/key"),
+            };
+            this.ExecuteTestSuite(testVariations);
+        }
+
         private static readonly PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
         {
             Paths = new Collection<string>()
@@ -81,20 +99,6 @@
             return documentContainer;
         }
 
-        [TestMethod]
-        [Owner("akotalwar")]
-        public void PassThroughQueryTest()
-        {
-            List<PassThroughQueryTestInput> testVariations = new List<PassThroughQueryTestInput>
-            {
-                Hash( // dont use hash (maketest)
-                @"Aggregate Partition Key Field",
-                @"SELECT VALUE MIN(c.key) FROM c",
-                @"/key"),
-            };
-            this.ExecuteTestSuite(testVariations);
-        }
-
         private static PassThroughQueryTestInput Hash(
             string description,
             string query,
@@ -124,6 +128,7 @@
                 Paths = new Collection<string>(partitionKeys),
                 Kind = PartitionKind.Range
             };
+
         public override PassThroughQueryTestOutput ExecuteTest(PassThroughQueryTestInput input)
         {
             // this gets DocumentContainer
@@ -135,10 +140,54 @@
             }
             DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
 
+            // this gets PartionedQueryExecutionContext
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = new PartitionedQueryExecutionInfo()
+            {
+                QueryInfo = new QueryInfo()
+                {
+                    Aggregates = null,
+                    DistinctType = DistinctQueryType.None,
+                    GroupByAliases = null,
+                    GroupByAliasToAggregateType = null,
+                    GroupByExpressions = null,
+                    HasSelectValue = false,
+                    Limit = null,
+                    Offset = null,
+                    OrderBy = null,
+                    OrderByExpressions = null,
+                    RewrittenQuery = null,
+                    Top = null,
+                },
+                QueryRanges = new List<Documents.Routing.Range<string>>(),
+            };
+
+            // this is container query properties
+            PartitionKeyDefinition PKDefinition = new PartitionKeyDefinition();
+            const string resourceId = "resourceId";
+            ContainerQueryProperties containerQueryProperties = new ContainerQueryProperties(
+                    resourceId,
+                    null,
+                    PKDefinition);
+
+            // gets query context
+            string databaseId = "db1234";
+            string resourceLink = string.Format("dbs/{0}/colls", databaseId);
+            Mock<CosmosQueryClient> mockCosmosQueryClient = new Mock<CosmosQueryClient>();
+            CosmosQueryContextCore cosmosQueryContextCore = new CosmosQueryContextCore(
+                client: mockCosmosQueryClient.Object,
+                resourceTypeEnum: Documents.ResourceType.Document,
+                operationType: Documents.OperationType.Query,
+                resourceType: typeof(QueryResponseCore),
+                resourceLink: resourceLink,
+                isContinuationExpected: false,
+                allowNonValueAggregateQuery: true,
+                correlatedActivityId: Guid.NewGuid());
+
             // this gets input parameters
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
-            SqlQuerySpec sqlQuerySpec = new SqlQuerySpec("SELECT VALUE MIN(c.key) FROM c");
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = new PartitionedQueryExecutionInfo();
+            SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(this.query);
+            Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey("pk");
+
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
             sqlQuerySpec: sqlQuerySpec,
             initialUserContinuationToken: null,
@@ -146,43 +195,38 @@
             maxConcurrency: queryRequestOptions.MaxConcurrency,
             maxItemCount: queryRequestOptions.MaxItemCount,
             maxBufferedItemCount: queryRequestOptions.MaxBufferedItemCount,
-            partitionKey: queryRequestOptions.PartitionKey,
+            partitionKey: partitionKey,
             properties: queryRequestOptions.Properties,
             partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
             executionEnvironment: null,
             returnResultsInDeterministicOrder: null,
             forcePassthrough: true,
             testInjections: null);
-
-            // gets query context
-            Mock<CosmosQueryClient> mockCosmosQueryClient = new Mock<CosmosQueryClient>();
-            CosmosQueryContextCore cosmosQueryContextCore = new CosmosQueryContextCore(
-                client: mockCosmosQueryClient.Object,
-                resourceTypeEnum: Documents.ResourceType.Document,
-                operationType: Documents.OperationType.Query,
-                resourceType: typeof(QueryResponseCore),
-                resourceLink: null,
-                isContinuationExpected: false,
-                allowNonValueAggregateQuery: true,
-                correlatedActivityId: Guid.NewGuid());
+            
+            ITrace trace = NoOpTrace.Singleton;
+            CancellationToken cancellationToken = new CancellationToken();
 
             // make call to Create
-            IQueryPipelineStage info = CosmosQueryExecutionContextFactory.Create(
+            Task<TryCatch<IQueryPipelineStage>> queryPipelineStage = CosmosQueryExecutionContextFactory.TryCreateFromPartitionedQueryExecutionInfoAsync(
                 documentContainer,
+                partitionedQueryExecutionInfo,
+                containerQueryProperties,
                 cosmosQueryContextCore,
                 inputParameters,
-                It.IsAny<ITrace>());
+                trace,
+                cancellationToken);
 
-            Assert.IsTrue(info!=null);
-            // add an assert to check if TryCreateFromPartitionedQueryExecutionInfoAsync's output tells us if query is PassThrough or not
-            return (PassThroughQueryTestOutput)info;
+            Assert.IsTrue(inputParameters.SqlQuerySpec.options.GetIsPassThrough() == true);
+            bool isPassThrough = inputParameters.SqlQuerySpec.options.GetIsPassThrough();
+
+            return new PassThroughQueryTestPositiveOutput(isPassThrough);
         }
-
     }
 
     public abstract class PassThroughQueryTestOutput : BaselineTestOutput
     {
     }
+
     public sealed class PassThroughQueryTestInput : BaselineTestInput
     {
         internal PartitionKeyDefinition PartitionKeyDefinition { get; set; }
@@ -246,17 +290,16 @@
     }
     internal sealed class PassThroughQueryTestPositiveOutput : PassThroughQueryTestOutput
     {
-        public PassThroughQueryTestPositiveOutput(PartitionedQueryExecutionInfoInternal info)
+        public PassThroughQueryTestPositiveOutput(bool tryExecute)
         {
-            this.Info = info ?? throw new ArgumentNullException(nameof(info));
+            this.TryExecute = tryExecute;
         }
 
-        public PartitionedQueryExecutionInfoInternal Info { get; }
+        public bool TryExecute { get; }
 
         public override void SerializeAsXml(XmlWriter xmlWriter)
         {
             xmlWriter.WriteStartElement(nameof(PartitionedQueryExecutionInfoInternal));
-            WritePartitionQueryExecutionInfoAsXML(this.Info, xmlWriter);
             xmlWriter.WriteEndElement();
         }
 

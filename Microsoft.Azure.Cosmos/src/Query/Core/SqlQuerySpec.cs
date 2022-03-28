@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     internal sealed class SqlQuerySpec
     {
         private SqlParameterCollection parameters;
+        public SqlOptionsCollection options;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Microsoft.Azure.Documents.SqlQuerySpec"/> class for the Azure Cosmos DB service.</summary>
@@ -43,8 +44,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         {
             this.QueryText = queryText;
             this.parameters = parameters ?? throw new ArgumentNullException("parameters");
+            this.options = new SqlOptionsCollection();
         }
-
+        
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:Microsoft.Azure.Documents.SqlQuerySpec"/> class for the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="queryText">The text of the database query.</param>
+        /// <param name="parameters">The <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of query parameters.</param>
+        /// /// <param name="options">The boolean value for whether the query should go straight to the Backend or not.</param>
+        public SqlQuerySpec(string queryText, SqlParameterCollection parameters, SqlOptionsCollection options)
+        {
+            this.QueryText = queryText;
+            this.parameters = parameters ?? throw new ArgumentNullException("parameters");
+            this.options = options ?? throw new ArgumentNullException("options");
+        }
+        
         /// <summary>
         /// Gets or sets the text of the Azure Cosmos DB database query.
         /// </summary>
@@ -69,6 +84,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             }
         }
 
+        /// <summary>
+        /// Gets or sets the boolean of the Azure Cosmos DB database options.
+        /// </summary>
+        /// <value>The boolean to let the Backend know that this is a pass through query.</value>
+        [DataMember(Name = "options")]        
+        public SqlOptionsCollection Options
+        {
+            get
+            {
+                return this.options;
+            }
+            set
+            {
+                this.options = value ?? throw new NotImplementedException();
+            }
+        }
+        
         /// <summary>
         /// Returns a value that indicates whether the Azure Cosmos DB database <see cref="Parameters"/> property should be serialized.
         /// </summary>

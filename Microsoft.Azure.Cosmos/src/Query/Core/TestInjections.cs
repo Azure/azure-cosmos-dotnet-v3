@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         {
             Passthrough,
             Specialized,
-            TryExecuteOnBE,
+            TryExecute,
         }
 
         public TestInjections(bool simulate429s, bool simulateEmptyPages, ResponseStats responseStats = null)
