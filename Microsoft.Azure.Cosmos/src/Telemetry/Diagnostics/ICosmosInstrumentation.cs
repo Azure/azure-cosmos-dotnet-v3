@@ -33,51 +33,27 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             /// <param name="statusCode"></param>
             /// <param name="databaseId"></param>
             /// <param name="containerId"></param>
-            /// <param name="queryText"></param>
             /// <param name="subStatusCode"></param>
-            /// <param name="pageSize"></param>
+            /// <param name="itemCount"></param>
             /// <param name="requestSize"></param>
             /// <param name="responseSize"></param>
+            /// <param name="accountName"></param>
+            /// <param name="userAgent"></param>
+            /// <param name="connectionMode"></param>
+            /// <param name="exception"></param>
             public void Record(double? requestCharge = null,
                 string operationType = null,
                 HttpStatusCode? statusCode = null, 
                 string databaseId = null, 
                 string containerId = null,
-                string queryText = null,
                 string subStatusCode = null,
-                string pageSize = null,
+                int? itemCount = null,
                 long? requestSize = null,
-                long? responseSize = null);
-
-            /// <summary>
-            /// Record with exception
-            /// </summary>
-            /// <param name="requestCharge"></param>
-            /// <param name="operationType"></param>
-            /// <param name="statusCode"></param>
-            /// <param name="databaseId"></param>
-            /// <param name="containerId"></param>
-            /// <param name="exception"></param>
-            /// <param name="queryText"></param>
-            /// <param name="subStatusCode"></param>
-            /// <param name="pageSize"></param>
-            public void RecordWithException(double? requestCharge,
-                string operationType,
-                HttpStatusCode? statusCode,
-                string databaseId,
-                string containerId,
-                Exception exception,
-                string queryText = null,
-                string subStatusCode = null,
-                string pageSize = null);
-
-            /// <summary>
-            /// Record Values
-            /// </summary>
-            /// <param name="accountName"></param>
-            /// <param name="userAgent"></param>
-            /// <param name="connectionMode"></param>
-            public void Record(Uri accountName, string userAgent, ConnectionMode connectionMode);
+                long? responseSize = null,
+                Uri accountName = null, 
+                string userAgent = null, 
+                ConnectionMode? connectionMode = null,
+                Exception exception = null);
 
             /// <summary>
             /// Record Values

@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
         public void MarkFailed(Exception ex)
         {
-            this.Attributes.Error = true;
+            this.Attributes.IsError = true;
             this.Attributes.ExceptionStackTrace = ex.StackTrace;
             
             this.scope.Failed(ex);
@@ -38,11 +38,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             HttpStatusCode? statusCode = null, 
             string databaseId = null, 
             string containerId = null,
-            string queryText = null,
             string subStatusCode = null,
-            string pageSize = null,
+            int? itemCount = null,
             long? requestSize = null,
-            long? responseSize = null)
+            long? responseSize = null,
+            Uri accountName = null, 
+            string userAgent = null, 
+            ConnectionMode? connectionMode = null,
+            Exception exception = null)
         {
             if (this.Attributes != null)
             {
@@ -54,11 +57,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                 if (!string.IsNullOrEmpty(containerId))
                 {
                     this.Attributes.ContainerName = containerId;
-                }
-
-                if (!string.IsNullOrEmpty(queryText))
-                {
-                    this.Attributes.QueryText = queryText;
                 }
 
                 if (!string.IsNullOrEmpty(operationType))
@@ -73,12 +71,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
                 if (subStatusCode != null)
                 {
-                    this.Attributes.SubStatusCode = subStatusCode;
+                    this.Attributes.BackendStatusCode = null;
                 }
 
-                if (pageSize != null)
+                if (itemCount.HasValue)
                 {
-                    this.Attributes.PageSize = pageSize;
+                    this.Attributes.ItemCount = itemCount.Value;
                 }
 
                 if (requestCharge.HasValue)
@@ -95,44 +93,30 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                 {
                     this.Attributes.ResponseSize = responseSize.Value;
                 }
+                
+                if (accountName != null)
+                {
+                    this.Attributes.AccountName = accountName;
+                }
+                
+                if (string.IsNullOrEmpty(userAgent))
+                {
+                    this.Attributes.UserAgent = userAgent;
+                }
+                
+                if (!connectionMode.HasValue)
+                {
+                    this.Attributes.ConnectionMode = connectionMode.Value;
+                }
 
-            }
-        }
-
-        public void RecordWithException(double? requestCharge,
-           string operationType,
-           HttpStatusCode? statusCode,
-           string databaseId,
-           string containerId,
-           Exception exception,
-           string queryText = null,
-           string subStatusCode = null,
-           string pageSize = null)
-        {
-            this.Record(
-                requestCharge: requestCharge,
-                operationType: operationType,
-                statusCode: statusCode,
-                databaseId: databaseId,
-                containerId: containerId,
-                queryText: queryText,
-                subStatusCode: subStatusCode,
-                pageSize: pageSize);
-
-            if (this.Attributes != null)
-            {
-                this.Attributes.Error = true;
-                this.Attributes.ExceptionStackTrace = exception.StackTrace;
-            }
-        }
-
-        public void Record(Uri accountName, string userAgent, ConnectionMode connectionMode)
-        {
-            if (this.Attributes != null)
-            {
-                this.Attributes.AccountName = accountName;
-                this.Attributes.UserAgent = userAgent;
-                this.Attributes.ConnectionMode = connectionMode;
+                if (exception != null)
+                {
+                    this.Attributes.IsError = true;
+                    this.Attributes.ExceptionStackTrace = exception.StackTrace;
+                    this.Attributes.ExceptionType = exception.GetType().ToString();
+                    this.Attributes.ExceptionMessage = exception.Message;
+                }
+                
             }
         }
 
@@ -151,44 +135,46 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                 return;
             }
 
-            //this.scope.AddAttribute(CosmosInstrumentationConstants.AccountNameKey, this.Attributes.AccountName?.ToString());
-           // this.scope.AddAttribute(CosmosInstrumentationConstants.ContainerNameKey, this.Attributes.ContainerName);
-
-            //this.scope.AddAttribute(CosmosInstrumentationConstants.DbNameKey, this.Attributes.DbName);
-            this.scope.AddAttribute(CosmosInstrumentationConstants.DbOperationKey, this.Attributes.DbOperation);
-            //this.scope.AddAttribute(CosmosInstrumentationConstants.DbSystemKey, this.Attributes.DbSystem);
-            this.scope.AddAttribute(CosmosInstrumentationConstants.DbName, this.Attributes.DbName);
             this.scope.AddAttribute(CosmosInstrumentationConstants.DbSystemName, this.Attributes.DbSystem);
-            this.scope.AddAttribute(CosmosInstrumentationConstants.NetPeerName, this.Attributes.AccountName.Host);
-            this.scope.AddAttribute(CosmosInstrumentationConstants.NetPeerPort, this.Attributes.AccountName.Port);
-/*
+            this.scope.AddAttribute(CosmosInstrumentationConstants.DbName, this.Attributes.DbName);
+            this.scope.AddAttribute(CosmosInstrumentationConstants.DbOperation, this.Attributes.DbOperation);
+
+            this.scope.AddAttribute(CosmosInstrumentationConstants.Account, this.Attributes.AccountName?.ToString());
+            this.scope.AddAttribute(CosmosInstrumentationConstants.ContainerName, this.Attributes.ContainerName);
+
+            this.scope.AddAttribute(CosmosInstrumentationConstants.PartitionId, "any value partitionid");
+
             if (this.Attributes.HttpStatusCode.HasValue)
             {
-                this.scope.AddAttribute(CosmosInstrumentationConstants.HttpStatusCodeKey, (int)this.Attributes.HttpStatusCode.Value);
+                this.scope.AddAttribute(CosmosInstrumentationConstants.StatusCode, (int)this.Attributes.HttpStatusCode.Value);
             }
+            this.scope.AddAttribute(CosmosInstrumentationConstants.UserAgent, this.Attributes.UserAgent);
+            this.scope.AddAttribute(CosmosInstrumentationConstants.RequestContentLength, "10");
+            this.scope.AddAttribute(CosmosInstrumentationConstants.ResponseContentLength, "20");
+            this.scope.AddAttribute(CosmosInstrumentationConstants.Region, "region");
+            this.scope.AddAttribute(CosmosInstrumentationConstants.RetryCount, "2");
+            this.scope.AddAttribute(CosmosInstrumentationConstants.ConnectionMode, this.Attributes.ConnectionMode);
+            this.scope.AddAttribute(CosmosInstrumentationConstants.BackendStatusCodes, this.Attributes.BackendStatusCode);
+            this.scope.AddAttribute(CosmosInstrumentationConstants.ItemCount, this.Attributes.ItemCount);
 
             if (this.Attributes.RequestCharge.HasValue)
             {
-                this.scope.AddAttribute(CosmosInstrumentationConstants.RequestChargeKey, this.Attributes.RequestCharge.Value);
+                this.scope.AddAttribute(CosmosInstrumentationConstants.RequestCharge, this.Attributes.RequestCharge.Value);
 
             }
-            this.scope.AddAttribute(CosmosInstrumentationConstants.UserAgentKey, this.Attributes.UserAgent);
-            this.scope.AddAttribute(CosmosInstrumentationConstants.ConnectionMode, this.Attributes.ConnectionMode);
-            
-            this.scope.AddAttribute(CosmosInstrumentationConstants.PageSize, this.Attributes.PageSize);
-            this.scope.AddAttribute(CosmosInstrumentationConstants.SubStatusCode, this.Attributes.SubStatusCode);
 
-            if (this.Attributes.Error)
+            if (this.Attributes.IsError)
             {
-                this.scope.AddAttribute(CosmosInstrumentationConstants.ErrorKey, this.Attributes.Error);
-                this.scope.AddAttribute(CosmosInstrumentationConstants.ExceptionKey, this.Attributes.ExceptionStackTrace);
+                this.scope.AddAttribute(CosmosInstrumentationConstants.ExceptionStacktrace, this.Attributes.ExceptionStackTrace);
+                this.scope.AddAttribute(CosmosInstrumentationConstants.ExceptionMessage, this.Attributes.ExceptionMessage);
+                this.scope.AddAttribute(CosmosInstrumentationConstants.ExceptionType, this.Attributes.ExceptionType);
             }
 
             IDiagnosticsFilter filter = new DiagnosticsFilter(this.Attributes);
-            if (filter.IsAllowed())
+            if (this.Attributes.IsError || filter.IsAllowed())
             {
-                this.scope.AddAttribute(CosmosInstrumentationConstants.RequestDiagnosticsKey, this.Attributes.RequestDiagnostics);
-            }*/
+                this.scope.AddAttribute(CosmosInstrumentationConstants.RequestDiagnostics, this.Attributes.RequestDiagnostics);
+            }
         }
 
         public void Dispose()

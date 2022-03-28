@@ -7,32 +7,30 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     internal class CosmosInstrumentationConstants
     {
         public const string DiagnosticNamespace = "Azure.Cosmos";
-        public const string ResourceProviderNamespace = "Microsoft.Azure.Cosmos";
+        public const string ResourceProviderNamespace = "Microsoft.DocumentDB";
         public const string OperationPrefix = "Cosmos";
 
-/*        public const string DbSystemKey = "db.type";
-        public const string AccountNameKey = "db.url";
-        public const string DbNameKey = "db.instance";*/
-        public const string DbOperationKey = "db.statement";
-
-        public const string DbName = "db.name";
         public const string DbSystemName = "db.system";
-        public const string NetPeerName = "net.peer.name";
-        public const string NetPeerPort = "net.peer.port";
+        public const string DbName = "db.name";
+        public const string DbOperation = "db.operation";
 
-        public const string UserAgentKey = "User Agent";
-        public const string ConnectionMode = "Connection Mode";
-        public const string HttpStatusCodeKey = "StatusCode";
-        public const string ContainerNameKey = "Container Name";
-        public const string RequestChargeKey = "Request Charge (RUs)";
-        public const string RequestDiagnosticsKey = "Request Diagnostics (JSON)";
-        public const string SubStatusCode = "SubStatusCode";
-        public const string PageSize = "Page Size";
+        public const string Account = "db.cosmosdb.account";
+        public const string ContainerName = "db.cosmosdb.container";
+        public const string PartitionId = "db.cosmosdb.partitionId";
+        public const string StatusCode = "db.cosmosdb.status_code";
+        public const string UserAgent = "db.cosmosdb.user_agent";
+        public const string RequestContentLength = "db.cosmosdb.request_content_length";
+        public const string ResponseContentLength = "db.cosmosdb.response_content_length";
+        public const string Region = "db.cosmosdb.region";
+        public const string RetryCount = "db.cosmosdb.retry_count";
+        public const string ConnectionMode = "db.cosmosdb.connection_mode";
+        public const string BackendStatusCodes = "db.cosmosdb.backend_status_codes";
+        public const string ItemCount = "db.cosmosdb.item_count";
+        public const string RequestDiagnostics = "db.cosmosdb.request_diagnostics";
+        public const string RequestCharge = "db.cosmosdb.request_charge";
 
-        public const string RequestSize = "Request Size";
-        public const string ResponseSize = "Response Size";
-
-        public const string ErrorKey = "error";
-        public const string ExceptionKey = "Exception StackTrace";
+        public const string ExceptionType = "exception.type";
+        public const string ExceptionMessage = "exception.message";
+        public const string ExceptionStacktrace = "exception.stacktrace";
     }
 }

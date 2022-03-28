@@ -16,11 +16,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             // NoOp
         }
 
-        public void Record(Uri accountName, string userAgent, ConnectionMode connectionMode)
-        {
-            // NoOp
-        }
-
         public void Record(ITrace trace)
         {
             // NoOp
@@ -31,12 +26,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             // NoOp
         }
 
-        void ICosmosInstrumentation.RecordWithException(double? requestCharge, string operationType, HttpStatusCode? statusCode, string databaseId, string containerId, Exception exception, string queryText, string subStatusCode, string pageSize)
-        {
-            // NoOp
-        }
-
-        void ICosmosInstrumentation.Record(double? requestCharge, string operationType, HttpStatusCode? statusCode, string databaseId, string containerId, string queryText, string subStatusCode, string pageSize, long? requestSize, long? responseSize)
+        public void Record(double? requestCharge = null, string operationType = null, HttpStatusCode? statusCode = null, string databaseId = null, string containerId = null, string subStatusCode = null, int? itemCount = null, long? requestSize = null, long? responseSize = null, Uri accountName = null, string userAgent = null, ConnectionMode? connectionMode = null, Exception exception = null)
         {
             // NoOp
         }

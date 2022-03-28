@@ -8,9 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
-    using Telemetry;
     using Telemetry.Diagnostics;
 
     internal sealed class Trace : ITrace

@@ -82,6 +82,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         if (producedDiagnosticScope.Activity.Id == Activity.Current.Id)
                         {
+                            Console.WriteLine(Activity.Current.Id);
+
                             this.AssertTags(producedDiagnosticScope.Name, producedDiagnosticScope.Activity.Tags);
 
                             producedDiagnosticScope.IsCompleted = true;
@@ -106,6 +108,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         }
                     }
                 }
+
             }
         }
 
