@@ -59,7 +59,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string containerId,
             Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor,
             bool useGatewayMode = false,
-            Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> interceptorWithStoreResult = null)
+            Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> interceptorWithStoreResult = null,
+            ISessionContainer sessionContainer = null)
         {
             CosmosClient clientWithIntercepter = TestCommon.CreateCosmosClient(
                builder =>
@@ -67,6 +68,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                    if (useGatewayMode)
                    {
                        builder.WithConnectionModeGateway();
+                   }
+
+                   if (sessionContainer != null)
+                   {
+                       builder.WithSessionContainer(sessionContainer);
                    }
 
                    builder.WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(

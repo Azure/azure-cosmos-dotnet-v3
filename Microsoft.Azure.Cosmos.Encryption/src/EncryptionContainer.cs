@@ -454,46 +454,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return this.container.GetFeedRangesAsync(cancellationToken);
         }
 
-        public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
-            FeedRange feedRange,
-            CancellationToken cancellationToken = default)
-        {
-            return this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
-        }
-
-        public override FeedIterator GetItemQueryStreamIterator(
-            FeedRange feedRange,
-            QueryDefinition queryDefinition,
-            string continuationToken,
-            QueryRequestOptions requestOptions = null)
-        {
-            QueryRequestOptions clonedRequestOptions = requestOptions != null ? (QueryRequestOptions)requestOptions.ShallowCopy() : new QueryRequestOptions();
-
-            return new EncryptionFeedIterator(
-                this.container.GetItemQueryStreamIterator(
-                    feedRange,
-                    queryDefinition,
-                    continuationToken,
-                    clonedRequestOptions),
-                this,
-                clonedRequestOptions);
-        }
-
-        public override FeedIterator<T> GetItemQueryIterator<T>(
-            FeedRange feedRange,
-            QueryDefinition queryDefinition,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
-        {
-            return new EncryptionFeedIterator<T>(
-                (EncryptionFeedIterator)this.GetItemQueryStreamIterator(
-                    feedRange,
-                    queryDefinition,
-                    continuationToken,
-                    requestOptions),
-                this.ResponseFactory);
-        }
-
         public override ChangeFeedEstimator GetChangeFeedEstimator(
             string processorName,
             Container leaseContainer)
@@ -719,17 +679,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return this.ResponseFactory.CreateItemFeedResponse<T>(responseMessage);
         }
 
-        public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
-               Cosmos.PartitionKey partitionKey,
-               RequestOptions requestOptions = null,
-               CancellationToken cancellationToken = default)
-        {
-            return this.container.DeleteAllItemsByPartitionKeyStreamAsync(
-                partitionKey,
-                requestOptions,
-                cancellationToken);
-        }
-
         public async Task<EncryptionSettings> GetOrUpdateEncryptionSettingsFromCacheAsync(
             EncryptionSettings obsoleteEncryptionSettings,
             CancellationToken cancellationToken)
@@ -740,6 +689,59 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 singleValueInitFunc: () => EncryptionSettings.CreateAsync(this, cancellationToken),
                 cancellationToken: cancellationToken);
         }
+
+        public override FeedIterator GetItemQueryStreamIterator(
+            FeedRange feedRange,
+            QueryDefinition queryDefinition,
+            string continuationToken,
+            QueryRequestOptions requestOptions = null)
+        {
+            QueryRequestOptions clonedRequestOptions = requestOptions != null ? (QueryRequestOptions)requestOptions.ShallowCopy() : new QueryRequestOptions();
+
+            return new EncryptionFeedIterator(
+                this.container.GetItemQueryStreamIterator(
+                    feedRange,
+                    queryDefinition,
+                    continuationToken,
+                    clonedRequestOptions),
+                this,
+                clonedRequestOptions);
+        }
+
+        public override FeedIterator<T> GetItemQueryIterator<T>(
+            FeedRange feedRange,
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            return new EncryptionFeedIterator<T>(
+                (EncryptionFeedIterator)this.GetItemQueryStreamIterator(
+                    feedRange,
+                    queryDefinition,
+                    continuationToken,
+                    requestOptions),
+                this.ResponseFactory);
+        }
+
+#if ENCRYPTIONPREVIEW
+        public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+            Cosmos.PartitionKey partitionKey,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            return this.container.DeleteAllItemsByPartitionKeyStreamAsync(
+                partitionKey,
+                requestOptions,
+                cancellationToken);
+        }
+
+        public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+            FeedRange feedRange,
+            CancellationToken cancellationToken = default)
+        {
+            return this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
+        }
+#endif
 
         /// <summary>
         /// This function handles the scenario where a container is deleted(say from different Client) and recreated with same Id but with different client encryption policy.
