@@ -552,23 +552,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             Address address = addresses.First();
 
-            AddressInformation[] addressInfos =
-                addresses.Select(
-                    addr =>
-                    new AddressInformation
-                    {
-                        IsPrimary = addr.IsPrimary,
-                        PhysicalUri = addr.PhysicalUri,
-                        Protocol = ProtocolFromString(addr.Protocol),
-                        IsPublic = true
-                    }).ToArray();
+            IReadOnlyList<AddressInformation> addressInfosSorted = GatewayAddressCache.GetSortedAddressInformation(addresses);
 
             PartitionKeyRangeIdentity partitionKeyRangeIdentity = new PartitionKeyRangeIdentity(collectionRid, address.PartitionKeyRangeId);
 
             if (this.enableTcpConnectionEndpointRediscovery && partitionKeyRangeIdentity.PartitionKeyRangeId != PartitionKeyRange.MasterPartitionKeyRangeId)
             {
                 // add serverKey-pkRangeIdentity mapping only for addresses retrieved from gateway
-                foreach (AddressInformation addressInfo in addressInfos)
+                foreach (AddressInformation addressInfo in addressInfosSorted)
                 {
                     DefaultTrace.TraceInformation("Added address to serverPartitionAddressToPkRangeIdMap, collectionRid :{0}, pkRangeId: {1}, address: {2}",
                        partitionKeyRangeIdentity.CollectionRid,
@@ -587,7 +578,24 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             return Tuple.Create(
                 partitionKeyRangeIdentity,
-                new PartitionAddressInformation(addressInfos, inNetworkRequest));
+                new PartitionAddressInformation(addressInfosSorted, inNetworkRequest));
+        }
+
+        private static IReadOnlyList<AddressInformation> GetSortedAddressInformation(IList<Address> addresses)
+        {
+            AddressInformation[] addressInformationArray = new AddressInformation[addresses.Count];
+            for (int i = 0; i < addresses.Count; i++)
+            {
+                Address addr = addresses[i];
+                addressInformationArray[i] = new AddressInformation(
+                    isPrimary: addr.IsPrimary,
+                    physicalUri: addr.PhysicalUri,
+                    protocol: ProtocolFromString(addr.Protocol),
+                    isPublic: true);
+            }
+
+            Array.Sort(addressInformationArray);
+            return addressInformationArray;
         }
 
         private bool IsInNetworkRequest(DocumentServiceResponse documentServiceResponse)
