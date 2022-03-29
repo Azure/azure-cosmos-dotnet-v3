@@ -218,6 +218,7 @@
             
             bool isPassThrough = inputParameters.SqlQuerySpec.options.IsPassThrough;
             Assert.IsTrue(isPassThrough);
+            Assert.IsTrue(queryPipelineStage != null);
 
             return new PassThroughQueryTestOutput(isPassThrough);
         }
