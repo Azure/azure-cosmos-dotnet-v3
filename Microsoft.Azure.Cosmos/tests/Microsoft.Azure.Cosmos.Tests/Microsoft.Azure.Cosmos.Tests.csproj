@@ -229,8 +229,8 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
 	<None Update="BaselineTest\TestBaseline\PassThroughQueryBaselineTests.PassThroughQueryTest.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
     <None Update="Contracts\DotNetPreviewSDKAPI.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

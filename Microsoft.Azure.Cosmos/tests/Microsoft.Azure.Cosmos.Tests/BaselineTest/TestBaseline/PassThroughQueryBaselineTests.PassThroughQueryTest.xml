@@ -1,7 +1,7 @@
 ﻿<Results>
   <Result>
     <Input>
-      <Description>Aggregate Partition Key Field</Description>
+      <Description>Partition Key Field</Description>
       <Query>SELECT c.key FROM c</Query>
       <PartitionKeys>
         <Key>/key</Key>
@@ -9,7 +9,7 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal />
+      <TryExecuteOnBE>true</TryExecuteOnBE>
     </Output>
   </Result>
 </Results>

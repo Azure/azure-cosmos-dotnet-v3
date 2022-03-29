@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SinglePartition;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Tokens;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -265,8 +264,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                    trace);
 
             bool singleLogicalPartitionKeyQuery = inputParameters.PartitionKey.HasValue
-                 || ((partitionedQueryExecutionInfo.QueryRanges.Count == 1)
-                     && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
+                || ((partitionedQueryExecutionInfo.QueryRanges.Count == 1)
+                && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
             bool serverStreamingQuery = !partitionedQueryExecutionInfo.QueryInfo.HasAggregates
                 && !partitionedQueryExecutionInfo.QueryInfo.HasDistinct
                 && !partitionedQueryExecutionInfo.QueryInfo.HasGroupBy;
@@ -304,8 +303,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                     if (createPassthroughQuery)
                     {
+                        //TODO: Add new pass through pipeline code here 
                         // Set the IsPassThrough check in SqlQuerySpec to be true
-                        inputParameters.SqlQuerySpec.Options.SetIsPassThrough(true);
+                        inputParameters.SqlQuerySpec.Options.IsPassThrough = true;
                     }
                 }
             }
@@ -394,34 +394,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 cancellationToken: cancellationToken,
                 continuationToken: inputParameters.InitialUserContinuationToken);
         }
-
-        private static TryCatch<IQueryPipelineStage> TryCreateAndExecutePassthroughQueryExecutionContext(
-            DocumentContainer documentContainer,
-            InputParameters inputParameters,
-            List<Documents.PartitionKeyRange> targetRanges,
-            CancellationToken cancellationToken)
-        {
-            // Return a single context
-            List<FeedRangeEpk> list = (targetRanges ?? Enumerable.Empty<Documents.PartitionKeyRange>())
-                    .Select(range => new FeedRangeEpk(
-                        new Documents.Routing.Range<string>(
-                            min: range.MinInclusive,
-                            max: range.MaxExclusive,
-                            isMinInclusive: true,
-                            isMaxInclusive: false)))
-                    .ToList();
-            TryCatch<IQueryPipelineStage> result = TryExecuteQueryPipelineStage.MonadicCreate(
-                documentContainer: documentContainer,
-                sqlQuerySpec: inputParameters.SqlQuerySpec,
-                targetRanges: list,
-                queryPaginationOptions: new QueryPaginationOptions(
-                    pageSizeHint: inputParameters.MaxItemCount),
-                partitionKey: inputParameters.PartitionKey,
-                maxConcurrency: inputParameters.MaxConcurrency,
-                cancellationToken: cancellationToken,
-                continuationToken: inputParameters.InitialUserContinuationToken);
-            return result;  
-        } 
 
         private static TryCatch<IQueryPipelineStage> TryCreateSpecializedDocumentQueryExecutionContext(
             DocumentContainer documentContainer,

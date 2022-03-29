@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
 {
     internal interface IPartitionedToken
     {

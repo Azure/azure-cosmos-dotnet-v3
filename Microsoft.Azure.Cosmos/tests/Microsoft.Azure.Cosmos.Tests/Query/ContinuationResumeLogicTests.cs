@@ -4,11 +4,11 @@
     using System.Collections.Generic;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using static Microsoft.Azure.Cosmos.Query.Core.Pipeline.PartitionMapper;
+    using static Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.PartitionMapper;
 
     [TestClass]
     public class ContinuationResumeLogicTests

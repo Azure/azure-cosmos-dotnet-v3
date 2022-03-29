@@ -39,7 +39,7 @@
             List<PassThroughQueryTestInput> testVariations = new List<PassThroughQueryTestInput>
             {
                 Hash( // dont use hash (maketest)
-                @"Aggregate Partition Key Field",
+                @"Partition Key Field",
                 this.@query,
                 @"/key"),
             };
@@ -215,22 +215,37 @@
                 inputParameters,
                 trace,
                 cancellationToken);
+            
+            bool isPassThrough = inputParameters.SqlQuerySpec.options.IsPassThrough;
+            Assert.IsTrue(isPassThrough);
 
-            Assert.IsTrue(inputParameters.SqlQuerySpec.options.GetIsPassThrough() == true);
-            bool isPassThrough = inputParameters.SqlQuerySpec.options.GetIsPassThrough();
-
-            return new PassThroughQueryTestPositiveOutput(isPassThrough);
+            return new PassThroughQueryTestOutput(isPassThrough);
         }
     }
 
-    public abstract class PassThroughQueryTestOutput : BaselineTestOutput
+    public sealed class PassThroughQueryTestOutput : BaselineTestOutput
     {
+        public PassThroughQueryTestOutput(bool tryExecuteOnBE)
+        {
+            this.TryExecuteOnBE = tryExecuteOnBE;
+        }
+
+        public bool TryExecuteOnBE { get; }
+
+        public override void SerializeAsXml(XmlWriter xmlWriter)
+        {
+            xmlWriter.WriteStartElement(nameof(this.TryExecuteOnBE));
+            xmlWriter.WriteValue(this.TryExecuteOnBE);
+            xmlWriter.WriteEndElement();
+        }
     }
 
     public sealed class PassThroughQueryTestInput : BaselineTestInput
     {
         internal PartitionKeyDefinition PartitionKeyDefinition { get; set; }
         internal SqlQuerySpec SqlQuerySpec { get; set; }
+        internal PartitionKey PartitionKey { get; set; } 
+        internal PartitionKeyRangeIdentity PartitionKeyRangeId { get; set; }
 
         internal PassThroughQueryTestInput(
             string description,
@@ -274,132 +289,4 @@
             }
         }
     }
-    internal sealed class PassThroughQueryTestNegativeOutput : PassThroughQueryTestOutput
-    {
-        public PassThroughQueryTestNegativeOutput(Exception exception)
-        {
-            this.Exception = exception ?? throw new ArgumentNullException(nameof(exception));
-        }
-
-        public override void SerializeAsXml(XmlWriter xmlWriter)
-        {
-            xmlWriter.WriteElementString(nameof(this.Exception), this.Exception.Message);
-        }
-
-        public Exception Exception { get; }
-    }
-    internal sealed class PassThroughQueryTestPositiveOutput : PassThroughQueryTestOutput
-    {
-        public PassThroughQueryTestPositiveOutput(bool tryExecute)
-        {
-            this.TryExecute = tryExecute;
-        }
-
-        public bool TryExecute { get; }
-
-        public override void SerializeAsXml(XmlWriter xmlWriter)
-        {
-            xmlWriter.WriteStartElement(nameof(PartitionedQueryExecutionInfoInternal));
-            xmlWriter.WriteEndElement();
-        }
-
-        private static void WriteQueryInfoAsXML(QueryInfo queryInfo, XmlWriter writer)
-        {
-            writer.WriteStartElement(nameof(QueryInfo));
-            writer.WriteElementString(nameof(queryInfo.DistinctType), queryInfo.DistinctType.ToString());
-            writer.WriteElementString(nameof(queryInfo.Top), queryInfo.Top.ToString());
-            writer.WriteElementString(nameof(queryInfo.Offset), queryInfo.Offset.ToString());
-            writer.WriteElementString(nameof(queryInfo.Limit), queryInfo.Limit.ToString());
-            writer.WriteStartElement(nameof(queryInfo.GroupByExpressions));
-            foreach (string GroupByExpression in queryInfo.GroupByExpressions)
-            {
-                writer.WriteElementString(nameof(GroupByExpression), GroupByExpression);
-            }
-            writer.WriteEndElement();
-            writer.WriteStartElement(nameof(queryInfo.OrderBy));
-            foreach (SortOrder sortorder in queryInfo.OrderBy)
-            {
-                writer.WriteElementString(nameof(SortOrder), sortorder.ToString());
-            }
-            writer.WriteEndElement();
-            writer.WriteStartElement(nameof(queryInfo.OrderByExpressions));
-            foreach (string OrderByExpression in queryInfo.OrderByExpressions)
-            {
-                writer.WriteElementString(nameof(OrderByExpression), OrderByExpression);
-            }
-            writer.WriteEndElement();
-            writer.WriteStartElement(nameof(queryInfo.Aggregates));
-            foreach (AggregateOperator aggregate in queryInfo.Aggregates)
-            {
-                writer.WriteElementString(nameof(AggregateOperator), aggregate.ToString());
-            }
-            writer.WriteEndElement();
-            writer.WriteStartElement(nameof(queryInfo.GroupByAliasToAggregateType));
-            foreach (KeyValuePair<string, AggregateOperator?> kvp in queryInfo.GroupByAliasToAggregateType)
-            {
-                writer.WriteStartElement("AliasToAggregateType");
-                writer.WriteElementString("Alias", kvp.Key);
-                writer.WriteElementString(nameof(AggregateOperator), kvp.Value.HasValue ? kvp.Value.ToString() : "null");
-                writer.WriteEndElement();
-            }
-            writer.WriteEndElement();
-            writer.WriteStartElement(nameof(queryInfo.GroupByAliases));
-            foreach (string alias in queryInfo.GroupByAliases)
-            {
-                writer.WriteElementString("Alias", alias);
-            }
-            writer.WriteEndElement();
-            writer.WriteElementString(nameof(queryInfo.HasSelectValue), queryInfo.HasSelectValue.ToString());
-            writer.WriteEndElement();
-        }
-
-        private static void WriteQueryRangesAsXML(List<Range<PartitionKeyInternal>> queryRanges, XmlWriter writer)
-        {
-            writer.WriteStartElement("QueryRanges");
-            writer.WriteStartElement("Range");
-            foreach (Range<PartitionKeyInternal> range in queryRanges)
-            {
-                string minBound = range.IsMinInclusive ? "[" : "(";
-                string maxBound = range.IsMaxInclusive ? "]" : ")";
-                JsonSerializerSettings settings = new JsonSerializerSettings
-                {
-                    DateParseHandling = DateParseHandling.None,
-                    Formatting = Newtonsoft.Json.Formatting.None
-                };
-                string minRangeString = JsonConvert.SerializeObject(JsonConvert.DeserializeObject(range.Min.ToJsonString(), settings), settings);
-                string maxRangeString = JsonConvert.SerializeObject(JsonConvert.DeserializeObject(range.Max.ToJsonString(), settings), settings);
-                writer.WriteElementString("Range", $"{minBound}{minRangeString},{maxRangeString}{maxBound}");
-            }
-            writer.WriteEndElement();
-            writer.WriteEndElement();
-        }
-
-        private static void WriteRewrittenQueryAsXML(string query, XmlWriter writer)
-        {
-            writer.WriteStartElement("RewrittenQuery");
-            writer.WriteCData(query);
-            writer.WriteEndElement();
-        }
-
-        private static void WritePartitionQueryExecutionInfoAsXML(PartitionedQueryExecutionInfoInternal info, XmlWriter writer)
-        {
-            if (info.QueryInfo != null)
-            {
-                WriteQueryInfoAsXML(info.QueryInfo, writer);
-            }
-
-            if (info.QueryRanges != null)
-            {
-                WriteQueryRangesAsXML(info.QueryRanges, writer);
-            }
-
-            if (info.QueryInfo.RewrittenQuery != null)
-            {
-                WriteRewrittenQueryAsXML(info.QueryInfo.RewrittenQuery, writer);
-            }
-        }
-    }
-    
-
-
 }
