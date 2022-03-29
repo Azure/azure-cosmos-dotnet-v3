@@ -81,8 +81,35 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             if (forceRefesh && this.sessionContainer != null)
             {
-                string resourceFullName = PathsHelper.GetCollectionPath(resourceAddress);
-                this.sessionContainer.ClearTokenByCollectionFullname(resourceFullName);
+                return TaskHelper.InlineIfPossible(
+                    async () =>
+                    {
+                        string oldRid = (await base.ResolveByNameAsync(
+                            apiVersion,
+                            resourceAddress,
+                            forceRefesh: false,
+                            trace,
+                            clientSideRequestStatistics,
+                            cancellationToken))?.ResourceId;
+
+                        ContainerProperties propertiesAfterRefresh = await base.ResolveByNameAsync(
+                            apiVersion,
+                            resourceAddress,
+                            forceRefesh,
+                            trace,
+                            clientSideRequestStatistics,
+                            cancellationToken);
+
+                        if (oldRid != null && oldRid != propertiesAfterRefresh?.ResourceId)
+                        {
+                            string resourceFullName = PathsHelper.GetCollectionPath(resourceAddress);
+                            this.sessionContainer.ClearTokenByCollectionFullname(resourceFullName);
+                        }
+
+                        return propertiesAfterRefresh;
+                    },
+                    retryPolicy: null,
+                    cancellationToken);
             }
 
             return TaskHelper.InlineIfPossible(
