@@ -260,17 +260,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// 
         /// SCENARIO
         /// - App using .Net SDK running queries against Container_1 or Container_2
-        /// - Every 24 hours the app chnages reading between the two of them
+        /// - Every 24 hours the app changes reading between the two of them
         /// - Before switching the query app to a new Container of either name the Container was deleted, 
         ///   re-created and data was ingested via a Spark job from a different process
         /// - Customer was seeing 404/1002 Not Found/Read Session not available regularly
         /// 
         /// ROOT CAUSE
         /// - SessionContainer and CollectionCache have both Dictionaries for a CollectionName to CollectionRid lookup
-        /// - In some places where a stale collection name was identified,  not both dictionaries were updated
-        /// - Therefore it was possible that the CollectionCache was updated so CollectionRid on DocumentServiceRequest
-        ///   was populated correctly (for the new container) but SessionContainer still mapped the container name to 
-        ///   the old CollectionRid - and as such still found the SessionToken captured from the old container
+        /// - In some places where a stale collection name was identified, not both dictionaries were updated
+        /// - Therefore, it was possible that the CollectionCache was updated so CollectionRid on
+        ///   DocumentServiceRequest was populated correctly (for the new container) but SessionContainer still mapped 
+        ///   the container name to the old CollectionRid - and as such still found the SessionToken captured from 
+        ///   the old container
         /// - This could result in either using a stale LSN (LSN captured on old container less than current LSN
         ///   on new container - which would not be an issue - or LSN captured on old container was higher than the 
         ///   latest LSN on the new container - so all subsequent queries would fail with 404/1002
@@ -279,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// - This would only permanently leave the CosmosClient in bad state when 
         ///     - Session consistency is used, 
         ///     - container deletes and recreates are happening,
-        ///     - no point operations are used with the same CosmsoClient instance (for point operations the 
+        ///     - no point operations are used with the same CosmosClient instance (for point operations the 
         ///       RenameCollectionAwareClientRetryPolicy would have recovered the client instance because the session
         ///       cache would have been purged)
         ///     - A CollectionCache refresh is happening after the recreation without also updating the
@@ -289,7 +290,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         ///       would have purged the session container and collection cache.
         ///       
         /// TEST COVERAGE
-        /// - Without PR xxx this test was consistently failing (either due to 404/1022 or because the requested 
+        /// - Without PR https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3119 this test was consistently 
+        ///   failing (either due to 404/1022 or because the requested 
         ///   session token was lower than the latest session token captured on the new container (meaning 
         ///   possible risk of returning outdated data and violating read your own write semantic in theory
         ///   because the requested session token was the last session token seen on the old container 
