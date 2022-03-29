@@ -190,7 +190,7 @@
         TraceForBaselineTesting rootTrace;
         using (rootTrace = TraceForBaselineTesting.GetRootTrace())
         {
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue,new TraceSummary());
 
             TransportAddressUri uri1 = new TransportAddressUri(new Uri("http://someUri1.com"));
             TransportAddressUri uri2 = new TransportAddressUri(new Uri("http://someUri2.com"));
@@ -390,21 +390,8 @@
                   "durationInMs": 0
                 }
               ],
-              "serviceEndpointStats": {
-                "inflightRequests": 2,
-                "openConnections": 1
-              },
-              "connectionStats": {
-                "waitforConnectionInit": "True",
-                "callsPendingReceive": 1,
-                "lastSendAttempt": "2021-12-31T23:59:59.059Z",
-                "lastSend": "2021-12-31T23:59:59.059Z",
-                "lastReceive": "2021-12-31T23:59:59.059Z"
-              },
-              "requestSizeInBytes": 2,
-              "requestBodySizeInBytes": 1,
-              "responseMetadataSizeInBytes": 1,
-              "responseBodySizeInBytes": 1
+              "serviceEndpointStats": {},
+              "connectionStats": {}
             },
             "TransportException": null
           }
@@ -422,7 +409,7 @@
         TraceForBaselineTesting rootTrace;
         using (rootTrace = TraceForBaselineTesting.GetRootTrace())
         {
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue,new TraceSummary());
             datum.ContactedReplicas.Add(default);
 
             TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf", default);
@@ -598,21 +585,8 @@
                   "durationInMs": 0
                 }
               ],
-              "serviceEndpointStats": {
-                "inflightRequests": 2,
-                "openConnections": 1
-              },
-              "connectionStats": {
-                "waitforConnectionInit": "True",
-                "callsPendingReceive": 1,
-                "lastSendAttempt": "2021-12-31T23:59:59.059Z",
-                "lastSend": "2021-12-31T23:59:59.059Z",
-                "lastReceive": "2021-12-31T23:59:59.059Z"
-              },
-              "requestSizeInBytes": 2,
-              "requestBodySizeInBytes": 1,
-              "responseMetadataSizeInBytes": 1,
-              "responseBodySizeInBytes": 1
+              "serviceEndpointStats": {},
+              "connectionStats": {}
             },
             "TransportException": null
           }
@@ -630,7 +604,7 @@
         TraceForBaselineTesting rootTrace;
         using (rootTrace = TraceForBaselineTesting.GetRootTrace())
         {
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue, new TraceSummary());
             TraceWriterBaselineTests.SetEndRequestTime(datum,DateTime.MaxValue);
 
             HttpResponseStatistics httpResponseStatistics = new HttpResponseStatistics(

@@ -54,7 +54,7 @@
 
         private TraceDatum GetDatumObject(string regionName1, string regionName2 = null)
         {
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow,new TraceSummary());
             Uri uri1 = new Uri("http://someUri1.com");
             datum.RegionsContacted.Add((regionName1, uri1));
             if (regionName2 != null)

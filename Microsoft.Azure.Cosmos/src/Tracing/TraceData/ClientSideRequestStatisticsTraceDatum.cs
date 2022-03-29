@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private SystemUsageHistory systemUsageHistory = null;
         public TraceSummary TraceSummary = null;
 
-        public ClientSideRequestStatisticsTraceDatum(DateTime startTime, TraceSummary summary = default)
+        public ClientSideRequestStatisticsTraceDatum(DateTime startTime, TraceSummary summary)
         {
             this.RequestStartTimeUtc = startTime;
             this.RequestEndTimeUtc = null;
