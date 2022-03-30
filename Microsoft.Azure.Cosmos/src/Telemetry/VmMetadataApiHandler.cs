@@ -41,14 +41,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         internal static VmMetadataApiHandler Initialize(CosmosHttpClient httpClient)
         {
+            if (VmMetadataApiHandler.instance != null)
+            {
+                return VmMetadataApiHandler.instance;
+            }
+
             lock (VmMetadataApiHandler.lockObject)
             {
-                if (VmMetadataApiHandler.instance == null)
-                {
-                    DefaultTrace.TraceInformation("Initializing VM Metadata API ");
-                    VmMetadataApiHandler.instance = new VmMetadataApiHandler(httpClient);
-                }
-
+                DefaultTrace.TraceInformation("Initializing VM Metadata API ");
+                VmMetadataApiHandler.instance = new VmMetadataApiHandler(httpClient);
+ 
                 return VmMetadataApiHandler.instance;
             }
         }
@@ -111,8 +113,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     vmMetadataUrl = new Uri(vmMetadataUrlProp);
                 }
-
-                DefaultTrace.TraceInformation($"VM metadata URL for telemetry {vmMetadataUrlProp}");
+                DefaultTrace.TraceInformation($"VM Metadata URL {vmMetadataUrlProp}");
             }
             return vmMetadataUrl;
         }
