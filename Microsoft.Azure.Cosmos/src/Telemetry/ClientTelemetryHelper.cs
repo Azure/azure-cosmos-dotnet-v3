@@ -111,6 +111,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             systemInfoCollection.Add(TelemetrySystemUsage.GetAvailableThreadsInfo(systemUsageHistory.Values));
             systemInfoCollection.Add(TelemetrySystemUsage.GetThreadWaitIntervalInMs(systemUsageHistory.Values));
             systemInfoCollection.Add(TelemetrySystemUsage.GetThreadStarvationSignalCount(systemUsageHistory.Values));
+            systemInfoCollection.Add(TelemetrySystemUsage.GetTcpConnectionCount(systemUsageHistory.Values));
         }
 
         /// <summary>
