@@ -10,7 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.5.0" />
     <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.2.0" />
-    <PackageReference Include="Microsoft.Azure.Cosmos.Encryption" Version="1.0.0-previewV20" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Encryption" Version="1.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
