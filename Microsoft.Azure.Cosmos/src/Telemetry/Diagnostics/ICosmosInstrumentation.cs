@@ -20,12 +20,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         interface ICosmosInstrumentation : IDisposable
         {
             /// <summary>
-            /// Mark Failed
-            /// </summary>
-            /// <param name="ex"></param>
-            public void MarkFailed(Exception ex);
-
-            /// <summary>
             /// Record Values
             /// </summary>
             /// <param name="requestCharge"></param>

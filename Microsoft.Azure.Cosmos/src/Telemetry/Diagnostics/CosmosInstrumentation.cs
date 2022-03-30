@@ -25,14 +25,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             this.scope.Start();
         }
 
-        public void MarkFailed(Exception ex)
-        {
-            this.Attributes.IsError = true;
-            this.Attributes.ExceptionStackTrace = ex.StackTrace;
-            
-            this.scope.Failed(ex);
-        }
-
         public void Record(double? requestCharge = null,
             string operationType = null,
             HttpStatusCode? statusCode = null, 
@@ -115,6 +107,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                     this.Attributes.ExceptionStackTrace = exception.StackTrace;
                     this.Attributes.ExceptionType = exception.GetType().ToString();
                     this.Attributes.ExceptionMessage = exception.Message;
+
+                    this.scope.Failed(exception);
                 }
                 
             }

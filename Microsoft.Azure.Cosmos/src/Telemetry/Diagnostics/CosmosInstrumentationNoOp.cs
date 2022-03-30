@@ -11,11 +11,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
     internal class CosmosInstrumentationNoOp : ICosmosInstrumentation
     {
-        public void MarkFailed(Exception ex)
-        {
-            // NoOp
-        }
-
         public void Record(ITrace trace)
         {
             // NoOp
