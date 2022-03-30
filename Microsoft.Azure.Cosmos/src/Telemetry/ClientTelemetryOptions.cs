@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const string ThreadWaitIntervalInMsUnit = "MilliSecond";
 
         // Expecting histogram to have Minimum Number of TCP connections as 1 and Maximum Number Of TCP connection as 70000
-        internal const long NumberOfTcpConnectionMax = TimeSpan.TicksPerSecond;
+        internal const long NumberOfTcpConnectionMax = 70000;
         internal const long NumberOfTcpConnectionMin = 1;
         internal const int NumberOfTcpConnectionPrecision = 2;
         internal const string NumberOfTcpConnectionName = "TcpOpenConnections";
