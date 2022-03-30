@@ -285,7 +285,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ITrace createQueryPipelineTrace = trace.StartChild("Create Query Pipeline", TraceComponent.Query, Tracing.TraceLevel.Info);
 
             // After getting the Query Plan if we find out that the query is single logical partition, then short circuit and send straight to Backend
-            if (singleLogicalPartitionKeyQuery)  
+            if (singleLogicalPartitionKeyQuery && inputParameters.PartitionKey != PartitionKey.Null && inputParameters.PartitionKey != PartitionKey.None)  
             {
                 bool parsed;
                 SqlQuery sqlQuery;

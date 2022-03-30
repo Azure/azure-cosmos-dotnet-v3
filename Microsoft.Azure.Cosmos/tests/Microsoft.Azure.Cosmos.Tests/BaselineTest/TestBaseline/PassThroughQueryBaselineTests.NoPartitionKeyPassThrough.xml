@@ -1,0 +1,15 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>No Partition Key</Description>
+      <Query>SELECT * FROM c</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <TryExecuteOnBE>false</TryExecuteOnBE>
+    </Output>
+  </Result>
+</Results>

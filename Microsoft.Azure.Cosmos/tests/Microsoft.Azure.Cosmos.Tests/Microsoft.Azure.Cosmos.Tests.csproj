@@ -228,9 +228,18 @@
     <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.Top.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-	<None Update="BaselineTest\TestBaseline\PassThroughQueryBaselineTests.PassThroughQueryTest.xml">
+    <None Update="BaselineTest\TestBaseline\PassThroughQueryBaselineTests.PartitionKeyPassThrough.xml">
 	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+	<None Update="BaselineTest\TestBaseline\PassThroughQueryBaselineTests.DistinctPassThrough.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	</None>
+    <None Update="BaselineTest\TestBaseline\PassThroughQueryBaselineTests.AggregatePassThrough.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\PassThroughQueryBaselineTests.NoPartitionKeyPassThrough.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Contracts\DotNetPreviewSDKAPI.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

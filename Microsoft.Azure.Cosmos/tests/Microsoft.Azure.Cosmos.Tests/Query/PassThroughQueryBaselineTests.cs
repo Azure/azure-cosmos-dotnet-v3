@@ -31,122 +31,96 @@
     public class PassThroughQueryBaselineTests : BaselineTests<PassThroughQueryTestInput, PassThroughQueryTestOutput>
     {
         private string query = "";
+
         [TestMethod]
         [Owner("akotalwar")]
-        public void PassThroughQueryTest()
+        public void PartitionKeyPassThrough()
         {
             this.query = "SELECT c.key FROM c";
             List<PassThroughQueryTestInput> testVariations = new List<PassThroughQueryTestInput>
             {
-                Hash( // dont use hash (maketest)
+                CreateInput(
                 @"Partition Key Field",
-                this.@query,
+                this.query,
+                true,
                 @"/key"),
             };
             this.ExecuteTestSuite(testVariations);
         }
 
-        private static readonly PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
+        [TestMethod]
+        [Owner("akotalwar")]
+        public void DistinctPassThrough()
         {
-            Paths = new Collection<string>()
+            this.query = "SELECT DISTINCT c.key FROM c";
+            List<PassThroughQueryTestInput> testVariations = new List<PassThroughQueryTestInput>
             {
-                "/pk"
-            },
-            Kind = PartitionKind.Hash,
-            Version = PartitionKeyDefinitionVersion.V2,
-        };
-
-        private static async Task<IDocumentContainer> CreateDocumentContainerAsync(
-            IReadOnlyList<CosmosObject> documents,
-            int numPartitions = 3,
-            FlakyDocumentContainer.FailureConfigs failureConfigs = null)
-        {
-            IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(partitionKeyDefinition);
-            if (failureConfigs != null)
-            {
-                monadicDocumentContainer = new FlakyDocumentContainer(monadicDocumentContainer, failureConfigs);
-            }
-
-            DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
-
-            for (int i = 0; i < numPartitions; i++)
-            {
-                IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(
-                    trace: NoOpTrace.Singleton,
-                    cancellationToken: default);
-                foreach (FeedRangeInternal range in ranges)
-                {
-                    await documentContainer.SplitAsync(range, cancellationToken: default);
-                }
-
-                await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
-            }
-
-            foreach (CosmosObject document in documents)
-            {
-                while (true)
-                {
-                    TryCatch<Record> monadicCreateRecord = await documentContainer.MonadicCreateItemAsync(
-                        document,
-                        cancellationToken: default);
-                    if (monadicCreateRecord.Succeeded)
-                    {
-                        break;
-                    }
-                }
-            }
-
-            return documentContainer;
+                CreateInput(
+                @"Partition Key and Distinct",
+                this.query,
+                false,
+                @"/key"),
+            };
+            this.ExecuteTestSuite(testVariations);
         }
 
-        private static PassThroughQueryTestInput Hash(
+        [TestMethod]
+        [Owner("akotalwar")]
+        public void AggregatePassThrough()
+        {
+            this.query = "SELECT VALUE MIN(c.key) FROM c";
+            List<PassThroughQueryTestInput> testVariations = new List<PassThroughQueryTestInput>
+            {
+                CreateInput( 
+                @"Partition Key and Min Aggregate",
+                this.query,
+                false,
+                @"/key"),
+            };
+            this.ExecuteTestSuite(testVariations);
+        }
+
+        [TestMethod]
+        [Owner("akotalwar")]
+        public void NoPartitionKeyPassThrough()
+        {
+            this.query = "SELECT * FROM c";
+            List<PassThroughQueryTestInput> testVariations = new List<PassThroughQueryTestInput>
+            {
+                CreateInput(
+                @"No Partition Key",
+                this.query,
+                false),
+            };
+            this.ExecuteTestSuite(testVariations);
+        }
+
+        private static PassThroughQueryTestInput CreateInput(
             string description,
             string query,
+            bool expectedValueForTest,
             params string[] partitionkeys) => new PassThroughQueryTestInput(
                 description,
-                CreateHashPartitionKey(partitionkeys),
-                new SqlQuerySpec(query));
-
-        private static PassThroughQueryTestInput Hash(
-            string description,
-            SqlQuerySpec query,
-            params string[] partitionkeys) => new PassThroughQueryTestInput(
-                description,
-                CreateHashPartitionKey(partitionkeys),
-                query);
-
-        private static PartitionKeyDefinition CreateHashPartitionKey(
-            params string[] partitionKeys) => new PartitionKeyDefinition()
-            {
-                Paths = new Collection<string>(partitionKeys),
-                Kind = Microsoft.Azure.Documents.PartitionKind.Hash
-            };
-
-        private static PartitionKeyDefinition CreateRangePartitionKey(
-            params string[] partitionKeys) => new PartitionKeyDefinition()
-            {
-                Paths = new Collection<string>(partitionKeys),
-                Kind = PartitionKind.Range
-            };
+                new SqlQuerySpec(query),
+                expectedValueForTest,
+                partitionkeys);
 
         public override PassThroughQueryTestOutput ExecuteTest(PassThroughQueryTestInput input)
         {
             // this gets DocumentContainer
-            IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(partitionKeyDefinition);
-            FlakyDocumentContainer.FailureConfigs failureConfigs = null;
-            if (failureConfigs != null)
-            {
-                monadicDocumentContainer = new FlakyDocumentContainer(monadicDocumentContainer, failureConfigs);
-            }
+            IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(input.PartitionKeyDefinition);
             DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
 
             // this gets PartionedQueryExecutionContext
+            DistinctQueryType distinctType = this.query.Contains("DISTINCT") ? DistinctQueryType.Ordered : DistinctQueryType.None;
+            List<AggregateOperator> aggregates = this.query.Contains("MIN") ? new List<AggregateOperator>() { AggregateOperator.Min } : null;
+           
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = new PartitionedQueryExecutionInfo()
             {
                 QueryInfo = new QueryInfo()
                 {
-                    Aggregates = null,
-                    DistinctType = DistinctQueryType.None,
+                    Aggregates = aggregates,
+                    DistinctType = distinctType,
                     GroupByAliases = null,
                     GroupByAliasToAggregateType = null,
                     GroupByExpressions = null,
@@ -162,12 +136,11 @@
             };
 
             // this is container query properties
-            PartitionKeyDefinition PKDefinition = new PartitionKeyDefinition();
             const string resourceId = "resourceId";
             ContainerQueryProperties containerQueryProperties = new ContainerQueryProperties(
-                    resourceId,
-                    null,
-                    PKDefinition);
+                resourceId,
+                null,
+                input.PartitionKeyDefinition);
 
             // gets query context
             string databaseId = "db1234";
@@ -186,22 +159,21 @@
             // this gets input parameters
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
             SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(this.query);
-            Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey("pk");
 
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
-            sqlQuerySpec: sqlQuerySpec,
-            initialUserContinuationToken: null,
-            initialFeedRange: null,
-            maxConcurrency: queryRequestOptions.MaxConcurrency,
-            maxItemCount: queryRequestOptions.MaxItemCount,
-            maxBufferedItemCount: queryRequestOptions.MaxBufferedItemCount,
-            partitionKey: partitionKey,
-            properties: queryRequestOptions.Properties,
-            partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
-            executionEnvironment: null,
-            returnResultsInDeterministicOrder: null,
-            forcePassthrough: true,
-            testInjections: null);
+                sqlQuerySpec: sqlQuerySpec,
+                initialUserContinuationToken: null,
+                initialFeedRange: null,
+                maxConcurrency: queryRequestOptions.MaxConcurrency,
+                maxItemCount: queryRequestOptions.MaxItemCount,
+                maxBufferedItemCount: queryRequestOptions.MaxBufferedItemCount,
+                partitionKey: input.PartitionKey,
+                properties: queryRequestOptions.Properties,
+                partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
+                executionEnvironment: null,
+                returnResultsInDeterministicOrder: null,
+                forcePassthrough: true,
+                testInjections: null);
             
             ITrace trace = NoOpTrace.Singleton;
             CancellationToken cancellationToken = new CancellationToken();
@@ -217,8 +189,16 @@
                 cancellationToken);
             
             bool isPassThrough = inputParameters.SqlQuerySpec.options.IsPassThrough;
-            Assert.IsTrue(isPassThrough);
-            Assert.IsTrue(queryPipelineStage != null);
+            if (input.ExpectedValueFromTest)
+            {
+                Assert.IsTrue(isPassThrough, "Expected true for PassThrough query");
+            }
+            else 
+            {
+                Assert.IsFalse(isPassThrough, "Expected false for PassThrough query");
+            }
+
+            Assert.IsTrue(queryPipelineStage != null, "Expected queryPipelineStage to not be null");
 
             return new PassThroughQueryTestOutput(isPassThrough);
         }
@@ -245,17 +225,30 @@
     {
         internal PartitionKeyDefinition PartitionKeyDefinition { get; set; }
         internal SqlQuerySpec SqlQuerySpec { get; set; }
-        internal PartitionKey PartitionKey { get; set; } 
+        internal Cosmos.PartitionKey PartitionKey { get; set; }
+        internal bool ExpectedValueFromTest { get; set; }
         internal PartitionKeyRangeIdentity PartitionKeyRangeId { get; set; }
 
         internal PassThroughQueryTestInput(
             string description,
-            PartitionKeyDefinition partitionKeyDefinition,
-            SqlQuerySpec sqlQuerySpec)
+            SqlQuerySpec sqlQuerySpec,
+            bool expectedValueFromTest,
+            string[] partitionKeys
+            )
             : base(description)
         {
-            this.PartitionKeyDefinition = partitionKeyDefinition;
+            this.PartitionKeyDefinition = partitionKeys == null ? null : new PartitionKeyDefinition()
+            {
+                Paths = new Collection<string>()
+            {
+                "/key"
+            },
+                Kind = PartitionKind.Hash,
+                Version = PartitionKeyDefinitionVersion.V2,
+            };
             this.SqlQuerySpec = sqlQuerySpec;
+            this.ExpectedValueFromTest = expectedValueFromTest;
+            this.PartitionKey = partitionKeys.Length == 0 ? Cosmos.PartitionKey.None : new Cosmos.PartitionKey(partitionKeys[0]);
         }
 
         public override void SerializeAsXml(XmlWriter xmlWriter)
