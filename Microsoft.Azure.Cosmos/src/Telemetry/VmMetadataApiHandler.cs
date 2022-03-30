@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Net.Http;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -27,6 +28,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private static VmMetadataApiHandler instance = null;
         private static Uri vmMetadataUrl;
+        private static bool isInitialized = false;
 
         private static volatile AzureVMMetadata azMetadata = null;
 
@@ -41,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         internal static VmMetadataApiHandler Initialize(CosmosHttpClient httpClient)
         {
-            if (VmMetadataApiHandler.instance != null)
+            if (VmMetadataApiHandler.isInitialized)
             {
                 return VmMetadataApiHandler.instance;
             }
@@ -50,7 +52,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 DefaultTrace.TraceInformation("Initializing VM Metadata API ");
                 VmMetadataApiHandler.instance = new VmMetadataApiHandler(httpClient);
- 
+
+                VmMetadataApiHandler.isInitialized = true;
+
                 return VmMetadataApiHandler.instance;
             }
         }
@@ -81,14 +85,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                  cancellationToken: default);
                 azMetadata = await VmMetadataApiHandler.ProcessResponseAsync(response);
 
-                DefaultTrace.TraceWarning("Succesfully get Instance Metedata Response : " + azMetadata.Compute.VMId);
+                DefaultTrace.TraceWarning($"Succesfully get Instance Metedata Response : {azMetadata.Compute.VMId}");
 
             }
             catch (Exception ex)
             {
-                VmMetadataApiHandler.azMetadata = null;
+                DefaultTrace.TraceWarning($"Exception while making metadata call {ex}");
 
-                DefaultTrace.TraceWarning("Exception while making metadata call " + ex.ToString());
+                this.Dispose();
             }
 
         }
@@ -132,6 +136,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             this.apiCallTask = null;
             VmMetadataApiHandler.instance = null;
+            VmMetadataApiHandler.isInitialized = false;
         }
     }
 }
