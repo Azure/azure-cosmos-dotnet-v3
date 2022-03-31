@@ -24,7 +24,7 @@
         private readonly List<double> getCosmosElementResponseTimeList = new();
         private const string cosmosDatabaseId = "";
         private const string containerId = "";
-        private const string contentSerialization = "CosmosBinary";
+        private const string contentSerialization = "";
         private const string query = "";
         private const int numberOfIterations = 30;
         private const int warmupIterations = 10;
@@ -36,7 +36,6 @@
             {
                 string authKey = System.Configuration.ConfigurationManager.AppSettings["MasterKey"];
                 string endpoint = System.Configuration.ConfigurationManager.AppSettings["GatewayEndpoint"];
-
                 using (CosmosClient client = new CosmosClient(endpoint, authKey,
                     new CosmosClientOptions
                     {
@@ -46,7 +45,6 @@
                     await this.RunAsync(client);
                 }
             }
-
             catch (CosmosException cre)
             {
                 Assert.Fail(cre.ToString());
@@ -63,7 +61,6 @@
             {
                 await this.RunQueryAsync(container, query);
             }
-
             using (TextWriter rawDataFile = new StreamWriter(rawDataPath))
             {
                 this.SerializeAsync(rawDataFile, this.queryStatisticsAccumulator, true);
@@ -152,7 +149,7 @@
             string backendNodeValue = "[,FF) move next";
             ITrace trace = ((CosmosTraceDiagnostics)Response.Diagnostics).Value;
             ContentSerializationPerformanceTests contentSerializationPerformanceTests = new();
-            List<ITrace> backendMetrics = contentSerializationPerformanceTests.FindQueryMetrics(trace, backendKeyValue, backendNodeValue);
+            List<ITrace> backendMetrics = contentSerializationPerformanceTests.FindQueryMetrics(trace, backendNodeValue, backendKeyValue);
             if (backendMetrics != null)
             {
                 foreach (ITrace node in backendMetrics)
@@ -163,10 +160,9 @@
                     }
                 }
             }
-
             string transportKeyValue = "Client Side Request Stats";
             string transportNodeValue = "Microsoft.Azure.Documents.ServerStoreModel Transport Request";
-            List<ITrace> transitMetrics = contentSerializationPerformanceTests.FindQueryMetrics(trace, transportKeyValue, transportNodeValue);
+            List<ITrace> transitMetrics = contentSerializationPerformanceTests.FindQueryMetrics(trace, transportNodeValue, transportKeyValue);
             if (transitMetrics != null)
             {
                 foreach (ITrace node in transitMetrics)
@@ -184,10 +180,13 @@
                 this.pocoTimeList.Add(poco.Duration.TotalMilliseconds);
             }
             string clientDeserializationTimeNode = "Get Cosmos Element Response";
-            ITrace getCosmosElementResponse = contentSerializationPerformanceTests.FindQueryClientMetrics(trace, clientDeserializationTimeNode);
+            List<ITrace> getCosmosElementResponse = contentSerializationPerformanceTests.FindQueryMetrics(trace, clientDeserializationTimeNode);
             if (getCosmosElementResponse != null)
             {
-                this.getCosmosElementResponseTimeList.Add(getCosmosElementResponse.Duration.TotalMilliseconds);
+                foreach (ITrace getCosmos in getCosmosElementResponse)
+                {
+                    this.getCosmosElementResponseTimeList.Add(getCosmos.Duration.TotalMilliseconds);
+                }
             }
         }
 
@@ -197,7 +196,7 @@
             string backendNodeValue = "[,FF) move next";
             ITrace trace = ((CosmosTraceDiagnostics)Response.Diagnostics).Value;
             ContentSerializationPerformanceTests contentSerializationPerformanceTests = new();
-            List<ITrace> backendMetrics = contentSerializationPerformanceTests.FindQueryMetrics(trace, backendKeyValue, backendNodeValue);
+            List<ITrace> backendMetrics = contentSerializationPerformanceTests.FindQueryMetrics(trace, backendNodeValue, backendKeyValue);
             if (backendMetrics != null)
             {
                 foreach (ITrace node in backendMetrics)
@@ -208,10 +207,9 @@
                     }
                 }
             }
-
             string transportKeyValue = "Client Side Request Stats";
             string transportNodeValue = "Microsoft.Azure.Documents.ServerStoreModel Transport Request";
-            List<ITrace> transitMetrics = contentSerializationPerformanceTests.FindQueryMetrics(trace, transportKeyValue, transportNodeValue);
+            List<ITrace> transitMetrics = contentSerializationPerformanceTests.FindQueryMetrics(trace, transportNodeValue, transportKeyValue);
             if (transitMetrics != null)
             {
                 foreach (ITrace node in transitMetrics)
@@ -235,7 +233,7 @@
                 this.getCosmosElementResponseTimeList.Add(getCosmosElementResponse.Duration.TotalMilliseconds);
             }
         }
-        private List<ITrace> FindQueryMetrics(ITrace trace, string keyName, string nodeName)
+        private List<ITrace> FindQueryMetrics(ITrace trace, string nodeName, string keyName = null)
         {
             List<ITrace> queryMetricsNodes = new();
             Queue<ITrace> queue = new Queue<ITrace>();
@@ -243,11 +241,14 @@
             while (queue.Count > 0)
             {
                 ITrace node = queue.Dequeue();
-                if (node.Data.ContainsKey(keyName) && node.Name == nodeName)
+                if (keyName != null && node.Data.ContainsKey(keyName) && node.Name == nodeName)
                 {
                     queryMetricsNodes.Add(node);
                 }
-
+                else if (node.Name == nodeName)
+                {
+                    queryMetricsNodes.Add(node);
+                }
                 foreach (ITrace child in node.Children)
                 {
                     queue.Enqueue(child);

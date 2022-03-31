@@ -15,10 +15,8 @@
         private class RequestTimeline
         {
             public DateTime StartTimeUtc { get; set; }
-
             public EventType Event { get; set; }
             public double DurationInMs { get; set; }
-
             [JsonConverter(typeof(StringEnumConverter))]
             public enum EventType
             {
@@ -48,10 +46,6 @@
                 .AddDocumentLoadTime(queryMetricsTraceDatum.QueryMetrics.BackendMetrics.DocumentLoadTime.TotalMilliseconds)
                 .AddDocumentWriteTime(queryMetricsTraceDatum.QueryMetrics.BackendMetrics.DocumentWriteTime.TotalMilliseconds)
                 .Build();
-        }
-
-        public void Visit(PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
-        {
         }
 
         public void Visit(ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
@@ -133,6 +127,10 @@
             }
         }
 
+        public void Visit(PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
+        {
+        }
+
         public void Visit(CpuHistoryTraceDatum cpuHistoryTraceDatum)
         {
         }
@@ -140,6 +138,5 @@
         public void Visit(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
         {
         }
-
     }
 }
