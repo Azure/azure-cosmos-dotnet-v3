@@ -249,7 +249,9 @@
                 }
 
                 foreach (ITrace child in node.Children)
+                {
                     queue.Enqueue(child);
+                }
             }
             return queryMetricsNodes;
         }
@@ -267,7 +269,9 @@
                 }
 
                 foreach (ITrace child in node.Children)
+                {
                     queue.Enqueue(child);
+                }
             }
             throw new Exception(name + " not found in Diagnostics");
         }
