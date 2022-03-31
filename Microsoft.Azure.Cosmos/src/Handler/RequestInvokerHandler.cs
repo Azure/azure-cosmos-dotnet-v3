@@ -186,7 +186,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                                                        containerId: cosmosContainerCore?.Id,
                                                                        databaseId: cosmosContainerCore?.Database?.Id,
                                                                        exception: dce,
-                                                                       subStatusCode: response?.Headers?.SubStatusCode.ToSubStatusCodeString(),
                                                                        itemCount: Convert.ToInt32(request?.Headers?.PageSize));
 
                                     return response;
@@ -201,7 +200,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                                                        containerId: cosmosContainerCore?.Id,
                                                                        databaseId: cosmosContainerCore?.Database?.Id,
                                                                        exception: ce,
-                                                                       subStatusCode: response?.Headers?.SubStatusCode.ToSubStatusCodeString(),
                                                                        itemCount: Convert.ToInt32(request?.Headers?.PageSize));
 
                                     return response;
@@ -237,7 +235,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                                                    containerId: cosmosContainerCore?.Id,
                                                                    databaseId: cosmosContainerCore?.Database?.Id,
                                                                    exception: ex,
-                                                                   subStatusCode: response?.Headers?.SubStatusCode.ToSubStatusCodeString(),
                                                                    itemCount: Convert.ToInt32(request?.Headers?.PageSize));
 
                                 return response;
@@ -265,7 +262,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                                                    containerId: cosmosContainerCore?.Id,
                                                                    databaseId: cosmosContainerCore?.Database?.Id,
                                                                    exception: notFound,
-                                                                   subStatusCode: response?.Headers?.SubStatusCode.ToSubStatusCodeString(),
                                                                    itemCount: Convert.ToInt32(request?.Headers?.PageSize));
 
                                 return response;
@@ -292,7 +288,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                                                    containerId: cosmosContainerCore?.Id,
                                                                    databaseId: cosmosContainerCore?.Database?.Id,
                                                                    exception: goneException,
-                                                                   subStatusCode: response?.Headers?.SubStatusCode.ToSubStatusCodeString(),
                                                                    itemCount: Convert.ToInt32(request?.Headers?.PageSize));
 
                                 return response;
@@ -350,7 +345,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                                        statusCode: response.StatusCode,
                                                        containerId: cosmosContainerCore?.Id,
                                                        databaseId: cosmosContainerCore?.Database?.Id,
-                                                       subStatusCode: response?.Headers?.SubStatusCode.ToSubStatusCodeString(),
                                                        itemCount: Convert.ToInt32(request?.Headers?.PageSize),
                                                        requestSize: request?.Content?.Length,
                                                        responseSize: response?.Content?.Length);

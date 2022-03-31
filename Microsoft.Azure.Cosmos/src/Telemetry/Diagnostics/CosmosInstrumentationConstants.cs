@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         public const string DbName = "db.name";
         public const string DbOperation = "db.operation";
 
-        public const string Account = "db.cosmosdb.account";
+        public const string NetPeerName = "net.peer.name";
         public const string ContainerName = "db.cosmosdb.container";
         public const string PartitionId = "db.cosmosdb.partitionId";
         public const string StatusCode = "db.cosmosdb.status_code";

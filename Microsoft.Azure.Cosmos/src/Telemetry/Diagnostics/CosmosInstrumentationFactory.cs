@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
-    using System;
     using global::Azure.Core.Pipeline;
 
     internal static class CosmosInstrumentationFactory
@@ -19,8 +18,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             DiagnosticScope scope = CosmosInstrumentationFactory
                 .ScopeFactory
                 .CreateScope($"{CosmosInstrumentationConstants.OperationPrefix}.{operationName}");
-
-            Console.WriteLine(scope);
 
             if (scope.IsEnabled)
             {
