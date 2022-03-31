@@ -191,11 +191,11 @@
             bool isPassThrough = inputParameters.SqlQuerySpec.options.IsPassThrough;
             if (input.ExpectedValueFromTest)
             {
-                Assert.IsTrue(isPassThrough, "Expected true for PassThrough query");
+                Assert.AreEqual(input.ExpectedValueFromTest, inputParameters.SqlQuerySpec.options.IsPassThrough, "Expected true for PassThrough query");
             }
             else 
             {
-                Assert.IsFalse(isPassThrough, "Expected false for PassThrough query");
+                Assert.AreEqual(input.ExpectedValueFromTest, inputParameters.SqlQuerySpec.options.IsPassThrough, "Expected false for PassThrough query");
             }
 
             Assert.IsTrue(queryPipelineStage != null, "Expected queryPipelineStage to not be null");

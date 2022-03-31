@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// <param name="queryText">The text of the database query.</param>
         /// <param name="parameters">The <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of query parameters.</param>
         public SqlQuerySpec(string queryText, SqlParameterCollection parameters)
-        : this(queryText, parameters, new SqlQueryOptions())
+            : this(queryText, parameters, new SqlQueryOptions())
         {
         }
 

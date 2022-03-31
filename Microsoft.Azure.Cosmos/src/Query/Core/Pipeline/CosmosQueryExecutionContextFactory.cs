@@ -279,12 +279,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 && !partitionedQueryExecutionInfo.QueryInfo.HasOffset;
             bool streamingCrossContinuationQuery = !singleLogicalPartitionKeyQuery && clientStreamingQuery;
 
-            bool createPassthoughQuery = streamingSinglePartitionQuery || streamingCrossContinuationQuery;
+            bool createPassthroughQuery = streamingSinglePartitionQuery || streamingCrossContinuationQuery;
             
             TryCatch<IQueryPipelineStage> tryCreatePipelineStage;
             ITrace createQueryPipelineTrace = trace.StartChild("Create Query Pipeline", TraceComponent.Query, Tracing.TraceLevel.Info);
 
             // After getting the Query Plan if we find out that the query is single logical partition, then short circuit and send straight to Backend
+            /*
+            Extra checks added because inputParams.Partition.GetType returns a true value causing singleLogicalPartitionKeyQuery to be true
+            and hence certain queries which should not be considered as pass through to be considered as that
+            */
             if (singleLogicalPartitionKeyQuery && inputParameters.PartitionKey != PartitionKey.Null && inputParameters.PartitionKey != PartitionKey.None)  
             {
                 bool parsed;
@@ -299,9 +303,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     bool hasDistinct = sqlQuery.SelectClause.HasDistinct;
                     bool hasGroupBy = sqlQuery.GroupByClause != default;
                     bool hasAggregates = AggregateProjectionDetector.HasAggregate(sqlQuery.SelectClause.SelectSpec);
-                    bool createPassthroughQuery = !hasAggregates && !hasDistinct && !hasGroupBy;
+                    bool createTryExecute = !hasAggregates && !hasDistinct && !hasGroupBy;
 
-                    if (createPassthroughQuery)
+                    if (createTryExecute)
                     {
                         //TODO: Add new pass through pipeline code here 
                         // Set the IsPassThrough check in SqlQuerySpec to be true
@@ -310,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 }
             }
 
-            if (createPassthoughQuery)
+            if (createPassthroughQuery)
             {
                 TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
                 if (responseStats != null)
