@@ -109,6 +109,7 @@ namespace Microsoft.Azure.Cosmos
         private const bool DefaultEnableCpuMonitor = true;
         private const string DefaultInitTaskKey = "InitTaskKey";
 
+        private readonly bool IsLocalQuorumConsistency = false;
         //Auth
         private readonly AuthorizationTokenProvider cosmosAuthorization;
 
@@ -164,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
         private AsyncLazy<QueryPartitionProvider> queryPartitionProvider;
 
         private DocumentClientEventSource eventSource;
-        private Func<Task<bool>> initializeTaskFactory;
+        private Func<bool, Task<bool>> initializeTaskFactory;
         internal AsyncCacheNonBlocking<string, bool> initTaskCache = new AsyncCacheNonBlocking<string, bool>();
 
         private JsonSerializerSettings serializerSettings;
@@ -410,6 +411,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="enableCpuMonitor">Flag that indicates whether client-side CPU monitoring is enabled for improved troubleshooting.</param>
         /// <param name="transportClientHandlerFactory">Transport client handler factory.</param>
         /// <param name="storeClientFactory">Factory that creates store clients sharing the same transport client to optimize network resource reuse across multiple document clients in the same process.</param>
+        /// <param name="isLocalQuorumConsistency">Flag to allow Quorum Read with Eventual Consistency Account</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -433,7 +435,8 @@ namespace Microsoft.Azure.Cosmos
                               ISessionContainer sessionContainer = null,
                               bool? enableCpuMonitor = null,
                               Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
-                              IStoreClientFactory storeClientFactory = null)
+                              IStoreClientFactory storeClientFactory = null,
+                              bool isLocalQuorumConsistency = false)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -454,6 +457,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.cosmosAuthorization = cosmosAuthorization ?? throw new ArgumentNullException(nameof(cosmosAuthorization));
             this.transportClientHandlerFactory = transportClientHandlerFactory;
+            this.IsLocalQuorumConsistency = isLocalQuorumConsistency;
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -915,33 +919,28 @@ namespace Microsoft.Azure.Cosmos
             // For direct: WFStoreProxy [set in OpenAsync()].
             this.eventSource = DocumentClientEventSource.Instance;
 
-            this.initializeTaskFactory = () =>
-            {
-                Task<bool> task = TaskHelper.InlineIfPossible<bool>(
+            this.initializeTaskFactory = (_) => TaskHelper.InlineIfPossible<bool>(
                     () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
                     new ResourceThrottleRetryPolicy(
                         this.ConnectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests,
                         this.ConnectionPolicy.RetryOptions.MaxRetryWaitTimeInSeconds));
 
-                // ContinueWith on the initialization task is needed for handling the UnobservedTaskException
-                // if this task throws for some reason. Awaiting inside a constructor is not supported and
-                // even if we had to await inside GetInitializationTask to catch the exception, that will
-                // be a blocking call. In such cases, the recommended approach is to "handle" the
-                // UnobservedTaskException by using ContinueWith method w/ TaskContinuationOptions.OnlyOnFaulted
-                // and accessing the Exception property on the target task.
-#pragma warning disable VSTHRD110 // Observe result of async calls
-                task.ContinueWith(t => DefaultTrace.TraceWarning("initializeTask failed {0}", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
-#pragma warning restore VSTHRD110 // Observe result of async calls
-                return task;
-            };
-
             // Create the task to start the initialize task
             // Task will be awaited on in the EnsureValidClientAsync
-            _ = this.initTaskCache.GetAsync(
+            Task initTask = this.initTaskCache.GetAsync(
                        key: DocumentClient.DefaultInitTaskKey,
                        singleValueInitFunc: this.initializeTaskFactory,
-                       forceRefresh: false,
-                       callBackOnForceRefresh: null);
+                       forceRefresh: (_) => false);
+
+            // ContinueWith on the initialization task is needed for handling the UnobservedTaskException
+            // if this task throws for some reason. Awaiting inside a constructor is not supported and
+            // even if we had to await inside GetInitializationTask to catch the exception, that will
+            // be a blocking call. In such cases, the recommended approach is to "handle" the
+            // UnobservedTaskException by using ContinueWith method w/ TaskContinuationOptions.OnlyOnFaulted
+            // and accessing the Exception property on the target task.
+#pragma warning disable VSTHRD110 // Observe result of async calls
+            initTask.ContinueWith(t => DefaultTrace.TraceWarning("initializeTask failed {0}", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+#pragma warning restore VSTHRD110 // Observe result of async calls
 
             this.traceId = Interlocked.Increment(ref DocumentClient.idCounter);
             DefaultTrace.TraceInformation(string.Format(
@@ -1450,8 +1449,7 @@ namespace Microsoft.Azure.Cosmos
                     this.isSuccessfullyInitialized = await this.initTaskCache.GetAsync(
                         key: DocumentClient.DefaultInitTaskKey,
                         singleValueInitFunc: this.initializeTaskFactory,
-                        forceRefresh: false,
-                        callBackOnForceRefresh: null);
+                        forceRefresh: (_) => false);
                 }
                 catch (DocumentClientException ex)
                 {
@@ -1461,7 +1459,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (Exception e)
                 {
-                    DefaultTrace.TraceWarning("initializeTask failed {0}", e);
+                    DefaultTrace.TraceWarning("EnsureValidClientAsync initializeTask failed {0}", e);
                     childTrace.AddDatum("initializeTask failed", e);
                     throw;
                 }
@@ -1534,7 +1532,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateResource(database);
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Create, ResourceType.Database);
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Create,
@@ -1774,7 +1772,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("document");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Create, ResourceType.Document);
             Document typedDocument = Document.FromObject(document, this.GetSerializerSettingsForRequest(options));
 
             this.ValidateResource(typedDocument);
@@ -1869,7 +1867,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(documentCollection);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Create, ResourceType.Collection);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Create,
                 databaseLink,
@@ -2057,7 +2055,7 @@ namespace Microsoft.Azure.Cosmos
                 options.RestorePointInTime = Helpers.ToUnixTime(restoreTime.Value);
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Create, ResourceType.Collection);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Create,
                 databaseLink,
@@ -2184,7 +2182,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateResource(storedProcedure);
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Create, ResourceType.StoredProcedure);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Create,
                 collectionLink,
@@ -2279,7 +2277,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(trigger);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Create, ResourceType.Trigger);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Create,
                 collectionLink,
@@ -2365,7 +2363,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(function);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Create, ResourceType.UserDefinedFunction);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Create,
                 collectionLink,
@@ -2438,7 +2436,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(userDefinedType);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Create, ResourceType.UserDefinedType);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Create,
                 databaseLink,
@@ -2522,7 +2520,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateResource(snapshot);
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Create, ResourceType.Snapshot);
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Create,
@@ -2585,7 +2583,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("databaseLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Delete, ResourceType.Database);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
                 ResourceType.Database,
@@ -2643,7 +2641,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("documentLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Delete, ResourceType.Document);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
                 ResourceType.Document,
@@ -2702,7 +2700,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("documentCollectionLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Delete, ResourceType.Collection);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
                 ResourceType.Collection,
@@ -2759,7 +2757,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("storedProcedureLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Delete, ResourceType.StoredProcedure);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
                 ResourceType.StoredProcedure,
@@ -2816,7 +2814,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("triggerLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Delete, ResourceType.Trigger);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
                 ResourceType.Trigger,
@@ -2873,7 +2871,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("functionLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Delete, ResourceType.UserDefinedFunction);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
                 ResourceType.UserDefinedFunction,
@@ -2930,7 +2928,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("conflictLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Delete, ResourceType.Conflict);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
                 ResourceType.Conflict,
@@ -2988,7 +2986,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("snapshotLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Delete, ResourceType.Snapshot);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Delete,
                 ResourceType.Snapshot,
@@ -3031,7 +3029,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(documentCollection);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Replace, ResourceType.Collection);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Replace,
                 altLink ?? this.GetLinkForRouting(documentCollection),
@@ -3212,7 +3210,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(document);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Replace, ResourceType.Document);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Replace,
                 documentLink,
@@ -3288,7 +3286,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(storedProcedure);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Replace, ResourceType.StoredProcedure);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Replace,
                 altLink ?? this.GetLinkForRouting(storedProcedure),
@@ -3358,7 +3356,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(trigger);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Replace, ResourceType.Trigger);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Replace,
                 altLink ?? this.GetLinkForRouting(trigger),
@@ -3432,7 +3430,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(function);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Replace, ResourceType.UserDefinedFunction);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Replace,
                 altLink ?? this.GetLinkForRouting(function),
@@ -3567,7 +3565,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(userDefinedType);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Replace, ResourceType.UserDefinedType);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Replace,
                 altLink ?? this.GetLinkForRouting(userDefinedType),
@@ -3648,7 +3646,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("databaseLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.Database);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.Database,
@@ -3728,7 +3726,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("documentLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.Document);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.Document,
@@ -3810,7 +3808,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("documentLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.Document);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.Document,
@@ -3893,7 +3891,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("documentCollectionLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.Collection);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.Collection,
@@ -3972,7 +3970,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("storedProcedureLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.StoredProcedure);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.StoredProcedure,
@@ -4051,7 +4049,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("triggerLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.Trigger);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.Trigger,
@@ -4130,7 +4128,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("functionLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.UserDefinedFunction);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.UserDefinedFunction,
@@ -4209,7 +4207,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("conflictLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.Conflict);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.Conflict,
@@ -4374,7 +4372,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("documentSchemaLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.Schema);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.Schema,
@@ -4454,7 +4452,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("userDefinedTypeLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.UserDefinedType);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.UserDefinedType,
@@ -4530,7 +4528,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("snapshotLink");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Read, ResourceType.Snapshot);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Read,
                 ResourceType.Snapshot,
@@ -5480,7 +5478,7 @@ namespace Microsoft.Azure.Cosmos
                     await writer.FlushAsync();
                     storedProcedureInputStream.Position = 0;
 
-                    INameValueCollection headers = this.GetRequestHeaders(options);
+                    INameValueCollection headers = this.GetRequestHeaders(options, OperationType.ExecuteJavaScript, ResourceType.StoredProcedure);
                     using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                         OperationType.ExecuteJavaScript,
                         ResourceType.StoredProcedure,
@@ -5568,7 +5566,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateResource(database);
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Upsert, ResourceType.Database);
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Upsert,
@@ -5726,7 +5724,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("document");
             }
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Upsert, ResourceType.Document);
             Document typedDocument = Document.FromObject(document, this.GetSerializerSettingsForRequest(options));
             this.ValidateResource(typedDocument);
 
@@ -5876,7 +5874,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateResource(storedProcedure);
 
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Upsert, ResourceType.StoredProcedure);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Upsert,
                 collectionLink,
@@ -5971,7 +5969,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(trigger);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Upsert, ResourceType.Trigger);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Upsert,
                 collectionLink,
@@ -6057,7 +6055,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(function);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Upsert, ResourceType.UserDefinedFunction);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Upsert,
                 collectionLink,
@@ -6130,7 +6128,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateResource(userDefinedType);
-            INameValueCollection headers = this.GetRequestHeaders(options);
+            INameValueCollection headers = this.GetRequestHeaders(options, OperationType.Upsert, ResourceType.UserDefinedType);
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.Upsert,
                 databaseLink,
@@ -6459,10 +6457,17 @@ namespace Microsoft.Azure.Cosmos
             return resource.SelfLink ?? resource.AltLink;
         }
 
-        internal void EnsureValidOverwrite(Documents.ConsistencyLevel desiredConsistencyLevel)
+        internal void EnsureValidOverwrite(
+            Documents.ConsistencyLevel desiredConsistencyLevel,
+            OperationType? operationType = null,
+            ResourceType? resourceType = null)
         {
             Documents.ConsistencyLevel defaultConsistencyLevel = this.accountServiceConfiguration.DefaultConsistencyLevel;
-            if (!this.IsValidConsistency(defaultConsistencyLevel, desiredConsistencyLevel))
+            if (!this.IsValidConsistency(
+                        defaultConsistencyLevel, 
+                        desiredConsistencyLevel,
+                        operationType,
+                        resourceType))
             {
                 throw new ArgumentException(string.Format(
                     CultureInfo.CurrentUICulture,
@@ -6472,14 +6477,23 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private bool IsValidConsistency(Documents.ConsistencyLevel backendConsistency, Documents.ConsistencyLevel desiredConsistency)
+        private bool IsValidConsistency(
+            Documents.ConsistencyLevel backendConsistency, 
+            Documents.ConsistencyLevel desiredConsistency,
+            OperationType? operationType,
+            ResourceType? resourceType)
         {
             if (this.allowOverrideStrongerConsistency)
             {
                 return true;
             }
 
-            return ValidationHelpers.IsValidConsistencyLevelOverwrite(backendConsistency, desiredConsistency);
+            return ValidationHelpers.IsValidConsistencyLevelOverwrite(
+                backendConsistency: backendConsistency,
+                desiredConsistency: desiredConsistency,
+                isLocalQuorumConsistency: this.IsLocalQuorumConsistency,
+                operationType: operationType,
+                resourceType: resourceType);
         }
 
         private void InitializeDirectConnectivity(IStoreClientFactory storeClientFactory)
@@ -6705,7 +6719,10 @@ namespace Microsoft.Azure.Cosmos
             return requestOptions?.JsonSerializerSettings ?? this.serializerSettings;
         }
 
-        private INameValueCollection GetRequestHeaders(Documents.Client.RequestOptions options)
+        private INameValueCollection GetRequestHeaders(
+            Documents.Client.RequestOptions options,
+            OperationType operationType,
+            ResourceType resourceType)
         {
             Debug.Assert(
                 this.isSuccessfullyInitialized,
@@ -6721,7 +6738,11 @@ namespace Microsoft.Azure.Cosmos
             if (this.desiredConsistencyLevel.HasValue)
             {
                 // check anyways since default consistency level might have been refreshed.
-                if (!this.IsValidConsistency(this.accountServiceConfiguration.DefaultConsistencyLevel, this.desiredConsistencyLevel.Value))
+                if (!this.IsValidConsistency(
+                            backendConsistency: this.accountServiceConfiguration.DefaultConsistencyLevel, 
+                            desiredConsistency: this.desiredConsistencyLevel.Value,
+                            operationType: operationType,
+                            resourceType: resourceType))
                 {
                     throw new ArgumentException(string.Format(
                             CultureInfo.CurrentUICulture,
@@ -6752,7 +6773,11 @@ namespace Microsoft.Azure.Cosmos
 
             if (options.ConsistencyLevel.HasValue)
             {
-                if (!this.IsValidConsistency(this.accountServiceConfiguration.DefaultConsistencyLevel, options.ConsistencyLevel.Value))
+                if (!this.IsValidConsistency(
+                            backendConsistency: this.accountServiceConfiguration.DefaultConsistencyLevel,
+                            desiredConsistency: options.ConsistencyLevel.Value,
+                            operationType: operationType,
+                            resourceType: resourceType))
                 {
                     throw new ArgumentException(string.Format(
                             CultureInfo.CurrentUICulture,

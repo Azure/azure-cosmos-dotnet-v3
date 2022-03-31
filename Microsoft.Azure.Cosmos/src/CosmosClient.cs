@@ -451,6 +451,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The <see cref="Cosmos.CosmosClientOptions"/> used initialize CosmosClient.
         /// </summary>
+        /// <remarks>This property is read-only. Modifying any options after the client has been created has no effect on the existing client instance.</remarks>
         public virtual CosmosClientOptions ClientOptions => this.ClientContext.ClientOptions;
 
         /// <summary>
@@ -461,12 +462,7 @@ namespace Microsoft.Azure.Cosmos
         /// a custom container that modifies the response. For example the client encryption
         /// uses this to decrypt responses before returning to the caller.
         /// </remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        virtual CosmosResponseFactory ResponseFactory => this.ClientContext.ResponseFactory;
+        public virtual CosmosResponseFactory ResponseFactory => this.ClientContext.ResponseFactory;
 
         /// <summary>
         /// Gets the endpoint Uri for the Azure Cosmos DB service.

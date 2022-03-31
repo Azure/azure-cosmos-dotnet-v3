@@ -508,7 +508,6 @@ namespace Microsoft.Azure.Cosmos
                 collectionRid,
                 previousValue: null,
                 request: null,
-                cancellationToken,
                 NoOpTrace.Singleton);
 
             // Not found.
@@ -523,7 +522,6 @@ namespace Microsoft.Azure.Cosmos
                     collectionRid,
                     previousValue: null,
                     request: null,
-                    cancellationToken,
                     NoOpTrace.Singleton);
             }
 
