@@ -1799,7 +1799,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Int16 one = 1;
 
             Assert.IsNull(testItem.children[1].pk);
-
+            string value = null;
             List<PatchOperation> patchOperations = new List<PatchOperation>()
             {
                 PatchOperation.Set("/children/0/description", "testSet"),
@@ -1807,6 +1807,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PatchOperation.Remove("/description"),
                 PatchOperation.Replace("/taskNum", newTaskNum),
                 //PatchOperation.Increment("/taskNum", one)
+
+                PatchOperation.Set("/children/1/nullableInt",value)
             };
 
             // without content response
@@ -1835,10 +1837,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual("patched", response.Resource.children[1].pk);
             Assert.IsNull(response.Resource.description);
             Assert.AreEqual(newTaskNum, response.Resource.taskNum);
+            Assert.IsNull(response.Resource.children[1].nullableInt);
 
             patchOperations.Clear();
             patchOperations.Add(PatchOperation.Add("/children/0/cost", 1));
-
+            //patchOperations.Add(PatchOperation.Set("/random", value));
             // with content response
             response = await containerInternal.PatchItemAsync<ToDoActivity>(
                 id: testItem.id,
@@ -1848,6 +1851,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             Assert.IsNotNull(response.Resource);
             Assert.AreEqual(1, response.Resource.children[0].cost);
+
+            patchOperations.Clear();
+            patchOperations.Add(PatchOperation.Set("/children/0/id", value));
+            // with content response
+            response = await containerInternal.PatchItemAsync<ToDoActivity>(
+                id: testItem.id,
+                partitionKey: new Cosmos.PartitionKey(testItem.pk),
+                patchOperations: patchOperations);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsNotNull(response.Resource);
+            Assert.AreEqual(null, response.Resource.children[0].id);
         }
 
         [TestMethod]
