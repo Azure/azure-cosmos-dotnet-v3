@@ -2,47 +2,47 @@
 
 internal class ImmutableQueryStatisticsAccumulator
 {
-    public List<double> RetrievedDocumentCountList = new();
-    public List<double> RetrievedDocumentSizeList = new();
-    public List<double> OutputDocumentCountList = new();
-    public List<double> OutputDocumentSizeList = new();
-    public List<double> TotalQueryExecutionTimeList = new();
-    public List<double> DocumentLoadTimeList = new();
-    public List<double> DocumentWriteTimeList = new();
-    public List<double> CreatedList = new();
-    public List<double> ChannelAcquisitionStartedList = new();
-    public List<double> PipelinedList = new();
-    public List<double> TransitTimeList = new();
-    public List<double> ReceivedList = new();
-    public List<double> CompletedList = new();
-    public List<double> BadRequestCreatedList = new();
-    public List<double> BadRequestChannelAcquisitionStartedList = new();
-    public List<double> BadRequestPipelinedList = new();
-    public List<double> BadRequestTransitTimeList = new();
-    public List<double> BadRequestReceivedList = new();
-    public List<double> BadRequestCompletedList = new();
+    public List<double> retrievedDocumentCountList = new();
+    public List<double> retrievedDocumentSizeList = new();
+    public List<double> outputDocumentCountList = new();
+    public List<double> outputDocumentSizeList = new();
+    public List<double> totalQueryExecutionTimeList = new();
+    public List<double> documentLoadTimeList = new();
+    public List<double> documentWriteTimeList = new();
+    public List<double> createdList = new();
+    public List<double> channelAcquisitionStartedList = new();
+    public List<double> pipelinedList = new();
+    public List<double> transitTimeList = new();
+    public List<double> receivedList = new();
+    public List<double> completedList = new();
+    public List<double> badRequestCreatedList = new();
+    public List<double> badRequestChannelAcquisitionStartedList = new();
+    public List<double> badRequestPipelinedList = new();
+    public List<double> badRequestTransitTimeList = new();
+    public List<double> badRequestReceivedList = new();
+    public List<double> badRequestCompletedList = new();
 
-    private ImmutableQueryStatisticsAccumulator(QueryStatisticsAccumulatorBuilder builder)
+    public ImmutableQueryStatisticsAccumulator(QueryStatisticsAccumulatorBuilder builder)
     {
-        this.RetrievedDocumentCountList = builder.RetrievedDocumentCountList;
-        this.RetrievedDocumentSizeList = builder.RetrievedDocumentSizeList;
-        this.OutputDocumentCountList = builder.OutputDocumentCountList;
-        this.OutputDocumentSizeList = builder.OutputDocumentSizeList;
-        this.TotalQueryExecutionTimeList = builder.TotalQueryExecutionTimeList;
-        this.DocumentLoadTimeList = builder.DocumentLoadTimeList;
-        this.DocumentWriteTimeList = builder.DocumentWriteTimeList;
-        this.CreatedList = builder.CreatedList;
-        this.ChannelAcquisitionStartedList = builder.ChannelAcquisitionStartedList;
-        this.PipelinedList = builder.PipelinedList;
-        this.TransitTimeList = builder.TransitTimeList;
-        this.ReceivedList = builder.ReceivedList;
-        this.CompletedList = builder.CompletedList;
-        this.BadRequestCreatedList = builder.BadRequestCreatedList;
-        this.BadRequestChannelAcquisitionStartedList = builder.BadRequestChannelAcquisitionStartedList;
-        this.BadRequestPipelinedList = builder.BadRequestPipelinedList;
-        this.BadRequestTransitTimeList = builder.BadRequestTransitTimeList;
-        this.BadRequestReceivedList = builder.BadRequestReceivedList;
-        this.BadRequestCompletedList = builder.BadRequestCompletedList;
+        this.retrievedDocumentCountList = builder.RetrievedDocumentCountList;
+        this.retrievedDocumentSizeList = builder.RetrievedDocumentSizeList;
+        this.outputDocumentCountList = builder.OutputDocumentCountList;
+        this.outputDocumentSizeList = builder.OutputDocumentSizeList;
+        this.totalQueryExecutionTimeList = builder.TotalQueryExecutionTimeList;
+        this.documentLoadTimeList = builder.DocumentLoadTimeList;
+        this.documentWriteTimeList = builder.DocumentWriteTimeList;
+        this.createdList = builder.CreatedList;
+        this.channelAcquisitionStartedList = builder.ChannelAcquisitionStartedList;
+        this.pipelinedList = builder.PipelinedList;
+        this.transitTimeList = builder.TransitTimeList;
+        this.receivedList = builder.ReceivedList;
+        this.completedList = builder.CompletedList;
+        this.badRequestCreatedList = builder.BadRequestCreatedList;
+        this.badRequestChannelAcquisitionStartedList = builder.BadRequestChannelAcquisitionStartedList;
+        this.badRequestPipelinedList = builder.BadRequestPipelinedList;
+        this.badRequestTransitTimeList = builder.BadRequestTransitTimeList;
+        this.badRequestReceivedList = builder.BadRequestReceivedList;
+        this.badRequestCompletedList = builder.BadRequestCompletedList;
     }
 
     public class QueryStatisticsAccumulatorBuilder
