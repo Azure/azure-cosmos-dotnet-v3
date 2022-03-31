@@ -113,20 +113,29 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return vmMetadataUrl;
         }
 
+        /// <summary>
+        /// Get VM Id if it is Azure System else Generate an unique id for this machine
+        /// </summary>
+        /// <returns>machine id</returns>
         internal static string GetMachineId()
         {
             return VmMetadataApiHandler.azMetadata == null ? VmMetadataApiHandler.UniqueId : VmMetadataApiHandler.azMetadata.Compute.VMId;
         }
 
+        /// <summary>
+        /// Get Machine Information (If Azure System) else null
+        /// </summary>
+        /// <returns>Compute</returns>
         internal static Compute GetMachineInfo()
         {
             return VmMetadataApiHandler.azMetadata?.Compute;     
         }
 
+        /// <summary>
+        /// Clean up cached values
+        /// </summary>
         public void Dispose()
         {
-            this.apiCallTask?.Dispose();
-
             this.apiCallTask = null;
             VmMetadataApiHandler.instance = null;
             VmMetadataApiHandler.azMetadata = null;
