@@ -465,10 +465,9 @@ namespace Microsoft.Azure.Cosmos
                 {
                     try
                     {
-                        instrumentation.Record(
-                            accountName: this.client?.Endpoint, 
-                            userAgent: this.UserAgent, 
-                            connectionMode: this.ClientOptions.ConnectionMode);
+                        //instrumentation.Record(accountName: this.client?.Endpoint);
+                        instrumentation.Record(CosmosInstrumentationConstants.UserAgent, this.UserAgent);
+                        instrumentation.Record(CosmosInstrumentationConstants.ConnectionMode, this.ClientOptions.ConnectionMode);
 
                         return await task(trace).ConfigureAwait(false);
                     }

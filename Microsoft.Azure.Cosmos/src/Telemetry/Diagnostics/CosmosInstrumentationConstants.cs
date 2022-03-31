@@ -13,18 +13,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         public const string DbSystemName = "db.system";
         public const string DbName = "db.name";
         public const string DbOperation = "db.operation";
-
         public const string NetPeerName = "net.peer.name";
+        public const string ClientId = "db.cosmosdb.client_id";
+        public const string MachineId = "db.cosmosdb.machine_id";
         public const string ContainerName = "db.cosmosdb.container";
-        public const string PartitionId = "db.cosmosdb.partitionId";
         public const string StatusCode = "db.cosmosdb.status_code";
         public const string UserAgent = "db.cosmosdb.user_agent";
         public const string RequestContentLength = "db.cosmosdb.request_content_length";
         public const string ResponseContentLength = "db.cosmosdb.response_content_length";
-        public const string Region = "db.cosmosdb.region";
+        public const string Region = "db.cosmosdb.regions_contacted";
         public const string RetryCount = "db.cosmosdb.retry_count";
         public const string ConnectionMode = "db.cosmosdb.connection_mode";
-        public const string BackendStatusCodes = "db.cosmosdb.backend_status_codes";
         public const string ItemCount = "db.cosmosdb.item_count";
         public const string RequestDiagnostics = "db.cosmosdb.request_diagnostics";
         public const string RequestCharge = "db.cosmosdb.request_charge";

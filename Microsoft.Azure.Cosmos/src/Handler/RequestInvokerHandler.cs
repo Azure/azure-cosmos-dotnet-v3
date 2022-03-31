@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -180,27 +181,23 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 {
                                     response = dce.ToCosmosResponseMessage(request);
 
-                                    trace.CosmosInstrumentation.Record(requestCharge: response?.Headers?.RequestCharge,
-                                                                       operationType: operationType.ToOperationTypeString(),
-                                                                       statusCode: response.StatusCode,
-                                                                       containerId: cosmosContainerCore?.Id,
-                                                                       databaseId: cosmosContainerCore?.Database?.Id,
-                                                                       exception: dce,
-                                                                       itemCount: Convert.ToInt32(request?.Headers?.PageSize));
+                                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
+                                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
+                                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
 
+                                    trace.CosmosInstrumentation.MarkFailed(dce);
+                                   
                                     return response;
                                 }
                                 catch (CosmosException ce)
                                 {
                                     response = ce.ToCosmosResponseMessage(request);
 
-                                    trace.CosmosInstrumentation.Record(requestCharge: response?.Headers?.RequestCharge,
-                                                                       operationType: operationType.ToOperationTypeString(),
-                                                                       statusCode: response.StatusCode,
-                                                                       containerId: cosmosContainerCore?.Id,
-                                                                       databaseId: cosmosContainerCore?.Database?.Id,
-                                                                       exception: ce,
-                                                                       itemCount: Convert.ToInt32(request?.Headers?.PageSize));
+                                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
+                                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
+                                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
+
+                                    trace.CosmosInstrumentation.MarkFailed(ce);
 
                                     return response;
                                 }
@@ -229,13 +226,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             {
                                 response = ex.ToCosmosResponseMessage(request);
 
-                                trace.CosmosInstrumentation.Record(requestCharge: response?.Headers?.RequestCharge,
-                                                                   operationType: operationType.ToOperationTypeString(),
-                                                                   statusCode: response.StatusCode,
-                                                                   containerId: cosmosContainerCore?.Id,
-                                                                   databaseId: cosmosContainerCore?.Database?.Id,
-                                                                   exception: ex,
-                                                                   itemCount: Convert.ToInt32(request?.Headers?.PageSize));
+                                trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
+                                trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
+                                trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
+
+                                trace.CosmosInstrumentation.MarkFailed(ex);
 
                                 return response;
                             }
@@ -256,13 +251,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                     requestCharge: default);
                                 response = notFound.ToCosmosResponseMessage(request);
 
-                                trace.CosmosInstrumentation.Record(requestCharge: response?.Headers?.RequestCharge,
-                                                                   operationType: operationType.ToOperationTypeString(),
-                                                                   statusCode: response.StatusCode,
-                                                                   containerId: cosmosContainerCore?.Id,
-                                                                   databaseId: cosmosContainerCore?.Database?.Id,
-                                                                   exception: notFound,
-                                                                   itemCount: Convert.ToInt32(request?.Headers?.PageSize));
+                                trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
+                                trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
+                                trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
+
+                                trace.CosmosInstrumentation.MarkFailed(notFound);
 
                                 return response;
                             }
@@ -282,13 +275,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                                 response = goneException.ToCosmosResponseMessage(request);
 
-                                trace.CosmosInstrumentation.Record(requestCharge: response?.Headers?.RequestCharge,
-                                                                   operationType: operationType.ToOperationTypeString(),
-                                                                   statusCode: response.StatusCode,
-                                                                   containerId: cosmosContainerCore?.Id,
-                                                                   databaseId: cosmosContainerCore?.Database?.Id,
-                                                                   exception: goneException,
-                                                                   itemCount: Convert.ToInt32(request?.Headers?.PageSize));
+                                trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
+                                trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
+                                trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
+
+                                trace.CosmosInstrumentation.MarkFailed(goneException);
 
                                 return response;
                             }
@@ -340,14 +331,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                     response = await this.SendAsync(request, cancellationToken);
 
-                    trace.CosmosInstrumentation.Record(requestCharge: response?.Headers?.RequestCharge,
-                                                       operationType: operationType.ToOperationTypeString(),
-                                                       statusCode: response.StatusCode,
-                                                       containerId: cosmosContainerCore?.Id,
-                                                       databaseId: cosmosContainerCore?.Database?.Id,
-                                                       itemCount: Convert.ToInt32(request?.Headers?.PageSize),
-                                                       requestSize: request?.Content?.Length,
-                                                       responseSize: response?.Content?.Length);
+                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
+                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
+                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
 
                     return response;
 

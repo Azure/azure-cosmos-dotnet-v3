@@ -47,8 +47,7 @@ namespace Microsoft.Azure.Cosmos
 
             trace.AddDatum("Operation Cancelled Exception", originalException);
 
-            trace.CosmosInstrumentation.Record(
-                exception: originalException);
+            trace.CosmosInstrumentation.MarkFailed(originalException);
 
             this.Diagnostics = new CosmosTraceDiagnostics(trace);
             this.lazyMessage = this.CreateLazyMessage();
