@@ -268,6 +268,53 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock.Get(this.leaseManager)
                 .Verify(manager => manager.ReleaseAsync(this.lease), Times.Once);
+
+            this.healthMonitor
+                .Verify(m => m.NotifyLeaseReleaseAsync(this.lease.CurrentLeaseToken), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task Controller_ShouldNotify_IfProcessingFails_EvenOnLeaseLost()
+        {
+            Mock.Get(this.partitionProcessor)
+                .Reset();
+
+            Mock<PartitionSupervisor> supervisor = new Mock<PartitionSupervisor>();
+
+            Exception exception = new NotImplementedException();
+
+            ManualResetEvent manualResetEvent = new ManualResetEvent(false);
+
+            // Fail on Release
+            Mock.Get(this.leaseManager)
+                .Setup(manager => manager.ReleaseAsync(this.lease))
+                .ThrowsAsync(new Exceptions.LeaseLostException());
+
+            supervisor
+                .Setup(s => s.RunAsync(It.IsAny<CancellationToken>()))
+                .Callback((CancellationToken ct) =>
+                {
+                    manualResetEvent.Set();
+                    throw exception;
+                });
+
+            Mock.Get(this.partitionSupervisorFactory)
+                .Setup(f => f.Create(this.lease))
+                .Returns(supervisor.Object);
+
+            await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
+
+            bool timeout = manualResetEvent.WaitOne(100);
+            Assert.IsTrue(timeout, "Partition supervisor not started");
+
+            this.healthMonitor
+                .Verify(m => m.NotifyErrorAsync(this.lease.CurrentLeaseToken, exception), Times.Once);
+
+            Mock.Get(this.leaseManager)
+                .Verify(manager => manager.ReleaseAsync(this.lease), Times.Once);
+
+            this.healthMonitor
+                .Verify(m => m.NotifyLeaseReleaseAsync(this.lease.CurrentLeaseToken), Times.Once);
         }
 
         [TestMethod]
