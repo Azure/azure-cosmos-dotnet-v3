@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
     using System;
+    using System.Collections.Generic;
     using System.Net;
     using Documents;
     using global::Azure.Core.Pipeline;
@@ -25,22 +26,46 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             this.scope.Start();
         }
 
-        public void Record(double? requestCharge = null,
+        public void Record(
+            string databaseId = null,
             string operationType = null,
-            HttpStatusCode? statusCode = null, 
-            string databaseId = null, 
+            Uri accountName = null,
+            string clientId = null,
+            string machineId = null,
             string containerId = null,
-            string subStatusCode = null,
-            int? itemCount = null,
+            HttpStatusCode? statusCode = null,
+            string userAgent = null,
             long? requestSize = null,
             long? responseSize = null,
-            Uri accountName = null, 
-            string userAgent = null, 
+            IList<string> regionsContacted = null,
+            Int16? retryCount = null,
             ConnectionMode? connectionMode = null,
+            int? itemCount = null,
+            double? requestCharge = null,
             Exception exception = null)
         {
             if (this.Attributes != null)
             {
+                if (!string.IsNullOrEmpty(clientId))
+                {
+                    this.Attributes.ClientId = clientId;
+                }
+
+                if (!string.IsNullOrEmpty(machineId))
+                {
+                    this.Attributes.MachineId = machineId;
+                }
+
+                if (regionsContacted != null)
+                {
+                    this.Attributes.RegionsContacted = regionsContacted;
+                }
+
+                if (retryCount.HasValue)
+                {
+                    this.Attributes.RetryCount = retryCount.Value;
+                }
+
                 if (!string.IsNullOrEmpty(databaseId))
                 {
                     this.Attributes.DbName = databaseId;
@@ -59,11 +84,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                 if (statusCode != null)
                 {
                     this.Attributes.HttpStatusCode = statusCode;
-                }
-
-                if (subStatusCode != null)
-                {
-                    this.Attributes.BackendStatusCode = null;
                 }
 
                 if (itemCount.HasValue)
