@@ -113,7 +113,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
             catch (LeaseLostException)
             {
-                await this.monitor.NotifyLeaseReleaseAsync(lease.CurrentLeaseToken);
                 DefaultTrace.TraceVerbose("Lease with token {0}: taken by another host during release");
             }
             catch (Exception ex)

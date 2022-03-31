@@ -399,7 +399,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Verify(m => m.NotifyLeaseAcquireAsync(this.lease.CurrentLeaseToken), Times.Never);
 
             this.healthMonitor
-                .Verify(m => m.NotifyLeaseReleaseAsync(this.lease.CurrentLeaseToken), Times.Once);
+                .Verify(m => m.NotifyLeaseReleaseAsync(this.lease.CurrentLeaseToken), Times.Never);
         }
 
         [TestMethod]
