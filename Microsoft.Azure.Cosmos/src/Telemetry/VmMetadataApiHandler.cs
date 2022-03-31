@@ -5,10 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
-    using System.Collections.Generic;
     using System.Net.Http;
-    using System.Runtime.CompilerServices;
-    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
@@ -27,10 +24,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private static readonly Uri vmMetadataEndpointUrl = VmMetadataApiHandler.GetVmMetadataUrl();
 
         private static VmMetadataApiHandler instance = null;
-        private static Uri vmMetadataUrl;
+        private static Uri vmMetadataUrl = null;
         private static bool isInitialized = false;
 
-        private static volatile AzureVMMetadata azMetadata = null;
+        private static AzureVMMetadata azMetadata = null;
 
         private readonly CosmosHttpClient httpClient;
         private Task apiCallTask;
@@ -38,7 +35,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private VmMetadataApiHandler(CosmosHttpClient httpClient)
         {
             this.httpClient = httpClient;
-            this.apiCallTask = Task.Run(this.MetadataApiCallAsync, default);
+
+            this.apiCallTask = Task.Run(this.MetadataApiCallAsync, default)
+                .ContinueWith(t => DefaultTrace.TraceWarning(
+                         $"Exception while making metadata call {t.Exception}"),
+                TaskContinuationOptions.OnlyOnFaulted);
         }
 
         internal static VmMetadataApiHandler Initialize(CosmosHttpClient httpClient)
@@ -75,26 +76,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return new ValueTask<HttpRequestMessage>(request);
             }
 
-            try
-            {
-                HttpResponseMessage response = await this.httpClient
-                  .SendHttpAsync(createRequestMessageAsync: CreateRequestMessage,
-                                 resourceType: ResourceType.Telemetry,
-                                 timeoutPolicy: HttpTimeoutPolicyNoRetry.Instance,
-                                 clientSideRequestStatistics: null,
-                                 cancellationToken: default);
-                azMetadata = await VmMetadataApiHandler.ProcessResponseAsync(response);
+            HttpResponseMessage response = await this.httpClient
+                .SendHttpAsync(createRequestMessageAsync: CreateRequestMessage,
+                                resourceType: ResourceType.Telemetry,
+                                timeoutPolicy: HttpTimeoutPolicyNoRetry.Instance,
+                                clientSideRequestStatistics: null,
+                                cancellationToken: default);
 
-                DefaultTrace.TraceWarning($"Succesfully get Instance Metedata Response : {azMetadata.Compute.VMId}");
+            azMetadata = await VmMetadataApiHandler.ProcessResponseAsync(response);
 
-            }
-            catch (Exception ex)
-            {
-                DefaultTrace.TraceWarning($"Exception while making metadata call {ex}");
-
-                this.Dispose();
-            }
-
+            DefaultTrace.TraceInformation($"Succesfully get Instance Metadata Response : {azMetadata.Compute.VMId}");
         }
 
         internal static async Task<AzureVMMetadata> ProcessResponseAsync(HttpResponseMessage httpResponseMessage)
@@ -134,8 +125,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         public void Dispose()
         {
+            this.apiCallTask?.Dispose();
+
             this.apiCallTask = null;
             VmMetadataApiHandler.instance = null;
+            VmMetadataApiHandler.azMetadata = null;
+
             VmMetadataApiHandler.isInitialized = false;
         }
     }
