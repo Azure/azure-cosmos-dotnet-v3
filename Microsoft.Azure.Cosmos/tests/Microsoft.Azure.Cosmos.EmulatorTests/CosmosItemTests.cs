@@ -757,6 +757,87 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+#if PREVIEW
+        [TestMethod]
+        public async Task PartitionKeyDeleteTestForSubpartitionedContainer()
+        {
+            string currentVersion = HttpConstants.Versions.CurrentVersion;
+            HttpConstants.Versions.CurrentVersion = "2020-07-15";
+            CosmosClient client = TestCommon.CreateCosmosClient(true);
+            Cosmos.Database database = await client.CreateDatabaseIfNotExistsAsync("mydb");
+            try
+            {
+                ContainerProperties containerProperties = new ContainerProperties("subpartitionedcontainer", new List<string> { "/Country", "/City" });
+                Container container = await database.CreateContainerAsync(containerProperties);
+                ContainerInternal containerInternal = (ContainerInternal)container;
+
+                //Document create.
+                ItemResponse<Document>[] documents = new ItemResponse<Document>[5];
+                Document doc1 = new Document { Id = "document1" };
+                doc1.SetValue("Country", "USA");
+                doc1.SetValue("City", "Redmond");
+                documents[0] = await container.CreateItemAsync<Document>(doc1);
+
+                doc1 = new Document { Id = "document2" };
+                doc1.SetValue("Country", "USA");
+                doc1.SetValue("City", "Pittsburgh");
+                documents[1] = await container.CreateItemAsync<Document>(doc1);
+
+                doc1 = new Document { Id = "document3" };
+                doc1.SetValue("Country", "USA");
+                doc1.SetValue("City", "Stonybrook");
+                documents[2] = await container.CreateItemAsync<Document>(doc1);
+
+                doc1 = new Document { Id = "document4" };
+                doc1.SetValue("Country", "USA");
+                doc1.SetValue("City", "Stonybrook");
+                documents[3] = await container.CreateItemAsync<Document>(doc1);
+
+                doc1 = new Document { Id = "document5" };
+                doc1.SetValue("Country", "USA");
+                doc1.SetValue("City", "Stonybrook");
+                documents[4] = await container.CreateItemAsync<Document>(doc1);
+               
+                Cosmos.PartitionKey partitionKey1 = new PartitionKeyBuilder().Add("USA").Add("Stonybrook").Build();
+
+                using (ResponseMessage pKDeleteResponse = await containerInternal.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey1))
+                {
+                    Assert.AreEqual(pKDeleteResponse.StatusCode, HttpStatusCode.OK);
+                }
+                using (ResponseMessage readResponse = await containerInternal.ReadItemStreamAsync("document5", partitionKey1))
+                {
+                    Assert.AreEqual(readResponse.StatusCode, HttpStatusCode.NotFound);
+                    Assert.AreEqual(readResponse.Headers.SubStatusCode, SubStatusCodes.Unknown);
+                }
+
+                Cosmos.PartitionKey partitionKey2 = new PartitionKeyBuilder().Add("USA").Add("Pittsburgh").Build();
+                using (ResponseMessage readResponse = await containerInternal.ReadItemStreamAsync("document2", partitionKey2))
+                {
+                    Assert.AreEqual(readResponse.StatusCode, HttpStatusCode.OK);
+                }
+
+
+                //Specifying a partial partition key should fail
+                Cosmos.PartitionKey partialPartitionKey = new PartitionKeyBuilder().Add("USA").Build();
+                using (ResponseMessage pKDeleteResponse = await containerInternal.DeleteAllItemsByPartitionKeyStreamAsync(partialPartitionKey))
+                {
+                    Assert.AreEqual(pKDeleteResponse.StatusCode, HttpStatusCode.BadRequest);
+                    Assert.AreEqual(pKDeleteResponse.CosmosException.SubStatusCode, SubStatusCodes.PartitionKeyMismatch);
+                    Assert.IsTrue(pKDeleteResponse.ErrorMessage.Contains("Partition key provided either doesn't correspond to definition in the collection or doesn't match partition key field values specified in the document."));
+                }
+            }
+            catch (Exception)
+            {
+                Assert.Fail();
+            }
+            finally
+            {
+                await database.DeleteAsync();
+                HttpConstants.Versions.CurrentVersion = currentVersion;
+            }
+        }
+#endif
+
         [TestMethod]
         public async Task ItemCustomSerialzierTest()
         {
