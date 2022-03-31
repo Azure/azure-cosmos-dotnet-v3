@@ -304,7 +304,6 @@
                 {
                     sumOfIterations += originalList[j];
                 }
-                sumOfIterations /= roundTrips;
                 sumOfRoundTripsList.Add(sumOfIterations);
                 i += roundTrips;
             }
