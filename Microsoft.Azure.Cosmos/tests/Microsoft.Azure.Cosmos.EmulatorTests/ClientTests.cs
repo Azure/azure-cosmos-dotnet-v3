@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 RequestCallBack = async (request, cancellToken) =>
                 {
-                    if(request.RequestUri.AbsoluteUri ==  VmMetadataApiHandler.GetVmMetadataUrl().AbsoluteUri)
+                    if(request.RequestUri.AbsoluteUri ==  VmMetadataApiHandler.vmMetadataEndpointUrl.AbsoluteUri)
                     {
                         Interlocked.Increment(ref metadataCallCount);
                     } 

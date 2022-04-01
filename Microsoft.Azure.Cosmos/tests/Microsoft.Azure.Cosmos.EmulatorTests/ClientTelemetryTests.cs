@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         return Task.FromResult(result);
                     }
-                    else if (request.RequestUri.AbsoluteUri.Equals(VmMetadataApiHandler.GetVmMetadataUrl().AbsoluteUri))
+                    else if (request.RequestUri.AbsoluteUri.Equals(VmMetadataApiHandler.vmMetadataEndpointUrl.AbsoluteUri))
                     {
                         HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 
@@ -172,6 +172,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCleanup]
         public async Task Cleanup()
         {
+            VmMetadataApiHandler.Clear();
             await base.TestCleanup();
         }
             
@@ -688,7 +689,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     return Task.FromResult(result);
                 }
-                else if (request.RequestUri.AbsoluteUri.Equals(VmMetadataApiHandler.GetVmMetadataUrl().AbsoluteUri))
+                else if (request.RequestUri.AbsoluteUri.Equals(VmMetadataApiHandler.vmMetadataEndpointUrl.AbsoluteUri))
                 {
                     HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 

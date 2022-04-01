@@ -16,27 +16,25 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// ref: https://docs.microsoft.com/en-us/azure/virtual-machines/windows/instance-metadata-service?tabs=windows
     /// Collects only application region and environment information
     /// </summary>
-    internal class VmMetadataApiHandler : IDisposable
+    internal class VmMetadataApiHandler
     {
-        private const string DefaultVmMetadataUrL = "http://169.254.169.254/metadata/instance?api-version=2020-06-01";
+        internal static readonly Uri vmMetadataEndpointUrl = new ("http://169.254.169.254/metadata/instance?api-version=2020-06-01");
+
         private static readonly string UniqueId = "uuid:" + Guid.NewGuid().ToString();
         private static readonly object lockObject = new object();
-        private static readonly Uri vmMetadataEndpointUrl = VmMetadataApiHandler.GetVmMetadataUrl();
 
         private static VmMetadataApiHandler instance = null;
-        private static Uri vmMetadataUrl = null;
         private static bool isInitialized = false;
 
         private static AzureVMMetadata azMetadata = null;
 
         private readonly CosmosHttpClient httpClient;
-        private Task apiCallTask;
 
         private VmMetadataApiHandler(CosmosHttpClient httpClient)
         {
             this.httpClient = httpClient;
 
-            this.apiCallTask = Task.Run(this.MetadataApiCallAsync, default)
+            _ = Task.Run(this.MetadataApiCallAsync, default)
                 .ContinueWith(t => DefaultTrace.TraceWarning(
                          $"Exception while making metadata call {t.Exception}"),
                 TaskContinuationOptions.OnlyOnFaulted);
@@ -68,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 HttpRequestMessage request = new HttpRequestMessage()
                 {
-                    RequestUri = vmMetadataEndpointUrl,
+                    RequestUri = VmMetadataApiHandler.vmMetadataEndpointUrl,
                     Method = HttpMethod.Get,
                 };
                 request.Headers.Add("Metadata", "true");
@@ -98,21 +96,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return JObject.Parse(jsonVmInfo).ToObject<AzureVMMetadata>();
         }
 
-        internal static Uri GetVmMetadataUrl()
-        {
-            if (vmMetadataUrl == null)
-            {
-                string vmMetadataUrlProp = ConfigurationManager.GetEnvironmentVariable<string>(
-                   ClientTelemetryOptions.EnvPropsClientTelemetryVmMetadataUrl, DefaultVmMetadataUrL);
-                if (!String.IsNullOrEmpty(vmMetadataUrlProp))
-                {
-                    vmMetadataUrl = new Uri(vmMetadataUrlProp);
-                }
-                DefaultTrace.TraceInformation($"VM Metadata URL {vmMetadataUrlProp}");
-            }
-            return vmMetadataUrl;
-        }
-
         /// <summary>
         /// Get VM Id if it is Azure System else Generate an unique id for this machine
         /// </summary>
@@ -132,14 +115,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         /// <summary>
-        /// Clean up cached values
+        /// Only for tests, as this cache needs to clear while switching between Azure System tests and non Azure system tests
         /// </summary>
-        public void Dispose()
+        internal static void Clear()
         {
-            this.apiCallTask = null;
-            VmMetadataApiHandler.instance = null;
             VmMetadataApiHandler.azMetadata = null;
-
             VmMetadataApiHandler.isInitialized = false;
         }
     }
