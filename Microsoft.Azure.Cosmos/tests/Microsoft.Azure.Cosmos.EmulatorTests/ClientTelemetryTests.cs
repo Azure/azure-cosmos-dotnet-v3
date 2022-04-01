@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json;
     using Documents.Rntbd;
     using System.Globalization;
+    using System.Runtime.CompilerServices;
 
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper
@@ -35,6 +36,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private List<ClientTelemetryProperties> actualInfo;
         private List<string> preferredRegionList;
+
+        private IDictionary<string, string> expectedMetricNameUnitMap;
 
         [ClassInitialize]
         public static void ClassInitialize(TestContext context)
@@ -89,6 +92,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 "region1",
                 "region2"
+            };
+
+            this.expectedMetricNameUnitMap = new Dictionary<string, string>()
+            {
+                { ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit },
+                { ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit },
+                { ClientTelemetryOptions.AvailableThreadsName, ClientTelemetryOptions.AvailableThreadsUnit },
+                { ClientTelemetryOptions.IsThreadStarvingName, ClientTelemetryOptions.IsThreadStarvingUnit },
+                { ClientTelemetryOptions.ThreadWaitIntervalInMsName, ClientTelemetryOptions.ThreadWaitIntervalInMsUnit }
             };
 
             this.cosmosClientBuilder = TestCommon.GetDefaultConfiguration()
@@ -723,8 +735,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(1500)); // wait at least for 1 round of telemetry
 
-                await Task.Delay(TimeSpan.FromMilliseconds(1500));
-
                 HashSet<OperationInfo> actualOperationSet = new HashSet<OperationInfo>();
                 lock (this.actualInfo)
                 {
@@ -752,24 +762,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<OperationInfo> actualOperationList = new List<OperationInfo>();
             List<SystemInfo> actualSystemInformation = new List<SystemInfo>();
 
+            string connectionMode = localCopyOfActualInfo[0].ConnectionMode;
+            if (connectionMode == "DIRECT")
+            {
+                this.expectedMetricNameUnitMap.Add(ClientTelemetryOptions.NumberOfTcpConnectionName, ClientTelemetryOptions.NumberOfTcpConnectionUnit);
+            }
+
             ClientTelemetryTests.AssertAccountLevelInformation(localCopyOfActualInfo, actualOperationList, actualSystemInformation);
             ClientTelemetryTests.AssertOperationLevelInformation(expectedConsistencyLevel, expectedOperationRecordCountMap, actualOperationList, expectedSubstatuscode);
-            ClientTelemetryTests.AssertSystemLevelInformation(actualSystemInformation);
+            ClientTelemetryTests.AssertSystemLevelInformation(actualSystemInformation, this.expectedMetricNameUnitMap);
         }
 
-        private static void AssertSystemLevelInformation(List<SystemInfo> actualSystemInformation)
+        private static void AssertSystemLevelInformation(List<SystemInfo> actualSystemInformation, IDictionary<string, string> expectedMetricNameUnitMap)
         {
-            Dictionary<string, string> expectedMetricNameUnitMap = new Dictionary<string, string>()
-            {
-                { ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit },
-                { ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit },
-                { ClientTelemetryOptions.AvailableThreadsName, ClientTelemetryOptions.AvailableThreadsUnit },
-                { ClientTelemetryOptions.IsThreadStarvingName, ClientTelemetryOptions.IsThreadStarvingUnit },
-                { ClientTelemetryOptions.ThreadWaitIntervalInMsName, ClientTelemetryOptions.ThreadWaitIntervalInMsUnit },
-                { ClientTelemetryOptions.NumberOfTcpConnectionName, ClientTelemetryOptions.NumberOfTcpConnectionUnit }
-            };
-
-            Dictionary<string, string> actualMetricNameUnitMap = new Dictionary<string, string>();
+            IDictionary<string, string> actualMetricNameUnitMap = new Dictionary<string, string>();
 
             // Asserting If system information list is as expected
             foreach (SystemInfo systemInfo in actualSystemInformation)
@@ -855,8 +861,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 actualOperationList.AddRange(telemetryInfo.OperationInfo);
                 actualSystemInformation.AddRange(telemetryInfo.SystemInfo);
 
-                Assert.AreEqual(6, telemetryInfo.SystemInfo.Count, $"System Information Count doesn't Match; {JsonConvert.SerializeObject(telemetryInfo.SystemInfo)}");
-
+                if(telemetryInfo.ConnectionMode == "DIRECT")
+                {
+                    Assert.AreEqual(6, telemetryInfo.SystemInfo.Count, $"System Information Count doesn't Match; {JsonConvert.SerializeObject(telemetryInfo.SystemInfo)}");
+                }
+                else
+                {
+                    Assert.AreEqual(5, telemetryInfo.SystemInfo.Count, $"System Information Count doesn't Match; {JsonConvert.SerializeObject(telemetryInfo.SystemInfo)}");
+                }
+               
                 Assert.IsNotNull(telemetryInfo.GlobalDatabaseAccountName, "GlobalDatabaseAccountName is null");
                 Assert.IsNotNull(telemetryInfo.DateTimeUtc, "Timestamp is null");
                 Assert.AreEqual(2, telemetryInfo.PreferredRegions.Count);

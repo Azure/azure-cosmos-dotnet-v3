@@ -95,9 +95,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         /// <param name="systemUsageHistory"></param>
         /// <param name="systemInfoCollection"></param>
+        /// <param name="connectionMode"></param>
         internal static void RecordSystemUsage(
                 SystemUsageHistory systemUsageHistory, 
-                List<SystemInfo> systemInfoCollection)
+                List<SystemInfo> systemInfoCollection,
+                string connectionMode)
         {
             if (systemUsageHistory.Values == null)
             {
@@ -111,7 +113,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             systemInfoCollection.Add(TelemetrySystemUsage.GetAvailableThreadsInfo(systemUsageHistory.Values));
             systemInfoCollection.Add(TelemetrySystemUsage.GetThreadWaitIntervalInMs(systemUsageHistory.Values));
             systemInfoCollection.Add(TelemetrySystemUsage.GetThreadStarvationSignalCount(systemUsageHistory.Values));
-            systemInfoCollection.Add(TelemetrySystemUsage.GetTcpConnectionCount(systemUsageHistory.Values));
+
+            if (connectionMode == ClientTelemetryHelper.GetConnectionModeString(ConnectionMode.Direct))
+            {
+                systemInfoCollection.Add(TelemetrySystemUsage.GetTcpConnectionCount(systemUsageHistory.Values));
+            }
+            
         }
 
         /// <summary>
@@ -178,6 +185,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
 
             return regionsContacted.ToString();
+        }
+
+        internal static string GetConnectionModeString(ConnectionMode connectionMode)
+        {
+            return connectionMode switch
+            {
+                Cosmos.ConnectionMode.Direct => "DIRECT",
+                Cosmos.ConnectionMode.Gateway => "GATEWAY",
+                _ => connectionMode.ToString().ToUpper(),
+            };
         }
 
     }

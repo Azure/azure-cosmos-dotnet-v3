@@ -254,7 +254,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 if (systemUsageHistory != null )
                 {
-                    ClientTelemetryHelper.RecordSystemUsage(systemUsageHistory, this.clientTelemetryInfo.SystemInfo);
+                    ClientTelemetryHelper.RecordSystemUsage(
+                        systemUsageHistory: systemUsageHistory, 
+                        systemInfoCollection: this.clientTelemetryInfo.SystemInfo,
+                        connectionMode: this.clientTelemetryInfo.ConnectionMode);
                 } 
                 else
                 {

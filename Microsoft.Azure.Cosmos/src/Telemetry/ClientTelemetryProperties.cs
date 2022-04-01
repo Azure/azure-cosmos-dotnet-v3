@@ -56,9 +56,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         [JsonProperty(PropertyName = "operationInfo")]
         internal List<OperationInfo> OperationInfo { get; set; }
 
-        [JsonIgnore]
-        private readonly ConnectionMode ConnectionModeEnum;
-
         internal ClientTelemetryProperties(string clientId,
                                    string processId,
                                    string userAgent,
@@ -69,8 +66,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.ClientId = clientId;
             this.ProcessId = processId;
             this.UserAgent = userAgent;
-            this.ConnectionModeEnum = connectionMode;
-            this.ConnectionMode = ClientTelemetryProperties.GetConnectionModeString(connectionMode);
+            this.ConnectionMode = ClientTelemetryHelper.GetConnectionModeString(connectionMode);
             this.SystemInfo = new List<SystemInfo>();
             this.PreferredRegions = preferredRegions;
             this.AggregationIntervalInSec = aggregationIntervalInSec;
@@ -79,6 +75,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Needed by Serializer to deserialize the json
         /// </summary>
+        [JsonConstructor]
         public ClientTelemetryProperties(string dateTimeUtc,
             string clientId,
             string processId,
@@ -106,16 +103,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.CacheRefreshInfo = cacheRefreshInfo;
             this.OperationInfo = operationInfo;
             this.PreferredRegions = preferredRegions;
-        }
-
-        private static string GetConnectionModeString(ConnectionMode connectionMode)
-        {
-            return connectionMode switch
-            {
-                Cosmos.ConnectionMode.Direct => "DIRECT",
-                Cosmos.ConnectionMode.Gateway => "GATEWAY",
-                _ => connectionMode.ToString().ToUpper(),
-            };
         }
     }
 }
