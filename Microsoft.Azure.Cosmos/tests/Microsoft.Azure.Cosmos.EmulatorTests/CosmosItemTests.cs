@@ -821,7 +821,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using (ResponseMessage pKDeleteResponse = await containerInternal.DeleteAllItemsByPartitionKeyStreamAsync(partialPartitionKey))
                 {
                     Assert.AreEqual(pKDeleteResponse.StatusCode, HttpStatusCode.BadRequest);
-                    Assert.AreEqual(pKDeleteResponse.CosmosException.SubStatusCode, SubStatusCodes.PartitionKeyMismatch);
+                    Assert.AreEqual(pKDeleteResponse.CosmosException.SubStatusCode, (int)SubStatusCodes.PartitionKeyMismatch);
                     Assert.IsTrue(pKDeleteResponse.ErrorMessage.Contains("Partition key provided either doesn't correspond to definition in the collection or doesn't match partition key field values specified in the document."));
                 }
             }
