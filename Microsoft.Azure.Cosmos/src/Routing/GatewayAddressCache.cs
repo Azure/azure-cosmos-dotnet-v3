@@ -195,6 +195,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                         singleValueInitFunc: (currentCachedValue) =>
                         {
                             staleAddressInfo = currentCachedValue;
+
+                            GatewayAddressCache.SetTransportAddressUrisToUnhealthy(
+                               currentCachedValue,
+                               request?.RequestContext?.FailedEndpoints);
+
                             return this.GetAddressesForRangeIdAsync(
                                 request,
                                 partitionKeyRangeIdentity.CollectionRid,
@@ -269,6 +274,32 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 throw;
+            }
+        }
+
+        private static void SetTransportAddressUrisToUnhealthy(
+            PartitionAddressInformation stalePartitionAddressInformation,
+            Lazy<HashSet<TransportAddressUri>> failedEndpoints)
+        {
+            if (stalePartitionAddressInformation == null ||
+                failedEndpoints == null ||
+                !failedEndpoints.IsValueCreated)
+            {
+                return;
+            }
+
+            IReadOnlyList<TransportAddressUri> perProtocolPartitionAddressInformation = stalePartitionAddressInformation.Get(Protocol.Tcp)?.ReplicaTransportAddressUris;
+            if (perProtocolPartitionAddressInformation == null)
+            {
+                return;
+            }
+
+            foreach (TransportAddressUri failed in perProtocolPartitionAddressInformation)
+            {
+                if (failedEndpoints.Value.Contains(failed))
+                {
+                    failed.SetUnhealthy();
+                }
             }
         }
 
