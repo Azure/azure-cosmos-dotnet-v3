@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 cRid);
 
             bool delayCacheRefresh = true;
-
+            bool delayRefreshUnblocked = false;
             mockHttpHandler.SetupSequence(x => x.SendAsync(
                 It.Is<HttpRequestMessage>(r => r.RequestUri.ToString().Contains("addresses")), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(replicaSet1))
@@ -92,7 +92,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     {
                         await Task.Delay(TimeSpan.FromMilliseconds(20));
                     }
-                    
+
+                    delayRefreshUnblocked = true;
                     return replicaSet2;
                 });
 
@@ -163,7 +164,10 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                     urisVisited.Clear();
                     delayCacheRefresh = false;
-                    await Task.Delay(TimeSpan.FromMilliseconds(100));
+                    do 
+                    {
+                        await Task.Delay(TimeSpan.FromMilliseconds(100));
+                    }while (!delayRefreshUnblocked);
 
                     for (int i = 0; i < 20; i++)
                     {
