@@ -757,7 +757,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-#if PREVIEW
         [TestMethod]
         public async Task PartitionKeyDeleteTestForSubpartitionedContainer()
         {
@@ -836,7 +835,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 HttpConstants.Versions.CurrentVersion = currentVersion;
             }
         }
-#endif
 
         [TestMethod]
         public async Task ItemCustomSerialzierTest()
