@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal static readonly Uri vmMetadataEndpointUrl = new ("http://169.254.169.254/metadata/instance?api-version=2020-06-01");
 
         private static readonly string UniqueId = "uuid:" + Guid.NewGuid().ToString();
-        private static string HashedMachineName => "hashedMachineName:" + VmMetadataApiHandler.ComputeSha256Hash(Environment.MachineName);
+        private static string HashedMachineName => "hashedMachineName:" + VmMetadataApiHandler.ComputeHash(Environment.MachineName);
 
         private static readonly object lockObject = new object();
 
@@ -132,13 +132,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return VmMetadataApiHandler.azMetadata?.Compute;     
         }
 
-        internal static string ComputeSha256Hash(string rawData)
+        /// <summary>
+        /// Hash a passed Value
+        /// </summary>
+        /// <param name="rawData"></param>
+        /// <returns>hashed Value</returns>
+        internal static string ComputeHash(string rawData)
         {
-            // Create a SHA256   
-            using (SHA256 sha256Hash = SHA256.Create())
+            // Create a SHA1   
+            using (SHA1 sha1Hash = SHA1.Create())
             {
                 // ComputeHash - returns byte array  
-                byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(rawData));
+                byte[] bytes = sha1Hash.ComputeHash(Encoding.UTF8.GetBytes(rawData));
 
                 // Convert byte array to a string   
                 StringBuilder builder = new StringBuilder();

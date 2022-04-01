@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task GetHashedMachineNameAsMachineIdTest()
         {
-            string expectedMachineId = "hashedMachineName:" + VmMetadataApiHandler.ComputeSha256Hash(Environment.MachineName);
+            string expectedMachineId = "hashedMachineName:" + VmMetadataApiHandler.ComputeHash(Environment.MachineName);
 
             static Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken) { throw new Exception("error while making API call"); };
 

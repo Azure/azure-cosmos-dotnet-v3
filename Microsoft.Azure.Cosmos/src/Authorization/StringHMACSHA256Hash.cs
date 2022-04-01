@@ -45,11 +45,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal string ComputeHash(string machineName)
-        {
-            throw new NotImplementedException();
-        }
-
         public SecureString Key
         {
             get
