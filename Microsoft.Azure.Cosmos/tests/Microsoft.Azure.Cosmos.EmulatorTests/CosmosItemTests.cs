@@ -762,10 +762,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string currentVersion = HttpConstants.Versions.CurrentVersion;
             HttpConstants.Versions.CurrentVersion = "2020-07-15";
-            CosmosClient client = TestCommon.CreateCosmosClient(true);
-            Cosmos.Database database = await client.CreateDatabaseIfNotExistsAsync("mydb");
+            Cosmos.Database database = null;
             try
             {
+                CosmosClient client = TestCommon.CreateCosmosClient(true);
+                
+                database = await client.CreateDatabaseIfNotExistsAsync("mydb");
+                
                 ContainerProperties containerProperties = new ContainerProperties("subpartitionedcontainer", new List<string> { "/Country", "/City" });
                 Container container = await database.CreateContainerAsync(containerProperties);
                 ContainerInternal containerInternal = (ContainerInternal)container;
@@ -825,14 +828,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsTrue(pKDeleteResponse.ErrorMessage.Contains("Partition key provided either doesn't correspond to definition in the collection or doesn't match partition key field values specified in the document."));
                 }
             }
-            catch (Exception)
-            {
-                Assert.Fail();
-            }
             finally
             {
-                await database.DeleteAsync();
                 HttpConstants.Versions.CurrentVersion = currentVersion;
+                if(database != null) await database.DeleteAsync();
             }
         }
 
