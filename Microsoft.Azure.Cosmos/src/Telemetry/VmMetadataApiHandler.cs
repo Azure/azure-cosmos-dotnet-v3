@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Net.Http;
+    using System.Security.Cryptography;
+    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
@@ -21,6 +23,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal static readonly Uri vmMetadataEndpointUrl = new ("http://169.254.169.254/metadata/instance?api-version=2020-06-01");
 
         private static readonly string UniqueId = "uuid:" + Guid.NewGuid().ToString();
+        private static string HashedMachineName => "hashedMachineName:" + VmMetadataApiHandler.ComputeSha256Hash(Environment.MachineName);
+
         private static readonly object lockObject = new object();
 
         private static VmMetadataApiHandler instance = null;
@@ -97,12 +101,26 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         /// <summary>
-        /// Get VM Id if it is Azure System else Generate an unique id for this machine
+        /// Get VM Id if it is Azure System 
+        ///             else Get Hashed MachineName
+        ///             else Generate an unique id for this machine/process
         /// </summary>
         /// <returns>machine id</returns>
         internal static string GetMachineId()
         {
-            return VmMetadataApiHandler.azMetadata == null ? VmMetadataApiHandler.UniqueId : VmMetadataApiHandler.azMetadata.Compute.VMId;
+            if (VmMetadataApiHandler.azMetadata != null)
+            {
+                return VmMetadataApiHandler.azMetadata.Compute.VMId;
+            }
+
+            try
+            {
+                return VmMetadataApiHandler.HashedMachineName;
+            }
+            catch (Exception)
+            {
+                return VmMetadataApiHandler.UniqueId;
+            }
         }
 
         /// <summary>
@@ -112,6 +130,24 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal static Compute GetMachineInfo()
         {
             return VmMetadataApiHandler.azMetadata?.Compute;     
+        }
+
+        internal static string ComputeSha256Hash(string rawData)
+        {
+            // Create a SHA256   
+            using (SHA256 sha256Hash = SHA256.Create())
+            {
+                // ComputeHash - returns byte array  
+                byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(rawData));
+
+                // Convert byte array to a string   
+                StringBuilder builder = new StringBuilder();
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    builder.Append(bytes[i].ToString("x2"));
+                }
+                return builder.ToString();
+            }
         }
 
         /// <summary>

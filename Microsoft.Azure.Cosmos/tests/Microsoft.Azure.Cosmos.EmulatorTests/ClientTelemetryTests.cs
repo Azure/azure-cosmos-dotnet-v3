@@ -946,7 +946,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 else
                 {
                     Assert.AreNotEqual("vmId:d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd", machineId.ToList()[0]);
-                    Assert.IsTrue(machineId.ToList()[0].Contains("uuid:"), machineId.ToList()[0]);
                 }
             }
 
