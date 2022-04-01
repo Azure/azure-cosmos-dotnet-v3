@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     addresses = await this.serverPartitionAddressCache.GetAsync(
                         key: partitionKeyRangeIdentity,
                         singleValueInitFunc: (currentCachedValue) =>
-                        { 
+                        {
                             staleAddressInfo = currentCachedValue;
                             return this.GetAddressesForRangeIdAsync(
                                 request,
@@ -201,7 +201,18 @@ namespace Microsoft.Azure.Cosmos.Routing
                                 partitionKeyRangeIdentity.PartitionKeyRangeId,
                                 forceRefresh: forceRefreshPartitionAddresses);
                         },
-                        forceRefresh: (_) => true);
+                        forceRefresh: (currentCachedValue) =>
+                        {
+                            int cachedHashCode = request?.RequestContext?.LastPartitionAddressInformationHashCode ?? 0;
+                            if (cachedHashCode == 0)
+                            {
+                                return true;
+                            }
+
+                            // The cached value is different then the previous access hash then assume
+                            // another request already updated the cache since there is a new value in the cache
+                            return currentCachedValue.GetHashCode() == cachedHashCode;
+                        });
 
                     if (staleAddressInfo != null)
                     {
@@ -220,6 +231,13 @@ namespace Microsoft.Azure.Cosmos.Routing
                             partitionKeyRangeIdentity.PartitionKeyRangeId,
                             forceRefresh: false),
                         forceRefresh: (_) => false);
+                }
+
+                // Always save the hash code. This is used to determine if another request already updated the cache.
+                // This helps reduce latency by avoiding uncessary cache refreshes.
+                if (request?.RequestContext != null)
+                {
+                    request.RequestContext.LastPartitionAddressInformationHashCode = addresses.GetHashCode();
                 }
 
                 int targetReplicaSetSize = this.serviceConfigReader.UserReplicationPolicy.MaxReplicaSetSize;
