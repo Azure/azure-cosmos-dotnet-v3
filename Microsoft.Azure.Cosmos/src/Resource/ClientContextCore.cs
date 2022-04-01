@@ -253,13 +253,15 @@ namespace Microsoft.Azure.Cosmos
         {
             bool disableDiagnostics = requestOptions != null && requestOptions.DisablePointOperationDiagnostics;
 
+            TResult result;
             using (ITrace trace = disableDiagnostics ? NoOpTrace.Singleton : (ITrace)Tracing.Trace.GetRootTrace(operationName, traceComponent, traceLevel))
             {
                 trace.AddDatum("Client Configuration", this.client.ClientConfigurationTraceDatum);
-                return await this.RunWithDiagnosticsHelperAsync(
+                result = await this.RunWithDiagnosticsHelperAsync(
                     trace,
                     task);
             }
+            return result;
         }
 
         private Task<TResult> OperationHelperWithRootTraceWithSynchronizationContextAsync<TResult>(string operationName,

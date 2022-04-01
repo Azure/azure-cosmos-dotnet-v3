@@ -55,8 +55,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container = await this.CreateClientAndContainer(mode);
             // Create an item
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
-            ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(testItem);
-            ToDoActivity testItemCreated = createResponse.Resource;
+            /*ItemResponse<ToDoActivity> createResponse = */await container.CreateItemAsync<ToDoActivity>(testItem);
+      /*      ToDoActivity testItemCreated = createResponse.Resource;
 
             // Read an Item
             await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 patch);
 
             // Delete an Item
-            await container.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
+            await container.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));*/
         }
 
         [TestMethod]

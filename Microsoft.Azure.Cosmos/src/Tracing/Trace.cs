@@ -95,7 +95,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             this.stopwatch.Stop();
 
-            this.CosmosInstrumentation.Record(this);
+            if (this.Parent == null)
+            { 
+                this.CosmosInstrumentation.Record(this);
+            }
         }
 
         public ITrace StartChild(
