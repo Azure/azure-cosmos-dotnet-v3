@@ -48,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Factory method to intiakize telemetry object and start observer task
         /// </summary>
+        /// <param name="clientId"></param>
         /// <param name="documentClient"></param>
         /// <param name="userAgent"></param>
         /// <param name="connectionMode"></param>
@@ -55,7 +56,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="diagnosticsHelper"></param>
         /// <param name="preferredRegions"></param>
         /// <returns>ClientTelemetry</returns>
-        public static ClientTelemetry CreateAndStartBackgroundTelemetry(DocumentClient documentClient,
+        public static ClientTelemetry CreateAndStartBackgroundTelemetry(
+            int clientId,
+            DocumentClient documentClient,
             string userAgent,
             ConnectionMode connectionMode,
             AuthorizationTokenProvider authorizationTokenProvider,
@@ -64,7 +67,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             DefaultTrace.TraceInformation("Initiating telemetry with background task.");
 
-            ClientTelemetry clientTelemetry = new ClientTelemetry(documentClient,
+            ClientTelemetry clientTelemetry = new ClientTelemetry(
+                clientId,
+                documentClient,
                 userAgent,
                 connectionMode,
                 authorizationTokenProvider,
@@ -77,6 +82,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         private ClientTelemetry(
+            int clientId,
             DocumentClient documentClient,
             string userAgent,
             ConnectionMode connectionMode,
@@ -89,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.tokenProvider = authorizationTokenProvider ?? throw new ArgumentNullException(nameof(authorizationTokenProvider));
 
             this.clientTelemetryInfo = new ClientTelemetryProperties(
-                clientId: Guid.NewGuid().ToString(), 
+                clientId: Convert.ToString(clientId), 
                 processId: System.Diagnostics.Process.GetCurrentProcess().ProcessName, 
                 userAgent: userAgent, 
                 connectionMode: connectionMode,

@@ -114,6 +114,7 @@ namespace Microsoft.Azure.Cosmos
                 try
                 {
                     telemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
+                        clientId: cosmosClient.ClientId,
                         documentClient: documentClient,
                         userAgent: connectionPolicy.UserAgentContainer.UserAgent,
                         connectionMode: connectionPolicy.ConnectionMode,
