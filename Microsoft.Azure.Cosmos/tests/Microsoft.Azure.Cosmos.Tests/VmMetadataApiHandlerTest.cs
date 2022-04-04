@@ -19,8 +19,8 @@ namespace Microsoft.Azure.Cosmos
     [TestClass]
     public class VmMetadataApiHandlerTest
     {
-        [TestCleanup]
-        public void Cleanp()
+        [TestInitialize]
+        public void Intialize()
         {
             VmMetadataApiHandler.Clear();
         }
