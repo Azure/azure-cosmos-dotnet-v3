@@ -203,17 +203,25 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics);
 
-            // Recording Request Latency and Request Charge
-            OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
-                                            responseSizeInBytes: responseSizeInBytes,
-                                            consistency: consistencyLevel,
-                                            databaseName: databaseId,
-                                            containerName: containerId,
-                                            operation: operationType,
-                                            resource: resourceType,
-                                            statusCode: (int)statusCode,
-                                            subStatusCode: subStatusCode);
-
+            OperationInfo payloadKey = null;
+            try
+            {
+                // Recording Request Latency and Request Charge
+                payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
+                                                responseSizeInBytes: responseSizeInBytes,
+                                                consistency: consistencyLevel,
+                                                databaseName: databaseId,
+                                                containerName: containerId,
+                                                operation: operationType,
+                                                resource: resourceType,
+                                                statusCode: (int)statusCode,
+                                                subStatusCode: subStatusCode);
+            } 
+            catch (Exception ex) 
+            {
+                Console.WriteLine("payloadKey => " + ex.Message);
+            }
+   
             (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
                     .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                         ClientTelemetryOptions.RequestLatencyMax,
