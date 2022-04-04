@@ -19,6 +19,12 @@ namespace Microsoft.Azure.Cosmos
     [TestClass]
     public class VmMetadataApiHandlerTest
     {
+        [TestCleanup]
+        public void Cleanp()
+        {
+            VmMetadataApiHandler.Clear();
+        }
+
         [TestMethod]
         public async Task GetVmIdAsMachineIdTest()
         {

@@ -81,6 +81,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int httpCallCount = 0;
             int metadataCallCount = 0;
             bool delayCallBack = true;
+
+            VmMetadataApiHandler.Clear();
+
             HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
             {
                 RequestCallBack = async (request, cancellToken) =>
