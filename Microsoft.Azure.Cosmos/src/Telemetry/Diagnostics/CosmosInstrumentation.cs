@@ -45,12 +45,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             if (this.scope.IsEnabled)
             {
                 CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
+
+                this.Record(CosmosInstrumentationConstants.Region, diagnostics.GetContactedRegions());
+
                 /*if (DiagnosticsFilterHelper.IsAllowed(
                         latency: diagnostics.GetClientElapsedTime(),
                         requestcharge: this.requestCharge,
                         statuscode: this.statusCode))
                 {*/
-                this.scope.AddAttribute(CosmosInstrumentationConstants.RequestDiagnostics, diagnostics.ToString());
+                this.Record(CosmosInstrumentationConstants.RequestDiagnostics, diagnostics.ToString());
                 //}
             }
         }

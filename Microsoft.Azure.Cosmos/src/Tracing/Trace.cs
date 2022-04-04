@@ -98,6 +98,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
             if (this.Parent == null)
             { 
                 this.CosmosInstrumentation.Record(this);
+
+                this.CosmosInstrumentation.Dispose();
             }
         }
 

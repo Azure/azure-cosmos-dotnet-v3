@@ -463,37 +463,47 @@ namespace Microsoft.Azure.Cosmos
         {
             using (new ActivityScope(Guid.NewGuid()))
             {
-                using (ICosmosInstrumentation instrumentation = trace.CosmosInstrumentation)
+                try
                 {
-                    try
-                    {
-                        //instrumentation.Record(accountName: this.client?.Endpoint);
-                        instrumentation.Record(CosmosInstrumentationConstants.UserAgent, this.UserAgent);
-                        instrumentation.Record(CosmosInstrumentationConstants.ConnectionMode, this.ClientOptions.ConnectionMode);
+                    AccountProperties account = await this.Client.DocumentClient.GetDatabaseAccountAsync();
 
-                        return await task(trace).ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
-                    {
-                        throw new CosmosOperationCanceledException(oe, trace);
-                    }
-                    catch (ObjectDisposedException objectDisposed) when
-                        (!(objectDisposed is CosmosObjectDisposedException))
-                    {
-                        throw new CosmosObjectDisposedException(
-                            objectDisposed,
-                            this.client,
-                            trace);
-                    }
-                    catch (NullReferenceException nullRefException) when
-                        (!(nullRefException is CosmosNullReferenceException))
-                    {
-                        throw new CosmosNullReferenceException(
-                            nullRefException,
-                            trace);
-                    }
+                    //instrumentation.Record(accountName: this.client?.Endpoint);
+                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.UserAgent, this.UserAgent);
+                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.ConnectionMode, this.ClientOptions.ConnectionMode);
+                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.NetPeerName, account.Id);
+
+                    //dummy values
+                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.ClientId, new Guid().ToString());
+                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.MachineId, new Guid().ToString());
+                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.ContainerName, "container name");
+                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RetryCount, 10);
+                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.ConnectionMode, "dummy connection mode");
+                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.ItemCount, 1000);
+
+                    return await task(trace).ConfigureAwait(false);
                 }
-               
+                catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
+                {
+                    trace.CosmosInstrumentation.MarkFailed(oe);
+                    throw new CosmosOperationCanceledException(oe, trace);
+                }
+                catch (ObjectDisposedException objectDisposed) when
+                    (!(objectDisposed is CosmosObjectDisposedException))
+                {
+                    trace.CosmosInstrumentation.MarkFailed(objectDisposed);
+                    throw new CosmosObjectDisposedException(
+                        objectDisposed,
+                        this.client,
+                        trace);
+                }
+                catch (NullReferenceException nullRefException) when
+                    (!(nullRefException is CosmosNullReferenceException))
+                {
+                    trace.CosmosInstrumentation.MarkFailed(nullRefException);
+                    throw new CosmosNullReferenceException(
+                        nullRefException,
+                        trace);
+                }
             }
         }
 

@@ -181,11 +181,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 {
                                     response = dce.ToCosmosResponseMessage(request);
 
-                                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
-                                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
-                                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
+                                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
+                                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
+                                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
 
-                                    trace.CosmosInstrumentation.MarkFailed(dce);
+                                    childTrace.CosmosInstrumentation.MarkFailed(dce);
                                    
                                     return response;
                                 }
@@ -193,11 +193,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 {
                                     response = ce.ToCosmosResponseMessage(request);
 
-                                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
-                                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
-                                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
+                                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
+                                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
+                                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
 
-                                    trace.CosmosInstrumentation.MarkFailed(ce);
+                                    childTrace.CosmosInstrumentation.MarkFailed(ce);
 
                                     return response;
                                 }
@@ -226,11 +226,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             {
                                 response = ex.ToCosmosResponseMessage(request);
 
-                                trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
-                                trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
-                                trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
+                                childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
+                                childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
+                                childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
 
-                                trace.CosmosInstrumentation.MarkFailed(ex);
+                                childTrace.CosmosInstrumentation.MarkFailed(ex);
 
                                 return response;
                             }
@@ -251,11 +251,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                     requestCharge: default);
                                 response = notFound.ToCosmosResponseMessage(request);
 
-                                trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
-                                trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
-                                trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
+                                childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
+                                childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
+                                childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
 
-                                trace.CosmosInstrumentation.MarkFailed(notFound);
+                                childTrace.CosmosInstrumentation.MarkFailed(notFound);
 
                                 return response;
                             }
@@ -275,11 +275,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                                 response = goneException.ToCosmosResponseMessage(request);
 
-                                trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
-                                trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
-                                trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
+                                childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
+                                childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
+                                childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
 
-                                trace.CosmosInstrumentation.MarkFailed(goneException);
+                                childTrace.CosmosInstrumentation.MarkFailed(goneException);
 
                                 return response;
                             }
@@ -329,11 +329,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     }
                     requestEnricher?.Invoke(request);
 
+                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestContentLength, request.Headers.ContentLength);
+
                     response = await this.SendAsync(request, cancellationToken);
 
-                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
-                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
-                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
+                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
+                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
+                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
+                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.ResponseContentLength, response.Headers.ContentLength);
 
                     return response;
 

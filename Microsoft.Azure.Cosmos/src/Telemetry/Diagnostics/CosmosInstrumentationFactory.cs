@@ -21,6 +21,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
             if (scope.IsEnabled)
             {
+                scope.AddAttribute(CosmosInstrumentationConstants.DbSystemName, "cosmosdb");
+
                 return new CosmosInstrumentation(scope);
             }
 
