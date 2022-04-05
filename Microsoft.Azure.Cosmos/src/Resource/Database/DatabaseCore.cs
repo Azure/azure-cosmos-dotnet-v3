@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -344,6 +345,9 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ValidateContainerProperties(containerProperties);
+
+            trace.CosmosInstrumentation.Record(OTelAttributes.DbName, this.Id);
+            trace.CosmosInstrumentation.Record(OTelAttributes.ContainerName, containerProperties.Id);
 
             ResponseMessage response = await this.ProcessCollectionCreateAsync(
                 streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties),

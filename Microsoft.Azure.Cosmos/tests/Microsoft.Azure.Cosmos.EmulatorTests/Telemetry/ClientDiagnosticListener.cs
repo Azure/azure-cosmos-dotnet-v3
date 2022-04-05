@@ -118,6 +118,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Console.WriteLine(name + " => " + tag.Key + " : " + tag.Value);
             }
+            Console.WriteLine("Total Count :: " + tags.Count());
             Console.WriteLine();
         }
 

@@ -181,21 +181,17 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 {
                                     response = dce.ToCosmosResponseMessage(request);
 
-                                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
-                                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
-                                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
+                                    this.RecordFromResponse(operationType, response, childTrace);
 
                                     childTrace.CosmosInstrumentation.MarkFailed(dce);
-                                   
+
                                     return response;
                                 }
                                 catch (CosmosException ce)
                                 {
                                     response = ce.ToCosmosResponseMessage(request);
 
-                                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
-                                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
-                                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
+                                    this.RecordFromResponse(operationType, response, childTrace);
 
                                     childTrace.CosmosInstrumentation.MarkFailed(ce);
 
@@ -226,9 +222,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             {
                                 response = ex.ToCosmosResponseMessage(request);
 
-                                childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
-                                childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
-                                childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
+                                this.RecordFromResponse(operationType, response, childTrace);
 
                                 childTrace.CosmosInstrumentation.MarkFailed(ex);
 
@@ -251,9 +245,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                     requestCharge: default);
                                 response = notFound.ToCosmosResponseMessage(request);
 
-                                childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
-                                childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
-                                childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
+                                this.RecordFromResponse(operationType, response, childTrace);
 
                                 childTrace.CosmosInstrumentation.MarkFailed(notFound);
 
@@ -275,9 +267,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                                 response = goneException.ToCosmosResponseMessage(request);
 
-                                childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
-                                childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
-                                childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
+                                this.RecordFromResponse(operationType, response, childTrace);
 
                                 childTrace.CosmosInstrumentation.MarkFailed(goneException);
 
@@ -324,19 +314,22 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                     if (cosmosContainerCore != null)
                     {
+                        Console.WriteLine("cosmosContainerCore is NOT null");
                         request.ContainerId = cosmosContainerCore?.Id;
                         request.DatabaseId = cosmosContainerCore?.Database.Id;
+
+                        childTrace.CosmosInstrumentation.Record(OTelAttributes.ContainerName, cosmosContainerCore?.Id);
+                        childTrace.CosmosInstrumentation.Record(OTelAttributes.DbName, cosmosContainerCore?.Database.Id);
+
                     }
+
                     requestEnricher?.Invoke(request);
 
-                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestContentLength, request.Headers.ContentLength);
+                    childTrace.CosmosInstrumentation.Record(OTelAttributes.RequestContentLength, this.GetPayloadSize(request));
 
                     response = await this.SendAsync(request, cancellationToken);
 
-                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RequestCharge, response?.Headers?.RequestCharge);
-                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.StatusCode, response.StatusCode);
-                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbOperation, operationType.ToOperationTypeString());
-                    childTrace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.ResponseContentLength, response.Headers.ContentLength);
+                    this.RecordFromResponse(operationType, response, childTrace);
 
                     return response;
 
@@ -346,6 +339,64 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     activityScope?.Dispose();
                 }
             }
+        }
+
+        private void RecordFromResponse(OperationType operationType, ResponseMessage response, ITrace childTrace)
+        {
+            childTrace.CosmosInstrumentation.Record(OTelAttributes.RequestCharge, response?.Headers?.RequestCharge);
+            childTrace.CosmosInstrumentation.Record(OTelAttributes.StatusCode, response.StatusCode);
+            childTrace.CosmosInstrumentation.Record(OTelAttributes.DbOperation, operationType.ToOperationTypeString());
+            childTrace.CosmosInstrumentation.Record(OTelAttributes.ResponseContentLength, this.GetPayloadSize(response));
+        }
+
+        /// <summary>
+        /// It returns the payload size after reading it from the Response content stream. 
+        /// To avoid blocking IO calls to get the stream length, it will return response content length if stream is of Memory Type
+        /// otherwise it will return the content length from the response header (if it is there)
+        /// </summary>
+        /// <param name="response"></param>
+        /// <returns>Size of Payload</returns>
+        private long GetPayloadSize(ResponseMessage response)
+        {
+            if (response != null)
+            {
+                if (response.Content != null && response.Content is MemoryStream)
+                {
+                    return response.Content.Length;
+                }
+
+                if (response.Headers != null && response.Headers.ContentLength != null)
+                {
+                    return long.Parse(response.Headers.ContentLength);
+                }
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// It returns the payload size after reading it from the Response content stream. 
+        /// To avoid blocking IO calls to get the stream length, it will return response content length if stream is of Memory Type
+        /// otherwise it will return the content length from the response header (if it is there)
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns>Size of Payload</returns>
+        private long GetPayloadSize(RequestMessage request)
+        {
+            if (request != null)
+            {
+                if (request.Content != null && request.Content is MemoryStream)
+                {
+                    return request.Content.Length;
+                }
+
+                if (request.Headers != null && request.Headers.ContentLength != null)
+                {
+                    return long.Parse(request.Headers.ContentLength);
+                }
+            }
+
+            return 0;
         }
 
         internal static HttpMethod GetHttpMethod(

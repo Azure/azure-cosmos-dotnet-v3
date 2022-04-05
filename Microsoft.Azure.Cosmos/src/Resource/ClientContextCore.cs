@@ -468,17 +468,15 @@ namespace Microsoft.Azure.Cosmos
                     AccountProperties account = await this.Client.DocumentClient.GetDatabaseAccountAsync();
 
                     //instrumentation.Record(accountName: this.client?.Endpoint);
-                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.UserAgent, this.UserAgent);
-                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.ConnectionMode, this.ClientOptions.ConnectionMode);
-                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.NetPeerName, account.Id);
+                    trace.CosmosInstrumentation.Record(OTelAttributes.UserAgent, this.UserAgent);
+                    trace.CosmosInstrumentation.Record(OTelAttributes.ConnectionMode, this.ClientOptions.ConnectionMode);
+                    trace.CosmosInstrumentation.Record(OTelAttributes.NetPeerName, account.Id);
+                    trace.CosmosInstrumentation.Record(OTelAttributes.ClientId, this.client.ClientId);
 
                     //dummy values
-                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.ClientId, new Guid().ToString());
-                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.MachineId, new Guid().ToString());
-                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.ContainerName, "container name");
-                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.RetryCount, 10);
-                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.ConnectionMode, "dummy connection mode");
-                    trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.ItemCount, 1000);
+                    trace.CosmosInstrumentation.Record(OTelAttributes.RetryCount, 10);
+                    trace.CosmosInstrumentation.Record(OTelAttributes.ItemCount, 1000);
+                    trace.CosmosInstrumentation.Record(OTelAttributes.ServiceEndpointsContacted, "[{ \"Uri\": \"https://www.regional_enpoint_url.com\", \"Summary\": [{ \"400/1000\": 2}, { \"410/1002\": 3}]}]");
 
                     return await task(trace).ConfigureAwait(false);
                 }

@@ -4,7 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
-    internal class CosmosInstrumentationConstants
+    internal class OTelAttributes
     {
         public const string DiagnosticNamespace = "Azure.Cosmos";
         public const string ResourceProviderNamespace = "Microsoft.DocumentDB";
@@ -17,10 +17,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         public const string ClientId = "db.cosmosdb.client_id";
         public const string MachineId = "db.cosmosdb.machine_id";
         public const string ContainerName = "db.cosmosdb.container";
+        public const string ServiceEndpointsContacted = "db.cosmosdb.service_endpoints_contacted";
         public const string StatusCode = "db.cosmosdb.status_code";
         public const string UserAgent = "db.cosmosdb.user_agent";
-        public const string RequestContentLength = "db.cosmosdb.request_content_length";
-        public const string ResponseContentLength = "db.cosmosdb.response_content_length";
+        public const string RequestContentLength = "db.cosmosdb.request_content_length_bytes";
+        public const string ResponseContentLength = "db.cosmosdb.response_content_length_bytes";
         public const string Region = "db.cosmosdb.regions_contacted";
         public const string RetryCount = "db.cosmosdb.retry_count";
         public const string ConnectionMode = "db.cosmosdb.connection_mode";

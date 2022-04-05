@@ -1143,7 +1143,7 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            trace.CosmosInstrumentation.Record(CosmosInstrumentationConstants.DbName, databaseProperties.Id);
+            trace.CosmosInstrumentation.Record(OTelAttributes.DbName, databaseProperties.Id);
 
             ResponseMessage response = await this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.DatabaseRootUri,

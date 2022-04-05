@@ -28,11 +28,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         {
             if (this.scope.IsEnabled)
             {
-                if (attributeKey.Equals(CosmosInstrumentationConstants.RequestCharge))
+                if (attributeKey.Equals(OTelAttributes.RequestCharge))
                 {
                     this.requestCharge = Convert.ToDouble(attributeValue);
                 }
-                if (attributeKey.Equals(CosmosInstrumentationConstants.StatusCode))
+                if (attributeKey.Equals(OTelAttributes.StatusCode))
                 {
                     this.statusCode = (HttpStatusCode)attributeValue;
                 }
@@ -46,14 +46,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             {
                 CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
 
-                this.Record(CosmosInstrumentationConstants.Region, diagnostics.GetContactedRegions());
+                this.Record(OTelAttributes.Region, diagnostics.GetContactedRegions());
 
                 /*if (DiagnosticsFilterHelper.IsAllowed(
                         latency: diagnostics.GetClientElapsedTime(),
                         requestcharge: this.requestCharge,
                         statuscode: this.statusCode))
                 {*/
-                this.Record(CosmosInstrumentationConstants.RequestDiagnostics, diagnostics.ToString());
+                this.Record(OTelAttributes.RequestDiagnostics, diagnostics.ToString());
                 //}
             }
         }
@@ -62,9 +62,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         {
             if (this.scope.IsEnabled)
             {
-                this.scope.AddAttribute(CosmosInstrumentationConstants.ExceptionMessage, exception.Message);
-                this.scope.AddAttribute(CosmosInstrumentationConstants.ExceptionStacktrace, exception.StackTrace);
-                this.scope.AddAttribute(CosmosInstrumentationConstants.ExceptionType, exception.GetType());
+                this.scope.AddAttribute(OTelAttributes.ExceptionMessage, exception.Message);
+                this.scope.AddAttribute(OTelAttributes.ExceptionStacktrace, exception.StackTrace);
+                this.scope.AddAttribute(OTelAttributes.ExceptionType, exception.GetType());
 
                 this.scope.Failed(exception);
             }
