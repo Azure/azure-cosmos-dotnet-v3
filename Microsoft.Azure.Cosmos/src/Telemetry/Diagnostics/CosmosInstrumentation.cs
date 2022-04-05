@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
     using System;
+    using System.Collections.Generic;
     using System.Net;
     using global::Azure.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -46,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             {
                 CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
 
-                this.Record(OTelAttributes.Region, diagnostics.GetContactedRegions());
+                this.Record(OTelAttributes.Region, ClientTelemetryHelper.GetContactedRegions(diagnostics));
 
                 /*if (DiagnosticsFilterHelper.IsAllowed(
                         latency: diagnostics.GetClientElapsedTime(),

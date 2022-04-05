@@ -882,6 +882,8 @@ namespace Microsoft.Azure.Cosmos
            ITrace trace,
            CancellationToken cancellationToken)
         {
+            trace.CosmosInstrumentation.Record(OTelAttributes.DbName, this.Id);
+
             return this.ClientContext.ProcessResourceOperationStreamAsync(
               resourceUri: linkUri,
               resourceType: resourceType,

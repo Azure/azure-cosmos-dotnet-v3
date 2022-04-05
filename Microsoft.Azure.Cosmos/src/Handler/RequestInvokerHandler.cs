@@ -314,7 +314,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                     if (cosmosContainerCore != null)
                     {
-                        Console.WriteLine("cosmosContainerCore is NOT null");
                         request.ContainerId = cosmosContainerCore?.Id;
                         request.DatabaseId = cosmosContainerCore?.Database.Id;
 
