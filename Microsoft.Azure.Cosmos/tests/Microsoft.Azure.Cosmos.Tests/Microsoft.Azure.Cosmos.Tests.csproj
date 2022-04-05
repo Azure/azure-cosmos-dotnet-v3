@@ -228,18 +228,12 @@
     <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.Top.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="BaselineTest\TestBaseline\PassThroughQueryBaselineTests.PartitionKeyPassThrough.xml">
-	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-	<None Update="BaselineTest\TestBaseline\PassThroughQueryBaselineTests.DistinctPassThrough.xml">
+	<None Update="BaselineTest\TestBaseline\PassThroughQueryBaselineTests.PositivePassThroughOutput.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	</None>
-    <None Update="BaselineTest\TestBaseline\PassThroughQueryBaselineTests.AggregatePassThrough.xml">
+	<None Update="BaselineTest\TestBaseline\PassThroughQueryBaselineTests.NegativePassThroughOutput.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="BaselineTest\TestBaseline\PassThroughQueryBaselineTests.NoPartitionKeyPassThrough.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+	</None>
     <None Update="Contracts\DotNetPreviewSDKAPI.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

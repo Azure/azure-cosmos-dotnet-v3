@@ -282,7 +282,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             bool createPassthroughQuery = streamingSinglePartitionQuery || streamingCrossContinuationQuery;
             
             TryCatch<IQueryPipelineStage> tryCreatePipelineStage;
-            ITrace createQueryPipelineTrace = trace.StartChild("Create Query Pipeline", TraceComponent.Query, Tracing.TraceLevel.Info);
 
             // After getting the Query Plan if we find out that the query is single logical partition, then short circuit and send straight to Backend
             /*
@@ -291,18 +290,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             */
             if (singleLogicalPartitionKeyQuery && inputParameters.PartitionKey != PartitionKey.Null && inputParameters.PartitionKey != PartitionKey.None)  
             {
-                bool parsed;
-                SqlQuery sqlQuery;
-                using (ITrace queryParseTrace = createQueryPipelineTrace.StartChild("Parse Query", TraceComponent.Query, Tracing.TraceLevel.Info))
+                if (partitionedQueryExecutionInfo != null)
                 {
-                    parsed = SqlQueryParser.TryParse(inputParameters.SqlQuerySpec.QueryText, out sqlQuery);
-                }
-
-                if (parsed)
-                {
-                    bool hasDistinct = sqlQuery.SelectClause.HasDistinct;
-                    bool hasGroupBy = sqlQuery.GroupByClause != default;
-                    bool hasAggregates = AggregateProjectionDetector.HasAggregate(sqlQuery.SelectClause.SelectSpec);
+                    bool hasDistinct = partitionedQueryExecutionInfo.QueryInfo.HasDistinct;
+                    bool hasGroupBy = partitionedQueryExecutionInfo.QueryInfo.HasGroupBy;
+                    bool hasAggregates = partitionedQueryExecutionInfo.QueryInfo.HasAggregates;
                     bool createTryExecute = !hasAggregates && !hasDistinct && !hasGroupBy;
 
                     if (createTryExecute)

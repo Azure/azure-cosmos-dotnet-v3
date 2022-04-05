@@ -28,14 +28,5 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             get { return this.isPassThrough; }
             set { this.isPassThrough = value; }
         }
-       
-        /// <summary>
-        /// Gets a value indicating whether the Azure Cosmos DB collection is read-only.
-        /// </summary>
-        /// <value>true if the collection is read-only; otherwise, false.</value>
-        public bool IsReadOnly
-        {
-            get { return false; }
-        }
     }
 }

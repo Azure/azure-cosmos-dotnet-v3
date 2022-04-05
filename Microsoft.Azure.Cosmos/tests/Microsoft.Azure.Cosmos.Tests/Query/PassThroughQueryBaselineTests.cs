@@ -30,80 +30,71 @@
     [TestClass]
     public class PassThroughQueryBaselineTests : BaselineTests<PassThroughQueryTestInput, PassThroughQueryTestOutput>
     {
-        private string query = "";
-
         [TestMethod]
         [Owner("akotalwar")]
-        public void PartitionKeyPassThrough()
+        public void PositivePassThroughOutput()
         {
-            this.query = "SELECT c.key FROM c";
             List<PassThroughQueryTestInput> testVariations = new List<PassThroughQueryTestInput>
             {
                 CreateInput(
                 @"Partition Key Field",
-                this.query,
+                "SELECT c.key FROM c",
                 true,
                 @"/key"),
             };
             this.ExecuteTestSuite(testVariations);
         }
-
+        
         [TestMethod]
         [Owner("akotalwar")]
-        public void DistinctPassThrough()
+        public void NegativePassThroughOutput()
         {
-            this.query = "SELECT DISTINCT c.key FROM c";
             List<PassThroughQueryTestInput> testVariations = new List<PassThroughQueryTestInput>
             {
                 CreateInput(
                 @"Partition Key and Distinct",
-                this.query,
+                "SELECT DISTINCT c.key FROM c",
                 false,
                 @"/key"),
-            };
-            this.ExecuteTestSuite(testVariations);
-        }
 
-        [TestMethod]
-        [Owner("akotalwar")]
-        public void AggregatePassThrough()
-        {
-            this.query = "SELECT VALUE MIN(c.key) FROM c";
-            List<PassThroughQueryTestInput> testVariations = new List<PassThroughQueryTestInput>
-            {
-                CreateInput( 
+                CreateInput(
                 @"Partition Key and Min Aggregate",
-                this.query,
+                "SELECT VALUE MIN(c.key) FROM c",
                 false,
                 @"/key"),
-            };
-            this.ExecuteTestSuite(testVariations);
-        }
 
-        [TestMethod]
-        [Owner("akotalwar")]
-        public void NoPartitionKeyPassThrough()
-        {
-            this.query = "SELECT * FROM c";
-            List<PassThroughQueryTestInput> testVariations = new List<PassThroughQueryTestInput>
-            {
                 CreateInput(
                 @"No Partition Key",
-                this.query,
+                "SELECT * FROM c",
                 false),
             };
             this.ExecuteTestSuite(testVariations);
         }
-
+ 
         private static PassThroughQueryTestInput CreateInput(
             string description,
             string query,
             bool expectedValueForTest,
             params string[] partitionkeys) => new PassThroughQueryTestInput(
                 description,
+                query,
                 new SqlQuerySpec(query),
                 expectedValueForTest,
                 partitionkeys);
+
+        private static PartitionedQueryExecutionInfo GetPartitionedQueryExecutionInfo(SqlQuerySpec sqlQuerySpec, PartitionKeyDefinition pkDefinition)
+        {
+            TryCatch<PartitionedQueryExecutionInfo> tryGetQueryPlan = QueryPartitionProviderTestInstance.Object.TryGetPartitionedQueryExecutionInfo(
+                querySpec: sqlQuerySpec,
+                partitionKeyDefinition: pkDefinition,
+                requireFormattableOrderByQuery: true,
+                isContinuationExpected: false,
+                allowNonValueAggregateQuery: true,
+                hasLogicalPartitionKey: false,
+                allowDCount: true);
+
+            return tryGetQueryPlan.Result;
+        }
 
         public override PassThroughQueryTestOutput ExecuteTest(PassThroughQueryTestInput input)
         {
@@ -111,31 +102,9 @@
             IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(input.PartitionKeyDefinition);
             DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
 
-            // this gets PartionedQueryExecutionContext
-            DistinctQueryType distinctType = this.query.Contains("DISTINCT") ? DistinctQueryType.Ordered : DistinctQueryType.None;
-            List<AggregateOperator> aggregates = this.query.Contains("MIN") ? new List<AggregateOperator>() { AggregateOperator.Min } : null;
-           
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = new PartitionedQueryExecutionInfo()
-            {
-                QueryInfo = new QueryInfo()
-                {
-                    Aggregates = aggregates,
-                    DistinctType = distinctType,
-                    GroupByAliases = null,
-                    GroupByAliasToAggregateType = null,
-                    GroupByExpressions = null,
-                    HasSelectValue = false,
-                    Limit = null,
-                    Offset = null,
-                    OrderBy = null,
-                    OrderByExpressions = null,
-                    RewrittenQuery = null,
-                    Top = null,
-                },
-                QueryRanges = new List<Documents.Routing.Range<string>>(),
-            };
+            SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(input.Query);
 
-            // this is container query properties
+            // gets container query properties
             const string resourceId = "resourceId";
             ContainerQueryProperties containerQueryProperties = new ContainerQueryProperties(
                 resourceId,
@@ -156,9 +125,9 @@
                 allowNonValueAggregateQuery: true,
                 correlatedActivityId: Guid.NewGuid());
 
-            // this gets input parameters
+            //  gets input parameters
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
-            SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(this.query);
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = GetPartitionedQueryExecutionInfo(sqlQuerySpec, input.PartitionKeyDefinition);
 
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
                 sqlQuerySpec: sqlQuerySpec,
@@ -174,31 +143,20 @@
                 returnResultsInDeterministicOrder: null,
                 forcePassthrough: true,
                 testInjections: null);
-            
-            ITrace trace = NoOpTrace.Singleton;
-            CancellationToken cancellationToken = new CancellationToken();
 
-            // make call to Create
             Task<TryCatch<IQueryPipelineStage>> queryPipelineStage = CosmosQueryExecutionContextFactory.TryCreateFromPartitionedQueryExecutionInfoAsync(
                 documentContainer,
                 partitionedQueryExecutionInfo,
                 containerQueryProperties,
                 cosmosQueryContextCore,
                 inputParameters,
-                trace,
-                cancellationToken);
+                NoOpTrace.Singleton,
+                default);
             
             bool isPassThrough = inputParameters.SqlQuerySpec.options.IsPassThrough;
-            if (input.ExpectedValueFromTest)
-            {
-                Assert.AreEqual(input.ExpectedValueFromTest, inputParameters.SqlQuerySpec.options.IsPassThrough, "Expected true for PassThrough query");
-            }
-            else 
-            {
-                Assert.AreEqual(input.ExpectedValueFromTest, inputParameters.SqlQuerySpec.options.IsPassThrough, "Expected false for PassThrough query");
-            }
-
-            Assert.IsTrue(queryPipelineStage != null, "Expected queryPipelineStage to not be null");
+           
+            Assert.AreEqual(input.ExpectedValueFromTest, inputParameters.SqlQuerySpec.options.IsPassThrough);
+            Assert.IsNotNull(queryPipelineStage);
 
             return new PassThroughQueryTestOutput(isPassThrough);
         }
@@ -228,9 +186,11 @@
         internal Cosmos.PartitionKey PartitionKey { get; set; }
         internal bool ExpectedValueFromTest { get; set; }
         internal PartitionKeyRangeIdentity PartitionKeyRangeId { get; set; }
+        internal string Query { get; set; }
 
         internal PassThroughQueryTestInput(
             string description,
+            string query,
             SqlQuerySpec sqlQuerySpec,
             bool expectedValueFromTest,
             string[] partitionKeys
@@ -248,6 +208,7 @@
             };
             this.SqlQuerySpec = sqlQuerySpec;
             this.ExpectedValueFromTest = expectedValueFromTest;
+            this.Query = query;
             this.PartitionKey = partitionKeys.Length == 0 ? Cosmos.PartitionKey.None : new Cosmos.PartitionKey(partitionKeys[0]);
         }
 
