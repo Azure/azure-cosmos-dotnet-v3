@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
 
     [Serializable]
     internal sealed class ClientTelemetryProperties
@@ -23,8 +24,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         [JsonProperty(PropertyName = "userAgent")]
         internal string UserAgent { get; }
 
+        [JsonConverter(typeof(StringEnumConverter))]
         [JsonProperty(PropertyName = "connectionMode")]
-        internal string ConnectionMode { get; }
+        internal ConnectionMode ConnectionMode { get; }
 
         [JsonProperty(PropertyName = "globalDatabaseAccountName")]
         internal string GlobalDatabaseAccountName { get; set; }
@@ -69,8 +71,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.ClientId = clientId;
             this.ProcessId = processId;
             this.UserAgent = userAgent;
-            this.ConnectionMode = ClientTelemetryHelper.GetConnectionModeString(connectionMode);
-            if (this.ConnectionMode == ClientTelemetryHelper.DirectMode)
+            this.ConnectionMode = connectionMode;
+            if (this.ConnectionMode == ConnectionMode.Direct)
             {
                 this.IsDirectConnectionMode = true;   
             }
@@ -87,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string clientId,
             string processId,
             string userAgent,
-            string connectionMode,
+            ConnectionMode connectionMode,
             string globalDatabaseAccountName,
             string applicationRegion,
             string hostEnvInfo,
