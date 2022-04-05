@@ -16,8 +16,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
     internal static class ClientTelemetryHelper
     {
-        private const string DirectMode = "DIRECT";
-        private const string GatewayMode = "GATEWAY";
+        internal const string DirectMode = "DIRECT";
+        internal const string GatewayMode = "GATEWAY";
 
         internal static AzureVMMetadata azMetadata = null;
 
@@ -98,11 +98,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         /// <param name="systemUsageHistory"></param>
         /// <param name="systemInfoCollection"></param>
-        /// <param name="connectionMode"></param>
+        /// <param name="isDirectConnectionMode"></param>
         internal static void RecordSystemUsage(
                 SystemUsageHistory systemUsageHistory, 
                 List<SystemInfo> systemInfoCollection,
-                string connectionMode)
+                bool isDirectConnectionMode)
         {
             if (systemUsageHistory.Values == null)
             {
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             systemInfoCollection.Add(TelemetrySystemUsage.GetThreadWaitIntervalInMs(systemUsageHistory.Values));
             systemInfoCollection.Add(TelemetrySystemUsage.GetThreadStarvationSignalCount(systemUsageHistory.Values));
 
-            if (connectionMode == ClientTelemetryHelper.GetConnectionModeString(ConnectionMode.Direct))
+            if (isDirectConnectionMode)
             {
                 systemInfoCollection.Add(TelemetrySystemUsage.GetTcpConnectionCount(systemUsageHistory.Values));
             }
@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 Cosmos.ConnectionMode.Direct => ClientTelemetryHelper.DirectMode,
                 Cosmos.ConnectionMode.Gateway => ClientTelemetryHelper.GatewayMode,
-                _ => connectionMode.ToString().ToUpper(),
+                _ => throw new Exception("Unsupported Connection Mode is Passed"),
             };
         }
 

@@ -56,6 +56,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         [JsonProperty(PropertyName = "operationInfo")]
         internal List<OperationInfo> OperationInfo { get; set; }
 
+        [JsonIgnore]
+        internal bool IsDirectConnectionMode { get; }
+
         internal ClientTelemetryProperties(string clientId,
                                    string processId,
                                    string userAgent,
@@ -67,6 +70,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.ProcessId = processId;
             this.UserAgent = userAgent;
             this.ConnectionMode = ClientTelemetryHelper.GetConnectionModeString(connectionMode);
+            if (this.ConnectionMode == ClientTelemetryHelper.DirectMode)
+            {
+                this.IsDirectConnectionMode = true;   
+            }
             this.SystemInfo = new List<SystemInfo>();
             this.PreferredRegions = preferredRegions;
             this.AggregationIntervalInSec = aggregationIntervalInSec;

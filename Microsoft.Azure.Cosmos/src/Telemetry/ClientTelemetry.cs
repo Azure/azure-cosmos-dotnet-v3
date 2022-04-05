@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     ClientTelemetryHelper.RecordSystemUsage(
                         systemUsageHistory: systemUsageHistory, 
                         systemInfoCollection: this.clientTelemetryInfo.SystemInfo,
-                        connectionMode: this.clientTelemetryInfo.ConnectionMode);
+                        isDirectConnectionMode: this.clientTelemetryInfo.IsDirectConnectionMode);
                 } 
                 else
                 {
