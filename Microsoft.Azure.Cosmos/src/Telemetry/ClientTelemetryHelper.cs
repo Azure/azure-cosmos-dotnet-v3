@@ -190,15 +190,5 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return regionsContacted.ToString();
         }
 
-        internal static string GetConnectionModeString(ConnectionMode connectionMode)
-        {
-            return connectionMode switch
-            {
-                Cosmos.ConnectionMode.Direct => ClientTelemetryHelper.DirectMode,
-                Cosmos.ConnectionMode.Gateway => ClientTelemetryHelper.GatewayMode,
-                _ => throw new Exception("Unsupported Connection Mode is Passed"),
-            };
-        }
-
     }
 }
