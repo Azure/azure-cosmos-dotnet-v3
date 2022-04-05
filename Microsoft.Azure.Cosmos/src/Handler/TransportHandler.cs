@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
-            ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, request.Trace.Summary);
+            ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary());
             serviceRequest.RequestContext.ClientRequestStatistics = clientSideRequestStatisticsTraceDatum;
 
             //TODO: extrace auth into a separate handler
