@@ -16,6 +16,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
     internal static class ClientTelemetryHelper
     {
+        private const string DirectMode = "DIRECT";
+        private const string GatewayMode = "GATEWAY";
+
         internal static AzureVMMetadata azMetadata = null;
 
         private static readonly Uri vmMetadataEndpointUrl = ClientTelemetryOptions.GetVmMetadataUrl();
@@ -191,8 +194,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             return connectionMode switch
             {
-                Cosmos.ConnectionMode.Direct => "DIRECT",
-                Cosmos.ConnectionMode.Gateway => "GATEWAY",
+                Cosmos.ConnectionMode.Direct => ClientTelemetryHelper.DirectMode,
+                Cosmos.ConnectionMode.Gateway => ClientTelemetryHelper.GatewayMode,
                 _ => connectionMode.ToString().ToUpper(),
             };
         }
