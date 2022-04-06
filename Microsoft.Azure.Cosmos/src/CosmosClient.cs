@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
     public class CosmosClient : IDisposable
     {
-        internal readonly string Id = new Guid().ToString();
+        internal readonly string Id = Guid.NewGuid().ToString();
 
         private readonly string DatabaseRootUri = Paths.Databases_Root;
         private ConsistencyLevel? accountConsistencyLevel;
