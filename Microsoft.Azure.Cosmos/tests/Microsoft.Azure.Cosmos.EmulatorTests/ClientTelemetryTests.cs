@@ -811,7 +811,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 actualOperationList: actualOperationList,
                 expectedSubstatuscode: expectedSubstatuscode);
 
-            ClientTelemetryTests.AssertSystemLevelInformation(actualSystemInformation);
+            ClientTelemetryTests.AssertSystemLevelInformation(actualSystemInformation, this.expectedMetricNameUnitMap);
         }
 
         private static void AssertSystemLevelInformation(List<SystemInfo> actualSystemInformation, IDictionary<string, string> expectedMetricNameUnitMap)
