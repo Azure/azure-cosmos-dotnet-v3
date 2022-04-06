@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
             HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
             CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
 
-            VmMetadataApiHandler.Initialize(cosmoshttpClient);
+            VmMetadataApiHandler.TryInitialize(cosmoshttpClient);
 
             await Task.Delay(2000);
             Assert.AreEqual("vmId:d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd", VmMetadataApiHandler.GetMachineId());
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
             HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
             CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
 
-            VmMetadataApiHandler.Initialize(cosmoshttpClient);
+            VmMetadataApiHandler.TryInitialize(cosmoshttpClient);
 
             await Task.Delay(2000);
             Assert.AreEqual(expectedMachineId, VmMetadataApiHandler.GetMachineId());

@@ -174,8 +174,6 @@ namespace Microsoft.Azure.Cosmos
         private event EventHandler<ReceivedResponseEventArgs> receivedResponse;
         private Func<TransportClient, TransportClient> transportClientHandlerFactory;
 
-        private VmMetadataApiHandler vmMetadataApiHandler;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
         /// specified Azure Cosmos DB service endpoint, key, and connection policy for the Azure Cosmos DB service.
@@ -901,7 +899,7 @@ namespace Microsoft.Azure.Cosmos
                 this.receivedResponse);
 
             // Loading VM Information (non blocking call and initialization won't fail if this call fails)
-            this.vmMetadataApiHandler = VmMetadataApiHandler.Initialize(this.httpClient);
+            VmMetadataApiHandler.TryInitialize(this.httpClient);
 
             if (sessionContainer != null)
             {

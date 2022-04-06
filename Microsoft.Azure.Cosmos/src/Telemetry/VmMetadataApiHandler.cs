@@ -21,48 +21,37 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     internal class VmMetadataApiHandler
     {
         internal static readonly Uri vmMetadataEndpointUrl = new ("http://169.254.169.254/metadata/instance?api-version=2020-06-01");
-
+        
         private static readonly string UniqueId = "uuid:" + Guid.NewGuid().ToString();
-        private static string HashedMachineName => "hashedMachineName:" + VmMetadataApiHandler.ComputeHash(Environment.MachineName);
-
         private static readonly object lockObject = new object();
 
-        private static VmMetadataApiHandler instance = null;
+        private static CosmosHttpClient httpClient;
+
         private static bool isInitialized = false;
-
         private static AzureVMMetadata azMetadata = null;
+        private static string HashedMachineName => "hashedMachineName:" + VmMetadataApiHandler.ComputeHash(Environment.MachineName);
 
-        private readonly CosmosHttpClient httpClient;
-
-        private VmMetadataApiHandler(CosmosHttpClient httpClient)
+        internal static void TryInitialize(CosmosHttpClient httpClient)
         {
-            this.httpClient = httpClient;
-
-            _ = Task.Run(this.MetadataApiCallAsync, default)
-                .ContinueWith(t => DefaultTrace.TraceWarning(
-                         $"Exception while making metadata call {t.Exception}"),
-                TaskContinuationOptions.OnlyOnFaulted);
-        }
-
-        internal static VmMetadataApiHandler Initialize(CosmosHttpClient httpClient)
-        {
-            if (VmMetadataApiHandler.isInitialized)
-            {
-                return VmMetadataApiHandler.instance;
-            }
+            VmMetadataApiHandler.httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
 
             lock (VmMetadataApiHandler.lockObject)
             {
-                DefaultTrace.TraceInformation("Initializing VM Metadata API ");
-                VmMetadataApiHandler.instance = new VmMetadataApiHandler(httpClient);
+                if (!VmMetadataApiHandler.isInitialized)
+                {
+                    DefaultTrace.TraceInformation("Initializing VM Metadata API ");
 
-                VmMetadataApiHandler.isInitialized = true;
+                    VmMetadataApiHandler.isInitialized = true;
 
-                return VmMetadataApiHandler.instance;
+                    _ = Task.Run(MetadataApiCallAsync, default)
+                                .ContinueWith(t => DefaultTrace.TraceWarning($"Exception while making metadata call {t.Exception}"),
+                                TaskContinuationOptions.OnlyOnFaulted);
+                }
+
             }
         }
 
-        private async Task MetadataApiCallAsync()
+        private static async Task MetadataApiCallAsync()
         {
             DefaultTrace.TraceInformation($"Loading VM Metadata");
 
@@ -78,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return new ValueTask<HttpRequestMessage>(request);
             }
 
-            HttpResponseMessage response = await this.httpClient
+            HttpResponseMessage response = await VmMetadataApiHandler.httpClient
                 .SendHttpAsync(createRequestMessageAsync: CreateRequestMessage,
                                 resourceType: ResourceType.Telemetry,
                                 timeoutPolicy: HttpTimeoutPolicyNoRetry.Instance,
