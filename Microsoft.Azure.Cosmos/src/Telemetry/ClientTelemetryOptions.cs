@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const long NumberOfTcpConnectionMax = 70000;
         internal const long NumberOfTcpConnectionMin = 1;
         internal const int NumberOfTcpConnectionPrecision = 2;
-        internal const string NumberOfTcpConnectionName = "RntbOpenConnections";
+        internal const string NumberOfTcpConnectionName = "RntbdOpenConnections";
         internal const string NumberOfTcpConnectionUnit = "Count";
 
         internal const string IsThreadStarvingName = "SystemPool_IsThreadStarving_True";
