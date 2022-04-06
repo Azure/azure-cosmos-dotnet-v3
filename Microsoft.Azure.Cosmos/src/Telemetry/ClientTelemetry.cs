@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="preferredRegions"></param>
         /// <returns>ClientTelemetry</returns>
         public static ClientTelemetry CreateAndStartBackgroundTelemetry(
-            int clientId,
+            string clientId,
             DocumentClient documentClient,
             string userAgent,
             ConnectionMode connectionMode,
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         private ClientTelemetry(
-            int clientId,
+            string clientId,
             DocumentClient documentClient,
             string userAgent,
             ConnectionMode connectionMode,
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.tokenProvider = authorizationTokenProvider ?? throw new ArgumentNullException(nameof(authorizationTokenProvider));
 
             this.clientTelemetryInfo = new ClientTelemetryProperties(
-                clientId: Convert.ToString(clientId), 
+                clientId: clientId, 
                 processId: System.Diagnostics.Process.GetCurrentProcess().ProcessName, 
                 userAgent: userAgent, 
                 connectionMode: connectionMode,
