@@ -864,6 +864,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(1, telemetryInfo.AggregationIntervalInSec);
                 Assert.IsNull(telemetryInfo.AcceleratedNetworking);
                 Assert.IsNotNull(telemetryInfo.ClientId);
+                Assert.IsTrue(Convert.ToInt16(telemetryInfo.ClientId) > 0);
                 Assert.IsNotNull(telemetryInfo.ProcessId);
                 Assert.IsNotNull(telemetryInfo.UserAgent);
                 Assert.IsNotNull(telemetryInfo.ConnectionMode);
