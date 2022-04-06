@@ -465,19 +465,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 try
                 {
-                    AccountProperties account = await this.Client.DocumentClient.GetDatabaseAccountAsync();
-
-                    //instrumentation.Record(accountName: this.client?.Endpoint);
-                    trace.CosmosInstrumentation.Record(OTelAttributes.UserAgent, this.UserAgent);
-                    trace.CosmosInstrumentation.Record(OTelAttributes.ConnectionMode, this.ClientOptions.ConnectionMode);
-                    trace.CosmosInstrumentation.Record(OTelAttributes.NetPeerName, account.Id);
-                    trace.CosmosInstrumentation.Record(OTelAttributes.ClientId, this.client.ClientId);
-
-                    //dummy values
-                    trace.CosmosInstrumentation.Record(OTelAttributes.RetryCount, 10);
-                    trace.CosmosInstrumentation.Record(OTelAttributes.ItemCount, 1000);
-                    trace.CosmosInstrumentation.Record(OTelAttributes.ServiceEndpointsContacted, "[{ \"Uri\": \"https://www.regional_enpoint_url.com\", \"Summary\": [{ \"400/1000\": 2}, { \"410/1002\": 3}]}]");
-
                     return await task(trace).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))

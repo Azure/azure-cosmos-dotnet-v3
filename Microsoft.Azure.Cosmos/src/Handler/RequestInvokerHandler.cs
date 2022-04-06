@@ -181,8 +181,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 {
                                     response = dce.ToCosmosResponseMessage(request);
 
-                                    this.RecordFromResponse(operationType, response, childTrace);
-
                                     childTrace.CosmosInstrumentation.MarkFailed(dce);
 
                                     return response;
@@ -190,8 +188,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 catch (CosmosException ce)
                                 {
                                     response = ce.ToCosmosResponseMessage(request);
-
-                                    this.RecordFromResponse(operationType, response, childTrace);
 
                                     childTrace.CosmosInstrumentation.MarkFailed(ce);
 
@@ -222,8 +218,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             {
                                 response = ex.ToCosmosResponseMessage(request);
 
-                                this.RecordFromResponse(operationType, response, childTrace);
-
                                 childTrace.CosmosInstrumentation.MarkFailed(ex);
 
                                 return response;
@@ -245,8 +239,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                     requestCharge: default);
                                 response = notFound.ToCosmosResponseMessage(request);
 
-                                this.RecordFromResponse(operationType, response, childTrace);
-
                                 childTrace.CosmosInstrumentation.MarkFailed(notFound);
 
                                 return response;
@@ -266,8 +258,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                     requestCharge: default);
 
                                 response = goneException.ToCosmosResponseMessage(request);
-
-                                this.RecordFromResponse(operationType, response, childTrace);
 
                                 childTrace.CosmosInstrumentation.MarkFailed(goneException);
 
@@ -316,19 +306,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     {
                         request.ContainerId = cosmosContainerCore?.Id;
                         request.DatabaseId = cosmosContainerCore?.Database.Id;
-
-                        childTrace.CosmosInstrumentation.Record(OTelAttributes.ContainerName, cosmosContainerCore?.Id);
-                        childTrace.CosmosInstrumentation.Record(OTelAttributes.DbName, cosmosContainerCore?.Database.Id);
-
                     }
 
                     requestEnricher?.Invoke(request);
 
-                    childTrace.CosmosInstrumentation.Record(OTelAttributes.RequestContentLength, this.GetPayloadSize(request));
-
                     response = await this.SendAsync(request, cancellationToken);
-
-                    this.RecordFromResponse(operationType, response, childTrace);
 
                     return response;
 
@@ -338,14 +320,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     activityScope?.Dispose();
                 }
             }
-        }
-
-        private void RecordFromResponse(OperationType operationType, ResponseMessage response, ITrace childTrace)
-        {
-            childTrace.CosmosInstrumentation.Record(OTelAttributes.RequestCharge, response?.Headers?.RequestCharge);
-            childTrace.CosmosInstrumentation.Record(OTelAttributes.StatusCode, response.StatusCode);
-            childTrace.CosmosInstrumentation.Record(OTelAttributes.DbOperation, operationType.ToOperationTypeString());
-            childTrace.CosmosInstrumentation.Record(OTelAttributes.ResponseContentLength, this.GetPayloadSize(response));
         }
 
         /// <summary>
