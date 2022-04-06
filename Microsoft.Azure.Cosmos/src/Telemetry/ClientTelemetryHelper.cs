@@ -16,8 +16,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
     internal static class ClientTelemetryHelper
     {
-        internal const string DirectMode = "DIRECT";
-
         internal static AzureVMMetadata azMetadata = null;
 
         private static readonly Uri vmMetadataEndpointUrl = ClientTelemetryOptions.GetVmMetadataUrl();

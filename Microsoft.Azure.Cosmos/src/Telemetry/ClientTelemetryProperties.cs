@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.ProcessId = processId;
             this.UserAgent = userAgent;
             this.ConnectionMode = connectionMode.ToString().ToUpperInvariant();
-            if (this.ConnectionMode == ClientTelemetryHelper.DirectMode)
+            if (connectionMode == Microsoft.Azure.Cosmos.ConnectionMode.Direct)
             {
                 this.IsDirectConnectionMode = true;   
             }
