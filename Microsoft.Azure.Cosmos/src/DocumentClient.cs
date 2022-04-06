@@ -213,7 +213,9 @@ namespace Microsoft.Azure.Cosmos
 
             if (authKey != null)
             {
-                this.cosmosAuthorization = new AuthorizationTokenProviderMasterKey(authKey);
+                this.cosmosAuthorization = new AuthorizationTokenProviderMasterKey(
+                    new CosmosMasterKeyCredential(serviceEndpoint.ToString(), authKey),
+                    disposeCredential: true);
             }
 
             this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel);
@@ -378,7 +380,7 @@ namespace Microsoft.Azure.Cosmos
                       Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
                       IStoreClientFactory storeClientFactory = null)
             : this(serviceEndpoint,
-                AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken),
+                AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(serviceEndpoint.ToString(), authKeyOrResourceToken),
                 sendingRequestEventArgs,
                 connectionPolicy,
                 desiredConsistencyLevel,

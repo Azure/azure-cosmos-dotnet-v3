@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Globalization;
     using System.Net;
-    using System.Security;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -22,23 +21,34 @@ namespace Microsoft.Azure.Cosmos
         private const string MacSignatureString = "to sign";
         private const string EnableAuthFailureTracesConfig = "enableAuthFailureTraces";
         private readonly Lazy<bool> enableAuthFailureTraces;
-        private readonly IComputeHash authKeyHashFunction;
-        private bool isDisposed = false;
+        private readonly CosmosMasterKeyCredential cosmosMasterKeyCredential;
+        private readonly bool disposeCredential;
+        private bool isDisposed;
 
-        public AuthorizationTokenProviderMasterKey(IComputeHash computeHash)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AuthorizationTokenProviderMasterKey"/> class.
+        /// </summary>
+        /// <param name="cosmosMasterKeyCredential">Master key credential.</param>
+        /// <param name="disposeCredential">
+        /// Indicates whether the credential should be disposed when the <see cref="AuthorizationTokenProviderMasterKey"/> is disposed. This value
+        /// should be set to <c>true</c> when the <paramref name="cosmosMasterKeyCredential"/> is generated from a user-provided key or connection string.
+        /// </param>
+        /// <exception cref="ArgumentNullException">Thrown if the credential is null.</exception>
+        public AuthorizationTokenProviderMasterKey(CosmosMasterKeyCredential cosmosMasterKeyCredential, bool disposeCredential)
         {
-            this.authKeyHashFunction = computeHash ?? throw new ArgumentNullException(nameof(computeHash));
+            this.cosmosMasterKeyCredential = cosmosMasterKeyCredential ?? throw new ArgumentNullException(nameof(cosmosMasterKeyCredential));
+            this.disposeCredential = disposeCredential;
             this.enableAuthFailureTraces = new Lazy<bool>(() =>
             {
 #if NETSTANDARD20
                 // GetEntryAssembly returns null when loaded from native netstandard2.0
                 if (System.Reflection.Assembly.GetEntryAssembly() == null)
                 {
-                        return false;
+                    return false;
                 }
 #endif
                 string enableAuthFailureTracesString = System.Configuration.ConfigurationManager.AppSettings[EnableAuthFailureTracesConfig];
-                if (string.IsNullOrEmpty(enableAuthFailureTracesString) || 
+                if (string.IsNullOrEmpty(enableAuthFailureTracesString) ||
                     !bool.TryParse(enableAuthFailureTracesString, out bool enableAuthFailureTracesFlag))
                 {
                     return false;
@@ -46,16 +56,6 @@ namespace Microsoft.Azure.Cosmos
 
                 return enableAuthFailureTracesFlag;
             });
-        }
-
-        public AuthorizationTokenProviderMasterKey(SecureString authKey)
-            : this(new SecureStringHMACSHA256Helper(authKey))
-        {
-        }
-
-        public AuthorizationTokenProviderMasterKey(string authKey)
-            : this(new StringHMACSHA256Hash(authKey))
-        {
         }
 
         public override ValueTask<(string token, string payload)> GetUserAuthorizationAsync(
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceAddress,
                 resourceType,
                 headers,
-                this.authKeyHashFunction,
+                this.cosmosMasterKeyCredential.HashFunction,
                 out AuthorizationHelper.ArrayOwner arrayOwner);
 
             using (arrayOwner)
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceAddress,
                 resourceType,
                 headers,
-                this.authKeyHashFunction,
+                this.cosmosMasterKeyCredential.HashFunction,
                 out AuthorizationHelper.ArrayOwner arrayOwner);
 
             using (arrayOwner)
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
                             verb,
                             requestAddress,
                             headersCollection,
-                            this.authKeyHashFunction);
+                            this.cosmosMasterKeyCredential.HashFunction);
 
             headersCollection.Add(HttpConstants.HttpHeaders.Authorization, token);
             return default;
@@ -152,9 +152,9 @@ namespace Microsoft.Azure.Cosmos
                 {
                     string tokenFirst5 = HttpUtility.UrlDecode(authorizationToken).Split('&')[2].Split('=')[1].Substring(0, 5);
                     ulong authHash = 0;
-                    if (this.authKeyHashFunction?.Key != null)
+                    if (this.cosmosMasterKeyCredential.HashFunction?.Key != null)
                     {
-                        byte[] bytes = Encoding.UTF8.GetBytes(this.authKeyHashFunction?.Key?.ToString());
+                        byte[] bytes = Encoding.UTF8.GetBytes(this.cosmosMasterKeyCredential.HashFunction?.Key?.ToString());
                         authHash = Documents.Routing.MurmurHash3.Hash64(bytes, bytes.Length);
                     }
                     DefaultTrace.TraceError("Un-expected authorization payload mis-match. Actual payload={0}, token={1}..., hash={2:X}..., error={3}",
@@ -171,7 +171,11 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!this.isDisposed)
             {
-                this.authKeyHashFunction.Dispose();
+                if (this.disposeCredential)
+                {
+                    this.cosmosMasterKeyCredential.Dispose();
+                }
+
                 this.isDisposed = true;
             }
         }

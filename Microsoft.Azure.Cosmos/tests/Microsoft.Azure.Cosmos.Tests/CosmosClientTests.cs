@@ -14,6 +14,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Tests.Utils;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -138,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void InvalidConnectionString()
         {
             Assert.ThrowsException<ArgumentException>(() => new CosmosClient(""));
-            Assert.ThrowsException<ArgumentNullException>(() => new CosmosClient(null));
+            Assert.ThrowsException<ArgumentNullException>(() => new CosmosClient(connectionString: null));
         }
 
         [TestMethod]
@@ -192,10 +194,82 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task ValidateClientKeyUpdateAsync()
+        {
+            const string exKeyField = "UsedKey";
+            string originalKey = TestKeyGenerator.GenerateAuthKey();
+            string newKey = TestKeyGenerator.GenerateAuthKey();
+            string currentKey = originalKey;
+
+            Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>();
+            mockHttpHandler.Setup(x => x.SendAsync(
+                It.IsAny<HttpRequestMessage>(),
+                It.IsAny<CancellationToken>()))
+                .Callback<HttpRequestMessage, CancellationToken>(
+                (request, cancellationToken) =>
+                {
+                    Assert.IsTrue(request.Headers.TryGetValues(Documents.HttpConstants.HttpHeaders.Authorization, out IEnumerable<string> authValues));
+
+                    AuthorizationHelper.GetResourceTypeAndIdOrFullName(request.RequestUri, out _, out string resourceType, out string resourceIdValue);
+
+                    AuthorizationHelper.ParseAuthorizationToken(authValues.First(),
+                        out ReadOnlyMemory<char> _,
+                        out ReadOnlyMemory<char> _,
+                        out ReadOnlyMemory<char> tokenOutput);
+
+                    Assert.IsTrue(AuthorizationHelper.CheckPayloadUsingKey(
+                        tokenOutput,
+                        "GET",
+                        resourceIdValue,
+                        resourceType,
+                        request.Headers.Aggregate(new NameValueCollectionWrapper(), (c, kvp) => { c.Add(kvp.Key, kvp.Value); return c; }),
+                        currentKey));
+
+                    Exception validationEx = new Exception($"Authenticated connection to {request.RequestUri} using {(currentKey == originalKey ? "orignal" : "new")} key.");
+                    validationEx.Data[exKeyField] = currentKey;
+
+                    throw validationEx;
+                });
+
+
+            using CosmosMasterKeyCredential masterKeyCredential = new CosmosMasterKeyCredential("https://localhost:8081", originalKey);
+
+            using CosmosClient client = new CosmosClient(masterKeyCredential,
+                new CosmosClientOptions()
+                {
+                    HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
+                });
+
+            Container container = client.GetContainer("Test", "MockTest");
+
+            try
+            {
+                await container.ReadItemAsync<ToDoActivity>(Guid.NewGuid().ToString(), new PartitionKey(Guid.NewGuid().ToString()));
+                Assert.Fail("Expected client to throw a post authentication exception");
+            }
+            catch (Exception e)
+            {
+                Assert.AreEqual(originalKey, e.Data[exKeyField].ToString(), $"{e.Message} Expected original key to be used");
+            }
+
+            masterKeyCredential.UpdateKey(newKey);
+            currentKey = newKey;
+            try
+            {
+                await container.ReadItemAsync<ToDoActivity>(Guid.NewGuid().ToString(), new PartitionKey(Guid.NewGuid().ToString()));
+                Assert.Fail("Expected client to throw a post authentication exception");
+            }
+            catch (Exception e)
+            {
+                Assert.AreEqual(newKey, e.Data[exKeyField].ToString(), $"{e.Message} Expected new key to be used");
+            }
+        }
+
+        [TestMethod]
         public void Builder_InvalidConnectionString()
         {
             Assert.ThrowsException<ArgumentException>(() => new CosmosClientBuilder(""));
-            Assert.ThrowsException<ArgumentNullException>(() => new CosmosClientBuilder(null));
+            Assert.ThrowsException<ArgumentNullException>(() => new CosmosClientBuilder(connectionString: default));
         }
 
         [TestMethod]

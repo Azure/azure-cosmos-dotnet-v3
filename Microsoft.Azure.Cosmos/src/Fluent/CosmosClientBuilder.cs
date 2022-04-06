@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private readonly CosmosClientOptions clientOptions = new CosmosClientOptions();
         private readonly string accountEndpoint;
         private readonly string accountKey;
+        private readonly CosmosMasterKeyCredential cosmosMasterKeyCredential;
         private readonly TokenCredential tokenCredential;
 
         /// <summary>
@@ -87,6 +88,15 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="CosmosClientBuilder"/> class.
+        /// </summary>
+        /// <param name="cosmosMasterKeyCredential">Master key credentials to use for the client.</param>
+        public CosmosClientBuilder(CosmosMasterKeyCredential cosmosMasterKeyCredential)
+        {
+            this.cosmosMasterKeyCredential = cosmosMasterKeyCredential ?? throw new ArgumentNullException(nameof(cosmosMasterKeyCredential));
+        }
+
+        /// <summary>
         /// Initializes a new <see cref="CosmosClientBuilder"/> with a <see cref="TokenCredential"/> instance.
         /// </summary>
         /// <param name="accountEndpoint">The Uri to the Cosmos Account. Example: https://{Cosmos Account Name}.documents.azure.com:443/ </param>
@@ -112,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
             }
 
             this.accountEndpoint = accountEndpoint;
-            this.tokenCredential = tokenCredential ?? throw new ArgumentNullException(nameof(CosmosClientBuilder.tokenCredential));
+            this.tokenCredential = tokenCredential ?? throw new ArgumentNullException(nameof(tokenCredential));
         }
 
         /// <summary>
@@ -126,7 +136,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
         {
             DefaultTrace.TraceInformation($"CosmosClientBuilder.Build with configuration: {this.clientOptions.GetSerializedConfiguration()}");
             return this.tokenCredential == null ?
-                new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions) :
+                (this.cosmosMasterKeyCredential == null ?
+                    new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions) :
+                    new CosmosClient(this.cosmosMasterKeyCredential, this.clientOptions)) :
                 new CosmosClient(this.accountEndpoint, this.tokenCredential, this.clientOptions);
         }
 

@@ -6,20 +6,22 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Concurrent;
-    using System.IO;
     using System.Security;
     using System.Security.Cryptography;
 
     internal sealed class StringHMACSHA256Hash : IComputeHash
     {
-        private readonly String base64EncodedKey;
         private readonly byte[] keyBytes;
-        private SecureString secureString;
-        private ConcurrentQueue<HMACSHA256> hmacPool;
+        private readonly ConcurrentQueue<HMACSHA256> hmacPool;
 
-        public StringHMACSHA256Hash(String base64EncodedKey)
+        public StringHMACSHA256Hash(string base64EncodedKey)
         {
-            this.base64EncodedKey = base64EncodedKey;
+            if (string.IsNullOrEmpty(base64EncodedKey))
+            {
+                throw new ArgumentNullException(nameof(base64EncodedKey));
+            }
+
+            this.Key = SecureStringUtility.ConvertToSecureString(base64EncodedKey);
             this.keyBytes = Convert.FromBase64String(base64EncodedKey);
             this.hmacPool = new ConcurrentQueue<HMACSHA256>();
         }
@@ -45,15 +47,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public SecureString Key
-        {
-            get
-            {
-                if (this.secureString != null) return this.secureString;
-                this.secureString = SecureStringUtility.ConvertToSecureString(this.base64EncodedKey);
-                return this.secureString;
-            }
-        }
+        public SecureString Key { get; private set; }
 
         public void Dispose()
         {
@@ -62,10 +56,10 @@ namespace Microsoft.Azure.Cosmos
                 hmacsha256.Dispose();
             }
 
-            if (this.secureString != null)
+            if (this.Key != null)
             {
-                this.secureString.Dispose();
-                this.secureString = null;
+                this.Key.Dispose();
+                this.Key = null;
             }
         }
     }

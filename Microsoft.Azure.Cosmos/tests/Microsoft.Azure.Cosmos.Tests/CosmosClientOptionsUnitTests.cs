@@ -314,7 +314,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ThrowOnNullConnectionString()
         {
-            new CosmosClientBuilder(null);
+            new CosmosClientBuilder(connectionString: default);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void ThrowOnNullCredentials()
+        {
+            new CosmosClientBuilder(cosmosMasterKeyCredential: default);
         }
 
         [TestMethod]

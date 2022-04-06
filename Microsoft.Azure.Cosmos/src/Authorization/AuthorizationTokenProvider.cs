@@ -55,7 +55,12 @@ namespace Microsoft.Azure.Cosmos
             string authorizationToken,
             string payload);
 
-        public static AuthorizationTokenProvider CreateWithResourceTokenOrAuthKey(string authKeyOrResourceToken)
+        public static AuthorizationTokenProvider CreateWithMasterKeyCredential(CosmosMasterKeyCredential cosmosMasterKeyCredential)
+        {
+            return new AuthorizationTokenProviderMasterKey(cosmosMasterKeyCredential, disposeCredential: false);
+        }
+
+        public static AuthorizationTokenProvider CreateWithResourceTokenOrAuthKey(string accountEndpoint, string authKeyOrResourceToken)
         {
             if (string.IsNullOrEmpty(authKeyOrResourceToken))
             {
@@ -68,7 +73,9 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                return new AuthorizationTokenProviderMasterKey(authKeyOrResourceToken);
+                return new AuthorizationTokenProviderMasterKey(
+                    new CosmosMasterKeyCredential(accountEndpoint, authKeyOrResourceToken),
+                    disposeCredential: true);
             }
         }
 

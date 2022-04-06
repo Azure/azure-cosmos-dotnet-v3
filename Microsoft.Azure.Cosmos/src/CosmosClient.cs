@@ -217,7 +217,53 @@ namespace Microsoft.Azure.Cosmos
             string authKeyOrResourceToken,
             CosmosClientOptions clientOptions = null)
              : this(accountEndpoint,
-                     AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken),
+                     AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(accountEndpoint, authKeyOrResourceToken),
+                     clientOptions)
+        {
+        }
+
+        /// <summary>
+        /// Creates a new CosmosClient with the given master key credential.
+        /// 
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// of the application which enables efficient connection management and performance. Please refer to the
+        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
+        /// </summary>
+        /// <param name="cosmosMasterKeyCredential">The master key credential.</param>
+        /// <param name="clientOptions">(Optional) client options</param>
+        /// <example>
+        /// The CosmosClient is created with the master key credential and configured to use "East US 2" region.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// using Microsoft.Azure.Cosmos;
+        ///
+        /// CosmosMasterKeyCredential credential = new CosmosMasterKeyCredential(
+        ///             "account-endpoint-from-portal",
+        ///             "account-key-from-portal");
+        ///
+        /// CosmosClient cosmosClient = new CosmosClient(
+        ///             credential,
+        ///             new CosmosClientOptions()
+        ///             {
+        ///                 ApplicationRegion = Regions.EastUS2,
+        ///             });
+        ///
+        /// // Update the credential in case of a key rotation
+        /// credential.UpdateKey("new-account-key-from-portal");
+        ///
+        /// // Dispose cosmosClient and credential at application exit
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso cref="CosmosClientOptions"/>
+        /// <seealso cref="Fluent.CosmosClientBuilder"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">Performance Tips</seealso>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk">Diagnose and troubleshoot issues</seealso>
+        public CosmosClient(
+            CosmosMasterKeyCredential cosmosMasterKeyCredential,
+            CosmosClientOptions clientOptions = null)
+             : this(cosmosMasterKeyCredential.Endpoint.ToString(),
+                     AuthorizationTokenProvider.CreateWithMasterKeyCredential(cosmosMasterKeyCredential),
                      clientOptions)
         {
         }
@@ -438,7 +484,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.Endpoint = new Uri(accountEndpoint);
             this.AccountKey = authKeyOrResourceToken;
-            this.AuthorizationTokenProvider = AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken);
+            this.AuthorizationTokenProvider = AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(accountEndpoint, authKeyOrResourceToken);
 
             this.ClientContext = ClientContextCore.Create(
                  this,
