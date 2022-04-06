@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
+    using Newtonsoft.Json.Serialization;
 
     [Serializable]
     internal sealed class ClientTelemetryProperties
@@ -57,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal List<OperationInfo> OperationInfo { get; set; }
 
         [JsonIgnore]
-        private readonly ConnectionMode ConnectionModeEnum;
+        internal bool IsDirectConnectionMode { get; }
 
         internal ClientTelemetryProperties(string clientId,
                                    string processId,
@@ -69,8 +71,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.ClientId = clientId;
             this.ProcessId = processId;
             this.UserAgent = userAgent;
-            this.ConnectionModeEnum = connectionMode;
-            this.ConnectionMode = ClientTelemetryProperties.GetConnectionModeString(connectionMode);
+            this.ConnectionMode = connectionMode.ToString().ToUpperInvariant();
+            if (connectionMode == Microsoft.Azure.Cosmos.ConnectionMode.Direct)
+            {
+                this.IsDirectConnectionMode = true;   
+            }
             this.SystemInfo = new List<SystemInfo>();
             this.PreferredRegions = preferredRegions;
             this.AggregationIntervalInSec = aggregationIntervalInSec;
@@ -79,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Needed by Serializer to deserialize the json
         /// </summary>
+        [JsonConstructor]
         public ClientTelemetryProperties(string dateTimeUtc,
             string clientId,
             string processId,
@@ -106,16 +112,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.CacheRefreshInfo = cacheRefreshInfo;
             this.OperationInfo = operationInfo;
             this.PreferredRegions = preferredRegions;
-        }
-
-        private static string GetConnectionModeString(ConnectionMode connectionMode)
-        {
-            return connectionMode switch
-            {
-                Cosmos.ConnectionMode.Direct => "DIRECT",
-                Cosmos.ConnectionMode.Gateway => "GATEWAY",
-                _ => connectionMode.ToString().ToUpper(),
-            };
         }
     }
 }

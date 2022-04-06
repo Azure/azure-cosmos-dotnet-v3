@@ -95,9 +95,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         /// <param name="systemUsageHistory"></param>
         /// <param name="systemInfoCollection"></param>
+        /// <param name="isDirectConnectionMode"></param>
         internal static void RecordSystemUsage(
                 SystemUsageHistory systemUsageHistory, 
-                List<SystemInfo> systemInfoCollection)
+                List<SystemInfo> systemInfoCollection,
+                bool isDirectConnectionMode)
         {
             if (systemUsageHistory.Values == null)
             {
@@ -111,6 +113,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             systemInfoCollection.Add(TelemetrySystemUsage.GetAvailableThreadsInfo(systemUsageHistory.Values));
             systemInfoCollection.Add(TelemetrySystemUsage.GetThreadWaitIntervalInMs(systemUsageHistory.Values));
             systemInfoCollection.Add(TelemetrySystemUsage.GetThreadStarvationSignalCount(systemUsageHistory.Values));
+
+            if (isDirectConnectionMode)
+            {
+                systemInfoCollection.Add(TelemetrySystemUsage.GetTcpConnectionCount(systemUsageHistory.Values));
+            }
+            
         }
 
         /// <summary>
@@ -178,6 +186,5 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             return regionsContacted.ToString();
         }
-
     }
 }
