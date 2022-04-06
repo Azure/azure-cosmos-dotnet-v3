@@ -761,7 +761,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<OperationInfo> actualOperationList = new List<OperationInfo>();
             List<SystemInfo> actualSystemInformation = new List<SystemInfo>();
 
-            if (localCopyOfActualInfo[0].ConnectionMode == ClientTelemetryHelper.DirectMode)
+            if (localCopyOfActualInfo[0].ConnectionMode == ConnectionMode.Direct.ToString().ToUpperInvariant())
             {
                 this.expectedMetricNameUnitMap.Add(ClientTelemetryOptions.NumberOfTcpConnectionName, ClientTelemetryOptions.NumberOfTcpConnectionUnit);
             }
@@ -859,7 +859,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 actualOperationList.AddRange(telemetryInfo.OperationInfo);
                 actualSystemInformation.AddRange(telemetryInfo.SystemInfo);
 
-                if (telemetryInfo.ConnectionMode == ClientTelemetryHelper.DirectMode)
+                if (telemetryInfo.ConnectionMode == ConnectionMode.Direct.ToString().ToUpperInvariant())
                 {
                     Assert.AreEqual(6, telemetryInfo.SystemInfo.Count, $"System Information Count doesn't Match; {JsonConvert.SerializeObject(telemetryInfo.SystemInfo)}");
                 }
