@@ -1807,7 +1807,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PatchOperation.Replace("/taskNum", newTaskNum),
                 //PatchOperation.Increment("/taskNum", one)
 
-                PatchOperation.Set<string>("/children/1/nullableInt",null)
+                PatchOperation.Set<object>("/children/1/nullableInt",null)
             };
 
             // without content response
@@ -1852,7 +1852,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(1, response.Resource.children[0].cost);
 
             patchOperations.Clear();
-            patchOperations.Add(PatchOperation.Set<string>("/children/0/id", null));
+            patchOperations.Add(PatchOperation.Set<object>("/children/0/id", null));
             // with content response
             response = await containerInternal.PatchItemAsync<ToDoActivity>(
                 id: testItem.id,
