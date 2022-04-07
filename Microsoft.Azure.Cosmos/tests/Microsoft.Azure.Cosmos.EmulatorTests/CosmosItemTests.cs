@@ -234,6 +234,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNull(response.Content);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.AreNotEqual(0, response.Diagnostics.GetFailedRequestCount());
+
         }
 
         [TestMethod]
