@@ -62,9 +62,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             operation = PatchOperation.Set(path, guid);
             PatchOperationTests.ValidateOperations(operation, PatchOperationType.Set, guid);
             
-            string value = null;
-            operation = PatchOperation.Set(path, value);
-            PatchOperationTests.ValidateOperations(operation, PatchOperationType.Set, value);
+            operation = PatchOperation.Set<string>(path, null);
+            PatchOperationTests.ValidateOperations<string>(operation, PatchOperationType.Set, null);
         }
 
         private static void ValidateOperations<T>(PatchOperation patchOperation, PatchOperationType operationType, T value)

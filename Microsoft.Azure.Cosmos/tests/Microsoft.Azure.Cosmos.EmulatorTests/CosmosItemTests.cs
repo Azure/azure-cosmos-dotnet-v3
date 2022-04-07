@@ -1799,7 +1799,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Int16 one = 1;
 
             Assert.IsNull(testItem.children[1].pk);
-            string value = null;
             List<PatchOperation> patchOperations = new List<PatchOperation>()
             {
                 PatchOperation.Set("/children/0/description", "testSet"),
@@ -1808,7 +1807,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PatchOperation.Replace("/taskNum", newTaskNum),
                 //PatchOperation.Increment("/taskNum", one)
 
-                PatchOperation.Set("/children/1/nullableInt",value)
+                PatchOperation.Set<string>("/children/1/nullableInt",null)
             };
 
             // without content response
@@ -1853,7 +1852,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(1, response.Resource.children[0].cost);
 
             patchOperations.Clear();
-            patchOperations.Add(PatchOperation.Set("/children/0/id", value));
+            patchOperations.Add(PatchOperation.Set<string>("/children/0/id", null));
             // with content response
             response = await containerInternal.PatchItemAsync<ToDoActivity>(
                 id: testItem.id,
