@@ -148,10 +148,5 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
         }
 
-        internal static void Clear()
-        {
-            VmMetadataApiHandler.azMetadata = null;
-            VmMetadataApiHandler.isInitialized = false; 
-        }
     }
 }

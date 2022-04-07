@@ -82,7 +82,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int metadataCallCount = 0;
             bool delayCallBack = true;
 
-            VmMetadataApiHandler.Clear();
+            var isInitializedField = typeof(VmMetadataApiHandler).GetField("isInitialized",
+               BindingFlags.Static |
+               BindingFlags.NonPublic);
+            isInitializedField.SetValue(null, false);
+
+            var azMetadataField = typeof(VmMetadataApiHandler).GetField("azMetadata",
+               BindingFlags.Static |
+               BindingFlags.NonPublic);
+            azMetadataField.SetValue(null, null);
 
             HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
             {
