@@ -734,8 +734,8 @@ function bulkImport(docs) {
         }
 
 #pragma warning disable CS0618 
-        private sealed class CommonSerializationBinder : DefaultSerializationBinder
-#pragma warning restore CS0618
+        private sealed class CommonSerializationBinder : Newtonsoft.Json.SerializationBinder
+#pragma warning restore CS0618 
         {
             private readonly ConcurrentDictionary<Type, string> _typeToNameMapping;
             private readonly ConcurrentDictionary<string, Type> _nameToTypeMapping;
