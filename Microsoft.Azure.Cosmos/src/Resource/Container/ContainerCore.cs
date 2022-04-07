@@ -291,7 +291,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                    containerRId,
+                    refreshedContainerRId,
                     ContainerCore.allRanges,
                     trace,
                     forceRefresh: true);
