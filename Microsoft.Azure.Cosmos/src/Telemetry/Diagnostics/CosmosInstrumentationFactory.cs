@@ -19,12 +19,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                 .ScopeFactory
                 .CreateScope($"{OTelAttributes.OperationPrefix}.{operationName}");
 
+#if PREVIEW
             if (scope.IsEnabled)
             {
                 scope.AddAttribute(OTelAttributes.DbSystemName, "cosmosdb");
 
                 return new CosmosInstrumentation(scope);
             }
+#endif
 
             return new CosmosInstrumentationNoOp();
         }
