@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -78,17 +79,37 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task InitTaskThreadSafe()
         {
             int httpCallCount = 0;
+            int metadataCallCount = 0;
             bool delayCallBack = true;
+
+            var isInitializedField = typeof(VmMetadataApiHandler).GetField("isInitialized",
+               BindingFlags.Static |
+               BindingFlags.NonPublic);
+            isInitializedField.SetValue(null, false);
+
+            var azMetadataField = typeof(VmMetadataApiHandler).GetField("azMetadata",
+               BindingFlags.Static |
+               BindingFlags.NonPublic);
+            azMetadataField.SetValue(null, null);
+
             HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
             {
                 RequestCallBack = async (request, cancellToken) =>
                 {
-                    Interlocked.Increment(ref httpCallCount);
+                    if(request.RequestUri.AbsoluteUri ==  VmMetadataApiHandler.vmMetadataEndpointUrl.AbsoluteUri)
+                    {
+                        Interlocked.Increment(ref metadataCallCount);
+                    } 
+                    else
+                    {
+                        Interlocked.Increment(ref httpCallCount);
+                    }
+                    
                     while (delayCallBack)
                     {
                         await Task.Delay(TimeSpan.FromMilliseconds(100));
                     }
-                    
+
                     return null;
                 }
             };
@@ -105,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Container container = cosmosClient.GetContainer("db", "c");
 
-            for(int loop = 0; loop < 3; loop++)
+            for (int loop = 0; loop < 3; loop++)
             {
                 for (int i = 0; i < 10; i++)
                 {
@@ -123,6 +144,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 await Task.WhenAll(tasks);
 
+                Assert.AreEqual(1, metadataCallCount, "Only one call for VM Metadata call with be made");
                 Assert.AreEqual(1, httpCallCount, "Only the first task should do the http call. All other should wait on the first task");
 
                 // Reset counters and retry the client to verify a new http call is done for new requests

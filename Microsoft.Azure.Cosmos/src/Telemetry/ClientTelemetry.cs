@@ -32,7 +32,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
 
         private readonly ClientTelemetryProperties clientTelemetryInfo;
-
         private readonly DocumentClient documentClient;
         private readonly CosmosHttpClient httpClient;
         private readonly AuthorizationTokenProvider tokenProvider;
@@ -135,17 +134,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         this.clientTelemetryInfo.GlobalDatabaseAccountName = accountProperties?.Id;
                     }
 
-                    // Load host information if not available (it caches the information)
-                    AzureVMMetadata azMetadata = await ClientTelemetryHelper.LoadAzureVmMetaDataAsync(this.httpClient);
-
-                    Compute vmInformation = azMetadata?.Compute;
+                    // Load host information from cache
+                    Compute vmInformation = VmMetadataApiHandler.GetMachineInfo();
                     if (vmInformation != null)
                     {
                         this.clientTelemetryInfo.ApplicationRegion = vmInformation.Location;
                         this.clientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(vmInformation);
+                       
                         //TODO: Set AcceleratingNetwork flag from instance metadata once it is available.
                     }
 
+                    this.clientTelemetryInfo.MachineId = VmMetadataApiHandler.GetMachineId();
+                    
                     await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
 
                     // If cancellation is requested after the delay then return from here.
@@ -329,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 using HttpResponseMessage response = await this.httpClient.SendHttpAsync(CreateRequestMessage,
                                                     ResourceType.Telemetry,
-                                                    HttpTimeoutPolicyDefault.Instance,
+                                                    HttpTimeoutPolicyNoRetry.Instance,
                                                     null,
                                                     this.cancellationTokenSource.Token);
 
@@ -369,7 +369,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             this.cancellationTokenSource.Cancel();
             this.cancellationTokenSource.Dispose();
-
+            
             this.telemetryTask = null;
         }
     }
