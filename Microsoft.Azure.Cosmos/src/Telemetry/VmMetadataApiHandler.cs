@@ -22,9 +22,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         internal static readonly Uri vmMetadataEndpointUrl = new ("http://169.254.169.254/metadata/instance?api-version=2020-06-01");
         
-        private static readonly string UniqueId = "uuid:" + Guid.NewGuid().ToString();
-        private static readonly string HashedMachineName = "hashedMachineName:" + VmMetadataApiHandler.ComputeHash(Environment.MachineName);
-
         private static readonly object lockObject = new object();
 
         private static bool isInitialized = false;
@@ -106,14 +103,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return VmMetadataApiHandler.azMetadata.Compute.VMId;
             }
 
-            try
-            {
-                return VmMetadataApiHandler.HashedMachineName;
-            }
-            catch (Exception)
-            {
-                return VmMetadataApiHandler.UniqueId;
-            }
+            return VmMetadataApiHandler.uniqueId.Value;
         }
 
         /// <summary>
@@ -147,6 +137,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return builder.ToString();
             }
         }
+
+        private static readonly Lazy<string> uniqueId = new Lazy<string>(() =>
+        {
+            try
+            {
+                return "hashedMachineName:" + VmMetadataApiHandler.ComputeHash(Environment.MachineName);
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning("Error while generating hashed machine name " + ex.Message);
+            }
+
+            return "uuid:" + Guid.NewGuid().ToString();
+        });
 
     }
 }
