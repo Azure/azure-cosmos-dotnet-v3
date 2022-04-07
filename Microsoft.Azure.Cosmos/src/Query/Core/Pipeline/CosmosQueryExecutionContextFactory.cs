@@ -264,8 +264,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                    trace);
 
             bool singleLogicalPartitionKeyQuery = inputParameters.PartitionKey.HasValue
-                || ((partitionedQueryExecutionInfo.QueryRanges.Count == 1)
-                && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
+                || partitionedQueryExecutionInfo.QueryRanges.Count == 1;
+            bool tryExecuteQueryOnBackend = singleLogicalPartitionKeyQuery
+                && inputParameters.PartitionKey != PartitionKey.Null
+                && inputParameters.PartitionKey != PartitionKey.None;
             bool serverStreamingQuery = !partitionedQueryExecutionInfo.QueryInfo.HasAggregates
                 && !partitionedQueryExecutionInfo.QueryInfo.HasDistinct
                 && !partitionedQueryExecutionInfo.QueryInfo.HasGroupBy;
@@ -284,11 +286,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             TryCatch<IQueryPipelineStage> tryCreatePipelineStage;
 
             // After getting the Query Plan if we find out that the query is single logical partition, then short circuit and send straight to Backend
-            /*
-            Extra checks added because inputParams.Partition.GetType returns a true value causing singleLogicalPartitionKeyQuery to be true
-            and hence certain queries which should not be considered as pass through to be considered as that
-            */
-            if (singleLogicalPartitionKeyQuery && inputParameters.PartitionKey != PartitionKey.Null && inputParameters.PartitionKey != PartitionKey.None)  
+            if (tryExecuteQueryOnBackend)  
             {
                 if (partitionedQueryExecutionInfo != null)
                 {

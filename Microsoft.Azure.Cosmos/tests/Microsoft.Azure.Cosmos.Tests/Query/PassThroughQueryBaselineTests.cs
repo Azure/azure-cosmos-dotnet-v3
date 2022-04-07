@@ -33,7 +33,7 @@
         [TestMethod]
         [Owner("akotalwar")]
         public void PositivePassThroughOutput()
-        {
+        { 
             List<PassThroughQueryTestInput> testVariations = new List<PassThroughQueryTestInput>
             {
                 CreateInput(
@@ -152,13 +152,11 @@
                 inputParameters,
                 NoOpTrace.Singleton,
                 default);
-            
-            bool isPassThrough = inputParameters.SqlQuerySpec.options.IsPassThrough;
-           
+                       
             Assert.AreEqual(input.ExpectedValueFromTest, inputParameters.SqlQuerySpec.options.IsPassThrough);
             Assert.IsNotNull(queryPipelineStage);
 
-            return new PassThroughQueryTestOutput(isPassThrough);
+            return new PassThroughQueryTestOutput(inputParameters.SqlQuerySpec.options.IsPassThrough);
         }
     }
 

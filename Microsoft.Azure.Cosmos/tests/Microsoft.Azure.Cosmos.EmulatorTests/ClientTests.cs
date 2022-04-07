@@ -207,6 +207,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     QueryText = "SELECT 1",
                     Parameters = new SqlParameterCollection() { new SqlParameter("@p1", new JRaw("{\"a\":[1,2,3]}")) }
                 });
+            verifyJsonSerialization("{\"query\":\"SELECT 1\",\"parameters\":[" +
+                    "{\"name\":\"@p1\",\"value\":{\"a\":[1,2,3]}}" + 
+                "]," + "\"options\":{\"IsPassThrough\":true}" + "}",
+                new SqlQuerySpec()
+                {
+                    QueryText = "SELECT 1",
+                    Parameters = new SqlParameterCollection() { new SqlParameter("@p1", new JRaw("{\"a\":[1,2,3]}")) },
+                    Options = new SqlQueryOptions() {IsPassThrough = true}
+                });
 
             // Verify roundtrips
             verifyJsonSerializationText("{\"query\":null}");
@@ -230,7 +239,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "\"query\":\"SELECT 1\"," +
                     "\"parameters\":[" +
                         "{\"name\":\"@p1\",\"value\":true}" +
-                    "]" +
+                    "]" + 
                 "}");
             verifyJsonSerializationText(
                 "{" +
@@ -259,6 +268,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "\"parameters\":[" +
                         "{\"name\":\"@p1\",\"value\":{\"a\":[1,2,\"abc\"]}}" +
                     "]" +
+                "}");
+            verifyJsonSerializationText(
+                "{" +
+                    "\"query\":\"SELECT 1\"," +
+                    "\"parameters\":[" +
+                        "{\"name\":\"@p1\",\"value\":{\"a\":[1,2,\"abc\"]}}" +
+                    "]," + "\"options\":{\"IsPassThrough\":true}" + 
                 "}");
         }
 
