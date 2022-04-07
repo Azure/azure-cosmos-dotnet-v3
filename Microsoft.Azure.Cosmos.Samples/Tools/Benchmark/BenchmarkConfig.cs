@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -98,13 +98,13 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Disable core SDK logging")]
         public bool DisableCoreSdkLogging { get; set; }
 
-        [Option(Required = false, HelpText = "Enable Client Telemetry")]
+        [Option(Required = false, HelpText = "Enable Telemetry")]
         public bool EnableTelemetry { get; set; }
 
-        [Option(Required = false, HelpText = "Client Telemetry Schedule in Seconds, if Client Telemetry is enabled (EnableTelemetry)")]
+        [Option(Required = false, HelpText = "Telemetry Schedule in Seconds")]
         public int  TelemetryScheduleInSec { get; set; }
 
-        [Option(Required = false, HelpText = "Client Telemetry Endpoint, if Client Telemetry is enabled (EnableTelemetry)")]
+        [Option(Required = false, HelpText = "Telemetry Endpoint")]
         public string TelemetryEndpoint { get; set; }
 
         [Option(Required = false, HelpText = "Endpoint to publish results to")]
@@ -119,15 +119,6 @@ namespace CosmosBenchmark
 
         [Option(Required = false, HelpText = "Container to publish results to")]
         public string ResultsContainer { get; set; } = "runsummary";
-
-        [Option(Required = false, HelpText = "Enable Open Telemetry")]
-        public bool EnableOpenTelemetry { get; set; }
-
-        [Option(Required = false, HelpText = "AppInsights Connection String, if Open Telemetry is enabled (EnableOpenTelemetry)")]
-        public string AppInsightConnectionString { get; set; }
-
-        [Option(Required = false, HelpText = "The desired probability of sampling. This must be between 0.0 and 1.0. Higher the value, higher is the probability of a given Activity to be sampled in, if Open Telemetry is Enabled (EnableOpenTelemetry) and AppInsight Connection String is there (AppInsightConnectionString)")]
-        public double? SamplingRatio { get; set; }
 
         internal int GetTaskCount(int containerThroughput)
         {

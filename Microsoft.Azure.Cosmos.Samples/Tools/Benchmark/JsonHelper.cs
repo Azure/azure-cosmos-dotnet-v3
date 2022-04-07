@@ -15,7 +15,7 @@ namespace CosmosBenchmark
                     NullValueHandling = NullValueHandling.Ignore,
                     Formatting = Formatting.Indented,
                 });
-        private const int DefaultCapacity = 2048;
+        private const int DefaultCapacity = 1024;
 
         public static string ToString<T>(T input)
         {

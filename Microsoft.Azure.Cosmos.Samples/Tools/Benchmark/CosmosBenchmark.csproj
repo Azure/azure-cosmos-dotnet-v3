@@ -17,7 +17,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.0.0-beta.3" />
     <PackageReference Include="CommandLineParser" Version="2.8.0" />
     <PackageReference Include="MathNet.Numerics" Version="4.15.0" />
     <PackageReference Include="Microsoft.Azure.DocumentDB.Core" Version="*" />
