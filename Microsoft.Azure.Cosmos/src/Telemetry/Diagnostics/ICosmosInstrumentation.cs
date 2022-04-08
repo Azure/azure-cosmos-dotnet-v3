@@ -17,10 +17,23 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 #endif 
         interface ICosmosInstrumentation : IDisposable
     {
+         /// <summary>
+         /// Recording Attributes
+         /// </summary>
+         /// <param name="attributeKey"></param>
+         /// <param name="attributeValue"></param>
         public void Record(string attributeKey, object attributeValue);
 
+        /// <summary>
+        /// Recording Request Diagnostics
+        /// </summary>
+        /// <param name="trace"></param>
         public void Record(ITrace trace);
 
+        /// <summary>
+        /// Mark Scope as failed and add exceptions in attribute
+        /// </summary>
+        /// <param name="exception"></param>
         public void MarkFailed(Exception exception);
     }
 }
