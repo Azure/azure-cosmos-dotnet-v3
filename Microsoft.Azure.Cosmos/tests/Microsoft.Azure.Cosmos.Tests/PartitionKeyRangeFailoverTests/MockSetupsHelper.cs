@@ -43,6 +43,66 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Returns<HttpRequestMessage, CancellationToken>((request, cancellationToken) => Task.FromResult(httpResponseMessage));
         }
 
+        public static Uri SetupSingleRegionAccount(
+          string accountName,
+          Cosmos.ConsistencyLevel consistencyLevel,
+          Mock<IHttpHandler> mockHttpHandler,
+          out string primaryRegionEndpoint)
+        {
+            primaryRegionEndpoint = $"https://{accountName}-eastus.documents.azure.com";
+            AccountRegion region = new AccountRegion()
+            {
+                Name = "East US",
+                Endpoint = primaryRegionEndpoint
+            };
+
+            AccountProperties accountProperties = new AccountProperties()
+            {
+                Id = accountName,
+                WriteLocationsInternal = new Collection<AccountRegion>()
+                {
+                    region
+                },
+                ReadLocationsInternal = new Collection<AccountRegion>()
+                {
+                    region
+                },
+                EnableMultipleWriteLocations = false,
+                Consistency = new AccountConsistency()
+                {
+                    DefaultConsistencyLevel = consistencyLevel
+                },
+                SystemReplicationPolicy = new ReplicationPolicy()
+                {
+                    MinReplicaSetSize = 3,
+                    MaxReplicaSetSize = 4
+                },
+                ReadPolicy = new ReadPolicy()
+                {
+                    PrimaryReadCoefficient = 1,
+                    SecondaryReadCoefficient = 1
+                },
+                ReplicationPolicy = new ReplicationPolicy()
+                {
+                    AsyncReplication = false,
+                    MinReplicaSetSize = 3,
+                    MaxReplicaSetSize = 4
+                }
+            };
+            
+
+            Uri endpointUri = new Uri($"https://{accountName}.documents.azure.com");
+            mockHttpHandler.Setup(x => x.SendAsync(
+                It.Is<HttpRequestMessage>(x => x.RequestUri == endpointUri),
+                It.IsAny<CancellationToken>()))
+                .Returns<HttpRequestMessage, CancellationToken>((request, cancellationToken) => Task.FromResult(new HttpResponseMessage()
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(JsonConvert.SerializeObject(accountProperties))
+                }));
+            return endpointUri;
+        }
+
         public static HttpResponseMessage CreateStrongAccount(
             string accountName,
             IList<AccountRegion> writeRegions,
@@ -174,6 +234,83 @@ namespace Microsoft.Azure.Cosmos.Tests
               }));
         }
 
+        internal static void SetupSinglePartitionKeyRange(
+            Mock<IHttpHandler> mockHttpHandler,
+            string regionEndpoint,
+            ResourceId containerResourceId,
+            out IReadOnlyList<string> partitionKeyRangeIds)
+        {
+            List<Documents.PartitionKeyRange> partitionKeyRanges = new List<Documents.PartitionKeyRange>()
+            {
+                new Documents.PartitionKeyRange()
+                {
+                    MinInclusive = "",
+                    MaxExclusive = "FF",
+                    Id = "0",
+                    ResourceId = "ccZ1ANCszwkDAAAAAAAAUA==",
+                }
+            };
+
+            partitionKeyRangeIds = partitionKeyRanges.Select(x => x.Id).ToList();
+            string containerRidValue = containerResourceId.DocumentCollectionId.ToString();
+            JObject jObject = new JObject
+            {
+                { "_rid",  containerRidValue},
+                { "_count", partitionKeyRanges.Count },
+                { "PartitionKeyRanges", JArray.FromObject(partitionKeyRanges) }
+            };
+
+            Uri partitionKeyUri = new Uri($"{regionEndpoint}/dbs/{containerResourceId.DatabaseId}/colls/{containerRidValue}/pkranges");
+            mockHttpHandler.SetupSequence(x => x.SendAsync(It.Is<HttpRequestMessage>(x => x.RequestUri == partitionKeyUri), It.IsAny<CancellationToken>()))
+              .Returns(() => Task.FromResult(new HttpResponseMessage()
+              {
+                  StatusCode = HttpStatusCode.OK,
+                  Content = new StringContent(jObject.ToString())
+              }))
+              .Returns(() => Task.FromResult(new HttpResponseMessage()
+              {
+                  StatusCode = HttpStatusCode.NotModified,
+              }));
+        }
+
+        internal static HttpResponseMessage CreateAddresses(
+            List<string> replicaIds,
+            string partitionKeyRangeId,
+            string regionName,
+            ResourceId containerResourceId)
+        {
+            string basePhysicalUri = $"rntbd://cdb-ms-prod-{regionName}-fd4.documents.azure.com:14382/apps/9dc0394e-d25f-4c98-baa5-72f1c700bf3e/services/060067c7-a4e9-4465-a412-25cb0104cb58/partitions/2cda760c-f81f-4094-85d0-7bcfb2acc4e6/replicas/";
+
+            // Use the partition key range id at the end of each replica id to avoid conflicts when setting up multiple partition key ranges
+            List<Address> addresses = new List<Address>();
+            for (int i = 0; i < replicaIds.Count; i++)
+            {
+                string repliaId = replicaIds[i] + (i == 0 ? "p":"s") + "/";
+                addresses.Add(new Address()
+                {
+                    IsPrimary = i == 0,
+                    PartitionKeyRangeId = partitionKeyRangeId,
+                    PhysicalUri = basePhysicalUri + repliaId,
+                    Protocol = "rntbd",
+                    PartitionIndex = "7718513@164605136"
+                });
+            }
+
+            string containerRid = containerResourceId.DocumentCollectionId.ToString();
+            JObject jObject = new JObject
+            {
+                { "_rid", containerRid },
+                { "_count", addresses.Count },
+                { "Addresss", JArray.FromObject(addresses) }
+            };
+
+            return new HttpResponseMessage()
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(jObject.ToString())
+            };
+        }
+
         internal static void SetupAddresses(
             Mock<IHttpHandler> mockHttpHandler,
             string partitionKeyRangeId,
@@ -273,7 +410,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Returns<TransportAddressUri, DocumentServiceRequest>(
                 (uri, documentServiceRequest) =>
                 {
-                    Console.WriteLine($"Write Success: {physicalUri}");
                     Stream createdObject = documentServiceRequest.CloneableBody.Clone();
                     return Task.FromResult(new StoreResponse()
                     {
