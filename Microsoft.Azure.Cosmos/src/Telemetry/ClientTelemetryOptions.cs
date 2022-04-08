@@ -67,6 +67,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const string NumberOfTcpConnectionName = "RntbdOpenConnections";
         internal const string NumberOfTcpConnectionUnit = "Count";
 
+        // Expecting histogram to have Maximum Latency of 1 hour
+        internal const long TcpNewChannelOpenLatencyMax = TimeSpan.TicksPerHour;
+        internal const long TcpNewChannelOpenLatencyMin = 1;
+        internal const int TcpNewChannelOpenLatencyPrecision = 4;
+        internal const string TcpNewChannelOpenLatencyName = "TcpNewChannelOpenLatency";
+        internal const string TcpNewChannelOpenLatencyUnit = "MilliSecond";
+
         internal const string IsThreadStarvingName = "SystemPool_IsThreadStarving_True";
         internal const string IsThreadStarvingUnit = "Count";
 
