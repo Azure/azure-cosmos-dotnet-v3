@@ -69,15 +69,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
                 if (!tryGetQueryPlan.Succeeded)
                 {
-                    if (tryGetQueryPlan.Exception is CosmosException)
+                    Exception originalException = ExceptionWithStackTraceException.UnWrapMonadExcepion(tryGetQueryPlan.Exception, serviceInteropTrace);
+                    if (originalException is CosmosException)
                     {
                         throw tryGetQueryPlan.Exception;
                     }
 
                     throw CosmosExceptionFactory.CreateBadRequestException(
-                        message: tryGetQueryPlan.Exception.ToString(),
+                        message: originalException.ToString(),
                         headers: new Headers(),
-                        stackTrace: tryGetQueryPlan.Exception.StackTrace,
+                        stackTrace: originalException.StackTrace,
+                        innerException: originalException,
                         trace: trace);
                 }
 
