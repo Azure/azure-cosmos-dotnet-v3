@@ -208,6 +208,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Parameters = new SqlParameterCollection() { new SqlParameter("@p1", new JRaw("{\"a\":[1,2,3]}")) }
                 });
             verifyJsonSerialization("{\"query\":\"SELECT 1\",\"parameters\":[" +
+                    "{\"name\":\"@p1\",\"value\":{\"a\":[1,2,3]}}" +
+                "]}",
+                new SqlQuerySpec()
+                {
+                    QueryText = "SELECT 1",
+                    Parameters = new SqlParameterCollection() { new SqlParameter("@p1", new JRaw("{\"a\":[1,2,3]}")) },
+                    Options = new SqlQueryOptions() { IsPassThrough = false }
+                });
+            verifyJsonSerialization("{\"query\":\"SELECT 1\",\"parameters\":[" +
                     "{\"name\":\"@p1\",\"value\":{\"a\":[1,2,3]}}" + 
                 "]," + "\"options\":{\"IsPassThrough\":true}" + "}",
                 new SqlQuerySpec()
