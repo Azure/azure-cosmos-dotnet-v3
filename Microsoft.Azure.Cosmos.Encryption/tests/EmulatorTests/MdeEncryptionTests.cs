@@ -71,25 +71,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>()
             {
+#if true
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/Sensitive_StringFormat",
-                    ClientEncryptionKeyId = "key1",
-                    EncryptionType = "Deterministic",
-                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
-                },
-
-                new ClientEncryptionIncludedPath()
-                {
-                    Path = "/Sensitive_ArrayFormat",
-                    ClientEncryptionKeyId = "keywithRevokedKek",
-                    EncryptionType = "Deterministic",
-                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
-                },
-
-                new ClientEncryptionIncludedPath()
-                {
-                    Path = "/Sensitive_NestedObjectFormatL1",
                     ClientEncryptionKeyId = "key1",
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
@@ -159,13 +144,43 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
+#if false
                 new ClientEncryptionIncludedPath()
                 {
-                    Path = "/Sensitive_ObjectArrayType",
+                    Path = "/Sensitive_ArrayFormat",
+                    ClientEncryptionKeyId = "key2",
+                    EncryptionType = "Randomized",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+
+                },
+#endif
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_ArrayFormat/Sensitive_ArrayIntFormat",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+
+                },
+
+#endif
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_NestedObjectFormatL1/Sensitive_NestedObjectFormatL2/Sensitive_StringFormatL2",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+
+                },
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_NestedObjectFormatL1",
                     ClientEncryptionKeyId = "key2",
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
-                },
+
+                }
             };
 
 
@@ -497,6 +512,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
+        public async Task TestNestedPropertySupport()
+        {
+            TestDoc testDoc = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
+            _ = testDoc;
+            return;
+        }
+
+            [TestMethod]
         public async Task EncryptionCreateItemAndQuery()
         {
             TestDoc testDoc = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
@@ -777,7 +800,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             };
 
             FeedResponse<TestDoc> response = await encryptionContainer.ReadManyItemsAsync<TestDoc>(itemList);
-            VerifyDiagnostics(response.Diagnostics, encryptOperation: false, expectedPropertiesDecryptedCount: 24);
+            VerifyDiagnostics(response.Diagnostics, encryptOperation: false, expectedPropertiesDecryptedCount: 22);
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             Assert.AreEqual(2, response.Count);
@@ -789,7 +812,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             itemList.Add((testDoc3.Id, new PartitionKey(testDoc3.PK)));
 
             ResponseMessage responseStream = await encryptionContainer.ReadManyItemsStreamAsync(itemList);
-            VerifyDiagnostics(responseStream.Diagnostics, encryptOperation: false, expectedPropertiesDecryptedCount: 36);
+            VerifyDiagnostics(responseStream.Diagnostics, encryptOperation: false, expectedPropertiesDecryptedCount: 33);
 
             Assert.IsTrue(responseStream.IsSuccessStatusCode);
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
@@ -839,14 +862,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc testDoc2 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
 
             // test GetItemLinqQueryable
-            await MdeEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(MdeEncryptionTests.encryptionContainer, testDoc1, testDoc2, null, expectedPropertiesDecryptedCount: 24);
+            await MdeEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(MdeEncryptionTests.encryptionContainer, testDoc1, testDoc2, null, expectedPropertiesDecryptedCount: 22);
 
             string query = $"SELECT * FROM c WHERE c.PK in ('{testDoc1.PK}', '{testDoc2.PK}')";
-            await MdeEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(MdeEncryptionTests.encryptionContainer, testDoc1, testDoc2, query, expectedPropertiesDecryptedCount: 24);
+            await MdeEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(MdeEncryptionTests.encryptionContainer, testDoc1, testDoc2, query, expectedPropertiesDecryptedCount: 22);
 
             // ORDER BY query
             query += " ORDER BY c._ts";
-            await MdeEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(MdeEncryptionTests.encryptionContainer, testDoc1, testDoc2, query, expectedPropertiesDecryptedCount: 24);
+            await MdeEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(MdeEncryptionTests.encryptionContainer, testDoc1, testDoc2, query, expectedPropertiesDecryptedCount: 22);
         }
 
         [TestMethod]
@@ -2351,7 +2374,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 VerifyExpectedDocResponse(testDoc1, testDocs.Resource.ElementAt(0));
                 VerifyExpectedDocResponse(testDoc2, testDocs.Resource.ElementAt(1));
 
-                VerifyDiagnostics(testDocs.Diagnostics, encryptOperation: false, expectedPropertiesDecryptedCount: 24);
+                VerifyDiagnostics(testDocs.Diagnostics, encryptOperation: false, expectedPropertiesDecryptedCount: 22);
             }
         }
 
@@ -2617,7 +2640,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc expectedDoc = null,
             QueryDefinition queryDefinition = null,
             bool decryptOperation = true,
-            int expectedPropertiesDecryptedCount = 12)
+            int expectedPropertiesDecryptedCount = 11)
         {
             QueryRequestOptions requestOptions = expectedDoc != null
                 ? new QueryRequestOptions()
@@ -2888,8 +2911,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             CosmosDiagnostics diagnostics,
             bool encryptOperation = true,
             bool decryptOperation = true,
-            int expectedPropertiesEncryptedCount = 12,
-            int expectedPropertiesDecryptedCount = 12)
+            int expectedPropertiesEncryptedCount = 11,
+            int expectedPropertiesDecryptedCount = 11)
         {
             Assert.IsNotNull(diagnostics);
             JObject diagnosticsObject = JObject.Parse(diagnostics.ToString());

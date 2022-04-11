@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
@@ -59,25 +60,30 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
 
+            List<string> visited = new List<string>();
             foreach (string propertyName in encryptionSettings.PropertiesToEncrypt)
             {
                 // possibly a wrong path configured in the Client Encryption Policy, ignore.
-                JProperty propertyToEncrypt = itemJObj.Property(propertyName);
-                if (propertyToEncrypt == null)
+                string parentPath = propertyName.Split('/')[0];
+                JProperty propertyToEncrypt = itemJObj.Property(parentPath);
+                if (propertyToEncrypt == null || visited.Contains(parentPath))
                 {
                     continue;
                 }
 
-                EncryptionSettingForProperty settingforProperty = encryptionSettings.GetEncryptionSettingForProperty(propertyName);
+                visited.Add(parentPath);
 
-                if (settingforProperty == null)
+                Dictionary<string, EncryptionSettingForProperty> settingForProperty = encryptionSettings.GetEncryptionSettingForProperty(parentPath);
+
+                if (settingForProperty == null)
                 {
                     throw new ArgumentException($"Invalid Encryption Setting for the Property:{propertyName}. ");
                 }
 
+                // pass the parent path Setting.Find all path perhaps which start /parent/* and build it in settingforProperty
                 await EncryptJTokenAsync(
                     propertyToEncrypt.Value,
-                    settingforProperty,
+                    settingForProperty,
                     cancellationToken);
 
                 propertiesEncryptedCount++;
@@ -182,8 +188,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         internal static async Task<Stream> EncryptValueStreamAsync(
             Stream valueStream,
-            EncryptionSettingForProperty settingsForProperty,
-            CancellationToken cancellationToken)
+            Dictionary<string, EncryptionSettingForProperty> settingsForProperty,
+            CancellationToken cancellationToken,
+            string parentPath)
         {
             if (valueStream == null)
             {
@@ -200,11 +207,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             JToken encryptedPropertyValue = propertyValueToEncrypt;
             if (propertyValueToEncrypt.Type == JTokenType.Object || propertyValueToEncrypt.Type == JTokenType.Array)
             {
-                await EncryptJTokenAsync(encryptedPropertyValue, settingsForProperty, cancellationToken);
+                await EncryptJTokenAsync(encryptedPropertyValue, settingsForProperty, cancellationToken, parentPath);
             }
             else
             {
-                encryptedPropertyValue = await SerializeAndEncryptValueAsync(propertyValueToEncrypt, settingsForProperty, cancellationToken);
+                encryptedPropertyValue = await SerializeAndEncryptValueAsync(propertyValueToEncrypt, settingsForProperty[parentPath], cancellationToken);
             }
 
             return EncryptionProcessor.BaseSerializer.ToStream(encryptedPropertyValue);
@@ -236,41 +243,84 @@ namespace Microsoft.Azure.Cosmos.Encryption
             };
         }
 
-        private static async Task EncryptJTokenAsync(
+        private static async Task<string> EncryptJTokenAsync(
            JToken jTokenToEncrypt,
-           EncryptionSettingForProperty encryptionSettingForProperty,
-           CancellationToken cancellationToken)
+           Dictionary<string, EncryptionSettingForProperty> encryptionSettingForPropertyForParentPath,
+           CancellationToken cancellationToken,
+           string absolutePath = null)
         {
+            // since just the value is sent out.
+            if (string.IsNullOrEmpty(absolutePath))
+            {
+                absolutePath = absolutePath + "/" + jTokenToEncrypt.Parent.Path;
+            }
+
             // Top Level can be an Object
             if (jTokenToEncrypt.Type == JTokenType.Object)
             {
                 foreach (JProperty jProperty in jTokenToEncrypt.Children<JProperty>())
                 {
-                    await EncryptJTokenAsync(
+                    absolutePath = absolutePath + "/" + jProperty.Name;
+                    absolutePath = await EncryptJTokenAsync(
                         jProperty.Value,
-                        encryptionSettingForProperty,
-                        cancellationToken);
+                        encryptionSettingForPropertyForParentPath,
+                        cancellationToken,
+                        absolutePath);
+
+                    // dont remove the parent path
+                    if (absolutePath.LastIndexOf("/") != 0)
+                    {
+                        absolutePath = absolutePath.Remove(absolutePath.LastIndexOf("/"));
+                    }
                 }
             }
             else if (jTokenToEncrypt.Type == JTokenType.Array)
             {
+                // Get the parent and pass just its encryptionSetting.
                 if (jTokenToEncrypt.Children().Any())
                 {
+                    absolutePath = absolutePath + "/" + jTokenToEncrypt.Path;
                     for (int i = 0; i < jTokenToEncrypt.Count(); i++)
                     {
-                        await EncryptJTokenAsync(
+                        absolutePath = await EncryptJTokenAsync(
                             jTokenToEncrypt[i],
-                            encryptionSettingForProperty,
-                            cancellationToken);
+                            encryptionSettingForPropertyForParentPath,
+                            cancellationToken,
+                            absolutePath);
+
+                        // dont remove the parent path
+                        if (absolutePath.LastIndexOf("/") != 0)
+                        {
+                            absolutePath = absolutePath.Remove(absolutePath.LastIndexOf("/"));
+                        }
                     }
                 }
             }
             else
             {
-                jTokenToEncrypt.Replace(await SerializeAndEncryptValueAsync(jTokenToEncrypt, encryptionSettingForProperty, cancellationToken));
+                if (!encryptionSettingForPropertyForParentPath.TryGetValue(absolutePath, out EncryptionSettingForProperty encryptionSettingForProperty))
+                {
+                    string parentPropertyName = "/" + absolutePath.Split('/').ElementAt(1);
+
+                    // check if the parent path is part of policy
+                    if (!encryptionSettingForPropertyForParentPath.TryGetValue(parentPropertyName, out encryptionSettingForProperty))
+                    {
+                    }
+                }
+
+                if (encryptionSettingForProperty != null)
+                {
+                    jTokenToEncrypt.Replace(await SerializeAndEncryptValueAsync(jTokenToEncrypt, encryptionSettingForProperty, cancellationToken));
+                }
+
+                // parent path was not passed in policy.
+                else
+                {
+                    jTokenToEncrypt.Replace(jTokenToEncrypt);
+                }
             }
 
-            return;
+            return absolutePath;
         }
 
         private static async Task<JToken> SerializeAndEncryptValueAsync(
@@ -329,41 +379,83 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 (TypeMarker)cipherTextWithTypeMarker[0]);
         }
 
-        private static async Task DecryptJTokenAsync(
+        private static async Task<string> DecryptJTokenAsync(
             JToken jTokenToDecrypt,
-            EncryptionSettingForProperty encryptionSettingForProperty,
-            CancellationToken cancellationToken)
+            Dictionary<string, EncryptionSettingForProperty> encryptionSettingForPropertyForParentPath,
+            CancellationToken cancellationToken,
+            string absolutePath = null)
         {
+            // since just the value is sent out.
+            if (string.IsNullOrEmpty(absolutePath))
+            {
+                absolutePath = absolutePath + "/" + jTokenToDecrypt.Parent.Path;
+            }
+
             if (jTokenToDecrypt.Type == JTokenType.Object)
             {
                 foreach (JProperty jProperty in jTokenToDecrypt.Children<JProperty>())
                 {
+                    absolutePath = absolutePath + "/" + jProperty.Name;
                     await DecryptJTokenAsync(
                         jProperty.Value,
-                        encryptionSettingForProperty,
-                        cancellationToken);
+                        encryptionSettingForPropertyForParentPath,
+                        cancellationToken,
+                        absolutePath);
+
+                    if (absolutePath.LastIndexOf("/") != 0)
+                    {
+                        absolutePath = absolutePath.Remove(absolutePath.LastIndexOf("/"));
+                    }
                 }
             }
             else if (jTokenToDecrypt.Type == JTokenType.Array)
             {
                 if (jTokenToDecrypt.Children().Any())
                 {
+                    absolutePath = absolutePath + "/" + jTokenToDecrypt.Path;
                     for (int i = 0; i < jTokenToDecrypt.Count(); i++)
                     {
                         await DecryptJTokenAsync(
                             jTokenToDecrypt[i],
-                            encryptionSettingForProperty,
-                            cancellationToken);
+                            encryptionSettingForPropertyForParentPath,
+                            cancellationToken,
+                            absolutePath);
+
+                        if (absolutePath.LastIndexOf("/") != 0)
+                        {
+                            absolutePath = absolutePath.Remove(absolutePath.LastIndexOf("/"));
+                        }
                     }
                 }
             }
             else
             {
-                jTokenToDecrypt.Replace(await DecryptAndDeserializeValueAsync(
-                    jTokenToDecrypt,
-                    encryptionSettingForProperty,
-                    cancellationToken));
+                if (!encryptionSettingForPropertyForParentPath.TryGetValue(absolutePath, out EncryptionSettingForProperty encryptionSettingForProperty))
+                {
+                    string parentPropertyName = "/" + absolutePath.Split('/').ElementAt(1);
+
+                    // check if the parent path is part of policy.
+                    if (!encryptionSettingForPropertyForParentPath.TryGetValue(parentPropertyName, out encryptionSettingForProperty))
+                    {
+                    }
+                }
+
+                if (encryptionSettingForProperty != null)
+                {
+                    jTokenToDecrypt.Replace(await DecryptAndDeserializeValueAsync(
+                        jTokenToDecrypt,
+                        encryptionSettingForProperty,
+                        cancellationToken));
+                }
+
+                // not part of the policy.
+                else
+                {
+                    jTokenToDecrypt.Replace(jTokenToDecrypt);
+                }
             }
+
+            return absolutePath;
         }
 
         private static async Task<int> DecryptObjectAsync(
@@ -372,12 +464,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken)
         {
             int propertiesDecryptedCount = 0;
+            List<string> visited = new List<string>();
             foreach (string propertyName in encryptionSettings.PropertiesToEncrypt)
             {
-                JProperty propertyToDecrypt = document.Property(propertyName);
-                if (propertyToDecrypt != null)
+                string parentPath = propertyName.Split('/')[0];
+
+                JProperty propertyToDecrypt = document.Property(parentPath);
+                if (propertyToDecrypt != null && !visited.Contains(parentPath))
                 {
-                    EncryptionSettingForProperty settingsForProperty = encryptionSettings.GetEncryptionSettingForProperty(propertyName);
+                    Dictionary<string, EncryptionSettingForProperty> settingsForProperty = encryptionSettings.GetEncryptionSettingForProperty(parentPath);
 
                     if (settingsForProperty == null)
                     {
@@ -387,9 +482,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     await DecryptJTokenAsync(
                         propertyToDecrypt.Value,
                         settingsForProperty,
-                        cancellationToken);
+                        cancellationToken,
+                        "/" + parentPath);
 
                     propertiesDecryptedCount++;
+                    visited.Add(parentPath);
                 }
             }
 

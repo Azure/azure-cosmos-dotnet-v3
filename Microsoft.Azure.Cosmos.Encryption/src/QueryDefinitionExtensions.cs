@@ -5,7 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -81,22 +83,22 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 // get the path's encryption setting.
                 EncryptionSettings encryptionSettings = await encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
-                EncryptionSettingForProperty settingsForProperty = encryptionSettings.GetEncryptionSettingForProperty(path.Substring(1));
+                Dictionary<string, EncryptionSettingForProperty> settingsForProperty = encryptionSettings.GetEncryptionSettingForProperty(path.Substring(1));
 
-                if (settingsForProperty == null)
+                if (settingsForProperty.Count == 0)
                 {
                     // property not encrypted.
                     queryDefinitionwithEncryptedValues.WithParameter(name, value);
                     return queryDefinitionwithEncryptedValues;
                 }
 
-                if (settingsForProperty.EncryptionType == Data.Encryption.Cryptography.EncryptionType.Randomized)
+                if (settingsForProperty[path].EncryptionType == Data.Encryption.Cryptography.EncryptionType.Randomized)
                 {
                     throw new ArgumentException($"Unsupported argument with Path: {path} for query. Executing queries on encrypted paths requires the use of deterministic encryption type. Please refer to https://aka.ms/CosmosClientEncryption for more details.");
                 }
 
                 Stream valueStream = encryptionContainer.CosmosSerializer.ToStream(value);
-                Stream encryptedValueStream = await EncryptionProcessor.EncryptValueStreamAsync(valueStream, settingsForProperty, cancellationToken);
+                Stream encryptedValueStream = await EncryptionProcessor.EncryptValueStreamAsync(valueStream, settingsForProperty, cancellationToken, path);
                 queryDefinitionwithEncryptedValues.WithParameterStream(name, encryptedValueStream);
 
                 return queryDefinitionwithEncryptedValues;

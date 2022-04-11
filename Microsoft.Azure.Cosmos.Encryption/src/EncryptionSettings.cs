@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Data.Encryption.Cryptography;
 
     internal sealed class EncryptionSettings
     {
@@ -33,11 +32,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return InitializeEncryptionSettingsAsync(encryptionContainer, cancellationToken);
         }
 
-        public EncryptionSettingForProperty GetEncryptionSettingForProperty(string propertyName)
+        public Dictionary<string, EncryptionSettingForProperty> GetEncryptionSettingForProperty(string propertyName)
         {
-            this.encryptionSettingsDictByPropertyName.TryGetValue(propertyName, out EncryptionSettingForProperty encryptionSettingsForProperty);
-
-            return encryptionSettingsForProperty;
+            // find all keys under this path.
+            return this.encryptionSettingsDictByPropertyName
+                .Where(kvp => kvp.Key.StartsWith(propertyName + "/") || kvp.Key.Equals(propertyName))
+                .ToDictionary(kvp => "/" + kvp.Key, kvp => kvp.Value);
         }
 
         public void SetRequestHeaders(RequestOptions requestOptions)
@@ -102,6 +102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 // update the property level setting.
                 foreach (ClientEncryptionIncludedPath propertyToEncrypt in clientEncryptionPolicy.IncludedPaths)
                 {
+                    // if there is a parent path already just add subpaths to it.
                     Data.Encryption.Cryptography.EncryptionType encryptionType = GetEncryptionTypeForProperty(propertyToEncrypt);
 
                     EncryptionSettingForProperty encryptionSettingsForProperty = new EncryptionSettingForProperty(

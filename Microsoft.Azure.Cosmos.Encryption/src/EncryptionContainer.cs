@@ -808,7 +808,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
 
                 // get the top level path's encryption setting.
-                EncryptionSettingForProperty settingforProperty = encryptionSettings.GetEncryptionSettingForProperty(
+                Dictionary<string, EncryptionSettingForProperty> settingforProperty = encryptionSettings.GetEncryptionSettingForProperty(
                     patchOperation.Path.Split('/')[1]);
 
                 // non-encrypted path
@@ -830,7 +830,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 Stream encryptedPropertyValue = await EncryptionProcessor.EncryptValueStreamAsync(
                     valueParam,
                     settingforProperty,
-                    cancellationToken);
+                    cancellationToken,
+                    patchOperation.Path);
 
                 propertiesEncryptedCount++;
 
