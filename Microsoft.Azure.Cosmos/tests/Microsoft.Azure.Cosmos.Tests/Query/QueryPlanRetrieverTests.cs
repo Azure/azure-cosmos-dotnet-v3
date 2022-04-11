@@ -51,5 +51,33 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             Assert.IsNotNull(cosmosException.Trace);
             Assert.IsNotNull(cosmosException.Diagnostics);
         }
+
+        [TestMethod]
+        public async Task ServiceInterop_BadRequestContainsOriginalCosmosException()
+        {
+            CosmosException actualException = new CosmosException("Some message", (HttpStatusCode)429, (int)Documents.SubStatusCodes.Unknown, Guid.NewGuid().ToString(), 0);
+            Mock<CosmosQueryClient> queryClient = new Mock<CosmosQueryClient>();
+
+            queryClient.Setup(c => c.TryGetPartitionedQueryExecutionInfoAsync(
+                It.IsAny<SqlQuerySpec>(),
+                It.IsAny<Documents.PartitionKeyDefinition>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>())).ReturnsAsync(TryCatch<PartitionedQueryExecutionInfo>.FromException(actualException));
+
+            Mock<ITrace> trace = new Mock<ITrace>();
+            CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
+                queryClient.Object,
+                new SqlQuerySpec("selectttttt * from c"),
+                new Documents.PartitionKeyDefinition() { Paths = new Collection<string>() { "/id" } },
+                hasLogicalPartitionKey: false,
+                trace.Object,
+                default));
+
+            Assert.AreEqual(actualException, cosmosException);
+        }
     }
 }
