@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         [TestMethod]
         public async Task ServiceInterop_BadRequestContainsOriginalCosmosException()
         {
-            CosmosException actualException = new CosmosException("Some message", (HttpStatusCode)429, (int)Documents.SubStatusCodes.Unknown, Guid.NewGuid().ToString(), 0);
+            CosmosException expectedException = new CosmosException("Some message", (HttpStatusCode)429, (int)Documents.SubStatusCodes.Unknown, Guid.NewGuid().ToString(), 0);
             Mock<CosmosQueryClient> queryClient = new Mock<CosmosQueryClient>();
 
             queryClient.Setup(c => c.TryGetPartitionedQueryExecutionInfoAsync(
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
-                It.IsAny<CancellationToken>())).ReturnsAsync(TryCatch<PartitionedQueryExecutionInfo>.FromException(actualException));
+                It.IsAny<CancellationToken>())).ReturnsAsync(TryCatch<PartitionedQueryExecutionInfo>.FromException(expectedException));
 
             Mock<ITrace> trace = new Mock<ITrace>();
             CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 trace.Object,
                 default));
 
-            Assert.AreEqual(actualException, cosmosException);
+            Assert.AreEqual(expectedException, cosmosException);
         }
     }
 }
