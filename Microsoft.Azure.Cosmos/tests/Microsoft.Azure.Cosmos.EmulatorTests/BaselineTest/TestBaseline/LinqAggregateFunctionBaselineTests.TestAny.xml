@@ -11,7 +11,7 @@ FROM (
     SELECT VALUE root 
     FROM root) AS v0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -27,7 +27,7 @@ FROM (
     FROM root 
     WHERE root["Flag"]) AS v0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -43,7 +43,7 @@ FROM (
     FROM root 
     WHERE (NOT root["Flag"])) AS v0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -58,7 +58,7 @@ FROM (
     SELECT VALUE root["Number"] 
     FROM root) AS v0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -75,7 +75,7 @@ FROM (
     JOIN m0 IN root["Multiples"] 
     WHERE ((m0 % 3) = 0)) AS v0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -91,7 +91,7 @@ FROM (
     FROM root 
     WHERE root["Flag"]) AS v0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -107,7 +107,7 @@ FROM (
     FROM root 
     WHERE (root["Number"] < -7)) AS v0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -123,7 +123,7 @@ FROM (
     FROM root 
     WHERE (root["Number"] < -13)) AS v0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -145,7 +145,7 @@ FROM (
             JOIN v0 IN r0) AS v1 
             WHERE (v1 > 5)) AS v2
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -173,7 +173,7 @@ FROM (
                     JOIN c IN r0) AS v1 
                     WHERE (v1 > 150)) AS v2
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -189,7 +189,7 @@ FROM (
     FROM root 
     OFFSET 20 LIMIT 1) AS v2
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -206,7 +206,7 @@ FROM (
     JOIN v0 IN root["Children"] 
     OFFSET 4 LIMIT 2147483647) AS v2
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -276,7 +276,7 @@ FROM (
                                                                     OFFSET 1 LIMIT 20) AS r3 
                                                                     OFFSET 1 LIMIT 10) AS v26
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

@@ -63,7 +63,7 @@ JOIN (
     WHERE (c0["Grade"] > 100)) AS v0 
     ORDER BY v0 ASC, root["Int"] DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -82,7 +82,7 @@ JOIN (
     WHERE (p0["GivenName"]["Length"] > 10)) AS v0 
     ORDER BY root["FamilyId"] ASC, v0 DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -106,7 +106,7 @@ JOIN (
         WHERE (p0["GivenName"]["Length"] > 10)) AS v1 
         ORDER BY v0 DESC, v1 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -156,7 +156,7 @@ JOIN (
         WHERE (c1["Grade"] > 100)) AS v1 
         ORDER BY v0 DESC, v1 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -169,7 +169,7 @@ JOIN (
 SELECT VALUE root 
 FROM root 
 ORDER BY (root["Int"] * 2) ASC, SUBSTRING(root["FamilyId"], 2, 3) ASC]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -182,7 +182,7 @@ ORDER BY (root["Int"] * 2) ASC, SUBSTRING(root["FamilyId"], 2, 3) ASC]]></SqlQue
 SELECT VALUE root 
 FROM root 
 ORDER BY (NOT IS_DEFINED(root["NullableInt"])) ASC, (ARRAY_LENGTH(root["Tags"]) % 2) DESC]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -201,7 +201,7 @@ JOIN (
         JOIN t0 IN root["Records"]["Transactions"])) AS v0 
         ORDER BY (root["IsRegistered"] ? root["FamilyId"] : root["Int"]) DESC, (v0[0] % 1000) ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -249,7 +249,7 @@ JOIN (
         WHERE (p0["GivenName"]["Length"] > 10)) AS v1 
         ORDER BY v0 ASC, v1 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -273,7 +273,7 @@ JOIN (
         WHERE (c0["Grade"] > 100)) AS v1 
         ORDER BY root["FamilyId"] ASC, v0 DESC, v1 ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -293,7 +293,7 @@ JOIN (
         ORDER BY p0["FamilyName"] ASC, p0["GivenName"] DESC)) AS v0 
         ORDER BY root["FamilyId"] ASC, v0 DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -319,7 +319,7 @@ JOIN (
                 ORDER BY p0["FamilyName"] ASC, p0["GivenName"] DESC)) AS v1 
                 ORDER BY v0 ASC, v1 DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -339,7 +339,7 @@ JOIN (
         ORDER BY p0["FamilyName"] ASC, p0["GivenName"] DESC)) AS v1 
         ORDER BY root["FamilyId"] ASC, v1 DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -368,7 +368,7 @@ JOIN (
                     ORDER BY p0["FamilyName"] ASC, p0["GivenName"] DESC)) AS v2 
                     ORDER BY v1 ASC, v2 DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -413,7 +413,7 @@ JOIN (
             WHERE (p0["GivenName"]["Length"] > 5)) AS v0) AS r0 
             ORDER BY r0["FamilyId"] ASC, r0["FamilyNumber"] ASC) AS v1
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -461,7 +461,7 @@ FROM (
                 JOIN t0 IN root["Records"]["Transactions"]) AS v1) AS r0 
                 ORDER BY ARRAY_LENGTH(r0["ChildrenWithPets"]) DESC, r0["TotalExpenses"] DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -494,7 +494,7 @@ FROM (
                         JOIN c2 IN c1["Pets"]) AS r1) AS v3) AS r2 
                         ORDER BY r2["GoodChildrenCount"] DESC, r2["UniquePetsNameCount"] ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -522,7 +522,7 @@ FROM root
 JOIN f0 IN root["Children"] 
 WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
 ORDER BY f0["Grade"] ASC, ARRAY_LENGTH(f0["Pets"]) DESC]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -549,7 +549,7 @@ FROM (
             WHERE (p0["GivenName"]["Length"] > 10)) AS v2 
             WHERE (v2 > 0)) AS r1
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -571,7 +571,7 @@ FROM (
         OFFSET 5 LIMIT 2147483647) AS r2 
         ORDER BY r2["Length"] ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -602,7 +602,7 @@ FROM (
     FROM root) AS r0 
     ORDER BY r0["IsRegistered"] ASC, r0["Int"] DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -619,7 +619,7 @@ FROM (
     ORDER BY r0["IsRegistered"] ASC, r0["Int"] DESC 
     OFFSET 5 LIMIT 2147483647
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -654,7 +654,7 @@ FROM (
         WHERE (ARRAY_LENGTH(root["Children"]) > 0)) AS r0 
         ORDER BY r0["Name"] DESC, r0["PetWithLongNames"] ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -680,7 +680,7 @@ JOIN (
                 WHERE (p0["GivenName"]["Length"] > 10))) AS v1 
                 ORDER BY v0 ASC, v1 DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -713,7 +713,7 @@ JOIN (
                             JOIN t1 IN root["Records"]["Transactions"])) AS v3 
                             ORDER BY v0[0] ASC, v1[0] DESC, v2 ASC, v3[0] DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

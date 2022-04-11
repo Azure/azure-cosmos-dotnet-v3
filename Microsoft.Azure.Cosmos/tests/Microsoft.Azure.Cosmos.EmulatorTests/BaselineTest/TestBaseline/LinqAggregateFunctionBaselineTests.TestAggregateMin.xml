@@ -104,7 +104,7 @@ FROM (
     FROM root 
     OFFSET 90 LIMIT 2147483647) AS r0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -120,7 +120,7 @@ FROM (
     FROM root 
     OFFSET 90 LIMIT 5) AS r0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -136,7 +136,7 @@ FROM (
     FROM root 
     OFFSET 5 LIMIT 5) AS r0
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -156,7 +156,7 @@ FROM (
         JOIN c0 IN r0["Children"] 
         OFFSET 10 LIMIT 20) AS r1
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -220,7 +220,7 @@ FROM (
                                                                         OFFSET 1 LIMIT 20) AS r7 
                                                                         OFFSET 1 LIMIT 10) AS r8
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
 </Results>
