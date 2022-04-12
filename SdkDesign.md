@@ -1,1 +1,63 @@
-[![](https://mermaid.ink/img/pako:eNqtVtGOojAU_ZWGp91kJhFM1JjNJEY368RMQsTsPlQeOnCVZrGQUtY1xn_fQlFKYRYehhfbc869PbfcUq9WkIRgza1DnJyDiHCB9gzJJ8vfj5ykEfKA_6EBKLTB_Hyza7R4tjb-soU0pgFB9lffIJ2adFrkpCYnLXJWk7MWaWt57UZiYGGna8fIMK4TjNuuR5rtUXt1jbY76KlGT026z-oPIuBMLu1XUDwFCByrHyOxt9q8MgGckRjLMTpTEaEgz0RyQhFhYUzZ0e9Kh749P7_o4R0WH4O6RVabDvcryiEQXat4IuHwJvsuruyjEkHLmAIThrFlwjKaCWDB5Ren0hXWEKSgj0O2QEIjREFGyI4TlqUJF8oDfsy7TS3CkEOWeRDLEhOOqzm6A_7_yy62GZ0L66jY73aNA8K5LKMVrWrr2UD1ko2Ke3ZwQIyxJyqix1tfjLkbjXPi5u_yYC1SitUILdxXv4OuspaWZW4BfwVWM1RNtaiGTEW6NAV5YuC6Lo6O3Is7cNMWq6DqABkvrNZ1FuxutoQdAbvy80sFTRjagOzTAkNLEkTg9ySowFL76EUVqX1kjLdXdtFu6ZZNtLUH6pxPzmePPlvoSGEt1b5lTdlkgGY2QDMeoLGnuiW9V9AiCJJcliBbq-xGIgmOKDskZWh1BZSthO_3QVbM_EZK1UGqG9ZCpOYB1TvkY5W-mqnC9VBrxxosq1nvdq6H6iOg3RjWk3UCfiI0lP82rgWxt0QEJ9hbczkMCf-9t_bsJnV5Gkoj30MqfVjzA4kzeLJILhLvwoIHoFQrSuR1c6rQ2z-njJ0u)](https://mermaid.live/edit#pako:eNqtVtGOojAU_ZWGp91kJhFM1JjNJEY368RMQsTsPlQeOnCVZrGQUtY1xn_fQlFKYRYehhfbc869PbfcUq9WkIRgza1DnJyDiHCB9gzJJ8vfj5ykEfKA_6EBKLTB_Hyza7R4tjb-soU0pgFB9lffIJ2adFrkpCYnLXJWk7MWaWt57UZiYGGna8fIMK4TjNuuR5rtUXt1jbY76KlGT026z-oPIuBMLu1XUDwFCByrHyOxt9q8MgGckRjLMTpTEaEgz0RyQhFhYUzZ0e9Kh749P7_o4R0WH4O6RVabDvcryiEQXat4IuHwJvsuruyjEkHLmAIThrFlwjKaCWDB5Ren0hXWEKSgj0O2QEIjREFGyI4TlqUJF8oDfsy7TS3CkEOWeRDLEhOOqzm6A_7_yy62GZ0L66jY73aNA8K5LKMVrWrr2UD1ko2Ke3ZwQIyxJyqix1tfjLkbjXPi5u_yYC1SitUILdxXv4OuspaWZW4BfwVWM1RNtaiGTEW6NAV5YuC6Lo6O3Is7cNMWq6DqABkvrNZ1FuxutoQdAbvy80sFTRjagOzTAkNLEkTg9ySowFL76EUVqX1kjLdXdtFu6ZZNtLUH6pxPzmePPlvoSGEt1b5lTdlkgGY2QDMeoLGnuiW9V9AiCJJcliBbq-xGIgmOKDskZWh1BZSthO_3QVbM_EZK1UGqG9ZCpOYB1TvkY5W-mqnC9VBrxxosq1nvdq6H6iOg3RjWk3UCfiI0lP82rgWxt0QEJ9hbczkMCf-9t_bsJnV5Gkoj30MqfVjzA4kzeLJILhLvwoIHoFQrSuR1c6rQ2z-njJ0u)
+```mermaid
+flowchart 
+    subgraph Service
+        subgraph VM1
+            R1[(Replica 1)]
+            R2[(Replica 2)]
+            R6[(Replica 6)]
+            R8[(Replica 8)]
+            R12[(Replica 12)]
+        end
+        subgraph VM2
+            R3[(Replica 3)]
+            R20[(Replica 20)]
+            R10[(Replica 10)]
+            R17[(Replica 17)]
+            
+        end
+        subgraph Gateway Service
+            Server[Server]
+            SDKInternal[SDK with custom handling]
+            Server <--> SDKInternal
+        end
+    end
+    subgraph SDK
+        subgraph Direct
+            ServerStoreModel[Server Store Client]
+            ConsistencyWriter[Consistency Writer]
+            ConsistencyReader[Consistency Reader]
+            TransportClient[Transport Client]
+            AddressSelector[Address Selector]
+            ServerStoreModel <-- write -->  ConsistencyWriter
+            ServerStoreModel <-- read -->  ConsistencyReader
+            ConsistencyWriter <--> TransportClient
+            ConsistencyReader <--> TransportClient
+            AddressSelector <--> ConsistencyReader
+            AddressSelector <--> ConsistencyWriter
+        end
+        PublicApi[Public API]
+        PublicApi <--> ClientContext[Client Context]
+        ClientContext <--> Pipeline{Handler Pipeline}
+        Pipeline <--> ServerStoreModel
+        AddressSelector <--> PKRange[Partition Key Range Cache]
+        AddressSelector <--> AddressCache[Address Cache] 
+        TransportClient <-- TCP --> R1
+        TransportClient <-- TCP --> R2
+        TransportClient <-- TCP --> R1
+        TransportClient <-- TCP --> R10
+        TransportClient <-- TCP --> R10
+        TransportClient <-- TCP --> R20
+
+        SDKInternal <-- TCP --> R6
+        SDKInternal <-- TCP --> R8
+        SDKInternal <-- TCP --> R3
+        SDKInternal <-- TCP --> R17
+
+        Pipeline <-- Account and Container info --> GatewayStore[Gateway store]
+
+        PKRange <--> HttpClient
+        AddressCache <--> HttpClient
+        GatewayStore <--> HttpClient[HttpClient]
+        HttpClient <-- HTTPS --> Server
+    end
+```
