@@ -264,7 +264,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                    trace);
 
             bool singleLogicalPartitionKeyQuery = inputParameters.PartitionKey.HasValue
-                || partitionedQueryExecutionInfo.QueryRanges.Count == 1;
+                || ((partitionedQueryExecutionInfo.QueryRanges.Count == 1)
+                && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
             bool tryExecuteQueryOnBackend = singleLogicalPartitionKeyQuery
                 && inputParameters.PartitionKey != PartitionKey.Null
                 && inputParameters.PartitionKey != PartitionKey.None;
