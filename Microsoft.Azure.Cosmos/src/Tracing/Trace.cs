@@ -24,7 +24,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
             TraceLevel level,
             TraceComponent component,
             Trace parent,
-            ISet<(string, Uri)> regionContactedInternal, TraceSummary summary)
+            ISet<(string, Uri)> regionContactedInternal, 
+            TraceSummary summary)
         {
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Id = Guid.NewGuid();
@@ -37,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.data = new Lazy<Dictionary<string, object>>();
 
             this.regionContactedInternal = regionContactedInternal;
-            this.Summary = summary;
+            this.Summary = summary ?? throw new ArgumentNullException(nameof(summary));
         }
 
         public string Name { get; }

@@ -267,7 +267,10 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
                 if (responseStatistics.StoreResult != null && !((HttpStatusCode)responseStatistics.StoreResult.StatusCode).IsSuccess())
                 {
-                    this.TraceSummary.failedRequestCount++;
+                    if (this.TraceSummary != null)
+                    {
+                        this.TraceSummary.IncrementFailedCount();
+                    }
                 }
 
                 // Reset the shallow copy

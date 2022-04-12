@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 return this.failedRequestCount;
             }
 
-            this.failedRequestCount = currentTrace.Summary.failedRequestCount;
+            this.failedRequestCount = currentTrace.Summary.GetFailedCount();
             return this.failedRequestCount;
         }
 

@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             public TraceLevel Level => TraceLevel.Info;
 
-            public TraceSummary Summary => null;
+            public TraceSummary Summary => new TraceSummary();
 
             public TraceComponent Component => TraceComponent.Unknown;
 
