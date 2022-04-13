@@ -24,11 +24,17 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// </summary>
         private int failedRequestCount = 0;
 
+        /// <summary>
+        ///  The increment of failed requests with thread safe for an <see cref="ITrace"/>
+        /// </summary>
         public void IncrementFailedCount()
         {
             Interlocked.Increment(ref this.failedRequestCount);
         }
 
+        /// <summary>
+        ///  The return the count of failed requests for an <see cref="ITrace"/>
+        /// </summary>
         public int GetFailedCount()
         {
             return this.failedRequestCount;
