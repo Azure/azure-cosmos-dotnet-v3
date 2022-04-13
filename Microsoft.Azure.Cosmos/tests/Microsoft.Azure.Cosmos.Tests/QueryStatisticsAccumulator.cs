@@ -9,14 +9,16 @@
     using Newtonsoft.Json.Converters;
     using System.Runtime.Serialization;
 
-    class QueryStatisticsAccumulator : ITraceDatumVisitor
+    internal class QueryStatisticsAccumulator : ITraceDatumVisitor
     {
-        public readonly ImmutableQueryStatisticsAccumulator.QueryStatisticsAccumulatorBuilder queryStatisticsAccumulatorBuilder = new();
+        public readonly QueryStatisticsAccumulatorBuilder queryStatisticsAccumulatorBuilder = new();
         private class RequestTimeline
         {
             public DateTime StartTimeUtc { get; set; }
+
             public EventType Event { get; set; }
             public double DurationInMs { get; set; }
+
             [JsonConverter(typeof(StringEnumConverter))]
             public enum EventType
             {
@@ -37,15 +39,13 @@
 
         public void Visit(QueryMetricsTraceDatum queryMetricsTraceDatum)
         {
-            this.queryStatisticsAccumulatorBuilder
-                .AddRetrievedDocumentCount(queryMetricsTraceDatum.QueryMetrics.BackendMetrics.RetrievedDocumentCount)
-                .AddRetrievedDocumentSize(queryMetricsTraceDatum.QueryMetrics.BackendMetrics.RetrievedDocumentSize)
-                .AddOutputDocumentCount(queryMetricsTraceDatum.QueryMetrics.BackendMetrics.OutputDocumentCount)
-                .AddOutputDocumentSize(queryMetricsTraceDatum.QueryMetrics.BackendMetrics.OutputDocumentSize)
-                .AddTotalQueryExecutionTime(queryMetricsTraceDatum.QueryMetrics.BackendMetrics.TotalTime.TotalMilliseconds)
-                .AddDocumentLoadTime(queryMetricsTraceDatum.QueryMetrics.BackendMetrics.DocumentLoadTime.TotalMilliseconds)
-                .AddDocumentWriteTime(queryMetricsTraceDatum.QueryMetrics.BackendMetrics.DocumentWriteTime.TotalMilliseconds)
-                .Build();
+            this.queryStatisticsAccumulatorBuilder.queryMetrics.RetrievedDocumentCount = queryMetricsTraceDatum.QueryMetrics.BackendMetrics.RetrievedDocumentCount;
+            this.queryStatisticsAccumulatorBuilder.queryMetrics.RetrievedDocumentSize = queryMetricsTraceDatum.QueryMetrics.BackendMetrics.RetrievedDocumentSize;
+            this.queryStatisticsAccumulatorBuilder.queryMetrics.OutputDocumentCount = queryMetricsTraceDatum.QueryMetrics.BackendMetrics.OutputDocumentCount;
+            this.queryStatisticsAccumulatorBuilder.queryMetrics.OutputDocumentSize = queryMetricsTraceDatum.QueryMetrics.BackendMetrics.OutputDocumentSize;
+            this.queryStatisticsAccumulatorBuilder.queryMetrics.TotalQueryExecutionTime = queryMetricsTraceDatum.QueryMetrics.BackendMetrics.TotalTime.TotalMilliseconds;
+            this.queryStatisticsAccumulatorBuilder.queryMetrics.DocumentLoadTime = queryMetricsTraceDatum.QueryMetrics.BackendMetrics.DocumentLoadTime.TotalMilliseconds;
+            this.queryStatisticsAccumulatorBuilder.queryMetrics.DocumentWriteTime = queryMetricsTraceDatum.QueryMetrics.BackendMetrics.DocumentWriteTime.TotalMilliseconds;
         }
 
         public void Visit(ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
@@ -59,33 +59,27 @@
                         TransportStats transportStats = JsonConvert.DeserializeObject<TransportStats>(storeResponse.StoreResult.TransportRequestStats.ToString());
                         if (transportStats.RequestTimeline[0].Event == RequestTimeline.EventType.Created)
                         {
-                            this.queryStatisticsAccumulatorBuilder
-                                .AddCreated(transportStats.RequestTimeline[0].DurationInMs);
+                            this.queryStatisticsAccumulatorBuilder.queryMetrics.Created = transportStats.RequestTimeline[0].DurationInMs;
                         }
                         if (transportStats.RequestTimeline[1].Event == RequestTimeline.EventType.ChannelAcquisitionStarted)
                         {
-                            this.queryStatisticsAccumulatorBuilder
-                                .AddChannelAcquisitionStarted(transportStats.RequestTimeline[1].DurationInMs);
+                            this.queryStatisticsAccumulatorBuilder.queryMetrics.ChannelAcquisitionStarted = transportStats.RequestTimeline[1].DurationInMs;
                         }
                         if (transportStats.RequestTimeline[2].Event == RequestTimeline.EventType.Pipelined)
                         {
-                            this.queryStatisticsAccumulatorBuilder
-                                .AddPipelined(transportStats.RequestTimeline[2].DurationInMs);
+                            this.queryStatisticsAccumulatorBuilder.queryMetrics.Pipelined = transportStats.RequestTimeline[2].DurationInMs;
                         }
                         if (transportStats.RequestTimeline[3].Event == RequestTimeline.EventType.TransitTime)
                         {
-                            this.queryStatisticsAccumulatorBuilder
-                                   .AddTransitTime(transportStats.RequestTimeline[3].DurationInMs);
+                            this.queryStatisticsAccumulatorBuilder.queryMetrics.TransitTime = transportStats.RequestTimeline[3].DurationInMs;
                         }
                         if (transportStats.RequestTimeline[4].Event == RequestTimeline.EventType.Received)
                         {
-                            this.queryStatisticsAccumulatorBuilder
-                                   .AddReceived(transportStats.RequestTimeline[4].DurationInMs);
+                            this.queryStatisticsAccumulatorBuilder.queryMetrics.Received = transportStats.RequestTimeline[4].DurationInMs;
                         }
                         if (transportStats.RequestTimeline[5].Event == RequestTimeline.EventType.Completed)
                         {
-                            this.queryStatisticsAccumulatorBuilder
-                                .AddCompleted(transportStats.RequestTimeline[5].DurationInMs);
+                            this.queryStatisticsAccumulatorBuilder.queryMetrics.Completed = transportStats.RequestTimeline[5].DurationInMs;
                         }
                     }
                     if (storeResponse.StoreResult.StatusCode != StatusCodes.Ok)
@@ -93,44 +87,60 @@
                         TransportStats badRequestTransportStats = JsonConvert.DeserializeObject<TransportStats>(storeResponse.StoreResult.TransportRequestStats.ToString());
                         if (badRequestTransportStats.RequestTimeline[0].Event == RequestTimeline.EventType.Created)
                         {
-                            this.queryStatisticsAccumulatorBuilder
-                                .AddBadRequestCreated(badRequestTransportStats.RequestTimeline[0].DurationInMs);
+                            this.queryStatisticsAccumulatorBuilder.queryMetrics.BadRequestCreated = badRequestTransportStats.RequestTimeline[0].DurationInMs;
                         }
                         if (badRequestTransportStats.RequestTimeline[1].Event == RequestTimeline.EventType.ChannelAcquisitionStarted)
                         {
-                            this.queryStatisticsAccumulatorBuilder
-                                .AddBadRequestChannelAcquisitionStarted(badRequestTransportStats.RequestTimeline[1].DurationInMs);
+                            this.queryStatisticsAccumulatorBuilder.queryMetrics.BadRequestChannelAcquisitionStarted = badRequestTransportStats.RequestTimeline[1].DurationInMs;
                         }
                         if (badRequestTransportStats.RequestTimeline[2].Event == RequestTimeline.EventType.Pipelined)
                         {
-                            this.queryStatisticsAccumulatorBuilder
-                                .AddBadRequestPipelined(badRequestTransportStats.RequestTimeline[2].DurationInMs);
+                            this.queryStatisticsAccumulatorBuilder.queryMetrics.BadRequestPipelined = badRequestTransportStats.RequestTimeline[2].DurationInMs;
                         }
                         if (badRequestTransportStats.RequestTimeline[3].Event == RequestTimeline.EventType.TransitTime)
                         {
-                            this.queryStatisticsAccumulatorBuilder
-                                .AddBadRequestTransitTime(badRequestTransportStats.RequestTimeline[3].DurationInMs);
+                            this.queryStatisticsAccumulatorBuilder.queryMetrics.BadRequestTransitTime = badRequestTransportStats.RequestTimeline[3].DurationInMs;
                         }
                         if (badRequestTransportStats.RequestTimeline[4].Event == RequestTimeline.EventType.Received)
                         {
-                            this.queryStatisticsAccumulatorBuilder
-                                .AddBadRequestReceived(badRequestTransportStats.RequestTimeline[4].DurationInMs);
+                            this.queryStatisticsAccumulatorBuilder.queryMetrics.BadRequestReceived = badRequestTransportStats.RequestTimeline[4].DurationInMs;
                         }
                         if (badRequestTransportStats.RequestTimeline[5].Event == RequestTimeline.EventType.Completed)
                         {
-                            this.queryStatisticsAccumulatorBuilder
-                                .AddBadRequestCompleted(badRequestTransportStats.RequestTimeline[5].DurationInMs);
+                            this.queryStatisticsAccumulatorBuilder.queryMetrics.BadRequestCompleted = badRequestTransportStats.RequestTimeline[5].DurationInMs;
                         }
                     }
                 }
-
+                this.PopulateMetrics();
             }
         }
 
-        public void Visit(PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
+        public void PopulateMetrics()
         {
+            this.queryStatisticsAccumulatorBuilder.QueryMetricsList
+                .Add(new QueryMetrics
+                {
+                    RetrievedDocumentCount = this.queryStatisticsAccumulatorBuilder.queryMetrics.RetrievedDocumentCount,
+                    RetrievedDocumentSize = this.queryStatisticsAccumulatorBuilder.queryMetrics.RetrievedDocumentSize,
+                    OutputDocumentCount = this.queryStatisticsAccumulatorBuilder.queryMetrics.OutputDocumentCount,
+                    OutputDocumentSize = this.queryStatisticsAccumulatorBuilder.queryMetrics.OutputDocumentSize,
+                    TotalQueryExecutionTime = this.queryStatisticsAccumulatorBuilder.queryMetrics.TotalQueryExecutionTime,
+                    DocumentLoadTime = this.queryStatisticsAccumulatorBuilder.queryMetrics.DocumentLoadTime,
+                    DocumentWriteTime = this.queryStatisticsAccumulatorBuilder.queryMetrics.DocumentWriteTime,
+                    Created = this.queryStatisticsAccumulatorBuilder.queryMetrics.Created,
+                    ChannelAcquisitionStarted = this.queryStatisticsAccumulatorBuilder.queryMetrics.ChannelAcquisitionStarted,
+                    Pipelined = this.queryStatisticsAccumulatorBuilder.queryMetrics.Pipelined,
+                    TransitTime = this.queryStatisticsAccumulatorBuilder.queryMetrics.TransitTime,
+                    Received = this.queryStatisticsAccumulatorBuilder.queryMetrics.Received,
+                    Completed = this.queryStatisticsAccumulatorBuilder.queryMetrics.Completed,
+                    BadRequestCreated = this.queryStatisticsAccumulatorBuilder.queryMetrics.BadRequestCreated,
+                    BadRequestChannelAcquisitionStarted = this.queryStatisticsAccumulatorBuilder.queryMetrics.BadRequestChannelAcquisitionStarted,
+                    BadRequestPipelined = this.queryStatisticsAccumulatorBuilder.queryMetrics.BadRequestPipelined,
+                    BadRequestTransitTime = this.queryStatisticsAccumulatorBuilder.queryMetrics.BadRequestTransitTime,
+                    BadRequestReceived = this.queryStatisticsAccumulatorBuilder.queryMetrics.BadRequestReceived,
+                    BadRequestCompleted = this.queryStatisticsAccumulatorBuilder.queryMetrics.BadRequestCompleted
+                });
         }
-
         public void Visit(CpuHistoryTraceDatum cpuHistoryTraceDatum)
         {
         }
@@ -138,5 +148,10 @@
         public void Visit(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
         {
         }
+
+        public void Visit(PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
+        {
+        }
+
     }
 }
