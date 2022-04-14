@@ -248,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                         resourceType: ResourceType.Collection,
                         timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
-                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
                         cancellationToken: default);
             }
             catch (Exception ex)
@@ -282,7 +282,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                         resourceType: ResourceType.Collection,
                         timeoutPolicy: HttpTimeoutPolicyNoRetry.Instance,
-                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
                         cancellationToken: default);
             }
             catch (Exception ex)

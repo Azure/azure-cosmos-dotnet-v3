@@ -269,7 +269,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 {
                     if (this.TraceSummary != null)
                     {
-                        this.TraceSummary.failedRequestCount++;
+                        this.TraceSummary.IncrementFailedCount();
                     }
                 }
 
