@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <summary>
         ///  The return the count of failed requests for an <see cref="ITrace"/>
         /// </summary>
+        /// <returns>The value of failed requests count</returns>
         public int GetFailedCount()
         {
             return this.failedRequestCount;
