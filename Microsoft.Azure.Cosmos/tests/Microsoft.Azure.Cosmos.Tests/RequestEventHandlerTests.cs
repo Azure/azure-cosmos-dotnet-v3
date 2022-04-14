@@ -131,13 +131,12 @@ namespace Microsoft.Azure.Cosmos
             AddressInformation[] addressInformation = new AddressInformation[3];
             for (int i = 0; i <= 2; i++)
             {
-                addressInformation[i] = new AddressInformation();
-                addressInformation[i].PhysicalUri =
-                    "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/"
-                    + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/";
-                addressInformation[i].IsPrimary = i == 0 ? true : false;
-                addressInformation[i].Protocol = Protocol.Tcp;
-                addressInformation[i].IsPublic = true;
+                addressInformation[i] = new AddressInformation(
+                    physicalUri: "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/"
+                        + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/",
+                    isPrimary: i == 0,
+                    protocol: Documents.Client.Protocol.Tcp,
+                    isPublic: true);
             }
 
             Mock<IAddressResolver> mockAddressCache = new Mock<IAddressResolver>();
