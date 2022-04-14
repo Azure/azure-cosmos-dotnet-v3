@@ -8,7 +8,7 @@
 		<EncryptionOfficialVersion>1.0.0</EncryptionOfficialVersion>
 		<EncryptionPreviewVersion>1.0.0</EncryptionPreviewVersion>
 		<EncryptionPreviewSuffixVersion>preview20</EncryptionPreviewSuffixVersion>
-		<CustomEncryptionVersion>1.0.0-preview02</CustomEncryptionVersion>
+		<CustomEncryptionVersion>1.0.0-preview03</CustomEncryptionVersion>
 		<HybridRowVersion>1.1.0-preview3</HybridRowVersion>
 		<LangVersion>9.0</LangVersion>
 		<AboveDirBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</AboveDirBuildProps>
