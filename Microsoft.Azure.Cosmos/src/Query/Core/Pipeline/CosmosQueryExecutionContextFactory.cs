@@ -131,6 +131,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     cancellationToken);
                 cosmosQueryContext.ContainerResourceId = containerQueryProperties.ResourceId;
 
+                inputParameters.SqlQuerySpec.PassThrough = PassThroughForBackend(inputParameters, queryPlanFromContinuationToken);
+
+                if (inputParameters.SqlQuerySpec.PassThrough)
+                {
+                    //TODO: Add new pass through pipeline code here 
+                }
+
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
                 if (inputParameters.ForcePassthrough)
                 {
@@ -266,9 +273,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             bool singleLogicalPartitionKeyQuery = inputParameters.PartitionKey.HasValue
                 || ((partitionedQueryExecutionInfo.QueryRanges.Count == 1)
                 && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
-            bool tryExecuteQueryOnBackend = singleLogicalPartitionKeyQuery
-                && inputParameters.PartitionKey != PartitionKey.Null
-                && inputParameters.PartitionKey != PartitionKey.None;
             bool serverStreamingQuery = !partitionedQueryExecutionInfo.QueryInfo.HasAggregates
                 && !partitionedQueryExecutionInfo.QueryInfo.HasDistinct
                 && !partitionedQueryExecutionInfo.QueryInfo.HasGroupBy;
@@ -287,22 +291,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             TryCatch<IQueryPipelineStage> tryCreatePipelineStage;
 
             // After getting the Query Plan if we find out that the query is single logical partition, then short circuit and send straight to Backend
-            if (tryExecuteQueryOnBackend)  
-            {
-                if (partitionedQueryExecutionInfo != null)
-                {
-                    bool hasDistinct = partitionedQueryExecutionInfo.QueryInfo.HasDistinct;
-                    bool hasGroupBy = partitionedQueryExecutionInfo.QueryInfo.HasGroupBy;
-                    bool hasAggregates = partitionedQueryExecutionInfo.QueryInfo.HasAggregates;
-                    bool createTryExecute = !hasAggregates && !hasDistinct && !hasGroupBy;
+            inputParameters.SqlQuerySpec.PassThrough = PassThroughForBackend(inputParameters, partitionedQueryExecutionInfo);
 
-                    if (createTryExecute)
-                    {
-                        //TODO: Add new pass through pipeline code here 
-                        // Set the IsPassThrough check in SqlQuerySpec to be true
-                        inputParameters.SqlQuerySpec.Options.IsPassThrough = true;
-                    }
-                }
+            if (inputParameters.SqlQuerySpec.PassThrough)
+            {
+                //TODO: Add new pass through pipeline code here 
             }
 
             if (createPassthroughQuery)
@@ -553,6 +546,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
 
             return partitionKeyDefinition;
+        }
+
+        private static bool PassThroughForBackend(InputParameters inputParameters, PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
+        {
+            bool hasQueryRanges = false;
+            bool hasPartitionKey = inputParameters.PartitionKey.HasValue
+                && inputParameters.PartitionKey != PartitionKey.Null
+                && inputParameters.PartitionKey != PartitionKey.None;
+            
+            if (partitionedQueryExecutionInfo != null)
+            {
+                hasQueryRanges = partitionedQueryExecutionInfo.QueryRanges.Count == 1
+                && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue;
+            }
+            // TODO: find a way to check if collection only has one physical partition
+            bool tryExecuteOnBackend = hasPartitionKey || hasQueryRanges;
+
+            return tryExecuteOnBackend;
         }
 
         public sealed class InputParameters

@@ -37,6 +37,18 @@
             List<PassThroughQueryTestInput> testVariations = new List<PassThroughQueryTestInput>
             {
                 CreateInput(
+                @"Partition Key and Distinct",
+                "SELECT DISTINCT c.key FROM c",
+                true,
+                @"/key"),
+
+                CreateInput(
+                @"Partition Key and Min Aggregate",
+                "SELECT VALUE MIN(c.key) FROM c",
+                true,
+                @"/key"),
+
+                CreateInput(
                 @"Partition Key Field",
                 "SELECT c.key FROM c",
                 true,
@@ -51,18 +63,6 @@
         {
             List<PassThroughQueryTestInput> testVariations = new List<PassThroughQueryTestInput>
             {
-                CreateInput(
-                @"Partition Key and Distinct",
-                "SELECT DISTINCT c.key FROM c",
-                false,
-                @"/key"),
-
-                CreateInput(
-                @"Partition Key and Min Aggregate",
-                "SELECT VALUE MIN(c.key) FROM c",
-                false,
-                @"/key"),
-
                 CreateInput(
                 @"No Partition Key",
                 "SELECT * FROM c",
@@ -143,7 +143,7 @@
                 returnResultsInDeterministicOrder: null,
                 forcePassthrough: true,
                 testInjections: null);
-
+            
             Task<TryCatch<IQueryPipelineStage>> queryPipelineStage = CosmosQueryExecutionContextFactory.TryCreateFromPartitionedQueryExecutionInfoAsync(
                 documentContainer,
                 partitionedQueryExecutionInfo,
@@ -153,10 +153,24 @@
                 NoOpTrace.Singleton,
                 default);
                        
-            Assert.AreEqual(input.ExpectedValueFromTest, inputParameters.SqlQuerySpec.options.IsPassThrough);
+            Assert.AreEqual(input.ExpectedValueFromTest, inputParameters.SqlQuerySpec.PassThrough);
             Assert.IsNotNull(queryPipelineStage);
 
-            return new PassThroughQueryTestOutput(inputParameters.SqlQuerySpec.options.IsPassThrough);
+            return new PassThroughQueryTestOutput(inputParameters.SqlQuerySpec.PassThrough);
+            //ignore the below comment, will be removed before pushing to master
+            /*
+            // make call to Create
+            IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
+                documentContainer,
+                cosmosQueryContextCore,
+                inputParameters,
+                NoOpTrace.Singleton);
+
+            bool result = queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton).Result;
+
+            Assert.AreEqual(input.ExpectedValueFromTest, inputParameters.SqlQuerySpec.PassThrough);
+
+            return new PassThroughQueryTestOutput(inputParameters.SqlQuerySpec.PassThrough); */
         }
     }
 

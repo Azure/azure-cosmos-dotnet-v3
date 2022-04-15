@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     internal sealed class SqlQuerySpec
     {
         private SqlParameterCollection parameters;
-        public SqlQueryOptions options;
+        private bool passThrough;
         
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Microsoft.Azure.Documents.SqlQuerySpec"/> class for the Azure Cosmos DB service.</summary>
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// <param name="queryText">The text of the database query.</param>
         /// <param name="parameters">The <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of query parameters.</param>
         public SqlQuerySpec(string queryText, SqlParameterCollection parameters)
-            : this(queryText, parameters, new SqlQueryOptions())
+            : this(queryText, parameters, false)
         {
         }
 
@@ -50,12 +50,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// </summary>
         /// <param name="queryText">The text of the database query.</param>
         /// <param name="parameters">The <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of query parameters.</param>
-        /// /// <param name="options">The boolean value for whether the query should go straight to the Backend or not.</param>
-        public SqlQuerySpec(string queryText, SqlParameterCollection parameters, SqlQueryOptions options)
+        /// /// <param name="passThrough">The boolean value for whether the query should go straight to the Backend or not.</param>
+        public SqlQuerySpec(string queryText, SqlParameterCollection parameters, bool passThrough)
         {
             this.QueryText = queryText;
             this.parameters = parameters ?? throw new ArgumentNullException("parameters");
-            this.options = options ?? throw new ArgumentNullException("options");
+            this.passThrough = passThrough;
         }
         
         /// <summary>
@@ -86,16 +86,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// Gets or sets the boolean of the Azure Cosmos DB database options.
         /// </summary>
         /// <value>The boolean to let the Backend know that this is a pass through query.</value>
-        [DataMember(Name = "options")]        
-        public SqlQueryOptions Options
+        [DataMember(Name = "passThrough")]        
+        public bool PassThrough
         {
             get
             {
-                return this.options;
+                return this.passThrough;
             }
             set
             {
-                this.options = value ?? new SqlQueryOptions();
+                this.passThrough = value;
             }
         }
         
@@ -108,11 +108,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         }
 
         /// <summary>
-        /// Returns a value that indicates whether the Azure Cosmos DB database <see cref="Options"/> property should be serialized.
+        /// Returns a value that indicates whether the Azure Cosmos DB database <see cref="PassThrough"/> property should be serialized.
         /// </summary>
-        public bool ShouldSerializeOptions()
+        public bool ShouldSerializePassThrough()
         {
-            return this.options.IsPassThrough;
+            return this.passThrough;
         }
     }
 }

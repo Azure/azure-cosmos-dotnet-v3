@@ -1,6 +1,32 @@
 ﻿<Results>
   <Result>
     <Input>
+      <Description>Partition Key and Distinct</Description>
+      <Query>SELECT DISTINCT c.key FROM c</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <TryExecuteOnBE>true</TryExecuteOnBE>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Partition Key and Min Aggregate</Description>
+      <Query>SELECT VALUE MIN(c.key) FROM c</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <TryExecuteOnBE>true</TryExecuteOnBE>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description>Partition Key Field</Description>
       <Query>SELECT c.key FROM c</Query>
       <PartitionKeys>
