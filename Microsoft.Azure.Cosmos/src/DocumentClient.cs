@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -898,6 +899,9 @@ namespace Microsoft.Azure.Cosmos
                 handler,
                 this.sendingRequest,
                 this.receivedResponse);
+
+            // Loading VM Information (non blocking call and initialization won't fail if this call fails)
+            VmMetadataApiHandler.TryInitialize(this.httpClient);
 
             if (sessionContainer != null)
             {

@@ -309,6 +309,10 @@
       "ContactedReplicas": [
         {
           "Count": 1,
+          "Uri": "http://someuri1.com/"
+        },
+        {
+          "Count": 1,
           "Uri": "http://someuri2.com/"
         }
       ],
