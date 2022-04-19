@@ -1,17 +1,12 @@
-﻿using System.Collections.Generic;
-
-internal class QueryStatisticsAccumulatorBuilder
+﻿internal class QueryMetrics
 {
-    public QueryMetrics queryMetrics = new();
-    public List<QueryMetrics> QueryMetricsList { get; set; } = new List<QueryMetrics>();
-}
-
-internal class QueryMetrics
-{
-    public long RetrievedDocumentCount { get; set; }
-    public long RetrievedDocumentSize { get; set; }
-    public long OutputDocumentCount { get; set; }
-    public long OutputDocumentSize { get; set; }
+    public double EndToEndTimeList { get; set; }
+    public double PocoTimeList { get; set; }
+    public double GetCosmosElementResponseTimeList { get; set; }
+    public double RetrievedDocumentCount { get; set; }
+    public double RetrievedDocumentSize { get; set; }
+    public double OutputDocumentCount { get; set; }
+    public double OutputDocumentSize { get; set; }
     public double TotalQueryExecutionTime { get; set; }
     public double DocumentLoadTime { get; set; }
     public double DocumentWriteTime { get; set; }
