@@ -1,44 +1,16 @@
 ﻿namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
-    using System.Collections.Generic;
-    using System.Runtime.Serialization;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
 
     internal class QueryStatisticsDatumVisitor : ITraceDatumVisitor
     {
         public readonly QueryStatisticsAccumulator queryStatisticsAccumulator = new();
         public readonly QueryMetrics queryMetrics = new();
         private readonly int numberOfEvents = 6;
-        private class RequestTimeline
-        {
-            public DateTime StartTimeUtc { get; set; }
-
-            public EventType Event { get; set; }
-
-            public double DurationInMs { get; set; }
-
-            [JsonConverter(typeof(StringEnumConverter))]
-            public enum EventType
-            {
-                Created,
-                ChannelAcquisitionStarted,
-                Pipelined,
-                [EnumMember(Value = "Transit Time")]
-                TransitTime,
-                Received,
-                Completed
-            }
-        }
-
-        private class TransportStats
-        {
-            public List<RequestTimeline> RequestTimeline { get; set; }
-        }
 
         public void Visit(QueryMetricsTraceDatum queryMetricsTraceDatum)
         {
