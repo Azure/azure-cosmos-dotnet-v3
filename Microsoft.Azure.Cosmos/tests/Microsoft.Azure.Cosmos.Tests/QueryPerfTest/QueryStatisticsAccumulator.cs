@@ -1,6 +1,9 @@
-﻿using System.Collections.Generic;
-
-internal class QueryStatisticsAccumulator
+﻿namespace Microsoft.Azure.Cosmos.Tests
 {
-    public List<QueryMetrics> QueryMetricsList { get; } = new();
+    using System.Collections.Generic;
+
+    internal class QueryStatisticsAccumulator
+    {
+        public List<QueryMetrics> QueryMetricsList { get; } = new();
+    }
 }

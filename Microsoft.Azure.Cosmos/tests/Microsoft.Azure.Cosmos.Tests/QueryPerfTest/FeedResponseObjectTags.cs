@@ -1,11 +1,14 @@
-﻿using System.Collections.Generic;
-using Newtonsoft.Json;
-
-internal sealed class Tags
+﻿namespace Microsoft.Azure.Cosmos.Tests
 {
-    [JsonProperty(PropertyName = "words")]
-    public List<string> Words { get; set; }
+    using System.Collections.Generic;
+    using Newtonsoft.Json;
 
-    [JsonProperty(PropertyName = "numbers")]
-    public string Numbers { get; set; }
+    internal sealed class Tags
+    {
+        [JsonProperty(PropertyName = "words")]
+        public List<string> Words { get; set; }
+
+        [JsonProperty(PropertyName = "numbers")]
+        public string Numbers { get; set; }
+    }
 }

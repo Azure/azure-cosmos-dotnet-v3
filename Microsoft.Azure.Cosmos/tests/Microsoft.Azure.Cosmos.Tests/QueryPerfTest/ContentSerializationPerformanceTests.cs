@@ -1,12 +1,12 @@
 ﻿namespace Microsoft.Azure.Cosmos.Tests
 {
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Cosmos;
     using System;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Json;
     using System.Diagnostics;
     using System.IO;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class ContentSerializationPerformanceTests
@@ -82,7 +82,7 @@
                 CosmosSerializationFormatOptions = new CosmosSerializationFormatOptions(
                             contentSerializationFormat: this.contentSerialization,
                             createCustomNavigator: (content) => JsonNavigator.Create(content),
-                            createCustomWriter: () => JsonWriter.Create(JsonSerializationFormat.Text))
+                            createCustomWriter: () => JsonWriter.Create(this.contentSerialization == "JsonText" ? JsonSerializationFormat.Text : JsonSerializationFormat.Binary))
             };
 
             if (this.useStronglyTypedIterator)
@@ -128,7 +128,7 @@
                 totalTime.Stop();
             }
 
-            this.queryStatisticsDatumVisitor.queryMetrics.EndToEndTime = totalTime.ElapsedMilliseconds - getTraceTime.ElapsedMilliseconds;            
+            this.queryStatisticsDatumVisitor.queryMetrics.EndToEndTime = totalTime.ElapsedMilliseconds - getTraceTime.ElapsedMilliseconds;
         }
     }
 }

@@ -1,12 +1,15 @@
-﻿using System.IO;
-
-internal static class TextWriterExtension
+﻿namespace Microsoft.Azure.Cosmos.Tests
 {
-    public static void WriteMetrics(this TextWriter textWriter, params double[] metrics)
+    using System.IO;
+
+    internal static class TextWriterExtension
     {
-        foreach (double metric in metrics)
+        public static void WriteMetrics(this TextWriter textWriter, params double[] metrics)
         {
-            textWriter.WriteLine(metric);
+            foreach (double metric in metrics)
+            {
+                textWriter.WriteLine(metric);
+            }
         }
     }
 }
