@@ -1,13 +1,12 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Cosmos.Diagnostics;
-using Microsoft.Azure.Cosmos.Tests;
 using Microsoft.Azure.Cosmos.Tracing;
-using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
 internal class MetricsAccumulator
 {
-    public void GetTrace<T>(FeedResponse<T> Response, QueryStatisticsAccumulator queryStatisticsAccumulator)
+    public void GetTrace<T>(FeedResponse<T> Response, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor)
     {
         string backendKeyValue = "Query Metrics";
         ITrace trace = ((CosmosTraceDiagnostics)Response.Diagnostics).Value;
@@ -18,10 +17,12 @@ internal class MetricsAccumulator
             {
                 foreach (KeyValuePair<string, object> kvp in node.Data)
                 {
-                    queryStatisticsAccumulator.Visit((QueryMetricsTraceDatum)kvp.Value);
+                    Debug.Assert(kvp.Value is TraceDatum, "Unexpected trace type!");
+                    ((TraceDatum)kvp.Value).Accept(queryStatisticsDatumVisitor);
                 }
             }
         }
+
         string transportKeyValue = "Client Side Request Stats";
         List<ITrace> transitMetrics = this.FindQueryMetrics(trace, nodeNameOrKeyName: transportKeyValue, hasKey: true);
         if (transitMetrics != null)
@@ -30,26 +31,29 @@ internal class MetricsAccumulator
             {
                 foreach (KeyValuePair<string, object> kvp in node.Data)
                 {
-                    queryStatisticsAccumulator.Visit((ClientSideRequestStatisticsTraceDatum)kvp.Value);
+                    Debug.Assert(kvp.Value is TraceDatum, "Unexpected trace type!");
+                    ((TraceDatum)kvp.Value).Accept(queryStatisticsDatumVisitor);
                 }
             }
         }
+
         string clientParseTimeNode = "POCO Materialization";
         List<ITrace> poco = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: clientParseTimeNode, hasKey: false);
         if (poco != null)
         {
             foreach (ITrace p in poco)
             {
-                queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.queryMetrics.PocoTimeList = p.Duration.TotalMilliseconds;
+                queryStatisticsDatumVisitor.queryMetrics.PocoTime = p.Duration.TotalMilliseconds;
             }
         }
+
         string clientDeserializationTimeNode = "Get Cosmos Element Response";
         List<ITrace> getCosmosElementResponse = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: clientDeserializationTimeNode, hasKey: false);
         if (getCosmosElementResponse != null)
         {
             foreach (ITrace getCosmos in getCosmosElementResponse)
             {
-                queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.queryMetrics.GetCosmosElementResponseTimeList = getCosmos.Duration.TotalMilliseconds;
+                queryStatisticsDatumVisitor.queryMetrics.GetCosmosElementResponseTime = getCosmos.Duration.TotalMilliseconds;
             }
         }
     }
@@ -66,15 +70,18 @@ internal class MetricsAccumulator
             {
                 queryMetricsNodes.Add(node);
             }
+
             else if (node.Name == nodeNameOrKeyName)
             {
                 queryMetricsNodes.Add(node);
             }
+
             foreach (ITrace child in node.Children)
             {
                 queue.Enqueue(child);
             }
         }
+
         return queryMetricsNodes;
     }
 }

@@ -2,15 +2,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Microsoft.Azure.Cosmos.Tests;
 
 internal class MetricsSerializer
 {
     private readonly Func<QueryMetrics, double>[] metricsDelegate = new Func<QueryMetrics, double>[] { metric => metric.RetrievedDocumentCount,
             metric => metric.RetrievedDocumentSize, metric => metric.OutputDocumentCount, metric => metric.OutputDocumentSize, metric => metric.TotalQueryExecutionTime,
             metric => metric.DocumentLoadTime, metric => metric.DocumentWriteTime, metric => metric.Created, metric => metric.ChannelAcquisitionStarted, metric => metric.Pipelined,
-            metric => metric.TransitTime, metric => metric.Received, metric => metric.Completed,metric => metric.PocoTimeList, metric => metric.GetCosmosElementResponseTimeList,
-            metric => metric.EndToEndTimeList};
+            metric => metric.TransitTime, metric => metric.Received, metric => metric.Completed,metric => metric.PocoTime, metric => metric.GetCosmosElementResponseTime,
+            metric => metric.EndToEndTime};
 
     private List<double> CalculateAverage(List<QueryMetrics> getAverageList)
     {
@@ -30,6 +29,7 @@ internal class MetricsSerializer
         {
             medianList.Add(this.GetMedian(getMedianList, getMedianList.ConvertAll(new Converter<QueryMetrics, double>(metric))));
         }
+
         return medianList;
     }
 
@@ -69,12 +69,14 @@ internal class MetricsSerializer
                     TransitTime = metricsPerRoundTrip.Sum(metric => metric.TransitTime),
                     Received = metricsPerRoundTrip.Sum(metric => metric.Received),
                     Completed = metricsPerRoundTrip.Sum(metric => metric.Completed),
-                    PocoTimeList = metricsPerRoundTrip.Sum(metric => metric.PocoTimeList),
-                    GetCosmosElementResponseTimeList = metricsPerRoundTrip.Sum(metric => metric.GetCosmosElementResponseTimeList),
-                    EndToEndTimeList = metricsPerRoundTrip.Sum(metric => metric.EndToEndTimeList)
+                    PocoTime = metricsPerRoundTrip.Sum(metric => metric.PocoTime),
+                    GetCosmosElementResponseTime = metricsPerRoundTrip.Sum(metric => metric.GetCosmosElementResponseTime),
+                    EndToEndTime = metricsPerRoundTrip.Sum(metric => metric.EndToEndTime)
                 });
+
             i += roundTrips;
         }
+
         return sumOfRoundTripsList;
     }
 
@@ -85,19 +87,20 @@ internal class MetricsSerializer
         return noWarmupList;
     }
 
-    public void SerializeAsync(TextWriter textWriter, QueryStatisticsAccumulator queryStatisticsAccumulator, int numberOfIterations, int warmupIterations, bool rawData)
+    public void SerializeAsync(TextWriter textWriter, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor, int numberOfIterations, int warmupIterations, bool rawData)
     {
-        int roundTrips = queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.QueryMetricsList.Count / numberOfIterations;
+        int roundTrips = queryStatisticsDatumVisitor.queryStatisticsAccumulator.QueryMetricsList.Count / numberOfIterations;
         if (rawData == false)
         {
             textWriter.WriteLine(roundTrips);
             List<QueryMetrics> noWarmupList = this.EliminateWarmupIterations(
-                            queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.QueryMetricsList, roundTrips, warmupIterations);
+                            queryStatisticsDatumVisitor.queryStatisticsAccumulator.QueryMetricsList, roundTrips, warmupIterations);
 
             if (roundTrips > 1)
             {
                 noWarmupList = this.SumOfRoundTrips(roundTrips, noWarmupList);
             }
+
             this.CalculateAverage(noWarmupList).ForEach(textWriter.WriteLine);
             textWriter.WriteLine();
             textWriter.WriteLine("Median");
@@ -106,26 +109,29 @@ internal class MetricsSerializer
             textWriter.Flush();
             textWriter.Close();
         }
+
         else
         {
             textWriter.WriteLine();
             textWriter.WriteLine("QueryMetrics");
-            foreach (QueryMetrics metrics in queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.QueryMetricsList)
+            foreach (QueryMetrics metrics in queryStatisticsDatumVisitor.queryStatisticsAccumulator.QueryMetricsList)
             {
-                textWriter.WriteLines(metrics.RetrievedDocumentCount, metrics.RetrievedDocumentSize, metrics.OutputDocumentCount,
+                textWriter.WriteMetrics(metrics.RetrievedDocumentCount, metrics.RetrievedDocumentSize, metrics.OutputDocumentCount,
                     metrics.OutputDocumentSize, metrics.TotalQueryExecutionTime, metrics.DocumentLoadTime, metrics.DocumentWriteTime,
                     metrics.Created, metrics.ChannelAcquisitionStarted, metrics.Pipelined, metrics.TransitTime, metrics.Received,
-                    metrics.Completed, metrics.PocoTimeList, metrics.GetCosmosElementResponseTimeList, metrics.EndToEndTimeList);
+                    metrics.Completed, metrics.PocoTime, metrics.GetCosmosElementResponseTime, metrics.EndToEndTime);
                 textWriter.WriteLine();
             }
+
             textWriter.WriteLine();
             textWriter.WriteLine("BadRequest");
-            foreach (QueryMetrics metrics in queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.QueryMetricsList)
+            foreach (QueryMetrics metrics in queryStatisticsDatumVisitor.queryStatisticsAccumulator.QueryMetricsList)
             {
-                textWriter.WriteLines(metrics.BadRequestCreated, metrics.BadRequestChannelAcquisitionStarted, metrics.BadRequestPipelined,
+                textWriter.WriteMetrics(metrics.BadRequestCreated, metrics.BadRequestChannelAcquisitionStarted, metrics.BadRequestPipelined,
                     metrics.BadRequestTransitTime, metrics.BadRequestReceived, metrics.BadRequestCompleted);
                 textWriter.WriteLine();
             }
+
             textWriter.Flush();
             textWriter.Close();
         }

@@ -11,7 +11,7 @@
     [TestClass]
     public class ContentSerializationPerformanceTests
     {
-        private readonly QueryStatisticsAccumulator queryStatisticsAccumulator = new();
+        private readonly QueryStatisticsDatumVisitor queryStatisticsDatumVisitor = new();
         private readonly string cosmosDatabaseId;
         private readonly string containerId;
         private readonly string contentSerialization;
@@ -61,13 +61,15 @@
             {
                 await this.RunQueryAsync(container);
             }
+
             using (TextWriter rawDataFile = new StreamWriter(path: rawDataPath, append: this.appendRawDataToFile))
             {
-                metricsSerializer.SerializeAsync(rawDataFile, this.queryStatisticsAccumulator, this.numberOfIterations, this.warmupIterations, rawData: true);
+                metricsSerializer.SerializeAsync(rawDataFile, this.queryStatisticsDatumVisitor, this.numberOfIterations, this.warmupIterations, rawData: true);
             }
+
             using (TextWriter writer = Console.Out)
             {
-                metricsSerializer.SerializeAsync(writer, this.queryStatisticsAccumulator, this.numberOfIterations, this.warmupIterations, rawData: false);
+                metricsSerializer.SerializeAsync(writer, this.queryStatisticsDatumVisitor, this.numberOfIterations, this.warmupIterations, rawData: false);
             }
         }
 
@@ -92,6 +94,7 @@
                     await this.GetIteratorResponse(iterator);
                 }
             }
+
             else
             {
                 using (FeedIterator<string> distinctQueryIterator = container.GetItemQueryIterator<string>(
@@ -116,13 +119,16 @@
                     getTraceTime.Start();
                     if (response.RequestCharge != 0)
                     {
-                        metricsAccumulator.GetTrace(response, this.queryStatisticsAccumulator);
+                        metricsAccumulator.GetTrace(response, this.queryStatisticsDatumVisitor);
                     }
+
                     getTraceTime.Stop();
                 }
+
                 totalTime.Stop();
             }
-            this.queryStatisticsAccumulator.queryStatisticsAccumulatorBuilder.queryMetrics.EndToEndTimeList = totalTime.ElapsedMilliseconds - getTraceTime.ElapsedMilliseconds;            
+
+            this.queryStatisticsDatumVisitor.queryMetrics.EndToEndTime = totalTime.ElapsedMilliseconds - getTraceTime.ElapsedMilliseconds;            
         }
     }
 }
