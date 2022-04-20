@@ -533,7 +533,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                 
                     break;
-                case 38:
+                case 37:
                     if (string.Equals(HttpConstants.HttpHeaders.SDKSupportedCapabilities, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.SDKSupportedCapabilities;
@@ -1049,7 +1049,7 @@ namespace Microsoft.Azure.Cosmos
                         return;
                     }
                     break;
-                case 38:
+                case 37:
                     if (string.Equals(HttpConstants.HttpHeaders.SDKSupportedCapabilities, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.SDKSupportedCapabilities != null)
