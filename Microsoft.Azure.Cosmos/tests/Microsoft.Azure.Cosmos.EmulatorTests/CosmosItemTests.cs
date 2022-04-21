@@ -960,7 +960,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Each parameter in query spec should be a call to the custom serializer
                 int parameterCount = queryDefinition.ToSqlQuerySpec().Parameters.Count;
-                Assert.AreEqual(parameterCount, toStreamCount, $"missing to stream call. Expected: {parameterCount}, Actual: {toStreamCount} for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
+                Assert.AreEqual((parameterCount*pageCount)+parameterCount, toStreamCount, $"missing to stream call. Expected: {(parameterCount * pageCount) + parameterCount}, Actual: {toStreamCount} for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
                 Assert.AreEqual(pageCount, fromStreamCount);
             }
         }
@@ -1072,7 +1072,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<dynamic> allItems = new List<dynamic>();
                 int pageCount = 0;
                 using (FeedIterator<dynamic> feedIterator = containerSerializer.GetItemQueryIterator<dynamic>(
-                    queryDefinition: queryDefinition))
+                    queryDefinition: queryDefinition,
+                    requestOptions: new QueryRequestOptions()
+                    {
+                        MaxItemCount = 100
+                    }))
                 {
                     while (feedIterator.HasMoreResults)
                     {

@@ -79,6 +79,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(
             SqlQuerySpec sqlQuerySpec,
+            ResourceType resourceType,
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
@@ -87,8 +88,20 @@ namespace Microsoft.Azure.Cosmos
             bool allowDCount,
             CancellationToken cancellationToken)
         {
+            string queryString = null;
+            if (queryString == null)
+            {
+                using (Stream stream = this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType))
+                {
+                    using (StreamReader reader = new StreamReader(stream))
+                    {
+                        queryString = reader.ReadToEnd();
+                    }
+                }
+            }
+            
             return (await this.documentClient.QueryPartitionProvider).TryGetPartitionedQueryExecutionInfo(
-                querySpec: sqlQuerySpec,
+                querySpecJsonString: queryString,
                 partitionKeyDefinition: partitionKeyDefinition,
                 requireFormattableOrderByQuery: requireFormattableOrderByQuery,
                 isContinuationExpected: isContinuationExpected,

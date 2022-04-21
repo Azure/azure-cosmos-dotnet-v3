@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
 
     [TestClass]
     public class FullPipelineTests
@@ -388,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         private static QueryInfo GetQueryPlan(string query)
         {
             TryCatch<PartitionedQueryExecutionInfoInternal> info = QueryPartitionProviderTestInstance.Object.TryGetPartitionedQueryExecutionInfoInternal(
-                new SqlQuerySpec(query),
+                JsonConvert.SerializeObject(new SqlQuerySpec(query)),
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: false,
