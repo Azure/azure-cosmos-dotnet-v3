@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -8,9 +9,10 @@
 
     internal class QueryStatisticsDatumVisitor : ITraceDatumVisitor
     {
-        public readonly QueryStatisticsAccumulator queryStatisticsAccumulator = new();
+        private readonly List<QueryMetrics> queryMetricsList = new();
+        private const int numberOfEvents = 6;
         public readonly QueryMetrics queryMetrics = new();
-        private readonly int numberOfEvents = 6;
+        public IReadOnlyList<QueryMetrics> QueryMetricsList => this.queryMetricsList;
 
         public void Visit(QueryMetricsTraceDatum queryMetricsTraceDatum)
         {
@@ -32,7 +34,7 @@
                     if (storeResponse.StoreResult.StatusCode == StatusCodes.Ok)
                     {
                         TransportStats transportStats = JsonConvert.DeserializeObject<TransportStats>(storeResponse.StoreResult.TransportRequestStats.ToString());
-                        for (int i = 0; i < this.numberOfEvents; i++)
+                        for (int i = 0; i < numberOfEvents; i++)
                         {
                             switch (transportStats.RequestTimeline[i].Event)
                             {
@@ -63,7 +65,7 @@
                     else if (storeResponse.StoreResult.StatusCode != StatusCodes.Ok)
                     {
                         TransportStats badRequestTransportStats = JsonConvert.DeserializeObject<TransportStats>(storeResponse.StoreResult.TransportRequestStats.ToString());
-                        for (int i = 0; i < this.numberOfEvents; i++)
+                        for (int i = 0; i < numberOfEvents; i++)
                         {
                             switch (badRequestTransportStats.RequestTimeline[i].Event)
                             {
@@ -99,8 +101,7 @@
 
         public void PopulateMetrics()
         {
-            this.queryStatisticsAccumulator.QueryMetricsList
-                .Add(this.queryMetrics);
+            this.queryMetricsList.Add(this.queryMetrics);
         }
 
         public void Visit(CpuHistoryTraceDatum cpuHistoryTraceDatum)

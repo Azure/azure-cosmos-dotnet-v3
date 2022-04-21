@@ -7,11 +7,25 @@
 
     internal class MetricsSerializer
     {
-        private readonly Func<QueryMetrics, double>[] metricsDelegate = new Func<QueryMetrics, double>[] { metric => metric.RetrievedDocumentCount,
-            metric => metric.RetrievedDocumentSize, metric => metric.OutputDocumentCount, metric => metric.OutputDocumentSize, metric => metric.TotalQueryExecutionTime,
-            metric => metric.DocumentLoadTime, metric => metric.DocumentWriteTime, metric => metric.Created, metric => metric.ChannelAcquisitionStarted, metric => metric.Pipelined,
-            metric => metric.TransitTime, metric => metric.Received, metric => metric.Completed,metric => metric.PocoTime, metric => metric.GetCosmosElementResponseTime,
-            metric => metric.EndToEndTime};
+        private readonly Func<QueryMetrics, double>[] metricsDelegate = new Func<QueryMetrics, double>[]
+        {
+            metric => metric.RetrievedDocumentCount,
+            metric => metric.RetrievedDocumentSize,
+            metric => metric.OutputDocumentCount,
+            metric => metric.OutputDocumentSize,
+            metric => metric.TotalQueryExecutionTime,
+            metric => metric.DocumentLoadTime,
+            metric => metric.DocumentWriteTime,
+            metric => metric.Created,
+            metric => metric.ChannelAcquisitionStarted,
+            metric => metric.Pipelined,
+            metric => metric.TransitTime,
+            metric => metric.Received,
+            metric => metric.Completed,
+            metric => metric.PocoTime,
+            metric => metric.GetCosmosElementResponseTime,
+            metric => metric.EndToEndTime
+        };
 
         private List<double> CalculateAverage(List<QueryMetrics> getAverageList)
         {
@@ -82,7 +96,7 @@
             return sumOfRoundTripsList;
         }
 
-        private List<T> EliminateWarmupIterations<T>(List<T> noWarmupList, int roundTrips, int warmupIterations)
+        private List<QueryMetrics> EliminateWarmupIterations(List<QueryMetrics> noWarmupList, int roundTrips, int warmupIterations)
         {
             int iterationsToEliminate = warmupIterations * roundTrips;
             noWarmupList = noWarmupList.GetRange(iterationsToEliminate, noWarmupList.Count - iterationsToEliminate);
@@ -91,12 +105,11 @@
 
         public void SerializeAsync(TextWriter textWriter, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor, int numberOfIterations, int warmupIterations, bool rawData)
         {
-            int roundTrips = queryStatisticsDatumVisitor.queryStatisticsAccumulator.QueryMetricsList.Count / numberOfIterations;
+            int roundTrips = queryStatisticsDatumVisitor.QueryMetricsList.Count / numberOfIterations;
             if (rawData == false)
             {
                 textWriter.WriteLine(roundTrips);
-                List<QueryMetrics> noWarmupList = this.EliminateWarmupIterations(
-                                queryStatisticsDatumVisitor.queryStatisticsAccumulator.QueryMetricsList, roundTrips, warmupIterations);
+                List<QueryMetrics> noWarmupList = this.EliminateWarmupIterations((List<QueryMetrics>)queryStatisticsDatumVisitor.QueryMetricsList, roundTrips, warmupIterations);
 
                 if (roundTrips > 1)
                 {
@@ -108,15 +121,12 @@
                 textWriter.WriteLine("Median");
                 textWriter.WriteLine();
                 this.CalculateMedian(noWarmupList).ForEach(textWriter.WriteLine);
-                textWriter.Flush();
-                textWriter.Close();
             }
-
             else
             {
                 textWriter.WriteLine();
                 textWriter.WriteLine("QueryMetrics");
-                foreach (QueryMetrics metrics in queryStatisticsDatumVisitor.queryStatisticsAccumulator.QueryMetricsList)
+                foreach (QueryMetrics metrics in queryStatisticsDatumVisitor.QueryMetricsList)
                 {
                     textWriter.WriteMetrics(metrics.RetrievedDocumentCount, metrics.RetrievedDocumentSize, metrics.OutputDocumentCount,
                         metrics.OutputDocumentSize, metrics.TotalQueryExecutionTime, metrics.DocumentLoadTime, metrics.DocumentWriteTime,
@@ -127,16 +137,16 @@
 
                 textWriter.WriteLine();
                 textWriter.WriteLine("BadRequest");
-                foreach (QueryMetrics metrics in queryStatisticsDatumVisitor.queryStatisticsAccumulator.QueryMetricsList)
+                foreach (QueryMetrics metrics in queryStatisticsDatumVisitor.QueryMetricsList)
                 {
                     textWriter.WriteMetrics(metrics.BadRequestCreated, metrics.BadRequestChannelAcquisitionStarted, metrics.BadRequestPipelined,
                         metrics.BadRequestTransitTime, metrics.BadRequestReceived, metrics.BadRequestCompleted);
                     textWriter.WriteLine();
                 }
-
-                textWriter.Flush();
-                textWriter.Close();
             }
+
+            textWriter.Flush();
+            textWriter.Close();
         }
     }
 }

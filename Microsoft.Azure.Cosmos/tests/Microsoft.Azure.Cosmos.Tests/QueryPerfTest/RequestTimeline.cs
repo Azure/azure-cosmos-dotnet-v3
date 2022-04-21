@@ -19,6 +19,7 @@
             Created,
             ChannelAcquisitionStarted,
             Pipelined,
+
             [EnumMember(Value = "Transit Time")]
             TransitTime,
             Received,

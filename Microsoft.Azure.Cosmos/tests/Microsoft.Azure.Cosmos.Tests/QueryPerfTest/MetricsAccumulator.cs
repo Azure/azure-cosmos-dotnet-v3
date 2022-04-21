@@ -9,11 +9,14 @@
 
     internal class MetricsAccumulator
     {
-        public void GetTrace<T>(FeedResponse<T> Response, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor)
+        private const string backendKeyValue = "Query Metrics";
+        private const string transportKeyValue = "Client Side Request Stats";
+        private const string clientParseTimeNode = "POCO Materialization";
+        private const string clientDeserializationTimeNode = "Get Cosmos Element Response";
+
+        public void ReadFromTrace<T>(FeedResponse<T> Response, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor)
         {
             ITrace trace = ((CosmosTraceDiagnostics)Response.Diagnostics).Value;
-            string backendKeyValue = "Query Metrics";
-            string transportKeyValue = "Client Side Request Stats";
             List<ITrace> transitMetrics = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: transportKeyValue, hasKey: true);
             List<ITrace> backendMetrics = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: backendKeyValue, hasKey: true);
             foreach (ITrace node in backendMetrics.Concat(transitMetrics))
@@ -22,18 +25,16 @@
                 {
                     switch (kvp.Value)
                     {
-                        case TraceDatum:
-                            ((TraceDatum)kvp.Value).Accept(queryStatisticsDatumVisitor);
+                        case TraceDatum traceDatum:
+                            traceDatum.Accept(queryStatisticsDatumVisitor);
                             break;
                         default:
-                            Console.WriteLine("Unexpected trace type");
+                            Console.WriteLine($"Unexpected type {kvp.Value.GetType()}");
                             break;
                     }
                 }
             }
 
-            string clientParseTimeNode = "POCO Materialization";
-            string clientDeserializationTimeNode = "Get Cosmos Element Response";
             List<ITrace> getCosmosElementResponse = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: clientDeserializationTimeNode, hasKey: false);
             List<ITrace> poco = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: clientParseTimeNode, hasKey: false);
             foreach (ITrace p in poco)
@@ -55,12 +56,7 @@
             while (queue.Count > 0)
             {
                 ITrace node = queue.Dequeue();
-                if (hasKey == true && node.Data.ContainsKey(nodeNameOrKeyName))
-                {
-                    queryMetricsNodes.Add(node);
-                }
-
-                else if (node.Name == nodeNameOrKeyName)
+                if ((hasKey == true && node.Data.ContainsKey(nodeNameOrKeyName)) || node.Name == nodeNameOrKeyName)
                 {
                     queryMetricsNodes.Add(node);
                 }

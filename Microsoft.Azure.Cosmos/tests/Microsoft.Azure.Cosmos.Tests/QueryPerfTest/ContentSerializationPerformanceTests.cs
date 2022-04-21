@@ -11,7 +11,7 @@
     [TestClass]
     public class ContentSerializationPerformanceTests
     {
-        private readonly QueryStatisticsDatumVisitor queryStatisticsDatumVisitor = new();
+        private readonly QueryStatisticsDatumVisitor queryStatisticsDatumVisitor;
         private readonly string cosmosDatabaseId;
         private readonly string containerId;
         private readonly string contentSerialization;
@@ -22,8 +22,10 @@
         private readonly int MaxItemCount;
         private readonly bool appendRawDataToFile;
         private readonly bool useStronglyTypedIterator;
+
         public ContentSerializationPerformanceTests()
         {
+            this.queryStatisticsDatumVisitor = new();
             this.cosmosDatabaseId = System.Configuration.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.CosmosDatabaseId"];
             this.containerId = System.Configuration.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.ContainerId"];
             this.contentSerialization = System.Configuration.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.ContentSerialization"];
@@ -55,13 +57,14 @@
         {
             Database cosmosDatabase = client.GetDatabase(this.cosmosDatabaseId);
             Container container = cosmosDatabase.GetContainer(this.containerId);
-            string rawDataPath = "ContentSerializationPerformanceTestsRawData.csv";
+            string rawDataPath = Path.GetFullPath("ContentSerializationPerformanceTestsRawData.csv");
             MetricsSerializer metricsSerializer = new MetricsSerializer();
             for (int i = 0; i < this.numberOfIterations; i++)
             {
                 await this.RunQueryAsync(container);
             }
 
+            Console.WriteLine(rawDataPath);
             using (TextWriter rawDataFile = new StreamWriter(path: rawDataPath, append: this.appendRawDataToFile))
             {
                 metricsSerializer.SerializeAsync(rawDataFile, this.queryStatisticsDatumVisitor, this.numberOfIterations, this.warmupIterations, rawData: true);
@@ -119,7 +122,7 @@
                     getTraceTime.Start();
                     if (response.RequestCharge != 0)
                     {
-                        metricsAccumulator.GetTrace(response, this.queryStatisticsDatumVisitor);
+                        metricsAccumulator.ReadFromTrace(response, this.queryStatisticsDatumVisitor);
                     }
 
                     getTraceTime.Stop();

@@ -4,6 +4,6 @@
 
     internal class TransportStats
     {
-        public List<RequestTimeline> RequestTimeline { get; set; }
+        public List<RequestTimeline> RequestTimeline { get; } = new();
     }
 }
