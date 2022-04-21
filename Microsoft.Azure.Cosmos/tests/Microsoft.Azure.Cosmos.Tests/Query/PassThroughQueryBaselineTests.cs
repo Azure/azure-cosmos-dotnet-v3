@@ -257,7 +257,7 @@
 
         public override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(string resourceUri, ResourceType resourceType, OperationType operationType, SqlQuerySpec sqlQuerySpec, Cosmos.PartitionKey? partitionKey, string supportedQueryFeatures, ITrace trace, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(new PartitionedQueryExecutionInfo());
         }
 
         public override Task ForceRefreshCollectionCacheAsync(string collectionLink, CancellationToken cancellationToken)
