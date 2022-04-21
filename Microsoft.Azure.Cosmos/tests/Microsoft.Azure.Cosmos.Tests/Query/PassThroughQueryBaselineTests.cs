@@ -25,7 +25,10 @@
     using Moq;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Routing;
     using System.Threading;
+    using System.Linq;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
 
     [TestClass]
     public class PassThroughQueryBaselineTests : BaselineTests<PassThroughQueryTestInput, PassThroughQueryTestOutput>
@@ -98,25 +101,17 @@
 
         public override PassThroughQueryTestOutput ExecuteTest(PassThroughQueryTestInput input)
         {
-            // this gets DocumentContainer
+            // gets DocumentContainer
             IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(input.PartitionKeyDefinition);
             DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
 
             SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(input.Query);
 
-            // gets container query properties
-            const string resourceId = "resourceId";
-            ContainerQueryProperties containerQueryProperties = new ContainerQueryProperties(
-                resourceId,
-                null,
-                input.PartitionKeyDefinition);
-
             // gets query context
             string databaseId = "db1234";
             string resourceLink = string.Format("dbs/{0}/colls", databaseId);
-            Mock<CosmosQueryClient> mockCosmosQueryClient = new Mock<CosmosQueryClient>();
             CosmosQueryContextCore cosmosQueryContextCore = new CosmosQueryContextCore(
-                client: mockCosmosQueryClient.Object,
+                client: new TestCosmosQueryClient(),
                 resourceTypeEnum: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.Query,
                 resourceType: typeof(QueryResponseCore),
@@ -143,34 +138,19 @@
                 returnResultsInDeterministicOrder: null,
                 forcePassthrough: true,
                 testInjections: null);
-            
-            Task<TryCatch<IQueryPipelineStage>> queryPipelineStage = CosmosQueryExecutionContextFactory.TryCreateFromPartitionedQueryExecutionInfoAsync(
-                documentContainer,
-                partitionedQueryExecutionInfo,
-                containerQueryProperties,
-                cosmosQueryContextCore,
-                inputParameters,
-                NoOpTrace.Singleton,
-                default);
-                       
+          
+            IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
+                      documentContainer,
+                      cosmosQueryContextCore,
+                      inputParameters,
+                      NoOpTrace.Singleton);
+            bool result = queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton).Result; 
+
             Assert.AreEqual(input.ExpectedValueFromTest, inputParameters.SqlQuerySpec.PassThrough);
             Assert.IsNotNull(queryPipelineStage);
+            Assert.IsTrue(result);
 
             return new PassThroughQueryTestOutput(inputParameters.SqlQuerySpec.PassThrough);
-            //ignore the below comment, will be removed before pushing to master
-            /*
-            // make call to Create
-            IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
-                documentContainer,
-                cosmosQueryContextCore,
-                inputParameters,
-                NoOpTrace.Singleton);
-
-            bool result = queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton).Result;
-
-            Assert.AreEqual(input.ExpectedValueFromTest, inputParameters.SqlQuerySpec.PassThrough);
-
-            return new PassThroughQueryTestOutput(inputParameters.SqlQuerySpec.PassThrough); */
         }
     }
 
@@ -254,6 +234,70 @@
                     Newtonsoft.Json.Formatting.Indented));
                 xmlWriter.WriteEndElement();
             }
+        }
+    }
+    internal class TestCosmosQueryClient : CosmosQueryClient
+    {
+        public override Action<IQueryable> OnExecuteScalarQueryCallback => throw new NotImplementedException();
+
+        public override bool ByPassQueryParsing()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void ClearSessionTokenCache(string collectionFullName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Task<TryCatch<QueryPage>> ExecuteItemQueryAsync(string resourceUri, ResourceType resourceType, OperationType operationType, Guid clientQueryCorrelationId, Cosmos.FeedRange feedRange, QueryRequestOptions requestOptions, SqlQuerySpec sqlQuerySpec, string continuationToken, bool isContinuationExpected, int pageSize, ITrace trace, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(string resourceUri, ResourceType resourceType, OperationType operationType, SqlQuerySpec sqlQuerySpec, Cosmos.PartitionKey? partitionKey, string supportedQueryFeatures, ITrace trace, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Task ForceRefreshCollectionCacheAsync(string collectionLink, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Task<ContainerQueryProperties> GetCachedContainerQueryPropertiesAsync(string containerLink, Cosmos.PartitionKey? partitionKey, ITrace trace, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(new ContainerQueryProperties());
+        }
+
+        public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(string resourceLink, string collectionResourceId, PartitionKeyDefinition partitionKeyDefinition, FeedRangeInternal feedRangeInternal, bool forceRefresh, ITrace trace)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(string resourceLink, string collectionResourceId, List<Range<string>> providedRanges, bool forceRefresh, ITrace trace)
+        {
+            return Task.FromResult(new List<PartitionKeyRange>{new PartitionKeyRange()
+            {
+                MinInclusive = PartitionKeyHash.V2.Hash("abc").ToString(),
+                MaxExclusive = PartitionKeyHash.V2.Hash("def").ToString()
+            }
+            });
+        }
+
+        public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(string resourceLink, string collectionResourceId, string effectivePartitionKeyString, bool forceRefresh, ITrace trace)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(string collectionResourceId, Range<string> range, bool forceRefresh = false)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(SqlQuerySpec sqlQuerySpec, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
     }
 }

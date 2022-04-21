@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     cancellationToken);
                 cosmosQueryContext.ContainerResourceId = containerQueryProperties.ResourceId;
 
-                inputParameters.SqlQuerySpec.PassThrough = PassThroughForBackend(inputParameters, queryPlanFromContinuationToken);
+                inputParameters.SqlQuerySpec.PassThrough = ShouldPassThroughToBackend(inputParameters, queryPlanFromContinuationToken);
 
                 if (inputParameters.SqlQuerySpec.PassThrough)
                 {
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                             cancellationToken);
                     }
                 }
-                
+
                 return await TryCreateFromPartitionedQueryExecutionInfoAsync(
                     documentContainer,
                     partitionedQueryExecutionInfo,
@@ -291,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             TryCatch<IQueryPipelineStage> tryCreatePipelineStage;
 
             // After getting the Query Plan if we find out that the query is single logical partition, then short circuit and send straight to Backend
-            inputParameters.SqlQuerySpec.PassThrough = PassThroughForBackend(inputParameters, partitionedQueryExecutionInfo);
+            inputParameters.SqlQuerySpec.PassThrough = ShouldPassThroughToBackend(inputParameters, partitionedQueryExecutionInfo);
 
             if (inputParameters.SqlQuerySpec.PassThrough)
             {
@@ -548,7 +548,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return partitionKeyDefinition;
         }
 
-        private static bool PassThroughForBackend(InputParameters inputParameters, PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
+        private static bool ShouldPassThroughToBackend(InputParameters inputParameters, PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
         {
             bool hasQueryRanges = false;
             bool hasPartitionKey = inputParameters.PartitionKey.HasValue

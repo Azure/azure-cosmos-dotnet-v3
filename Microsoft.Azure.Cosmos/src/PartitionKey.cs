@@ -183,6 +183,11 @@ namespace Microsoft.Azure.Cosmos
 
         internal string ToJsonString()
         {
+            if (this.InternalKey.Components == null)
+            {
+                return PartitionKey.NullPartitionKeyInternal.ToJsonString();
+            }
+
             return this.InternalKey.ToJsonString();
         }
 
