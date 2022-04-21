@@ -394,8 +394,21 @@
                   "durationInMs": 0
                 }
               ],
-              "serviceEndpointStats": {},
-              "connectionStats": {}
+              "serviceEndpointStats": {
+                "inflightRequests": 2,
+                "openConnections": 1
+              },
+              "connectionStats": {
+                "waitforConnectionInit": "True",
+                "callsPendingReceive": 1,
+                "lastSendAttempt": "2021-12-31T23:59:59.059Z",
+                "lastSend": "2021-12-31T23:59:59.059Z",
+                "lastReceive": "2021-12-31T23:59:59.059Z"
+              },
+              "requestSizeInBytes": 2,
+              "requestBodySizeInBytes": 1,
+              "responseMetadataSizeInBytes": 1,
+              "responseBodySizeInBytes": 1
             },
             "TransportException": null
           }
@@ -589,8 +602,21 @@
                   "durationInMs": 0
                 }
               ],
-              "serviceEndpointStats": {},
-              "connectionStats": {}
+              "serviceEndpointStats": {
+                "inflightRequests": 2,
+                "openConnections": 1
+              },
+              "connectionStats": {
+                "waitforConnectionInit": "True",
+                "callsPendingReceive": 1,
+                "lastSendAttempt": "2021-12-31T23:59:59.059Z",
+                "lastSend": "2021-12-31T23:59:59.059Z",
+                "lastReceive": "2021-12-31T23:59:59.059Z"
+              },
+              "requestSizeInBytes": 2,
+              "requestBodySizeInBytes": 1,
+              "responseMetadataSizeInBytes": 1,
+              "responseBodySizeInBytes": 1
             },
             "TransportException": null
           }
