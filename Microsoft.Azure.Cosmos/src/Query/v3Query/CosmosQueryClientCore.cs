@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             string queryString = null;
-            if (queryString == null)
+            if (sqlQuerySpec != null)
             {
                 using (Stream stream = this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType))
                 {
