@@ -11,8 +11,23 @@
     {
         private readonly List<QueryMetrics> queryMetricsList = new();
         private const int numberOfEvents = 6;
-        public readonly QueryMetrics queryMetrics = new();
+        private readonly QueryMetrics queryMetrics = new();
         public IReadOnlyList<QueryMetrics> QueryMetricsList => this.queryMetricsList;
+
+        public void AddEndToEndTime(double totalTime)
+        {
+            this.queryMetrics.EndToEndTime = totalTime;
+        }
+
+        public void AddPocoTime(double totalTime)
+        {
+            this.queryMetrics.PocoTime = totalTime;
+        }
+
+        public void AddGetCosmosElementResponseTime(double totalTime)
+        {
+            this.queryMetrics.GetCosmosElementResponseTime = totalTime;
+        }
 
         public void Visit(QueryMetricsTraceDatum queryMetricsTraceDatum)
         {
@@ -115,6 +130,5 @@
         public void Visit(PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
         {
         }
-
     }
 }

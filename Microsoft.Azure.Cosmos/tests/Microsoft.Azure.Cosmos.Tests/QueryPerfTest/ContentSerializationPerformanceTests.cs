@@ -131,7 +131,7 @@
                 totalTime.Stop();
             }
 
-            this.queryStatisticsDatumVisitor.queryMetrics.EndToEndTime = totalTime.ElapsedMilliseconds - getTraceTime.ElapsedMilliseconds;
+            this.queryStatisticsDatumVisitor.AddEndToEndTime(totalTime.ElapsedMilliseconds - getTraceTime.ElapsedMilliseconds);
         }
     }
 }

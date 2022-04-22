@@ -7,6 +7,9 @@
 
     internal class MetricsSerializer
     {
+        private const string printMedian = "Median";
+        private const string printQueryMetrics = "QueryMetrics";
+        private const string printBadRequests = "BadRequest";
         private readonly Func<QueryMetrics, double>[] metricsDelegate = new Func<QueryMetrics, double>[]
         {
             metric => metric.RetrievedDocumentCount,
@@ -60,15 +63,16 @@
             return median;
         }
 
-        private List<QueryMetrics> SumOfRoundTrips(int roundTrips, List<QueryMetrics> originalList)
+        private List<QueryMetrics> SumOfRoundTrips(int roundTrips, IReadOnlyList<QueryMetrics> originalList)
         {
             List<QueryMetrics> sumOfRoundTripsList = new();
             int i = 0;
             int j = roundTrips;
-            while (i < originalList.Count - 1)
+            while (j <= originalList.Count)
             {
                 List<QueryMetrics> metricsPerRoundTrip = new();
-                metricsPerRoundTrip = originalList.GetRange(i, j);
+                Range range = i..j;
+                metricsPerRoundTrip = originalList.Take(range).ToList();
                 sumOfRoundTripsList.
                     Add(new QueryMetrics
                     {
@@ -91,16 +95,17 @@
                     });
 
                 i += roundTrips;
+                j += roundTrips;
             }
 
             return sumOfRoundTripsList;
         }
 
-        private List<QueryMetrics> EliminateWarmupIterations(List<QueryMetrics> noWarmupList, int roundTrips, int warmupIterations)
+        private List<QueryMetrics> EliminateWarmupIterations(IReadOnlyList<QueryMetrics> noWarmupList, int roundTrips, int warmupIterations)
         {
             int iterationsToEliminate = warmupIterations * roundTrips;
-            noWarmupList = noWarmupList.GetRange(iterationsToEliminate, noWarmupList.Count - iterationsToEliminate);
-            return noWarmupList;
+            noWarmupList = noWarmupList.Skip(iterationsToEliminate).ToList();
+            return noWarmupList.ToList();
         }
 
         public void SerializeAsync(TextWriter textWriter, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor, int numberOfIterations, int warmupIterations, bool rawData)
@@ -109,7 +114,7 @@
             if (rawData == false)
             {
                 textWriter.WriteLine(roundTrips);
-                List<QueryMetrics> noWarmupList = this.EliminateWarmupIterations((List<QueryMetrics>)queryStatisticsDatumVisitor.QueryMetricsList, roundTrips, warmupIterations);
+                List<QueryMetrics> noWarmupList = this.EliminateWarmupIterations(queryStatisticsDatumVisitor.QueryMetricsList, roundTrips, warmupIterations);
 
                 if (roundTrips > 1)
                 {
@@ -118,14 +123,14 @@
 
                 this.CalculateAverage(noWarmupList).ForEach(textWriter.WriteLine);
                 textWriter.WriteLine();
-                textWriter.WriteLine("Median");
+                textWriter.WriteLine(printMedian);
                 textWriter.WriteLine();
-                this.CalculateMedian(noWarmupList).ForEach(textWriter.WriteLine);
+                this.CalculateMedian(noWarmupList.ToList()).ForEach(textWriter.WriteLine);
             }
             else
             {
                 textWriter.WriteLine();
-                textWriter.WriteLine("QueryMetrics");
+                textWriter.WriteLine(printQueryMetrics);
                 foreach (QueryMetrics metrics in queryStatisticsDatumVisitor.QueryMetricsList)
                 {
                     textWriter.WriteMetrics(metrics.RetrievedDocumentCount, metrics.RetrievedDocumentSize, metrics.OutputDocumentCount,
@@ -136,7 +141,7 @@
                 }
 
                 textWriter.WriteLine();
-                textWriter.WriteLine("BadRequest");
+                textWriter.WriteLine(printBadRequests);
                 foreach (QueryMetrics metrics in queryStatisticsDatumVisitor.QueryMetricsList)
                 {
                     textWriter.WriteMetrics(metrics.BadRequestCreated, metrics.BadRequestChannelAcquisitionStarted, metrics.BadRequestPipelined,

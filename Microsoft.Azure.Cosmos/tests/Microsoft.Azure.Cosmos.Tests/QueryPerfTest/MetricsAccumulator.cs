@@ -17,6 +17,18 @@
         public void ReadFromTrace<T>(FeedResponse<T> Response, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor)
         {
             ITrace trace = ((CosmosTraceDiagnostics)Response.Diagnostics).Value;
+            List<ITrace> getCosmosElementResponse = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: clientDeserializationTimeNode, hasKey: false);
+            List<ITrace> poco = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: clientParseTimeNode, hasKey: false);
+            foreach (ITrace p in poco)
+            {
+                queryStatisticsDatumVisitor.AddPocoTime(p.Duration.TotalMilliseconds);
+            }
+
+            foreach (ITrace getCosmos in getCosmosElementResponse)
+            {
+                queryStatisticsDatumVisitor.AddGetCosmosElementResponseTime(getCosmos.Duration.TotalMilliseconds);
+            }
+
             List<ITrace> transitMetrics = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: transportKeyValue, hasKey: true);
             List<ITrace> backendMetrics = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: backendKeyValue, hasKey: true);
             foreach (ITrace node in backendMetrics.Concat(transitMetrics))
@@ -34,18 +46,6 @@
                     }
                 }
             }
-
-            List<ITrace> getCosmosElementResponse = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: clientDeserializationTimeNode, hasKey: false);
-            List<ITrace> poco = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: clientParseTimeNode, hasKey: false);
-            foreach (ITrace p in poco)
-            {
-                queryStatisticsDatumVisitor.queryMetrics.PocoTime = p.Duration.TotalMilliseconds;
-            }
-
-            foreach (ITrace getCosmos in getCosmosElementResponse)
-            {
-                queryStatisticsDatumVisitor.queryMetrics.GetCosmosElementResponseTime = getCosmos.Duration.TotalMilliseconds;
-            }
         }
 
         private List<ITrace> FindQueryMetrics(ITrace trace, string nodeNameOrKeyName, bool hasKey)
@@ -56,7 +56,7 @@
             while (queue.Count > 0)
             {
                 ITrace node = queue.Dequeue();
-                if ((hasKey == true && node.Data.ContainsKey(nodeNameOrKeyName)) || node.Name == nodeNameOrKeyName)
+                if ((hasKey && node.Data.ContainsKey(nodeNameOrKeyName)) || node.Name == nodeNameOrKeyName)
                 {
                     queryMetricsNodes.Add(node);
                 }
