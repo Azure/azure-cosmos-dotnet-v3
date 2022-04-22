@@ -132,10 +132,17 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An instance of <see cref="QueryDefinition"/>.</returns>
         public QueryDefinition WithParameterStream(string name, Stream valueStream)
         {
+            if (!(valueStream is MemoryStream memoryStream))
+            {
+                memoryStream = new MemoryStream();
+                valueStream.CopyTo(memoryStream);
+                memoryStream.Position = 0;
+            }
+
             // pack it into an internal type for identification.
             SerializedParameterValue serializedParameterValue = new SerializedParameterValue
             {
-                valueStream = valueStream
+                byteArrayValue = memoryStream.ToArray()
             };
 
             return this.WithParameter(name, serializedParameterValue);
@@ -200,6 +207,6 @@ namespace Microsoft.Azure.Cosmos
 
     internal struct SerializedParameterValue
     {
-        internal Stream valueStream;
+        internal byte[] byteArrayValue;
     }
 }
