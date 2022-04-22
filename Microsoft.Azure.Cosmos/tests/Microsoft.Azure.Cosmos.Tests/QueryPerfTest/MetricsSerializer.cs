@@ -7,9 +7,9 @@
 
     internal class MetricsSerializer
     {
-        private const string printMedian = "Median";
-        private const string printQueryMetrics = "QueryMetrics";
-        private const string printBadRequests = "BadRequest";
+        private const string PrintMedian = "Median";
+        private const string PrintQueryMetrics = "QueryMetrics";
+        private const string PrintBadRequests = "BadRequest";
         private readonly Func<QueryMetrics, double>[] metricsDelegate = new Func<QueryMetrics, double>[]
         {
             metric => metric.RetrievedDocumentCount,
@@ -70,9 +70,8 @@
             int j = roundTrips;
             while (j <= originalList.Count)
             {
-                List<QueryMetrics> metricsPerRoundTrip = new();
                 Range range = i..j;
-                metricsPerRoundTrip = originalList.Take(range).ToList();
+                List<QueryMetrics> metricsPerRoundTrip = originalList.Take(range).ToList();
                 sumOfRoundTripsList.
                     Add(new QueryMetrics
                     {
@@ -123,14 +122,14 @@
 
                 this.CalculateAverage(noWarmupList).ForEach(textWriter.WriteLine);
                 textWriter.WriteLine();
-                textWriter.WriteLine(printMedian);
+                textWriter.WriteLine(PrintMedian);
                 textWriter.WriteLine();
                 this.CalculateMedian(noWarmupList.ToList()).ForEach(textWriter.WriteLine);
             }
             else
             {
                 textWriter.WriteLine();
-                textWriter.WriteLine(printQueryMetrics);
+                textWriter.WriteLine(PrintQueryMetrics);
                 foreach (QueryMetrics metrics in queryStatisticsDatumVisitor.QueryMetricsList)
                 {
                     textWriter.WriteMetrics(metrics.RetrievedDocumentCount, metrics.RetrievedDocumentSize, metrics.OutputDocumentCount,
@@ -141,7 +140,7 @@
                 }
 
                 textWriter.WriteLine();
-                textWriter.WriteLine(printBadRequests);
+                textWriter.WriteLine(PrintBadRequests);
                 foreach (QueryMetrics metrics in queryStatisticsDatumVisitor.QueryMetricsList)
                 {
                     textWriter.WriteMetrics(metrics.BadRequestCreated, metrics.BadRequestChannelAcquisitionStarted, metrics.BadRequestPipelined,

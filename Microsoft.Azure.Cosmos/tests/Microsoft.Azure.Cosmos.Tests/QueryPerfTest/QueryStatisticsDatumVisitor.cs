@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -10,8 +11,9 @@
     internal class QueryStatisticsDatumVisitor : ITraceDatumVisitor
     {
         private readonly List<QueryMetrics> queryMetricsList = new();
-        private const int numberOfEvents = 6;
         private readonly QueryMetrics queryMetrics = new();
+        private const int NumberOfEvents = 6;
+
         public IReadOnlyList<QueryMetrics> QueryMetricsList => this.queryMetricsList;
 
         public void AddEndToEndTime(double totalTime)
@@ -49,7 +51,7 @@
                     if (storeResponse.StoreResult.StatusCode == StatusCodes.Ok)
                     {
                         TransportStats transportStats = JsonConvert.DeserializeObject<TransportStats>(storeResponse.StoreResult.TransportRequestStats.ToString());
-                        for (int i = 0; i < numberOfEvents; i++)
+                        for (int i = 0; i < NumberOfEvents; i++)
                         {
                             switch (transportStats.RequestTimeline[i].Event)
                             {
@@ -80,7 +82,7 @@
                     else if (storeResponse.StoreResult.StatusCode != StatusCodes.Ok)
                     {
                         TransportStats badRequestTransportStats = JsonConvert.DeserializeObject<TransportStats>(storeResponse.StoreResult.TransportRequestStats.ToString());
-                        for (int i = 0; i < numberOfEvents; i++)
+                        for (int i = 0; i < NumberOfEvents; i++)
                         {
                             switch (badRequestTransportStats.RequestTimeline[i].Event)
                             {
@@ -121,14 +123,17 @@
 
         public void Visit(CpuHistoryTraceDatum cpuHistoryTraceDatum)
         {
+            Debug.Fail("QueryStatisticsDatumVisitor Assert", "CpuHistoryTraceDatum is not supported");
         }
 
         public void Visit(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
         {
+            Debug.Fail("QueryStatisticsDatumVisitor Assert", "ClientConfigurationTraceDatum is not supported");
         }
 
         public void Visit(PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
         {
+            Debug.Fail("QueryStatisticsDatumVisitor Assert", "PointOperationStatisticsTraceDatum is not supported");
         }
     }
 }

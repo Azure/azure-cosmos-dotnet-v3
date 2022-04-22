@@ -22,6 +22,7 @@
         private readonly int MaxItemCount;
         private readonly bool appendRawDataToFile;
         private readonly bool useStronglyTypedIterator;
+        private const string RawDataFileName = "ContentSerializationPerformanceTestsRawData.csv";
 
         public ContentSerializationPerformanceTests()
         {
@@ -57,14 +58,14 @@
         {
             Database cosmosDatabase = client.GetDatabase(this.cosmosDatabaseId);
             Container container = cosmosDatabase.GetContainer(this.containerId);
-            string rawDataPath = Path.GetFullPath("ContentSerializationPerformanceTestsRawData.csv");
+            string rawDataPath = Path.GetFullPath(RawDataFileName);
             MetricsSerializer metricsSerializer = new MetricsSerializer();
             for (int i = 0; i < this.numberOfIterations; i++)
             {
                 await this.RunQueryAsync(container);
             }
 
-            Console.WriteLine(rawDataPath);
+            Console.WriteLine("File path for raw data: ", rawDataPath);
             using (TextWriter rawDataFile = new StreamWriter(path: rawDataPath, append: this.appendRawDataToFile))
             {
                 metricsSerializer.SerializeAsync(rawDataFile, this.queryStatisticsDatumVisitor, this.numberOfIterations, this.warmupIterations, rawData: true);
@@ -97,7 +98,6 @@
                     await this.GetIteratorResponse(iterator);
                 }
             }
-
             else
             {
                 using (FeedIterator<string> distinctQueryIterator = container.GetItemQueryIterator<string>(

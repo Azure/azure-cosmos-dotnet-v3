@@ -9,16 +9,16 @@
 
     internal class MetricsAccumulator
     {
-        private const string backendKeyValue = "Query Metrics";
-        private const string transportKeyValue = "Client Side Request Stats";
-        private const string clientParseTimeNode = "POCO Materialization";
-        private const string clientDeserializationTimeNode = "Get Cosmos Element Response";
+        private const string BackendKeyValue = "Query Metrics";
+        private const string TransportKeyValue = "Client Side Request Stats";
+        private const string ClientParseTimeNode = "POCO Materialization";
+        private const string ClientDeserializationTimeNode = "Get Cosmos Element Response";
 
         public void ReadFromTrace<T>(FeedResponse<T> Response, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor)
         {
             ITrace trace = ((CosmosTraceDiagnostics)Response.Diagnostics).Value;
-            List<ITrace> getCosmosElementResponse = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: clientDeserializationTimeNode, hasKey: false);
-            List<ITrace> poco = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: clientParseTimeNode, hasKey: false);
+            List<ITrace> getCosmosElementResponse = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: ClientDeserializationTimeNode, hasKey: false);
+            List<ITrace> poco = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: ClientParseTimeNode, hasKey: false);
             foreach (ITrace p in poco)
             {
                 queryStatisticsDatumVisitor.AddPocoTime(p.Duration.TotalMilliseconds);
@@ -29,8 +29,8 @@
                 queryStatisticsDatumVisitor.AddGetCosmosElementResponseTime(getCosmos.Duration.TotalMilliseconds);
             }
 
-            List<ITrace> transitMetrics = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: transportKeyValue, hasKey: true);
-            List<ITrace> backendMetrics = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: backendKeyValue, hasKey: true);
+            List<ITrace> transitMetrics = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: TransportKeyValue, hasKey: true);
+            List<ITrace> backendMetrics = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: BackendKeyValue, hasKey: true);
             foreach (ITrace node in backendMetrics.Concat(transitMetrics))
             {
                 foreach (KeyValuePair<string, object> kvp in node.Data)
@@ -56,7 +56,8 @@
             while (queue.Count > 0)
             {
                 ITrace node = queue.Dequeue();
-                if ((hasKey && node.Data.ContainsKey(nodeNameOrKeyName)) || node.Name == nodeNameOrKeyName)
+                if ((hasKey && node.Data.ContainsKey(nodeNameOrKeyName)) ||
+                     node.Name == nodeNameOrKeyName)
                 {
                     queryMetricsNodes.Add(node);
                 }
