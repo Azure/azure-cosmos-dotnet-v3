@@ -65,9 +65,6 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (OperationCanceledException ex)
                 {
-                    // Catch Operation Cancelled Exception and convert to Timeout 408 if the user did not cancel it.
-                    //using (ITrace trace = Trace.GetRootTrace("Account Read Exception", TraceComponent.Transport, TraceLevel.Info))
-                    //{
                         trace.AddDatum("Client Side Request Stats", stats);
                         throw CosmosExceptionFactory.CreateRequestTimeoutException(
                                                     message: ex.Data?["Message"].ToString(),
@@ -77,7 +74,6 @@ namespace Microsoft.Azure.Cosmos
                                                     },
                                                     innerException: ex,
                                                     trace: trace);
-                    //}
                 }
             }
         }
