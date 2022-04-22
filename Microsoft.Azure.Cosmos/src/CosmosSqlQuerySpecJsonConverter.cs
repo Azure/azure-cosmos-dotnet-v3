@@ -44,11 +44,14 @@ namespace Microsoft.Azure.Cosmos
             // if the SqlParameter has stream value we dont pass it through the custom serializer.
             if (sqlParameter.Value is SerializedParameterValue serializedEncryptedData)
             {
-                using (StreamReader streamReader = new StreamReader(serializedEncryptedData.valueStream))
-                {
-                    string parameterValue = streamReader.ReadToEnd();
-                    writer.WriteRawValue(parameterValue);
-                }
+                StreamReader streamReader = new StreamReader(serializedEncryptedData.valueStream);
+                string parameterValue = streamReader.ReadToEnd();
+                writer.WriteRawValue(parameterValue);
+
+                // once read need to move back the pointer to start.If it gets reused.
+                // Query plan will be serialized multiple times for cross partition queries and for scenarios where the query plan can not be generated locally.
+                // Note: this is a stream passed by user.
+                serializedEncryptedData.valueStream.Position = 0;
             }
             else
             {
