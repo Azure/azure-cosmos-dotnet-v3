@@ -47,7 +47,7 @@
             SqlQuerySpec sqlQuerySpec,
             Cosmos.PartitionKey? partitionKey,
             string supportedQueryFeatures,
-            Guid clientQueryCorrelationId,
+            Guid correlatedActivityId,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -59,7 +59,7 @@
                 sqlQuerySpec,
                 partitionKey,
                 supportedQueryFeatures,
-                new Guid(),
+                correlatedActivityId,
                 trace,
                 cancellationToken);
         }

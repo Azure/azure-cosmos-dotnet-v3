@@ -119,7 +119,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     sqlQuerySpec,
                     partitionKey,
                     QueryPlanRetriever.SupportedQueryFeaturesString,
-                    new Guid(),
                     trace,
                     cancellationToken);
             }
