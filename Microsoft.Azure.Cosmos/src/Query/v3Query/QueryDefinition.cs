@@ -136,7 +136,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 memoryStream = new MemoryStream();
                 valueStream.CopyTo(memoryStream);
-                memoryStream.Position = 0;
             }
 
             // pack it into an internal type for identification.
