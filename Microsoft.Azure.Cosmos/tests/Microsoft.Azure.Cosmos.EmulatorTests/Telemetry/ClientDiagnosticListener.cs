@@ -12,16 +12,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Reflection;
     using System.Threading;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public class ClientDiagnosticListener : IObserver<KeyValuePair<string, object>>, IObserver<DiagnosticListener>, IDisposable
     {
+
+        private readonly IList<string> expectedAttributes = new List<string>
+        {
+           "kind", "az.namespace", "db.system", "db.cosmosdb.regions_contacted", "db.cosmosdb.request_diagnostics"
+        };
+
         private readonly Func<string, bool> sourceNameFilter;
         private readonly AsyncLocal<bool> collectThisStack;
+
+        public static bool isInitialized = false;
 
         private List<IDisposable> subscriptions = new List<IDisposable>();
         private readonly Action<ProducedDiagnosticScope> scopeStartCallback;
 
         public List<ProducedDiagnosticScope> Scopes { get; } = new List<ProducedDiagnosticScope>();
+        public bool IsListen = false;
 
         public ClientDiagnosticListener(string name, bool asyncLocal = false, Action<ProducedDiagnosticScope> scopeStartCallback = default)
             : this(n => n == name, asyncLocal, scopeStartCallback)
@@ -53,6 +63,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             lock (this.Scopes)
             {
+                 this.IsListen = true;
+
                 // Check for disposal
                 if (this.subscriptions == null) return;
 
@@ -84,9 +96,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         if (producedDiagnosticScope.Activity.Id == Activity.Current.Id)
                         {
-                            Console.WriteLine(Activity.Current.Id);
-
-                            this.AssertTags(producedDiagnosticScope.Name, producedDiagnosticScope.Activity.Tags);
+                            this.AssertTags(producedDiagnosticScope.Activity.DisplayName, producedDiagnosticScope.Activity.Tags);
 
                             producedDiagnosticScope.IsCompleted = true;
                             return;
@@ -114,14 +124,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private void AssertTags(string name, IEnumerable<KeyValuePair<string, string>> tags)
+        private void AssertTags(string name,IEnumerable<KeyValuePair<string, string>> tags)
         {
+            IList<string> actualAttributes = new List<string>();
+
             foreach(KeyValuePair<string, string> tag in tags)
             {
-                Console.WriteLine(name + " => " + tag.Key + " : " + tag.Value);
+                actualAttributes.Add(tag.Key);
             }
-            Console.WriteLine("Total Count :: " + tags.Count());
-            Console.WriteLine();
+
+            Assert.AreEqual(0, this.expectedAttributes.Except(actualAttributes).ToList().Count, $"failed for {name}");
         }
 
         public void OnNext(DiagnosticListener value)

@@ -8,18 +8,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
     internal static class CosmosInstrumentationFactory
     {
+#if PREVIEW
         public static DiagnosticScopeFactory ScopeFactory { get; } = new DiagnosticScopeFactory(
                                                                                 clientNamespace: OTelAttributes.DiagnosticNamespace, 
                                                                                 resourceProviderNamespace: OTelAttributes.ResourceProviderNamespace,
                                                                                 isActivityEnabled: true);
-
+#endif
         public static ICosmosInstrumentation Get(string operationName)
         {
+#if PREVIEW
             DiagnosticScope scope = CosmosInstrumentationFactory
                 .ScopeFactory
                 .CreateScope($"{OTelAttributes.OperationPrefix}.{operationName}");
 
-#if PREVIEW
             if (scope.IsEnabled)
             {
                 scope.AddAttribute(OTelAttributes.DbSystemName, "cosmosdb");

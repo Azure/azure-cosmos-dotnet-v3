@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
@@ -74,6 +75,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Delete an Item
             await container.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
+
+#if PREVIEW
+             Assert.IsTrue(OpenTelemetryTests.testListener.IsListen); 
+#else
+            Assert.IsFalse(OpenTelemetryTests.testListener.IsListen);
+#endif
+
         }
 
         [TestMethod]
@@ -109,6 +117,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //Delete an Item
             await container.DeleteItemStreamAsync(testItem.id, new Cosmos.PartitionKey(testItem.id));
+
+#if PREVIEW
+             Assert.IsTrue(OpenTelemetryTests.testListener.IsListen); 
+#else
+            Assert.IsFalse(OpenTelemetryTests.testListener.IsListen);
+#endif
         }
 
         [TestMethod]
@@ -133,6 +147,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 await Task.WhenAll(tasks);
             }
+
+#if PREVIEW
+             Assert.IsTrue(OpenTelemetryTests.testListener.IsListen); 
+#else
+            Assert.IsFalse(OpenTelemetryTests.testListener.IsListen);
+#endif
         }
 
         [TestMethod]
@@ -165,6 +185,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await queryResultSetIterator.ReadNextAsync();
                 }
             }
+
+#if PREVIEW
+             Assert.IsTrue(OpenTelemetryTests.testListener.IsListen); 
+#else
+            Assert.IsFalse(OpenTelemetryTests.testListener.IsListen);
+#endif
         }
 
         [TestMethod]
@@ -206,6 +232,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
 
             }
+
+#if PREVIEW
+             Assert.IsTrue(OpenTelemetryTests.testListener.IsListen); 
+#else
+            Assert.IsFalse(OpenTelemetryTests.testListener.IsListen);
+#endif
         }
 
         private static ItemBatchOperation CreateItem(string itemId)
