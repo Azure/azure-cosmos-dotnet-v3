@@ -2,6 +2,8 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+// This file is copied from Azure.Core repo and modified accordingly. i.e. https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/core/Azure.Core.TestFramework/src/ClientDiagnosticListener.cs
+
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;

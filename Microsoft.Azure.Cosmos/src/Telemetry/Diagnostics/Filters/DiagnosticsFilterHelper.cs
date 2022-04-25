@@ -13,11 +13,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         private static readonly double requestChargeThresholdInRu = 100;
 
         /// <summary>
-        /// Allow only when either of below is True
-        /// 1) Latency is not more than 100 ms
-        /// 2) Request Charge is more than 100 RUs
-        /// 3) HTTP status code is not Success
-        /// 
+        /// Allow only when either of below is <b>True</b><br></br>
+        /// 1) Latency is not more than 100 ms<br></br>
+        /// 2) Request Charge is more than 100 RUs<br></br>
+        /// 3) HTTP status code is not Success<br></br>
         /// </summary>
         /// <returns>true or false</returns>
         public static bool IsAllowed(
