@@ -240,7 +240,11 @@ namespace Microsoft.Azure.Cosmos
                 //Throw the exception
                 message.EnsureSuccessStatusCode();
 
-                return createResponse(message);
+                using (message.Trace.StartChild("Response Serialization"))
+                {
+                    return createResponse(message);
+                }
+                
             }
         }
 

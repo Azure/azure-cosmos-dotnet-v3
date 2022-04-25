@@ -137,6 +137,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Diagnostics);
             CosmosTraceDiagnostics diagnostics = (CosmosTraceDiagnostics)response.Diagnostics;
             Assert.IsFalse(diagnostics.IsGoneExceptionHit());
+            string diagnosticString = response.Diagnostics.ToString();
+            Assert.IsTrue(diagnosticString.Contains("Response Serialization"));
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics.ToString()));
             Assert.IsTrue(diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
 
