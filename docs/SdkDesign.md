@@ -1,3 +1,17 @@
+# Introduction and high level SDK concepts
+
+## Important Cosmos DB Concepts
+
+### Cosmos DB scaling:
+https://docs.microsoft.com/azure/cosmos-db/partitioning-overview
+
+### Cosmos DB consistency levels:
+https://docs.microsoft.com/azure/cosmos-db/consistency-levels
+
+## Try running and walking through the samples:
+https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos.Samples/Usage/ItemManagement/Program.cs
+
+## High level overview of the SDK
 ```mermaid
 flowchart
     subgraph Service
@@ -60,3 +74,13 @@ flowchart
     end
 
 ```
+
+## Caches the SDK maintains:
+
+<img width="1352" alt="image" src="https://user-images.githubusercontent.com/8868107/165150887-2ccd6b82-7f09-4729-a096-afb84e6af829.png">
+
+
+## Direct mode overview:
+<img width="1372" alt="image" src="https://user-images.githubusercontent.com/8868107/165151366-4497ebae-c0bd-4f41-abea-afec92355c1d.png">
+
+
