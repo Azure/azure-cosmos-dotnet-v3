@@ -44,11 +44,7 @@ namespace Microsoft.Azure.Cosmos
             // if the SqlParameter has stream value we dont pass it through the custom serializer.
             if (sqlParameter.Value is SerializedParameterValue serializedEncryptedData)
             {
-                using (StreamReader streamReader = new StreamReader(new MemoryStream(serializedEncryptedData.byteArrayValue)))
-                {
-                    string parameterValue = streamReader.ReadToEnd();
-                    writer.WriteRawValue(parameterValue);
-                }
+                writer.WriteRawValue(serializedEncryptedData.rawSerializedJsonValue);
             }
             else
             {
