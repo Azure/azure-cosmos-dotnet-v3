@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 rawSerializedJsonValue = streamReader.ReadToEnd();
             }
-
+            
             // pack it into an internal type for identification.
             SerializedParameterValue serializedParameterValue = new SerializedParameterValue
             {
