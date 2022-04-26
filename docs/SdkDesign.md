@@ -81,6 +81,38 @@ flowchart
 
 
 ## Direct mode overview:
-<img width="1372" alt="image" src="https://user-images.githubusercontent.com/8868107/165151366-4497ebae-c0bd-4f41-abea-afec92355c1d.png">
+```mermaid
+flowchart
+     subgraph Cosmos DB Service
+        CosmosDBNode[backend nodes]
+     end
+    Client[TransportHandler.cs]
+    ServerStoreModel[ServerStoreModel]
+    Client --> ServerStoreModel
+    ServerStoreModel --> StoreClient[StoreClient]
+    StoreClient --> ConsistencyReader[ConsistencyReader]
+    StoreClient --> ConsistencyWriter[ConsistencyWriter]
+    ConsistencyReader --> StoreReader[StoreReader]
+    ConsistencyWriter --> StoreReader
+    StoreReader --> RntbdTransportClient[RntbdTransportClient]
+    ConsistencyWriter --> RntbdTransportClient
+    RntbdTransportClient --> CosmosDBNode
+```
+
+## Gateway mode overview:
+```mermaid
+flowchart
+     subgraph Cosmos DB Service
+        CosmosDBNode[backend nodes]
+        CosmosDBGateway[Gateway node]
+        CosmosDBGateway --> CosmosDBNode
+     end
+    Client[TransportHandler.cs]
+    GatwayStoreModel[GatwayStoreModel]
+   
+    Client --> GatwayStoreModel
+    GatwayStoreModel --> HttpClient[HttpClient]
+    HttpClient --> CosmosDBGateway
+```
 
 
