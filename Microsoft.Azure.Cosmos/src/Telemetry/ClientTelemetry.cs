@@ -134,6 +134,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     if (this.numberOfFailures == allowedNumberOfFailures)
                     {
                         this.Dispose();
+                        break;
                     }
 
                     // Load account information if not available, cache is already implemented
@@ -350,6 +351,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 } 
                 else
                 {
+                    this.numberOfFailures = 0; // Ressetting failure counts on success call.
                     DefaultTrace.TraceInformation("Telemetry data sent successfully.");
                 }
 
