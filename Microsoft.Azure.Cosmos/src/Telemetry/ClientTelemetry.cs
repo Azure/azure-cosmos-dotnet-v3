@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Collections.Generic;
     using System.Net;
     using System.Net.Http;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -47,6 +48,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
 
         private int numberOfFailures = 0;
+
+        public ClientTelemetryJobState status { get; private set; }
+        public Exception exception { get; private set; }
 
         /// <summary>
         /// Factory method to intiakize telemetry object and start observer task
@@ -107,6 +111,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             this.httpClient = documentClient.httpClient;
             this.cancellationTokenSource = new CancellationTokenSource();
+
+            this.status = ClientTelemetryJobState.INITIALIZED;
         }
 
         /// <summary>
@@ -115,6 +121,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private void StartObserverTask()
         {
             this.telemetryTask = Task.Run(this.EnrichAndSendAsync, this.cancellationTokenSource.Token);
+
         }
 
         /// <summary>
@@ -131,6 +138,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 while (!this.cancellationTokenSource.IsCancellationRequested)
                 {
+                    this.status = ClientTelemetryJobState.RUNNING;
+
                     if (this.numberOfFailures == allowedNumberOfFailures)
                     {
                         this.Dispose();
@@ -386,6 +395,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 this.cancellationTokenSource.Dispose();
             }
             this.telemetryTask = null;
+
+            this.status = ClientTelemetryJobState.STOPPED;
         }
     }
 }

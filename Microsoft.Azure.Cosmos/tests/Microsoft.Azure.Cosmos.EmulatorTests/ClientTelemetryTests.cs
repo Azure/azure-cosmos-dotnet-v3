@@ -990,9 +990,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Read an Item
             ItemResponse<ToDoActivity> response = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
 
+            Console.WriteLine(response.Diagnostics.ToString());
+
             await Task.Delay(1500);
 
             response = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
+
+            Console.WriteLine(response.Diagnostics.ToString());
 
             await Task.Delay(3500);
 
