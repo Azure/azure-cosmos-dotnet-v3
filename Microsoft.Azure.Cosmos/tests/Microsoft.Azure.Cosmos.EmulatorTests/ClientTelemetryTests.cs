@@ -730,7 +730,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Container container = await this.CreateClientAndContainer(
                                                 mode: mode,
-                                                customHandler: httpHandler);
+                                                customHttpHandler: httpHandler);
             try
             {
                 ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
@@ -960,6 +960,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         }
 
+        [TestMethod]
+        public async Task CheckMisconfiguredTelemetryEndpoint_should_stop_the_job()
+        {
+            int retryCounter = 0;
+            HttpClientHandlerHelper customHttpHandler = new HttpClientHandlerHelper
+            {
+                RequestCallBack = (request, cancellation) =>
+                {
+                    if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
+                    {
+                        retryCounter++;
+                        throw new Exception("Exception while sending telemetry");
+                    }
+
+                    return null;
+                }
+            };
+
+            Container container = await this.CreateClientAndContainer(
+                mode: ConnectionMode.Direct, 
+                customHttpHandler: customHttpHandler);
+
+            // Create an item
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
+            ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(testItem);
+            ToDoActivity testItemCreated = createResponse.Resource;
+
+            // Read an Item
+            ItemResponse<ToDoActivity> response = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
+
+            Console.WriteLine(response.Diagnostics.ToString());
+
+            await Task.Delay(1500);
+
+            response = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
+
+            Console.WriteLine(response.Diagnostics.ToString());
+
+            await Task.Delay(3500);
+
+            Assert.AreEqual(3, retryCounter);
+        }
+
         private static ItemBatchOperation CreateItem(string itemId)
         {
             var testItem = new { id = itemId, Status = itemId };
@@ -970,7 +1013,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Microsoft.Azure.Cosmos.ConsistencyLevel? consistency = null,
             bool isLargeContainer = false,
             bool isAzureInstance = false,
-            HttpClientHandlerHelper customHandler = null)
+            HttpClientHandlerHelper customHttpHandler = null)
         {
             if (consistency.HasValue)
             {
@@ -979,13 +1022,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             HttpClientHandlerHelper handlerHelper;
-            if (customHandler == null)
+            if (customHttpHandler == null)
             {
                 handlerHelper = isAzureInstance ? this.httpHandler : this.httpHandlerForNonAzureInstance;
             } 
             else
             {
-                handlerHelper = customHandler;
+                handlerHelper = customHttpHandler;
             }
 
             this.cosmosClientBuilder = this.cosmosClientBuilder
