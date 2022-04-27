@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            trace.CosmosInstrumentation.MarkFailed(originalException);
+            trace.OpenTelemetryAttributeRecorder.MarkFailed(originalException);
 
             this.Diagnostics = new CosmosTraceDiagnostics(trace);
         }

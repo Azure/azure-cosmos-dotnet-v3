@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 {
                                     ResponseMessage response = dce.ToCosmosResponseMessage(request);
 
-                                    childTrace.CosmosInstrumentation.MarkFailed(dce);
+                                    childTrace.OpenTelemetryAttributeRecorder.MarkFailed(dce);
 
                                     return response;
                                 }
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 {
                                     ResponseMessage response = ce.ToCosmosResponseMessage(request);
 
-                                    childTrace.CosmosInstrumentation.MarkFailed(ce);
+                                    childTrace.OpenTelemetryAttributeRecorder.MarkFailed(ce);
 
                                     return response;
                                 }
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             {
                                 ResponseMessage response = ex.ToCosmosResponseMessage(request);
 
-                                childTrace.CosmosInstrumentation.MarkFailed(ex);
+                                childTrace.OpenTelemetryAttributeRecorder.MarkFailed(ex);
 
                                 return response;
                             }
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                     requestCharge: default);
                                 ResponseMessage response = notFound.ToCosmosResponseMessage(request);
 
-                                childTrace.CosmosInstrumentation.MarkFailed(notFound);
+                                childTrace.OpenTelemetryAttributeRecorder.MarkFailed(notFound);
 
                                 return response;
                             }
@@ -258,7 +258,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                                 ResponseMessage response = goneException.ToCosmosResponseMessage(request);
 
-                                childTrace.CosmosInstrumentation.MarkFailed(goneException);
+                                childTrace.OpenTelemetryAttributeRecorder.MarkFailed(goneException);
 
                                 return response;
                             }

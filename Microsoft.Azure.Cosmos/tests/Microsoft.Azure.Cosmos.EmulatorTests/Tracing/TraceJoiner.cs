@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             public IReadOnlyList<(string, Uri)> RegionsContacted => new List<(string, Uri)>();
 
-            public IRecorder CosmosInstrumentation => new RecorderNoOp();
+            public IRecorder OpenTelemetryAttributeRecorder => new RecorderNoOp();
 
             public void AddDatum(string key, TraceDatum traceDatum)
             {

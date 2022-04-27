@@ -10,22 +10,22 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     {
 #if PREVIEW
         public static DiagnosticScopeFactory ScopeFactory { get; } = new DiagnosticScopeFactory(
-                                                                                clientNamespace: OTelAttributes.DiagnosticNamespace, 
-                                                                                resourceProviderNamespace: OTelAttributes.ResourceProviderNamespace,
+                                                                                clientNamespace: Attributes.DiagnosticNamespace, 
+                                                                                resourceProviderNamespace: Attributes.ResourceProviderNamespace,
                                                                                 isActivityEnabled: true);
 #endif
         public static IRecorder Get(string operationName)
         {
 #if PREVIEW
-            DiagnosticScope scope = CosmosInstrumentationFactory
+            DiagnosticScope scope = RecorderFactory
                 .ScopeFactory
-                .CreateScope($"{OTelAttributes.OperationPrefix}.{operationName}");
+                .CreateScope($"{Attributes.OperationPrefix}.{operationName}");
 
             if (scope.IsEnabled)
             {
-                scope.AddAttribute(OTelAttributes.DbSystemName, "cosmosdb");
+                scope.AddAttribute(Attributes.DbSystemName, "cosmosdb");
 
-                return new CosmosInstrumentation(scope);
+                return new DefaultRecorder(scope);
             }
 #endif
 
