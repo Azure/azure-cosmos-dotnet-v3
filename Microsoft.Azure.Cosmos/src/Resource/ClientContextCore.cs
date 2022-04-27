@@ -29,7 +29,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosResponseFactoryInternal responseFactory;
         private readonly RequestInvokerHandler requestHandler;
         private readonly CosmosClientOptions clientOptions;
-        private readonly ClientTelemetry telemetry;
 
         private readonly string userAgent;
         private bool isDisposed = false;
@@ -42,8 +41,7 @@ namespace Microsoft.Azure.Cosmos
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
             string userAgent,
-            BatchAsyncContainerExecutorCache batchExecutorCache,
-            ClientTelemetry telemetry)
+            BatchAsyncContainerExecutorCache batchExecutorCache)
         {
             this.client = client;
             this.clientOptions = clientOptions;
@@ -53,7 +51,6 @@ namespace Microsoft.Azure.Cosmos
             this.documentClient = documentClient;
             this.userAgent = userAgent;
             this.batchExecutorCache = batchExecutorCache;
-            this.telemetry = telemetry;
         }
 
         internal static CosmosClientContext Create(
@@ -108,32 +105,20 @@ namespace Microsoft.Azure.Cosmos
             clientOptions = ClientContextCore.CreateOrCloneClientOptions(clientOptions);
 
             ConnectionPolicy connectionPolicy = clientOptions.GetConnectionPolicy(cosmosClient.ClientId);
-            ClientTelemetry telemetry = null;
+
             if (connectionPolicy.EnableClientTelemetry)
             {
-                try
-                {
-                    telemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
+               connectionPolicy.EnableClientTelemetry = 
+                    ClientTelemetry.TryCreateAndStartBackgroundTelemetry(
                         clientId: cosmosClient.Id,
                         documentClient: documentClient,
                         userAgent: connectionPolicy.UserAgentContainer.UserAgent,
                         connectionMode: connectionPolicy.ConnectionMode,
                         authorizationTokenProvider: cosmosClient.AuthorizationTokenProvider,
                         diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
-                        preferredRegions: clientOptions.ApplicationPreferredRegions);
-
-                } 
-                catch (Exception ex)
-                {
-                    DefaultTrace.TraceInformation($"Error While starting Telemetry Job : {ex.Message}. Hence disabling Client Telemetry");
-                    connectionPolicy.EnableClientTelemetry = false;
-                }
-               
+                        preferredRegions: clientOptions.ApplicationPreferredRegions); // If job doesn't start then switch off client telemetry
             } 
-            else
-            {
-                DefaultTrace.TraceInformation("Client Telemetry Disabled.");
-            }
+            DefaultTrace.TraceInformation("Client Telemetry Enabled : " + connectionPolicy.EnableClientTelemetry);
 
             if (requestInvokerHandler == null)
             {
@@ -141,8 +126,7 @@ namespace Microsoft.Azure.Cosmos
                 ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
                     cosmosClient,
                     clientOptions.ConsistencyLevel,
-                    clientOptions.CustomHandlers,
-                    telemetry: telemetry);
+                    clientOptions.CustomHandlers);
 
                 requestInvokerHandler = clientPipelineBuilder.Build();
             }
@@ -164,8 +148,7 @@ namespace Microsoft.Azure.Cosmos
                 requestHandler: requestInvokerHandler,
                 documentClient: documentClient,
                 userAgent: documentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
-                batchExecutorCache: new BatchAsyncContainerExecutorCache(),
-                telemetry: telemetry);
+                batchExecutorCache: new BatchAsyncContainerExecutorCache());
         }
 
         /// <summary>
@@ -447,7 +430,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (disposing)
                 {
-                    this.telemetry?.Dispose();
                     this.batchExecutorCache.Dispose();
                     this.DocumentClient.Dispose();
                 }

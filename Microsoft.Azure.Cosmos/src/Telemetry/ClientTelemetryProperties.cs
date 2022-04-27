@@ -65,11 +65,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal bool IsDirectConnectionMode { get; }
 
         internal ClientTelemetryProperties(string clientId,
-                                   string processId,
-                                   string userAgent,
-                                   ConnectionMode connectionMode,
-                                   IReadOnlyList<string> preferredRegions,
-                                   int aggregationIntervalInSec)
+                             string processId,
+                             string userAgent,
+                             ConnectionMode connectionMode,
+                             IReadOnlyList<string> preferredRegions,
+                             int aggregationIntervalInSec)
         {
             this.ClientId = clientId;
             this.ProcessId = processId;
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.ConnectionMode = connectionMode.ToString().ToUpperInvariant();
             if (connectionMode == Microsoft.Azure.Cosmos.ConnectionMode.Direct)
             {
-                this.IsDirectConnectionMode = true;   
+                this.IsDirectConnectionMode = true;
             }
             this.SystemInfo = new List<SystemInfo>();
             this.PreferredRegions = preferredRegions;

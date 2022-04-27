@@ -13,13 +13,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
     internal class TelemetryHandler : RequestHandler
     {
-        private readonly ClientTelemetry telemetry;
-
-        public TelemetryHandler(ClientTelemetry telemetry)
-        {
-            this.telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
-        }
-
         public override async Task<ResponseMessage> SendAsync(
             RequestMessage request,
             CancellationToken cancellationToken)
@@ -29,8 +22,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 try
                 {
-                    this.telemetry
-                        .Collect(
+                clientId: cosmosClient.Id,
+                        documentClient: documentClient,
+                        userAgent: connectionPolicy.UserAgentContainer.UserAgent,
+                        connectionMode: connectionPolicy.ConnectionMode,
+                        authorizationTokenProvider: cosmosClient.AuthorizationTokenProvider,
+                        preferredRegions: clientOptions.ApplicationPreferredRegions
+
+                    ClientTelemetry.Collect(
                                 cosmosDiagnostics: response.Diagnostics,
                                 statusCode: response.StatusCode,
                                 responseSizeInBytes: this.GetPayloadSize(response),
