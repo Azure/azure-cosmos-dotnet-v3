@@ -112,25 +112,25 @@
         {
             MetricsAccumulator metricsAccumulator = new MetricsAccumulator();
             Stopwatch totalTime = new Stopwatch();
-            Stopwatch getTraceTime = new Stopwatch();
+            Stopwatch captureTraceTime = new Stopwatch();
             while (feedIterator.HasMoreResults)
             {
                 totalTime.Start();
                 FeedResponse<T> response = await feedIterator.ReadNextAsync();
                 {
-                    getTraceTime.Start();
+                    captureTraceTime.Start();
                     if (response.RequestCharge != 0)
                     {
                         metricsAccumulator.ReadFromTrace(response, this.queryStatisticsDatumVisitor);
                     }
 
-                    getTraceTime.Stop();
+                    captureTraceTime.Stop();
                 }
 
                 totalTime.Stop();
             }
 
-            this.queryStatisticsDatumVisitor.AddEndToEndTime(totalTime.ElapsedMilliseconds - getTraceTime.ElapsedMilliseconds);
+            this.queryStatisticsDatumVisitor.AddEndToEndTime(totalTime.ElapsedMilliseconds - captureTraceTime.ElapsedMilliseconds);
         }
     }
 }
