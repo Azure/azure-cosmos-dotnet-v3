@@ -22,19 +22,19 @@
         }
         public IReadOnlyList<QueryMetrics> QueryMetricsList => this.queryMetricsList;
 
-        public void AddEndToEndTime(double totalTime)
+        public void AddEndToEndTime(double time)
         {
-            this.queryMetrics.EndToEndTime = totalTime;
+            this.queryMetrics.EndToEndTime = time;
         }
 
-        public void AddPocoTime(double totalTime)
+        public void AddPocoTime(double time)
         {
-            this.queryMetrics.PocoTime = totalTime;
+            this.queryMetrics.PocoTime = time;
         }
 
-        public void AddGetCosmosElementResponseTime(double totalTime)
+        public void AddGetCosmosElementResponseTime(double time)
         {
-            this.queryMetrics.GetCosmosElementResponseTime = totalTime;
+            this.queryMetrics.GetCosmosElementResponseTime = time;
         }
 
         public void Visit(QueryMetricsTraceDatum queryMetricsTraceDatum)
