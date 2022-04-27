@@ -8,6 +8,7 @@
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    [Ignore]
     [TestClass]
     public class ContentSerializationPerformanceTests
     {
