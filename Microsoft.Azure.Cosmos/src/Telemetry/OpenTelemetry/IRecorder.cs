@@ -36,6 +36,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         /// <param name="exception"></param>
         public abstract void MarkFailed(Exception exception);
 
+        /// <summary>
+        /// Dispose open telemetry recorder
+        /// </summary>
         public abstract void Dispose();
     }
 }
