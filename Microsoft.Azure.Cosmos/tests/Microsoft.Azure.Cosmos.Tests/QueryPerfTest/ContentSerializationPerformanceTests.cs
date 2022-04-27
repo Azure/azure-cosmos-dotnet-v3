@@ -11,6 +11,8 @@
     [TestClass]
     public class ContentSerializationPerformanceTests
     {
+        private const string RawDataFileName = "ContentSerializationPerformanceTestsRawData.csv";
+
         private readonly QueryStatisticsDatumVisitor queryStatisticsDatumVisitor;
         private readonly string cosmosDatabaseId;
         private readonly string containerId;
@@ -22,7 +24,6 @@
         private readonly int MaxItemCount;
         private readonly bool appendRawDataToFile;
         private readonly bool useStronglyTypedIterator;
-        private const string RawDataFileName = "ContentSerializationPerformanceTestsRawData.csv";
 
         public ContentSerializationPerformanceTests()
         {
@@ -68,13 +69,10 @@
             Console.WriteLine("File path for raw data: ", rawDataPath);
             using (TextWriter rawDataFile = new StreamWriter(path: rawDataPath, append: this.appendRawDataToFile))
             {
-                metricsSerializer.SerializeAsync(rawDataFile, this.queryStatisticsDatumVisitor, this.numberOfIterations, this.warmupIterations, rawData: true);
+                metricsSerializer.Serialize(rawDataFile, this.queryStatisticsDatumVisitor, this.numberOfIterations, this.warmupIterations, rawData: true);
             }
 
-            using (TextWriter writer = Console.Out)
-            {
-                metricsSerializer.SerializeAsync(writer, this.queryStatisticsDatumVisitor, this.numberOfIterations, this.warmupIterations, rawData: false);
-            }
+            metricsSerializer.Serialize(Console.Out, this.queryStatisticsDatumVisitor, this.numberOfIterations, this.warmupIterations, rawData: false);
         }
 
         private async Task RunQueryAsync(Container container)

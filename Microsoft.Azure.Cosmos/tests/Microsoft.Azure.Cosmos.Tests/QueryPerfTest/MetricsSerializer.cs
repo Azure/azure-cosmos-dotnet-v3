@@ -107,7 +107,7 @@
             return noWarmupList.ToList();
         }
 
-        public void SerializeAsync(TextWriter textWriter, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor, int numberOfIterations, int warmupIterations, bool rawData)
+        public void Serialize(TextWriter textWriter, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor, int numberOfIterations, int warmupIterations, bool rawData)
         {
             int roundTrips = queryStatisticsDatumVisitor.QueryMetricsList.Count / numberOfIterations;
             if (rawData == false)
@@ -150,7 +150,6 @@
             }
 
             textWriter.Flush();
-            textWriter.Close();
         }
     }
 }

@@ -10,10 +10,16 @@
 
     internal class QueryStatisticsDatumVisitor : ITraceDatumVisitor
     {
-        private readonly List<QueryMetrics> queryMetricsList = new();
-        private readonly QueryMetrics queryMetrics = new();
         private const int NumberOfEvents = 6;
 
+        private readonly List<QueryMetrics> queryMetricsList;
+        private QueryMetrics queryMetrics;
+
+        public QueryStatisticsDatumVisitor()
+        {
+            this.queryMetricsList = new();
+            this.queryMetrics = new();
+        }
         public IReadOnlyList<QueryMetrics> QueryMetricsList => this.queryMetricsList;
 
         public void AddEndToEndTime(double totalTime)
@@ -74,7 +80,7 @@
                                     this.queryMetrics.Completed = transportStats.RequestTimeline[i].DurationInMs;
                                     break;
                                 default:
-                                    Console.WriteLine($"Unknown event ignored : '{transportStats.RequestTimeline[i].Event}'");
+                                    Debug.Fail("Unknown event ignored", $"Event Type not supported '{transportStats.RequestTimeline[i].Event}'");
                                     break;
                             }
                         }
@@ -105,7 +111,7 @@
                                     this.queryMetrics.BadRequestCompleted = badRequestTransportStats.RequestTimeline[i].DurationInMs;
                                     break;
                                 default:
-                                    Console.WriteLine($"Unknown event ignored : '{badRequestTransportStats.RequestTimeline[i].Event}'");
+                                    Debug.Fail("Unknown event ignored", $"Event Type not supported '{badRequestTransportStats.RequestTimeline[i].Event}'");
                                     break;
                             }
                         }
@@ -119,6 +125,7 @@
         public void PopulateMetrics()
         {
             this.queryMetricsList.Add(this.queryMetrics);
+            this.queryMetrics = new();
         }
 
         public void Visit(CpuHistoryTraceDatum cpuHistoryTraceDatum)

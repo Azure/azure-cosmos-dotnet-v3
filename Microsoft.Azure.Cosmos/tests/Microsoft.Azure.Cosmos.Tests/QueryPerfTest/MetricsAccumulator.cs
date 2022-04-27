@@ -1,7 +1,7 @@
 ﻿namespace Microsoft.Azure.Cosmos.Tests
 {
-    using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -17,20 +17,20 @@
         public void ReadFromTrace<T>(FeedResponse<T> Response, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor)
         {
             ITrace trace = ((CosmosTraceDiagnostics)Response.Diagnostics).Value;
-            List<ITrace> getCosmosElementResponse = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: ClientDeserializationTimeNode, hasKey: false);
-            List<ITrace> poco = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: ClientParseTimeNode, hasKey: false);
-            foreach (ITrace p in poco)
+            List<ITrace> retrieveCosmosElementTraces = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: ClientDeserializationTimeNode, isKeyName: false);
+            List<ITrace> retrieveQueryMetricTraces = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: ClientParseTimeNode, isKeyName: false);
+            foreach (ITrace queryMetricTrace in retrieveQueryMetricTraces)
             {
-                queryStatisticsDatumVisitor.AddPocoTime(p.Duration.TotalMilliseconds);
+                queryStatisticsDatumVisitor.AddPocoTime(queryMetricTrace.Duration.TotalMilliseconds);
             }
 
-            foreach (ITrace getCosmos in getCosmosElementResponse)
+            foreach (ITrace cosmosElementTrace in retrieveCosmosElementTraces)
             {
-                queryStatisticsDatumVisitor.AddGetCosmosElementResponseTime(getCosmos.Duration.TotalMilliseconds);
+                queryStatisticsDatumVisitor.AddGetCosmosElementResponseTime(cosmosElementTrace.Duration.TotalMilliseconds);
             }
 
-            List<ITrace> transitMetrics = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: TransportKeyValue, hasKey: true);
-            List<ITrace> backendMetrics = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: BackendKeyValue, hasKey: true);
+            List<ITrace> transitMetrics = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: TransportKeyValue, isKeyName: true);
+            List<ITrace> backendMetrics = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: BackendKeyValue, isKeyName: true);
             foreach (ITrace node in backendMetrics.Concat(transitMetrics))
             {
                 foreach (KeyValuePair<string, object> kvp in node.Data)
@@ -41,14 +41,14 @@
                             traceDatum.Accept(queryStatisticsDatumVisitor);
                             break;
                         default:
-                            Console.WriteLine($"Unexpected type {kvp.Value.GetType()}");
+                            Debug.Fail("Unexpected type", $"Type not supported {kvp.Value.GetType()}");
                             break;
                     }
                 }
             }
         }
 
-        private List<ITrace> FindQueryMetrics(ITrace trace, string nodeNameOrKeyName, bool hasKey)
+        private List<ITrace> FindQueryMetrics(ITrace trace, string nodeNameOrKeyName, bool isKeyName)
         {
             List<ITrace> queryMetricsNodes = new();
             Queue<ITrace> queue = new Queue<ITrace>();
@@ -56,8 +56,8 @@
             while (queue.Count > 0)
             {
                 ITrace node = queue.Dequeue();
-                if ((hasKey && node.Data.ContainsKey(nodeNameOrKeyName)) ||
-                     node.Name == nodeNameOrKeyName)
+                if ((isKeyName && node.Data.ContainsKey(nodeNameOrKeyName)) ||
+                     (node.Name == nodeNameOrKeyName))
                 {
                     queryMetricsNodes.Add(node);
                 }
