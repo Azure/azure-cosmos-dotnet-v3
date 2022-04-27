@@ -956,7 +956,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 return this.StartChild(name, TraceComponent.Unknown, TraceLevel.Info);
             }
 
-            public ICosmosInstrumentation CosmosInstrumentation { get; }
+            public IRecorder CosmosInstrumentation { get; }
 
             public ITrace StartChild(string name, TraceComponent component, TraceLevel level)
             {

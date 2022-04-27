@@ -7,24 +7,24 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     using System;
     using Microsoft.Azure.Cosmos.Tracing;
 
-    internal class CosmosInstrumentationNoOp : ICosmosInstrumentation
+    internal class RecorderNoOp : IRecorder
     {
-        public void Dispose()
+        public override void Dispose()
         {
             // NoOp
         }
 
-        public void MarkFailed(Exception exception)
+        public override void MarkFailed(Exception exception)
         {
             // NoOp
         }
 
-        public void Record(string attributeKey, object attributeValue)
+        public override void Record(string attributeKey, object attributeValue)
         {
             // NoOp
         }
 
-        public void Record(ITrace trace)
+        public override void Record(CosmosDiagnostics diagnostics)
         {
             // NoOp
         }

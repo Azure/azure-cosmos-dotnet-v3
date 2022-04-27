@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
     using global::Azure.Core.Pipeline;
 
-    internal static class CosmosInstrumentationFactory
+    internal static class RecorderFactory
     {
 #if PREVIEW
         public static DiagnosticScopeFactory ScopeFactory { get; } = new DiagnosticScopeFactory(
@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                                                                                 resourceProviderNamespace: OTelAttributes.ResourceProviderNamespace,
                                                                                 isActivityEnabled: true);
 #endif
-        public static ICosmosInstrumentation Get(string operationName)
+        public static IRecorder Get(string operationName)
         {
 #if PREVIEW
             DiagnosticScope scope = CosmosInstrumentationFactory
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             }
 #endif
 
-            return new CosmosInstrumentationNoOp();
+            return new RecorderNoOp();
         }
     }
 }

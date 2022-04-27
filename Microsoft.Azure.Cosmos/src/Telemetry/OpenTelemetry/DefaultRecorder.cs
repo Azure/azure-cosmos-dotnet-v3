@@ -10,29 +10,29 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
 
-    internal class CosmosInstrumentation : ICosmosInstrumentation
+    internal class DefaultRecorder : IRecorder
     {
         private readonly DiagnosticScope scope;
 
         private HttpStatusCode statusCode;
         private double requestCharge;
 
-        public CosmosInstrumentation(DiagnosticScope scope)
+        public DefaultRecorder(DiagnosticScope scope)
         {
             this.scope = scope;
 
             this.scope.Start();
         }
 
-        public void Record(string attributeKey, object attributeValue)
+        public override void Record(string attributeKey, object attributeValue)
         {
             if (this.scope.IsEnabled)
             {
-                if (attributeKey.Equals(OTelAttributes.RequestCharge))
+                if (attributeKey.Equals(Attributes.RequestCharge, StringComparison.OrdinalIgnoreCase))
                 {
                     this.requestCharge = Convert.ToDouble(attributeValue);
                 }
-                if (attributeKey.Equals(OTelAttributes.StatusCode))
+                if (attributeKey.Equals(Attributes.StatusCode, StringComparison.OrdinalIgnoreCase))
                 {
                     this.statusCode = (HttpStatusCode)attributeValue;
                 }
@@ -40,37 +40,34 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             }
         }
 
-        public void Record(ITrace trace)
+        public override void Record(CosmosDiagnostics diagnostics)
         {
             if (this.scope.IsEnabled)
             {
-                CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
-
-                this.Record(OTelAttributes.Region, ClientTelemetryHelper.GetContactedRegions(diagnostics));
+                this.Record(Attributes.Region, ClientTelemetryHelper.GetContactedRegions(diagnostics));
 
                 if (DiagnosticsFilterHelper.IsAllowed(
                         latency: diagnostics.GetClientElapsedTime(), 
-                        requestcharge: this.requestCharge, 
                         statuscode: this.statusCode))
                 {
-                    this.Record(OTelAttributes.RequestDiagnostics, diagnostics.ToString());
+                    this.Record(Attributes.RequestDiagnostics, diagnostics.ToString());
                 } 
             }
         }
 
-        public void MarkFailed(Exception exception)
+        public override void MarkFailed(Exception exception)
         {
             if (this.scope.IsEnabled)
             {
-                this.scope.AddAttribute(OTelAttributes.ExceptionMessage, exception.Message);
-                this.scope.AddAttribute(OTelAttributes.ExceptionStacktrace, exception.StackTrace);
-                this.scope.AddAttribute(OTelAttributes.ExceptionType, exception.GetType());
+                this.scope.AddAttribute(Attributes.ExceptionMessage, exception.Message);
+                this.scope.AddAttribute(Attributes.ExceptionStacktrace, exception.StackTrace);
+                this.scope.AddAttribute(Attributes.ExceptionType, exception.GetType());
 
                 this.scope.Failed(exception);
             }
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             this.scope.Dispose();
         }

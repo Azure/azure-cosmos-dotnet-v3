@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <summary>
         /// DiagnosticAttributes
         /// </summary>
-        ICosmosInstrumentation CosmosInstrumentation { get; }
+        IRecorder CosmosInstrumentation { get; }
 
         /// <summary>
         /// Starts a trace and adds it as a child to this instance.
@@ -126,6 +126,5 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// </summary>
         /// <param name="traceDatum"></param>
         void UpdateRegionContacted(TraceDatum traceDatum);
-
     }
 }

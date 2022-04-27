@@ -4,7 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
-    internal class OTelAttributes
+    internal class Attributes
     {
         public const string DiagnosticNamespace = "Azure.Cosmos";
         public const string ResourceProviderNamespace = "Microsoft.DocumentDB";

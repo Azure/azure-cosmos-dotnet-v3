@@ -123,7 +123,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            ResponseMessage response = null;
             if (resourceUriString == null)
             {
                 throw new ArgumentNullException(nameof(resourceUriString));
@@ -179,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 }
                                 catch (DocumentClientException dce)
                                 {
-                                    response = dce.ToCosmosResponseMessage(request);
+                                    ResponseMessage response = dce.ToCosmosResponseMessage(request);
 
                                     childTrace.CosmosInstrumentation.MarkFailed(dce);
 
@@ -187,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 }
                                 catch (CosmosException ce)
                                 {
-                                    response = ce.ToCosmosResponseMessage(request);
+                                    ResponseMessage response = ce.ToCosmosResponseMessage(request);
 
                                     childTrace.CosmosInstrumentation.MarkFailed(ce);
 
@@ -216,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             }
                             catch (CosmosException ex)
                             {
-                                response = ex.ToCosmosResponseMessage(request);
+                                ResponseMessage response = ex.ToCosmosResponseMessage(request);
 
                                 childTrace.CosmosInstrumentation.MarkFailed(ex);
 
@@ -237,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                     subStatusCode: default,
                                     activityId: Guid.Empty.ToString(),
                                     requestCharge: default);
-                                response = notFound.ToCosmosResponseMessage(request);
+                                ResponseMessage response = notFound.ToCosmosResponseMessage(request);
 
                                 childTrace.CosmosInstrumentation.MarkFailed(notFound);
 
@@ -257,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                     activityId: Guid.NewGuid().ToString(),
                                     requestCharge: default);
 
-                                response = goneException.ToCosmosResponseMessage(request);
+                                ResponseMessage response = goneException.ToCosmosResponseMessage(request);
 
                                 childTrace.CosmosInstrumentation.MarkFailed(goneException);
 
@@ -310,9 +309,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                     requestEnricher?.Invoke(request);
 
-                    response = await this.SendAsync(request, cancellationToken);
-
-                    return response;
+                    return await this.SendAsync(request, cancellationToken);
 
                 }
                 finally
