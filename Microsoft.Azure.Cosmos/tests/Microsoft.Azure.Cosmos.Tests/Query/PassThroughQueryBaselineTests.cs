@@ -40,22 +40,25 @@
             List<PassThroughQueryTestInput> testVariations = new List<PassThroughQueryTestInput>
             {
                 CreateInput(
-                @"Partition Key and Distinct",
+                @"Partition Key + Value and Distinct",
                 "SELECT DISTINCT c.key FROM c",
                 true,
-                @"/key"),
+                @"/pk",
+                @"/value"),
 
                 CreateInput(
-                @"Partition Key and Min Aggregate",
+                @"Partition Key + Value and Min Aggregate",
                 "SELECT VALUE MIN(c.key) FROM c",
                 true,
-                @"/key"),
-
+                @"/pk",
+                @"/value"),
+               
                 CreateInput(
-                @"Partition Key Field",
+                @"Partition Key + Value Fields",
                 "SELECT c.key FROM c",
                 true,
-                @"/key"),
+                @"/pk",
+                @"/value"),
             };
             this.ExecuteTestSuite(testVariations);
         }
@@ -67,24 +70,60 @@
             List<PassThroughQueryTestInput> testVariations = new List<PassThroughQueryTestInput>
             {
                 CreateInput(
-                @"No Partition Key",
+                @"Null Partition Key Value",
                 "SELECT * FROM c",
-                false),
+                false,
+                @"/pk",
+                Cosmos.PartitionKey.Null),
+
+                CreateInput(
+                @"None Partition Key Value",
+                "SELECT * FROM c",
+                false,
+                @"/pk",
+                Cosmos.PartitionKey.None), 
+                
+                CreateInput(
+                @"C# Null Partition Key Value",
+                "SELECT * FROM c",
+                false,
+                @"/pk",
+                null),
             };
             this.ExecuteTestSuite(testVariations);
         }
- 
+
         private static PassThroughQueryTestInput CreateInput(
             string description,
             string query,
-            bool expectedValueForTest,
-            params string[] partitionkeys) => new PassThroughQueryTestInput(
-                description,
-                query,
-                new SqlQuerySpec(query),
-                expectedValueForTest,
-                partitionkeys);
+            bool expectedPassThrough)
+        {
+            return new PassThroughQueryTestInput(description, query, new SqlQuerySpec(query), expectedPassThrough, @"/pk", Cosmos.PartitionKey.Null);
+        }
 
+        private static PassThroughQueryTestInput CreateInput(
+            string description,
+            string query,
+            bool expectedPassThrough,
+            string partitionKeyPath,
+            string partitionKeyValue)
+        {
+            PartitionKeyBuilder pkBuilder = new PartitionKeyBuilder();
+            pkBuilder.Add(partitionKeyValue);
+
+            return CreateInput(description, query, expectedPassThrough, partitionKeyPath, pkBuilder.Build());
+        }
+
+        private static PassThroughQueryTestInput CreateInput(
+            string description,
+            string query,
+            bool expectedPassThrough,
+            string partitionKeyPath,
+            Cosmos.PartitionKey partitionKeyValue)
+        {
+            return new PassThroughQueryTestInput(description, query, new SqlQuerySpec(query), expectedPassThrough, partitionKeyPath, partitionKeyValue);
+        }
+        
         private static PartitionedQueryExecutionInfo GetPartitionedQueryExecutionInfo(SqlQuerySpec sqlQuerySpec, PartitionKeyDefinition pkDefinition)
         {
             TryCatch<PartitionedQueryExecutionInfo> tryGetQueryPlan = QueryPartitionProviderTestInstance.Object.TryGetPartitionedQueryExecutionInfo(
@@ -123,6 +162,10 @@
             //  gets input parameters
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = GetPartitionedQueryExecutionInfo(sqlQuerySpec, input.PartitionKeyDefinition);
+            if (input.PartitionKeyValue == null)
+            {
+                input.PartitionKeyValue = Cosmos.PartitionKey.Null;
+            }
 
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
                 sqlQuerySpec: sqlQuerySpec,
@@ -131,7 +174,7 @@
                 maxConcurrency: queryRequestOptions.MaxConcurrency,
                 maxItemCount: queryRequestOptions.MaxItemCount,
                 maxBufferedItemCount: queryRequestOptions.MaxBufferedItemCount,
-                partitionKey: input.PartitionKey,
+                partitionKey: input.PartitionKeyValue,
                 properties: queryRequestOptions.Properties,
                 partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
                 executionEnvironment: null,
@@ -146,7 +189,7 @@
                       NoOpTrace.Singleton);
             bool result = queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton).Result; 
 
-            Assert.AreEqual(input.ExpectedValueFromTest, inputParameters.SqlQuerySpec.PassThrough);
+            Assert.AreEqual(input.ExpectedPassThrough, inputParameters.SqlQuerySpec.PassThrough);
             Assert.IsNotNull(queryPipelineStage);
             Assert.IsTrue(result);
 
@@ -156,17 +199,17 @@
 
     public sealed class PassThroughQueryTestOutput : BaselineTestOutput
     {
-        public PassThroughQueryTestOutput(bool tryExecuteOnBE)
+        public PassThroughQueryTestOutput(bool executeAsPassThrough)
         {
-            this.TryExecuteOnBE = tryExecuteOnBE;
+            this.ExecuteAsPassThrough = executeAsPassThrough;
         }
 
-        public bool TryExecuteOnBE { get; }
+        public bool ExecuteAsPassThrough { get; }
 
         public override void SerializeAsXml(XmlWriter xmlWriter)
         {
-            xmlWriter.WriteStartElement(nameof(this.TryExecuteOnBE));
-            xmlWriter.WriteValue(this.TryExecuteOnBE);
+            xmlWriter.WriteStartElement(nameof(this.ExecuteAsPassThrough));
+            xmlWriter.WriteValue(this.ExecuteAsPassThrough);
             xmlWriter.WriteEndElement();
         }
     }
@@ -175,8 +218,8 @@
     {
         internal PartitionKeyDefinition PartitionKeyDefinition { get; set; }
         internal SqlQuerySpec SqlQuerySpec { get; set; }
-        internal Cosmos.PartitionKey PartitionKey { get; set; }
-        internal bool ExpectedValueFromTest { get; set; }
+        internal Cosmos.PartitionKey PartitionKeyValue { get; set; }
+        internal bool ExpectedPassThrough { get; set; }
         internal PartitionKeyRangeIdentity PartitionKeyRangeId { get; set; }
         internal string Query { get; set; }
 
@@ -184,24 +227,24 @@
             string description,
             string query,
             SqlQuerySpec sqlQuerySpec,
-            bool expectedValueFromTest,
-            string[] partitionKeys
-            )
+            bool expectedPassThrough,
+            string partitionKeyPath,
+            Cosmos.PartitionKey partitionKeyValue)
             : base(description)
         {
-            this.PartitionKeyDefinition = partitionKeys == null ? null : new PartitionKeyDefinition()
+            this.PartitionKeyDefinition = new PartitionKeyDefinition()
             {
                 Paths = new Collection<string>()
-            {
-                "/key"
-            },
+                {
+                    partitionKeyPath
+                },
                 Kind = PartitionKind.Hash,
                 Version = PartitionKeyDefinitionVersion.V2,
             };
             this.SqlQuerySpec = sqlQuerySpec;
-            this.ExpectedValueFromTest = expectedValueFromTest;
+            this.ExpectedPassThrough = expectedPassThrough;
             this.Query = query;
-            this.PartitionKey = partitionKeys.Length == 0 ? Cosmos.PartitionKey.None : new Cosmos.PartitionKey(partitionKeys[0]);
+            this.PartitionKeyValue = partitionKeyValue;
         }
 
         public override void SerializeAsXml(XmlWriter xmlWriter)
@@ -216,8 +259,8 @@
                     xmlWriter.WriteElementString("Key", path);
                 }
             }
-            xmlWriter.WriteEndElement();
 
+            xmlWriter.WriteEndElement(); 
             if (this.PartitionKeyDefinition != null)
             {
                 xmlWriter.WriteElementString(
@@ -236,6 +279,7 @@
             }
         }
     }
+
     internal class TestCosmosQueryClient : CosmosQueryClient
     {
         public override Action<IQueryable> OnExecuteScalarQueryCallback => throw new NotImplementedException();

@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// </summary>
         /// <param name="queryText">The text of the database query.</param>
         /// <param name="parameters">The <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of query parameters.</param>
-        /// /// <param name="passThrough">The boolean value for whether the query should go straight to the Backend or not.</param>
+        /// <param name="passThrough">A Boolean value that indicates whether the query should be executed as pass-through.</param>
         public SqlQuerySpec(string queryText, SqlParameterCollection parameters, bool passThrough)
         {
             this.QueryText = queryText;
@@ -83,9 +83,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         }
 
         /// <summary>
-        /// Gets or sets the boolean of the Azure Cosmos DB database options.
+        /// Gets or sets the boolean value that indicates whether the query should be executed as pass-through..
         /// </summary>
-        /// <value>The boolean to let the Backend know that this is a pass through query.</value>
+        /// <value>A boolean value that indicates whether the query should be executed as pass-through.</value>
         [DataMember(Name = "passThrough")]        
         public bool PassThrough
         {
