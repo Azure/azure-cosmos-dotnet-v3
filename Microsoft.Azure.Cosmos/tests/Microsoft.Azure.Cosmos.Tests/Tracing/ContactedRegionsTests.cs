@@ -29,9 +29,9 @@
             {
                 using (ITrace firstLevel = trace.StartChild("First level Node", TraceComponent.Unknown, TraceLevel.Info))
                 {
-                    using (ITrace secondLevel = trace.StartChild("Second level Node", TraceComponent.Unknown, TraceLevel.Info))
+                    using (ITrace secondLevel = firstLevel.StartChild("Second level Node", TraceComponent.Unknown, TraceLevel.Info))
                     {
-                        using (ITrace thirdLevel = trace.StartChild("Third level Node", TraceComponent.Unknown, TraceLevel.Info))
+                        using (ITrace thirdLevel = secondLevel.StartChild("Third level Node", TraceComponent.Unknown, TraceLevel.Info))
                         {
                             thirdLevel.AddDatum("Client Side Request Stats", this.GetDatumObject(Regions.CentralUS));
                         }

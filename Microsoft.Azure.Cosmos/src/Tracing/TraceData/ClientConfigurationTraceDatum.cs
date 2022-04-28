@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Telemetry;
 
     internal sealed class ClientConfigurationTraceDatum : TraceDatum
     {
@@ -28,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                                     cosmosClientContext.ClientOptions.ApplicationPreferredRegions);
 
             this.cachedNumberOfClientCreated = CosmosClient.numberOfClientsCreated;
+            this.cachedNumberOfActiveClient = CosmosClient.NumberOfActiveClients;
             this.cachedUserAgentString = this.UserAgentContainer.UserAgent;
             this.cachedSerializedJson = this.GetSerializedDatum();
         }
@@ -46,9 +48,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         {
             get
             {
-                if ((this.cachedUserAgentString != this.UserAgentContainer.UserAgent) ||
-                    (this.cachedNumberOfClientCreated != CosmosClient.numberOfClientsCreated))
+                if (this.cachedUserAgentString != this.UserAgentContainer.UserAgent ||
+                    this.cachedNumberOfClientCreated != CosmosClient.numberOfClientsCreated ||
+                    this.cachedNumberOfActiveClient != CosmosClient.NumberOfActiveClients)
                 {
+                    this.cachedNumberOfActiveClient = CosmosClient.NumberOfActiveClients;
                     this.cachedNumberOfClientCreated = CosmosClient.numberOfClientsCreated;
                     this.cachedUserAgentString = this.UserAgentContainer.UserAgent;
                     this.cachedSerializedJson = this.GetSerializedDatum();
@@ -62,6 +66,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         private ReadOnlyMemory<byte> cachedSerializedJson;
         private int cachedNumberOfClientCreated;
+        private int cachedNumberOfActiveClient;
+
         private string cachedUserAgentString;
 
         internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
@@ -76,9 +82,12 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
             jsonTextWriter.WriteFieldName("Client Created Time Utc");
             jsonTextWriter.WriteStringValue(this.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture));
-
+            jsonTextWriter.WriteFieldName("MachineId");
+            jsonTextWriter.WriteStringValue(VmMetadataApiHandler.GetMachineId());
             jsonTextWriter.WriteFieldName("NumberOfClientsCreated");
             jsonTextWriter.WriteNumber64Value(this.cachedNumberOfClientCreated);
+            jsonTextWriter.WriteFieldName("NumberOfActiveClients");
+            jsonTextWriter.WriteNumber64Value(this.cachedNumberOfActiveClient);
             jsonTextWriter.WriteFieldName("User Agent");
             jsonTextWriter.WriteStringValue(this.cachedUserAgentString);
 

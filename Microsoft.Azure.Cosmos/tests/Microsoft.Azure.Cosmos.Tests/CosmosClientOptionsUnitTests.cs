@@ -489,6 +489,51 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsFalse(connectionPolicy.EnableEndpointDiscovery);
         }
 
+        [TestMethod]
+        public void WithUnrecognizedApplicationRegionThrows()
+        {
+            string notAValidAzureRegion = Guid.NewGuid().ToString();
+
+            {
+                CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                    accountEndpoint: AccountEndpoint,
+                    authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey)
+                    .WithApplicationRegion(notAValidAzureRegion);
+
+                ArgumentException argumentException = Assert.ThrowsException<ArgumentException>(() => cosmosClientBuilder.Build(new MockDocumentClient()));
+
+                Assert.IsTrue(argumentException.Message.Contains(notAValidAzureRegion), $"Expected error message to contain {notAValidAzureRegion} but got: {argumentException.Message}");
+            }
+
+            {
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+                {
+                    ApplicationRegion = notAValidAzureRegion
+                };
+
+                ArgumentException argumentException = Assert.ThrowsException<ArgumentException>(() => new CosmosClient(AccountEndpoint, MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey, cosmosClientOptions));
+
+                Assert.IsTrue(argumentException.Message.Contains(notAValidAzureRegion), $"Expected error message to contain {notAValidAzureRegion} but got: {argumentException.Message}");
+            }
+        }
+
+        [TestMethod]
+        public void WithQuorumReadWithEventualConsistencyAccount()
+        {
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: AccountEndpoint,
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+
+            CosmosClientOptions cosmosClientOptions = cosmosClientBuilder.Build(new MockDocumentClient()).ClientOptions;
+            Assert.IsFalse(cosmosClientOptions.EnableUpgradeConsistencyToLocalQuorum);
+
+            cosmosClientBuilder
+                .AllowUpgradeConsistencyToLocalQuorum();
+
+            cosmosClientOptions = cosmosClientBuilder.Build(new MockDocumentClient()).ClientOptions;
+            Assert.IsTrue(cosmosClientOptions.EnableUpgradeConsistencyToLocalQuorum);
+        }
+
         private class TestWebProxy : IWebProxy
         {
             public ICredentials Credentials { get; set; }

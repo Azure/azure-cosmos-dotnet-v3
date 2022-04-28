@@ -39,7 +39,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 operationType: request.OperationType,
                                 resourceType: request.ResourceType,
                                 consistencyLevel: request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
-                                requestCharge: response.Headers.RequestCharge);
+                                requestCharge: response.Headers.RequestCharge,
+                                subStatusCode: response.Headers.SubStatusCodeLiteral);
                 }
                 catch (Exception ex)
                 {

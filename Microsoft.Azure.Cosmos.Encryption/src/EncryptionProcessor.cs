@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 return input;
             }
 
-            Debug.Assert(input.CanSeek);
+            Debug.Assert(input.CanSeek, "DecryptAsync input.CanSeek false");
 
             operationDiagnostics?.Begin(Constants.DiagnosticsDecryptOperation);
             JObject itemJObj = RetrieveItem(input);
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionSettings encryptionSettings,
             CancellationToken cancellationToken)
         {
-            Debug.Assert(document != null);
+            Debug.Assert(document != null,  "DecryptAsync document null");
 
             int propertiesDecryptedCount = await DecryptObjectAsync(
                 document,
@@ -399,7 +399,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private static JObject RetrieveItem(
             Stream input)
         {
-            Debug.Assert(input != null);
+            Debug.Assert(input != null, "RetrieveItem input stream null");
 
             JObject itemJObj;
             using (StreamReader sr = new StreamReader(input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))

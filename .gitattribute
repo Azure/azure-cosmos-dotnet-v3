@@ -1,0 +1,19 @@
+# Declare files that will always have CRLF line endings on checkout
+* text=auto
+
+*.bmp binary
+*.dll binary
+*.gif binary
+*.jpg binary
+*.png binary
+*.snk binary
+*.exe binary
+*.wmv binary
+*.mp4 binary
+*.ismv binary
+*.isma binary
+
+*.cs text diff=csharp eol=crlf
+*.csproj text=auto
+*.sln text=auto eol=crlf
+*.sh text=auto eol=lf

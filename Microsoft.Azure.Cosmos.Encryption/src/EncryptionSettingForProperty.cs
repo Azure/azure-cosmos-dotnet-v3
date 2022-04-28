@@ -13,15 +13,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class EncryptionSettingForProperty
     {
-        private static readonly SemaphoreSlim EncryptionKeyCacheSemaphore = new SemaphoreSlim(1, 1);
-
         private readonly string databaseRid;
 
         private readonly EncryptionContainer encryptionContainer;
 
         public EncryptionSettingForProperty(
             string clientEncryptionKeyId,
-            EncryptionType encryptionType,
+            Data.Encryption.Cryptography.EncryptionType encryptionType,
             EncryptionContainer encryptionContainer,
             string databaseRid)
         {
@@ -33,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public string ClientEncryptionKeyId { get; }
 
-        public EncryptionType EncryptionType { get; }
+        public Data.Encryption.Cryptography.EncryptionType EncryptionType { get; }
 
         public async Task<AeadAes256CbcHmac256EncryptionAlgorithm> BuildEncryptionAlgorithmForSettingAsync(CancellationToken cancellationToken)
         {
@@ -52,7 +50,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 // Here a request is sent out to unwrap using the Master Key configured via the Key Encryption Key.
                 protectedDataEncryptionKey = await this.BuildProtectedDataEncryptionKeyAsync(
                     clientEncryptionKeyProperties,
-                    this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProvider,
                     this.ClientEncryptionKeyId,
                     cancellationToken);
             }
@@ -75,7 +72,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     // try to build the ProtectedDataEncryptionKey. If it fails, try to force refresh the gateway cache and get the latest client encryption key.
                     protectedDataEncryptionKey = await this.BuildProtectedDataEncryptionKeyAsync(
                         clientEncryptionKeyProperties,
-                        this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProvider,
                         this.ClientEncryptionKeyId,
                         cancellationToken);
                 }
@@ -125,9 +121,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 if (ex.StatusCode == HttpStatusCode.NotModified)
                 {
                     // looks like the key was never rewrapped with a valid Key Encryption Key.
-                    throw new InvalidOperationException($"The Client Encryption Key with key id:{this.ClientEncryptionKeyId} on database:{this.encryptionContainer.Database.Id} and container:{this.encryptionContainer.Id} , needs to be rewrapped with a valid Key Encryption Key using RewrapClientEncryptionKeyAsync. " +
+                    throw new EncryptionCosmosException(
+                        $"The Client Encryption Key with key id:{this.ClientEncryptionKeyId} on database:{this.encryptionContainer.Database.Id} and container:{this.encryptionContainer.Id} , needs to be rewrapped with a valid Key Encryption Key using RewrapClientEncryptionKeyAsync. " +
                         $" The Key Encryption Key used to wrap the Client Encryption Key has been revoked: {ex.Message}." +
-                        $" Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                        $" Please refer to https://aka.ms/CosmosClientEncryption for more details. ",
+                        HttpStatusCode.BadRequest,
+                        int.Parse(Constants.IncorrectContainerRidSubStatus),
+                        ex.ActivityId,
+                        ex.RequestCharge,
+                        ex.Diagnostics);
                 }
                 else
                 {
@@ -137,7 +139,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ProtectedDataEncryptionKey protectedDataEncryptionKey = await this.BuildProtectedDataEncryptionKeyAsync(
                 clientEncryptionKeyProperties,
-                this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProvider,
                 this.ClientEncryptionKeyId,
                 cancellationToken);
 
@@ -146,18 +147,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private async Task<ProtectedDataEncryptionKey> BuildProtectedDataEncryptionKeyAsync(
             ClientEncryptionKeyProperties clientEncryptionKeyProperties,
-            EncryptionKeyStoreProvider encryptionKeyStoreProvider,
             string keyId,
             CancellationToken cancellationToken)
         {
-            if (await EncryptionKeyCacheSemaphore.WaitAsync(-1, cancellationToken))
+            if (await EncryptionCosmosClient.EncryptionKeyCacheSemaphore.WaitAsync(-1, cancellationToken))
             {
                 try
                 {
                     KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                         clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
                         clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
-                        encryptionKeyStoreProvider);
+                        this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProviderImpl);
 
                     ProtectedDataEncryptionKey protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
                         keyId,
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
                 finally
                 {
-                    EncryptionKeyCacheSemaphore.Release(1);
+                    EncryptionCosmosClient.EncryptionKeyCacheSemaphore.Release(1);
                 }
             }
 

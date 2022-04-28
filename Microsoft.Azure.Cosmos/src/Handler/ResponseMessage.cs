@@ -8,7 +8,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net;
+    using System.Text;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -18,9 +20,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class ResponseMessage : IDisposable
     {
-#if PREVIEW
         private CosmosDiagnostics diagnostics = null;
-#endif
 
         /// <summary>
         /// Create a <see cref="ResponseMessage"/>
@@ -81,6 +81,9 @@ namespace Microsoft.Azure.Cosmos
             this.RequestMessage = requestMessage;
             this.CosmosException = cosmosException;
             this.Headers = headers ?? new Headers();
+
+            this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(this.Headers);
+
             if (requestMessage != null && requestMessage.Trace != null)
             {
                 this.Trace = requestMessage.Trace;
@@ -127,26 +130,31 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public virtual string ContinuationToken => this.Headers?.ContinuationToken;
 
+        private Lazy<string> IndexUtilizationText { get; }
+
+        /// <summary>
+        /// Gets the Index Metrics in the current <see cref="ResponseMessage"/> to be used for debugging purposes. 
+        /// It's applicable to query response only. Other feed response will return null for this field.
+        /// This result is only available if QueryRequestOptions.PopulateIndexMetrics is set to true.
+        /// </summary>
+        /// <value>
+        /// The index utilization metrics.
+        /// </value>
+        public string IndexMetrics => this.IndexUtilizationText?.Value;
+
         /// <summary>
         /// Gets the original request message
         /// </summary>
         public virtual RequestMessage RequestMessage { get; internal set; }
 
-#if PREVIEW
         /// <summary>
-        /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
+        /// Gets or sets the cosmos diagnostic information for the current request to Azure Cosmos DB service
         /// </summary>
         public virtual CosmosDiagnostics Diagnostics
         {
             get => this.diagnostics ?? new CosmosTraceDiagnostics(this.Trace ?? NoOpTrace.Singleton);
             set => this.diagnostics = value ?? throw new ArgumentNullException(nameof(this.Diagnostics));
         }
-#else
-        /// <summary>
-        /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
-        /// </summary>
-        public virtual CosmosDiagnostics Diagnostics => new CosmosTraceDiagnostics(this.Trace ?? NoOpTrace.Singleton);
-#endif
 
         internal ITrace Trace { get; set; }
 
@@ -236,6 +244,29 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ObjectDisposedException(this.GetType().ToString());
             }
+        }
+
+        /// <summary>
+        /// Decode the Index Metrics from the response headers, if exists.
+        /// </summary>
+        /// <param name="responseMessageHeaders">The response headers</param>
+        /// <returns>Lazy implementation of the pretty-printed IndexMetrics</returns>
+        static internal Lazy<string> DecodeIndexMetrics(Headers responseMessageHeaders)
+        {
+            if (responseMessageHeaders?.IndexUtilizationText != null)
+            {
+                return new Lazy<string>(() =>
+                    {
+                        IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText);
+                        StringBuilder stringBuilder = new StringBuilder();
+                        IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
+                        indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);
+
+                        return stringBuilder.ToString();
+                    });
+            }
+
+            return null;
         }
     }
 }

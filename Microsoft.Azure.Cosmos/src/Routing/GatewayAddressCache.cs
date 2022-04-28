@@ -187,17 +187,42 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 PartitionAddressInformation addresses;
+                PartitionAddressInformation staleAddressInfo = null;
                 if (forceRefreshPartitionAddresses || request.ForceCollectionRoutingMapRefresh)
                 {
                     addresses = await this.serverPartitionAddressCache.GetAsync(
                         key: partitionKeyRangeIdentity,
-                        singleValueInitFunc: () => this.GetAddressesForRangeIdAsync(
-                            request,
-                            partitionKeyRangeIdentity.CollectionRid,
-                            partitionKeyRangeIdentity.PartitionKeyRangeId,
-                            forceRefresh: forceRefreshPartitionAddresses),
-                        forceRefresh: true,
-                        callBackOnForceRefresh: (old, updated) => GatewayAddressCache.LogPartitionCacheRefresh(request.RequestContext.ClientRequestStatistics, old, updated));
+                        singleValueInitFunc: (currentCachedValue) =>
+                        {
+                            staleAddressInfo = currentCachedValue;
+
+                            GatewayAddressCache.SetTransportAddressUrisToUnhealthy(
+                               currentCachedValue,
+                               request?.RequestContext?.FailedEndpoints);
+
+                            return this.GetAddressesForRangeIdAsync(
+                                request,
+                                partitionKeyRangeIdentity.CollectionRid,
+                                partitionKeyRangeIdentity.PartitionKeyRangeId,
+                                forceRefresh: forceRefreshPartitionAddresses);
+                        },
+                        forceRefresh: (currentCachedValue) =>
+                        {
+                            int cachedHashCode = request?.RequestContext?.LastPartitionAddressInformationHashCode ?? 0;
+                            if (cachedHashCode == 0)
+                            {
+                                return true;
+                            }
+
+                            // The cached value is different then the previous access hash then assume
+                            // another request already updated the cache since there is a new value in the cache
+                            return currentCachedValue.GetHashCode() == cachedHashCode;
+                        });
+
+                    if (staleAddressInfo != null)
+                    {
+                        GatewayAddressCache.LogPartitionCacheRefresh(request.RequestContext.ClientRequestStatistics, staleAddressInfo, addresses);
+                    }
 
                     this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out DateTime ignoreDateTime);
                 }
@@ -205,13 +230,19 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     addresses = await this.serverPartitionAddressCache.GetAsync(
                         key: partitionKeyRangeIdentity,
-                        singleValueInitFunc: () => this.GetAddressesForRangeIdAsync(
+                        singleValueInitFunc: (_) => this.GetAddressesForRangeIdAsync(
                             request,
                             partitionKeyRangeIdentity.CollectionRid,
                             partitionKeyRangeIdentity.PartitionKeyRangeId,
                             forceRefresh: false),
-                        forceRefresh: false,
-                        callBackOnForceRefresh: (old, updated) => GatewayAddressCache.LogPartitionCacheRefresh(request.RequestContext.ClientRequestStatistics, old, updated));
+                        forceRefresh: (_) => false);
+                }
+
+                // Always save the hash code. This is used to determine if another request already updated the cache.
+                // This helps reduce latency by avoiding uncessary cache refreshes.
+                if (request?.RequestContext != null)
+                {
+                    request.RequestContext.LastPartitionAddressInformationHashCode = addresses.GetHashCode();
                 }
 
                 int targetReplicaSetSize = this.serviceConfigReader.UserReplicationPolicy.MaxReplicaSetSize;
@@ -243,6 +274,32 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 throw;
+            }
+        }
+
+        private static void SetTransportAddressUrisToUnhealthy(
+            PartitionAddressInformation stalePartitionAddressInformation,
+            Lazy<HashSet<TransportAddressUri>> failedEndpoints)
+        {
+            if (stalePartitionAddressInformation == null ||
+                failedEndpoints == null ||
+                !failedEndpoints.IsValueCreated)
+            {
+                return;
+            }
+
+            IReadOnlyList<TransportAddressUri> perProtocolPartitionAddressInformation = stalePartitionAddressInformation.Get(Protocol.Tcp)?.ReplicaTransportAddressUris;
+            if (perProtocolPartitionAddressInformation == null)
+            {
+                return;
+            }
+
+            foreach (TransportAddressUri failed in perProtocolPartitionAddressInformation)
+            {
+                if (failedEndpoints.Value.Contains(failed))
+                {
+                    failed.SetUnhealthy();
+                }
             }
         }
 
@@ -298,13 +355,12 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             return await this.serverPartitionAddressCache.GetAsync(
                        key: partitionKeyRangeIdentity,
-                       singleValueInitFunc: () => this.GetAddressesForRangeIdAsync(
+                       singleValueInitFunc: (_) => this.GetAddressesForRangeIdAsync(
                            null,
                            partitionKeyRangeIdentity.CollectionRid,
                            partitionKeyRangeIdentity.PartitionKeyRangeId,
                            forceRefresh: true),
-                       forceRefresh: true,
-                       callBackOnForceRefresh: null);
+                       forceRefresh: (_) => true);
         }
 
         private async Task<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> ResolveMasterAsync(DocumentServiceRequest request, bool forceRefresh)
@@ -545,23 +601,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             Address address = addresses.First();
 
-            AddressInformation[] addressInfos =
-                addresses.Select(
-                    addr =>
-                    new AddressInformation
-                    {
-                        IsPrimary = addr.IsPrimary,
-                        PhysicalUri = addr.PhysicalUri,
-                        Protocol = ProtocolFromString(addr.Protocol),
-                        IsPublic = true
-                    }).ToArray();
+            IReadOnlyList<AddressInformation> addressInfosSorted = GatewayAddressCache.GetSortedAddressInformation(addresses);
 
             PartitionKeyRangeIdentity partitionKeyRangeIdentity = new PartitionKeyRangeIdentity(collectionRid, address.PartitionKeyRangeId);
 
             if (this.enableTcpConnectionEndpointRediscovery && partitionKeyRangeIdentity.PartitionKeyRangeId != PartitionKeyRange.MasterPartitionKeyRangeId)
             {
                 // add serverKey-pkRangeIdentity mapping only for addresses retrieved from gateway
-                foreach (AddressInformation addressInfo in addressInfos)
+                foreach (AddressInformation addressInfo in addressInfosSorted)
                 {
                     DefaultTrace.TraceInformation("Added address to serverPartitionAddressToPkRangeIdMap, collectionRid :{0}, pkRangeId: {1}, address: {2}",
                        partitionKeyRangeIdentity.CollectionRid,
@@ -580,7 +627,24 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             return Tuple.Create(
                 partitionKeyRangeIdentity,
-                new PartitionAddressInformation(addressInfos, inNetworkRequest));
+                new PartitionAddressInformation(addressInfosSorted, inNetworkRequest));
+        }
+
+        private static IReadOnlyList<AddressInformation> GetSortedAddressInformation(IList<Address> addresses)
+        {
+            AddressInformation[] addressInformationArray = new AddressInformation[addresses.Count];
+            for (int i = 0; i < addresses.Count; i++)
+            {
+                Address addr = addresses[i];
+                addressInformationArray[i] = new AddressInformation(
+                    isPrimary: addr.IsPrimary,
+                    physicalUri: addr.PhysicalUri,
+                    protocol: ProtocolFromString(addr.Protocol),
+                    isPublic: true);
+            }
+
+            Array.Sort(addressInformationArray);
+            return addressInformationArray;
         }
 
         private bool IsInNetworkRequest(DocumentServiceResponse documentServiceResponse)

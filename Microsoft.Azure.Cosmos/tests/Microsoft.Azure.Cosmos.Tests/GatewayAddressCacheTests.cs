@@ -4,20 +4,20 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Net.Http;
-    using System.Threading.Tasks;
-    using System.Threading;
-    using System.Net;
-    using System.Text;
-    using System.Collections.ObjectModel;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Linq;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
-    using Microsoft.Azure.Documents;
+    using System.Net;
+    using System.Net.Http;
+    using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     /// <summary>
     /// Tests for <see cref="GatewayAddressCache"/>.
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
             httpClient.Timeout = TimeSpan.FromSeconds(120);
             GatewayAddressCache cache = new GatewayAddressCache(
                 new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
-                Documents.Client.Protocol.Https,
+                Documents.Client.Protocol.Tcp,
                 this.mockTokenProvider.Object,
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
             httpClient.Timeout = TimeSpan.FromSeconds(120);
             GatewayAddressCache cache = new GatewayAddressCache(
                 new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
-                Documents.Client.Protocol.Https,
+                Documents.Client.Protocol.Tcp,
                 this.mockTokenProvider.Object,
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
@@ -118,6 +118,89 @@ namespace Microsoft.Azure.Cosmos
 
             Assert.IsNotNull(addresses.AllAddresses.Select(address => address.PhysicalUri == "https://blabla5.com"));
         }
+
+        [TestMethod]
+        public async Task TestGatewayAddressCacheAvoidCacheRefresWhenAlreadyUpdatedAsync()
+        {
+            Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>(MockBehavior.Strict);
+            string oldAddress = "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/4s";
+            string newAddress = "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/5s";
+            mockHttpHandler.SetupSequence(x => x.SendAsync(
+                It.IsAny<HttpRequestMessage>(),
+                It.IsAny<CancellationToken>()))
+                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(new List<string>()
+                 {
+                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/1p",
+                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/2s",
+                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/3s",
+                     oldAddress,
+                 }))
+                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(new List<string>()
+                 {
+                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/1p",
+                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/2s",
+                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/3s",
+                     newAddress,
+                 }));
+
+            HttpClient httpClient = new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object));
+            GatewayAddressCache cache = new GatewayAddressCache(
+                new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
+                Documents.Client.Protocol.Tcp,
+                this.mockTokenProvider.Object,
+                this.mockServiceConfigReader.Object,
+                MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
+                suboptimalPartitionForceRefreshIntervalInSeconds: 2,
+                enableTcpConnectionEndpointRediscovery: true);
+
+            DocumentServiceRequest request1 = DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid);
+            DocumentServiceRequest request2 = DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid);
+
+            PartitionAddressInformation request1Addresses = await cache.TryGetAddressesAsync(
+                request: request1,
+                partitionKeyRangeIdentity: this.testPartitionKeyRangeIdentity,
+                serviceIdentity: this.serviceIdentity,
+                forceRefreshPartitionAddresses: false,
+                cancellationToken: CancellationToken.None);
+
+            PartitionAddressInformation request2Addresses = await cache.TryGetAddressesAsync(
+                request: request2,
+                partitionKeyRangeIdentity: this.testPartitionKeyRangeIdentity,
+                serviceIdentity: this.serviceIdentity,
+                forceRefreshPartitionAddresses: false,
+                cancellationToken: CancellationToken.None);
+
+            Assert.AreEqual(request1Addresses, request2Addresses);
+            Assert.AreEqual(4, request1Addresses.AllAddresses.Count());
+            Assert.AreEqual(1, request1Addresses.AllAddresses.Count(x => x.PhysicalUri == oldAddress));
+            Assert.AreEqual(0, request1Addresses.AllAddresses.Count(x => x.PhysicalUri == newAddress));
+
+            // check if the addresss is updated
+            request1Addresses = await cache.TryGetAddressesAsync(
+                request: request1,
+                partitionKeyRangeIdentity: this.testPartitionKeyRangeIdentity,
+                serviceIdentity: this.serviceIdentity,
+                forceRefreshPartitionAddresses: true,
+                cancellationToken: CancellationToken.None);
+
+            // Even though force refresh is true it will just use the new cache
+            // value rather than doing a gateway call to do another refresh since the value
+            // already changed from the last cache access
+            request2Addresses = await cache.TryGetAddressesAsync(
+                request: request2,
+                partitionKeyRangeIdentity: this.testPartitionKeyRangeIdentity,
+                serviceIdentity: this.serviceIdentity,
+                forceRefreshPartitionAddresses: true,
+                cancellationToken: CancellationToken.None);
+
+            Assert.AreEqual(request1Addresses, request2Addresses);
+            Assert.AreEqual(4, request1Addresses.AllAddresses.Count());
+            Assert.AreEqual(0, request1Addresses.AllAddresses.Count(x => x.PhysicalUri == oldAddress));
+            Assert.AreEqual(1, request1Addresses.AllAddresses.Count(x => x.PhysicalUri == newAddress));
+
+            mockHttpHandler.VerifyAll();
+        }
+
 
         [TestMethod]
         [Timeout(2000)]
@@ -155,7 +238,7 @@ namespace Microsoft.Azure.Cosmos
                         routingMapProvider: null,
                         serviceConfigReader: this.mockServiceConfigReader.Object,
                         connectionPolicy: connectionPolicy,
-                        httpClient: MockCosmosUtil.CreateCosmosHttpClient(() =>new HttpClient(messageHandler)));
+                        httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
 
                     ConnectionStateListener connectionStateListener = new ConnectionStateListener(globalAddressResolver);
                     connectionStateListener.OnConnectionEvent(ConnectionEvent.ReadEof, DateTime.Now, new Documents.Rntbd.ServerKey(new Uri("https://endpoint.azure.com:4040/")));
@@ -173,11 +256,11 @@ namespace Microsoft.Azure.Cosmos
         public async Task GatewayAddressCacheInNetworkRequestTestAsync()
         {
             FakeMessageHandler messageHandler = new FakeMessageHandler();
-            HttpClient httpClient = new HttpClient(messageHandler);
+            HttpClient httpClient = new(messageHandler);
             httpClient.Timeout = TimeSpan.FromSeconds(120);
             GatewayAddressCache cache = new GatewayAddressCache(
                 new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
-                Documents.Client.Protocol.Https,
+                Documents.Client.Protocol.Tcp,
                 this.mockTokenProvider.Object,
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
@@ -191,7 +274,6 @@ namespace Microsoft.Azure.Cosmos
                 this.serviceIdentity,
                 false,
                 CancellationToken.None);
-
 
             Assert.IsFalse(legacyRequest.IsLocalRegion);
 
@@ -234,14 +316,14 @@ namespace Microsoft.Azure.Cosmos
             {
                 List<Address> addresses = new List<Address>()
                 {
-                    new Address() { IsPrimary = true, PhysicalUri = "https://blabla.com", Protocol = RuntimeConstants.Protocols.HTTPS, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" },
-                    new Address() { IsPrimary = false, PhysicalUri = "https://blabla3.com", Protocol = RuntimeConstants.Protocols.HTTPS, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" },
-                    new Address() { IsPrimary = false, PhysicalUri = "https://blabla2.com", Protocol = RuntimeConstants.Protocols.HTTPS, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" },
+                    new Address() { IsPrimary = true, PhysicalUri = "https://blabla.com", Protocol = RuntimeConstants.Protocols.RNTBD, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" },
+                    new Address() { IsPrimary = false, PhysicalUri = "https://blabla3.com", Protocol = RuntimeConstants.Protocols.RNTBD, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" },
+                    new Address() { IsPrimary = false, PhysicalUri = "https://blabla2.com", Protocol = RuntimeConstants.Protocols.RNTBD, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" },
                 };
 
                 if (this.returnFullReplicaSet)
                 {
-                    addresses.Add(new Address() { IsPrimary = false, PhysicalUri = "https://blabla4.com", Protocol = RuntimeConstants.Protocols.HTTPS, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" });
+                    addresses.Add(new Address() { IsPrimary = false, PhysicalUri = "https://blabla4.com", Protocol = RuntimeConstants.Protocols.RNTBD, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" });
                     this.returnFullReplicaSet = false;
                 }
                 else
@@ -252,7 +334,7 @@ namespace Microsoft.Azure.Cosmos
                 if (this.returnUpdatedAddresses)
                 {
                     addresses.RemoveAll(address => address.IsPrimary == true);
-                    addresses.Add(new Address() { IsPrimary = true, PhysicalUri = "https://blabla5.com", Protocol = RuntimeConstants.Protocols.HTTPS, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" });
+                    addresses.Add(new Address() { IsPrimary = true, PhysicalUri = "https://blabla5.com", Protocol = RuntimeConstants.Protocols.RNTBD, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" });
                     this.returnUpdatedAddresses = false;
                 }
                 else

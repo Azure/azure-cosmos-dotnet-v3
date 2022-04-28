@@ -347,15 +347,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             // rntbd://yt1prdddc01-docdb-1.documents.azure.com:14003/apps/ce8ab332-f59e-4ce7-a68e-db7e7cfaa128/services/68cc0b50-04c6-4716-bc31-2dfefd29e3ee/partitions/5604283d-0907-4bf4-9357-4fa9e62de7b5/replicas/131170760736528207s/
             for (int i = 0; i <= 2; i++)
             {
-                addressInformation[i] = new AddressInformation
-                {
-                    PhysicalUri =
-                    "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/"
-                    + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/",
-                    IsPrimary = i == 0,
-                    Protocol = Protocol.Tcp,
-                    IsPublic = true
-                };
+                addressInformation[i] = new AddressInformation(
+                    physicalUri: "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/"
+                        + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/",
+                    isPrimary: i == 0,
+                    protocol: Documents.Client.Protocol.Tcp,
+                    isPublic: true);
             }
             return addressInformation;
         }
