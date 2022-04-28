@@ -75,7 +75,7 @@
                 false,
                 @"/pk",
                 Cosmos.PartitionKey.Null),
-
+                
                 CreateInput(
                 @"None Partition Key Value",
                 "SELECT * FROM c",
@@ -154,7 +154,7 @@
             //  gets input parameters
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = GetPartitionedQueryExecutionInfo(sqlQuerySpec, input.PartitionKeyDefinition);
-            if (input.PartitionKeyValue == null)
+            if (input.PartitionKeyValue == null || input.PartitionKeyValue == Cosmos.PartitionKey.None)
             {
                 input.PartitionKeyValue = Cosmos.PartitionKey.Null;
             }
