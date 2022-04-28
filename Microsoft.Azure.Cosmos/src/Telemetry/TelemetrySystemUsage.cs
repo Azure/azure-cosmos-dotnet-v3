@@ -159,5 +159,41 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             return systemInfo;
         }
+
+        /// <summary>
+        /// Collecting TCP Connection Count and aggregating using Histogram
+        /// </summary>
+        /// <param name="systemUsageCollection"></param>
+        /// <returns>SystemInfo</returns>
+        public static SystemInfo GetTcpConnectionCount(IReadOnlyCollection<SystemUsageLoad> systemUsageCollection)
+        {
+            LongConcurrentHistogram histogram = new LongConcurrentHistogram(ClientTelemetryOptions.NumberOfTcpConnectionMin,
+                                                        ClientTelemetryOptions.NumberOfTcpConnectionMax,
+                                                        ClientTelemetryOptions.NumberOfTcpConnectionPrecision);
+
+            SystemInfo systemInfo = new SystemInfo(ClientTelemetryOptions.NumberOfTcpConnectionName, ClientTelemetryOptions.NumberOfTcpConnectionUnit);
+            foreach (SystemUsageLoad load in systemUsageCollection)
+            {
+                int? infoToRecord = load.NumberOfOpenTcpConnections;
+
+                // If anyhow, there are more than 70000 TCP connections, just fallback to 69999
+                if (infoToRecord.HasValue && infoToRecord.Value >= ClientTelemetryOptions.NumberOfTcpConnectionMax)
+                {
+                    infoToRecord = (int)(ClientTelemetryOptions.NumberOfTcpConnectionMax - 1);
+                }
+
+                if (infoToRecord.HasValue)
+                {
+                    histogram.RecordValue(infoToRecord.Value);
+                }
+            }
+
+            if (histogram.TotalCount > 0)
+            {
+                systemInfo.SetAggregators(histogram);
+            }
+
+            return systemInfo;
+        }
     }
 }

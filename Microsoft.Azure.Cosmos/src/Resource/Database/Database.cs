@@ -980,7 +980,6 @@ namespace Microsoft.Azure.Cosmos
             string name,
             string partitionKeyPath);
 
-#if PREVIEW
         /// <summary>
         /// Returns a reference to a client encryption key object.
         /// This method is not meant to be invoked directly. Please see https://aka.ms/CosmosClientEncryption in order to use client-side encryption.
@@ -1022,6 +1021,5 @@ namespace Microsoft.Azure.Cosmos
             ClientEncryptionKeyProperties clientEncryptionKeyProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
-#endif
     }
 }

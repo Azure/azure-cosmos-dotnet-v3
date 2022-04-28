@@ -499,42 +499,32 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 if (uris != null)
                 {
-                    TransportAddressUri previous = null;
-                    int duplicateCount = 1;
-                    int totalCount = uris.Count;
-                    for (int i = 0; i < totalCount; i++)
+                    Dictionary<TransportAddressUri, int> uriCount = new ();
+                    foreach (TransportAddressUri transportAddressUri in uris)
                     {
-                        TransportAddressUri contactedReplica = uris[i];
-                        if (contactedReplica == null)
+                        if (transportAddressUri == null)
                         {
                             continue;
                         }
 
-                        if (contactedReplica.Equals(previous))
+                        if (uriCount.ContainsKey(transportAddressUri))
                         {
-                            duplicateCount++;
-                            // Don't continue for last link so it get's printed
-                            if (i < totalCount - 1)
-                            {
-                                continue;
-                            }
+                            uriCount[transportAddressUri]++;
                         }
-
-                        // The URI is not a duplicate.
-                        // Write previous URI and count.
-                        // Then update them to the new URI and count
-                        if (previous != null)
+                        else
                         {
-                            this.jsonWriter.WriteObjectStart();
-                            this.jsonWriter.WriteFieldName("Count");
-                            this.jsonWriter.WriteNumber64Value(duplicateCount);
-                            this.jsonWriter.WriteFieldName("Uri");
-                            this.WriteStringValueOrNull(contactedReplica?.ToString());
-                            this.jsonWriter.WriteObjectEnd();
+                            uriCount.Add(transportAddressUri, 1);
                         }
+                    }
 
-                        previous = contactedReplica;
-                        duplicateCount = 1;
+                    foreach (KeyValuePair<TransportAddressUri, int> contactedCount in uriCount) 
+                    {
+                        this.jsonWriter.WriteObjectStart();
+                        this.jsonWriter.WriteFieldName("Count");
+                        this.jsonWriter.WriteNumber64Value(contactedCount.Value);
+                        this.jsonWriter.WriteFieldName("Uri");
+                        this.WriteStringValueOrNull(contactedCount.Key.ToString());
+                        this.jsonWriter.WriteObjectEnd();
                     }
                 }
 
