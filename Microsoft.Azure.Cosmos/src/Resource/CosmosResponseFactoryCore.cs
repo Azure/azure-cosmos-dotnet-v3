@@ -51,17 +51,23 @@ namespace Microsoft.Azure.Cosmos
         private FeedResponse<T> CreateQueryFeedResponseHelper<T>(
             ResponseMessage cosmosResponseMessage)
         {
-            cosmosResponseMessage.Trace.StartChild("Query Response Serialization");
-            if (cosmosResponseMessage is QueryResponse queryResponse)
+            using (cosmosResponseMessage.Trace.StartChild("Query Response Serialization"))
             {
-                return QueryResponse<T>.CreateResponse<T>(
-                    cosmosQueryResponse: queryResponse,
-                    serializerCore: this.serializerCore);
+                if (cosmosResponseMessage is QueryResponse queryResponse)
+                {
+                    return QueryResponse<T>.CreateResponse<T>(
+                        cosmosQueryResponse: queryResponse,
+                        serializerCore: this.serializerCore);
+                }
             }
 
-            return ReadFeedResponse<T>.CreateResponse<T>(
+            using (cosmosResponseMessage.Trace.StartChild("Feed Response Serialization"))
+            {
+                return ReadFeedResponse<T>.CreateResponse<T>(
                        cosmosResponseMessage,
                        this.serializerCore);
+            }
+                
         }
 
         private FeedResponse<T> CreateChangeFeedResponseHelper<T>(
