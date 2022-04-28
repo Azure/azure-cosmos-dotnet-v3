@@ -96,14 +96,6 @@
         private static PassThroughQueryTestInput CreateInput(
             string description,
             string query,
-            bool expectedPassThrough)
-        {
-            return new PassThroughQueryTestInput(description, query, new SqlQuerySpec(query), expectedPassThrough, @"/pk", Cosmos.PartitionKey.Null);
-        }
-
-        private static PassThroughQueryTestInput CreateInput(
-            string description,
-            string query,
             bool expectedPassThrough,
             string partitionKeyPath,
             string partitionKeyValue)
