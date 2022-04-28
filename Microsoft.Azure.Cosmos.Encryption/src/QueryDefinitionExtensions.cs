@@ -8,38 +8,40 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Data.Encryption.Cryptography;
 
     /// <summary>
-    /// This class provides extension methods for <see cref="QueryDefinition"/>.
+    /// Extension methods for <see cref="QueryDefinition"/> to support client-side encryption.
     /// </summary>
     public static class QueryDefinitionExtensions
     {
         /// <summary>
-        /// Gets a QueryDefinition with Encrypted Parameters.
+        /// Adds a parameter to a SQL query definition. This supports parameters corresponding to encrypted properties.
         /// </summary>
-        /// <param name="queryDefinition"> Query Definition to be replaced with Encrypted Values.</param>
-        /// <param name="name"> Query Paramerter Name. </param>
-        /// <param name="value"> Query Paramerter Value.</param>
-        /// <param name="path"> Encrypted Property Path. </param>
-        /// <param name="cancellationToken"> cancellation token </param>
-        /// <returns> QueryDefinition with encrypted parameters. </returns>
+        /// <param name="queryDefinition">Query definition created using <see cref="EncryptionContainerExtensions.CreateQueryDefinition"/>.</param>
+        /// <param name="name">Name of the parameter.</param>
+        /// <param name="value">Value of the parameter.</param>
+        /// <param name="path">Path of the parameter in the items being queried.</param>
+        /// <param name="cancellationToken">Token for request cancellation.</param>
+        /// <returns>Query definition with parameter added.</returns>
         /// <example>
-        /// This example shows how to pass in a QueryDefinition with Encryption support to AddParameterAsync
-        /// to encrypt the required Property for running Query on encrypted data.
+        /// This example shows how to add a parameter corresponding to an encrypted property to a query definition.
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// containerWithEncryption = await this.cosmosDatabase.GetContainer("id").InitializeEncryptionAsync();
-        /// QueryDefinition withEncryptedParameter = containerWithEncryption.CreateQueryDefinition(
-        ///     "SELECT * FROM c where c.PropertyName = @PropertyValue");
-        /// await withEncryptedParameter.AddParameterAsync(
-        ///     "@PropertyName",
-        ///     PropertyValue,
-        ///     "/PropertyName");
+        /// QueryDefinition queryDefinitionWithEncryptedParameter = container.CreateQueryDefinition(
+        ///     "SELECT * FROM c where c.SensitiveProperty = @FirstParameter");
+        /// await queryDefinitionWithEncryptedParameter.AddParameterAsync(
+        ///     name: "@FirstParameter",
+        ///     value: "sensitive value",
+        ///     path: "/SensitiveProperty");
         /// ]]>
         /// </code>
         /// </example>
+        /// <remarks>
+        /// Only equality comparisons are supported in the filter condition on encrypted properties.
+        /// These also require the property being filtered upon to be encrypted using <see cref="EncryptionType.Deterministic"/> encryption.
+        /// See <see href="https://aka.ms/CosmosClientEncryption">client-side encryption documentation</see> for more details.
+        /// </remarks>
         public static async Task<QueryDefinition> AddParameterAsync(
             this QueryDefinition queryDefinition,
             string name,
@@ -88,9 +90,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     return queryDefinitionwithEncryptedValues;
                 }
 
-                if (settingsForProperty.EncryptionType == EncryptionType.Randomized)
+                if (settingsForProperty.EncryptionType == Data.Encryption.Cryptography.EncryptionType.Randomized)
                 {
-                    throw new ArgumentException($"Unsupported argument with Path: {path} for query. For executing queries on encrypted path requires the use of deterministic encryption type. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                    throw new ArgumentException($"Unsupported argument with Path: {path} for query. Executing queries on encrypted paths requires the use of deterministic encryption type. Please refer to https://aka.ms/CosmosClientEncryption for more details.");
                 }
 
                 Stream valueStream = encryptionContainer.CosmosSerializer.ToStream(value);
@@ -101,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             else
             {
-                throw new ArgumentException("Executing queries on encrypted path requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                throw new ArgumentException("Executing queries on encrypted paths requires the use of an encryption-enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details.");
             }
         }
     }

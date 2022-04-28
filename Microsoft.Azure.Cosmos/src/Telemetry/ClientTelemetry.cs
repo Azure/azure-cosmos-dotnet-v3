@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Net;
     using System.Net.Http;
     using System.Text;
@@ -29,11 +28,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// </summary>
     internal class ClientTelemetry : IDisposable
     {
+        private const int allowedNumberOfFailures = 3;
+
         private static readonly Uri endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
 
         private readonly ClientTelemetryProperties clientTelemetryInfo;
-
         private readonly DocumentClient documentClient;
         private readonly CosmosHttpClient httpClient;
         private readonly AuthorizationTokenProvider tokenProvider;
@@ -46,9 +46,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
             = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
 
+        private int numberOfFailures = 0;
+
         /// <summary>
         /// Factory method to intiakize telemetry object and start observer task
         /// </summary>
+        /// <param name="clientId"></param>
         /// <param name="documentClient"></param>
         /// <param name="userAgent"></param>
         /// <param name="connectionMode"></param>
@@ -56,7 +59,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="diagnosticsHelper"></param>
         /// <param name="preferredRegions"></param>
         /// <returns>ClientTelemetry</returns>
-        public static ClientTelemetry CreateAndStartBackgroundTelemetry(DocumentClient documentClient,
+        public static ClientTelemetry CreateAndStartBackgroundTelemetry(
+            string clientId,
+            DocumentClient documentClient,
             string userAgent,
             ConnectionMode connectionMode,
             AuthorizationTokenProvider authorizationTokenProvider,
@@ -65,12 +70,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             DefaultTrace.TraceInformation("Initiating telemetry with background task.");
 
-            ClientTelemetry clientTelemetry = new ClientTelemetry(documentClient,
-            userAgent,
-            connectionMode,
-            authorizationTokenProvider,
-            diagnosticsHelper,
-            preferredRegions);
+            ClientTelemetry clientTelemetry = new ClientTelemetry(
+                clientId,
+                documentClient,
+                userAgent,
+                connectionMode,
+                authorizationTokenProvider,
+                diagnosticsHelper,
+                preferredRegions);
 
             clientTelemetry.StartObserverTask();
 
@@ -78,6 +85,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         private ClientTelemetry(
+            string clientId,
             DocumentClient documentClient,
             string userAgent,
             ConnectionMode connectionMode,
@@ -90,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.tokenProvider = authorizationTokenProvider ?? throw new ArgumentNullException(nameof(authorizationTokenProvider));
 
             this.clientTelemetryInfo = new ClientTelemetryProperties(
-                clientId: Guid.NewGuid().ToString(), 
+                clientId: clientId, 
                 processId: System.Diagnostics.Process.GetCurrentProcess().ProcessName, 
                 userAgent: userAgent, 
                 connectionMode: connectionMode,
@@ -117,11 +125,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>Async Task</returns>
         private async Task EnrichAndSendAsync()
         {
-            DefaultTrace.TraceInformation("Telemetry Job Started with Observing window : " + observingWindow);
+            DefaultTrace.TraceInformation("Telemetry Job Started with Observing window : {0}", observingWindow);
+
             try
             {
                 while (!this.cancellationTokenSource.IsCancellationRequested)
                 {
+                    if (this.numberOfFailures == allowedNumberOfFailures)
+                    {
+                        this.Dispose();
+                        break;
+                    }
+
                     // Load account information if not available, cache is already implemented
                     if (String.IsNullOrEmpty(this.clientTelemetryInfo.GlobalDatabaseAccountName))
                     {
@@ -129,24 +144,26 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         this.clientTelemetryInfo.GlobalDatabaseAccountName = accountProperties?.Id;
                     }
 
-                    // Load host information if not available (it caches the information)
-                    AzureVMMetadata azMetadata = await ClientTelemetryHelper.LoadAzureVmMetaDataAsync(this.httpClient);
-
-                    Compute vmInformation = azMetadata?.Compute;
+                    // Load host information from cache
+                    Compute vmInformation = VmMetadataApiHandler.GetMachineInfo();
                     if (vmInformation != null)
                     {
                         this.clientTelemetryInfo.ApplicationRegion = vmInformation.Location;
                         this.clientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(vmInformation);
+                       
                         //TODO: Set AcceleratingNetwork flag from instance metadata once it is available.
                     }
 
+                    this.clientTelemetryInfo.MachineId = VmMetadataApiHandler.GetMachineId();
+                    
                     await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
 
                     // If cancellation is requested after the delay then return from here.
                     if (this.cancellationTokenSource.IsCancellationRequested)
                     {
                         DefaultTrace.TraceInformation("Observer Task Cancelled.");
-                        return;
+
+                        break;
                     }
 
                     this.RecordSystemUtilization();
@@ -163,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Exception in EnrichAndSendAsync() : " + ex.Message);
+                DefaultTrace.TraceError("Exception in EnrichAndSendAsync() : {0}", ex.Message);
             }
 
             DefaultTrace.TraceInformation("Telemetry Job Stopped.");
@@ -181,6 +198,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="resourceType"></param>
         /// <param name="consistencyLevel"></param>
         /// <param name="requestCharge"></param>
+        /// <param name="subStatusCode"></param>
         internal void Collect(CosmosDiagnostics cosmosDiagnostics,
                             HttpStatusCode statusCode,
                             long responseSizeInBytes,
@@ -189,7 +207,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             OperationType operationType,
                             ResourceType resourceType,
                             string consistencyLevel,
-                            double requestCharge)
+                            double requestCharge,
+                            string subStatusCode)
         {
             DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
 
@@ -208,7 +227,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                             containerName: containerId,
                                             operation: operationType,
                                             resource: resourceType,
-                                            statusCode: (int)statusCode);
+                                            statusCode: (int)statusCode,
+                                            subStatusCode: subStatusCode);
 
             (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
                     .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
@@ -223,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             } 
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : " + ex.Message);
+                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex.Message);
             }
 
             long requestChargeToRecord = (long)(requestCharge * ClientTelemetryOptions.HistogramPrecisionFactor);
@@ -233,7 +253,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : " + requestChargeToRecord + "  Exception : " + ex.Message);
+                DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex.Message);
             }
         }
 
@@ -246,27 +266,23 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 DefaultTrace.TraceVerbose("Started Recording System Usage for telemetry.");
 
-                SystemUsageHistory systemUsageHistory = this.diagnosticsHelper.GetClientTelemtrySystemHistory();
+                SystemUsageHistory systemUsageHistory = this.diagnosticsHelper.GetClientTelemetrySystemHistory();
 
                 if (systemUsageHistory != null )
                 {
-                    (SystemInfo cpuUsagePayload, SystemInfo memoryUsagePayload) = ClientTelemetryHelper.RecordSystemUsage(systemUsageHistory);
-                    if (cpuUsagePayload != null)
-                    {
-                        this.clientTelemetryInfo.SystemInfo.Add(cpuUsagePayload);
-                        DefaultTrace.TraceVerbose("Recorded CPU Usage for telemetry.");
-                    }
-
-                    if (memoryUsagePayload != null)
-                    {
-                        this.clientTelemetryInfo.SystemInfo.Add(memoryUsagePayload);
-                        DefaultTrace.TraceVerbose("Recorded Memory Usage for telemetry.");
-                    }
+                    ClientTelemetryHelper.RecordSystemUsage(
+                        systemUsageHistory: systemUsageHistory, 
+                        systemInfoCollection: this.clientTelemetryInfo.SystemInfo,
+                        isDirectConnectionMode: this.clientTelemetryInfo.IsDirectConnectionMode);
+                } 
+                else
+                {
+                    DefaultTrace.TraceWarning("System Usage History not available");
                 }
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("System Usage Recording Error : " + ex.Message);
+                DefaultTrace.TraceError("System Usage Recording Error : {0}", ex.Message);
             }
         }
 
@@ -286,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             try
             {
-                DefaultTrace.TraceInformation("Sending Telemetry Data to " + endpointUrl.AbsoluteUri);
+                DefaultTrace.TraceInformation("Sending Telemetry Data to {0}", endpointUrl.AbsoluteUri);
 
                 string json = JsonConvert.SerializeObject(this.clientTelemetryInfo, ClientTelemetryOptions.JsonSerializerSettings);
 
@@ -323,23 +339,28 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 using HttpResponseMessage response = await this.httpClient.SendHttpAsync(CreateRequestMessage,
                                                     ResourceType.Telemetry,
-                                                    HttpTimeoutPolicyDefault.Instance,
+                                                    HttpTimeoutPolicyNoRetry.Instance,
                                                     null,
                                                     this.cancellationTokenSource.Token);
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    DefaultTrace.TraceError("Juno API response not successful. Status Code : " + response.StatusCode + ", Message : " + response.ReasonPhrase);
+                    this.numberOfFailures++;
+
+                    DefaultTrace.TraceError("Juno API response not successful. Status Code : {0},  Message : {1}", response.StatusCode, response.ReasonPhrase);
                 } 
                 else
                 {
+                    this.numberOfFailures = 0; // Ressetting failure counts on success call.
                     DefaultTrace.TraceInformation("Telemetry data sent successfully.");
                 }
 
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Exception while sending telemetry data : " + ex.Message);
+                this.numberOfFailures++;
+
+                DefaultTrace.TraceError("Exception while sending telemetry data : {0}", ex.Message);
             }
             finally
             {
@@ -361,9 +382,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         public void Dispose()
         {
-            this.cancellationTokenSource.Cancel();
-            this.cancellationTokenSource.Dispose();
-
+            if (!this.cancellationTokenSource.IsCancellationRequested)
+            {
+                this.cancellationTokenSource.Cancel();
+                this.cancellationTokenSource.Dispose();
+            }
             this.telemetryTask = null;
         }
     }

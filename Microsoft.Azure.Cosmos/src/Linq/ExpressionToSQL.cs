@@ -110,8 +110,10 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <param name="inputExpression">Expression to translate.</param>
         /// <param name="context">Context for translation.</param>
-        public static Collection Translate(Expression inputExpression, TranslationContext context)
+        private static Collection Translate(Expression inputExpression, TranslationContext context)
         {
+            Debug.Assert(context != null, "Translation Context should not be null");
+
             if (inputExpression == null)
             {
                 throw new ArgumentNullException("inputExpression");
@@ -738,19 +740,21 @@ namespace Microsoft.Azure.Cosmos.Linq
         private static SqlScalarExpression VisitMemberAccess(MemberExpression inputExpression, TranslationContext context)
         {
             SqlScalarExpression memberExpression = ExpressionToSql.VisitScalarExpression(inputExpression.Expression, context);
-            string memberName = inputExpression.Member.GetMemberName(context?.linqSerializerOptions);
+            string memberName = inputExpression.Member.GetMemberName(context.linqSerializerOptions);
 
             // if expression is nullable
             if (inputExpression.Expression.Type.IsNullable())
             {
+                MemberNames memberNames = context.memberNames;
+
                 // ignore .Value 
-                if (memberName == "Value")
+                if (memberName == memberNames.Value)
                 {
                     return memberExpression;
                 }
 
                 // convert .HasValue to IS_DEFINED expression
-                if (memberName == "HasValue")
+                if (memberName == memberNames.HasValue)
                 {
                     return SqlFunctionCallScalarExpression.CreateBuiltin("IS_DEFINED", memberExpression);
                 }

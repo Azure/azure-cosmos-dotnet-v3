@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     internal sealed class OperationInfo
     {
         [JsonProperty(PropertyName = "regionsContacted")]
-        private string RegionsContacted { get; }
+        internal string RegionsContacted { get; }
 
         [JsonProperty(PropertyName = "greaterThan1Kb")]
         internal bool? GreaterThan1Kb { get; set; }
@@ -36,6 +36,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         [JsonProperty(PropertyName = "statusCode")]
         public int? StatusCode { get; }
 
+        [JsonProperty(PropertyName = "subStatusCode")]
+        public string SubStatusCode { get; }
+
         [JsonProperty(PropertyName = "metricInfo")]
         internal MetricInfo MetricInfo { get; set; }
 
@@ -51,7 +54,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string containerName, 
             OperationType? operation, 
             ResourceType? resource, 
-            int? statusCode)
+            int? statusCode,
+            string subStatusCode)
         {
             this.RegionsContacted = regionsContacted;
             if (responseSizeInBytes != null)
@@ -64,6 +68,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.Operation = operation?.ToOperationTypeString();
             this.Resource = resource?.ToResourceTypeString();
             this.StatusCode = statusCode;
+            this.SubStatusCode = subStatusCode;
         }
 
         public OperationInfo(string regionsContacted, 
@@ -74,6 +79,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string resource, 
             string consistency, 
             int? statusCode,
+            string subStatusCode,
             MetricInfo metricInfo)
         {
             this.RegionsContacted = regionsContacted;
@@ -84,6 +90,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.Resource = resource;
             this.Consistency = consistency;
             this.StatusCode = statusCode;
+            this.SubStatusCode = subStatusCode;
             this.MetricInfo = metricInfo;
         }
 
@@ -97,6 +104,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.Resource,
             this.Consistency,
             this.StatusCode,
+            this.SubStatusCode,
             null);
         }
 
@@ -111,6 +119,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             hash = (hash * 7) ^ (this.Operation == null ? 0 : this.Operation.GetHashCode());
             hash = (hash * 7) ^ (this.Resource == null ? 0 : this.Resource.GetHashCode());
             hash = (hash * 7) ^ (this.StatusCode == null ? 0 : this.StatusCode.GetHashCode());
+            hash = (hash * 7) ^ (this.SubStatusCode == null ? 0 : this.SubStatusCode.GetHashCode());
             return hash;
         }
 
@@ -124,7 +133,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                    ((this.ContainerName == null && payload.ContainerName == null) || (this.ContainerName != null && payload.ContainerName != null && this.ContainerName.Equals(payload.ContainerName))) &&
                    ((this.Operation == null && payload.Operation == null) || (this.Operation != null && payload.Operation != null && this.Operation.Equals(payload.Operation))) &&
                    ((this.Resource == null && payload.Resource == null) || (this.Resource != null && payload.Resource != null && this.Resource.Equals(payload.Resource))) &&
-                   ((this.StatusCode == null && payload.StatusCode == null) || (this.StatusCode != null && payload.StatusCode != null && this.StatusCode.Equals(payload.StatusCode)));
+                   ((this.StatusCode == null && payload.StatusCode == null) || (this.StatusCode != null && payload.StatusCode != null && this.StatusCode.Equals(payload.StatusCode))) &&
+                   ((this.SubStatusCode == null && payload.SubStatusCode == null) || (this.SubStatusCode != null && payload.SubStatusCode != null && this.SubStatusCode.Equals(payload.SubStatusCode)));
 
             return isequal;
         }

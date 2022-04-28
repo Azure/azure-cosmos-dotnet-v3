@@ -26,6 +26,9 @@ namespace CosmosBenchmark
         [JsonIgnore]
         public string Key { get; set; }
 
+        [Option(Required = false, HelpText = "Workload Name, it will override the workloadType value in published results")]
+        public string WorkloadName { get; set; }
+
         [Option(Required = false, HelpText = "Database to use")]
         public string Database { get; set; } = "db";
 
@@ -98,6 +101,12 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Enable Telemetry")]
         public bool EnableTelemetry { get; set; }
 
+        [Option(Required = false, HelpText = "Telemetry Schedule in Seconds")]
+        public int  TelemetryScheduleInSec { get; set; }
+
+        [Option(Required = false, HelpText = "Telemetry Endpoint")]
+        public string TelemetryEndpoint { get; set; }
+
         [Option(Required = false, HelpText = "Endpoint to publish results to")]
         public string ResultsEndpoint { get; set; }
 
@@ -140,7 +149,12 @@ namespace CosmosBenchmark
         internal static BenchmarkConfig From(string[] args)
         {
             BenchmarkConfig options = null;
-            Parser parser = new Parser((settings) => settings.CaseSensitive = false);
+            Parser parser = new Parser((settings) =>
+            {
+                settings.CaseSensitive = false;
+                settings.HelpWriter = Console.Error;
+                settings.AutoHelp = true;
+            });
             parser.ParseArguments<BenchmarkConfig>(args)
                 .WithParsed<BenchmarkConfig>(e => options = e)
                 .WithNotParsed<BenchmarkConfig>(e => BenchmarkConfig.HandleParseError(e));
@@ -160,20 +174,44 @@ namespace CosmosBenchmark
             return options;
         }
 
+        /// <summary>
+        /// Give each workload a unique user agent string
+        /// so the backend logs can be filtered by the workload.
+        /// </summary>
+        private string GetUserAgentPrefix()
+        {
+            return this.WorkloadName ?? this.WorkloadType ?? BenchmarkConfig.UserAgentSuffix;
+        }
+
         internal Microsoft.Azure.Cosmos.CosmosClient CreateCosmosClient(string accountKey)
         {
             Microsoft.Azure.Cosmos.CosmosClientOptions clientOptions = new Microsoft.Azure.Cosmos.CosmosClientOptions()
             {
-                ApplicationName = BenchmarkConfig.UserAgentSuffix,
+                ApplicationName = this.GetUserAgentPrefix(),
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
-                MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
-                EnableClientTelemetry = this.EnableTelemetry
+                MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint
             };
 
-            if(this.EnableTelemetry)
+            if (this.EnableTelemetry)
             {
-                Environment.SetEnvironmentVariable(Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
+                Environment.SetEnvironmentVariable(
+                    Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, 
+                    "true");
+
+                if (this.TelemetryScheduleInSec > 0)
+                {
+                    Environment.SetEnvironmentVariable(
+                        Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, 
+                        Convert.ToString(this.TelemetryScheduleInSec));
+                }
+
+                if (!string.IsNullOrEmpty(this.TelemetryEndpoint))
+                {
+                    Environment.SetEnvironmentVariable(
+                        Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, 
+                        this.TelemetryEndpoint);
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
@@ -203,7 +241,7 @@ namespace CosmosBenchmark
                                 ConnectionProtocol = Protocol.Tcp,
                                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
-                                UserAgentSuffix = BenchmarkConfig.UserAgentSuffix,
+                                UserAgentSuffix = this.GetUserAgentPrefix(),
                                 RetryOptions = new RetryOptions()
                                 {
                                     MaxRetryAttemptsOnThrottledRequests = 0

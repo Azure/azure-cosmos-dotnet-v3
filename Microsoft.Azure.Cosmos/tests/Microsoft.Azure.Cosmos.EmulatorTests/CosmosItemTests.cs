@@ -758,6 +758,84 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task PartitionKeyDeleteTestForSubpartitionedContainer()
+        {
+            string currentVersion = HttpConstants.Versions.CurrentVersion;
+            HttpConstants.Versions.CurrentVersion = "2020-07-15";
+            Cosmos.Database database = null;
+            try
+            {
+                CosmosClient client = TestCommon.CreateCosmosClient(true);
+                
+                database = await client.CreateDatabaseIfNotExistsAsync("mydb");
+                
+                ContainerProperties containerProperties = new ContainerProperties("subpartitionedcontainer", new List<string> { "/Country", "/City" });
+                Container container = await database.CreateContainerAsync(containerProperties);
+                ContainerInternal containerInternal = (ContainerInternal)container;
+
+                //Document create.
+                ItemResponse<Document>[] documents = new ItemResponse<Document>[5];
+                Document doc1 = new Document { Id = "document1" };
+                doc1.SetValue("Country", "USA");
+                doc1.SetValue("City", "Redmond");
+                documents[0] = await container.CreateItemAsync<Document>(doc1);
+
+                doc1 = new Document { Id = "document2" };
+                doc1.SetValue("Country", "USA");
+                doc1.SetValue("City", "Pittsburgh");
+                documents[1] = await container.CreateItemAsync<Document>(doc1);
+
+                doc1 = new Document { Id = "document3" };
+                doc1.SetValue("Country", "USA");
+                doc1.SetValue("City", "Stonybrook");
+                documents[2] = await container.CreateItemAsync<Document>(doc1);
+
+                doc1 = new Document { Id = "document4" };
+                doc1.SetValue("Country", "USA");
+                doc1.SetValue("City", "Stonybrook");
+                documents[3] = await container.CreateItemAsync<Document>(doc1);
+
+                doc1 = new Document { Id = "document5" };
+                doc1.SetValue("Country", "USA");
+                doc1.SetValue("City", "Stonybrook");
+                documents[4] = await container.CreateItemAsync<Document>(doc1);
+               
+                Cosmos.PartitionKey partitionKey1 = new PartitionKeyBuilder().Add("USA").Add("Stonybrook").Build();
+
+                using (ResponseMessage pKDeleteResponse = await containerInternal.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey1))
+                {
+                    Assert.AreEqual(pKDeleteResponse.StatusCode, HttpStatusCode.OK);
+                }
+                using (ResponseMessage readResponse = await containerInternal.ReadItemStreamAsync("document5", partitionKey1))
+                {
+                    Assert.AreEqual(readResponse.StatusCode, HttpStatusCode.NotFound);
+                    Assert.AreEqual(readResponse.Headers.SubStatusCode, SubStatusCodes.Unknown);
+                }
+
+                Cosmos.PartitionKey partitionKey2 = new PartitionKeyBuilder().Add("USA").Add("Pittsburgh").Build();
+                using (ResponseMessage readResponse = await containerInternal.ReadItemStreamAsync("document2", partitionKey2))
+                {
+                    Assert.AreEqual(readResponse.StatusCode, HttpStatusCode.OK);
+                }
+
+
+                //Specifying a partial partition key should fail
+                Cosmos.PartitionKey partialPartitionKey = new PartitionKeyBuilder().Add("USA").Build();
+                using (ResponseMessage pKDeleteResponse = await containerInternal.DeleteAllItemsByPartitionKeyStreamAsync(partialPartitionKey))
+                {
+                    Assert.AreEqual(pKDeleteResponse.StatusCode, HttpStatusCode.BadRequest);
+                    Assert.AreEqual(pKDeleteResponse.CosmosException.SubStatusCode, (int)SubStatusCodes.PartitionKeyMismatch);
+                    Assert.IsTrue(pKDeleteResponse.ErrorMessage.Contains("Partition key provided either doesn't correspond to definition in the collection or doesn't match partition key field values specified in the document."));
+                }
+            }
+            finally
+            {
+                HttpConstants.Versions.CurrentVersion = currentVersion;
+                if(database != null) await database.DeleteAsync();
+            }
+        }
+
+        [TestMethod]
         public async Task ItemCustomSerialzierTest()
         {
             DateTime createDateTime = DateTime.UtcNow;
@@ -1799,13 +1877,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Int16 one = 1;
 
             Assert.IsNull(testItem.children[1].pk);
-
             List<PatchOperation> patchOperations = new List<PatchOperation>()
             {
+                PatchOperation.Set("/children/0/description", "testSet"),
                 PatchOperation.Add("/children/1/pk", "patched"),
                 PatchOperation.Remove("/description"),
                 PatchOperation.Replace("/taskNum", newTaskNum),
                 //PatchOperation.Increment("/taskNum", one)
+
+                PatchOperation.Set<object>("/children/1/nullableInt",null)
             };
 
             // without content response
@@ -1830,13 +1910,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             Assert.IsNotNull(response.Resource);
+            Assert.AreEqual("testSet", response.Resource.children[0].description);
             Assert.AreEqual("patched", response.Resource.children[1].pk);
             Assert.IsNull(response.Resource.description);
             Assert.AreEqual(newTaskNum, response.Resource.taskNum);
+            Assert.IsNull(response.Resource.children[1].nullableInt);
 
             patchOperations.Clear();
             patchOperations.Add(PatchOperation.Add("/children/0/cost", 1));
-
+            //patchOperations.Add(PatchOperation.Set("/random", value));
             // with content response
             response = await containerInternal.PatchItemAsync<ToDoActivity>(
                 id: testItem.id,
@@ -1846,6 +1928,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             Assert.IsNotNull(response.Resource);
             Assert.AreEqual(1, response.Resource.children[0].cost);
+
+            patchOperations.Clear();
+            patchOperations.Add(PatchOperation.Set<object>("/children/0/id", null));
+            // with content response
+            response = await containerInternal.PatchItemAsync<ToDoActivity>(
+                id: testItem.id,
+                partitionKey: new Cosmos.PartitionKey(testItem.pk),
+                patchOperations: patchOperations);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsNotNull(response.Resource);
+            Assert.AreEqual(null, response.Resource.children[0].id);
         }
 
         [TestMethod]
@@ -2814,7 +2908,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(ex.StatusCode, HttpStatusCode.ServiceUnavailable);
                 CosmosTraceDiagnostics diagnostics = (CosmosTraceDiagnostics)ex.Diagnostics;
                 Assert.IsTrue(diagnostics.IsGoneExceptionHit());
-                Assert.IsFalse(string.IsNullOrEmpty(diagnostics.ToString()));
+                string diagnosticString = diagnostics.ToString();
+                Assert.IsFalse(string.IsNullOrEmpty(diagnosticString));
+                Assert.IsTrue(diagnosticString.Contains("ForceAddressRefresh"));
+                Assert.IsTrue(diagnosticString.Contains("No change to cache"));
             }
         }
 

@@ -111,17 +111,28 @@ namespace Microsoft.Azure.Cosmos
             ClientTelemetry telemetry = null;
             if (connectionPolicy.EnableClientTelemetry)
             {
-                telemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
-                     documentClient: documentClient,
-                     userAgent: connectionPolicy.UserAgentContainer.UserAgent,
-                     connectionMode: connectionPolicy.ConnectionMode,
-                     authorizationTokenProvider: cosmosClient.AuthorizationTokenProvider,
-                     diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
-                     preferredRegions: clientOptions.ApplicationPreferredRegions);
+                try
+                {
+                    telemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
+                        clientId: cosmosClient.Id,
+                        documentClient: documentClient,
+                        userAgent: connectionPolicy.UserAgentContainer.UserAgent,
+                        connectionMode: connectionPolicy.ConnectionMode,
+                        authorizationTokenProvider: cosmosClient.AuthorizationTokenProvider,
+                        diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
+                        preferredRegions: clientOptions.ApplicationPreferredRegions);
+
+                } 
+                catch (Exception ex)
+                {
+                    DefaultTrace.TraceInformation($"Error While starting Telemetry Job : {ex.Message}. Hence disabling Client Telemetry");
+                    connectionPolicy.EnableClientTelemetry = false;
+                }
+               
             } 
             else
             {
-                DefaultTrace.TraceInformation("Telemetry Disabled.");
+                DefaultTrace.TraceInformation("Client Telemetry Disabled.");
             }
 
             if (requestInvokerHandler == null)
@@ -436,9 +447,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (disposing)
                 {
+                    this.telemetry?.Dispose();
                     this.batchExecutorCache.Dispose();
                     this.DocumentClient.Dispose();
-                    this.telemetry?.Dispose();
                 }
 
                 this.isDisposed = true;

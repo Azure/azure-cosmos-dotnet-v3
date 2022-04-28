@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Overloaded. This method creates a query for stored procedures under a collection in an Azure Cosmos DB database using a SQL statement using a SQL statement with parameterized values. It returns an IQueryable{dynamic}.
+        /// Overloaded. This method creates a query for stored procedures under a collection in an Azure Cosmos DB database using a SQL statement with parameterized values. It returns an IQueryable{dynamic}.
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="SqlQuerySpec"/>.
         /// </summary>
         /// <param name="collectionLink">The link to the parent collection resource.</param>
