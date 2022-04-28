@@ -178,19 +178,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 }
                                 catch (DocumentClientException dce)
                                 {
-                                    ResponseMessage response = dce.ToCosmosResponseMessage(request);
-
                                     childTrace.OpenTelemetryAttributeRecorder.MarkFailed(dce);
-
-                                    return response;
+                                    return dce.ToCosmosResponseMessage(request);
                                 }
                                 catch (CosmosException ce)
                                 {
-                                    ResponseMessage response = ce.ToCosmosResponseMessage(request);
-
                                     childTrace.OpenTelemetryAttributeRecorder.MarkFailed(ce);
-
-                                    return response;
+                                    return ce.ToCosmosResponseMessage(request);
                                 }
                             }
                             else
@@ -215,11 +209,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             }
                             catch (CosmosException ex)
                             {
-                                ResponseMessage response = ex.ToCosmosResponseMessage(request);
-
                                 childTrace.OpenTelemetryAttributeRecorder.MarkFailed(ex);
-
-                                return response;
+                                return ex.ToCosmosResponseMessage(request);
                             }
 
                             PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync(childTrace);
@@ -236,11 +227,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                     subStatusCode: default,
                                     activityId: Guid.Empty.ToString(),
                                     requestCharge: default);
-                                ResponseMessage response = notFound.ToCosmosResponseMessage(request);
 
                                 childTrace.OpenTelemetryAttributeRecorder.MarkFailed(notFound);
-
-                                return response;
+                                return notFound.ToCosmosResponseMessage(request);
                             }
 
                             // For epk range filtering we can end up in one of 3 cases:
@@ -256,11 +245,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                     activityId: Guid.NewGuid().ToString(),
                                     requestCharge: default);
 
-                                ResponseMessage response = goneException.ToCosmosResponseMessage(request);
-
                                 childTrace.OpenTelemetryAttributeRecorder.MarkFailed(goneException);
-
-                                return response;
+                                return goneException.ToCosmosResponseMessage(request);
                             }
                             // overlappingRanges.Count == 1
                             else
