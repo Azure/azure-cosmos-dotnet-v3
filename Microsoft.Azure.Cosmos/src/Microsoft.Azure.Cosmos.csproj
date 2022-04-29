@@ -11,7 +11,7 @@
 		<ClientVersion Condition=" '$(IsPreview)' == 'true' ">$(ClientPreviewVersion)</ClientVersion>
 		<VersionSuffix Condition=" '$(IsNightly)' == 'true' ">nightly-$(CurrentDate)</VersionSuffix>
 		<VersionSuffix Condition=" '$(IsPreview)' == 'true' ">$(ClientPreviewSuffixVersion)</VersionSuffix>
-		<Version Condition=" '$(VersionSuffix)' == '' ">$(ClientVersion)</Version>
+		<Version Condition=" '$(VersionSuffix)' == '' ">$(ClientVersion)-pkid2</Version>
 		<Version Condition=" '$(VersionSuffix)' != '' ">$(ClientVersion)-$(VersionSuffix)</Version>
 		<FileVersion>$(ClientVersion)</FileVersion>
 		<Authors>Microsoft</Authors>
@@ -30,7 +30,7 @@
 		<PackageIcon>Icon.png</PackageIcon>
 		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<PlatformTarget>AnyCPU</PlatformTarget>
 		<ShippingScope>External</ShippingScope>

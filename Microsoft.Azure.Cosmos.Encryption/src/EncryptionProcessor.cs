@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using System.Net.Http.Headers;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal static class EncryptionProcessor
     {
-        private static readonly CosmosJsonDotNetSerializer BaseSerializer = new CosmosJsonDotNetSerializer(
+        public static readonly CosmosJsonDotNetSerializer BaseSerializer = new CosmosJsonDotNetSerializer(
             new JsonSerializerSettings()
             {
                 DateParseHandling = DateParseHandling.None,
@@ -43,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Else input stream will be disposed, and a new stream is returned.
         /// In case of an exception, input stream won't be disposed, but position will be end of stream.
         /// </remarks>
-        public static async Task<Stream> EncryptAsync(
+        public static async Task<(Stream, PartitionKey)> EncryptAsync(
             Stream input,
             EncryptionSettings encryptionSettings,
             EncryptionDiagnosticsContext operationDiagnostics,
@@ -80,14 +81,21 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     settingforProperty,
                     cancellationToken);
 
+                if (propertyName.Equals("id"))
+                {
+                    byte[] plainTextBytes = Encoding.UTF8.GetBytes((string)itemJObj["id"]);
+                    itemJObj["id"] = Convert.ToBase64String(plainTextBytes);
+                }
+
                 propertiesEncryptedCount++;
             }
 
+            PartitionKey partitionKey = new PartitionKey((string)itemJObj.Property(encryptionSettings.PartitionKeyPath.Substring(1)).Value);
             Stream result = EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
             input.Dispose();
 
             operationDiagnostics?.End(propertiesEncryptedCount);
-            return result;
+            return (result, partitionKey);
         }
 
         /// <remarks>
@@ -374,6 +382,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             int propertiesDecryptedCount = 0;
             foreach (string propertyName in encryptionSettings.PropertiesToEncrypt)
             {
+                if (propertyName.Equals("id") && document.Property(propertyName) != null)
+                {
+                    document["id"] = Encoding.UTF8.GetString(Convert.FromBase64String((string)document[propertyName]));
+                }
+
                 JProperty propertyToDecrypt = document.Property(propertyName);
                 if (propertyToDecrypt != null)
                 {

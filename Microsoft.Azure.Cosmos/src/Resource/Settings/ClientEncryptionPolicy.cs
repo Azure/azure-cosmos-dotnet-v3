@@ -104,8 +104,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             if (clientEncryptionIncludedPath.Path[0] != '/'
-                || clientEncryptionIncludedPath.Path.LastIndexOf('/') != 0
-                || string.Equals(clientEncryptionIncludedPath.Path.Substring(1), "id"))
+                || clientEncryptionIncludedPath.Path.LastIndexOf('/') != 0)
             {
                 throw new ArgumentException($"Invalid path '{clientEncryptionIncludedPath.Path ?? string.Empty}'.");
             }

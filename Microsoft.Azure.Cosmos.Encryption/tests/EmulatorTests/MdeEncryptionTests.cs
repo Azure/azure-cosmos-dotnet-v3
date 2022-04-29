@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
                 new ClientEncryptionIncludedPath()
                 {
-                    Path = "/Sensitive_IntArray",
+                    Path = "/id",
                     ClientEncryptionKeyId = "key2",
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
@@ -256,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 MdeEncryptionTests.MdeUpsertItemAsync(encryptionContainerWithBulk, TestDoc.Create(), HttpStatusCode.Created),
                 MdeEncryptionTests.MdeReplaceItemAsync(encryptionContainerWithBulk, docToReplace),
                 MdeEncryptionTests.MdeUpsertItemAsync(encryptionContainerWithBulk, docToUpsert, HttpStatusCode.OK),
-                MdeEncryptionTests.MdeDeleteItemAsync(encryptionContainerWithBulk, docToDelete)
+                //MdeEncryptionTests.MdeDeleteItemAsync(encryptionContainerWithBulk, docToDelete)
             };
 
             await Task.WhenAll(tasks);
@@ -502,7 +502,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc testDoc = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
 
             TestDoc testDoc2 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
-
+#if true
             await MdeEncryptionTests.VerifyItemByReadAsync(MdeEncryptionTests.encryptionContainer, testDoc);
 
             await MdeEncryptionTests.VerifyItemByReadStreamAsync(MdeEncryptionTests.encryptionContainer, testDoc2);
@@ -513,18 +513,36 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 MdeEncryptionTests.encryptionContainer,
                 query: null,
                 expectedDoc);
-
+#endif
+            //TestDoc expectedDoc = new TestDoc(testDoc);
             await MdeEncryptionTests.ValidateQueryResultsAsync(
                 MdeEncryptionTests.encryptionContainer,
                 "SELECT * FROM c",
                 expectedDoc);
 
+            QueryDefinition withEncryptedParameter = MdeEncryptionTests.encryptionContainer.CreateQueryDefinition(
+                  "select * from c where c.id = @theId and c.PK = @thePK");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@theId",
+                    expectedDoc.Id,
+                    "/id");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@thePK",
+                    expectedDoc.PK,
+                    "/PK");
+
+            await MdeEncryptionTests.ValidateQueryResultsAsync(
+                MdeEncryptionTests.encryptionContainer,
+                queryDefinition: withEncryptedParameter,
+                expectedDoc: expectedDoc);
+
             await MdeEncryptionTests.ValidateQueryResultsAsync(
                 MdeEncryptionTests.encryptionContainer,
                 string.Format(
-                    "SELECT * FROM c where c.PK = '{0}' and c.id = '{1}' and c.NonSensitive = '{2}'",
+                    "SELECT * FROM c where c.PK = '{0}' and c.NonSensitive = '{1}'",
                     expectedDoc.PK,
-                    expectedDoc.Id,
                     expectedDoc.NonSensitive),
                 expectedDoc);
 
@@ -532,14 +550,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 MdeEncryptionTests.encryptionContainer,
                 string.Format("SELECT * FROM c where c.Sensitive_IntFormat = '{0}'", testDoc.Sensitive_IntFormat),
                 expectedDoc: null);
-
-            await MdeEncryptionTests.ValidateQueryResultsAsync(
-                MdeEncryptionTests.encryptionContainer,
-                queryDefinition: new QueryDefinition(
-                    "select * from c where c.id = @theId and c.PK = @thePK")
-                         .WithParameter("@theId", expectedDoc.Id)
-                         .WithParameter("@thePK", expectedDoc.PK),
-                expectedDoc: expectedDoc);
 
             expectedDoc.Sensitive_IntMultiDimArray = null;
             expectedDoc.Sensitive_ArrayMultiTypes = null;
@@ -2054,7 +2064,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 docPostPatching,
                 HttpStatusCode.OK);
 
-            VerifyDiagnostics(patchResponse.Diagnostics, expectedPropertiesEncryptedCount: 8);
+            VerifyDiagnostics(patchResponse.Diagnostics, expectedPropertiesEncryptedCount: 7);
 
             docPostPatching.Sensitive_ArrayFormat = new TestDoc.Sensitive_ArrayData[]
             {
