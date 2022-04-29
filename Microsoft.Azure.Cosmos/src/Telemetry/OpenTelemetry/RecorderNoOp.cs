@@ -7,8 +7,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     using System;
     using Microsoft.Azure.Cosmos.Tracing;
 
-    internal class RecorderNoOp : IRecorder
+    internal sealed class RecorderNoOp : IRecorder
     {
+        public static readonly RecorderNoOp Singleton = new RecorderNoOp();
+
         public override void Dispose()
         {
             // NoOp

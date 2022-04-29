@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             }
 #endif
 
-            return new RecorderNoOp();
+            return RecorderNoOp.Singleton;
         }
     }
 }

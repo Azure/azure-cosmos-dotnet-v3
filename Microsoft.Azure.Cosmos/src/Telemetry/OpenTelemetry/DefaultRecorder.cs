@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
 
-    internal class DefaultRecorder : IRecorder
+    internal sealed class DefaultRecorder : IRecorder
     {
         private readonly DiagnosticScope scope;
 
