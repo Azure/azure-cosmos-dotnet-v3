@@ -13,7 +13,7 @@
     <PackageReference Include="Microsoft.ApplicationInsights.WindowsServer" Version="2.21.0-beta1-build00217" />
     <PackageReference Include="Microsoft.ApplicationInsights.WindowsServer.TelemetryChannel" Version="2.21.0-beta1-build00217" />
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.21.0-beta1-build00217" />
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.26.234" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.26.890" />
     <PackageReference Include="Microsoft.Extensions.Logging.ApplicationInsights" Version="2.21.0-beta1-build00217" />
   </ItemGroup>
 

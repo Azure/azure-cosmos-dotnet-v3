@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -119,6 +120,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 DocumentServiceResponse response = null;
                 try
                 {
+                    using ICosmosInstrumentation cosmosInstrumentation = CosmosInstrumentationFactory.Get("Cosmos.TransportRequest");
+
+                    cosmosInstrumentation.Record("Uri", serviceRequest.RequestContext.LocationEndpointToRoute);
+                    cosmosInstrumentation.Record("Region", serviceRequest.RequestContext.RegionName);
+
                     response = await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
                 }
                 finally

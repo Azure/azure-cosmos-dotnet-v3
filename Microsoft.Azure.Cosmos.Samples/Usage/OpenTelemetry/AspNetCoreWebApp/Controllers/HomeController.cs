@@ -31,7 +31,7 @@
         {
             Task.Run(async () =>
             {
-                Container container = await this.CreateClientAndContainer(ConnectionMode.Gateway);
+                Container container = await this.CreateClientAndContainer(ConnectionMode.Direct);
                 // Create an item
                 ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
                 ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(testItem);
