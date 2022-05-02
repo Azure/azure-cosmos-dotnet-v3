@@ -309,6 +309,10 @@
       "ContactedReplicas": [
         {
           "Count": 1,
+          "Uri": "http://someuri1.com/"
+        },
+        {
+          "Count": 1,
           "Uri": "http://someuri2.com/"
         }
       ],
@@ -770,7 +774,7 @@
 └── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
         (
             [System Info]
-            {"systemHistory":[{"dateUtc":"0001-01-01T00:00:00.0000000","cpu":42.000,"memory":1000.000,"threadInfo":{"isThreadStarving":"no info"}},{"dateUtc":"0001-01-01T00:00:00.0000000","cpu":23.000,"memory":9000.000,"threadInfo":{"isThreadStarving":"no info"}}]}
+            {"systemHistory":[{"dateUtc":"0001-01-01T00:00:00.0000000","cpu":42.000,"memory":1000.000,"threadInfo":{"isThreadStarving":"no info"},"numberOfOpenTcpConnection":0},{"dateUtc":"0001-01-01T00:00:00.0000000","cpu":23.000,"memory":9000.000,"threadInfo":{"isThreadStarving":"no info"},"numberOfOpenTcpConnection":0}]}
         )
 ]]></Text>
       <Json><![CDATA[{
@@ -788,7 +792,8 @@
           "memory": 1000.0,
           "threadInfo": {
             "isThreadStarving": "no info"
-          }
+          },
+          "numberOfOpenTcpConnection": 0
         },
         {
           "dateUtc": "0001-01-01T00:00:00",
@@ -796,7 +801,8 @@
           "memory": 9000.0,
           "threadInfo": {
             "isThreadStarving": "no info"
-          }
+          },
+          "numberOfOpenTcpConnection": 0
         }
       ]
     }

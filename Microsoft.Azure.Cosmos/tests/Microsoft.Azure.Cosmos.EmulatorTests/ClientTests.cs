@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -78,17 +79,37 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task InitTaskThreadSafe()
         {
             int httpCallCount = 0;
+            int metadataCallCount = 0;
             bool delayCallBack = true;
+
+            var isInitializedField = typeof(VmMetadataApiHandler).GetField("isInitialized",
+               BindingFlags.Static |
+               BindingFlags.NonPublic);
+            isInitializedField.SetValue(null, false);
+
+            var azMetadataField = typeof(VmMetadataApiHandler).GetField("azMetadata",
+               BindingFlags.Static |
+               BindingFlags.NonPublic);
+            azMetadataField.SetValue(null, null);
+
             HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
             {
                 RequestCallBack = async (request, cancellToken) =>
                 {
-                    Interlocked.Increment(ref httpCallCount);
+                    if(request.RequestUri.AbsoluteUri ==  VmMetadataApiHandler.vmMetadataEndpointUrl.AbsoluteUri)
+                    {
+                        Interlocked.Increment(ref metadataCallCount);
+                    } 
+                    else
+                    {
+                        Interlocked.Increment(ref httpCallCount);
+                    }
+                    
                     while (delayCallBack)
                     {
                         await Task.Delay(TimeSpan.FromMilliseconds(100));
                     }
-                    
+
                     return null;
                 }
             };
@@ -105,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Container container = cosmosClient.GetContainer("db", "c");
 
-            for(int loop = 0; loop < 3; loop++)
+            for (int loop = 0; loop < 3; loop++)
             {
                 for (int i = 0; i < 10; i++)
                 {
@@ -123,6 +144,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 await Task.WhenAll(tasks);
 
+                Assert.AreEqual(1, metadataCallCount, "Only one call for VM Metadata call with be made");
                 Assert.AreEqual(1, httpCallCount, "Only the first task should do the http call. All other should wait on the first task");
 
                 // Reset counters and retry the client to verify a new http call is done for new requests
@@ -182,6 +204,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Console.WriteLine("Expected exception while deserializing Resource: " + ex.Message);
                 }
             }
+        }
+
+        [TestMethod]
+        public async Task TestHeadersPassedinByClient()
+        {
+            int httpCallCount = 0;
+            IEnumerable<string> sdkSupportedCapabilities = null;
+            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
+            {
+                RequestCallBack = (request, cancellToken) =>
+                {
+                    Interlocked.Increment(ref httpCallCount);
+                    request.Headers.TryGetValues(HttpConstants.HttpHeaders.SDKSupportedCapabilities, out sdkSupportedCapabilities);
+                    return null;
+                }
+            };
+
+            using CosmosClient cosmosClient = new CosmosClient(
+                accountEndpoint: "https://localhost:8081",
+                authKeyOrResourceToken: Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
+                clientOptions: new CosmosClientOptions()
+                {
+                    HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
+                });
+
+            CosmosException cosmosException1 = null;
+            try
+            {
+                await cosmosClient.GetContainer("db", "c").ReadItemAsync<JObject>("Random", new Cosmos.PartitionKey("DoesNotExist"));
+            }
+            catch (CosmosException ex)
+            {
+                cosmosException1 = ex;
+                Assert.IsTrue(httpCallCount > 0);
+            }
+
+            Assert.IsNotNull(sdkSupportedCapabilities);
+            Assert.AreEqual(1, sdkSupportedCapabilities.Count());
+
+            string sdkSupportedCapability = sdkSupportedCapabilities.Single();
+            ulong capability = ulong.Parse(sdkSupportedCapability);
+
+            Assert.AreEqual((ulong)SDKSupportedCapabilities.PartitionMerge, capability & (ulong)SDKSupportedCapabilities.PartitionMerge,$" received header value as {sdkSupportedCapability}");
         }
 
         [TestMethod]

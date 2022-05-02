@@ -4,10 +4,12 @@
     <AssemblyName>Microsoft.Azure.Cosmos.Encryption</AssemblyName>
     <RootNamespace>Microsoft.Azure.Cosmos.Encryption</RootNamespace>
     <LangVersion>$(LangVersion)</LangVersion>
-    <IsPreview>true</IsPreview>
-    
+    <EncryptionVersion Condition=" '$(IsPreview)' != 'true' ">$(EncryptionOfficialVersion)</EncryptionVersion>
+    <EncryptionVersion Condition=" '$(IsPreview)' == 'true' ">$(EncryptionPreviewVersion)</EncryptionVersion>
+    <EncryptionVersionSuffix Condition=" '$(IsPreview)' == 'true' ">$(EncryptionPreviewSuffixVersion)</EncryptionVersionSuffix>
+    <Version Condition=" '$(EncryptionVersionSuffix)' == '' ">$(EncryptionVersion)</Version>
+    <Version Condition=" '$(EncryptionVersionSuffix)' != '' ">$(EncryptionVersion)-$(EncryptionVersionSuffix)</Version>
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
-    <Version>$(EncryptionVersion)</Version>
     <Company>Microsoft Corporation</Company>
     <Authors>Microsoft</Authors>
     <Description>This library provides an implementation for client-side encryption for Azure Cosmos's SQL API. For more information, refer to https://aka.ms/CosmosClientEncryption</Description>
@@ -18,24 +20,28 @@
     <PackageLicenseUrl>https://aka.ms/netcoregaeula</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/Azure/azure-cosmos-dotnet-v3</PackageProjectUrl>
     <PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=288890</PackageIconUrl>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageTags>microsoft;azure;cosmos;cosmosdb;documentdb;docdb;nosql;azureofficial;dotnetcore;netcore;netstandard;client;encryption;byok</PackageTags>
   </PropertyGroup>
   <ItemGroup>
     <AdditionalFiles Include="..\..\Microsoft.Azure.Cosmos\src\stylecop.json" Link="stylecop.json" />
   </ItemGroup>
 	
-	<ItemGroup Condition=" '$(SdkProjectRef)' != 'True' ">
-		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.23.0-preview" />
-	</ItemGroup>
+  <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' != 'True' ">
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="[3.26.0,3.27)" />
+  </ItemGroup>
 
-	<ItemGroup Condition=" '$(SdkProjectRef)' == 'True' ">
-		<ProjectReference Include="..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
-	</ItemGroup>
-	
+  <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' == 'True' ">
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.26.0-preview" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(SdkProjectRef)' == 'True' ">
+    <ProjectReference Include="..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
-     <PackageReference Include="Azure.Core" Version="1.19.0" />
-     <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.1.0" />
-     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />     
+    <PackageReference Include="Azure.Core" Version="1.19.0" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
   </ItemGroup>
 
   <ItemGroup>
@@ -54,14 +60,13 @@
   <ItemGroup>
     <PackageReference Include="System.Text.Encoding.CodePages" Version="5.0.0" />
   </ItemGroup>
-  
   <PropertyGroup>
     <SigningType>Product</SigningType>
     <SignAssembly>true</SignAssembly>
     <DelaySign>true</DelaySign>
     <AssemblyOriginatorKeyFile>..\..\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
-  
+
   <PropertyGroup Condition=" '$(SdkProjectRef)' == 'True' ">
     <DefineConstants>$(DefineConstants);SDKPROJECTREF</DefineConstants>
   </PropertyGroup>

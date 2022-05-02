@@ -28,6 +28,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         private readonly CosmosClient client;
         private readonly Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
 
+        private bool? IsLocalQuorumConsistency;
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
 
         public RequestInvokerHandler(
@@ -35,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Cosmos.ConsistencyLevel? requestedClientConsistencyLevel)
         {
             this.client = client;
-            this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;
+            this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;       
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -154,6 +155,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         RequestOptions = requestOptions,
                         Content = streamPayload,
                     };
+
+                    request.Headers[HttpConstants.HttpHeaders.SDKSupportedCapabilities] = Headers.SDKSupportedCapabilities;
 
                     if (feedRange != null)
                     {
@@ -354,10 +357,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
 
+        /// <summary>
+        /// Validate the request consistency compatibility with account consistency
+        /// Type based access context for requested consistency preferred for performance
+        /// </summary>
+        /// <param name="requestMessage"></param>
+        /// <exception cref="ArgumentException">In case, Invalid consistency is passed</exception>
         private async Task ValidateAndSetConsistencyLevelAsync(RequestMessage requestMessage)
         {
-            // Validate the request consistency compatibility with account consistency
-            // Type based access context for requested consistency preferred for performance
             Cosmos.ConsistencyLevel? consistencyLevel = null;
             RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
             if (promotedRequestOptions != null && promotedRequestOptions.BaseConsistencyLevel.HasValue)
@@ -376,7 +383,17 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     this.AccountConsistencyLevel = await this.client.GetAccountConsistencyLevelAsync();
                 }
 
-                if (ValidationHelpers.IsValidConsistencyLevelOverwrite(this.AccountConsistencyLevel.Value, consistencyLevel.Value))
+                if (!this.IsLocalQuorumConsistency.HasValue)
+                {
+                    this.IsLocalQuorumConsistency = this.client.ClientOptions.EnableUpgradeConsistencyToLocalQuorum;
+                }
+
+                if (ValidationHelpers.IsValidConsistencyLevelOverwrite(
+                            backendConsistency: this.AccountConsistencyLevel.Value, 
+                            desiredConsistency: consistencyLevel.Value,
+                            isLocalQuorumConsistency: this.IsLocalQuorumConsistency.Value,
+                            operationType: requestMessage.OperationType,
+                            resourceType: requestMessage.ResourceType))
                 {
                     // ConsistencyLevel compatibility with back-end configuration will be done by RequestInvokeHandler
                     requestMessage.Headers.Add(HttpConstants.HttpHeaders.ConsistencyLevel, consistencyLevel.Value.ToString());

@@ -119,9 +119,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 DocumentServiceResponse response = null;
                 try
                 {
-                    response = request.OperationType == OperationType.Upsert
-                       ? await this.ProcessUpsertAsync(storeProxy, serviceRequest, cancellationToken)
-                       : await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
+                    response = await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
                 }
                 finally
                 {
@@ -150,13 +148,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             return null;
-        }
-
-        private async Task<DocumentServiceResponse> ProcessUpsertAsync(IStoreModel storeProxy, DocumentServiceRequest serviceRequest, CancellationToken cancellationToken)
-        {
-            DocumentServiceResponse response = await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
-            this.client.DocumentClient.CaptureSessionToken(serviceRequest, response);
-            return response;
         }
     }
 }
