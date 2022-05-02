@@ -22,13 +22,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 try
                 {
-                clientId: cosmosClient.Id,
+/*                clientId: cosmosClient.Id,
                         documentClient: documentClient,
                         userAgent: connectionPolicy.UserAgentContainer.UserAgent,
                         connectionMode: connectionPolicy.ConnectionMode,
                         authorizationTokenProvider: cosmosClient.AuthorizationTokenProvider,
                         preferredRegions: clientOptions.ApplicationPreferredRegions
-
+*/
                     ClientTelemetry.Collect(
                                 cosmosDiagnostics: response.Diagnostics,
                                 statusCode: response.StatusCode,
