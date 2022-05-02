@@ -8,13 +8,15 @@
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    [Ignore]
     [TestClass]
     public class ContentSerializationPerformanceTests
     {
         private const string RawDataFileName = "ContentSerializationPerformanceTestsRawData.csv";
+        private const string DiagnosticsDataFileName = "ContentSerializationPerformanceTestsDiagnosticsData.txt";
 
         private readonly QueryStatisticsDatumVisitor queryStatisticsDatumVisitor;
+        private readonly string endpoint;
+        private readonly string authKey;
         private readonly string cosmosDatabaseId;
         private readonly string containerId;
         private readonly string contentSerialization;
@@ -29,6 +31,8 @@
         public ContentSerializationPerformanceTests()
         {
             this.queryStatisticsDatumVisitor = new();
+            this.endpoint = System.Configuration.ConfigurationManager.AppSettings["GatewayEndpoint"];
+            this.authKey = System.Configuration.ConfigurationManager.AppSettings["MasterKey"];
             this.cosmosDatabaseId = System.Configuration.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.CosmosDatabaseId"];
             this.containerId = System.Configuration.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.ContainerId"];
             this.contentSerialization = System.Configuration.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.ContentSerialization"];
@@ -44,9 +48,7 @@
         [TestMethod]
         public async Task ConnectEndpoint()
         {
-            string endpoint = System.Configuration.ConfigurationManager.AppSettings["GatewayEndpoint"];
-            string authKey = System.Configuration.ConfigurationManager.AppSettings["MasterKey"];
-            using (CosmosClient client = new CosmosClient(endpoint, authKey,
+            using (CosmosClient client = new CosmosClient(this.endpoint, this.authKey,
                 new CosmosClientOptions
                 {
                     ConnectionMode = ConnectionMode.Direct
@@ -112,25 +114,30 @@
         {
             MetricsAccumulator metricsAccumulator = new MetricsAccumulator();
             Stopwatch totalTime = new Stopwatch();
-            Stopwatch captureTraceTime = new Stopwatch();
+            Stopwatch getTraceTime = new Stopwatch();
+            string diagDataPath = Path.GetFullPath(DiagnosticsDataFileName);
             while (feedIterator.HasMoreResults)
             {
                 totalTime.Start();
                 FeedResponse<T> response = await feedIterator.ReadNextAsync();
                 {
-                    captureTraceTime.Start();
+                    getTraceTime.Start();
                     if (response.RequestCharge != 0)
                     {
+                        using (TextWriter outputFile = new StreamWriter(diagDataPath, true))
+                        {
+                            outputFile.WriteLine(response.Diagnostics.ToString());
+                        }
                         metricsAccumulator.ReadFromTrace(response, this.queryStatisticsDatumVisitor);
                     }
 
-                    captureTraceTime.Stop();
+                    getTraceTime.Stop();
                 }
 
                 totalTime.Stop();
             }
 
-            this.queryStatisticsDatumVisitor.AddEndToEndTime(totalTime.ElapsedMilliseconds - captureTraceTime.ElapsedMilliseconds);
+            this.queryStatisticsDatumVisitor.AddEndToEndTime(totalTime.ElapsedMilliseconds - getTraceTime.ElapsedMilliseconds);
         }
     }
 }

@@ -1,6 +1,5 @@
 ﻿namespace Microsoft.Azure.Cosmos.Tests
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -13,18 +12,21 @@
         private const int NumberOfEvents = 6;
 
         private readonly List<QueryMetrics> queryMetricsList;
+        private readonly List<QueryMetrics> badRequestMetricsList;
         private QueryMetrics queryMetrics;
 
         public QueryStatisticsDatumVisitor()
         {
             this.queryMetricsList = new();
+            this.badRequestMetricsList = new();
             this.queryMetrics = new();
         }
         public IReadOnlyList<QueryMetrics> QueryMetricsList => this.queryMetricsList;
+        public IReadOnlyList<QueryMetrics> BadRequestMetricsList => this.badRequestMetricsList;
 
-        public void AddEndToEndTime(double time)
+        public void AddEndToEndTime(double totalTime)
         {
-            this.queryMetrics.EndToEndTime = time;
+            this.queryMetrics.EndToEndTime = totalTime;
         }
 
         public void AddPocoTime(double time)
@@ -84,6 +86,8 @@
                                     break;
                             }
                         }
+
+                        this.PopulateMetrics();
                     }
                     else if (storeResponse.StoreResult.StatusCode != StatusCodes.Ok)
                     {
@@ -115,10 +119,10 @@
                                     break;
                             }
                         }
+
+                        this.badRequestMetricsList.Add(this.queryMetrics);
                     }
                 }
-
-                this.PopulateMetrics();
             }
         }
 
