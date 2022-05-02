@@ -131,6 +131,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     cancellationToken);
                 cosmosQueryContext.ContainerResourceId = containerQueryProperties.ResourceId;
 
+                inputParameters.SqlQuerySpec.PassThrough = IsPassThroughCandidate(inputParameters, queryPlanFromContinuationToken);
+
+                if (inputParameters.SqlQuerySpec.PassThrough)
+                {
+                    //TODO: Add new pass through pipeline code here 
+                }
+
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
                 if (inputParameters.ForcePassthrough)
                 {
@@ -233,7 +240,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     }
                 }
 
-                return await TryCreateFromPartitionedQuerExecutionInfoAsync(
+                return await TryCreateFromPartitionedQueryExecutionInfoAsync(
                     documentContainer,
                     partitionedQueryExecutionInfo,
                     containerQueryProperties,
@@ -244,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
         }
 
-        public static async Task<TryCatch<IQueryPipelineStage>> TryCreateFromPartitionedQuerExecutionInfoAsync(
+        public static async Task<TryCatch<IQueryPipelineStage>> TryCreateFromPartitionedQueryExecutionInfoAsync(
             DocumentContainer documentContainer,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             ContainerQueryProperties containerQueryProperties,
@@ -266,7 +273,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             bool singleLogicalPartitionKeyQuery = inputParameters.PartitionKey.HasValue
                 || ((partitionedQueryExecutionInfo.QueryRanges.Count == 1)
-                    && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
+                && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
             bool serverStreamingQuery = !partitionedQueryExecutionInfo.QueryInfo.HasAggregates
                 && !partitionedQueryExecutionInfo.QueryInfo.HasDistinct
                 && !partitionedQueryExecutionInfo.QueryInfo.HasGroupBy;
@@ -280,10 +287,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 && !partitionedQueryExecutionInfo.QueryInfo.HasOffset;
             bool streamingCrossContinuationQuery = !singleLogicalPartitionKeyQuery && clientStreamingQuery;
 
-            bool createPassthoughQuery = streamingSinglePartitionQuery || streamingCrossContinuationQuery;
-
+            bool createPassthroughQuery = streamingSinglePartitionQuery || streamingCrossContinuationQuery;
+            
             TryCatch<IQueryPipelineStage> tryCreatePipelineStage;
-            if (createPassthoughQuery)
+
+            // After getting the Query Plan if we find out that the query is single logical partition, then short circuit and send straight to Backend
+            inputParameters.SqlQuerySpec.PassThrough = IsPassThroughCandidate(inputParameters, partitionedQueryExecutionInfo);
+
+            if (inputParameters.SqlQuerySpec.PassThrough)
+            {
+                //TODO: Add new pass through pipeline code here 
+            }
+
+            if (createPassthroughQuery)
             {
                 TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
                 if (responseStats != null)
@@ -531,6 +547,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
 
             return partitionKeyDefinition;
+        }
+
+        private static bool IsPassThroughCandidate(InputParameters inputParameters, PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
+        {
+            // case 1: Is query going to a single partition
+            bool hasPartitionKey = inputParameters.PartitionKey.HasValue
+                && inputParameters.PartitionKey != PartitionKey.Null
+                && inputParameters.PartitionKey != PartitionKey.None;
+
+            if (hasPartitionKey) return true;
+            
+            // case 2: does query execution plan have a single query range
+            if (partitionedQueryExecutionInfo != null)
+            {
+                bool hasQueryRanges = (partitionedQueryExecutionInfo.QueryRanges.Count == 1)
+                && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue;
+
+                if (hasQueryRanges) return hasQueryRanges;
+            }
+        
+            // TODO: case 3: does collection have only one physical partition
+
+            return false;
         }
 
         public sealed class InputParameters
