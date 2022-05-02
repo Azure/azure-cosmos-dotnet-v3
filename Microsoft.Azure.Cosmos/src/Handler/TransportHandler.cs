@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
                 finally
                 {
-                    processMessageAsyncTrace.Summary.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum);
+                    processMessageAsyncTrace.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum);
                 }
                
                 return response.ToCosmosResponseMessage(
