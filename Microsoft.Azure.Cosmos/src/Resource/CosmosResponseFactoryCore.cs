@@ -73,9 +73,12 @@ namespace Microsoft.Azure.Cosmos
         private FeedResponse<T> CreateChangeFeedResponseHelper<T>(
             ResponseMessage cosmosResponseMessage)
         {
-            return ReadFeedResponse<T>.CreateResponse<T>(
+            using (cosmosResponseMessage.Trace.StartChild("ChangeFeed Response Serialization"))
+            {
+                return ReadFeedResponse<T>.CreateResponse<T>(
                        cosmosResponseMessage,
                        this.serializerCore);
+            }
         }
 
         public override ItemResponse<T> CreateItemResponse<T>(

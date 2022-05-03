@@ -1272,7 +1272,8 @@
     │   │                                               Redacted To Not Change The Baselines From Run To Run
     │   │                                           )
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
@@ -1299,7 +1300,8 @@
     │   │                                           Redacted To Not Change The Baselines From Run To Run
     │   │                                       )
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
@@ -1326,7 +1328,8 @@
     │   │                                           Redacted To Not Change The Baselines From Run To Run
     │   │                                       )
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
@@ -1353,7 +1356,8 @@
         │                                           Redacted To Not Change The Baselines From Run To Run
         │                                       )
         ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-        └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+        ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+        └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -1582,6 +1586,12 @@
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
+        },
+        {
+          "name": "ChangeFeed Response Serialization",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0
         }
       ]
     },
@@ -1696,6 +1706,12 @@
         },
         {
           "name": "Get Collection Cache",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0
+        },
+        {
+          "name": "ChangeFeed Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -1816,6 +1832,12 @@
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
+        },
+        {
+          "name": "ChangeFeed Response Serialization",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0
         }
       ]
     },
@@ -1930,6 +1952,12 @@
         },
         {
           "name": "Get Collection Cache",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0
+        },
+        {
+          "name": "ChangeFeed Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -2748,7 +2776,8 @@
     │   │                                               Redacted To Not Change The Baselines From Run To Run
     │   │                                           )
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
@@ -2775,7 +2804,8 @@
     │   │                                           Redacted To Not Change The Baselines From Run To Run
     │   │                                       )
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
@@ -2802,7 +2832,8 @@
     │   │                                           Redacted To Not Change The Baselines From Run To Run
     │   │                                       )
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
@@ -2829,7 +2860,8 @@
         │                                           Redacted To Not Change The Baselines From Run To Run
         │                                       )
         ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-        └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+        ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+        └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -3058,6 +3090,12 @@
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
+        },
+        {
+          "name": "ChangeFeed Response Serialization",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0
         }
       ]
     },
@@ -3172,6 +3210,12 @@
         },
         {
           "name": "Get Collection Cache",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0
+        },
+        {
+          "name": "ChangeFeed Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -3292,6 +3336,12 @@
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
+        },
+        {
+          "name": "ChangeFeed Response Serialization",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0
         }
       ]
     },
@@ -3406,6 +3456,12 @@
         },
         {
           "name": "Get Collection Cache",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0
+        },
+        {
+          "name": "ChangeFeed Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
