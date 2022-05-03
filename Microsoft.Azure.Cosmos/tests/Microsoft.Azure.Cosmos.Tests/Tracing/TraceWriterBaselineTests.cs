@@ -806,7 +806,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
         private static QueryInfo GetQueryPlan(string query)
         {
             TryCatch<PartitionedQueryExecutionInfoInternal> info = QueryPartitionProviderTestInstance.Object.TryGetPartitionedQueryExecutionInfoInternal(
-                new SqlQuerySpec(query),
+                Newtonsoft.Json.JsonConvert.SerializeObject(new SqlQuerySpec(query)),
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: false,

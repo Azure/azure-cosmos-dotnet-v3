@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             QueryPartitionProvider queryPartitionProvider = await this.Client.GetQueryPartitionProviderAsync();
             TryCatch<PartitionedQueryExecutionInfo> tryGetPartitionedQueryExecutionInfo = queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
-                querySpec: this.QuerySpec,
+                querySpecJsonString: JsonConvert.SerializeObject(this.QuerySpec),
                 partitionKeyDefinition: partitionKeyDefinition,
                 requireFormattableOrderByQuery: requireFormattableOrderByQuery,
                 isContinuationExpected: isContinuationExpected,
