@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
                 HttpConstants.HttpMethods.Get,
                 AuthorizationTokenType.PrimaryMasterKey);
 
-            using (ITrace trace = Trace.GetRootTrace("Account Read", TraceComponent.Transport, TraceLevel.Info))
+            using (ITrace trace = Trace.GetRootTrace("Account Read Exception", TraceComponent.Transport, TraceLevel.Info))
             {
                 IClientSideRequestStatistics stats = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary);
 
