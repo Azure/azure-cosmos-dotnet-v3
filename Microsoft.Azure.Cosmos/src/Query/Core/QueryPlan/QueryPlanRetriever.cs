@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         public static async Task<PartitionedQueryExecutionInfo> GetQueryPlanWithServiceInteropAsync(
             CosmosQueryClient queryClient,
             SqlQuerySpec sqlQuerySpec,
+            Documents.ResourceType resourceType,
             PartitionKeyDefinition partitionKeyDefinition,
             bool hasLogicalPartitionKey,
             ITrace trace,
@@ -62,6 +63,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
                 TryCatch<PartitionedQueryExecutionInfo> tryGetQueryPlan = await queryPlanHandler.TryGetQueryPlanAsync(
                     sqlQuerySpec,
+                    resourceType,
                     partitionKeyDefinition,
                     QueryPlanRetriever.SupportedQueryFeatures,
                     hasLogicalPartitionKey,
