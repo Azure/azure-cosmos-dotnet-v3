@@ -25,7 +25,6 @@
         private readonly int warmupIterations;
         private readonly int MaxConcurrency;
         private readonly int MaxItemCount;
-        private readonly bool appendRawDataToFile;
         private readonly bool useStronglyTypedIterator;
 
         public ContentSerializationPerformanceTests()
@@ -41,7 +40,6 @@
             this.warmupIterations = int.Parse(System.Configuration.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.WarmupIterations"]);
             this.MaxConcurrency = int.Parse(System.Configuration.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.MaxConcurrency"]);
             this.MaxItemCount = int.Parse(System.Configuration.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.MaxItemCount"]);
-            this.appendRawDataToFile = bool.Parse(System.Configuration.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.AppendRawDataToFile"]);
             this.useStronglyTypedIterator = bool.Parse(System.Configuration.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.UseStronglyTypedIterator"]);
         }
 
@@ -70,9 +68,9 @@
             }
 
             Console.WriteLine("File path for raw data: ", rawDataPath);
-            using (TextWriter rawDataFile = new StreamWriter(path: rawDataPath, append: this.appendRawDataToFile))
+            using (StreamWriter writer = new StreamWriter(new FileStream(rawDataPath, FileMode.Create, FileAccess.Write)))
             {
-                metricsSerializer.Serialize(rawDataFile, this.queryStatisticsDatumVisitor, this.numberOfIterations, this.warmupIterations, rawData: true);
+                metricsSerializer.Serialize(writer, this.queryStatisticsDatumVisitor, this.numberOfIterations, this.warmupIterations, rawData: true);
             }
 
             metricsSerializer.Serialize(Console.Out, this.queryStatisticsDatumVisitor, this.numberOfIterations, this.warmupIterations, rawData: false);
@@ -101,7 +99,7 @@
             }
             else
             {
-                using (FeedIterator<string> distinctQueryIterator = container.GetItemQueryIterator<string>(
+                using (FeedIterator<dynamic> distinctQueryIterator = container.GetItemQueryIterator<dynamic>(
                         queryText: this.query,
                         requestOptions: requestOptions))
                 {
@@ -115,7 +113,7 @@
             MetricsAccumulator metricsAccumulator = new MetricsAccumulator();
             Stopwatch totalTime = new Stopwatch();
             Stopwatch getTraceTime = new Stopwatch();
-            string diagDataPath = Path.GetFullPath(DiagnosticsDataFileName);
+            string diagnosticDataPath = Path.GetFullPath(DiagnosticsDataFileName);
             while (feedIterator.HasMoreResults)
             {
                 totalTime.Start();
@@ -124,7 +122,7 @@
                     getTraceTime.Start();
                     if (response.RequestCharge != 0)
                     {
-                        using (TextWriter outputFile = new StreamWriter(diagDataPath, true))
+                        using (StreamWriter outputFile = new StreamWriter(path: diagnosticDataPath, append: true))
                         {
                             outputFile.WriteLine(response.Diagnostics.ToString());
                         }

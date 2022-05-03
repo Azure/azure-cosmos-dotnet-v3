@@ -10,6 +10,7 @@
         private const string PrintMedian = "Median";
         private const string PrintQueryMetrics = "QueryMetrics";
         private const string PrintBadRequests = "BadRequest";
+
         private readonly Func<QueryMetrics, double>[] metricsDelegate = new Func<QueryMetrics, double>[]
         {
             metric => metric.RetrievedDocumentCount,
@@ -100,43 +101,6 @@
             return sumOfRoundTripsList;
         }
 
-        private List<QueryMetrics> SumOfRoundTripsWithoutOutputDoc(int roundTrips, IReadOnlyList<QueryMetrics> originalList)
-        {
-            List<QueryMetrics> sumOfRoundTripsList = new();
-            int i = 0;
-            int j = roundTrips;
-            while (j <= originalList.Count)
-            {
-                Range range = i..j;
-                List<QueryMetrics> metricsPerRoundTrip = originalList.Take(range).ToList();
-                sumOfRoundTripsList.
-                    Add(new QueryMetrics
-                    {
-                        RetrievedDocumentCount = metricsPerRoundTrip.Sum(metric => metric.RetrievedDocumentCount),
-                        RetrievedDocumentSize = metricsPerRoundTrip.Sum(metric => metric.RetrievedDocumentSize),
-                        OutputDocumentCount = metricsPerRoundTrip.Sum(metric => metric.OutputDocumentCount) / roundTrips,
-                        OutputDocumentSize = metricsPerRoundTrip.Sum(metric => metric.OutputDocumentSize) / roundTrips,
-                        TotalQueryExecutionTime = metricsPerRoundTrip.Sum(metric => metric.TotalQueryExecutionTime),
-                        DocumentLoadTime = metricsPerRoundTrip.Sum(metric => metric.DocumentLoadTime),
-                        DocumentWriteTime = metricsPerRoundTrip.Sum(metric => metric.DocumentWriteTime),
-                        Created = metricsPerRoundTrip.Sum(metric => metric.Created),
-                        ChannelAcquisitionStarted = metricsPerRoundTrip.Sum(metric => metric.ChannelAcquisitionStarted),
-                        Pipelined = metricsPerRoundTrip.Sum(metric => metric.Pipelined),
-                        TransitTime = metricsPerRoundTrip.Sum(metric => metric.TransitTime),
-                        Received = metricsPerRoundTrip.Sum(metric => metric.Received),
-                        Completed = metricsPerRoundTrip.Sum(metric => metric.Completed),
-                        PocoTime = metricsPerRoundTrip.Sum(metric => metric.PocoTime),
-                        GetCosmosElementResponseTime = metricsPerRoundTrip.Sum(metric => metric.GetCosmosElementResponseTime),
-                        EndToEndTime = metricsPerRoundTrip.Sum(metric => metric.EndToEndTime)
-                    });
-
-                i += roundTrips;
-                j += roundTrips;
-            }
-
-            return sumOfRoundTripsList;
-        }
-
         private List<QueryMetrics> EliminateWarmupIterations(IReadOnlyList<QueryMetrics> noWarmupList, int roundTrips, int warmupIterations)
         {
             int iterationsToEliminate = warmupIterations * roundTrips;
@@ -151,15 +115,10 @@
             {
                 textWriter.WriteLine(roundTrips);
                 List<QueryMetrics> noWarmupList = this.EliminateWarmupIterations(queryStatisticsDatumVisitor.QueryMetricsList, roundTrips, warmupIterations);
-
                 if (roundTrips > 1)
                 {
-                    double distinctOutputDocCount = noWarmupList.Select(x => x.OutputDocumentCount).Distinct().Count();
-                    noWarmupList = distinctOutputDocCount >= roundTrips
-                        ? this.SumOfRoundTrips(roundTrips, noWarmupList)
-                        : this.SumOfRoundTripsWithoutOutputDoc(roundTrips, noWarmupList);
+                    noWarmupList = this.SumOfRoundTrips(roundTrips, noWarmupList);
                 }
-
                 this.CalculateAverage(noWarmupList).ForEach(textWriter.WriteLine);
                 textWriter.WriteLine();
                 textWriter.WriteLine(PrintMedian);
@@ -170,25 +129,39 @@
             {
                 textWriter.WriteLine();
                 textWriter.WriteLine(PrintQueryMetrics);
+                int roundTripCount = 1;
+                int iterationCount = 1;
                 foreach (QueryMetrics metrics in queryStatisticsDatumVisitor.QueryMetricsList)
                 {
-                    textWriter.WriteMetrics(metrics.RetrievedDocumentCount, metrics.RetrievedDocumentSize, metrics.OutputDocumentCount,
-                        metrics.OutputDocumentSize, metrics.TotalQueryExecutionTime, metrics.DocumentLoadTime, metrics.DocumentWriteTime,
-                        metrics.Created, metrics.ChannelAcquisitionStarted, metrics.Pipelined, metrics.TransitTime, metrics.Received,
-                        metrics.Completed, metrics.PocoTime, metrics.GetCosmosElementResponseTime, metrics.EndToEndTime);
-                    textWriter.WriteLine();
+                    if (roundTripCount <= roundTrips)
+                    {
+                        textWriter.WriteMetrics(false, iterationCount, roundTripCount, metrics.RetrievedDocumentCount, metrics.RetrievedDocumentSize, metrics.OutputDocumentCount,
+                                                metrics.OutputDocumentSize, metrics.TotalQueryExecutionTime, metrics.DocumentLoadTime, metrics.DocumentWriteTime,
+                                                metrics.Created, metrics.ChannelAcquisitionStarted, metrics.Pipelined, metrics.TransitTime, metrics.Received,
+                                                metrics.Completed, metrics.PocoTime, metrics.GetCosmosElementResponseTime, metrics.EndToEndTime);
+                        roundTripCount++;
+                    }
+                    else
+                    {
+                        iterationCount++;
+                        roundTripCount = 1;
+                        textWriter.WriteMetrics(false, iterationCount, roundTripCount, metrics.RetrievedDocumentCount, metrics.RetrievedDocumentSize, metrics.OutputDocumentCount,
+                                                metrics.OutputDocumentSize, metrics.TotalQueryExecutionTime, metrics.DocumentLoadTime, metrics.DocumentWriteTime,
+                                                metrics.Created, metrics.ChannelAcquisitionStarted, metrics.Pipelined, metrics.TransitTime, metrics.Received,
+                                                metrics.Completed, metrics.PocoTime, metrics.GetCosmosElementResponseTime, metrics.EndToEndTime);
+                        roundTripCount++;
+                    }
                 }
 
                 textWriter.WriteLine();
                 textWriter.WriteLine(PrintBadRequests);
                 foreach (QueryMetrics metrics in queryStatisticsDatumVisitor.BadRequestMetricsList)
                 {
-                    textWriter.WriteMetrics(metrics.BadRequestCreated, metrics.BadRequestChannelAcquisitionStarted, metrics.BadRequestPipelined,
+                    textWriter.WriteMetrics(true, numberOfIterations, roundTrips, metrics.BadRequestCreated, metrics.BadRequestChannelAcquisitionStarted, metrics.BadRequestPipelined,
                         metrics.BadRequestTransitTime, metrics.BadRequestReceived, metrics.BadRequestCompleted);
                     textWriter.WriteLine();
                 }
             }
-
             textWriter.Flush();
         }
     }
