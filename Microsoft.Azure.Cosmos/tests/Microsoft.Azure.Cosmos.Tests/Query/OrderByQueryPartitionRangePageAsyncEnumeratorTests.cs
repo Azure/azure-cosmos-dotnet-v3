@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 throw new NotImplementedException();
             }
 
-            public override IAsyncEnumerable<TryCatch<OrderByQueryPage>> CreateEnumerable(IDocumentContainer documentContainer, QueryState state = null)
+            protected override IAsyncEnumerable<TryCatch<OrderByQueryPage>> CreateEnumerable(IDocumentContainer documentContainer, QueryState state = null)
             {
                 throw new NotImplementedException();
             }

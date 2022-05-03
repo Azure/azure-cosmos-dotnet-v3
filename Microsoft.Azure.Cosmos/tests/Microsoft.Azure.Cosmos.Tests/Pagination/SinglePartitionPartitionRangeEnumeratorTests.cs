@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 return page.GetRecords();
             }
 
-            public override IAsyncEnumerable<TryCatch<ReadFeedPage>> CreateEnumerable(
+            protected override IAsyncEnumerable<TryCatch<ReadFeedPage>> CreateEnumerable(
                 IDocumentContainer documentContainer,
                 ReadFeedState state = null)
             {

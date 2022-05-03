@@ -163,7 +163,9 @@
 
         public abstract IReadOnlyList<Record> GetRecordsFromPage(TPage page);
 
-        public abstract IAsyncEnumerable<TryCatch<TPage>> CreateEnumerable(IDocumentContainer documentContainer, TState state = null);
+        protected abstract IAsyncEnumerable<TryCatch<TPage>> CreateEnumerable(
+            IDocumentContainer documentContainer,
+            TState state = null);
 
         public abstract IAsyncEnumerator<TryCatch<TPage>> CreateEnumerator(IDocumentContainer documentContainer, TState state = null, CancellationToken cancellationToken= default);
 

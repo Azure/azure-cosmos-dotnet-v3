@@ -218,7 +218,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         public async Task TestSplitAndMergeAsync(bool useState, bool allowSplits, bool allowMerges)
         {
             Implementation implementation = new Implementation(singlePartition: false);
-            await implementation.TestSplitAndMergeImplementationAsync(useState, allowSplits, allowMerges);
+            await implementation.TestSplitAndMergeImplementationAsync(useState, allowSplits, allowMerges, false);
         }
 
         private sealed class Implementation : PartitionRangeEnumeratorTests<CrossFeedRangePage<ReadFeedPage, ReadFeedState>, CrossFeedRangeState<ReadFeedState>>
@@ -301,7 +301,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 Assert.AreEqual(numItems, identifiers.Count);
             }
 
-            public async Task TestSplitAndMergeImplementationAsync(bool useState, bool allowSplits, bool allowMerges)
+            public async Task TestSplitAndMergeImplementationAsync(bool useState, bool allowSplits, bool allowMerges, bool aggressivePrefetch)
             {
                 int numItems = 1000;
                 IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
@@ -363,7 +363,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 Assert.AreEqual(numItems, identifiers.Count);
             }
 
-            public override IAsyncEnumerable<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>> CreateEnumerable(
+            protected override IAsyncEnumerable<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>> CreateEnumerable(
                 IDocumentContainer inMemoryCollection,
                 CrossFeedRangeState<ReadFeedState> state = null)
             {

@@ -127,7 +127,7 @@
                 return records;
             }
 
-            public override IAsyncEnumerable<TryCatch<QueryPage>> CreateEnumerable(
+            protected override IAsyncEnumerable<TryCatch<QueryPage>> CreateEnumerable(
                 IDocumentContainer documentContainer,
                 QueryState state = null)
             {
