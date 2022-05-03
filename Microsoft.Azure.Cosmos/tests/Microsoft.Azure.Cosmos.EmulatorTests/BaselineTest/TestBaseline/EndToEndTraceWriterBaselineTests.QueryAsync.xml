@@ -46,7 +46,6 @@
     │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │                   │       │   (
     │                   │       │       [System Info]
@@ -80,7 +79,6 @@
     │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │                   │       │   (
     │                   │       │       [System Info]
@@ -114,7 +112,6 @@
     │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │                   │       │   (
     │                   │       │       [System Info]
@@ -148,7 +145,6 @@
                         │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
                         │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
                         │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-                        │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
                         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
                         │       │   (
                         │       │       [System Info]
@@ -281,12 +277,6 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
@@ -405,12 +395,6 @@
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
-                              "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
@@ -539,12 +523,6 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
@@ -663,12 +641,6 @@
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
-                              "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
@@ -786,7 +758,6 @@
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │               │       │   (
     │   │               │       │       [System Info]
@@ -801,7 +772,7 @@
     │   │               │                               Redacted To Not Change The Baselines From Run To Run
     │   │               │                           )
     │   │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
-    │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+    │   └── Query Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
@@ -821,7 +792,6 @@
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │               │       │   (
     │   │               │       │       [System Info]
@@ -836,7 +806,7 @@
     │   │               │                               Redacted To Not Change The Baselines From Run To Run
     │   │               │                           )
     │   │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
-    │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+    │   └── Query Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
@@ -856,7 +826,6 @@
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │               │       │   (
     │   │               │       │       [System Info]
@@ -871,7 +840,7 @@
     │   │               │                               Redacted To Not Change The Baselines From Run To Run
     │   │               │                           )
     │   │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
-    │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+    │   └── Query Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
@@ -891,7 +860,6 @@
         │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-        │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
         │               │       │   (
         │               │       │       [System Info]
@@ -906,7 +874,7 @@
         │               │                               Redacted To Not Change The Baselines From Run To Run
         │               │                           )
         │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
-        └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+        └── Query Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -1025,12 +993,6 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
@@ -1091,7 +1053,7 @@
           ]
         },
         {
-          "name": "POCO Materialization",
+          "name": "Query Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -1160,12 +1122,6 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
@@ -1226,7 +1182,7 @@
           ]
         },
         {
-          "name": "POCO Materialization",
+          "name": "Query Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -1295,12 +1251,6 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
@@ -1361,7 +1311,7 @@
           ]
         },
         {
-          "name": "POCO Materialization",
+          "name": "Query Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -1430,12 +1380,6 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
@@ -1496,7 +1440,7 @@
           ]
         },
         {
-          "name": "POCO Materialization",
+          "name": "Query Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -1555,7 +1499,6 @@
     │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │                   │       │   (
     │                   │       │       [System Info]
@@ -1589,7 +1532,6 @@
     │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │                   │       │   (
     │                   │       │       [System Info]
@@ -1623,7 +1565,6 @@
     │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │                   │       │   (
     │                   │       │       [System Info]
@@ -1657,7 +1598,6 @@
                         │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
                         │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
                         │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-                        │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
                         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
                         │       │   (
                         │       │       [System Info]
@@ -1790,12 +1730,6 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
@@ -1914,12 +1848,6 @@
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
-                              "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
@@ -2048,12 +1976,6 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
@@ -2172,12 +2094,6 @@
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
-                              "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
@@ -2296,7 +2212,6 @@
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │               │       │   (
     │   │               │       │       [System Info]
@@ -2311,7 +2226,7 @@
     │   │               │                               Redacted To Not Change The Baselines From Run To Run
     │   │               │                           )
     │   │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
-    │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+    │   └── Query Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
@@ -2331,7 +2246,6 @@
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │               │       │   (
     │   │               │       │       [System Info]
@@ -2346,7 +2260,7 @@
     │   │               │                               Redacted To Not Change The Baselines From Run To Run
     │   │               │                           )
     │   │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
-    │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+    │   └── Query Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
@@ -2366,7 +2280,6 @@
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │               │       │   (
     │   │               │       │       [System Info]
@@ -2381,7 +2294,7 @@
     │   │               │                               Redacted To Not Change The Baselines From Run To Run
     │   │               │                           )
     │   │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
-    │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+    │   └── Query Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
@@ -2401,7 +2314,6 @@
         │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-        │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
         │               │       │   (
         │               │       │       [System Info]
@@ -2416,7 +2328,7 @@
         │               │                               Redacted To Not Change The Baselines From Run To Run
         │               │                           )
         │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
-        └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+        └── Query Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -2535,12 +2447,6 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
@@ -2601,7 +2507,7 @@
           ]
         },
         {
-          "name": "POCO Materialization",
+          "name": "Query Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -2670,12 +2576,6 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
@@ -2736,7 +2636,7 @@
           ]
         },
         {
-          "name": "POCO Materialization",
+          "name": "Query Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -2805,12 +2705,6 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
@@ -2871,7 +2765,7 @@
           ]
         },
         {
-          "name": "POCO Materialization",
+          "name": "Query Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -2940,12 +2834,6 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
@@ -3006,7 +2894,7 @@
           ]
         },
         {
-          "name": "POCO Materialization",
+          "name": "Query Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
