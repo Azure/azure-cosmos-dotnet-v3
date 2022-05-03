@@ -79,6 +79,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 createPartitionRangeEnumerator: createEnumerator,
                 comparer: null,
                 maxConcurrency: 0,
+                prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
                 cancellationToken: default,
                 state: new CrossFeedRangeState<ReadFeedState>(
                     new FeedRangeState<ReadFeedState>[]
@@ -132,6 +133,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 feedRangeProvider: feedRangeProvider.Object,
                 createPartitionRangeEnumerator: createEnumerator,
                 comparer: null,
+                prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
                 maxConcurrency: 0,
                 cancellationToken: default,
                 state: new CrossFeedRangeState<ReadFeedState>(
@@ -377,6 +379,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     createPartitionRangeEnumerator: createEnumerator,
                     comparer: PartitionRangePageAsyncEnumeratorComparer.Singleton,
                     maxConcurrency: 10,
+                    prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
                     trace: NoOpTrace.Singleton,
                     state: state ?? new CrossFeedRangeState<ReadFeedState>(
                         new FeedRangeState<ReadFeedState>[]
@@ -403,6 +406,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         createPartitionRangeEnumerator: createEnumerator,
                         comparer: PartitionRangePageAsyncEnumeratorComparer.Singleton,
                         maxConcurrency: 10,
+                        prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
                         cancellationToken: cancellationToken,
                         state: state ?? new CrossFeedRangeState<ReadFeedState>(
                             new FeedRangeState<ReadFeedState>[]
