@@ -29,7 +29,7 @@
             CancellationTokenSource cts = new CancellationTokenSource();
             IAsyncEnumerator<TryCatch<TPage>> enumerator = this.CreateEnumerator(inMemoryCollection, cancellationToken: cts.Token);
             cts.Cancel();
-            await Assert.ThrowsExceptionAsync<TaskCanceledException>(async () => await enumerator.MoveNextAsync());
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () => await enumerator.MoveNextAsync());
         }
 
         [TestMethod]
