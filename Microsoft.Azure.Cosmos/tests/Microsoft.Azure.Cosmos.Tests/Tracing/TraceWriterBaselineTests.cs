@@ -956,7 +956,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 return this.StartChild(name, TraceComponent.Unknown, TraceLevel.Info);
             }
 
-            public IRecorder OpenTelemetryAttributeRecorder { get; }
+            public IOpenTelemetryRecorder OpenTelemetryAttributeRecorder { get; }
 
             public ITrace StartChild(string name, TraceComponent component, TraceLevel level)
             {

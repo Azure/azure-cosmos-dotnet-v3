@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 #else
     internal
 #endif 
-        abstract class IRecorder : IDisposable
+        abstract class IOpenTelemetryRecorder : IDisposable
     {
          /// <summary>
          /// Recording Attributes
@@ -27,8 +27,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         /// <summary>
         /// Recording Request Diagnostics
         /// </summary>
-        /// <param name="diagnostics"></param>
-        public abstract void Record(CosmosDiagnostics diagnostics);
+        /// <param name="trace"></param>
+        public abstract void Record(ITrace trace);
 
         /// <summary>
         /// Mark Scope as failed and add exceptions in attribute

@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -222,8 +223,7 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentClient.ValidateResource(resourceId);
         }
 
-        internal override Task<TResult> 
-            OperationHelperAsync<TResult>(
+        internal override Task<TResult> OperationHelperAsync<TResult>(
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
@@ -258,7 +258,8 @@ namespace Microsoft.Azure.Cosmos
 
                 return await this.RunWithDiagnosticsHelperAsync(
                     trace,
-                    task);
+                    task,
+                    operationName);
             }
         }
 
@@ -284,7 +285,8 @@ namespace Microsoft.Azure.Cosmos
 
                     return await this.RunWithDiagnosticsHelperAsync(
                         trace,
-                        task);
+                        task,
+                        operationName);
                 }
             });
         }
@@ -458,8 +460,10 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<TResult> RunWithDiagnosticsHelperAsync<TResult>(
             ITrace trace,
-            Func<ITrace, Task<TResult>> task)
+            Func<ITrace, Task<TResult>> task,
+            string operationName)
         {
+            using (IOpenTelemetryRecorder recorder = OpenTelemetryRecorderFactory.CreateRecorder(operationName))
             using (new ActivityScope(Guid.NewGuid()))
             {
                 try
@@ -485,6 +489,8 @@ namespace Microsoft.Azure.Cosmos
                 }
                 finally
                 {
+
+                    recorder.Record(trace);
                 }
             }
         }

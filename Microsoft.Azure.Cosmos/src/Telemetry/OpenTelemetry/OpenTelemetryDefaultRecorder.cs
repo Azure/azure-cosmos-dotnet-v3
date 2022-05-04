@@ -10,14 +10,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
 
-    internal sealed class DefaultRecorder : IRecorder
+    internal sealed class OpenTelemetryDefaultRecorder : IOpenTelemetryRecorder
     {
         private readonly DiagnosticScope scope;
 
         private HttpStatusCode statusCode;
         private double requestCharge;
 
-        public DefaultRecorder(DiagnosticScope scope)
+        public OpenTelemetryDefaultRecorder(DiagnosticScope scope)
         {
             this.scope = scope;
 
@@ -28,11 +28,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         {
             if (this.scope.IsEnabled)
             {
-                if (attributeKey.Equals(Attributes.RequestCharge, StringComparison.OrdinalIgnoreCase))
+                if (attributeKey.Equals(OpenTelemetryAttributeKeys.RequestCharge, StringComparison.OrdinalIgnoreCase))
                 {
                     this.requestCharge = Convert.ToDouble(attributeValue);
                 }
-                if (attributeKey.Equals(Attributes.StatusCode, StringComparison.OrdinalIgnoreCase))
+                if (attributeKey.Equals(OpenTelemetryAttributeKeys.StatusCode, StringComparison.OrdinalIgnoreCase))
                 {
                     this.statusCode = (HttpStatusCode)attributeValue;
                 }
@@ -40,17 +40,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             }
         }
 
-        public override void Record(CosmosDiagnostics diagnostics)
+        public override void Record(ITrace trace)
         {
             if (this.scope.IsEnabled)
             {
-                this.Record(Attributes.Region, ClientTelemetryHelper.GetContactedRegions(diagnostics));
+                CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
+                this.Record(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(diagnostics));
 
                 if (DiagnosticsFilterHelper.IsAllowed(
                         latency: diagnostics.GetClientElapsedTime(), 
                         statuscode: this.statusCode))
                 {
-                    this.Record(Attributes.RequestDiagnostics, diagnostics.ToString());
+                    this.Record(OpenTelemetryAttributeKeys.RequestDiagnostics, diagnostics.ToString());
                 } 
             }
         }
@@ -59,9 +60,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         {
             if (this.scope.IsEnabled)
             {
-                this.scope.AddAttribute(Attributes.ExceptionMessage, exception.Message);
-                this.scope.AddAttribute(Attributes.ExceptionStacktrace, exception.StackTrace);
-                this.scope.AddAttribute(Attributes.ExceptionType, exception.GetType());
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionStacktrace, exception.StackTrace);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType());
 
                 this.scope.Failed(exception);
             }
