@@ -145,6 +145,15 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public string Pk;
         }
 
+        internal class AmbientContextObject
+        {
+            public double FieldAccess;
+
+            public double PropertyAccess { get; set; }
+
+            public double MethodAccess() => 1.0;
+        }
+
         [TestMethod]
         public void TestLiteralSerialization()
         {
@@ -523,6 +532,34 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 // Truncate
                 new LinqTestInput("Truncate decimal", b => getQuery(b).Select(doc => Math.Truncate((decimal)doc.NumericField))),
                 new LinqTestInput("Truncate double", b => getQuery(b).Select(doc => Math.Truncate((double)doc.NumericField)))
+            };
+            this.ExecuteTestSuite(inputs);
+        }
+
+
+        [TestMethod]
+        public void TestMemberAccess()
+        {
+            AmbientContextObject ambientContext = new AmbientContextObject
+            {
+                FieldAccess = 2.0,
+                PropertyAccess = 3.0
+            };
+
+            List<DataObject> testData = new List<DataObject>();
+            IOrderedQueryable<DataObject> constantQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+            Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? constantQuery : testData.AsQueryable();
+            
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                // This test case will use the legacy delegate compilation expression evaluator
+                new LinqTestInput("Filter on Method value", b => getQuery(b).Where(doc => doc.NumericField == ambientContext.MethodAccess())),
+
+                // These test cases will use the new reflection-based member access expression evaluator
+                // to avoid the acquisition of a global lock when compiling the delegate (yielding a substantial
+                // performance boost, especially under highly concurrent workloads).
+                new LinqTestInput("Filter on Field value", b => getQuery(b).Where(doc => doc.NumericField == ambientContext.FieldAccess)),
+                new LinqTestInput("Filter on Property value", b => getQuery(b).Where(doc => doc.NumericField == ambientContext.PropertyAccess)),
             };
             this.ExecuteTestSuite(inputs);
         }
