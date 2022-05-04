@@ -48,6 +48,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// </summary>
         private HashSet<(string, Uri)> regionContactedInternal = new HashSet<(string, Uri)>();
 
+        /// <summary>
+        /// Consolidated Region contacted Information of this and children nodes
+        /// </summary>
         public IReadOnlyList<(string, Uri)> RegionsContacted
         {
             get
