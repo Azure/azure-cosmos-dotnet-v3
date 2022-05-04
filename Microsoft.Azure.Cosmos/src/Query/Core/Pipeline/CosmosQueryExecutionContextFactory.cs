@@ -232,6 +232,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
                             cosmosQueryContext.QueryClient,
                             inputParameters.SqlQuerySpec,
+                            cosmosQueryContext.ResourceTypeEnum,
                             partitionKeyDefinition,
                             inputParameters.PartitionKey != null,
                             createQueryPipelineTrace,

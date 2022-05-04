@@ -29,6 +29,7 @@
     using System.Threading;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using System.IO;
 
     [TestClass]
     public class PassThroughQueryBaselineTests : BaselineTests<PassThroughQueryTestInput, PassThroughQueryTestOutput>
@@ -116,10 +117,10 @@
             return new PassThroughQueryTestInput(description, query, new SqlQuerySpec(query), expectedPassThrough, partitionKeyPath, partitionKeyValue);
         }
         
-        private static PartitionedQueryExecutionInfo GetPartitionedQueryExecutionInfo(SqlQuerySpec sqlQuerySpec, PartitionKeyDefinition pkDefinition)
+        private static PartitionedQueryExecutionInfo GetPartitionedQueryExecutionInfo(string querySpecJsonString, PartitionKeyDefinition pkDefinition)
         {
             TryCatch<PartitionedQueryExecutionInfo> tryGetQueryPlan = QueryPartitionProviderTestInstance.Object.TryGetPartitionedQueryExecutionInfo(
-                querySpec: sqlQuerySpec,
+                querySpecJsonString: querySpecJsonString,
                 partitionKeyDefinition: pkDefinition,
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: false,
@@ -153,8 +154,13 @@
 
             //  gets input parameters
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = GetPartitionedQueryExecutionInfo(sqlQuerySpec, input.PartitionKeyDefinition);
-            if (input.PartitionKeyValue == null || input.PartitionKeyValue == Cosmos.PartitionKey.None)
+
+            CosmosSerializerCore serializerCore = new();
+            using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, Documents.ResourceType.Document));
+            string sqlQuerySpecJsonString = streamReader.ReadToEnd();
+
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = GetPartitionedQueryExecutionInfo(sqlQuerySpecJsonString, input.PartitionKeyDefinition);
+            if (input.PartitionKeyValue == default || input.PartitionKeyValue == Cosmos.PartitionKey.None)
             {
                 input.PartitionKeyValue = Cosmos.PartitionKey.Null;
             }
@@ -331,7 +337,7 @@
             throw new NotImplementedException();
         }
 
-        public override Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(SqlQuerySpec sqlQuerySpec, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, CancellationToken cancellationToken)
+        public override Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(SqlQuerySpec sqlQuerySpec, ResourceType resourceType, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
