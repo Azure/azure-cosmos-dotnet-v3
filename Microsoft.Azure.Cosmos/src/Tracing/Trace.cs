@@ -108,15 +108,20 @@ namespace Microsoft.Azure.Cosmos.Tracing
             TraceComponent component,
             TraceLevel level)
         {
+            Trace parent = (Trace)this.Parent;
+            if (parent != null && !this.stopwatch.IsRunning)
+            {
+                return parent.StartChild(name, component, level);
+            }
+
             Trace child = new Trace(
                 name: name,
                 level: level,
                 component: component,
                 parent: this,
-                regionContactedInternal: this.regionContactedInternal);
-
+                regionContactedInternal: this.regionContactedInternal);           
+            
             this.AddChild(child);
-
             return child;
         }
 
