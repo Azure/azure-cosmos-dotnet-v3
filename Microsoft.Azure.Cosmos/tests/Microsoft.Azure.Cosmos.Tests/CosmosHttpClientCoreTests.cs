@@ -122,6 +122,178 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void VerifyShouldRetryOnResponseTest()
+        {
+            foreach (HttpStatusCode statusCode in Enum.GetValues(typeof(HttpStatusCode)))
+            {
+                HttpResponseMessage responseMessage = new HttpResponseMessage(statusCode);
+                Assert.IsFalse(HttpTimeoutPolicyDefault.Instance.ShouldRetryBasedOnResponse(HttpMethod.Get, responseMessage));
+                Assert.IsFalse(HttpTimeoutPolicyControlPlaneRead.Instance.ShouldRetryBasedOnResponse(HttpMethod.Get, responseMessage));
+
+                Assert.IsFalse(HttpTimeoutPolicyDefault.Instance.ShouldRetryBasedOnResponse(HttpMethod.Put, responseMessage));
+                Assert.IsFalse(HttpTimeoutPolicyControlPlaneRead.Instance.ShouldRetryBasedOnResponse(HttpMethod.Put, responseMessage));
+
+                Assert.IsFalse(HttpTimeoutPolicyNoRetry.Instance.ShouldRetryBasedOnResponse(HttpMethod.Put, responseMessage));
+                Assert.IsFalse(HttpTimeoutPolicyNoRetry.Instance.ShouldRetryBasedOnResponse(HttpMethod.Get, responseMessage));
+
+                if (statusCode == HttpStatusCode.RequestTimeout)
+                {
+                    Assert.IsTrue(HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance.ShouldRetryBasedOnResponse(HttpMethod.Get, responseMessage));
+                    Assert.IsTrue(HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance.ShouldRetryBasedOnResponse(HttpMethod.Put, responseMessage));
+                }
+                else
+                {
+                    Assert.IsFalse(HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance.ShouldRetryBasedOnResponse(HttpMethod.Get, responseMessage));
+                    Assert.IsFalse(HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance.ShouldRetryBasedOnResponse(HttpMethod.Put, responseMessage));
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task RetryTransient408sTestAsync()
+        {
+            int count = 0;
+            async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                count++;
+
+                if (count <= 2)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(10));
+                    return new HttpResponseMessage(HttpStatusCode.RequestTimeout);
+                }
+
+                if (count == 3)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(10));
+                    return new HttpResponseMessage(HttpStatusCode.OK);
+                }
+
+                throw new Exception("Should not return after the success");
+            }
+
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            using CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
+
+            HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
+                new ValueTask<HttpRequestMessage>(
+                    result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
+                    resourceType: ResourceType.Collection,
+                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
+                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
+                    cancellationToken: default);
+
+            Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task DoesNotRetryTransient408sOnDefaultPolicyTestAsync()
+        {
+            int count = 0;
+            async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                count++;
+
+                if (count <= 2)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(10));
+                    return new HttpResponseMessage(HttpStatusCode.RequestTimeout);
+                }
+
+                if (count == 3)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(10));
+                    return new HttpResponseMessage(HttpStatusCode.OK);
+                }
+
+                throw new Exception("Should not return after the success");
+            }
+
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            using CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
+
+            HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
+                new ValueTask<HttpRequestMessage>(
+                    result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
+                    resourceType: ResourceType.Collection,
+                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
+                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
+                    cancellationToken: default);
+             
+            Assert.AreEqual(HttpStatusCode.RequestTimeout, responseMessage.StatusCode, "Should be a request timeout");
+        }
+
+        [TestMethod]
+        public async Task Retry3TimesOnDefaultPolicyTestAsync()
+        {
+            int count = 0;
+            async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                count++;
+
+                throw new OperationCanceledException("API with exception");
+
+            }
+
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            using CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
+
+            try
+            {
+                HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
+                    new ValueTask<HttpRequestMessage>(
+                        result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
+                        resourceType: ResourceType.Collection,
+                        timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
+                        cancellationToken: default);
+            }
+            catch (Exception ex)
+            {
+                //Ignore the exception
+            }
+
+            Assert.AreEqual(3, count, "Should retry 3 times");
+        }
+
+        [TestMethod]
+        public async Task NoRetryOnNoRetryPolicyTestAsync()
+        {
+            int count = 0;
+            async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                count++;
+
+                throw new OperationCanceledException("API with exception");
+
+            }
+
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            using CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
+
+            try
+            {
+                HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
+                    new ValueTask<HttpRequestMessage>(
+                        result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
+                        resourceType: ResourceType.Collection,
+                        timeoutPolicy: HttpTimeoutPolicyNoRetry.Instance,
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
+                        cancellationToken: default);
+            }
+            catch (Exception ex)
+            {
+                //Ignore the exception
+            }
+
+            Assert.AreEqual(1, count, "Should not retry at all");
+        }
+
+        [TestMethod]
         public async Task RetryTransientIssuesForQueryPlanTestAsync()
         {
             DocumentServiceRequest documentServiceRequest = DocumentServiceRequest.Create(

@@ -228,6 +228,12 @@
     <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.Top.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+	<None Update="BaselineTest\TestBaseline\PassThroughQueryBaselineTests.PositivePassThroughOutput.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
+	<None Update="BaselineTest\TestBaseline\PassThroughQueryBaselineTests.NegativePassThroughOutput.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
     <None Update="Contracts\DotNetPreviewSDKAPI.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

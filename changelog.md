@@ -1,6 +1,6 @@
 ## <a name="recommended-version"></a> Recommended version
 
-The **minimum recommended version is [3.20.1](#3.20.1)**.
+The **minimum recommended version is [3.25.0](#3.25.0)**.
 
 Make sure that your applications, when using the .NET V3 SDK, are using at least the version described here to have all the critical fixes.
 
@@ -13,6 +13,20 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.26.1"/> [3.26.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.26.1) - 2022-03-16
+
+#### Added
+- [#3080](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3080) & [#3081](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3081) Availability: Adds optimization to partition key ranges cache to reduce number of gateway calls in exception scenarios
+- [#3079](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3079) Availability: Adds a memory optimization to remove cached values when a not found is returned on a refresh
+- [#3089](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3089) Availability: Adds retries to gateway calls for metadata operations on 408 responses
+
+### <a name="3.26.0"/> [3.26.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.26.0) - 2022-03-10
+
+#### Added
+- [#3037](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3037) Diagnostics: Adds total number of active clients information
+- [#3068](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3068) Query: Adds FeedRange API for Query to GA
+- [#3035](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3035) Client Encryption: Adds Client Encryption APIs to GA SDK
+
 ### <a name="3.26.0-preview"/> [3.26.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.26.0-preview) - 2022-02-28
 
 #### Added
@@ -20,10 +34,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#3049](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3049) ClientEncryption: Adds algorithm to EncryptionKeyWrapMetadata
 
 ### <a name="3.25.0-preview"/> [3.25.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.25.0-preview) - 2022-02-18
+
+#### Added
+- [#2948](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2948) Partition Key Delete: Adds DeleteAllItemsByPartitionKeyStreamAsync to container
+
 ### <a name="3.25.0"/> [3.25.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.25.0) - 2022-02-18
 
 #### Added
 - [#3029](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3029) Dependencies: Upgrades to Azure.Core 1.19.0.
+- [#3015](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3015) Merge support: Minimum SDK version that includes partition merge support.
 
 #### Fixed
 - [#3034](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3034), [#3024](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3024), [#3018](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3018), [#3000](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3000) Documentation: Improvements in code samples within xml documentation.
