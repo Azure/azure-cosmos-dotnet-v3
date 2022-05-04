@@ -51,6 +51,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
             ContainerResponse response = await this.database.CreateContainerAsync(
                 this.containerSettings,
+                throughput: 15000,
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
@@ -962,7 +963,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Each parameter in query spec should be a call to the custom serializer
                 int parameterCount = queryDefinition.ToSqlQuerySpec().Parameters.Count;
-                Assert.AreEqual(parameterCount, toStreamCount, $"missing to stream call. Expected: {parameterCount}, Actual: {toStreamCount} for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
+                Assert.AreEqual((parameterCount*pageCount)+parameterCount, toStreamCount, $"missing to stream call. Expected: {(parameterCount * pageCount) + parameterCount}, Actual: {toStreamCount} for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
                 Assert.AreEqual(pageCount, fromStreamCount);
             }
         }
@@ -1093,6 +1094,36 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(pageCount, fromStreamCount);
             }
 
+            // get result across pages,multiple requests by setting MaxItemCount to 1.
+            foreach (QueryDefinition queryDefinition in queryDefinitions)
+            {
+                toStreamCount = 0;
+                fromStreamCount = 0;
+
+                List<dynamic> allItems = new List<dynamic>();
+                int pageCount = 0;
+                using (FeedIterator<dynamic> feedIterator = containerSerializer.GetItemQueryIterator<dynamic>(
+                    queryDefinition: queryDefinition,
+                    requestOptions: new QueryRequestOptions { MaxItemCount = 1 }))
+                {
+                    while (feedIterator.HasMoreResults)
+                    {
+                        // Only need once to verify correct serialization of the query definition
+                        FeedResponse<dynamic> response = await feedIterator.ReadNextAsync(this.cancellationToken);
+                        Assert.AreEqual(response.Count, response.Count());
+                        allItems.AddRange(response);
+                        pageCount++;
+                    }
+                }
+
+                Assert.AreEqual(2, allItems.Count, $"missing query results. Only found: {allItems.Count} items for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
+
+                // There should be no call to custom serializer since the parameter values are already serialized.
+                Assert.AreEqual(0, toStreamCount, $"missing to stream call. Expected: 0 , Actual: {toStreamCount} for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
+                Assert.AreEqual(pageCount, fromStreamCount);
+            }
+
+
             // Standard Cosmos Serializer Used
 
             CosmosClient clientStandardSerializer = TestCommon.CreateCosmosClient(useCustomSeralizer: false);
@@ -1144,7 +1175,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 Assert.AreEqual(2, allItems.Count, $"missing query results. Only found: {allItems.Count} items for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
-                Assert.AreEqual(pageCount, 1);
+                if (queryDefinition.QueryText.Contains("pk"))
+                {
+                    Assert.AreEqual(1, pageCount);
+                }
+                else
+                {
+                    Assert.AreEqual(3, pageCount);
+                }
+                
 
 
                 IReadOnlyList<(string Name, object Value)> parameters1 = queryDefinition.GetQueryParameters();
@@ -1290,13 +1329,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     sql,
                     requestOptions: requestOptions);
 
+            bool found = false;
             while (feedIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
-                Assert.AreEqual(1, iter.Count());
-                ToDoActivity response = iter.First();
-                Assert.AreEqual(find.id, response.id);
+                Assert.IsTrue(iter.Count() <= 1);
+                if(iter.Count() == 1)
+                {
+                    found = true;
+                    ToDoActivity response = iter.First();
+                    Assert.AreEqual(find.id, response.id);
+                }
             }
+
+            Assert.IsTrue(found);
         }
 
         /// <summary>
@@ -1313,7 +1359,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 System.Globalization.CultureInfo.GetCultureInfo("fr-FR")
             };
 
-            IList<ToDoActivity> deleteList = await ToDoActivity.CreateRandomItems(this.Container, 300, randomPartitionKey: true);
+            IList<ToDoActivity> deleteList = await ToDoActivity.CreateRandomItems(
+                this.Container, 
+                300, 
+                randomPartitionKey: true,
+                randomTaskNumber: true);
 
             try
             {
@@ -1399,8 +1449,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(deleteList.Count, resultList.Count);
             Assert.IsTrue(totalRequstCharge > 0);
 
-            List<ToDoActivity> verifiedOrderBy = deleteList.OrderBy(x => x.taskNum).ToList();
-            resultList = resultList.OrderBy(x => x.taskNum).ToList();
+            List<ToDoActivity> verifiedOrderBy = deleteList.OrderBy(x => x.id).ToList();
+            resultList = resultList.OrderBy(x => x.id).ToList();
             for (int i = 0; i < verifiedOrderBy.Count(); i++)
             {
                 Assert.AreEqual(verifiedOrderBy[i].taskNum, resultList[i].taskNum);
@@ -1482,6 +1532,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                            .InternalKey
                            .GetEffectivePartitionKeyString(this.containerSettings.PartitionKey);
 
+            properties = new Dictionary<string, object>()
+            {
+                { WFConstants.BackendHeaders.EffectivePartitionKeyString, epk },
+            };
+
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
                 IsEffectivePartitionKeyRouting = true,
@@ -1561,7 +1616,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemQueryStreamSerializationSetting()
         {
-            IList<ToDoActivity> deleteList = await ToDoActivity.CreateRandomItems(this.Container, 101, randomPartitionKey: true);
+            IList<ToDoActivity> deleteList = await ToDoActivity.CreateRandomItems(
+                container: this.Container, 
+                pkCount: 101, 
+                randomTaskNumber: true);
 
             QueryDefinition sql = new QueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum");
 
