@@ -78,11 +78,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
             string name);
 
         /// <summary>
-        /// It will record all the attributes in an Activity
-        /// </summary>
-        IRecorder OpenTelemetryAttributeRecorder { get; }
-
-        /// <summary>
         /// Starts a trace and adds it as a child to this instance.
         /// </summary>
         /// <param name="name">The name of the child.</param>

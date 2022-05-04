@@ -55,8 +55,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 level: TraceLevel.Info);
         }
 
-        public IRecorder OpenTelemetryAttributeRecorder => new RecorderNoOp();
-
         public ITrace StartChild(
             string name,
             TraceComponent component,

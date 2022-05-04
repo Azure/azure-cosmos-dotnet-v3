@@ -178,12 +178,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 }
                                 catch (DocumentClientException dce)
                                 {
-                                    childTrace.OpenTelemetryAttributeRecorder.MarkFailed(dce);
                                     return dce.ToCosmosResponseMessage(request);
                                 }
                                 catch (CosmosException ce)
                                 {
-                                    childTrace.OpenTelemetryAttributeRecorder.MarkFailed(ce);
                                     return ce.ToCosmosResponseMessage(request);
                                 }
                             }
@@ -209,7 +207,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             }
                             catch (CosmosException ex)
                             {
-                                childTrace.OpenTelemetryAttributeRecorder.MarkFailed(ex);
                                 return ex.ToCosmosResponseMessage(request);
                             }
 
@@ -228,7 +225,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                     activityId: Guid.Empty.ToString(),
                                     requestCharge: default);
 
-                                childTrace.OpenTelemetryAttributeRecorder.MarkFailed(notFound);
                                 return notFound.ToCosmosResponseMessage(request);
                             }
 
@@ -245,7 +241,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                     activityId: Guid.NewGuid().ToString(),
                                     requestCharge: default);
 
-                                childTrace.OpenTelemetryAttributeRecorder.MarkFailed(goneException);
                                 return goneException.ToCosmosResponseMessage(request);
                             }
                             // overlappingRanges.Count == 1

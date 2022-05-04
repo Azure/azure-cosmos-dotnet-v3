@@ -483,6 +483,9 @@ namespace Microsoft.Azure.Cosmos
                         nullRefException,
                         trace);
                 }
+                finally
+                {
+                }
             }
         }
 
