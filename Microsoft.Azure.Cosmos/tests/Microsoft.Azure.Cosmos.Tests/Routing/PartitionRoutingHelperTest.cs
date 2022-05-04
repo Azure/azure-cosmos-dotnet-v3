@@ -337,7 +337,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 try
                 {
                     IReadOnlyList<Range<string>> _ = PartitionRoutingHelper.GetProvidedPartitionKeyRanges(
-                        querySpec: new Cosmos.Query.Core.SqlQuerySpec(testcase.Query),
+                        querySpecJsonString: JsonConvert.SerializeObject(new Cosmos.Query.Core.SqlQuerySpec(testcase.Query)),
                         enableCrossPartitionQuery: testcase.EnableCrossPartitionQuery,
                         parallelizeCrossPartitionQuery: false,
                         isContinuationExpected: true,

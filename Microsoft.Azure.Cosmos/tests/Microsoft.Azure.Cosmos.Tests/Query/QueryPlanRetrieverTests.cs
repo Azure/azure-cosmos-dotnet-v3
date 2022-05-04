@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -29,6 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 
             queryClient.Setup(c => c.TryGetPartitionedQueryExecutionInfoAsync(
                 It.IsAny<SqlQuerySpec>(),
+                It.IsAny<ResourceType>(),
                 It.IsAny<Documents.PartitionKeyDefinition>(),
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
@@ -41,6 +43,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
                 queryClient.Object,
                 new SqlQuerySpec("selectttttt * from c"),
+                ResourceType.Document,
                 new Documents.PartitionKeyDefinition() { Paths = new Collection<string>() { "/id" } },
                 hasLogicalPartitionKey: false,
                 trace.Object,
@@ -60,6 +63,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 
             queryClient.Setup(c => c.TryGetPartitionedQueryExecutionInfoAsync(
                 It.IsAny<SqlQuerySpec>(),
+                It.IsAny<ResourceType>(),
                 It.IsAny<Documents.PartitionKeyDefinition>(),
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
@@ -72,6 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
                 queryClient.Object,
                 new SqlQuerySpec("selectttttt * from c"),
+                ResourceType.Document,
                 new Documents.PartitionKeyDefinition() { Paths = new Collection<string>() { "/id" } },
                 hasLogicalPartitionKey: false,
                 trace.Object,
