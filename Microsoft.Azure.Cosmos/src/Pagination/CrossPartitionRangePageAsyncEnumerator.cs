@@ -305,7 +305,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 BufferedPartitionRangePageAsyncEnumeratorBase<TPage, TState> bufferedEnumerator = policy switch
                 {
                     PrefetchPolicy.PrefetchSinglePage => new BufferedPartitionRangePageAsyncEnumerator<TPage, TState>(enumerator, cancellationToken),
-                    PrefetchPolicy.PrefetchAll => new BufferedPartitionRangePageAsyncEnumerator<TPage, TState>(enumerator, cancellationToken),
+                    PrefetchPolicy.PrefetchAll => new FullyBufferedPartitionRangeAsyncEnumerator<TPage, TState>(enumerator, cancellationToken),
                     _ => throw new ArgumentOutOfRangeException(nameof(policy)),
                 };
                 bufferedEnumerators.Add(bufferedEnumerator);

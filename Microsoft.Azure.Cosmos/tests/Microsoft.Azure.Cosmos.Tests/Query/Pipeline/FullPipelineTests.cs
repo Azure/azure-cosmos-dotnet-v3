@@ -162,8 +162,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public async Task Aggregates()
         {
+            const int DocumentCount = 250;
             List<CosmosObject> documents = new List<CosmosObject>();
-            for (int i = 0; i < 250; i++)
+            for (int i = 0; i < DocumentCount; i++)
             {
                 documents.Add(CosmosObject.Parse($"{{\"pk\" : {i} }}"));
             }
@@ -173,6 +174,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documents: documents);
 
             Assert.AreEqual(expected: 1, actual: documentsQueried.Count);
+            if (documentsQueried[0] is CosmosNumber number)
+            {
+                Assert.AreEqual(expected: DocumentCount, actual: Number64.ToLong(number.Value));
+            }
+            else
+            {
+                Assert.Fail();
+            }
         }
 
         [TestMethod]
