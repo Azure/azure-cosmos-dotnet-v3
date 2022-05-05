@@ -253,7 +253,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 storeResult,
                 request.ResourceType,
                 request.OperationType,
-                request.RequestContext.SessionToken,
+                request.Headers[HttpConstants.HttpHeaders.SessionToken],
                 locationEndpoint);
 
             lock (this.storeResponseStatistics)
@@ -442,7 +442,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 StoreResult storeResult,
                 ResourceType resourceType,
                 OperationType operationType,
-                ISessionToken sessionToken,
+                string sessionToken,
                 Uri locationEndpoint)
             {
                 this.RequestStartTime = requestStartTime;
@@ -460,7 +460,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             public StoreResult StoreResult { get; }
             public ResourceType RequestResourceType { get; }
             public OperationType RequestOperationType { get; }
-            public ISessionToken RequestSessionToken { get; }
+            public string RequestSessionToken { get; }
             public Uri LocationEndpoint { get; }
             public bool IsSupplementalResponse { get; }
         }

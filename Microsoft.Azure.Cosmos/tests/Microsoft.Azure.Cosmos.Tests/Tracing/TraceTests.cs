@@ -127,7 +127,7 @@
                             storeResult,
                             ResourceType.Document,
                             OperationType.Query,
-                            new SimpleSessionToken(42),
+                            "42",
                             new Uri("http://someUri1.com"));
 
             ((List<StoreResponseStatistics>)datum.GetType().GetField("storeResponseStatistics", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(datum)).Add(storeResponseStatistics);

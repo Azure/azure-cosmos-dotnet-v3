@@ -330,6 +330,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName("OperationType");
                 this.jsonWriter.WriteStringValue(storeResponseStatistics.RequestOperationType.ToString());
 
+                this.jsonWriter.WriteFieldName("SessionToken");
+                this.WriteStringValueOrNull(storeResponseStatistics.RequestSessionToken);
+
                 this.jsonWriter.WriteFieldName("LocationEndpoint");
                 this.WriteStringValueOrNull(storeResponseStatistics.LocationEndpoint?.ToString());
 
