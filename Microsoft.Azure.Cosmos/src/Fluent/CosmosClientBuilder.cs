@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using System.Collections.Generic;
     using System.Net;
     using System.Net.Http;
+    using global::Azure;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private readonly CosmosClientOptions clientOptions = new CosmosClientOptions();
         private readonly string accountEndpoint;
         private readonly string accountKey;
-        private readonly CosmosMasterKeyCredential cosmosMasterKeyCredential;
+        private readonly AzureKeyCredential keyCredential;
         private readonly TokenCredential tokenCredential;
 
         /// <summary>
@@ -90,10 +91,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Initializes a new instance of the <see cref="CosmosClientBuilder"/> class.
         /// </summary>
-        /// <param name="cosmosMasterKeyCredential">Master key credentials to use for the client.</param>
-        public CosmosClientBuilder(CosmosMasterKeyCredential cosmosMasterKeyCredential)
+        /// <param name="keyCredential">Master key credentials to use for the client.</param>
+        public CosmosClientBuilder(AzureKeyCredential keyCredential)
         {
-            this.cosmosMasterKeyCredential = cosmosMasterKeyCredential ?? throw new ArgumentNullException(nameof(cosmosMasterKeyCredential));
+            this.keyCredential = keyCredential ?? throw new ArgumentNullException(nameof(keyCredential));
         }
 
         /// <summary>
@@ -113,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </code>
         /// </example>
         public CosmosClientBuilder(
-            string accountEndpoint, 
+            string accountEndpoint,
             TokenCredential tokenCredential)
         {
             if (string.IsNullOrEmpty(accountEndpoint))
@@ -136,9 +137,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
         {
             DefaultTrace.TraceInformation($"CosmosClientBuilder.Build with configuration: {this.clientOptions.GetSerializedConfiguration()}");
             return this.tokenCredential == null ?
-                (this.cosmosMasterKeyCredential == null ?
+                (this.keyCredential == null ?
                     new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions) :
-                    new CosmosClient(this.cosmosMasterKeyCredential, this.clientOptions)) :
+                    new CosmosClient(this.accountEndpoint, this.keyCredential, this.clientOptions)) :
                 new CosmosClient(this.accountEndpoint, this.tokenCredential, this.clientOptions);
         }
 
@@ -169,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Set the preferred geo-replicated region to be used in the Azure Cosmos DB service. 
+        /// Set the preferred geo-replicated region to be used in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="applicationRegion">Azure region where application is running. <see cref="Regions"/> lists valid Cosmos DB regions.</param>
         /// <example>
@@ -294,8 +295,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="maxRequestsPerTcpConnection">
         /// Controls the number of requests allowed simultaneously over a single TCP connection. When more requests are in flight simultaneously, the direct/TCP client will open additional connections.
         /// The default settings allow 30 simultaneous requests per connection.
-        /// Do not set this value lower than 4 requests per connection or higher than 50-100 requests per connection.       
-        /// The former can lead to a large number of connections to be created. 
+        /// Do not set this value lower than 4 requests per connection or higher than 50-100 requests per connection.
+        /// The former can lead to a large number of connections to be created.
         /// The latter can lead to head of line blocking, high latency and timeouts.
         /// Applications with a very high degree of parallelism per connection, with large requests or responses, or with very tight latency requirements might get better performance with 8-16 requests per connection.
         /// </param>
@@ -429,7 +430,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Set a custom serializer option. 
+        /// Set a custom serializer option.
         /// </summary>
         /// <param name="cosmosSerializerOptions">The custom class that implements <see cref="CosmosSerializer"/> </param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
@@ -442,7 +443,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Set a custom JSON serializer. 
+        /// Set a custom JSON serializer.
         /// </summary>
         /// <param name="cosmosJsonSerializer">The custom class that implements <see cref="CosmosSerializer"/> </param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
@@ -577,7 +578,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// To enable Telemetry, set COSMOS.CLIENT_TELEMETRY_ENABLED environment property. 
+        /// To enable Telemetry, set COSMOS.CLIENT_TELEMETRY_ENABLED environment property.
         /// This function is used by Test only.
         /// </summary>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>

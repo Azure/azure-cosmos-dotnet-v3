@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Tests.Utils;
@@ -43,9 +44,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 { HttpConstants.HttpHeaders.XDate, new DateTime(2020, 02, 01, 10, 00, 00).ToString("r") }
             };
 
-            using CosmosMasterKeyCredential masterKeyCredential = new CosmosMasterKeyCredential(CosmosAuthorizationTests.AccountEndpoint.ToString(), authKey);
+            AzureKeyCredential masterKeyCredential = new AzureKeyCredential(authKey);
 
-            using AuthorizationTokenProvider cosmosAuthorization = AuthorizationTokenProvider.CreateWithMasterKeyCredential(masterKeyCredential);
+            using AuthorizationTokenProvider cosmosAuthorization = new AuthorizationTokenProviderMasterKey(masterKeyCredential);
 
             {
                 (string token, string payload) = await cosmosAuthorization.GetUserAuthorizationAsync(
@@ -146,9 +147,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 { HttpConstants.HttpHeaders.XDate, new DateTime(2020, 02, 01, 10, 00, 00).ToString("r") }
             };
 
-            using CosmosMasterKeyCredential masterKeyCredential = new CosmosMasterKeyCredential(CosmosAuthorizationTests.AccountEndpoint.ToString(), originalAuthKey);
+            AzureKeyCredential masterKeyCredential = new AzureKeyCredential(originalAuthKey);
 
-            using AuthorizationTokenProvider cosmosAuthorization = AuthorizationTokenProvider.CreateWithMasterKeyCredential(masterKeyCredential);
+            using AuthorizationTokenProvider cosmosAuthorization = new AuthorizationTokenProviderMasterKey(masterKeyCredential);
 
             {
                 (string token, string _) = await cosmosAuthorization.GetUserAuthorizationAsync(
@@ -181,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             // Update the key
-            masterKeyCredential.UpdateKey(newAuthKey);
+            masterKeyCredential.Update(newAuthKey);
 
             {
                 (string token, _) = await cosmosAuthorization.GetUserAuthorizationAsync(

@@ -11,6 +11,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure;
+    using global::Azure;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Telemetry;
@@ -21,8 +23,8 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Provides a client-side logical representation of the Azure Cosmos DB account.
     /// This client can be used to configure and execute requests in the Azure Cosmos DB database service.
-    /// 
-    /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+    ///
+    /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime
     /// of the application which enables efficient connection management and performance. Please refer to the
     /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
     /// </summary>
@@ -32,17 +34,17 @@ namespace Microsoft.Azure.Cosmos
     /// <code language="c#">
     /// <![CDATA[
     /// using Microsoft.Azure.Cosmos;
-    /// 
+    ///
     /// CosmosClient cosmosClient = new CosmosClient(
-    ///             "connection-string-from-portal", 
+    ///             "connection-string-from-portal",
     ///             new CosmosClientOptions()
     ///             {
     ///                 ApplicationRegion = Regions.EastUS2,
     ///             });
-    /// 
+    ///
     /// Database db = await cosmosClient.CreateDatabaseAsync("database-id");
     /// Container container = await db.CreateContainerAsync("container-id");
-    /// 
+    ///
     /// // Dispose cosmosClient at application exit
     /// ]]>
     /// </code>
@@ -53,18 +55,18 @@ namespace Microsoft.Azure.Cosmos
     /// <code language="c#">
     /// <![CDATA[
     /// using Microsoft.Azure.Cosmos;
-    /// 
+    ///
     /// CosmosClient cosmosClient = new CosmosClient(
-    ///             "account-endpoint-from-portal", 
-    ///             "account-key-from-portal", 
+    ///             "account-endpoint-from-portal",
+    ///             "account-key-from-portal",
     ///             new CosmosClientOptions()
     ///             {
     ///                 ApplicationRegion = Regions.EastUS2,
     ///             });
-    /// 
+    ///
     /// Database db = await cosmosClient.CreateDatabaseAsync("database-id");
     /// Container container = await db.CreateContainerAsync("container-id");
-    /// 
+    ///
     /// // Dispose cosmosClient at application exit
     /// ]]>
     /// </code>
@@ -76,14 +78,14 @@ namespace Microsoft.Azure.Cosmos
     /// <![CDATA[
     /// using Microsoft.Azure.Cosmos;
     /// using Microsoft.Azure.Cosmos.Fluent;
-    /// 
+    ///
     /// CosmosClient cosmosClient = new CosmosClientBuilder("connection-string-from-portal")
     ///     .WithApplicationRegion("East US 2")
     ///     .Build();
-    /// 
+    ///
     /// Database db = await cosmosClient.CreateDatabaseAsync("database-id")
     /// Container container = await db.CreateContainerAsync("container-id");
-    /// 
+    ///
     /// // Dispose cosmosClient at application exit
     /// ]]>
     /// </code>
@@ -126,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
 
             Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace.InitEventListener();
 
-            // If a debugger is not attached remove the DefaultTraceListener. 
+            // If a debugger is not attached remove the DefaultTraceListener.
             // DefaultTraceListener can cause lock contention leading to availability issues
             if (!Debugger.IsAttached)
             {
@@ -143,8 +145,8 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Creates a new CosmosClient with the connection string.
-        /// 
-        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        ///
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime
         /// of the application which enables efficient connection management and performance. Please refer to the
         /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
         /// </summary>
@@ -155,15 +157,15 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// using Microsoft.Azure.Cosmos;
-        /// 
+        ///
         /// CosmosClient cosmosClient = new CosmosClient(
-        ///             "account-endpoint-from-portal", 
-        ///             "account-key-from-portal", 
+        ///             "account-endpoint-from-portal",
+        ///             "account-key-from-portal",
         ///             new CosmosClientOptions()
         ///             {
         ///                 ApplicationRegion = Regions.EastUS2,
         ///             });
-        /// 
+        ///
         /// // Dispose cosmosClient at application exit
         /// ]]>
         /// </code>
@@ -184,8 +186,8 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Creates a new CosmosClient with the account endpoint URI string and account key.
-        /// 
-        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        ///
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime
         /// of the application which enables efficient connection management and performance. Please refer to the
         /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
         /// </summary>
@@ -197,15 +199,15 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// using Microsoft.Azure.Cosmos;
-        /// 
+        ///
         /// CosmosClient cosmosClient = new CosmosClient(
-        ///             "account-endpoint-from-portal", 
-        ///             "account-key-from-portal", 
+        ///             "account-endpoint-from-portal",
+        ///             "account-key-from-portal",
         ///             new CosmosClientOptions()
         ///             {
         ///                 ApplicationRegion = Regions.EastUS2,
         ///             });
-        /// 
+        ///
         /// // Dispose cosmosClient at application exit
         /// ]]>
         /// </code>
@@ -219,19 +221,20 @@ namespace Microsoft.Azure.Cosmos
             string authKeyOrResourceToken,
             CosmosClientOptions clientOptions = null)
              : this(accountEndpoint,
-                     AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(accountEndpoint, authKeyOrResourceToken),
+                     AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken),
                      clientOptions)
         {
         }
 
         /// <summary>
         /// Creates a new CosmosClient with the given master key credential.
-        /// 
-        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        ///
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime
         /// of the application which enables efficient connection management and performance. Please refer to the
         /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
         /// </summary>
-        /// <param name="cosmosMasterKeyCredential">The master key credential.</param>
+        /// <param name="accountEndpoint">The cosmos service endpoint to use</param>
+        /// <param name="keyCredential">The master key credential.</param>
         /// <param name="clientOptions">(Optional) client options</param>
         /// <example>
         /// The CosmosClient is created with the master key credential and configured to use "East US 2" region.
@@ -239,11 +242,11 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// using Microsoft.Azure.Cosmos;
         ///
-        /// CosmosMasterKeyCredential credential = new CosmosMasterKeyCredential(
-        ///             "account-endpoint-from-portal",
+        /// AzureKeyCredential credential = new AzureKeyCredential(
         ///             "account-key-from-portal");
         ///
         /// CosmosClient cosmosClient = new CosmosClient(
+        ///             "account-endpoint-from-portal",
         ///             credential,
         ///             new CosmosClientOptions()
         ///             {
@@ -262,18 +265,19 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">Performance Tips</seealso>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk">Diagnose and troubleshoot issues</seealso>
         public CosmosClient(
-            CosmosMasterKeyCredential cosmosMasterKeyCredential,
+            string accountEndpoint,
+            AzureKeyCredential keyCredential,
             CosmosClientOptions clientOptions = null)
-             : this(cosmosMasterKeyCredential.Endpoint.ToString(),
-                     AuthorizationTokenProvider.CreateWithMasterKeyCredential(cosmosMasterKeyCredential),
+             : this(accountEndpoint,
+                     new AuthorizationTokenProviderMasterKey(keyCredential),
                      clientOptions)
         {
         }
 
         /// <summary>
         /// Creates a new CosmosClient with the account endpoint URI string and TokenCredential.
-        /// 
-        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        ///
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime
         /// of the application which enables efficient connection management and performance. Please refer to the
         /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
         /// </summary>
@@ -313,7 +317,7 @@ namespace Microsoft.Azure.Cosmos
             clientOptions ??= new CosmosClientOptions();
 
             this.ClientId = this.IncrementNumberOfClientsCreated();
-            
+
             this.ClientContext = ClientContextCore.Create(
                 this,
                 clientOptions);
@@ -323,9 +327,9 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Creates a new CosmosClient with the account endpoint URI string and TokenCredential.
-        /// In addition to that it initializes the client with containers provided i.e The SDK warms up the caches and 
+        /// In addition to that it initializes the client with containers provided i.e The SDK warms up the caches and
         /// connections before the first call to the service is made. Use this to obtain lower latency while startup of your application.
-        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime
         /// of the application which enables efficient connection management and performance. Please refer to the
         /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
         /// </summary>
@@ -344,11 +348,11 @@ namespace Microsoft.Azure.Cosmos
         /// using Microsoft.Azure.Cosmos;
         /// List<(string, string)> containersToInitialize = new List<(string, string)>
         /// { ("DatabaseName1", "ContainerName1"), ("DatabaseName2", "ContainerName2") };
-        /// 
-        /// CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync("account-endpoint-from-portal", 
+        ///
+        /// CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync("account-endpoint-from-portal",
         ///                                                                         "account-key-from-portal",
         ///                                                                         containersToInitialize)
-        /// 
+        ///
         /// // Dispose cosmosClient at application exit
         /// ]]>
         /// </code>
@@ -374,9 +378,9 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Creates a new CosmosClient with the account endpoint URI string and TokenCredential.
-        /// In addition to that it initializes the client with containers provided i.e The SDK warms up the caches and 
+        /// In addition to that it initializes the client with containers provided i.e The SDK warms up the caches and
         /// connections before the first call to the service is made. Use this to obtain lower latency while startup of your application.
-        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime
         /// of the application which enables efficient connection management and performance. Please refer to the
         /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
         /// </summary>
@@ -394,10 +398,10 @@ namespace Microsoft.Azure.Cosmos
         /// using Microsoft.Azure.Cosmos;
         /// List<(string, string)> containersToInitialize = new List<(string, string)>
         /// { ("DatabaseName1", "ContainerName1"), ("DatabaseName2", "ContainerName2") };
-        /// 
+        ///
         /// CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync("connection-string-from-portal",
         ///                                                                         containersToInitialize)
-        /// 
+        ///
         /// // Dispose cosmosClient at application exit
         /// ]]>
         /// </code>
@@ -421,9 +425,9 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Creates a new CosmosClient with the account endpoint URI string and TokenCredential.
-        /// In addition to that it initializes the client with containers provided i.e The SDK warms up the caches and 
+        /// In addition to that it initializes the client with containers provided i.e The SDK warms up the caches and
         /// connections before the first call to the service is made. Use this to obtain lower latency while startup of your application.
-        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime
         /// of the application which enables efficient connection management and performance. Please refer to the
         /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
         /// </summary>
@@ -486,7 +490,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.Endpoint = new Uri(accountEndpoint);
             this.AccountKey = authKeyOrResourceToken;
-            this.AuthorizationTokenProvider = AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(accountEndpoint, authKeyOrResourceToken);
+            this.AuthorizationTokenProvider = AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken);
 
             this.ClientContext = ClientContextCore.Create(
                  this,
@@ -555,12 +559,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Returns a proxy reference to a database. 
+        /// Returns a proxy reference to a database.
         /// </summary>
         /// <param name="id">The Cosmos database id</param>
         /// <remarks>
         /// <see cref="Database"/> proxy reference doesn't guarantee existence.
-        /// Please ensure database exists through <see cref="CosmosClient.CreateDatabaseAsync(string, int?, RequestOptions, CancellationToken)"/> 
+        /// Please ensure database exists through <see cref="CosmosClient.CreateDatabaseAsync(string, int?, RequestOptions, CancellationToken)"/>
         /// or <see cref="CosmosClient.CreateDatabaseIfNotExistsAsync(string, int?, RequestOptions, CancellationToken)"/>, before
         /// operating on it.
         /// </remarks>
@@ -579,11 +583,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Returns a proxy reference to a container. 
+        /// Returns a proxy reference to a container.
         /// </summary>
         /// <remarks>
         /// <see cref="Container"/> proxy reference doesn't guarantee existence.
-        /// Please ensure container exists through <see cref="Database.CreateContainerAsync(ContainerProperties, int?, RequestOptions, CancellationToken)"/> 
+        /// Please ensure container exists through <see cref="Database.CreateContainerAsync(ContainerProperties, int?, RequestOptions, CancellationToken)"/>
         /// or <see cref="Database.CreateContainerIfNotExistsAsync(ContainerProperties, int?, RequestOptions, CancellationToken)"/>, before
         /// operating on it.
         /// </remarks>
@@ -697,9 +701,9 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// <para>Check if a database exists, and if it doesn't, create it.
-        /// Only the database id is used to verify if there is an existing database. Other database properties 
+        /// Only the database id is used to verify if there is an existing database. Other database properties
         /// such as throughput are not validated and can be different then the passed properties.</para>
-        /// 
+        ///
         /// <para>A database manages users, permissions and a set of containers.
         /// Each Azure Cosmos DB Database Account is able to support multiple independent named databases,
         /// with the database being the logical container for data.</para>
@@ -789,9 +793,9 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// <para>Check if a database exists, and if it doesn't, create it.
-        /// Only the database id is used to verify if there is an existing database. Other database properties 
+        /// Only the database id is used to verify if there is an existing database. Other database properties
         /// such as throughput are not validated and can be different then the passed properties.</para>
-        /// 
+        ///
         /// <para>A database manages users, permissions and a set of containers.
         /// Each Azure Cosmos DB Database Account is able to support multiple independent named databases,
         /// with the database being the logical container for data.</para>
@@ -911,7 +915,7 @@ namespace Microsoft.Azure.Cosmos
         ///         // Stream iterator returns a response with status for errors
         ///         using(ResponseMessage response = await feedIterator.ReadNextAsync())
         ///         {
-        ///             // Handle failure scenario. 
+        ///             // Handle failure scenario.
         ///             if(!response.IsSuccessStatusCode)
         ///             {
         ///                 // Log the response.Diagnostics and handle the error
@@ -1013,7 +1017,7 @@ namespace Microsoft.Azure.Cosmos
         ///         // Stream iterator returns a response with status for errors
         ///         using(ResponseMessage response = await feedIterator.ReadNextAsync())
         ///         {
-        ///             // Handle failure scenario. 
+        ///             // Handle failure scenario.
         ///             if(!response.IsSuccessStatusCode)
         ///             {
         ///                 // Log the response.Diagnostics and handle the error
@@ -1088,7 +1092,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Removes the DefaultTraceListener which causes locking issues which leads to avability problems. 
+        /// Removes the DefaultTraceListener which causes locking issues which leads to avability problems.
         /// </summary>
         private static void RemoveDefaultTraceListener()
         {
@@ -1361,7 +1365,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.ClientContext.Dispose();
                 this.DecrementNumberOfActiveClients();
-            }   
+            }
         }
     }
 }

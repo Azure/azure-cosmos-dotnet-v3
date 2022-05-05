@@ -321,7 +321,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ThrowOnNullCredentials()
         {
-            new CosmosClientBuilder(cosmosMasterKeyCredential: default);
+            new CosmosClientBuilder(keyCredential: default);
         }
 
         [TestMethod]

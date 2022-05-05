@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Tests.Utils;
@@ -39,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             FeedIterator<dynamic> feedIterator3 = database.GetContainerQueryIterator<dynamic>(queryText: "select * from T");
 
             string userAgent = cosmosClient.ClientContext.UserAgent;
-            // Dispose should be idempotent 
+            // Dispose should be idempotent
             cosmosClient.Dispose();
             cosmosClient.Dispose();
 
@@ -194,7 +195,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task ValidateClientKeyUpdateAsync()
+        public async Task ValidateAzureKeyCredentialUpdateAsync()
         {
             const string exKeyField = "UsedKey";
             string originalKey = TestKeyGenerator.GenerateAuthKey();
@@ -232,9 +233,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 });
 
 
-            using CosmosMasterKeyCredential masterKeyCredential = new CosmosMasterKeyCredential("https://localhost:8081", originalKey);
+           AzureKeyCredential masterKeyCredential = new AzureKeyCredential(originalKey);
 
-            using CosmosClient client = new CosmosClient(masterKeyCredential,
+            using CosmosClient client = new CosmosClient("https://localhost:8081", masterKeyCredential,
                 new CosmosClientOptions()
                 {
                     HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
@@ -252,7 +253,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.AreEqual(originalKey, e.Data[exKeyField].ToString(), $"{e.Message} Expected original key to be used");
             }
 
-            masterKeyCredential.UpdateKey(newKey);
+            masterKeyCredential.Update(newKey);
             currentKey = newKey;
             try
             {

@@ -14,9 +14,9 @@ namespace Microsoft.Azure.Cosmos
     internal abstract class AuthorizationTokenProvider : ICosmosAuthorizationTokenProvider, IAuthorizationTokenProvider, IDisposable
     {
         public async Task AddSystemAuthorizationHeaderAsync(
-            DocumentServiceRequest request, 
-            string federationId, 
-            string verb, 
+            DocumentServiceRequest request,
+            string federationId,
+            string verb,
             string resourceId)
         {
             request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
@@ -55,12 +55,7 @@ namespace Microsoft.Azure.Cosmos
             string authorizationToken,
             string payload);
 
-        public static AuthorizationTokenProvider CreateWithMasterKeyCredential(CosmosMasterKeyCredential cosmosMasterKeyCredential)
-        {
-            return new AuthorizationTokenProviderMasterKey(cosmosMasterKeyCredential, disposeCredential: false);
-        }
-
-        public static AuthorizationTokenProvider CreateWithResourceTokenOrAuthKey(string accountEndpoint, string authKeyOrResourceToken)
+        public static AuthorizationTokenProvider CreateWithResourceTokenOrAuthKey(string authKeyOrResourceToken)
         {
             if (string.IsNullOrEmpty(authKeyOrResourceToken))
             {
@@ -73,9 +68,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                return new AuthorizationTokenProviderMasterKey(
-                    new CosmosMasterKeyCredential(accountEndpoint, authKeyOrResourceToken),
-                    disposeCredential: true);
+                return new AuthorizationTokenProviderMasterKey(authKeyOrResourceToken);
             }
         }
 
