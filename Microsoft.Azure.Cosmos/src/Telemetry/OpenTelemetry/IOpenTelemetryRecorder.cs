@@ -17,12 +17,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 #endif 
         abstract class IOpenTelemetryRecorder : IDisposable
     {
+        /// <summary>
+        /// Recording Attributes
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        public abstract void Record(string key, string value);
+
          /// <summary>
          /// Recording Attributes
          /// </summary>
-         /// <param name="attributeKey"></param>
-         /// <param name="attributeValue"></param>
-        public abstract void Record(string attributeKey, object attributeValue);
+        public abstract void Record(IOpenTelemetryResponse response);
 
         /// <summary>
         /// Recording Request Diagnostics

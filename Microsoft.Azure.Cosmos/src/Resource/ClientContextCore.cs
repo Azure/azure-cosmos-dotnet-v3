@@ -469,12 +469,12 @@ namespace Microsoft.Azure.Cosmos
             using (IOpenTelemetryRecorder recorder = OpenTelemetryRecorderFactory.CreateRecorder(operationName))
             using (new ActivityScope(Guid.NewGuid()))
             {
+                recorder.Record(OpenTelemetryAttributeKeys.ClientId, this.Client.Id);
                 try
                 {
                     IOpenTelemetryResponse response = await task(trace).ConfigureAwait(false);
 
-                    recorder.Record(OpenTelemetryAttributeKeys.ResponseContentLength, response.RequestLength);
-                    recorder.Record(OpenTelemetryAttributeKeys.StatusCode, response.StatusCode);
+                    recorder.Record(response);
 
                     return (TResult)response;
                 }

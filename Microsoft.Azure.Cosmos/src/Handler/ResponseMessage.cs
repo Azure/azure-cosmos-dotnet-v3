@@ -177,12 +177,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// RequestLength
         /// </summary>
-        public long RequestLength => Convert.ToInt64(this.RequestMessage.Headers.ContentLength);
+        public long RequestContentLength => Convert.ToInt64(this.RequestMessage.Headers.ContentLength);
 
         /// <summary>
         /// ResponseLength
         /// </summary>
-        public long ResponseLength { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public long ResponseContentLength { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
         /// <summary>
         /// Checks if the current <see cref="ResponseMessage"/> has a successful status code, otherwise, throws.

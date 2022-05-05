@@ -21,12 +21,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             // NoOp
         }
 
-        public override void Record(string attributeKey, object attributeValue)
+        public override void Record(IOpenTelemetryResponse response)
         {
             // NoOp
         }
 
         public override void Record(ITrace trace)
+        {
+            // NoOp
+        }
+
+        public override void Record(string key, string value)
         {
             // NoOp
         }

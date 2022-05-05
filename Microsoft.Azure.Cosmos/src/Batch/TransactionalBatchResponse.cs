@@ -141,14 +141,24 @@ namespace Microsoft.Azure.Cosmos
         internal IReadOnlyList<ItemBatchOperation> Operations { get; set; }
 
         /// <summary>
-        /// Request length
+        /// ContainerName
         /// </summary>
-        public long RequestLength => 0;
+        public string ContainerName { get; }
 
         /// <summary>
-        /// Response length
+        /// ItemCount
         /// </summary>
-        public long ResponseLength => 0;
+        public string ItemCount { get; }
+
+        /// <summary>
+        /// RequestContentLength
+        /// </summary>
+        public long? RequestContentLength { get; }
+
+        /// <summary>
+        /// ResponseContentLength
+        /// </summary>
+        public long? ResponseContentLength { get; }
 
         /// <summary>
         /// Gets the result of the operation at the provided index in the batch.

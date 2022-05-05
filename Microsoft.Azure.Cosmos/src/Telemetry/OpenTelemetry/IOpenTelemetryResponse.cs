@@ -25,12 +25,22 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// RequestLength
         /// </summary>
-        public long RequestLength { get; }
+        public long? RequestContentLength { get; }
 
         /// <summary>
         /// ResponseLength
         /// </summary>
-        public long ResponseLength { get; }
+        public long? ResponseContentLength { get; }
+
+        /// <summary>
+        /// ContainerName
+        /// </summary>
+        public string ContainerName { get; }
+
+        /// <summary>
+        /// ItemCount
+        /// </summary>
+        public string ItemCount { get; }
 
     }
 }

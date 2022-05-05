@@ -14,29 +14,32 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     {
         private readonly DiagnosticScope scope;
 
-        private HttpStatusCode statusCode;
-        private double requestCharge;
+        private readonly IOpenTelemetryResponse response;
 
         public OpenTelemetryDefaultRecorder(DiagnosticScope scope)
         {
             this.scope = scope;
-
             this.scope.Start();
         }
 
-        public override void Record(string attributeKey, object attributeValue)
+        public override void Record(string key, string value)
         {
             if (this.scope.IsEnabled)
             {
-                if (attributeKey.Equals(OpenTelemetryAttributeKeys.RequestCharge, StringComparison.OrdinalIgnoreCase))
-                {
-                    this.requestCharge = Convert.ToDouble(attributeValue);
-                }
-                if (attributeKey.Equals(OpenTelemetryAttributeKeys.StatusCode, StringComparison.OrdinalIgnoreCase))
-                {
-                    this.statusCode = (HttpStatusCode)attributeValue;
-                }
-                this.scope.AddAttribute(attributeKey, attributeValue);
+                this.scope.AddAttribute(key, value);
+            }
+        }
+
+        public override void Record(IOpenTelemetryResponse response)
+        {
+            if (this.scope.IsEnabled)
+            {
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, response.StatusCode);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, response.RequestContentLength);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, response.ResponseContentLength);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, response.StatusCode);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, response.RequestCharge);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, response.ItemCount);
             }
         }
 
@@ -45,13 +48,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             if (this.scope.IsEnabled)
             {
                 CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
-                this.Record(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(diagnostics));
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(diagnostics));
 
                 if (DiagnosticsFilterHelper.IsAllowed(
                         latency: diagnostics.GetClientElapsedTime(), 
-                        statuscode: this.statusCode))
+                        statuscode: this.response.StatusCode))
                 {
-                    this.Record(OpenTelemetryAttributeKeys.RequestDiagnostics, diagnostics.ToString());
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, diagnostics.ToString());
                 } 
             }
         }

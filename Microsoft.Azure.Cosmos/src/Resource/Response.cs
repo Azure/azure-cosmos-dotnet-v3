@@ -74,11 +74,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// ResponseLength
         /// </summary>
-        public long RequestLength => 0;
+        public long RequestContentLength => 0;
 
         /// <summary>
         /// ResponseLength
         /// </summary>
-        public long ResponseLength => Convert.ToInt64(this.Headers.ContentLength);
+        public long ResponseContentLength => Convert.ToInt64(this.Headers.ContentLength);
     }
 }
