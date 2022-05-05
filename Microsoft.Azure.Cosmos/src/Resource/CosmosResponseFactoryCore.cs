@@ -50,35 +50,25 @@ namespace Microsoft.Azure.Cosmos
 
         private FeedResponse<T> CreateQueryFeedResponseHelper<T>(
             ResponseMessage cosmosResponseMessage)
-        {            
+        {
             if (cosmosResponseMessage is QueryResponse queryResponse)
             {
-                using (cosmosResponseMessage.Trace.StartChild("Query Response Serialization"))
-                {
-                    return QueryResponse<T>.CreateResponse<T>(
-                        cosmosQueryResponse: queryResponse,
-                        serializerCore: this.serializerCore);
-                }
+                return QueryResponse<T>.CreateResponse<T>(
+                    cosmosQueryResponse: queryResponse,
+                    serializerCore: this.serializerCore);
             }
 
-            using (cosmosResponseMessage.Trace.StartChild("Feed Response Serialization"))
-            {
-                return ReadFeedResponse<T>.CreateResponse<T>(
+            return ReadFeedResponse<T>.CreateResponse<T>(
                        cosmosResponseMessage,
                        this.serializerCore);
-            }
-                
         }
 
         private FeedResponse<T> CreateChangeFeedResponseHelper<T>(
             ResponseMessage cosmosResponseMessage)
         {
-            using (cosmosResponseMessage.Trace.StartChild("ChangeFeed Response Serialization"))
-            {
-                return ReadFeedResponse<T>.CreateResponse<T>(
+            return ReadFeedResponse<T>.CreateResponse<T>(
                        cosmosResponseMessage,
                        this.serializerCore);
-            }
         }
 
         public override ItemResponse<T> CreateItemResponse<T>(
@@ -250,11 +240,7 @@ namespace Microsoft.Azure.Cosmos
                 //Throw the exception
                 message.EnsureSuccessStatusCode();
 
-                using (message.Trace.StartChild("Response Serialization"))
-                {
-                    return createResponse(message);
-                }
-                
+                return createResponse(message);
             }
         }
 
