@@ -28,6 +28,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// </summary>
     internal class ClientTelemetry : IDisposable
     {
+        private const int allowedNumberOfFailures = 3;
+
         private static readonly Uri endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
 
@@ -43,6 +45,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
             = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
+
+        private int numberOfFailures = 0;
 
         /// <summary>
         /// Factory method to intiakize telemetry object and start observer task
@@ -127,6 +131,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 while (!this.cancellationTokenSource.IsCancellationRequested)
                 {
+                    if (this.numberOfFailures == allowedNumberOfFailures)
+                    {
+                        this.Dispose();
+                        break;
+                    }
+
                     // Load account information if not available, cache is already implemented
                     if (String.IsNullOrEmpty(this.clientTelemetryInfo.GlobalDatabaseAccountName))
                     {
@@ -335,16 +345,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 if (!response.IsSuccessStatusCode)
                 {
+                    this.numberOfFailures++;
+
                     DefaultTrace.TraceError("Juno API response not successful. Status Code : {0},  Message : {1}", response.StatusCode, response.ReasonPhrase);
                 } 
                 else
                 {
+                    this.numberOfFailures = 0; // Ressetting failure counts on success call.
                     DefaultTrace.TraceInformation("Telemetry data sent successfully.");
                 }
 
             }
             catch (Exception ex)
             {
+                this.numberOfFailures++;
+
                 DefaultTrace.TraceError("Exception while sending telemetry data : {0}", ex.Message);
             }
             finally
@@ -367,9 +382,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         public void Dispose()
         {
-            this.cancellationTokenSource.Cancel();
-            this.cancellationTokenSource.Dispose();
-            
+            if (!this.cancellationTokenSource.IsCancellationRequested)
+            {
+                this.cancellationTokenSource.Cancel();
+                this.cancellationTokenSource.Dispose();
+            }
             this.telemetryTask = null;
         }
     }

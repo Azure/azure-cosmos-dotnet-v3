@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         }
 
         public TryCatch<PartitionedQueryExecutionInfo> TryGetPartitionedQueryExecutionInfo(
-            SqlQuerySpec querySpec,
+            string querySpecJsonString,
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             bool allowDCount)
         {
             TryCatch<PartitionedQueryExecutionInfoInternal> tryGetInternalQueryInfo = this.TryGetPartitionedQueryExecutionInfoInternal(
-                querySpec: querySpec,
+                querySpecJsonString: querySpecJsonString,
                 partitionKeyDefinition: partitionKeyDefinition,
                 requireFormattableOrderByQuery: requireFormattableOrderByQuery,
                 isContinuationExpected: isContinuationExpected,
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         }
 
         internal TryCatch<PartitionedQueryExecutionInfoInternal> TryGetPartitionedQueryExecutionInfoInternal(
-            SqlQuerySpec querySpec,
+            string querySpecJsonString,
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
@@ -161,12 +161,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             bool hasLogicalPartitionKey,
             bool allowDCount)
         {
-            if (querySpec == null || partitionKeyDefinition == null)
+            if (querySpecJsonString == null || partitionKeyDefinition == null)
             {
                 return TryCatch<PartitionedQueryExecutionInfoInternal>.FromResult(DefaultInfoInternal);
             }
-
-            string queryText = JsonConvert.SerializeObject(querySpec);
 
             List<string> paths = new List<string>(partitionKeyDefinition.Paths);
             List<IReadOnlyList<string>> pathPartsList = new List<IReadOnlyList<string>>(paths.Count);
@@ -205,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 {
                     errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery2(
                         this.serviceProvider,
-                        queryText,
+                        querySpecJsonString,
                         requireFormattableOrderByQuery,
                         isContinuationExpected,
                         allowNonValueAggregateQuery,
@@ -230,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                         {
                             errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery2(
                                 this.serviceProvider,
-                                queryText,
+                                querySpecJsonString,
                                 requireFormattableOrderByQuery,
                                 isContinuationExpected,
                                 allowNonValueAggregateQuery,
