@@ -135,6 +135,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Diagnostics);
             CosmosTraceDiagnostics diagnostics = (CosmosTraceDiagnostics)response.Diagnostics;
             Assert.IsFalse(diagnostics.IsGoneExceptionHit());
+            string diagnosticString = response.Diagnostics.ToString();
+            Assert.IsTrue(diagnosticString.Contains("Response Serialization"));
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics.ToString()));
             Assert.IsTrue(diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
             Assert.AreEqual(0, response.Diagnostics.GetFailedRequestCount());
@@ -1081,6 +1083,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         // Only need once to verify correct serialization of the query definition
                         FeedResponse<dynamic> response = await feedIterator.ReadNextAsync(this.cancellationToken);
+                        string diagnosticString = response.Diagnostics.ToString();
+                        Assert.IsTrue(diagnosticString.Contains("Query Response Serialization"));
                         Assert.AreEqual(response.Count, response.Count());
                         allItems.AddRange(response);
                         pageCount++;
