@@ -118,12 +118,11 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateContainerResponse(this, response);
         }
 
-        public async Task<int?> ReadThroughputAsync(
+        public async Task<ThroughputResponse> ReadThroughputAsync(
             ITrace trace,
             CancellationToken cancellationToken = default)
         {
-            ThroughputResponse response = await this.ReadThroughputIfExistsAsync(null, cancellationToken);
-            return response.Resource?.Throughput;
+            return await this.ReadThroughputIfExistsAsync(null, cancellationToken);
         }
 
         public async Task<ThroughputResponse> ReadThroughputAsync(
@@ -256,7 +255,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public async Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(
+        public async Task<ReadFeedResponse<FeedRange>> GetFeedRangesAsync(
             ITrace trace,
             CancellationToken cancellationToken = default)
         {
@@ -311,7 +310,14 @@ namespace Microsoft.Azure.Cosmos
                 feedTokens.Add(new FeedRangeEpk(partitionKeyRange.ToRange()));
             }
 
-            return feedTokens;
+            ReadFeedResponse<FeedRange> response = new ReadFeedResponse<FeedRange>(
+                httpStatusCode: HttpStatusCode.OK,
+                resources: feedTokens,
+                resourceCount: feedTokens.Count,
+                responseMessageHeaders: null,
+                diagnostics: null);
+
+            return response;
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(
@@ -378,7 +384,7 @@ namespace Microsoft.Azure.Cosmos
                 responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
 
-        internal async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+        internal async Task<FeedResponse<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             ITrace trace,
             CancellationToken cancellationToken = default)
@@ -395,7 +401,14 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException(nameof(feedRange), ClientResources.FeedToken_UnrecognizedFeedToken);
             }
 
-            return await feedTokenInternal.GetPartitionKeyRangesAsync(routingMapProvider, containerRid, partitionKeyDefinition, cancellationToken, trace);
+            IEnumerable<string> partitionKeyRanges = await feedTokenInternal.GetPartitionKeyRangesAsync(routingMapProvider, containerRid, partitionKeyDefinition, cancellationToken, trace);
+
+            return new ReadFeedResponse<string>(
+                        httpStatusCode: HttpStatusCode.OK,
+                        resources: partitionKeyRanges,
+                        resourceCount: 0,
+                        responseMessageHeaders: null,
+                        diagnostics: null);
         }
 
         /// <summary>

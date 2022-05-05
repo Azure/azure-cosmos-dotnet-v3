@@ -249,6 +249,7 @@ namespace Microsoft.Azure.Cosmos
             Func<ITrace, Task<TResult>> task,
             TraceComponent traceComponent,
             Tracing.TraceLevel traceLevel)
+        where TResult : IOpenTelemetryResponse
         {
             bool disableDiagnostics = requestOptions != null && requestOptions.DisablePointOperationDiagnostics;
 
@@ -269,6 +270,7 @@ namespace Microsoft.Azure.Cosmos
             Func<ITrace, Task<TResult>> task,
             TraceComponent traceComponent,
             Tracing.TraceLevel traceLevel)
+        where TResult : IOpenTelemetryResponse
         {
             Debug.Assert(SynchronizationContext.Current != null, "This should only be used when a SynchronizationContext is specified");
 
@@ -462,13 +464,19 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             Func<ITrace, Task<TResult>> task,
             string operationName)
+            where TResult : IOpenTelemetryResponse
         {
             using (IOpenTelemetryRecorder recorder = OpenTelemetryRecorderFactory.CreateRecorder(operationName))
             using (new ActivityScope(Guid.NewGuid()))
             {
                 try
                 {
-                    return await task(trace).ConfigureAwait(false);
+                    IOpenTelemetryResponse response = await task(trace).ConfigureAwait(false);
+
+                    recorder.Record(OpenTelemetryAttributeKeys.ResponseContentLength, response.RequestLength);
+                    recorder.Record(OpenTelemetryAttributeKeys.StatusCode, response.StatusCode);
+
+                    return (TResult)response;
                 }
                 catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                 {
@@ -489,7 +497,6 @@ namespace Microsoft.Azure.Cosmos
                 }
                 finally
                 {
-
                     recorder.Record(trace);
                 }
             }

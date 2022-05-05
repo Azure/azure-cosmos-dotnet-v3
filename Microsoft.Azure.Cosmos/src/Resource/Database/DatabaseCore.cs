@@ -72,12 +72,11 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this, response);
         }
 
-        public async Task<int?> ReadThroughputAsync(
+        public async Task<ThroughputResponse> ReadThroughputAsync(
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            ThroughputResponse response = await this.ReadThroughputIfExistsAsync(null, cancellationToken);
-            return response.Resource?.Throughput;
+            return await this.ReadThroughputIfExistsAsync(null, cancellationToken);
         }
 
         public async Task<ThroughputResponse> ReadThroughputAsync(

@@ -6328,6 +6328,14 @@ namespace Microsoft.Azure.Cosmos
             return this.GetDatabaseAccountPrivateAsync(serviceEndpoint, cancellationToken);
         }
 
+        public async Task<ItemResponse<AccountProperties>> GetDatabaseAccountResponseInternalAsync(Uri serviceEndpoint, CancellationToken cancellationToken)
+        {
+            return new ItemResponse<AccountProperties>(httpStatusCode: HttpStatusCode.OK,
+                headers: null,
+                item: await this.GetDatabaseAccountPrivateAsync(serviceEndpoint, cancellationToken),
+                diagnostics: null);
+        }
+
         private async Task<AccountProperties> GetDatabaseAccountPrivateAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default)
         {
             await this.EnsureValidClientAsync(NoOpTrace.Singleton);

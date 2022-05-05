@@ -62,7 +62,8 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
             TraceComponent traceComponent = TraceComponent.Transport,
-            TraceLevel traceLevel = TraceLevel.Info);
+            TraceLevel traceLevel = TraceLevel.Info)
+        where TResult : IOpenTelemetryResponse;
 
         /// <summary>
         /// This is a wrapper around ExecUtil method. This allows the calls to be mocked so logic done 

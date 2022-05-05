@@ -92,10 +92,10 @@ namespace Microsoft.Azure.Cosmos.Tests
               new MockDocumentClient(),
               new CosmosClientOptions());
 
-            Guid result = await clientContext.OperationHelperAsync<Guid>(
+            Guid result = (await clientContext.OperationHelperAsync<ItemResponse<Guid>>(
                 nameof(ValidateActivityId),
                 new RequestOptions(),
-                (trace) => this.ValidateActivityIdHelper());
+                (trace) => this.ValidateActivityIdHelper())).Resource;
 
             Assert.AreEqual(Guid.Empty, System.Diagnostics.Trace.CorrelationManager.ActivityId, "ActivityScope was not disposed of");
         }
@@ -118,10 +118,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 SynchronizationContext.SetSynchronizationContext(mockSynchronizationContext.Object);
 
-                Guid result = await clientContext.OperationHelperAsync<Guid>(
+                Guid result = (await clientContext.OperationHelperAsync<ItemResponse<Guid>>(
                     nameof(ValidateActivityIdWithSynchronizationContext),
                     new RequestOptions(),
-                    (trace) => this.ValidateActivityIdHelper());
+                    (trace) => this.ValidateActivityIdHelper())).Resource;
 
                 Assert.AreEqual(Guid.Empty, System.Diagnostics.Trace.CorrelationManager.ActivityId, "ActivityScope was not disposed of");
             }
@@ -131,11 +131,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        private Task<Guid> ValidateActivityIdHelper()
+        private Task<ItemResponse<Guid>> ValidateActivityIdHelper()
         {
             Guid activityId = System.Diagnostics.Trace.CorrelationManager.ActivityId;
             Assert.AreNotEqual(Guid.Empty, activityId);
-            return Task.FromResult(activityId);
+
+            return Task.FromResult(new ItemResponse<Guid>(
+                httpStatusCode: HttpStatusCode.OK,
+                headers: null,
+                item: activityId,
+                diagnostics: null
+            ));
         }
     }
 }

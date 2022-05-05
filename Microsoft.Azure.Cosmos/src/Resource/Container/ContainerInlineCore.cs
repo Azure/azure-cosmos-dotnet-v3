@@ -94,12 +94,12 @@ namespace Microsoft.Azure.Cosmos
                 (trace) => base.DeleteContainerStreamAsync(trace, requestOptions, cancellationToken));
         }
 
-        public override Task<int?> ReadThroughputAsync(CancellationToken cancellationToken = default)
+        public override async Task<int?> ReadThroughputAsync(CancellationToken cancellationToken = default)
         {
-            return this.ClientContext.OperationHelperAsync(
+            return (await this.ClientContext.OperationHelperAsync(
                 nameof(ReadThroughputAsync),
                 null,
-                (trace) => base.ReadThroughputAsync(trace, cancellationToken));
+                (trace) => base.ReadThroughputAsync(trace, cancellationToken))).Resource.Throughput;
         }
 
         public override Task<ThroughputResponse> ReadThroughputAsync(
@@ -455,12 +455,12 @@ namespace Microsoft.Azure.Cosmos
             return base.CreateTransactionalBatch(partitionKey);
         }
 
-        public override Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default)
+        public override async Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default)
         {
-            return this.ClientContext.OperationHelperAsync(
+            return (IReadOnlyList<FeedRange>)(await this.ClientContext.OperationHelperAsync(
                 nameof(GetFeedRangesAsync),
                 null,
-                (trace) => base.GetFeedRangesAsync(trace, cancellationToken));
+                (trace) => base.GetFeedRangesAsync(trace, cancellationToken))).Resource;
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(
@@ -482,14 +482,14 @@ namespace Microsoft.Azure.Cosmos
                                                  this.ClientContext);
         }
 
-        public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+        public override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default)
         {
-            return this.ClientContext.OperationHelperAsync(
+            return (await this.ClientContext.OperationHelperAsync(
                 nameof(GetPartitionKeyRangesAsync),
                 null,
-                (trace) => base.GetPartitionKeyRangesAsync(feedRange, trace, cancellationToken));
+                (trace) => base.GetPartitionKeyRangesAsync(feedRange, trace, cancellationToken))).Resource;
         }
 
         public override FeedIterator GetItemQueryStreamIterator(

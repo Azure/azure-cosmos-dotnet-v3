@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
     /// Response of a <see cref="TransactionalBatch"/> request.
     /// </summary>
 #pragma warning disable CA1710 // Identifiers should have correct suffix
-    public class TransactionalBatchResponse : IReadOnlyList<TransactionalBatchOperationResult>, IDisposable
+    public class TransactionalBatchResponse : IReadOnlyList<TransactionalBatchOperationResult>, IDisposable, IOpenTelemetryResponse
 #pragma warning restore CA1710 // Identifiers should have correct suffix
     {
         private List<TransactionalBatchOperationResult> results;
@@ -139,6 +139,16 @@ namespace Microsoft.Azure.Cosmos
         internal virtual CosmosSerializerCore SerializerCore { get; }
 
         internal IReadOnlyList<ItemBatchOperation> Operations { get; set; }
+
+        /// <summary>
+        /// Request length
+        /// </summary>
+        public long RequestLength => 0;
+
+        /// <summary>
+        /// Response length
+        /// </summary>
+        public long ResponseLength => 0;
 
         /// <summary>
         /// Gets the result of the operation at the provided index in the batch.

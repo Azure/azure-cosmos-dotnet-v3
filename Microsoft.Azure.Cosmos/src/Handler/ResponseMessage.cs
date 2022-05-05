@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents a response from the Azure Cosmos DB service.
     /// </summary>
-    public class ResponseMessage : IDisposable
+    public class ResponseMessage : IOpenTelemetryResponse, IDisposable
     {
         private CosmosDiagnostics diagnostics = null;
 
@@ -168,6 +168,21 @@ namespace Microsoft.Azure.Cosmos
         /// Asserts if the current <see cref="HttpStatusCode"/> is a success.
         /// </summary>
         public virtual bool IsSuccessStatusCode => this.StatusCode.IsSuccess();
+
+        /// <summary>
+        /// RequestCharge
+        /// </summary>
+        public double RequestCharge => this.Headers.RequestCharge;
+
+        /// <summary>
+        /// RequestLength
+        /// </summary>
+        public long RequestLength => Convert.ToInt64(this.RequestMessage.Headers.ContentLength);
+
+        /// <summary>
+        /// ResponseLength
+        /// </summary>
+        public long ResponseLength { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
         /// <summary>
         /// Checks if the current <see cref="ResponseMessage"/> has a successful status code, otherwise, throws.

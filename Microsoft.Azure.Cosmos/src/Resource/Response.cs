@@ -4,12 +4,13 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Net;
 
     /// <summary>
     /// The cosmos resource response class
     /// </summary>
-    public abstract class Response<T>
+    public abstract class Response<T> : IOpenTelemetryResponse
     {
         /// <summary>
         /// Gets the current <see cref="ResponseMessage"/> HTTP headers.
@@ -69,5 +70,15 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the cosmos diagnostics information for the current request to Azure Cosmos DB service
         /// </summary>
         public abstract CosmosDiagnostics Diagnostics { get; }
+
+        /// <summary>
+        /// ResponseLength
+        /// </summary>
+        public long RequestLength => 0;
+
+        /// <summary>
+        /// ResponseLength
+        /// </summary>
+        public long ResponseLength => Convert.ToInt64(this.Headers.ContentLength);
     }
 }

@@ -218,12 +218,12 @@ namespace Microsoft.Azure.Cosmos
                 (trace) => base.ReadStreamAsync(requestOptions, trace, cancellationToken));
         }
 
-        public override Task<int?> ReadThroughputAsync(CancellationToken cancellationToken = default)
+        public override async Task<int?> ReadThroughputAsync(CancellationToken cancellationToken = default)
         {
-            return this.ClientContext.OperationHelperAsync(
+            return (await this.ClientContext.OperationHelperAsync(
                 nameof(ReadThroughputAsync),
                 null,
-                (trace) => base.ReadThroughputAsync(trace, cancellationToken));
+                (trace) => base.ReadThroughputAsync(trace, cancellationToken))).Resource.Throughput;
         }
 
         public override Task<ThroughputResponse> ReadThroughputAsync(

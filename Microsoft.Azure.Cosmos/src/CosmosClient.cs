@@ -500,12 +500,12 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="AccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
         /// </returns>
-        public virtual Task<AccountProperties> ReadAccountAsync()
+        public async virtual Task<AccountProperties> ReadAccountAsync()
         {
-            return this.ClientContext.OperationHelperAsync(
+            return (await this.ClientContext.OperationHelperAsync(
                 nameof(ReadAccountAsync),
                 null,
-                (trace) => ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.Endpoint));
+                (trace) => ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountResponseInternalAsync(this.Endpoint))).Resource;
         }
 
         /// <summary>

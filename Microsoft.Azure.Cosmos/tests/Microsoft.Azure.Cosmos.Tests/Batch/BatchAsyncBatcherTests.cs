@@ -754,13 +754,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         private static CosmosClientContext MockClientContext()
         {
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
-            mockContext.Setup(x => x.OperationHelperAsync<object>(
+            mockContext.Setup(x => x.OperationHelperAsync<IOpenTelemetryResponse>(
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<Func<ITrace, Task<object>>>(),
+                It.IsAny<Func<ITrace, Task<IOpenTelemetryResponse>>>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<object>>, TraceComponent, TraceLevel>(
+               .Returns<string, RequestOptions, Func<ITrace, Task<IOpenTelemetryResponse>>, TraceComponent, TraceLevel>(
                 (operationName, requestOptions, func, comp, level) => func(NoOpTrace.Singleton));
 
             return mockContext.Object;
