@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             QueryPartitionProvider queryPartitionProvider = await this.Client.GetQueryPartitionProviderAsync();
             TryCatch<PartitionedQueryExecutionInfo> tryGetPartitionedQueryExecutionInfo = queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
-                querySpec: this.QuerySpec,
+                querySpecJsonString: JsonConvert.SerializeObject(this.QuerySpec),
                 partitionKeyDefinition: partitionKeyDefinition,
                 requireFormattableOrderByQuery: requireFormattableOrderByQuery,
                 isContinuationExpected: isContinuationExpected,
@@ -266,7 +266,11 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (this.feedOptions.ConsistencyLevel.HasValue)
             {
-                await this.Client.EnsureValidOverwriteAsync((Documents.ConsistencyLevel)feedOptions.ConsistencyLevel.Value);
+                await this.Client.EnsureValidOverwriteAsync(
+                    (Documents.ConsistencyLevel)feedOptions.ConsistencyLevel.Value,
+                    OperationType.ReadFeed,
+                    this.ResourceTypeEnum);
+
                 requestHeaders.Set(HttpConstants.HttpHeaders.ConsistencyLevel, this.feedOptions.ConsistencyLevel.Value.ToString());
             }
             else if (desiredConsistencyLevel.HasValue)

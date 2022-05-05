@@ -291,7 +291,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                    containerRId,
+                    refreshedContainerRId,
                     ContainerCore.allRanges,
                     trace,
                     forceRefresh: true);
@@ -508,7 +508,6 @@ namespace Microsoft.Azure.Cosmos
                 collectionRid,
                 previousValue: null,
                 request: null,
-                cancellationToken,
                 NoOpTrace.Singleton);
 
             // Not found.
@@ -523,7 +522,6 @@ namespace Microsoft.Azure.Cosmos
                     collectionRid,
                     previousValue: null,
                     request: null,
-                    cancellationToken,
                     NoOpTrace.Singleton);
             }
 

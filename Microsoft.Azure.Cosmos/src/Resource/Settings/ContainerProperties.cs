@@ -108,13 +108,18 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateRequiredProperties();
         }
 
-#if PREVIEW
         /// <summary>
         /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
         /// <param name="partitionKeyPaths">The path to the partition key. Example: /location</param>
-        public ContainerProperties(string id, IReadOnlyList<string> partitionKeyPaths)
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+
+        ContainerProperties(string id, IReadOnlyList<string> partitionKeyPaths)
         {
             this.Id = id;
 
@@ -123,7 +128,6 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateRequiredProperties();
         }
 
-#endif
         /// <summary>
         /// Gets or sets the <see cref="Cosmos.PartitionKeyDefinitionVersion"/>
         ///
@@ -246,7 +250,7 @@ namespace Microsoft.Azure.Cosmos
         public DateTime? LastModified { get; private set; }
 
         /// <summary>
-        /// Gets the client encryption policy information for storing items in a container from the Azure Cosmos service.
+        /// Gets or sets the client encryption policy information for storing items in a container from the Azure Cosmos service.
         /// </summary>
         /// <value>
         /// It is an optional property.
@@ -258,12 +262,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         [JsonIgnore]
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-            ClientEncryptionPolicy ClientEncryptionPolicy
+        public ClientEncryptionPolicy ClientEncryptionPolicy
         {
             get => this.clientEncryptionPolicyInternal;
 
@@ -377,12 +376,16 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-#if PREVIEW
         /// <summary>
         /// JSON path used for containers partitioning
         /// </summary>
         [JsonIgnore]
-        public IReadOnlyList<string> PartitionKeyPaths
+#if PREVIEW
+        public
+#else 
+        internal
+#endif
+        IReadOnlyList<string> PartitionKeyPaths
         {
             get => this.PartitionKey?.Paths;
             set
@@ -408,7 +411,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-#endif
         /// <summary>
         /// Gets or sets the time to live base time stamp property path.
         /// </summary>

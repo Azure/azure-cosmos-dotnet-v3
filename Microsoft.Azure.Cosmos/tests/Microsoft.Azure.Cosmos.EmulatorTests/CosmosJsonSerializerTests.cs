@@ -27,7 +27,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await base.TestInit();
             string PartitionKey = "/pk";
             ContainerResponse response = await this.database.CreateContainerAsync(
-                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+                new ContainerProperties(
+                    id: Guid.NewGuid().ToString(), 
+                    partitionKeyPath: PartitionKey),
+                throughput: 15000,
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             this.container = response;
@@ -102,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     items.AddRange(await itemIterator.ReadNextAsync());
                 }
 
-                Assert.AreEqual(1, toStreamCount);
+                Assert.AreEqual(2, toStreamCount);
                 Assert.AreEqual(1, fromStreamCount);
 
                 toStreamCount = 0;
@@ -122,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
 
-                Assert.AreEqual(1, toStreamCount);
+                Assert.AreEqual(2, toStreamCount);
                 Assert.AreEqual(0, fromStreamCount);
 
             }

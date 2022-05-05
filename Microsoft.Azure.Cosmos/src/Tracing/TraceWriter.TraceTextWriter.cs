@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
@@ -478,7 +479,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     StringBuilder stringBuilder = new StringBuilder();
                     stringBuilder.AppendLine("Client Configuration");
                     stringBuilder.AppendLine($"Client Created Time: {clientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture)}");
+                    stringBuilder.AppendLine($"Machine Id: {VmMetadataApiHandler.GetMachineId()}");
                     stringBuilder.AppendLine($"Number Of Clients Created: {CosmosClient.numberOfClientsCreated}");
+                    stringBuilder.AppendLine($"Number Of Active Clients: {CosmosClient.NumberOfActiveClients}");
                     stringBuilder.AppendLine($"User Agent: {clientConfigurationTraceDatum.UserAgentContainer.UserAgent}");
                     stringBuilder.AppendLine("Connection Config:");
                     stringBuilder.AppendLine($"{space}'gw': {clientConfigurationTraceDatum.GatewayConnectionConfig}");
