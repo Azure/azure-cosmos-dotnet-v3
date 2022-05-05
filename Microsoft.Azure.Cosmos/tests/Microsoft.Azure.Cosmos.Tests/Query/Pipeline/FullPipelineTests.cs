@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     [TestClass]
     public class FullPipelineTests
     {
-        private static readonly PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
+        internal static readonly PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
         {
             Paths = new Collection<string>()
             {
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Assert.AreEqual(numTraces, rootTrace.Children.Count);
         }
 
-        private static async Task<List<CosmosElement>> ExecuteQueryAsync(
+        internal static async Task<List<CosmosElement>> ExecuteQueryAsync(
             string query,
             IReadOnlyList<CosmosObject> documents,
             IDocumentContainer documentContainer = null,
@@ -327,10 +327,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             return elements;
         }
 
-        private static async Task<IDocumentContainer> CreateDocumentContainerAsync(
+        internal static Task<IDocumentContainer> CreateDocumentContainerAsync(
             IReadOnlyList<CosmosObject> documents,
             int numPartitions = 3,
             FlakyDocumentContainer.FailureConfigs failureConfigs = null)
+        {
+            IMonadicDocumentContainer monadicDocumentContainer = CreateMonadicDocumentContainerAsync(failureConfigs);
+            return CreateDocumentContainerAsync(documents, monadicDocumentContainer, numPartitions);
+        }
+
+        internal static IMonadicDocumentContainer CreateMonadicDocumentContainerAsync(FlakyDocumentContainer.FailureConfigs failureConfigs)
         {
             IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(partitionKeyDefinition);
             if (failureConfigs != null)
@@ -338,6 +344,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 monadicDocumentContainer = new FlakyDocumentContainer(monadicDocumentContainer, failureConfigs);
             }
 
+            return monadicDocumentContainer;
+        }
+
+        internal static async Task<IDocumentContainer> CreateDocumentContainerAsync(
+            IReadOnlyList<CosmosObject> documents,
+            IMonadicDocumentContainer monadicDocumentContainer,
+            int numPartitions)
+        {
             DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
 
             for (int i = 0; i < numPartitions; i++)
@@ -373,7 +387,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         private static async Task<IQueryPipelineStage> CreatePipelineAsync(
             IDocumentContainer documentContainer,
             string query,
-            int pageSize = 10,
+            int pageSize,
             CosmosElement state = null)
         {
             IReadOnlyList<FeedRangeEpk> feedRanges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
