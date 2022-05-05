@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos
         /// // Update the credential in case of a key rotation
         /// credential.UpdateKey("new-account-key-from-portal");
         ///
-        /// // Dispose cosmosClient and credential at application exit
+        /// // Dispose cosmosClient at application exit
         /// ]]>
         /// </code>
         /// </example>
