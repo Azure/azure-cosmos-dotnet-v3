@@ -384,12 +384,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName(nameof(storeResult.LSN));
                 this.jsonWriter.WriteNumber64Value(storeResult.LSN);
 
-                if (storeResult.SessionToken != null)
-                {
-                    this.jsonWriter.WriteFieldName(nameof(storeResult.SessionToken));
-                    this.jsonWriter.WriteStringValue(storeResult.SessionToken.ToString());
-                }                
-
                 this.jsonWriter.WriteFieldName(nameof(storeResult.PartitionKeyRangeId));
                 this.WriteStringValueOrNull(storeResult.PartitionKeyRangeId);
 
