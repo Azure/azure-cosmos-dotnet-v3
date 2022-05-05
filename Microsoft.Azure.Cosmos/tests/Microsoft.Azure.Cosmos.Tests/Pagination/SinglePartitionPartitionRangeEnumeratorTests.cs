@@ -36,14 +36,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         public async Task TestDrainFullyAsync()
         {
             Implementation implementation = new Implementation();
-            await implementation.TestDrainFullyAsync();
+            await implementation.TestDrainFullyAsync(false);
         }
 
         [TestMethod]
         public async Task TestEmptyPages()
         {
             Implementation implementation = new Implementation();
-            await implementation.TestEmptyPages();
+            await implementation.TestEmptyPages(false);
         }
 
         [TestMethod]
@@ -124,6 +124,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             protected override IAsyncEnumerable<TryCatch<ReadFeedPage>> CreateEnumerable(
                 IDocumentContainer documentContainer,
+                bool aggressivePrefetch = false,
                 ReadFeedState state = null)
             {
                 return new PartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState>(
@@ -131,15 +132,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                         state ?? ReadFeedState.Beginning()),
                         (feedRangeState) => new ReadFeedPartitionRangeEnumerator(
-                        documentContainer,
-                        feedRangeState: feedRangeState,
-                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
-                        cancellationToken: default),
+                            documentContainer,
+                            feedRangeState: feedRangeState,
+                            readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                            cancellationToken: default),
                     trace: NoOpTrace.Singleton);
             }
 
-            public override IAsyncEnumerator<TryCatch<ReadFeedPage>> CreateEnumerator(
-                IDocumentContainer inMemoryCollection,  ReadFeedState state = null, CancellationToken cancellationToken = default)
+            protected override IAsyncEnumerator<TryCatch<ReadFeedPage>> CreateEnumerator(
+                IDocumentContainer inMemoryCollection,
+                bool aggressivePrefetch = false,
+                ReadFeedState state = null,
+                CancellationToken cancellationToken = default)
             {
                 return new TracingAsyncEnumerator<TryCatch<ReadFeedPage>>(
                     new ReadFeedPartitionRangeEnumerator(

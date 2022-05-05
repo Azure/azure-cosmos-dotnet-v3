@@ -36,13 +36,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 throw new NotImplementedException();
             }
 
-            protected override IAsyncEnumerable<TryCatch<OrderByQueryPage>> CreateEnumerable(IDocumentContainer documentContainer, QueryState state = null)
+            protected override IAsyncEnumerable<TryCatch<OrderByQueryPage>> CreateEnumerable(
+                IDocumentContainer documentContainer,
+                bool aggressivePrefetch = false,
+                QueryState state = null)
             {
                 throw new NotImplementedException();
             }
 
-            public override IAsyncEnumerator<TryCatch<OrderByQueryPage>> CreateEnumerator(
-                IDocumentContainer documentContainer, QueryState state = null, CancellationToken cancellationToken = default)
+            protected override IAsyncEnumerator<TryCatch<OrderByQueryPage>> CreateEnumerator(
+                IDocumentContainer documentContainer,
+                bool aggressivePrefetch = false,
+                QueryState state = null,
+                CancellationToken cancellationToken = default)
             {
                 List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(
                     trace: NoOpTrace.Singleton,

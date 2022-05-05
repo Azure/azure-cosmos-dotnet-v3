@@ -33,11 +33,11 @@
         }
 
         [TestMethod]
-        public async Task TestDrainFullyAsync()
+        public async Task TestDrainFullyAsync(bool aggressivePrefetch)
         {
             int numItems = 1000;
             IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
-            IAsyncEnumerable<TryCatch<TPage>> enumerable = this.CreateEnumerable(inMemoryCollection);
+            IAsyncEnumerable<TryCatch<TPage>> enumerable = this.CreateEnumerable(inMemoryCollection, aggressivePrefetch);
             HashSet<string> identifiers = await this.DrainFullyAsync(enumerable);
             Assert.AreEqual(numItems, identifiers.Count);
         }
@@ -51,7 +51,7 @@
             IAsyncEnumerator<TryCatch<TPage>> enumerator = this.CreateEnumerator(inMemoryCollection);
             (HashSet<string> firstDrainResults, TState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
-            IAsyncEnumerable<TryCatch<TPage>> enumerable = this.CreateEnumerable(inMemoryCollection, state);
+            IAsyncEnumerable<TryCatch<TPage>> enumerable = this.CreateEnumerable(inMemoryCollection, false, state);
             HashSet<string> secondDrainResults = await this.DrainFullyAsync(enumerable);
 
             Assert.AreEqual(numItems, firstDrainResults.Count + secondDrainResults.Count);
@@ -130,7 +130,7 @@
                     }
 
                     // Create a new enumerator from that state to simulate when the user want's to start resume later from a continuation token.
-                    enumerator = this.CreateEnumerator(inMemoryCollection, state);
+                    enumerator = this.CreateEnumerator(inMemoryCollection, false, state);
                 }
                 else
                 {
@@ -148,7 +148,7 @@
         }
 
         [TestMethod]
-        public async Task TestEmptyPages()
+        public async Task TestEmptyPages(bool aggressivePrefetch)
         {
             int numItems = 100;
             IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(
@@ -156,7 +156,7 @@
                 new FlakyDocumentContainer.FailureConfigs(
                     inject429s: false,
                     injectEmptyPages: true));
-            IAsyncEnumerable<TryCatch<TPage>> enumerable = this.CreateEnumerable(inMemoryCollection);
+            IAsyncEnumerable<TryCatch<TPage>> enumerable = this.CreateEnumerable(inMemoryCollection, aggressivePrefetch);
             HashSet<string> identifiers = await this.DrainFullyAsync(enumerable);
             Assert.AreEqual(numItems, identifiers.Count);
         }
@@ -165,9 +165,14 @@
 
         protected abstract IAsyncEnumerable<TryCatch<TPage>> CreateEnumerable(
             IDocumentContainer documentContainer,
+            bool aggressivePrefetch = false,
             TState state = null);
 
-        public abstract IAsyncEnumerator<TryCatch<TPage>> CreateEnumerator(IDocumentContainer documentContainer, TState state = null, CancellationToken cancellationToken= default);
+        protected abstract IAsyncEnumerator<TryCatch<TPage>> CreateEnumerator(
+                IDocumentContainer inMemoryCollection,
+                bool aggressivePrefetch = false,
+                TState state = null,
+                CancellationToken cancellationToken = default);
 
         public async Task<IDocumentContainer> CreateDocumentContainerAsync(
             int numItems,

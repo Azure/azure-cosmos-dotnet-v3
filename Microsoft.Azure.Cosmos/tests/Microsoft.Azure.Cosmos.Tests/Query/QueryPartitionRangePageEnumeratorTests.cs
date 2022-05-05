@@ -36,14 +36,14 @@
         public async Task TestDrainFullyAsync()
         {
             Implementation implementation = new Implementation();
-            await implementation.TestDrainFullyAsync();
+            await implementation.TestDrainFullyAsync(false);
         }
 
         [TestMethod]
         public async Task TestEmptyPages()
         {
             Implementation implementation = new Implementation();
-            await implementation.TestEmptyPages();
+            await implementation.TestEmptyPages(false);
         }
 
         [TestMethod]
@@ -129,6 +129,7 @@
 
             protected override IAsyncEnumerable<TryCatch<QueryPage>> CreateEnumerable(
                 IDocumentContainer documentContainer,
+                bool aggressivePrefetch = false,
                 QueryState state = null)
             {
                 List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(
@@ -147,8 +148,9 @@
                     trace: NoOpTrace.Singleton);
             }
 
-            public override IAsyncEnumerator<TryCatch<QueryPage>> CreateEnumerator(
+            protected override IAsyncEnumerator<TryCatch<QueryPage>> CreateEnumerator(
                 IDocumentContainer documentContainer,
+                bool aggressivePrefetch = false,
                 QueryState state = default,
                 CancellationToken cancellationToken = default)
             {

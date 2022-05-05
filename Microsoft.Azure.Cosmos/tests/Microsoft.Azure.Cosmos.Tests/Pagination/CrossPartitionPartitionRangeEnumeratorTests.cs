@@ -38,10 +38,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         }
 
         [TestMethod]
-        public async Task TestEmptyPages()
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task TestEmptyPages(bool aggressivePrefetch)
         {
             Implementation implementation = new Implementation(false);
-            await implementation.TestEmptyPages();
+            await implementation.TestEmptyPages(aggressivePrefetch);
         }
 
         [TestMethod]
@@ -326,7 +328,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             break;
                         }
 
-                        enumerator = this.CreateEnumerator(inMemoryCollection, tryGetPage.Result.State);
+                        enumerator = this.CreateEnumerator(inMemoryCollection, aggressivePrefetch, tryGetPage.Result.State);
                     }
 
                     if (random.Next() % 2 == 0)
@@ -365,6 +367,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             protected override IAsyncEnumerable<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>> CreateEnumerable(
                 IDocumentContainer inMemoryCollection,
+                bool aggressivePrefetch = false,
                 CrossFeedRangeState<ReadFeedState> state = null)
             {
                 PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> createEnumerator(
@@ -379,7 +382,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     createPartitionRangeEnumerator: createEnumerator,
                     comparer: PartitionRangePageAsyncEnumeratorComparer.Singleton,
                     maxConcurrency: 10,
-                    prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
+                    prefetchPolicy: aggressivePrefetch ? PrefetchPolicy.PrefetchAll : PrefetchPolicy.PrefetchSinglePage,
                     trace: NoOpTrace.Singleton,
                     state: state ?? new CrossFeedRangeState<ReadFeedState>(
                         new FeedRangeState<ReadFeedState>[]
@@ -388,8 +391,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         }));
             }
 
-            public override IAsyncEnumerator<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>> CreateEnumerator(
+            protected override IAsyncEnumerator<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>> CreateEnumerator(
                 IDocumentContainer inMemoryCollection,
+                bool aggressivePrefetch = false,
                 CrossFeedRangeState<ReadFeedState> state = null,
                 CancellationToken cancellationToken  = default)
             {

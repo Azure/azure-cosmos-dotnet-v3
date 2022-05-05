@@ -30,17 +30,21 @@
         }
 
         [TestMethod]
-        public async Task TestDrainFullyAsync()
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task TestDrainFullyAsync(bool aggressivePrefetch)
         {
             Implementation implementation = new Implementation();
-            await implementation.TestDrainFullyAsync();
+            await implementation.TestDrainFullyAsync(aggressivePrefetch);
         }
 
         [TestMethod]
-        public async Task TestEmptyPages()
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task TestEmptyPages(bool aggressivePrefetch)
         {
             Implementation implementation = new Implementation();
-            await implementation.TestEmptyPages();
+            await implementation.TestEmptyPages(aggressivePrefetch);
         }
 
         [TestMethod]
@@ -51,30 +55,42 @@
         }
 
         [TestMethod]
-        public async Task TestSplitAsync()
+        [DataRow(false, false)]
+        [DataRow(false, true)]
+        [DataRow(true, false)]
+        [DataRow(true, true)]
+        public async Task TestSplitAsync(bool aggressivePrefetch, bool exercisePrefetch)
         {
             Implementation implementation = new Implementation();
-            await implementation.TestSplitAsync();
+            await implementation.TestSplitAsync(aggressivePrefetch, exercisePrefetch);
         }
 
         [TestMethod]
-        public async Task TestBufferPageAsync()
+        [DataRow(false, false)]
+        [DataRow(false, true)]
+        [DataRow(true, false)]
+        [DataRow(true, true)]
+        public async Task TestBufferPageAsync(bool aggressivePrefetch, bool exercisePrefetch)
         {
             Implementation implementation = new Implementation();
-            await implementation.TestBufferPageAsync();
+            await implementation.TestBufferPageAsync(aggressivePrefetch, exercisePrefetch);
         }
 
         [TestMethod]
-        public async Task TestMoveNextAndBufferPageAsync()
+        [DataRow(false, false)]
+        [DataRow(false, true)]
+        [DataRow(true, false)]
+        [DataRow(true, true)]
+        public async Task TestMoveNextAndBufferPageAsync(bool aggressivePrefetch, bool exercisePrefetch)
         {
             Implementation implementation = new Implementation();
-            await implementation.TestMoveNextAndBufferPageAsync();
+            await implementation.TestMoveNextAndBufferPageAsync(aggressivePrefetch, exercisePrefetch);
         }
 
         [TestClass]
         private sealed class Implementation : PartitionRangeEnumeratorTests<ReadFeedPage, ReadFeedState>
         {
-            private static readonly int iterations = 1;
+            private const int Iterations = 1;
 
             public Implementation()
                 : base(singlePartition: true)
@@ -82,11 +98,11 @@
             }
 
             [TestMethod]
-            public async Task TestSplitAsync()
+            public async Task TestSplitAsync(bool aggressivePrefetch, bool exercisePrefetch)
             {
                 int numItems = 100;
                 IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
-                IAsyncEnumerator<TryCatch<ReadFeedPage>> enumerator = this.CreateEnumerator(inMemoryCollection);
+                IAsyncEnumerator<TryCatch<ReadFeedPage>> enumerator = this.CreateEnumerator(inMemoryCollection, aggressivePrefetch);
 
                 (HashSet<string> parentIdentifiers, ReadFeedState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
@@ -95,9 +111,9 @@
 
                 // Try To read from the partition that is gone.
                 await enumerator.MoveNextAsync();
-                Assert.IsTrue(enumerator.Current.Failed);
+                Assert.IsTrue((aggressivePrefetch && exercisePrefetch) || enumerator.Current.Failed);
 
-                // Resume on the children using the parent continuaiton token
+                // Resume on the children using the parent continuation token
                 HashSet<string> childIdentifiers = new HashSet<string>();
                 foreach (int partitionKeyRangeId in new int[] { 1, 2 })
                 {
@@ -111,6 +127,7 @@
                             readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
                             cancellationToken: default),
                         trace: NoOpTrace.Singleton);
+
                     HashSet<string> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
 
                     childIdentifiers.UnionWith(resourceIdentifiers);
@@ -120,19 +137,29 @@
             }
 
             [TestMethod]
-            public async Task TestBufferPageAsync()
+            public async Task TestBufferPageAsync(bool aggressivePrefetch, bool exercisePrefetch)
             {
                 int numItems = 100;
                 IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
-                BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> enumerator = new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
-                    new ReadFeedPartitionRangeEnumerator(
-                        inMemoryCollection,
-                        feedRangeState: new FeedRangeState<ReadFeedState>(
-                            new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
-                            ReadFeedState.Beginning()),
-                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
-                        cancellationToken: default),
-                    cancellationToken: default);
+                BufferedPartitionRangePageAsyncEnumeratorBase<ReadFeedPage, ReadFeedState> enumerator = aggressivePrefetch ?
+                    new FullyBufferedPartitionRangeAsyncEnumerator<ReadFeedPage, ReadFeedState>(
+                        new ReadFeedPartitionRangeEnumerator(
+                            inMemoryCollection,
+                            feedRangeState: new FeedRangeState<ReadFeedState>(
+                                new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
+                                ReadFeedState.Beginning()),
+                            readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                            cancellationToken: default),
+                        cancellationToken: default) :
+                    new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
+                        new ReadFeedPartitionRangeEnumerator(
+                            inMemoryCollection,
+                            feedRangeState: new FeedRangeState<ReadFeedState>(
+                                new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
+                                ReadFeedState.Beginning()),
+                            readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                            cancellationToken: default),
+                        cancellationToken: default);
 
                 int count = 0;
 
@@ -142,11 +169,10 @@
                     await enumerator.PrefetchAsync(trace: NoOpTrace.Singleton, default);
                 }
 
-                Random random = new Random();
                 while (await enumerator.MoveNextAsync(NoOpTrace.Singleton))
                 {
                     count += enumerator.Current.Result.GetRecords().Count;
-                    if (random.Next() % 2 == 0)
+                    if (exercisePrefetch)
                     {
                         for (int i = 0; i < 10; i++)
                         {
@@ -159,26 +185,34 @@
                 Assert.AreEqual(numItems, count);
             }
 
-            [TestMethod]
-            public async Task TestMoveNextAndBufferPageAsync()
+            public async Task TestMoveNextAndBufferPageAsync(bool aggressivePrefetch, bool exercisePrefetch)
             {
                 int numItems = 100;
                 IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
 
-                Random random = new Random();
-                for (int iteration = 0; iteration < iterations; iteration++)
+                for (int iteration = 0; iteration < Iterations; iteration++)
                 {
-                    BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> enumerator = new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
-                    new ReadFeedPartitionRangeEnumerator(
-                        inMemoryCollection,
-                        feedRangeState: new FeedRangeState<ReadFeedState>(
-                            new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
-                            ReadFeedState.Beginning()),
-                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
-                        cancellationToken: default),
-                    cancellationToken: default);
+                    BufferedPartitionRangePageAsyncEnumeratorBase<ReadFeedPage, ReadFeedState> enumerator = aggressivePrefetch ?
+                       new FullyBufferedPartitionRangeAsyncEnumerator<ReadFeedPage, ReadFeedState>(
+                            new ReadFeedPartitionRangeEnumerator(
+                                inMemoryCollection,
+                                feedRangeState: new FeedRangeState<ReadFeedState>(
+                                    new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
+                                    ReadFeedState.Beginning()),
+                                readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                                cancellationToken: default),
+                            cancellationToken: default) :
+                        new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
+                            new ReadFeedPartitionRangeEnumerator(
+                                inMemoryCollection,
+                                feedRangeState: new FeedRangeState<ReadFeedState>(
+                                    new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
+                                    ReadFeedState.Beginning()),
+                                readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                                cancellationToken: default),
+                            cancellationToken: default);
 
-                    if ((random.Next() % 2) == 0)
+                    if (exercisePrefetch)
                     {
                         await enumerator.PrefetchAsync(trace: NoOpTrace.Singleton, default);
                     }
@@ -187,8 +221,8 @@
                     while (await enumerator.MoveNextAsync(NoOpTrace.Singleton))
                     {
                         count += enumerator.Current.Result.GetRecords().Count;
-                        
-                        if ((random.Next() % 2) == 0)
+
+                        if (exercisePrefetch)
                         {
                             await enumerator.PrefetchAsync(trace: NoOpTrace.Singleton, default);
                         }
@@ -205,27 +239,49 @@
 
             protected override IAsyncEnumerable<TryCatch<ReadFeedPage>> CreateEnumerable(
                 IDocumentContainer documentContainer,
+                bool aggressivePrefetch = false,
                 ReadFeedState state = null)
             {
                 return new PartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState>(
                     feedRangeState: new FeedRangeState<ReadFeedState>(
                         new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                         state ?? ReadFeedState.Beginning()),
-                    (feedRangeState) => new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
-                        new ReadFeedPartitionRangeEnumerator(
-                            documentContainer,
-                            feedRangeState: feedRangeState,
-                            readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                    (feedRangeState) => aggressivePrefetch ?
+                        new FullyBufferedPartitionRangeAsyncEnumerator<ReadFeedPage, ReadFeedState>(
+                            new ReadFeedPartitionRangeEnumerator(
+                                documentContainer,
+                                feedRangeState: feedRangeState,
+                                readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                                cancellationToken: default),
+                        cancellationToken: default) :
+                        new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
+                            new ReadFeedPartitionRangeEnumerator(
+                                documentContainer,
+                                feedRangeState: feedRangeState,
+                                readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                                cancellationToken: default),
                             cancellationToken: default),
-                        cancellationToken: default),
                     trace: NoOpTrace.Singleton);
             }
 
-            public override IAsyncEnumerator<TryCatch<ReadFeedPage>> CreateEnumerator(
-                IDocumentContainer inMemoryCollection, ReadFeedState state = null, CancellationToken cancellationToken =default)
+            protected override IAsyncEnumerator<TryCatch<ReadFeedPage>> CreateEnumerator(
+                IDocumentContainer inMemoryCollection,
+                bool aggressivePrefetch = false,
+                ReadFeedState state = null,
+                CancellationToken cancellationToken = default)
             {
                 return new TracingAsyncEnumerator<TryCatch<ReadFeedPage>>(
-                    enumerator: new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
+                    enumerator: aggressivePrefetch ?
+                    new FullyBufferedPartitionRangeAsyncEnumerator<ReadFeedPage, ReadFeedState>(
+                        new ReadFeedPartitionRangeEnumerator(
+                            inMemoryCollection,
+                            feedRangeState: new FeedRangeState<ReadFeedState>(
+                                new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
+                                state ?? ReadFeedState.Beginning()),
+                            readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                            cancellationToken: cancellationToken),
+                    cancellationToken: cancellationToken) :
+                    new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
                         new ReadFeedPartitionRangeEnumerator(
                             inMemoryCollection,
                             feedRangeState: new FeedRangeState<ReadFeedState>(
@@ -235,15 +291,6 @@
                             cancellationToken: cancellationToken),
                     cancellationToken: cancellationToken),
                     trace: NoOpTrace.Singleton);
-            }
-
-            private async Task BufferMoreInBackground(BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> enumerator)
-            {
-                while (true)
-                {
-                    await enumerator.PrefetchAsync(trace: NoOpTrace.Singleton, default);
-                    await Task.Delay(10);
-                }
             }
         }
     }
