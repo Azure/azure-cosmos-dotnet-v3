@@ -93,7 +93,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             previewFlag = "P";
 #endif
             Assert.AreEqual($"cosmos-netstandard-sdk/{envInfo.ClientVersion}" + previewFlag, values[0]);
-            Assert.AreEqual(envInfo.DirectVersion, values[1]);
             Assert.AreEqual("0", values[2]);
             Assert.AreEqual(envInfo.ProcessArchitecture, values[3]);
             Assert.AreEqual(envInfo.OperatingSystem, values[4]);
@@ -377,7 +376,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             protected override void GetEnvironmentInformation(
                 out string clientVersion,
-                out string directVersion,
                 out string processArchitecture,
                 out string operatingSystem,
                 out string runtimeFramework)
@@ -387,7 +385,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 base.GetEnvironmentInformation(
                     clientVersion: out clientVersion,
-                    directVersion: out directVersion,
                     processArchitecture: out processArchitecture,
                     operatingSystem: out _,
                     runtimeFramework: out runtimeFramework);
