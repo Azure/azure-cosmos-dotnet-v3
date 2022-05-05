@@ -44,9 +44,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 throw new NotImplementedException();
             }
 
-            protected override IAsyncEnumerator<TryCatch<OrderByQueryPage>> CreateEnumerator(
+            protected override Task<IAsyncEnumerator<TryCatch<OrderByQueryPage>>> CreateEnumeratorAsync(
                 IDocumentContainer documentContainer,
                 bool aggressivePrefetch = false,
+                bool exercisePrefetch = false,
                 QueryState state = null,
                 CancellationToken cancellationToken = default)
             {
@@ -54,7 +55,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                     trace: NoOpTrace.Singleton,
                     cancellationToken: cancellationToken).Result;
                 Assert.AreEqual(1, ranges.Count);
-                return new TracingAsyncEnumerator<TryCatch<OrderByQueryPage>>(
+                
+                IAsyncEnumerator<TryCatch<OrderByQueryPage>> enumerator = new TracingAsyncEnumerator<TryCatch<OrderByQueryPage>>(
                     new OrderByQueryPartitionRangePageAsyncEnumerator(
                         queryDataSource: documentContainer,
                         sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
@@ -64,6 +66,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                         filter: "filter",
                         cancellationToken: cancellationToken),
                     NoOpTrace.Singleton);
+
+                return Task.FromResult(enumerator);
             }
         }
     }

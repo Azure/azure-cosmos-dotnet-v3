@@ -22,14 +22,14 @@
         public async Task Test429sAsync()
         {
             Implementation implementation = new Implementation();
-            await implementation.Test429sAsync();
+            await implementation.Test429sAsync(false);
         }
 
         [TestMethod]
         public async Task Test429sWithContinuationsAsync()
         {
             Implementation implementation = new Implementation();
-            await implementation.Test429sWithContinuationsAsync();
+            await implementation.Test429sWithContinuationsAsync(false, false);
         }
 
         [TestMethod]
@@ -50,7 +50,7 @@
         public async Task TestResumingFromStateAsync()
         {
             Implementation implementation = new Implementation();
-            await implementation.TestResumingFromStateAsync();
+            await implementation.TestResumingFromStateAsync(false, false);
         }
 
         [TestMethod]
@@ -73,7 +73,7 @@
             {
                 int numItems = 100;
                 IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems);
-                IAsyncEnumerator<TryCatch<QueryPage>> enumerator = this.CreateEnumerator(documentContainer);
+                IAsyncEnumerator<TryCatch<QueryPage>> enumerator = await this.CreateEnumeratorAsync(documentContainer);
 
                 (HashSet<string> parentIdentifiers, QueryState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
@@ -148,9 +148,10 @@
                     trace: NoOpTrace.Singleton);
             }
 
-            protected override IAsyncEnumerator<TryCatch<QueryPage>> CreateEnumerator(
+            protected override Task<IAsyncEnumerator<TryCatch<QueryPage>>> CreateEnumeratorAsync(
                 IDocumentContainer documentContainer,
                 bool aggressivePrefetch = false,
+                bool exercisePrefetch = false,
                 QueryState state = default,
                 CancellationToken cancellationToken = default)
             {
@@ -158,7 +159,8 @@
                     trace: NoOpTrace.Singleton, 
                     cancellationToken: default).Result;
                 Assert.AreEqual(1, ranges.Count);
-                return new TracingAsyncEnumerator<TryCatch<QueryPage>>(
+
+                IAsyncEnumerator<TryCatch<QueryPage>> enumerator = new TracingAsyncEnumerator<TryCatch<QueryPage>>(
                     enumerator: new QueryPartitionRangePageAsyncEnumerator(
                         queryDataSource: documentContainer,
                         sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
@@ -167,6 +169,8 @@
                         queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                         cancellationToken: cancellationToken),
                     trace: NoOpTrace.Singleton);
+
+                return Task.FromResult(enumerator);
             }
         }
     }

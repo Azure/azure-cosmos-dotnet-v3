@@ -16,18 +16,16 @@ namespace Microsoft.Azure.Cosmos.Pagination
     {
         private readonly PartitionRangePageAsyncEnumerator<TPage, TState> enumerator;
         private readonly List<TPage> bufferedPages;
-        private int index;
+        private int currentIndex;
         private Exception exception;
 
-        private bool HasPrefetched => this.exception != null || this.bufferedPages.Count > 0;
+        private bool HasPrefetched => (this.exception != null) || (this.bufferedPages.Count > 0);
 
         public FullyBufferedPartitionRangeAsyncEnumerator(PartitionRangePageAsyncEnumerator<TPage, TState> enumerator, CancellationToken cancellationToken)
             : base(enumerator.FeedRangeState, cancellationToken)
         {
             this.enumerator = enumerator ?? throw new ArgumentNullException(nameof(enumerator));
             this.bufferedPages = new List<TPage>();
-            this.index = 0;
-            this.exception = null;
         }
 
         public override ValueTask DisposeAsync()
@@ -51,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
             using (ITrace prefetchTrace = trace.StartChild("Prefetch", TraceComponent.Pagination, TraceLevel.Info))
             {
-                while (this.exception == null && await this.enumerator.MoveNextAsync(prefetchTrace))
+                while (await this.enumerator.MoveNextAsync(prefetchTrace))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     TryCatch<TPage> current = this.enumerator.Current;
@@ -62,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     else
                     {
                         this.exception = current.Exception;
+                        break;
                     }
                 }
             }
@@ -70,11 +69,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
         protected override async Task<TryCatch<TPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
         {
             TryCatch<TPage> result;
-            if (this.index < this.bufferedPages.Count)
+            if (this.currentIndex < this.bufferedPages.Count)
             {
-                result = TryCatch<TPage>.FromResult(this.bufferedPages[this.index]);
+                result = TryCatch<TPage>.FromResult(this.bufferedPages[this.currentIndex]);
             }
-            else if (this.index == this.bufferedPages.Count && this.exception != null)
+            else if (this.currentIndex == this.bufferedPages.Count && this.exception != null)
             {
                 result = TryCatch<TPage>.FromException(this.exception);
             }
@@ -84,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 result = this.enumerator.Current;
             }
 
-            ++this.index;
+            ++this.currentIndex;
             return result;
         }
 

@@ -188,10 +188,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             {
                 return PrefetchPolicy.PrefetchAll;
             }
-            else
-            {
-                return PrefetchPolicy.PrefetchSinglePage;
-            }
+
+            return PrefetchPolicy.PrefetchSinglePage;
         }
     }
 }

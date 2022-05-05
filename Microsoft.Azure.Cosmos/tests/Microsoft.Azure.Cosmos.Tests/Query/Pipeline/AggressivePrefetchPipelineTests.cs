@@ -168,6 +168,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 this.semaphore = new SemaphoreSlim(0, maxConcurrency);
                 this.cancellationToken = cancellationToken;
             }
+
             public override async Task<TryCatch<QueryPage>> MonadicQueryAsync(
                 SqlQuerySpec sqlQuerySpec,
                 FeedRangeState<QueryState> feedRangeState,

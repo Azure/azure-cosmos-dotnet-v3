@@ -22,14 +22,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         public async Task Test429sAsync()
         {
             Implementation implementation = new Implementation();
-            await implementation.Test429sAsync();
+            await implementation.Test429sAsync(false);
         }
 
         [TestMethod]
         public async Task Test429sWithContinuationsAsync()
         {
             Implementation implementation = new Implementation();
-            await implementation.Test429sWithContinuationsAsync();
+            await implementation.Test429sWithContinuationsAsync(false, false);
         }
 
         [TestMethod]
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         public async Task TestResumingFromStateAsync()
         {
             Implementation implementation = new Implementation();
-            await implementation.TestResumingFromStateAsync();
+            await implementation.TestResumingFromStateAsync(false, false);
         }
 
         [TestMethod]
@@ -139,13 +139,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     trace: NoOpTrace.Singleton);
             }
 
-            protected override IAsyncEnumerator<TryCatch<ReadFeedPage>> CreateEnumerator(
+            protected override Task<IAsyncEnumerator<TryCatch<ReadFeedPage>>> CreateEnumeratorAsync(
                 IDocumentContainer inMemoryCollection,
                 bool aggressivePrefetch = false,
+                bool exercisePrefetch = false,
                 ReadFeedState state = null,
                 CancellationToken cancellationToken = default)
             {
-                return new TracingAsyncEnumerator<TryCatch<ReadFeedPage>>(
+                IAsyncEnumerator<TryCatch<ReadFeedPage>> enumerator = new TracingAsyncEnumerator<TryCatch<ReadFeedPage>>(
                     new ReadFeedPartitionRangeEnumerator(
                         inMemoryCollection,
                         feedRangeState: new FeedRangeState<ReadFeedState>(
@@ -154,6 +155,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
                         cancellationToken: cancellationToken),
                     trace: NoOpTrace.Singleton);
+
+                return Task.FromResult(enumerator);
             }
         }
     }
