@@ -258,6 +258,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 routingMap = previousRoutingMap.TryCombine(tuples, changeFeedNextIfNoneMatch);
             }
 
+            trace.AddDatum("continuationToken", routingMap.ChangeFeedNextIfNoneMatch);
+
+            Console.WriteLine(changeFeedNextIfNoneMatch);
+            Console.WriteLine(routingMap.ChangeFeedNextIfNoneMatch);
+
             if (routingMap == null)
             {
                 // Range information either doesn't exist or is not complete.
