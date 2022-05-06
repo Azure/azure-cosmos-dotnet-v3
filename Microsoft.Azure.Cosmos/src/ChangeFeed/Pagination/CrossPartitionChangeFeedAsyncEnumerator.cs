@@ -158,10 +158,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                     documentContainer,
                     changeFeedPaginationOptions,
                     cancellationToken),
-                comparer: default /* this uses a regular queue instead of prioirty queue */,
+                comparer: default /* this uses a regular queue instead of priority queue */,
                 maxConcurrency: default,
-                cancellationToken,
-                state);
+                prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
+                cancellationToken: cancellationToken,
+                state: state);
 
             CrossPartitionChangeFeedAsyncEnumerator enumerator = new CrossPartitionChangeFeedAsyncEnumerator(
                 crossPartitionEnumerator,
