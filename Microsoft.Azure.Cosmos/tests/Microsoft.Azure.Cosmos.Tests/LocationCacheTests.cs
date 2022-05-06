@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                             retryCount++;
 
-                            StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+                            StoreResponseNameValueCollection headers = new();
                             headers[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString();
                             DocumentClientException notFoundException = new NotFoundException(RMResources.NotFound, headers);
 
@@ -237,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                             retryCount++;
 
-                            StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+                            StoreResponseNameValueCollection headers = new();
                             headers[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString();
                             DocumentClientException notFoundException = new NotFoundException(RMResources.NotFound, headers);
 
@@ -320,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                             retryCount++;
 
-                            StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+                            StoreResponseNameValueCollection headers = new();
                             headers[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString();
                             DocumentClientException notFoundException = new NotFoundException(RMResources.NotFound, headers);
 
@@ -400,7 +400,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                             retryCount++;
 
-                            StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+                            StoreResponseNameValueCollection headers = new();
                             headers[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString();
                             DocumentClientException notFoundException = new NotFoundException(RMResources.NotFound, headers);
 
@@ -456,7 +456,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                             Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
 
-                            StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+                            StoreResponseNameValueCollection headers = new();
                             headers[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.WriteForbidden).ToString();
                             DocumentClientException forbiddenException = new ForbiddenException(RMResources.Forbidden, headers);
 
@@ -523,7 +523,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
 
-                                StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+                                StoreResponseNameValueCollection headers = new();
                                 headers[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.DatabaseAccountNotFound).ToString();
                                 DocumentClientException forbiddenException = new ForbiddenException(RMResources.NotFound, headers);
 

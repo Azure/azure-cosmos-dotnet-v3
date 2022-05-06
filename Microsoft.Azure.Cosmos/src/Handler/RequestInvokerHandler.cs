@@ -156,8 +156,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         Content = streamPayload,
                     };
 
-                    request.Headers[HttpConstants.HttpHeaders.SDKSupportedCapabilities] = Headers.SDKSupportedCapabilities;
-
                     if (feedRange != null)
                     {
                         if (feedRange is FeedRangePartitionKey feedRangePartitionKey)
@@ -257,9 +255,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                     // In this case we route to the physical partition and 
                                     // pass the epk range headers to filter within partition
                                     request.PartitionKeyRangeId = new Documents.PartitionKeyRangeIdentity(overlappingRanges[0].Id);
-                                    request.Headers[HttpConstants.HttpHeaders.ReadFeedKeyType] = RntbdConstants.RntdbReadFeedKeyType.EffectivePartitionKeyRange.ToString();
-                                    request.Headers[HttpConstants.HttpHeaders.StartEpk] = feedRangeEpk.Range.Min;
-                                    request.Headers[HttpConstants.HttpHeaders.EndEpk] = feedRangeEpk.Range.Max;
+                                    request.Headers.ReadFeedKeyType = RntbdConstants.RntdbReadFeedKeyType.EffectivePartitionKeyRange.ToString();
+                                    request.Headers.StartEpk = feedRangeEpk.Range.Min;
+                                    request.Headers.EndEpk = feedRangeEpk.Range.Max;
                                 }
                             }
                         }
@@ -396,7 +394,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             resourceType: requestMessage.ResourceType))
                 {
                     // ConsistencyLevel compatibility with back-end configuration will be done by RequestInvokeHandler
-                    requestMessage.Headers.Add(HttpConstants.HttpHeaders.ConsistencyLevel, consistencyLevel.Value.ToString());
+                    requestMessage.Headers.ConsistencyLevel = consistencyLevel.Value.ToString();
                 }
                 else
                 {

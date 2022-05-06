@@ -279,7 +279,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             where T : Resource, new()
         {
             INameValueCollection inputHeaders = headers;
-            headers = new StoreRequestNameValueCollection();
+            headers = new Documents.Collections.RequestNameValueCollection();
             if (inputHeaders != null)
             {
                 headers.Add(inputHeaders); // dont mess with the input headers

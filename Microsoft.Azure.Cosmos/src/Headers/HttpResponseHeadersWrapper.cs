@@ -13,11 +13,13 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
-    internal sealed class HttpResponseHeadersWrapper : CosmosMessageHeadersInternal
+    internal sealed class HttpResponseHeadersWrapper : CosmosMessageHeadersInternal, INameValueCollection
     {
         private readonly HttpResponseHeaders httpResponseHeaders;
         private readonly HttpContentHeaders httpContentHeaders;
         private readonly Lazy<DictionaryNameValueCollection> dictionaryNameValueCollection;
+
+        public override INameValueCollection INameValueCollection => this;
 
         /// <summary>
         /// HttpResponse can have 2 headers. These headers have restrictions on what values are allowed.
@@ -64,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
             this.dictionaryNameValueCollection.Value.Add(collection);
         }
 
-        public override void Clear()
+        public void Clear()
         {
             this.httpResponseHeaders.Clear();
 
@@ -90,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
             return this.Keys().ToArray();
         }
 
-        public override INameValueCollection Clone()
+        public INameValueCollection Clone()
         {
             INameValueCollection headers = new DictionaryNameValueCollection();
 
@@ -105,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
             return headers;
         }
 
-        public override int Count()
+        public int Count()
         {
             int count = 0;
             if (this.dictionaryNameValueCollection.IsValueCreated)
@@ -175,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
             return this.httpResponseHeaders.GetValues(key).ToArray();
         }
 
-        public override IEnumerable<string> Keys()
+        public IEnumerable<string> Keys()
         {
             foreach (KeyValuePair<string, IEnumerable<string>> header in this.AllItems())
             {
@@ -209,7 +211,7 @@ namespace Microsoft.Azure.Cosmos
             this.Add(key, value);
         }
 
-        public override NameValueCollection ToNameValueCollection()
+        public NameValueCollection ToNameValueCollection()
         {
             NameValueCollection nameValueCollection = new NameValueCollection();
             foreach (KeyValuePair<string, IEnumerable<string>> header in this.AllItems())
@@ -223,6 +225,11 @@ namespace Microsoft.Azure.Cosmos
         private string JoinHeaders(IEnumerable<string> headerValues)
         {
             return headerValues == null ? null : string.Join(",", headerValues);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.GetEnumerator();
         }
     }
 }

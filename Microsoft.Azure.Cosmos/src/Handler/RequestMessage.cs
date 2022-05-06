@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos
                         resourceIdOrFullName: null,
                         resourceType: this.ResourceType,
                         body: this.Content,
-                        headers: this.Headers.CosmosMessageHeaders,
+                        headers: this.Headers.CosmosMessageHeaders.INameValueCollection,
                         isNameBased: false,
                         authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
                 }
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos
                         this.RequestUriString, 
                         this.Content, 
                         AuthorizationTokenType.PrimaryMasterKey, 
-                        this.Headers.CosmosMessageHeaders);
+                        this.Headers.CosmosMessageHeaders.INameValueCollection);
                 }
 
                 if (this.UseGatewayMode.HasValue)
