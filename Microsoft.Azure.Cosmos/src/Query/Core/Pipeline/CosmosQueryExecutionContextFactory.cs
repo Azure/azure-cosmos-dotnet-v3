@@ -379,6 +379,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 queryPaginationOptions: new QueryPaginationOptions(
                     pageSizeHint: inputParameters.MaxItemCount),
                 partitionKey: inputParameters.PartitionKey,
+                prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
                 maxConcurrency: inputParameters.MaxConcurrency,
                 cancellationToken: cancellationToken,
                 continuationToken: inputParameters.InitialUserContinuationToken);
