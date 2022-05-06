@@ -104,6 +104,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
                     cancellationToken),
                 comparer: comparer,
                 maxConcurrency: default,
+                prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
                 cancellationToken,
                 crossFeedRangeState);
 
@@ -116,11 +117,14 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
         private static CreatePartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> MakeCreateFunction(
             IReadFeedDataSource readFeedDataSource,
             ReadFeedPaginationOptions readFeedPaginationOptions,
-            CancellationToken cancellationToken) => (FeedRangeState<ReadFeedState> feedRangeState) => new ReadFeedPartitionRangeEnumerator(
+            CancellationToken cancellationToken)
+        {
+            return (FeedRangeState<ReadFeedState> feedRangeState) => new ReadFeedPartitionRangeEnumerator(
                 readFeedDataSource,
                 feedRangeState,
                 readFeedPaginationOptions,
                 cancellationToken);
+        }
 
         private sealed class PartitionRangePageAsyncEnumeratorComparerForward : IComparer<PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>>
         {
