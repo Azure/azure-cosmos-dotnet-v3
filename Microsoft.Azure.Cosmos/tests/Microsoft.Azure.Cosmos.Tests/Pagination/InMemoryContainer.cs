@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using ResourceIdentifier = Cosmos.Pagination.ResourceIdentifier;
 
     // Collection useful for mocking requests and repartitioning (splits / merge).
-    internal sealed class InMemoryContainer : IMonadicDocumentContainer
+    internal class InMemoryContainer : IMonadicDocumentContainer
     {
         private readonly PartitionKeyDefinition partitionKeyDefinition;
         private readonly Dictionary<int, (int, int)> parentToChildMapping;
@@ -449,7 +449,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
         }
 
-        public Task<TryCatch<QueryPage>> MonadicQueryAsync(
+        public virtual Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
             QueryPaginationOptions queryPaginationOptions,
