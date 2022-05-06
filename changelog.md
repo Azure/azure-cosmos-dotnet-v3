@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#3119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3119) Session: Fixes NotFound/ReadSessionNotAvailable (404/1002) on collection-recreate scenario for query-only workloads
 - [#3124](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3124) Change Feed Processor: Fixes noisy error notification when lease is stolen by other host
 - [#3141](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3141) Diagnostics: Fixes contacted replica count
-- [#3173](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3173) UserAgent: Fixes useragent by removing direct version
+- [#3173](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3173) UserAgent: Optimized size by removing irrelevant information
 
 
 ### <a name="3.26.2"/> [3.26.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.26.2) - 2022-05-05
