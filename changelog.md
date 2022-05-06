@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#3168](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3168) Performance: Adds aggressive prefetching for scalar aggregates for Query
 
 #### Fixed
-- [#3102](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3102) Upsert item: Fixes a bug causing session tokens for PKRangeId 0 to be overridden by session token for another partition on upserts
+- [#3102](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3102) Upsert item: Fixes a bug causing session tokens for partition 0 to be overridden by session token for another partition when users don't pass the token as input
 - [#3119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3119) Session: Fixes NotFound/ReadSessionNotAvailable (404/1002) on collection-recreate scenario for query-only workloads
 - [#3124](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3124) Change Feed Processor: Fixes noisy error notification when lease is stolen by other host
 - [#3141](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3141) Diagnostics: Fixes contacted replica count
