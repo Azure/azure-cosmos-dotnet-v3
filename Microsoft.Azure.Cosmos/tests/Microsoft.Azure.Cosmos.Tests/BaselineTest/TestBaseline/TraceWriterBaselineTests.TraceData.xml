@@ -342,7 +342,7 @@
           "ResponseTimeUTC": "9999-12-31T23:59:59.9999999",
           "ResourceType": "Document",
           "OperationType": "Query",
-          "SessionToken": "42",
+          "RequestSessionToken": "42",
           "LocationEndpoint": "http://someuri1.com/",
           "StoreResult": {
             "ActivityId": "00000000-0000-0000-0000-000000000000",
@@ -552,7 +552,7 @@
           "ResponseTimeUTC": "0001-01-01T00:00:00",
           "ResourceType": "Database",
           "OperationType": "Create",
-          "SessionToken": null,
+          "RequestSessionToken": null,
           "LocationEndpoint": null,
           "StoreResult": {
             "ActivityId": null,
