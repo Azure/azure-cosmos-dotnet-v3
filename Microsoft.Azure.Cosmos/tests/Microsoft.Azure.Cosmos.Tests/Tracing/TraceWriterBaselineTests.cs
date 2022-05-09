@@ -438,7 +438,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                  transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                             resourceType: default,
                             operationType: default,
-                            sessionToken: default,
+                            requestSessionToken: default,
                             locationEndpoint: default);
 
                         TraceWriterBaselineTests.GetPrivateField<List<StoreResponseStatistics>>(datum, "storeResponseStatistics").Add(storeResponseStatistics);
