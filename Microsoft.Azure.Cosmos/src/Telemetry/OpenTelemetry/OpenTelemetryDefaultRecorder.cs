@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     {
         private readonly DiagnosticScope scope;
 
-        private readonly IOpenTelemetryResponse response;
+        private IOpenTelemetryResponse response;
 
         public OpenTelemetryDefaultRecorder(DiagnosticScope scope)
         {
@@ -34,6 +34,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         {
             if (this.scope.IsEnabled)
             {
+                this.response = response;  
+
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, response.StatusCode);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, response.RequestContentLength);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, response.ResponseContentLength);

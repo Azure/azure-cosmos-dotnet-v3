@@ -72,13 +72,23 @@ namespace Microsoft.Azure.Cosmos
         public abstract CosmosDiagnostics Diagnostics { get; }
 
         /// <summary>
-        /// ResponseLength
+        /// RequestContentLength
         /// </summary>
-        public long RequestContentLength => 0;
+        public abstract long? RequestContentLength { get; }
 
         /// <summary>
-        /// ResponseLength
+        /// ResponseContentLength
         /// </summary>
-        public long ResponseContentLength => Convert.ToInt64(this.Headers.ContentLength);
+        public abstract long? ResponseContentLength { get; }
+
+        /// <summary>
+        /// ContainerName
+        /// </summary>
+        public abstract string ContainerName { get; }
+
+        /// <summary>
+        /// ItemCount
+        /// </summary>
+        public abstract string ItemCount { get; }
     }
 }

@@ -87,6 +87,18 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <inheritdoc/>
+        public override long? RequestContentLength => throw new System.NotImplementedException();
+
+        /// <inheritdoc/>
+        public override long? ResponseContentLength => throw new System.NotImplementedException();
+
+        /// <inheritdoc/>
+        public override string ContainerName => throw new System.NotImplementedException();
+
+        /// <inheritdoc/>
+        public override string ItemCount => throw new System.NotImplementedException();
+
         /// <summary>
         /// Get <see cref="ThroughputProperties"/> implicitly from <see cref="ThroughputResponse"/>
         /// </summary>

@@ -36,6 +36,14 @@ namespace Microsoft.Azure.Cosmos
 
         public override string IndexMetrics { get; }
 
+        public override long? RequestContentLength => throw new System.NotImplementedException();
+
+        public override long? ResponseContentLength => throw new System.NotImplementedException();
+
+        public override string ContainerName => throw new System.NotImplementedException();
+
+        public override string ItemCount => throw new System.NotImplementedException();
+
         public override IEnumerator<T> GetEnumerator()
         {
             return this.Resource.GetEnumerator();

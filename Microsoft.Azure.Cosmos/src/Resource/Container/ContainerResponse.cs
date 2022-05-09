@@ -65,6 +65,18 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override string ETag => this.Headers?.ETag;
 
+        /// <inheritdoc/>
+        public override long? RequestContentLength => throw new System.NotImplementedException();
+
+        /// <inheritdoc/>
+        public override long? ResponseContentLength => throw new System.NotImplementedException();
+
+        /// <inheritdoc/>
+        public override string ContainerName => throw new System.NotImplementedException();
+
+        /// <inheritdoc/>
+        public override string ItemCount => throw new System.NotImplementedException();
+
         /// <summary>
         /// Get <see cref="Cosmos.Container"/> implicitly from <see cref="ContainerResponse"/>
         /// </summary>

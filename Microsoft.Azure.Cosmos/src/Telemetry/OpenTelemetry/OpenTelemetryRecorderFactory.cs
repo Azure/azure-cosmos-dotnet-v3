@@ -8,15 +8,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
     internal static class OpenTelemetryRecorderFactory
     {
-//#if PREVIEW
+#if PREVIEW
         public static DiagnosticScopeFactory ScopeFactory { get; } = new DiagnosticScopeFactory(
                                                                                 clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace, 
                                                                                 resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
                                                                                 isActivityEnabled: true);
-//#endif
+#endif
         public static IOpenTelemetryRecorder CreateRecorder(string operationName)
         {
-//#if PREVIEW
+#if PREVIEW
             DiagnosticScope scope = OpenTelemetryRecorderFactory
                 .ScopeFactory
                 .CreateScope($"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}");
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
                 return new OpenTelemetryDefaultRecorder(scope);
             }
-//#endif
+#endif
 
             return OpenTelemetryRecorderNoOp.Singleton;
         }

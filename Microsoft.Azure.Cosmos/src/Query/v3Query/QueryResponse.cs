@@ -210,6 +210,14 @@ namespace Microsoft.Azure.Cosmos
 
         public override IEnumerable<T> Resource { get; }
 
+        public override long? RequestContentLength => throw new NotImplementedException();
+
+        public override long? ResponseContentLength => throw new NotImplementedException();
+
+        public override string ContainerName => throw new NotImplementedException();
+
+        public override string ItemCount => throw new NotImplementedException();
+
         internal static QueryResponse<TInput> CreateResponse<TInput>(
             QueryResponse cosmosQueryResponse,
             CosmosSerializerCore serializerCore)

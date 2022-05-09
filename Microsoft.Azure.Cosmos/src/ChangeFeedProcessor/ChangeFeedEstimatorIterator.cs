@@ -372,6 +372,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             public override string IndexMetrics => null;
 
+            public override long? RequestContentLength => throw new NotImplementedException();
+
+            public override long? ResponseContentLength => throw new NotImplementedException();
+
+            public override string ContainerName => throw new NotImplementedException();
+
+            public override string ItemCount => throw new NotImplementedException();
+
             public override IEnumerator<ChangeFeedProcessorState> GetEnumerator()
             {
                 return this.remainingLeaseWorks.GetEnumerator();
@@ -404,6 +412,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             public override CosmosDiagnostics Diagnostics => new CosmosTraceDiagnostics(this.Trace);
 
             public override string IndexMetrics => string.Empty;
+
+            public override long? RequestContentLength => throw new NotImplementedException();
+
+            public override long? ResponseContentLength => throw new NotImplementedException();
+
+            public override string ContainerName => throw new NotImplementedException();
+
+            public override string ItemCount => throw new NotImplementedException();
 
             public override IEnumerator<ChangeFeedProcessorState> GetEnumerator()
             {

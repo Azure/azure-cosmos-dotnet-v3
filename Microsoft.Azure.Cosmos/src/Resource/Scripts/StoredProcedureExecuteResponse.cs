@@ -81,5 +81,17 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 return string.IsNullOrEmpty(logResults) ? logResults : Uri.UnescapeDataString(logResults);
             }
         }
+
+        /// <inheritdoc/>
+        public override long? RequestContentLength => throw new NotImplementedException();
+
+        /// <inheritdoc/>
+        public override long? ResponseContentLength => throw new NotImplementedException();
+
+        /// <inheritdoc/>
+        public override string ContainerName => throw new NotImplementedException();
+
+        /// <inheritdoc/>
+        public override string ItemCount => throw new NotImplementedException();
     }
 }
