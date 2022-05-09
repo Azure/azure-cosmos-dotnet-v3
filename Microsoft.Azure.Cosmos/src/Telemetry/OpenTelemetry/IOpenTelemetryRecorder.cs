@@ -24,9 +24,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         /// <param name="value"></param>
         public abstract void Record(string key, string value);
 
-         /// <summary>
-         /// Recording Attributes
-         /// </summary>
+        /// <summary>
+        /// Recording attributes from response
+        /// </summary>
+        /// <param name="response">IOpenTelemetryResponse</param>
         public abstract void Record(IOpenTelemetryResponse response);
 
         /// <summary>

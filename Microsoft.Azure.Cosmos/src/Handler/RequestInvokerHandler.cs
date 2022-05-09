@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -224,7 +223,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                     subStatusCode: default,
                                     activityId: Guid.Empty.ToString(),
                                     requestCharge: default);
-
                                 return notFound.ToCosmosResponseMessage(request);
                             }
 
@@ -287,11 +285,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         request.ContainerId = cosmosContainerCore?.Id;
                         request.DatabaseId = cosmosContainerCore?.Database.Id;
                     }
-
                     requestEnricher?.Invoke(request);
 
                     return await this.SendAsync(request, cancellationToken);
-
                 }
                 finally
                 {
