@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
 
     internal static class TraceJoiner
     {
@@ -65,8 +64,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
             public IReadOnlyDictionary<string, object> Data => this.data;
 
             public IReadOnlyList<(string, Uri)> RegionsContacted => new List<(string, Uri)>();
-
-            public IOpenTelemetryRecorder OpenTelemetryAttributeRecorder => new OpenTelemetryRecorderNoOp();
 
             public void AddDatum(string key, TraceDatum traceDatum)
             {

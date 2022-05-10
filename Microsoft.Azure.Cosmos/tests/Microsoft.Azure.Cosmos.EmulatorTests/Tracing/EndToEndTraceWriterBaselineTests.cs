@@ -16,7 +16,6 @@
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
-    using Telemetry.Diagnostics;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
 
     [VisualStudio.TestTools.UnitTesting.TestClass]
@@ -1371,7 +1370,7 @@
             {
                 this.data[key] = traceDatum;
             }
-            
+
             public void AddDatum(string key, object value)
             {
                 if (key.Contains("CPU"))
@@ -1391,8 +1390,6 @@
             {
                 return this.StartChild(name, TraceComponent.Unknown, TraceLevel.Info);
             }
-
-            public IOpenTelemetryRecorder OpenTelemetryAttributeRecorder { get; }
 
             public ITrace StartChild(string name, TraceComponent component, TraceLevel level)
             {
