@@ -647,7 +647,6 @@
                 HttpMethod.Get,
                 ResourceType.Document,
                 new HttpResponseMessage(System.Net.HttpStatusCode.OK) { ReasonPhrase = "Success" },
-                "continuationToken",
                 exception: null);
 
             TraceWriterBaselineTests.GetPrivateField<List<HttpResponseStatistics>>(datum, "httpResponseStatistics").Add(httpResponseStatistics);
@@ -659,7 +658,6 @@
                 HttpMethod.Get,
                 ResourceType.Document,
                 responseMessage: null,
-                "continuationToken",
                 exception: new OperationCanceledException());
             TraceWriterBaselineTests.GetPrivateField<List<HttpResponseStatistics>>(datum, "httpResponseStatistics").Add(httpResponseStatisticsException);
 
@@ -728,7 +726,6 @@
           "ResourceType": "Document",
           "HttpMethod": "GET",
           "ActivityId": "00000000-0000-0000-0000-000000000000",
-          "ContinuationToken": "continuationToken",
           "StatusCode": "OK"
         },
         {
@@ -738,7 +735,6 @@
           "ResourceType": "Document",
           "HttpMethod": "GET",
           "ActivityId": "00000000-0000-0000-0000-000000000000",
-          "ContinuationToken": "continuationToken",
           "ExceptionType": "System.OperationCanceledException",
           "ExceptionMessage": "The operation was canceled."
         }

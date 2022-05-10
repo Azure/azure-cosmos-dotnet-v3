@@ -464,7 +464,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             HttpMethod.Get,
                             ResourceType.Document,
                             new HttpResponseMessage(System.Net.HttpStatusCode.OK) { ReasonPhrase = "Success" },
-                            "continuationToken",
                             exception: null);
 
                         TraceWriterBaselineTests.GetPrivateField<List<HttpResponseStatistics>>(datum, "httpResponseStatistics").Add(httpResponseStatistics);
@@ -476,7 +475,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             HttpMethod.Get,
                             ResourceType.Document,
                             responseMessage: null,
-                            "continuationToken",
                             exception: new OperationCanceledException());
                         TraceWriterBaselineTests.GetPrivateField<List<HttpResponseStatistics>>(datum, "httpResponseStatistics").Add(httpResponseStatisticsException);
 

@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
     using System.Net.Http;
     using System.Text;
     using Microsoft.Azure.Cosmos.Handler;
@@ -343,14 +342,12 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 }
 
                 this.shallowCopyOfHttpResponseStatistics = null;
-                request.Headers.TryGetValues(HttpConstants.HttpHeaders.IfNoneMatch, out IEnumerable<string> value);
                 this.httpResponseStatistics.Add(new HttpResponseStatistics(requestStartTimeUtc,
                                                                            requestEndTimeUtc,
                                                                            request.RequestUri,
                                                                            request.Method,
                                                                            resourceType,
                                                                            response,
-                                                                           value?.First(),
                                                                            exception: null));
             }
         }
@@ -373,14 +370,12 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 }
 
                 this.shallowCopyOfHttpResponseStatistics = null;
-                request.Headers.TryGetValues(HttpConstants.HttpHeaders.IfNoneMatch, out IEnumerable<string> value);
                 this.httpResponseStatistics.Add(new HttpResponseStatistics(requestStartTimeUtc,
                                                                            requestEndTimeUtc,
                                                                            request.RequestUri,
                                                                            request.Method,
                                                                            resourceType,
                                                                            responseMessage: null,
-                                                                           value?.First(),
                                                                            exception: exception));
             }
         }
@@ -479,7 +474,6 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 HttpMethod httpMethod,
                 ResourceType resourceType,
                 HttpResponseMessage responseMessage,
-                string continuationToken,
                 Exception exception)
             {
                 this.RequestStartTime = requestStartTime;
@@ -489,7 +483,6 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 this.ResourceType = resourceType;
                 this.HttpMethod = httpMethod;
                 this.RequestUri = requestUri;
-                this.ContinuationToken = continuationToken;
 
                 if (responseMessage != null)
                 {
@@ -502,7 +495,6 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 }
             }
 
-            public string ContinuationToken { get; }
             public DateTime RequestStartTime { get; }
             public TimeSpan Duration { get; }
             public HttpResponseMessage HttpResponseMessage { get; }

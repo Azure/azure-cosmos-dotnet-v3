@@ -261,12 +261,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 jsonWriter.WriteFieldName("ActivityId");
                 this.WriteStringValueOrNull(stat.ActivityId);
 
-                if (!string.IsNullOrEmpty(stat.ContinuationToken))
-                {
-                    jsonWriter.WriteFieldName("ContinuationToken");
-                    jsonWriter.WriteStringValue(stat.ContinuationToken);
-                }
-
                 if (stat.Exception != null)
                 {
                     jsonWriter.WriteFieldName("ExceptionType");
