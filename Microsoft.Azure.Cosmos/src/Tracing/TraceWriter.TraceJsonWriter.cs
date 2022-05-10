@@ -560,6 +560,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     this.jsonWriter.WriteStringValue(value.ToString("o", CultureInfo.InvariantCulture));
                 }
             }
+
+            public void Visit(PartitionKeyRangeCacheTraceDatum partitionKeyRangeCacheTraceDatum)
+            {
+                this.jsonWriter.WriteObjectStart();
+
+                this.jsonWriter.WriteFieldName("Previous Continuation Token");
+                this.WriteStringValueOrNull(partitionKeyRangeCacheTraceDatum.PreviousContinuationToken);
+
+                this.jsonWriter.WriteFieldName("Continuation Token");
+                this.WriteStringValueOrNull(partitionKeyRangeCacheTraceDatum.ContinuationToken);
+
+                this.jsonWriter.WriteObjectEnd();
+            }
         }
     }
 }

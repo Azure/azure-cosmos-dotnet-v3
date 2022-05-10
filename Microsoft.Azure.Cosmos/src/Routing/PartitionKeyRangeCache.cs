@@ -61,11 +61,18 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 if (forceRefresh && routingMap != null)
                 {
+                    string prevContinuationToken = routingMap.ChangeFeedNextIfNoneMatch;
+
                     routingMap = await this.TryLookupAsync(
                         collectionRid: collectionRid,
                         previousValue: routingMap,
                         request: null,
                         trace: childTrace);
+
+                    childTrace.AddDatum("PKRangeCache Info", 
+                                                new PartitionKeyRangeCacheTraceDatum(
+                                                    previousContinuationToken: prevContinuationToken,
+                                                    continuationToken: routingMap.ChangeFeedNextIfNoneMatch));
                 }
 
                 if (routingMap == null)
