@@ -65,15 +65,15 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (OperationCanceledException ex)
                 {
-                        trace.AddDatum("Client Side Request Stats", stats);
-                        throw CosmosExceptionFactory.CreateRequestTimeoutException(
-                                                    message: ex.Data?["Message"].ToString(),
-                                                    headers: new Headers()
-                                                    {
-                                                        ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString()
-                                                    },
-                                                    innerException: ex,
-                                                    trace: trace);
+                    trace.AddDatum("Client Side Request Stats", stats);
+                    throw CosmosExceptionFactory.CreateRequestTimeoutException(
+                                                message: ex.Data?["Message"].ToString(),
+                                                headers: new Headers()
+                                                {
+                                                    ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString()
+                                                },
+                                                innerException: ex,
+                                                trace: trace);
                 }
             }
         }

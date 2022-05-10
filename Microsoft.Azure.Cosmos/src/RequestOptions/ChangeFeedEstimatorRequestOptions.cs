@@ -16,6 +16,5 @@ namespace Microsoft.Azure.Cosmos
         /// If this value is greater than the number of leases, all estimations will be returned in the first page.
         /// </remarks>
         public int? MaxItemCount { get; set; }
-
     }
 }
