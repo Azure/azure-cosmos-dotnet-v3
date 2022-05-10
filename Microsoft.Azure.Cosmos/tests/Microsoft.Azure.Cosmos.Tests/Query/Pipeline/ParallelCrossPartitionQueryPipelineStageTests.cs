@@ -37,6 +37,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
                 maxConcurrency: 10,
+                prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
                 cancellationToken: default,
                 continuationToken: null);
             Assert.IsTrue(monadicCreate.Succeeded);
@@ -54,6 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
                 maxConcurrency: 10,
+                prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
                 cancellationToken: default,
                 continuationToken: CosmosObject.Create(new Dictionary<string, CosmosElement>()));
             Assert.IsTrue(monadicCreate.Failed);
@@ -72,6 +74,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
                 maxConcurrency: 10,
+                prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
                 cancellationToken: default,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>()));
             Assert.IsTrue(monadicCreate.Failed);
@@ -90,6 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
                 maxConcurrency: 10,
+                prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
                 cancellationToken: default,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { CosmosString.Create("asdf") }));
             Assert.IsTrue(monadicCreate.Failed);
@@ -112,6 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
                 maxConcurrency: 10,
+                prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
                 cancellationToken: default,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { ParallelContinuationToken.ToCosmosElement(token) }));
             Assert.IsTrue(monadicCreate.Succeeded);
@@ -141,6 +146,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
                 maxConcurrency: 10,
+                prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
                 cancellationToken: default,
                 continuationToken: CosmosArray.Create(
                     new List<CosmosElement>()
@@ -152,17 +158,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
-        [DataRow(false, false, false, DisplayName = "Use State: false, Allow Splits: false, Allow Merges: false")]
-        [DataRow(false, false, true, DisplayName = "Use State: false, Allow Splits: false, Allow Merges: true")]
-        [DataRow(false, true, false, DisplayName = "Use State: false, Allow Splits: true, Allow Merges: false")]
-        [DataRow(false, true, true, DisplayName = "Use State: false, Allow Splits: true, Allow Merges: true")]
-        [DataRow(true, false, false, DisplayName = "Use State: true, Allow Splits: false, Allow Merges: false")]
-        [DataRow(true, false, true, DisplayName = "Use State: true, Allow Splits: false, Allow Merges: true")]
-        [DataRow(true, true, false, DisplayName = "Use State: true, Allow Splits: true, Allow Merges: false")]
-        [DataRow(true, true, true, DisplayName = "Use State: true, Allow Splits: true, Allow Merges: true")]
-        public async Task TestDrainWithStateSplitsAndMergeAsync(bool useState, bool allowSplits, bool allowMerges)
+        [DataRow(false, false, false, false, DisplayName = "Use State: false, Allow Splits: false, Allow Merges: false")]
+        [DataRow(false, false, true, false, DisplayName = "Use State: false, Allow Splits: false, Allow Merges: true")]
+        [DataRow(false, true, false, false, DisplayName = "Use State: false, Allow Splits: true, Allow Merges: false")]
+        [DataRow(false, true, true, false, DisplayName = "Use State: false, Allow Splits: true, Allow Merges: true")]
+        [DataRow(true, false, false, false, DisplayName = "Use State: true, Allow Splits: false, Allow Merges: false")]
+        [DataRow(true, false, true, false, DisplayName = "Use State: true, Allow Splits: false, Allow Merges: true")]
+        [DataRow(true, true, false, false, DisplayName = "Use State: true, Allow Splits: true, Allow Merges: false")]
+        [DataRow(true, true, true, false, DisplayName = "Use State: true, Allow Splits: true, Allow Merges: true")]
+        [DataRow(false, false, false, true, DisplayName = "Use State: false, Allow Splits: false, Allow Merges: false")]
+        [DataRow(false, false, true, true, DisplayName = "Use State: false, Allow Splits: false, Allow Merges: true")]
+        [DataRow(false, true, false, true, DisplayName = "Use State: false, Allow Splits: true, Allow Merges: false")]
+        [DataRow(false, true, true, true, DisplayName = "Use State: false, Allow Splits: true, Allow Merges: true")]
+        [DataRow(true, false, false, true, DisplayName = "Use State: true, Allow Splits: false, Allow Merges: false")]
+        [DataRow(true, false, true, true, DisplayName = "Use State: true, Allow Splits: false, Allow Merges: true")]
+        [DataRow(true, true, false, true, DisplayName = "Use State: true, Allow Splits: true, Allow Merges: false")]
+        [DataRow(true, true, true, true, DisplayName = "Use State: true, Allow Splits: true, Allow Merges: true")]
+        public async Task TestDrainWithStateSplitsAndMergeAsync(bool useState, bool allowSplits, bool allowMerges, bool aggressivePrefetch)
         {
-            static async Task<IQueryPipelineStage> CreatePipelineStateAsync(IDocumentContainer documentContainer, CosmosElement continuationToken)
+            async Task<IQueryPipelineStage> CreatePipelineStateAsync(IDocumentContainer documentContainer, CosmosElement continuationToken)
             {
                 TryCatch<IQueryPipelineStage> monadicQueryPipelineStage = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer: documentContainer,
@@ -173,6 +187,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                     partitionKey: null,
                     maxConcurrency: 10,
+                    prefetchPolicy: aggressivePrefetch ? PrefetchPolicy.PrefetchAll : PrefetchPolicy.PrefetchSinglePage,
                     cancellationToken: default,
                     continuationToken: continuationToken);
                 Assert.IsTrue(monadicQueryPipelineStage.Succeeded);
