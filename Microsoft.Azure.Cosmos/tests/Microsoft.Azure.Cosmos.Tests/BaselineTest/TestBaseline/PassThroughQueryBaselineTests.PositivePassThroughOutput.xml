@@ -1,0 +1,41 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>Partition Key + Value and Distinct</Description>
+      <Query>SELECT DISTINCT c.key FROM c</Query>
+      <PartitionKeys>
+        <Key>/pk</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <ExecuteAsPassThrough>true</ExecuteAsPassThrough>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Partition Key + Value and Min Aggregate</Description>
+      <Query>SELECT VALUE MIN(c.key) FROM c</Query>
+      <PartitionKeys>
+        <Key>/pk</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <ExecuteAsPassThrough>true</ExecuteAsPassThrough>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Partition Key + Value Fields</Description>
+      <Query>SELECT c.key FROM c</Query>
+      <PartitionKeys>
+        <Key>/pk</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <ExecuteAsPassThrough>true</ExecuteAsPassThrough>
+    </Output>
+  </Result>
+</Results>
