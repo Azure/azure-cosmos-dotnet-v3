@@ -61,18 +61,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 if (forceRefresh && routingMap != null)
                 {
-                    string prevContinuationToken = routingMap.ChangeFeedNextIfNoneMatch;
-
                     routingMap = await this.TryLookupAsync(
                         collectionRid: collectionRid,
                         previousValue: routingMap,
                         request: null,
                         trace: childTrace);
-
-                    childTrace.AddDatum("PKRangeCache Info", 
-                                                new PartitionKeyRangeCacheTraceDatum(
-                                                    previousContinuationToken: prevContinuationToken,
-                                                    continuationToken: routingMap.ChangeFeedNextIfNoneMatch));
                 }
 
                 if (routingMap == null)
@@ -271,6 +264,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 throw new NotFoundException($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: GetRoutingMapForCollectionAsync(collectionRid: {collectionRid}), Range information either doesn't exist or is not complete.");
             }
 
+            trace.AddDatum("PKRangeCache Info",
+                                          new PartitionKeyRangeCacheTraceDatum(
+                                              previousContinuationToken: changeFeedNextIfNoneMatch,
+                                              continuationToken: routingMap.ChangeFeedNextIfNoneMatch));
             return routingMap;
         }
 

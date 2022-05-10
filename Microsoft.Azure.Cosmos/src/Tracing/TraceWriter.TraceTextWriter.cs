@@ -500,7 +500,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 public void Visit(PartitionKeyRangeCacheTraceDatum partitionKeyRangeCacheTraceDatum)
                 {
                     StringBuilder stringBuilder = new StringBuilder();
-                    stringBuilder.AppendLine(partitionKeyRangeCacheTraceDatum.Value.ToString());
                     stringBuilder.AppendLine($"Previous Continuation Token: {partitionKeyRangeCacheTraceDatum.PreviousContinuationToken ?? "<null>"}");
                     stringBuilder.AppendLine($"Continuation Token: {partitionKeyRangeCacheTraceDatum.ContinuationToken ?? "<null>"}");
 
