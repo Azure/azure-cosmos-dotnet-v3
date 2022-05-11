@@ -239,6 +239,7 @@
                     transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                 ResourceType.Document,
                 OperationType.Query,
+                "42",
                 uri1.Uri);
 
             TraceWriterBaselineTests.GetPrivateField<List<StoreResponseStatistics>>(datum, "storeResponseStatistics").Add(storeResponseStatistics);
@@ -341,6 +342,7 @@
           "ResponseTimeUTC": "9999-12-31T23:59:59.9999999",
           "ResourceType": "Document",
           "OperationType": "Query",
+          "RequestSessionToken": "42",
           "LocationEndpoint": "http://someuri1.com/",
           "StoreResult": {
             "ActivityId": "00000000-0000-0000-0000-000000000000",
@@ -463,6 +465,7 @@
                      transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                 resourceType: default,
                 operationType: default,
+                requestSessionToken: default,
                 locationEndpoint: default);
 
             TraceWriterBaselineTests.GetPrivateField<List<StoreResponseStatistics>>(datum, "storeResponseStatistics").Add(storeResponseStatistics);

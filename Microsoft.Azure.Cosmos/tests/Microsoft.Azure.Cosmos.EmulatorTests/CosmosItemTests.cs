@@ -135,6 +135,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Diagnostics);
             CosmosTraceDiagnostics diagnostics = (CosmosTraceDiagnostics)response.Diagnostics;
             Assert.IsFalse(diagnostics.IsGoneExceptionHit());
+            string diagnosticString = response.Diagnostics.ToString();
+            Assert.IsTrue(diagnosticString.Contains("Response Serialization"));
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics.ToString()));
             Assert.IsTrue(diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
             Assert.AreEqual(0, response.Diagnostics.GetFailedRequestCount());
@@ -1081,6 +1083,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         // Only need once to verify correct serialization of the query definition
                         FeedResponse<dynamic> response = await feedIterator.ReadNextAsync(this.cancellationToken);
+                        string diagnosticString = response.Diagnostics.ToString();
+                        Assert.IsTrue(diagnosticString.Contains("Query Response Serialization"));
                         Assert.AreEqual(response.Count, response.Count());
                         allItems.AddRange(response);
                         pageCount++;
@@ -1808,7 +1812,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.PreconditionFailed, e.StatusCode, e.Message);
                 Assert.AreNotEqual(e.ActivityId, Guid.Empty);
                 Assert.IsTrue(e.RequestCharge > 0);
-                string expectedResponseBody = $"{Environment.NewLine}Errors : [{Environment.NewLine}  \"One of the specified pre-condition is not met\"{Environment.NewLine}]{Environment.NewLine}";
+                string expectedResponseBody = $"{Environment.NewLine}Errors : [{Environment.NewLine}  \"One of the specified pre-condition is not met. Learn more: https://aka.ms/CosmosDB/sql/errors/precondition-failed\"{Environment.NewLine}]{Environment.NewLine}";
                 Assert.AreEqual(expectedResponseBody, e.ResponseBody);
                 string expectedMessage = $"Response status code does not indicate success: PreconditionFailed (412); Substatus: 0; ActivityId: {e.ActivityId}; Reason: ({expectedResponseBody});";
                 Assert.AreEqual(expectedMessage, e.Message);

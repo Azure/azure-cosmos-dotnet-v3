@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class EnvironmentInformation
     {
         private static readonly string clientSDKVersion;
-        private static readonly string directPackageVersion;
         private static readonly string framework;
         private static readonly string architecture;
         private static readonly string os;
@@ -19,8 +18,6 @@ namespace Microsoft.Azure.Cosmos
         {
             Version sdkVersion = Assembly.GetAssembly(typeof(CosmosClient)).GetName().Version;
             EnvironmentInformation.clientSDKVersion = $"{sdkVersion.Major}.{sdkVersion.Minor}.{sdkVersion.Build}";
-            Version directVersion = Assembly.GetAssembly(typeof(Documents.UserAgentContainer)).GetName().Version;
-            EnvironmentInformation.directPackageVersion = $"{directVersion.Major}.{directVersion.Minor}.{directVersion.Build}";
             EnvironmentInformation.framework = RuntimeInformation.FrameworkDescription;
             EnvironmentInformation.architecture = RuntimeInformation.ProcessArchitecture.ToString();
             EnvironmentInformation.os = RuntimeInformation.OSDescription;
@@ -29,11 +26,6 @@ namespace Microsoft.Azure.Cosmos
         public EnvironmentInformation()
         {
         }
-
-        /// <summary>
-        /// Version of the current direct package.
-        /// </summary>
-        public string DirectVersion => EnvironmentInformation.directPackageVersion;
 
         /// <summary>
         /// Version of the current client.

@@ -19,6 +19,7 @@
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
 
     [VisualStudio.TestTools.UnitTesting.TestClass]
+    [TestCategory("UpdateContract")]
     public sealed class EndToEndTraceWriterBaselineTests : BaselineTests<EndToEndTraceWriterBaselineTests.Input, EndToEndTraceWriterBaselineTests.Output>
     {
         public static CosmosClient client;
@@ -1443,4 +1444,3 @@
         }
     }
 }
-

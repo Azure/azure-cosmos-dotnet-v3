@@ -13,6 +13,31 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.27.0"/> [3.27.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.27.0) - 2022-05-06
+### <a name="3.27.0-preview"/> [3.27.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.27.0-preview) - 2022-05-06
+
+#### Added
+- [#3123](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3123) Availability: Adds optimization to reduce reduce metadata calls for addresses
+- [#3127](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3127) Availability: Adds logic to reduce impact of replica failovers and upgrades
+- [#3093](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3093) Patch: Adds Null support for Set operation
+- [#3111](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3111) & [#3015](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3015) Merge support: Minimum SDK version that includes partition merge support.
+- [#2924](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2924) Performance: Adds a LINQ optimization for member access in LINQ-to-SQL (Thanks [@notheotherben](https://github.com/notheotherben))
+- [#3165](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3165) Diagnostics: Adds response serialization time
+- [#3168](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3168) Performance: Adds aggressive prefetching for scalar aggregates for Query
+
+#### Fixed
+- [#3102](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3102) Upsert item: Fixes a bug causing session tokens for partition 0 to be overridden by session token for another partition when users don't pass the token as input
+- [#3119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3119) Session: Fixes NotFound/ReadSessionNotAvailable (404/1002) on collection-recreate scenario for query-only workloads
+- [#3124](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3124) Change Feed Processor: Fixes noisy error notification when lease is stolen by other host
+- [#3141](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3141) Diagnostics: Fixes contacted replica count
+- [#3173](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3173) UserAgent: Optimized size by removing irrelevant information
+
+
+### <a name="3.26.2"/> [3.26.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.26.2) - 2022-05-05
+- [#3155](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3155) Query: Fixes "System.ArgumentException: Stream was not readable." when using WithParameterStream
+- [#3154](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3154) Query: Fixes possible missing query results on Windows x64 when using a custom serializer
+- [#3137](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3137) Query: Fixes exception message readability for invalid query text. Introduced in 3.14.0 PR [#1812](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1812)
+- 
 ### <a name="3.26.1"/> [3.26.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.26.1) - 2022-03-16
 
 #### Added
@@ -42,7 +67,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 - [#3029](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3029) Dependencies: Upgrades to Azure.Core 1.19.0.
-- [#3015](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3015) Merge support: Minimum SDK version that includes partition merge support.
 
 #### Fixed
 - [#3034](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3034), [#3024](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3024), [#3018](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3018), [#3000](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3000) Documentation: Improvements in code samples within xml documentation.
