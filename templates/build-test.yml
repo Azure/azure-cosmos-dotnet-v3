@@ -78,7 +78,7 @@ jobs:
     inputs:
       command: run
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Performance.Tests/*.csproj'
-      arguments: --configuration ${{ parameters.BuildConfiguration }} --no-restore --framework net6.0 --allCategories=GateBenchmark -- -j Short  -m  --BaselineValidation --os ${{ parameters.OS }}
+      arguments: --configuration ${{ parameters.BuildConfiguration }} --no-restore --framework net6.0 --allCategories=GateBenchmark -- -j Short  -m  --BaselineValidation
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.PerformanceTests
 
