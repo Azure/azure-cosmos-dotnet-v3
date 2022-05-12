@@ -231,7 +231,8 @@ namespace Microsoft.Azure.Cosmos
 
                     this.operations = new List<ItemBatchOperation>();
                     return executor.ExecuteAsync(trace,  cancellationToken);
-                });
+                },
+                (responseMessage) => new OpenTelemetryResponse(responseMessage));
         }
 
         /// <summary>
