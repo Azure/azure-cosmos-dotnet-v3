@@ -505,8 +505,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadAccountAsync),
                 null,
-                (trace) => ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.Endpoint),
-                (responseMessage) => new OpenTelemetryResponse(responseMessage));
+                (trace) => ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.Endpoint));
         }
 
         /// <summary>
@@ -603,8 +602,7 @@ namespace Microsoft.Azure.Cosmos
                         requestOptions: requestOptions,
                         trace: trace,
                         cancellationToken: cancellationToken);
-                },
-                (responseMessage) => new OpenTelemetryResponse(responseMessage));
+                });
         }
 
         /// <summary>
@@ -648,8 +646,7 @@ namespace Microsoft.Azure.Cosmos
                         requestOptions: requestOptions,
                         trace: trace,
                         cancellationToken: cancellationToken);
-                },
-                (responseMessage) => new OpenTelemetryResponse(responseMessage));
+                });
         }
 
         /// <summary>

@@ -14,13 +14,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     {
         private readonly DiagnosticScope scope;
 
-        private IOpenTelemetryResponse response;
+        private OpenTelemetryResponse response;
 
         public OpenTelemetryDefaultRecorder(DiagnosticScope scope)
         {
             this.scope = scope;
             this.scope.Start();
         }
+
+        public override bool IsEnabled => this.scope.IsEnabled;
 
         public override void Record(string key, string value)
         {
@@ -30,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             }
         }
 
-        public override void Record(IOpenTelemetryResponse response)
+        public override void Record(OpenTelemetryResponse response)
         {
             if (this.scope.IsEnabled)
             {

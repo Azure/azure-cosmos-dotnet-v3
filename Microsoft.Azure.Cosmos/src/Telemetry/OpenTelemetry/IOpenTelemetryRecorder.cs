@@ -27,8 +27,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         /// <summary>
         /// Recording attributes from response
         /// </summary>
-        /// <param name="response">IOpenTelemetryResponse</param>
-        public abstract void Record(IOpenTelemetryResponse response);
+        /// <param name="response">OpenTelemetryResponse</param>
+        public abstract void Record(OpenTelemetryResponse response);
 
         /// <summary>
         /// Recording Request Diagnostics
@@ -41,6 +41,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         /// </summary>
         /// <param name="exception"></param>
         public abstract void MarkFailed(Exception exception);
+
+        public abstract bool IsEnabled { get; }
 
         /// <summary>
         /// Dispose open telemetry recorder

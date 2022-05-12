@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
-            Func<TResult, IOpenTelemetryResponse> openTelemetry,
+            Func<TResult, OpenTelemetryResponse> openTelemetry = null,
             TraceComponent traceComponent = TraceComponent.Transport,
             TraceLevel traceLevel = TraceLevel.Info);
 

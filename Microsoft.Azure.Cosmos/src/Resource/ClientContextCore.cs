@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -227,7 +228,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
-            Func<TResult, IOpenTelemetryResponse> openTelemetry,
+            Func<TResult, OpenTelemetryResponse> openTelemetry = null,
             TraceComponent traceComponent = TraceComponent.Transport,
             Tracing.TraceLevel traceLevel = Tracing.TraceLevel.Info)
         {
@@ -250,7 +251,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
-            Func<TResult, IOpenTelemetryResponse> openTelemetry,
+            Func<TResult, OpenTelemetryResponse> openTelemetry,
             TraceComponent traceComponent,
             Tracing.TraceLevel traceLevel)
         {
@@ -263,7 +264,8 @@ namespace Microsoft.Azure.Cosmos
                 return await this.RunWithDiagnosticsHelperAsync(
                     trace,
                     task,
-                    openTelemetry);
+                    openTelemetry,
+                    operationName);
             }
         }
 
@@ -271,7 +273,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
-            Func<TResult, IOpenTelemetryResponse> openTelemetry,
+            Func<TResult, OpenTelemetryResponse> openTelemetry,
             TraceComponent traceComponent,
             Tracing.TraceLevel traceLevel)
         {
@@ -291,7 +293,8 @@ namespace Microsoft.Azure.Cosmos
                     return await this.RunWithDiagnosticsHelperAsync(
                         trace,
                         task,
-                        openTelemetry);
+                        openTelemetry,
+                        operationName);
                 }
             });
         }
@@ -466,13 +469,21 @@ namespace Microsoft.Azure.Cosmos
         private async Task<TResult> RunWithDiagnosticsHelperAsync<TResult>(
             ITrace trace,
             Func<ITrace, Task<TResult>> task,
-            Func<TResult, IOpenTelemetryResponse> openTelemetry)
+            Func<TResult, OpenTelemetryResponse> openTelemetry,
+            string operationName)
         {
+            using (IOpenTelemetryRecorder recorder = OpenTelemetryRecorderFactory.CreateRecorder(operationName))
             using (new ActivityScope(Guid.NewGuid()))
             {
                 try
                 {
-                    return (TResult)openTelemetry(await task(trace).ConfigureAwait(false));
+                    TResult result = await task(trace).ConfigureAwait(false);
+                    if (openTelemetry != null && recorder.IsEnabled)
+                    {
+                        OpenTelemetryResponse response = openTelemetry(result);
+                        recorder.Record(response);
+                    }
+                    return result;
                 }
                 catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                 {
@@ -490,6 +501,10 @@ namespace Microsoft.Azure.Cosmos
                     throw new CosmosNullReferenceException(
                         nullRefException,
                         trace);
+                }
+                finally
+                {
+                    recorder.Record(trace);
                 }
             }
         }

@@ -10,59 +10,9 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// IOpenTelemetryResponse
     /// </summary>
-    internal class OpenTelemetryResponse : IOpenTelemetryResponse
+    internal class OpenTelemetryResponse
     {
         public OpenTelemetryResponse(ResponseMessage message)
-        {
-            this.StatusCode = message.StatusCode;
-        }
-
-        public OpenTelemetryResponse(UserResponse message)
-        {
-            this.StatusCode = message.StatusCode;
-        }
-        
-        public OpenTelemetryResponse(PermissionResponse message)
-        {
-            this.StatusCode = message.StatusCode;
-        }
-
-        public OpenTelemetryResponse(ContainerResponse message)
-        {
-            this.StatusCode = message.StatusCode;
-        }
-        
-        public OpenTelemetryResponse(DatabaseResponse message)
-        {
-            this.StatusCode = message.StatusCode;
-        }
-
-        public OpenTelemetryResponse(ThroughputResponse message)
-        {
-            this.StatusCode = message.StatusCode;
-        }
-        
-        public OpenTelemetryResponse(TransactionalBatchResponse message)
-        {
-            this.StatusCode = message.StatusCode;
-        }
-        
-        public OpenTelemetryResponse(FeedResponse<ChangeFeedProcessorState> message)
-        {
-            this.StatusCode = message.StatusCode;
-        }
-        
-        public OpenTelemetryResponse(ClientEncryptionKeyResponse message)
-        {
-            this.StatusCode = message.StatusCode;
-        }
-
-        public OpenTelemetryResponse(FeedResponse<dynamic> message)
-        {
-            this.StatusCode = message.StatusCode;
-        }
-
-        public OpenTelemetryResponse(ItemResponse<dynamic> message)
         {
             this.StatusCode = message.StatusCode;
         }

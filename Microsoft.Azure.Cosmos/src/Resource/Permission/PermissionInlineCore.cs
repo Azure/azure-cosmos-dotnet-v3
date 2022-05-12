@@ -29,8 +29,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadAsync),
                 requestOptions,
-                (trace) => base.ReadAsync(tokenExpiryInSeconds, requestOptions, trace, cancellationToken),
-                (responseMessage) => new OpenTelemetryResponse(responseMessage));
+                (trace) => base.ReadAsync(tokenExpiryInSeconds, requestOptions, trace, cancellationToken));
         }
 
         public override Task<PermissionResponse> ReplaceAsync(
@@ -42,8 +41,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReplaceAsync),
                 requestOptions,
-                (trace) => base.ReplaceAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken),
-                (responseMessage) => new OpenTelemetryResponse(responseMessage));
+                (trace) => base.ReplaceAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken));
         }
 
         public override Task<PermissionResponse> DeleteAsync(
@@ -53,8 +51,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(DeleteAsync),
                 requestOptions,
-                (trace) => base.DeleteAsync(requestOptions, trace, cancellationToken),
-                (responseMessage) => new OpenTelemetryResponse(responseMessage));
+                (trace) => base.DeleteAsync(requestOptions, trace, cancellationToken));
         }
     }
 }

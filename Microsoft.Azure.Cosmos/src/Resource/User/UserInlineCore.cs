@@ -28,8 +28,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadAsync),
                 requestOptions,
-                (trace) => base.ReadAsync(requestOptions, trace, cancellationToken),
-                (responseMessage) => new OpenTelemetryResponse(responseMessage));
+                (trace) => base.ReadAsync(requestOptions, trace, cancellationToken));
         }
 
         public override Task<UserResponse> ReplaceAsync(
@@ -40,8 +39,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReplaceAsync),
                 requestOptions,
-                (trace) => base.ReplaceAsync(userProperties, requestOptions, trace, cancellationToken),
-                (responseMessage) => new OpenTelemetryResponse(responseMessage));
+                (trace) => base.ReplaceAsync(userProperties, requestOptions, trace, cancellationToken));
         }
 
         public override Task<UserResponse> DeleteAsync(
@@ -51,8 +49,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(DeleteAsync),
                 requestOptions,
-                (trace) => base.DeleteAsync(requestOptions, trace, cancellationToken),
-                (responseMessage) => new OpenTelemetryResponse(responseMessage));
+                (trace) => base.DeleteAsync(requestOptions, trace, cancellationToken));
         }
 
         public override Permission GetPermission(string id)
@@ -69,8 +66,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreatePermissionAsync),
                 requestOptions,
-                (trace) => base.CreatePermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken),
-                (responseMessage) => new OpenTelemetryResponse(responseMessage));
+                (trace) => base.CreatePermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken));
         }
 
         public override Task<PermissionResponse> UpsertPermissionAsync(
@@ -82,8 +78,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(UpsertPermissionAsync),
                 requestOptions,
-                (trace) => base.UpsertPermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken),
-                (responseMessage) => new OpenTelemetryResponse(responseMessage));
+                (trace) => base.UpsertPermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken));
         }
 
         public override FeedIterator<T> GetPermissionQueryIterator<T>(

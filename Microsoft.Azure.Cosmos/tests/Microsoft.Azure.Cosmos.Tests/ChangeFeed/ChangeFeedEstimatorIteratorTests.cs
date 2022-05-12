@@ -337,6 +337,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<string>(str => str.Contains("Change Feed Estimator")),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>>(),
+                It.IsAny<Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryResponse>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
                .Returns<string, RequestOptions, Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>, TraceComponent, TraceLevel>(
@@ -431,6 +432,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<string>(str => str.Contains("Change Feed Estimator")),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>>(),
+                It.IsAny<Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryResponse>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
                .Returns<string, RequestOptions, Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>, TraceComponent, TraceLevel>(

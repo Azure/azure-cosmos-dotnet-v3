@@ -11,6 +11,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     {
         public static readonly OpenTelemetryRecorderNoOp Singleton = new OpenTelemetryRecorderNoOp();
 
+        public override bool IsEnabled => false;
+
         public override void Dispose()
         {
             // NoOp
@@ -21,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             // NoOp
         }
 
-        public override void Record(IOpenTelemetryResponse response)
+        public override void Record(OpenTelemetryResponse response)
         {
             // NoOp
         }
