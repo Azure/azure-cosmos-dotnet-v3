@@ -192,8 +192,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadItemStreamAsync),
                 requestOptions,
-                (trace) => base.ReadItemStreamAsync(id, partitionKey, trace, requestOptions, cancellationToken),
-                (response) => new OpenTelemetryResponse(response));
+                (trace) => base.ReadItemStreamAsync(id, partitionKey, trace, requestOptions, cancellationToken));
         }
 
         public override Task<ItemResponse<T>> ReadItemAsync<T>(
