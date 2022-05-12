@@ -334,8 +334,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsFalse(diagnostics.IsGoneExceptionHit());
                 Assert.IsFalse(string.IsNullOrEmpty(diagnostics.ToString()));
                 Assert.IsTrue(diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
-
-                Console.WriteLine(response.Diagnostics.ToString());
             }
 
             // Dedciated query client used only for queries simulating the customer's app
