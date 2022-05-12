@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private Expression EvaluateMemberAccess(Expression expression)
         {
-            while (expression.CanReduce)
+            while (expression?.CanReduce ?? false)
             {
                 expression = expression.Reduce();
             }
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             // This is done because the compilation of a delegate takes a global lock which causes highly
             // threaded clients to exhibit async-over-sync thread exhaustion behaviour on this call path
             // even when doing relatively straightforward queries.
-            if (!(expression is MemberExpression memberExpression))
+            if (expression is not MemberExpression memberExpression)
             {
                 return expression;
             }
@@ -66,19 +66,26 @@ namespace Microsoft.Azure.Cosmos.Linq
             // nested property access (x.y.z) without needing to fall back on delegate compilation.
             Expression targetExpression = this.EvaluateMemberAccess(memberExpression.Expression);
 
-            if (!(targetExpression is ConstantExpression targetConstant))
+            // NOTE: When evaluating static field or property access, we may have a null targetExpression.
+            //       In this situation, we should pass the null value to the GetValue(...) methods below to
+            //       indicate that we are accessing a static member.
+            ConstantExpression targetConstant = targetExpression as ConstantExpression;
+
+            // If we have a target expression but it cannot be resolved to a constant, then we should skip
+            // using reflectoin here and instead rely on the fallback delegate compilation approach.
+            if (targetExpression is not null && targetConstant is null)
             {
                 return expression;
             }
 
             if (memberExpression.Member is FieldInfo fieldInfo)
             {
-                return Expression.Constant(fieldInfo.GetValue(targetConstant.Value), memberExpression.Type);
+                return Expression.Constant(fieldInfo.GetValue(targetConstant?.Value), memberExpression.Type);
             }
 
             if (memberExpression.Member is PropertyInfo propertyInfo)
             {
-                return Expression.Constant(propertyInfo.GetValue(targetConstant.Value), memberExpression.Type);
+                return Expression.Constant(propertyInfo.GetValue(targetConstant?.Value), memberExpression.Type);
             }
 
             return expression;
