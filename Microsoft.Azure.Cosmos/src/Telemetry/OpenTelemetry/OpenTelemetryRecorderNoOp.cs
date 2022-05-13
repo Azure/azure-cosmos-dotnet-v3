@@ -28,11 +28,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             // NoOp
         }
 
-        public override void Record(ITrace trace)
-        {
-            // NoOp
-        }
-
         public override void Record(string key, string value)
         {
             // NoOp

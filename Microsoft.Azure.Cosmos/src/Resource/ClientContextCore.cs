@@ -487,10 +487,12 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                 {
+                    recorder.MarkFailed(oe);
                     throw new CosmosOperationCanceledException(oe, trace);
                 }
                 catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
                 {
+                    recorder.MarkFailed(objectDisposed);
                     throw new CosmosObjectDisposedException(
                         objectDisposed, 
                         this.client, 
@@ -498,13 +500,10 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
                 {
+                    recorder.MarkFailed(nullRefException);
                     throw new CosmosNullReferenceException(
                         nullRefException,
                         trace);
-                }
-                finally
-                {
-                    recorder.Record(trace);
                 }
             }
         }

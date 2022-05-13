@@ -7,16 +7,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     using System;
     using Microsoft.Azure.Cosmos.Tracing;
 
-    /// <summary>
-    /// Cosmos Instrumentation Interface
-    /// </summary>
-#if INTERNAL
-    public
-#else
-    internal
-#endif 
-        abstract class IOpenTelemetryRecorder : IDisposable
+    internal abstract class IOpenTelemetryRecorder : IDisposable
     {
+        public abstract bool IsEnabled { get; }
+
         /// <summary>
         /// Recording Attributes
         /// </summary>
@@ -31,18 +25,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         public abstract void Record(OpenTelemetryResponse response);
 
         /// <summary>
-        /// Recording Request Diagnostics
-        /// </summary>
-        /// <param name="trace"></param>
-        public abstract void Record(ITrace trace);
-
-        /// <summary>
         /// Mark Scope as failed and add exceptions in attribute
         /// </summary>
         /// <param name="exception"></param>
         public abstract void MarkFailed(Exception exception);
-
-        public abstract bool IsEnabled { get; }
 
         /// <summary>
         /// Dispose open telemetry recorder
