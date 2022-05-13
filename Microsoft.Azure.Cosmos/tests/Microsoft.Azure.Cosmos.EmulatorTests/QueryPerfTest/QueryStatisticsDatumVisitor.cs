@@ -144,5 +144,10 @@
         {
             Debug.Fail("QueryStatisticsDatumVisitor Assert", "PointOperationStatisticsTraceDatum is not supported");
         }
+
+        public void Visit(PartitionKeyRangeCacheTraceDatum partitionKeyRangeCacheTraceDatum)
+        {
+            Debug.Fail("QueryStatisticsDatumVisitor Assert", "PartitionKeyRangeCacheTraceDatum is not supported");
+        }
     }
 }
