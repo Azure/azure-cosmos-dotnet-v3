@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json.Linq;
+    using System.Linq;
 
     [TestClass]
     public class CosmosItemSessionTokenTests : BaseCosmosClientHelper
@@ -373,7 +374,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     FeedResponse<JObject> response = await queryIteratorOldContainer.ReadNextAsync();
                     if(i == 0)
                     {
-                        Assert.IsTrue(response.Diagnostics.ToString().Contains("PKRangeCache Info("));
+                        string diagnosticString = response.Diagnostics.ToString();
+                        Assert.IsTrue(diagnosticString.Contains("PKRangeCache Info("));
+                        JObject diagnosticJobject = JObject.Parse(diagnosticString);
+                        JToken actualToken = diagnosticJobject.SelectToken("$.children[0].children[?(@.name=='Get Partition Key Ranges')].children[?(@.name=='Try Get Overlapping Ranges')].data");
+                        JToken actualNode = actualToken.Children().First().First();
+
+                        Assert.IsTrue(actualNode["Previous Continuation Token"].ToString().Length == 0);
+                        Assert.IsTrue(actualNode["Continuation Token"].ToString().Length > 0);
                     }
                     
                     itemCountOldContainer += response.Count;
