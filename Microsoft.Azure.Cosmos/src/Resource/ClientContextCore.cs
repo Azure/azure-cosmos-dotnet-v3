@@ -505,6 +505,12 @@ namespace Microsoft.Azure.Cosmos
                         nullRefException,
                         trace);
                 }
+                catch (Exception ex)
+                {
+                    // Record any other exception
+                    recorder.MarkFailed(ex);
+                    throw ex;
+                }
             }
         }
 

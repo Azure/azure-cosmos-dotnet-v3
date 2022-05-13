@@ -45,8 +45,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Func<ResponseMessage, OpenTelemetryResponse>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, TraceComponent, TraceLevel>(
-                (operationName, requestOptions, func, comp, level) =>
+               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>,Func<ResponseMessage, OpenTelemetryResponse>, TraceComponent, TraceLevel>(
+                (operationName, requestOptions, func, oTelFunc, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
                     {
@@ -119,8 +119,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Func<ResponseMessage, OpenTelemetryResponse>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, TraceComponent, TraceLevel>(
-                (operationName, requestOptions, func, comp, level) =>
+               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryResponse>, TraceComponent, TraceLevel>(
+                (operationName, requestOptions, func, oTelFunc, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
                     {
@@ -183,8 +183,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Func<ResponseMessage, OpenTelemetryResponse>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, TraceComponent, TraceLevel>(
-                (operationName, requestOptions, func, comp, level) =>
+               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryResponse>, TraceComponent, TraceLevel>(
+                (operationName, requestOptions, func, oTelFunc, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
                     {
@@ -259,8 +259,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Func<ResponseMessage, OpenTelemetryResponse>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, TraceComponent, TraceLevel>(
-                (operationName, requestOptions, func, comp, level) =>
+               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryResponse>, TraceComponent, TraceLevel>(
+                (operationName, requestOptions, func, oTelFunc, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
                     {
