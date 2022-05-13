@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                                                                                 resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
                                                                                 isActivityEnabled: true);
 #endif
-        public static IOpenTelemetryRecorder CreateRecorder(string operationName)
+        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName)
         {
 #if PREVIEW
             DiagnosticScope scope = OpenTelemetryRecorderFactory
@@ -28,8 +28,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                 return new OpenTelemetryCoreRecorder(scope);
             }
 #endif
-
-            return OpenTelemetryRecorderNoOp.Singleton;
+            return default;
         }
     }
 }

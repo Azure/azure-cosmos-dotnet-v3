@@ -10,40 +10,29 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
 
-    internal sealed class OpenTelemetryCoreRecorder : IOpenTelemetryRecorder
+    internal struct OpenTelemetryCoreRecorder : IDisposable
     {
         private readonly DiagnosticScope scope;
-
-        private OpenTelemetryResponse response;
 
         public OpenTelemetryCoreRecorder(DiagnosticScope scope)
         {
             this.scope = scope;
 
-            this.scope.Start();
+            if (this.scope.IsEnabled)
+            {
+                this.scope.Start();
+            }
         }
 
-        public override bool IsEnabled => this.scope.IsEnabled;
+        public bool IsEnabled => this.scope.IsEnabled;
 
-        public override void Record(string key, string value)
+        public void Record(string key, string value)
         {
-            if (!this.scope.IsEnabled)
-            {
-                return;
-            }
-
             this.scope.AddAttribute(key, value);
         }
 
-        public override void Record(OpenTelemetryResponse response)
+        public void Record(OpenTelemetryResponse response)
         {
-            if (!this.scope.IsEnabled)
-            {
-                return;
-            }
-
-            this.response = response ?? throw new ArgumentNullException(nameof(response));  
-
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, response.StatusCode);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, response.RequestContentLength);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, response.ResponseContentLength);
@@ -51,34 +40,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, response.RequestCharge);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, response.ItemCount);
 
-            this.Record(response.Diagnostics);
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics));
+
+            if (this.IsEnabled && DiagnosticsFilterHelper.IsAllowed(
+                    latency: response.Diagnostics.GetClientElapsedTime(),
+                    statuscode: response.StatusCode))
+            {
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, response.Diagnostics.ToString());
+            }
 
         }
 
-        private void Record(CosmosDiagnostics diagnostics)
+        public void MarkFailed(Exception exception)
         {
-            if (!this.scope.IsEnabled)
-            {
-                return;
-            }
-
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(diagnostics));
-
-            if (DiagnosticsFilterHelper.IsAllowed(
-                    latency: diagnostics.GetClientElapsedTime(), 
-                    statuscode: this.response.StatusCode))
-            {
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, diagnostics.ToString());
-            } 
-        }
-
-        public override void MarkFailed(Exception exception)
-        {
-            if (!this.scope.IsEnabled)
-            {
-                return;
-            }
-
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionStacktrace, exception.StackTrace);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType());
@@ -86,9 +60,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             this.scope.Failed(exception);
         }
 
-        public override void Dispose()
+        public void Dispose()
         {
-            this.scope.Dispose();
+            if (this.scope.IsEnabled)
+            {
+                this.scope.Dispose();
+            }
         }
     }
 }

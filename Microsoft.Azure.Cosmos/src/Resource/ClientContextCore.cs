@@ -472,7 +472,7 @@ namespace Microsoft.Azure.Cosmos
             Func<TResult, OpenTelemetryResponse> openTelemetry,
             string operationName)
         {
-            using (IOpenTelemetryRecorder recorder = OpenTelemetryRecorderFactory.CreateRecorder(operationName))
+            using (OpenTelemetryCoreRecorder recorder = OpenTelemetryRecorderFactory.CreateRecorder(operationName))
             using (new ActivityScope(Guid.NewGuid()))
             {
                 try
@@ -483,6 +483,7 @@ namespace Microsoft.Azure.Cosmos
                         OpenTelemetryResponse response = openTelemetry(result);
                         recorder.Record(response);
                     }
+
                     return result;
                 }
                 catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
