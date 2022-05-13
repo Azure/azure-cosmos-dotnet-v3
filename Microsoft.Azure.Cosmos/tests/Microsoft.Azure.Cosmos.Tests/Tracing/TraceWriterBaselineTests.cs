@@ -385,7 +385,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                             ResourceType.Document,
                             OperationType.Query,
-                            42,
+                            "42",
                             uri1.Uri);
 
                         TraceWriterBaselineTests.GetPrivateField<List<StoreResponseStatistics>>(datum, "storeResponseStatistics").Add(storeResponseStatistics);
@@ -972,11 +972,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             public static TraceForBaselineTesting GetRootTrace()
             {
                 return new TraceForBaselineTesting("Trace For Baseline Testing", TraceLevel.Info, TraceComponent.Unknown, parent: null);
-            }
-
-            public void UpdateRegionContacted(TraceDatum traceDatum)
-            {
-                //NoImplementation
             }
 
             public void AddOrUpdateDatum(string key, object value)

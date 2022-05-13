@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class RetriableTestMethod : VisualStudio.TestTools.UnitTesting.TestMethodAttribute
     {
         private readonly VisualStudio.TestTools.UnitTesting.TestMethodAttribute testMethod;
-        private int maxRetry;
+        private readonly int maxRetry;
         public RetriableTestMethod(
             int maxRetry,
             VisualStudio.TestTools.UnitTesting.TestMethodAttribute testMethod)
@@ -47,7 +47,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.testMethod = testMethod;
         }
 
-        public override VisualStudio.TestTools.UnitTesting.TestResult[] Execute(VisualStudio.TestTools.UnitTesting.ITestMethod testMethod) => this.ExecuteWithRetry(this.maxRetry, testMethod);
+        public override VisualStudio.TestTools.UnitTesting.TestResult[] Execute(VisualStudio.TestTools.UnitTesting.ITestMethod testMethod)
+        {
+            return this.ExecuteWithRetry(this.maxRetry, testMethod);
+        }
 
         private VisualStudio.TestTools.UnitTesting.TestResult[] ExecuteWithRetry(
             int retryCount,
