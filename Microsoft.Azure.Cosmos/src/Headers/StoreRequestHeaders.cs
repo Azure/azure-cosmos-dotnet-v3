@@ -142,6 +142,11 @@ namespace Microsoft.Azure.Cosmos
             return this.requestNameValueCollection.Keys().GetEnumerator();
         }
 
+        public override int Count()
+        {
+            return this.requestNameValueCollection.Count();
+        }
+
         public override string[] GetValues(string key)
         {
             return this.requestNameValueCollection.GetValues(key);

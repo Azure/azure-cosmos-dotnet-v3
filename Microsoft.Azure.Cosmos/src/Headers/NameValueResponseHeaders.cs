@@ -65,6 +65,11 @@ namespace Microsoft.Azure.Cosmos
             return this.INameValueCollection.Keys().GetEnumerator();
         }
 
+        public override int Count()
+        {
+            return this.INameValueCollection.Count();
+        }
+
         public override string[] GetValues(string key)
         {
             return this.INameValueCollection.GetValues(key);

@@ -418,7 +418,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         private static Dictionary<string, string> GetAdditionalHeaders(CosmosMessageHeadersInternal headers, ImmutableHashSet<string> bannedHeaders)
         {
-            Dictionary<string, string> additionalHeaders = new Dictionary<string, string>();
+            Dictionary<string, string> additionalHeaders = new Dictionary<string, string>(capacity: headers.Count());
             foreach (string key in headers)
             {
                 if (!bannedHeaders.Contains(key))

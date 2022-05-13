@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
             return headers;
         }
 
-        public int Count()
+        public override int Count()
         {
             int count = 0;
             if (this.dictionaryNameValueCollection.IsValueCreated)

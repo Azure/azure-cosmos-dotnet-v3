@@ -208,6 +208,8 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract string[] AllKeys();
 
+        public abstract int Count();
+
         public abstract string[] GetValues(string key);
 
         protected void SetProperty(

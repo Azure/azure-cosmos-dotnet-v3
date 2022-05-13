@@ -118,6 +118,11 @@ namespace Microsoft.Azure.Cosmos
             return this.storeResponseNameValueCollection.Keys().GetEnumerator();
         }
 
+        public override int Count()
+        {
+            return this.storeResponseNameValueCollection.Count();
+        }
+
         public override string[] GetValues(string key)
         {
             return this.storeResponseNameValueCollection.GetValues(key);
