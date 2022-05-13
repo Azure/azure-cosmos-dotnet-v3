@@ -18,8 +18,8 @@ namespace Microsoft.Azure.Cosmos
 
         public override string Continuation
         {
-            get => this.requestNameValueCollection.ContinuationToken;
-            set => this.requestNameValueCollection.ContinuationToken = value;
+            get => this.requestNameValueCollection.Continuation;
+            set => this.requestNameValueCollection.Continuation = value;
         }
 
         public override string SessionToken
