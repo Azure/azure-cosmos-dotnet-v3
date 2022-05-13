@@ -151,7 +151,16 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             public double PropertyAccess { get; set; }
 
-            public double MethodAccess() => 1.0;
+            public double MethodAccess()
+            {
+                return 1.0;
+            }
+
+            public static double StaticFieldAccess = 4.0;
+
+            public static double StaticPropertyAccess => 5.0;
+
+            public const double ConstAccess = 6.0;
         }
 
         [TestMethod]
@@ -560,6 +569,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 // performance boost, especially under highly concurrent workloads).
                 new LinqTestInput("Filter on Field value", b => getQuery(b).Where(doc => doc.NumericField == ambientContext.FieldAccess)),
                 new LinqTestInput("Filter on Property value", b => getQuery(b).Where(doc => doc.NumericField == ambientContext.PropertyAccess)),
+                new LinqTestInput("Filter on Static Field value", b => getQuery(b).Where(doc => doc.NumericField == AmbientContextObject.StaticFieldAccess)),
+                new LinqTestInput("Filter on Static Property value", b => getQuery(b).Where(doc => doc.NumericField == AmbientContextObject.StaticPropertyAccess)),
+                new LinqTestInput("Filter on Const value", b => getQuery(b).Where(doc => doc.NumericField == AmbientContextObject.ConstAccess)),
             };
             this.ExecuteTestSuite(inputs);
         }
