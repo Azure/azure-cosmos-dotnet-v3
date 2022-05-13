@@ -89,7 +89,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(NotImplementedException))]
         public void TestGetToNameValueCollection()
         {
             Headers Headers = new Headers();

@@ -251,10 +251,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public Headers()
         {
-            this.CosmosMessageHeaders = new StoreRequestHeaders
-            {
-                SDKSupportedCapabilities = Headers.SDKSUPPORTEDCAPABILITIES
-            };
+            this.CosmosMessageHeaders = new StoreRequestHeaders();
         }
 
         internal Headers(INameValueCollection nameValueCollection)

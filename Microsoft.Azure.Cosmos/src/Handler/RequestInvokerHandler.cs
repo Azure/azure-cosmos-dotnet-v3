@@ -156,6 +156,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         Content = streamPayload,
                     };
 
+                    request.Headers.SDKSupportedCapabilities = Headers.SDKSUPPORTEDCAPABILITIES;
+
                     if (feedRange != null)
                     {
                         if (feedRange is FeedRangePartitionKey feedRangePartitionKey)

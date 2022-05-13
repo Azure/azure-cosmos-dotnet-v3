@@ -58,12 +58,6 @@ namespace Microsoft.Azure.Cosmos
             set => this.requestNameValueCollection.IfNoneMatch = value;
         }
 
-        public override string IndexUtilization
-        {
-            get => this.requestNameValueCollection.PopulateIndexMetrics;
-            set => this.requestNameValueCollection.PopulateIndexMetrics = value;
-        }
-
         public override string SDKSupportedCapabilities
         {
             get => this.requestNameValueCollection.SDKSupportedCapabilities;
