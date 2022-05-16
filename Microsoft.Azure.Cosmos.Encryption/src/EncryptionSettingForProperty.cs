@@ -81,7 +81,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     // bail out if this fails.
                     protectedDataEncryptionKey = await this.ForceRefreshGatewayCacheAndBuildProtectedDataEncryptionKeyAsync(
                         existingCekEtag: clientEncryptionKeyProperties.ETag,
-                        cancellationToken: cancellationToken);
+                        cancellationToken: cancellationToken,
+                        refreshRetriedOnException: exOnRetry);
                 }
             }
 
@@ -100,7 +101,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>ProtectedDataEncryptionKey object. </returns>
         private async Task<ProtectedDataEncryptionKey> ForceRefreshGatewayCacheAndBuildProtectedDataEncryptionKeyAsync(
             string existingCekEtag,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            Exception refreshRetriedOnException)
         {
             ClientEncryptionKeyProperties clientEncryptionKeyProperties;
             try
@@ -123,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     // looks like the key was never rewrapped with a valid Key Encryption Key.
                     throw new EncryptionCosmosException(
                         $"The Client Encryption Key with key id:{this.ClientEncryptionKeyId} on database:{this.encryptionContainer.Database.Id} and container:{this.encryptionContainer.Id} , needs to be rewrapped with a valid Key Encryption Key using RewrapClientEncryptionKeyAsync. " +
-                        $" The Key Encryption Key used to wrap the Client Encryption Key has been revoked: {ex.Message}." +
+                        $" The Key Encryption Key used to wrap the Client Encryption Key has been revoked: {refreshRetriedOnException.Message}. {ex.Message}." +
                         $" Please refer to https://aka.ms/CosmosClientEncryption for more details. ",
                         HttpStatusCode.BadRequest,
                         int.Parse(Constants.IncorrectContainerRidSubStatus),
