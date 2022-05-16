@@ -69,10 +69,10 @@
                 ? this.cosmosClientBuilder.WithConnectionModeGateway().Build()
                 : this.cosmosClientBuilder.Build();
 
-            this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            this.database = await this.cosmosClient.CreateDatabaseAsync("testDb");
 
             return await this.database.CreateContainerAsync(
-                id: Guid.NewGuid().ToString(),
+                id: "testContainer",
                 partitionKeyPath: "/id",
                 throughput: isLargeContainer ? 15000 : 400);
 

@@ -15,9 +15,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         public const string DbOperation = "db.operation";
         public const string NetPeerName = "net.peer.name";
         public const string ClientId = "db.cosmosdb.client_id";
-        public const string MachineId = "db.cosmosdb.machine_id";
         public const string ContainerName = "db.cosmosdb.container";
-        public const string ServiceEndpointsContacted = "db.cosmosdb.service_endpoints_contacted";
         public const string StatusCode = "db.cosmosdb.status_code";
         public const string UserAgent = "db.cosmosdb.user_agent";
         public const string RequestContentLength = "db.cosmosdb.request_content_length_bytes";

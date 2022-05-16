@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     {
         private readonly DiagnosticScope scope;
 
-        private HttpStatusCode statusCode;
+        //private HttpStatusCode statusCode;
         private double requestCharge;
 
         public CosmosInstrumentation(DiagnosticScope scope)
@@ -33,10 +33,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                 {
                     this.requestCharge = Convert.ToDouble(attributeValue);
                 }
-                if (attributeKey.Equals(OTelAttributes.StatusCode))
+                /*if (attributeKey.Equals(OTelAttributes.StatusCode))
                 {
                     this.statusCode = (HttpStatusCode)attributeValue;
-                }
+                }*/
                 this.scope.AddAttribute(attributeKey, attributeValue);
             }
         }

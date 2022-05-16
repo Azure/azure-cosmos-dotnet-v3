@@ -343,7 +343,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         private void RecordFromResponse(OperationType operationType, ResponseMessage response, ITrace childTrace)
         {
             childTrace.CosmosInstrumentation.Record(OTelAttributes.RequestCharge, response?.Headers?.RequestCharge);
-            childTrace.CosmosInstrumentation.Record(OTelAttributes.StatusCode, response.StatusCode);
+            childTrace.CosmosInstrumentation.Record(OTelAttributes.StatusCode, (int)response.StatusCode);
             childTrace.CosmosInstrumentation.Record(OTelAttributes.DbOperation, operationType.ToOperationTypeString());
             childTrace.CosmosInstrumentation.Record(OTelAttributes.ResponseContentLength, this.GetPayloadSize(response));
         }

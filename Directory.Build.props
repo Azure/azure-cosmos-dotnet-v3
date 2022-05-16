@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<PropertyGroup>
-		<ClientOfficialVersion>3.26.890</ClientOfficialVersion>
+		<ClientOfficialVersion>3.26.901</ClientOfficialVersion>
 		<ClientPreviewVersion>3.26.0</ClientPreviewVersion>
 		<ClientPreviewSuffixVersion>preview</ClientPreviewSuffixVersion>
 		<DirectVersion>3.27.2</DirectVersion>

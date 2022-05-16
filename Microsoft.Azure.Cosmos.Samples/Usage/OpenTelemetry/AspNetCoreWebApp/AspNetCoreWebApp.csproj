@@ -5,16 +5,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.ApplicationInsights" Version="2.21.0-beta1-build00217" />
-    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.21.0-beta1-build00217" />
-    <PackageReference Include="Microsoft.ApplicationInsights.DependencyCollector" Version="2.21.0-beta1-build00217" />
-    <PackageReference Include="Microsoft.ApplicationInsights.EventCounterCollector" Version="2.21.0-beta1-build00217" />
-    <PackageReference Include="Microsoft.ApplicationInsights.PerfCounterCollector" Version="2.21.0-beta1-build00217" />
-    <PackageReference Include="Microsoft.ApplicationInsights.WindowsServer" Version="2.21.0-beta1-build00217" />
-    <PackageReference Include="Microsoft.ApplicationInsights.WindowsServer.TelemetryChannel" Version="2.21.0-beta1-build00217" />
-    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.21.0-beta1-build00217" />
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.26.890" />
-    <PackageReference Include="Microsoft.Extensions.Logging.ApplicationInsights" Version="2.21.0-beta1-build00217" />
+    <PackageReference Include="Microsoft.ApplicationInsights" Version="2.21.0-beta1-build00279" />
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.21.0-beta1-build00279" />
+    <PackageReference Include="Microsoft.ApplicationInsights.DependencyCollector" Version="2.21.0-beta1-build00279" />
+    <PackageReference Include="Microsoft.ApplicationInsights.EventCounterCollector" Version="2.21.0-beta1-build00279" />
+    <PackageReference Include="Microsoft.ApplicationInsights.PerfCounterCollector" Version="2.21.0-beta1-build00279" />
+    <PackageReference Include="Microsoft.ApplicationInsights.WindowsServer" Version="2.21.0-beta1-build00279" />
+    <PackageReference Include="Microsoft.ApplicationInsights.WindowsServer.TelemetryChannel" Version="2.21.0-beta1-build00279" />
+    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.21.0-beta1-build00279" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.26.901" />
+    <PackageReference Include="Microsoft.Extensions.Logging.ApplicationInsights" Version="2.21.0-beta1-build00279" />
   </ItemGroup>
 
   <ItemGroup>
