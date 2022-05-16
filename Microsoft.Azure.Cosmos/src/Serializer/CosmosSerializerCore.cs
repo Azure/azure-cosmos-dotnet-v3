@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.IO;
+    using Microsoft.Azure.Cosmos.FullFidelity;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Scripts;
@@ -160,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
             string directAssemblyName = typeof(Documents.PartitionKeyRange).Assembly.GetName().Name;
             string inputAssemblyName = inputType.Assembly.GetName().Name;
             bool inputIsClientOrDirect = string.Equals(inputAssemblyName, clientAssemblyName) || string.Equals(inputAssemblyName, directAssemblyName);
-            bool typeIsWhiteListed = inputType == typeof(Document);
+            bool typeIsWhiteListed = inputType == typeof(Document) || (inputType.IsGenericType && inputType.GetGenericTypeDefinition() == typeof(ChangeFeedItem<>));
 
             if (!typeIsWhiteListed && inputIsClientOrDirect)
             {

@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -255,6 +256,21 @@ namespace Microsoft.Azure.Cosmos
                         isNameBased: false,
                         authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
                 }
+#if PREVIEW
+                else if (this.OperationType == OperationType.ReadFeed && this.ResourceType == ResourceType.Document)
+                {
+                    serviceRequest = new DocumentServiceRequest(
+                        this.OperationType,
+                        this.ResourceType,
+                        this.RequestUriString,
+                        this.Content,
+                        AuthorizationTokenType.PrimaryMasterKey,
+                        this.Headers.CosmosMessageHeaders)
+                    {
+                        UseGatewayMode = this.Headers[HttpConstants.HttpHeaders.A_IM] == ChangeFeedModeFullFidelity.FullFidelityHeader
+                    };
+                }
+#endif
                 else
                 {
                     serviceRequest = new DocumentServiceRequest(
