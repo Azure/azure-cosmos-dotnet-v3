@@ -49,6 +49,6 @@ namespace Microsoft.Azure.Cosmos
 #else
                 internal
 #endif
-                static ChangeFeedMode FullFidelity => ChangeFeedModeFullFidelity.Instance;
+                static ChangeFeedMode AllOperations => ChangeFeedModeFullFidelity.Instance;
     }
 }
