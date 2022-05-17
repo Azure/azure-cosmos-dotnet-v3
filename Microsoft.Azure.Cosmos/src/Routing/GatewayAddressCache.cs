@@ -460,12 +460,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             bool forceRefresh,
             bool useMasterCollectionResolver)
         {
-            INameValueCollection addressQuery = new StoreRequestNameValueCollection
+            INameValueCollection addressQuery = new RequestNameValueCollection
             {
                 { HttpConstants.QueryStrings.Url, HttpUtility.UrlEncode(entryUrl) }
             };
 
-            INameValueCollection headers = new StoreRequestNameValueCollection();
+            INameValueCollection headers = new RequestNameValueCollection();
             if (forceRefresh)
             {
                 headers.Set(HttpConstants.HttpHeaders.ForceRefresh, bool.TrueString);
@@ -524,12 +524,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             string entryUrl = PathsHelper.GeneratePath(ResourceType.Document, collectionRid, true);
 
-            INameValueCollection addressQuery = new StoreRequestNameValueCollection
+            INameValueCollection addressQuery = new RequestNameValueCollection
             {
                 { HttpConstants.QueryStrings.Url, HttpUtility.UrlEncode(entryUrl) }
             };
 
-            INameValueCollection headers = new StoreRequestNameValueCollection();
+            INameValueCollection headers = new RequestNameValueCollection();
             if (forceRefresh)
             {
                 headers.Set(HttpConstants.HttpHeaders.ForceRefresh, bool.TrueString);

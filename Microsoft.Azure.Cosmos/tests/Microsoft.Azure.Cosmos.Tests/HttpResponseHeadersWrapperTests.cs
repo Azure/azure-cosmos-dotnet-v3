@@ -273,12 +273,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(headers[key]);
         }
 
-        private CosmosMessageHeadersInternal CreateHeaders(HeaderType headerType)
+        private INameValueCollection CreateHeaders(HeaderType headerType)
         {
             switch (headerType)
             {
                 case HeaderType.Headers:
-                    return new Headers().CosmosMessageHeaders;
+                    return new Headers().CosmosMessageHeaders.INameValueCollection;
                 case HeaderType.HttpResponseHeadersNameValueCollectionWrapperNoContentHeaders:
                     HttpResponseMessage responseMessage = new HttpResponseMessage();
                     return new HttpResponseHeadersWrapper(
@@ -294,7 +294,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         responseMessageWithContent.Headers,
                         responseMessageWithContent.Content?.Headers);
                 case HeaderType.DictionaryNameValueCollection:
-                    return new Headers(new DictionaryNameValueCollection()).CosmosMessageHeaders;
+                    return new Headers(new DictionaryNameValueCollection()).CosmosMessageHeaders.INameValueCollection;
                 default:
                     throw new ArgumentException("Invalid header type");
             }
