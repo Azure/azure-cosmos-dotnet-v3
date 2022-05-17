@@ -19,6 +19,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal static class EncryptionProcessor
     {
+        public static readonly int TotalProcessorCount = Environment.ProcessorCount;
+
         private static readonly CosmosJsonDotNetSerializer BaseSerializer = new CosmosJsonDotNetSerializer(
             new JsonSerializerSettings()
             {
@@ -29,8 +31,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         // UTF-8 Encoding
         private static readonly SqlVarCharSerializer SqlVarcharSerializer = new SqlVarCharSerializer(size: -1, codePageCharacterEncoding: 65001);
-
-        private static readonly int TotalProcessorCount = Environment.ProcessorCount;
 
         private enum TypeMarker : byte
         {
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     cancellationToken));
 
                 // limit to number cores.
-                if (encryptionTasks.Count >= TotalProcessorCount)
+                if (encryptionTasks.Count == TotalProcessorCount)
                 {
                     await Task.WhenAll(encryptionTasks);
                     foreach (Task task in encryptionTasks)
@@ -116,6 +116,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                     propertiesEncryptedCount++;
                 }
+
+                encryptionTasks.Clear();
             }
 
             Stream result = EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
@@ -194,6 +196,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             int totalPropertiesDecryptedCount = 0;
+            List<Task<(JObject, int)>> decryptionTasks = new ();
             foreach (JToken value in documents)
             {
                 if (value is not JObject document)
@@ -201,12 +204,42 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continue;
                 }
 
-                (_, int propertiesDecrypted) = await EncryptionProcessor.DecryptAsync(
+                decryptionTasks.Add(EncryptionProcessor.DecryptAsync(
                     document,
                     encryptionSettings,
-                    cancellationToken);
+                    cancellationToken));
 
-                totalPropertiesDecryptedCount += propertiesDecrypted;
+                if (decryptionTasks.Count == TotalProcessorCount)
+                {
+                    await Task.WhenAll(decryptionTasks);
+                    foreach (Task<(JObject, int)> task in decryptionTasks)
+                    {
+                        if (task.IsFaulted || !task.IsCompleted)
+                        {
+                            Debug.Fail($"Failed to encrypt the document");
+                        }
+
+                        totalPropertiesDecryptedCount += (await task).Item2;
+                    }
+
+                    decryptionTasks.Clear();
+                }
+            }
+
+            if (decryptionTasks.Count > 0)
+            {
+                await Task.WhenAll(decryptionTasks);
+                foreach (Task<(JObject, int)> task in decryptionTasks)
+                {
+                    if (task.IsFaulted || !task.IsCompleted)
+                    {
+                        Debug.Fail($"Failed to encrypt the document");
+                    }
+
+                    totalPropertiesDecryptedCount += (await task).Item2;
+                }
+
+                decryptionTasks.Clear();
             }
 
             operationDiagnostics?.End(totalPropertiesDecryptedCount);
@@ -426,7 +459,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         settingsForProperty,
                         cancellationToken));
 
-                    if (decryptionTasks.Count >= TotalProcessorCount)
+                    if (decryptionTasks.Count == TotalProcessorCount)
                     {
                         await Task.WhenAll(decryptionTasks);
                         foreach (Task task in decryptionTasks)
@@ -456,6 +489,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                     propertiesDecryptedCount++;
                 }
+
+                decryptionTasks.Clear();
             }
 
             return propertiesDecryptedCount;
