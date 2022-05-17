@@ -27,10 +27,10 @@ namespace Microsoft.Azure.Cosmos
         public DateTimeOffset CRTS { get; set; }
 
         /// <summary>
-        /// The log sequence number.
+        /// The current log sequence number.
         /// </summary>
         [JsonProperty(PropertyName = "lsn", NullValueHandling = NullValueHandling.Ignore)]
-        public long LSN { get; set; }
+        public long CurrentLSN { get; set; }
 
         /// <summary>
         /// The operation type.
@@ -43,6 +43,6 @@ namespace Microsoft.Azure.Cosmos
         /// The previous image log sequence number.
         /// </summary>
         [JsonProperty(PropertyName = "previousImageLSN", NullValueHandling = NullValueHandling.Ignore)]
-        public long PreviousImageLSN { get; set; }
+        public long PreviousLSN { get; set; }
     }
 }

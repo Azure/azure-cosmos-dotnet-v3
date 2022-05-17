@@ -106,8 +106,6 @@
                     {
                         List<ItemChanges<Item>> resources = feedResponse.Resource.ToList();
 
-                        Console.WriteLine(JsonConvert.SerializeObject(resources));
-
                         GetChangeFeedIteratorOperationsLogTests.AssertGatewayMode(feedResponse);
                         
                         Assert.AreEqual(expected: 2, actual: resources.Count);
