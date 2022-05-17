@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     settingforProperty,
                     cancellationToken));
 
-                // limit to number cores.
+                // limit to number of cores.
                 if (encryptionTasks.Count == TotalProcessorCount)
                 {
                     await Task.WhenAll(encryptionTasks);
