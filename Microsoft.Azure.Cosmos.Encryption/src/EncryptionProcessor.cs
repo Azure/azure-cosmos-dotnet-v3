@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal static class EncryptionProcessor
     {
-        public static readonly int TotalProcessorCount = Environment.ProcessorCount;
+        public static readonly int TotalCpuCount = Environment.ProcessorCount;
 
         private static readonly CosmosJsonDotNetSerializer BaseSerializer = new CosmosJsonDotNetSerializer(
             new JsonSerializerSettings()
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     cancellationToken));
 
                 // limit to number of cores.
-                if (encryptionTasksList.Count == TotalProcessorCount)
+                if (encryptionTasksList.Count == TotalCpuCount)
                 {
                     await Task.WhenAll(encryptionTasksList);
                     foreach (Task encryptionTask in encryptionTasksList)
@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     encryptionSettings,
                     cancellationToken));
 
-                if (decryptionTasksList.Count == TotalProcessorCount)
+                if (decryptionTasksList.Count == TotalCpuCount)
                 {
                     await Task.WhenAll(decryptionTasksList);
                     foreach (Task<(JObject, int)> decryptionTask in decryptionTasksList)
@@ -459,7 +459,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         settingsForProperty,
                         cancellationToken));
 
-                    if (decryptionTasksList.Count == TotalProcessorCount)
+                    if (decryptionTasksList.Count == TotalCpuCount)
                     {
                         await Task.WhenAll(decryptionTasksList);
                         foreach (Task decryptionTask in decryptionTasksList)
