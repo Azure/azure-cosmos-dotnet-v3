@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     {
                         if (decryptionTask.IsFaulted || !decryptionTask.IsCompleted)
                         {
-                            Debug.Fail($"Failed to encrypt the document");
+                            Debug.Fail($"Failed to decrypt the document");
                         }
 
                         totalPropertiesDecryptedCount += (await decryptionTask).Item2;
@@ -233,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     if (decryptionTask.IsFaulted || !decryptionTask.IsCompleted)
                     {
-                        Debug.Fail($"Failed to encrypt the document");
+                        Debug.Fail($"Failed to decrypt the document");
                     }
 
                     totalPropertiesDecryptedCount += (await decryptionTask).Item2;
