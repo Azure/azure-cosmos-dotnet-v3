@@ -464,7 +464,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         await Task.WhenAll(decryptionTasksList);
                         foreach (Task decryptionTask in decryptionTasksList)
                         {
-                            if (decryptionTask.IsCanceled || !decryptionTask.IsCompleted)
+                            if (decryptionTask.IsFaulted || !decryptionTask.IsCompleted)
                             {
                                 Debug.Fail($"Failed to decrypt the document");
                             }
@@ -482,7 +482,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 await Task.WhenAll(decryptionTasksList);
                 foreach (Task decryptionTask in decryptionTasksList)
                 {
-                    if (decryptionTask.IsCanceled || !decryptionTask.IsCompleted)
+                    if (decryptionTask.IsFaulted || !decryptionTask.IsCompleted)
                     {
                         Debug.Fail($"Failed to decrypt the document");
                     }
