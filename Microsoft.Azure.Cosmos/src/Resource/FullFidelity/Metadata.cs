@@ -2,12 +2,15 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.FullFidelity
+namespace Microsoft.Azure.Cosmos
 {
+    using System;
+    using System.Text.Json;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
 
     /// <summary>
-    /// The metadata of full fidelity change feeds.
+    /// The metadata of a change feed resource with <see cref="ChangeFeedMode"/> is initialized to <see cref="ChangeFeedMode.AllOperations"/>.
     /// </summary>
 #if PREVIEW
     public
@@ -20,7 +23,8 @@ namespace Microsoft.Azure.Cosmos.FullFidelity
         /// The conflict resolved timestamp.
         /// </summary>
         [JsonProperty(PropertyName = "crts", NullValueHandling = NullValueHandling.Ignore)]
-        public long CRTS { get; set; }
+        [JsonConverter(typeof(DateTimeOffsetConverter))]
+        public DateTimeOffset CRTS { get; set; }
 
         /// <summary>
         /// The log sequence number.
@@ -32,7 +36,8 @@ namespace Microsoft.Azure.Cosmos.FullFidelity
         /// The operation type.
         /// </summary>
         [JsonProperty(PropertyName = "operationType")]
-        public OperationType OperationType { get; set; }
+        [JsonConverter(typeof(StringEnumConverter))]
+        internal ChangeFeedOperationType OperationType { get; set; }
 
         /// <summary>
         /// The previous image log sequence number.

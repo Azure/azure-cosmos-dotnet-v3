@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System.IO;
     using System.Net;
 
     /// <summary>

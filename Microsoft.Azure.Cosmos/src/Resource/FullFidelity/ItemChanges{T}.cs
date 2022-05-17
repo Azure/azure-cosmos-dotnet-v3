@@ -2,19 +2,19 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.FullFidelity
+namespace Microsoft.Azure.Cosmos
 {
     using Newtonsoft.Json;
 
     /// <summary>
-    /// The resource of full fidelity change feeds.
+    /// The typed response that contains the current, previous, and metadata change feed resource when <see cref="ChangeFeedMode"/> is initialized to <see cref="ChangeFeedMode.AllOperations"/>.
     /// </summary>
 #if PREVIEW
     public
 #else
     internal
 #endif  
-        class ChangeFeedItem<T>
+        class ItemChanges<T>
     {
         /// <summary>
         /// The full fidelity change feed current item.
