@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         /// The full fidelity change feed metadata.
         /// </summary>
         [JsonProperty(PropertyName = "metadata", NullValueHandling = NullValueHandling.Ignore)]
-        public Metadata Metadata { get; set; }
+        public ChangeFeedMetadata Metadata { get; set; }
 
         /// <summary>
         /// The full fidelity change feed previous item.

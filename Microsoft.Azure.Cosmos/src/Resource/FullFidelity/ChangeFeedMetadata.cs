@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
 #else
     internal
 #endif 
-        class Metadata
+        class ChangeFeedMetadata
     {
         /// <summary>
         /// The conflict resolved timestamp.
