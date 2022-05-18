@@ -32,19 +32,16 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The full fidelity change feed current item.
         /// </summary>
-        //////[JsonProperty(PropertyName = "current")]
         public T Current { get; set; }
 
         /// <summary>
         /// The full fidelity change feed metadata.
         /// </summary>
-        //////[JsonProperty(PropertyName = "metadata", NullValueHandling = NullValueHandling.Ignore)]
         public ChangeFeedMetadata Metadata { get; set; }
 
         /// <summary>
         /// The full fidelity change feed previous item.
         /// </summary>
-        //////[JsonProperty(PropertyName = "previous", NullValueHandling = NullValueHandling.Ignore)]
         public T Previous { get; set; }
     }
 }
