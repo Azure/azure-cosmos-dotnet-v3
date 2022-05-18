@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
         class ChangeFeedMetadata
     {
         /// <summary>
-        /// ctor.
+        /// New instance of meta data for <see cref="ItemChanges{T}"/> created.
         /// </summary>
         /// <param name="crts"></param>
         /// <param name="currentLSN"></param>
