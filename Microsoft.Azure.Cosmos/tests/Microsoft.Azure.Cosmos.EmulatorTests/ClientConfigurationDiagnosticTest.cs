@@ -74,6 +74,19 @@
 
             ConsistencyConfig consistencyConfig = cosmosClient.ClientConfigurationTraceDatum.ConsistencyConfig;
             Assert.AreEqual(consistencyConfig.ConsistencyLevel.Value, ConsistencyLevel.Session);
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions 
+            {
+                ApplicationRegion = "East US"
+            };
+
+            CosmosClientContext context = ClientContextCore.Create(
+                cosmosClient,
+                clientOptions);
+
+            ClientConfigurationTraceDatum clientConfig = new ClientConfigurationTraceDatum(context, DateTime.UtcNow);
+            Assert.AreEqual(clientConfig.ConsistencyConfig.ApplicationRegion, "East US");
+
         }
 
         [TestMethod]
