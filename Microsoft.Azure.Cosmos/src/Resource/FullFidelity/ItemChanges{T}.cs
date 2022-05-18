@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
         class ItemChanges<T>
     {
         /// <summary>
-        /// ctor.
+        /// New instance of ItemChanges that contain change feed resource along with metadata.
         /// </summary>
         /// <param name="current"></param>
         /// <param name="changeFeedMetadata"></param>
