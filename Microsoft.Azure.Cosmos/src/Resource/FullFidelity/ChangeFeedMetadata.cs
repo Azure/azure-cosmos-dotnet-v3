@@ -5,9 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Text.Json;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// The metadata of a change feed resource with <see cref="ChangeFeedMode"/> is initialized to <see cref="ChangeFeedMode.AllOperations"/>.
@@ -20,29 +17,42 @@ namespace Microsoft.Azure.Cosmos
         class ChangeFeedMetadata
     {
         /// <summary>
-        /// The conflict resolved timestamp.
+        /// ctor.
         /// </summary>
-        [JsonProperty(PropertyName = "crts", NullValueHandling = NullValueHandling.Ignore)]
-        [JsonConverter(typeof(DateTimeOffsetConverter))]
-        public DateTimeOffset CRTS { get; set; }
+        /// <param name="crts"></param>
+        /// <param name="currentLSN"></param>
+        /// <param name="operationType"></param>
+        /// <param name="previousLSN"></param>
+        public ChangeFeedMetadata(
+            DateTime crts, 
+            long currentLSN, 
+            ChangeFeedOperationType operationType, 
+            long previousLSN)
+        {
+            this.CRTS = crts;
+            this.CurrentLSN = currentLSN;
+            this.OperationType = operationType;
+            this.PreviousLSN = previousLSN;
+        }
 
         /// <summary>
-        /// The current log sequence number.
+        /// The conflict resolution timestamp.
         /// </summary>
-        [JsonProperty(PropertyName = "lsn", NullValueHandling = NullValueHandling.Ignore)]
+        public DateTime CRTS { get; set; }
+
+        /// <summary>
+        /// The current logical sequence number.
+        /// </summary>
         public long CurrentLSN { get; set; }
 
         /// <summary>
-        /// The operation type.
+        /// The change feed operation type.
         /// </summary>
-        [JsonProperty(PropertyName = "operationType")]
-        [JsonConverter(typeof(StringEnumConverter))]
         internal ChangeFeedOperationType OperationType { get; set; }
 
         /// <summary>
-        /// The previous image log sequence number.
+        /// The previous logical sequence number.
         /// </summary>
-        [JsonProperty(PropertyName = "previousImageLSN", NullValueHandling = NullValueHandling.Ignore)]
         public long PreviousLSN { get; set; }
     }
 }
