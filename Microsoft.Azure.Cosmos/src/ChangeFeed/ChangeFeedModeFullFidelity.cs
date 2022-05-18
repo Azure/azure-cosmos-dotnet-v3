@@ -16,6 +16,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         internal override void Accept(RequestMessage requestMessage)
         {
             requestMessage.UseGatewayMode = true;
+            
+            // Above, defaulting to Gateway is necessary for Full-Fidelity Change Feed for because the Split-handling logic resides within Compute Gateway.
+            // TODO: If and when, this changes, it will be necessary to remove this.
+
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.A_IM, ChangeFeedModeFullFidelity.FullFidelityHeader);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.ChangeFeedWireFormatVersion, ChangeFeedModeFullFidelity.ChangeFeedWireFormatVersion);
         }
