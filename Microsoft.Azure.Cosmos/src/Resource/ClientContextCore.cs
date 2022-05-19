@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
             if (connectionPolicy.EnableClientTelemetry)
             {
                connectionPolicy.EnableClientTelemetry = 
-                    ClientTelemetry.TryCreateAndStartBackgroundTelemetry(
+                    ClientTelemetry.RegisterClientAndTryStartBackgroundTelemetry(
                         clientId: cosmosClient.Id,
                         documentClient: documentClient,
                         userAgent: connectionPolicy.UserAgentContainer.UserAgent,

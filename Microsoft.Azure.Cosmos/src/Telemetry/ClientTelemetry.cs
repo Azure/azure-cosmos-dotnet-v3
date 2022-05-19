@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
 
         private static readonly string processName = System.Diagnostics.Process.GetCurrentProcess().ProcessName;
-        private static readonly ConcurrentDictionary<string, ClientTelemetryProperties> telemetryDataPerClient = new ConcurrentDictionary<string, ClientTelemetryProperties>();
+        private static readonly ConcurrentDictionary<string, ClientTelemetryProperties> clientPayload = new ConcurrentDictionary<string, ClientTelemetryProperties>();
 
         private readonly ClientTelemetryProperties clientTelemetryInfo;
         private readonly DocumentClient documentClient;
@@ -59,55 +59,79 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Factory method to intiakize telemetry object and start observer task
         /// </summary>
         /// <returns>ClientTelemetry</returns>
-        public static bool TryCreateAndStartBackgroundTelemetry(
+        public static bool RegisterClientAndTryStartBackgroundTelemetry(
             string clientId,
             DocumentClient documentClient,
             string userAgent,
             ConnectionMode connectionMode,
             AuthorizationTokenProvider authorizationTokenProvider,
-            DiagnosticsHandlerHelper diagnosticsHelper,
             IReadOnlyList<string> preferredRegions)
         {
             DefaultTrace.TraceInformation("Initiating telemetry with background task.");
             try
             {
-                telemetryDataPerClient.TryAdd(clientId, new ClientTelemetryProperties(
-                   clientId: clientId,
-                   processId: System.Diagnostics.Process.GetCurrentProcess().ProcessName,
-                   userAgent: userAgent,
-                   connectionMode: connectionMode,
-                   preferredRegions: preferredRegions,
-                   aggregationIntervalInSec: (int)observingWindow.TotalSeconds));
+                ClientTelemetry.RegisterClient(
+                    clientId: clientId,
+                    userAgent: userAgent,
+                    connectionMode: connectionMode,
+                    preferredRegions: preferredRegions);
 
-                if (Instance != null)
-                {
-                    return true;
-                }
-
-                lock (ClientTelemetry.lockObject)
-                {
-                    Instance = new ClientTelemetry();
-                    Instance.StartObserverTask();
-
-                    this.documentClient = documentClient ?? throw new ArgumentNullException(nameof(documentClient));
-                    this.diagnosticsHelper = diagnosticsHelper ?? throw new ArgumentNullException(nameof(diagnosticsHelper));
-                    this.tokenProvider = authorizationTokenProvider ?? throw new ArgumentNullException(nameof(authorizationTokenProvider));
-
-                    this.httpClient = documentClient.httpClient;
-                    this.cancellationTokenSource = new CancellationTokenSource();
-                }
-
+                ClientTelemetry.TryStartJob(documentClient, authorizationTokenProvider);
             }
             catch (Exception)
             {
                 return false;
             }
+            return true;
+        }
+
+        private static void RegisterClient(string clientId,
+            string userAgent,
+            ConnectionMode connectionMode,
+            IReadOnlyList<string> preferredRegions)
+        {
+            clientPayload.TryAdd(clientId, new ClientTelemetryProperties(
+                                                                    clientId: clientId,
+                                                                    processId: System.Diagnostics.Process.GetCurrentProcess().ProcessName,
+                                                                    userAgent: userAgent,
+                                                                    connectionMode: connectionMode,
+                                                                    preferredRegions: preferredRegions,
+                                                                    aggregationIntervalInSec: (int)observingWindow.TotalSeconds));
+        }
+
+        private static bool TryStartJob(
+            DocumentClient documentClient,
+            AuthorizationTokenProvider authorizationTokenProvider)
+        {
+            if (Instance != null)
+            {
+                return true;
+            }
+
+            lock (ClientTelemetry.lockObject)
+            {
+                Instance = new ClientTelemetry(documentClient, authorizationTokenProvider);
+                try
+                {
+                    Instance.StartObserverTask();
+                }
+                catch (Exception ex)
+                {
+                    DefaultTrace.TraceError("Error while starting job: " + ex.Message); 
+                    return false;
+                }
+                
+            }
 
             return true;
         }
 
-        private ClientTelemetry()
+        private ClientTelemetry(DocumentClient documentClient,
+            AuthorizationTokenProvider authorizationTokenProvider)
         {
+            this.documentClient = documentClient;
+            this.tokenProvider = authorizationTokenProvider;
+
             this.diagnosticsHelper = DiagnosticsHandlerHelper.Instance;
             this.cancellationTokenSource = new CancellationTokenSource();
         }
