@@ -14,13 +14,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class CosmosItemChangesJsonConverter : JsonConverter
     {
-        private readonly CosmosSerializer UserSerializer;
-
-        internal CosmosItemChangesJsonConverter(CosmosSerializer userSerializer)
-        {
-            this.UserSerializer = userSerializer ?? throw new ArgumentNullException(nameof(userSerializer));
-        }
-
         /// <summary>
         /// Determines whether this instance can convert the specified object type.
         /// </summary>
@@ -68,18 +61,11 @@ namespace Microsoft.Azure.Cosmos
             throw new NotImplementedException();
         }
 
-        internal static CosmosSerializer CreateItemChangesJsonSerializer(
-            CosmosSerializer cosmosSerializer, 
-            CosmosSerializer propertiesSerializer)
+        internal static CosmosSerializer CreateItemChangesJsonSerializer()
         {
-            if (propertiesSerializer is CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper)
-            {
-                propertiesSerializer = cosmosJsonSerializerWrapper.InternalJsonSerializer;
-            }
-
             JsonSerializerSettings settings = new JsonSerializerSettings()
             {
-                Converters = new List<JsonConverter>() { new CosmosItemChangesJsonConverter(cosmosSerializer ?? propertiesSerializer) }
+                Converters = new List<JsonConverter>() { new CosmosItemChangesJsonConverter() }
             };
 
             return new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer(settings));

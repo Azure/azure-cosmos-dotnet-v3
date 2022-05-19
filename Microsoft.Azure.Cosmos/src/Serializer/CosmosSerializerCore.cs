@@ -34,9 +34,7 @@ namespace Microsoft.Azure.Cosmos
                     cosmosSerializer: null,
                     propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
                 this.patchOperationSerializer = null;
-                this.itemChangesSerializer = CosmosItemChangesJsonConverter.CreateItemChangesJsonSerializer(
-                    cosmosSerializer: null,
-                    propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
+                this.itemChangesSerializer = CosmosItemChangesJsonConverter.CreateItemChangesJsonSerializer();
             }
             else
             {
@@ -47,9 +45,7 @@ namespace Microsoft.Azure.Cosmos
                 this.patchOperationSerializer = PatchOperationsJsonConverter.CreatePatchOperationsSerializer(
                     cosmosSerializer: this.customSerializer,
                     propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
-                this.itemChangesSerializer = CosmosItemChangesJsonConverter.CreateItemChangesJsonSerializer(
-                    cosmosSerializer: this.customSerializer,
-                    propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
+                this.itemChangesSerializer = CosmosItemChangesJsonConverter.CreateItemChangesJsonSerializer();
             }
         }
 
@@ -138,9 +134,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.itemChangesSerializer == null)
                 {
-                    this.itemChangesSerializer = CosmosItemChangesJsonConverter.CreateItemChangesJsonSerializer(
-                        cosmosSerializer: this.customSerializer ?? new CosmosJsonDotNetSerializer(),
-                        propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
+                    this.itemChangesSerializer = CosmosItemChangesJsonConverter.CreateItemChangesJsonSerializer();
                 }
                 return this.itemChangesSerializer;
             }
