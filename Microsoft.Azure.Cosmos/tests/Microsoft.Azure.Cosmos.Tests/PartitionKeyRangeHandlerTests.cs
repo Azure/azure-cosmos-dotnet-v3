@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken { Range = expectedRange, Token = expectedToken };
             string continuation = JsonConvert.SerializeObject(compositeContinuationToken);
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
-            StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection
+            RequestNameValueCollection headers = new()
             {
                 { HttpConstants.HttpHeaders.Continuation, continuation }
             };
@@ -388,7 +388,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             //Reverse
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
-            StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+            RequestNameValueCollection headers = new();
             bool result = await partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(
                 headers,
                 providedRanges,
@@ -414,7 +414,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<ITrace>(),
                 It.IsAny<bool>()
             )).Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)overlappingRanges.Skip(2).ToList())).Verifiable();
-            headers = new StoreRequestNameValueCollection();
+            headers = new RequestNameValueCollection();
             result = await partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(
                  headers,
                  providedRanges,
@@ -447,7 +447,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             )).Returns(Task.FromResult<IReadOnlyList<PartitionKeyRange>>(null)).Verifiable();
 
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
-            StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection
+            RequestNameValueCollection headers = new()
             {
                 { HttpConstants.HttpHeaders.Continuation, "something" }
             };
@@ -473,7 +473,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task AddPartitionKeyRangeToContinuationTokenOnSplit()
         {
             const string BackendToken = "backendToken";
-            StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+            RequestNameValueCollection headers = new();
             List<CompositeContinuationToken> compositeContinuationTokensFromSplit = new List<CompositeContinuationToken>
             {
                 new CompositeContinuationToken{ Token = "someToken", Range = new Range<string>("A", "B", true, false) },
@@ -541,7 +541,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             )).Returns(Task.FromResult(overlappingRanges)).Verifiable();
 
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
-            StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+            RequestNameValueCollection headers = new();
             bool result = await partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(
                 headers,
                 providedRanges,
@@ -572,7 +572,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<ITrace>(),
                 It.IsAny<bool>()
             )).Returns(Task.FromResult(overlappingRanges));
-            headers = new StoreRequestNameValueCollection();
+            headers = new RequestNameValueCollection();
 
             result = await partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(
                  headers,
