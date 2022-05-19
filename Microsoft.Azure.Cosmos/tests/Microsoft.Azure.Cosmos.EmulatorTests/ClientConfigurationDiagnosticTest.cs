@@ -120,6 +120,7 @@
             trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
             clientConfigurationTraceDatum = (ClientConfigurationTraceDatum)trace.Data["Client Configuration"];
             Assert.IsNotNull(clientConfigurationTraceDatum.SerializedJson);
+            Assert.AreEqual(clientConfigurationTraceDatum.ProcessorCount, Environment.ProcessorCount);
         }
     }
 }

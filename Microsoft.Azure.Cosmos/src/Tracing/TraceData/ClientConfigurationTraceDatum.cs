@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.cachedNumberOfActiveClient = CosmosClient.NumberOfActiveClients;
             this.cachedUserAgentString = this.UserAgentContainer.UserAgent;
             this.cachedSerializedJson = this.GetSerializedDatum();
+            this.ProcessorCount = Environment.ProcessorCount;
         }
 
         public DateTime ClientCreatedDateTimeUtc { get; }
@@ -43,6 +44,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public OtherConnectionConfig OtherConnectionConfig { get; }
 
         public ConsistencyConfig ConsistencyConfig { get; }
+
+        public int ProcessorCount { get; }
 
         public ReadOnlyMemory<byte> SerializedJson
         {
@@ -105,6 +108,9 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
             jsonTextWriter.WriteFieldName("ConsistencyConfig");
             jsonTextWriter.WriteStringValue(this.ConsistencyConfig.ToString());
+            jsonTextWriter.WriteFieldName("ProcessorCount");
+            jsonTextWriter.WriteNumber64Value(this.ProcessorCount);
+
             jsonTextWriter.WriteObjectEnd();
 
             return jsonTextWriter.GetResult();
