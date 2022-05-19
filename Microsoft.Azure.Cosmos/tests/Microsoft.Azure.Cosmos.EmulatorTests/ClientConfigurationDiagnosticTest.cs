@@ -86,6 +86,7 @@
 
             ClientConfigurationTraceDatum clientConfig = new ClientConfigurationTraceDatum(context, DateTime.UtcNow);
             Assert.AreEqual(clientConfig.ConsistencyConfig.ApplicationRegion, "East US");
+            Assert.IsNull(clientConfig.ConsistencyConfig.PreferredRegions);
 
         }
 
