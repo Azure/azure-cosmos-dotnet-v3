@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
     internal static class DiagnosticsFilterHelper
     {
-        private static readonly TimeSpan latencyThresholdInMs = TimeSpan.FromMilliseconds(100);
+        private static readonly TimeSpan latencyThresholdInMs = TimeSpan.FromMilliseconds(250);
 
         /// <summary>
         /// Allow only when either of below is <b>True</b><br></br>
