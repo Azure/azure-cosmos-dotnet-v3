@@ -17,20 +17,186 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using HdrHistogram;
+    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
 
     [TestClass]
     public class ClientTests
     {
+
+        [TestMethod]
+        public async Task SimulateSlowRefresh()
+        {
+            bool delayHttpRequest = false;
+            Uri blockWhileRefreshing = null;
+
+            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
+            {
+                RequestCallBack = async (request, cancellToken) =>
+                {
+                    if (delayHttpRequest)
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(10));
+                        blockWhileRefreshing = null;
+                    }
+                    
+                    return null;
+                }
+            };
+
+            
+
+            int directCalls = 0;
+            using CosmosClient cosmosClient = new CosmosClient(
+                accountEndpoint: "https://cosmosdbdotnetperf.documents.azure.com:443/",
+                authKeyOrResourceToken: "qgRIFBFZUGGfqyFOk4DaN4AOCMkOqUXeEAzrpKYk9DYzYrqCyAnmt2ybxSo4g2WKboSO6Z3YQMgOBotSpvLWQQ==",
+                clientOptions: new CosmosClientOptions()
+                {
+                    HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
+                    TransportClientHandlerFactory = (org) => new TransportClientWrapper(
+                        org,
+                        interceptorWithStoreResult: (uri, operationType, dsr) =>
+                        {
+                            if(dsr.OperationType == OperationType.Read &&
+                                dsr.ResourceType == ResourceType.Document)
+                            {
+                                int count = Interlocked.Increment(ref directCalls);
+
+                                if(count == 80 || (blockWhileRefreshing != null && blockWhileRefreshing == uri))
+                                {
+                                    if(count == 80)
+                                    {
+                                        blockWhileRefreshing = uri;
+                                    }
+                                    
+                                    return new StoreResponse()
+                                    {
+                                        Status = 410,
+                                        Headers = new StoreResponseNameValueCollection()
+                                        {
+                                            SubStatus = "0"
+                                        }
+                                    };
+                                }
+                            }
+
+                            return null;
+                        })
+                });
+
+            Cosmos.Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync("testdb");
+            Container container = await database.CreateContainerIfNotExistsAsync("test", "/pk", throughput: 10000);
+
+            ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
+            await container.CreateItemAsync(toDoActivity);
+
+            CancellationTokenSource tokenSource = new CancellationTokenSource();
+            List<Task<List<(DateTime, CosmosDiagnostics)>>> tasks = new();
+
+            for (int i = 0; i < 3; i++)
+            {
+                Task<List<(DateTime, CosmosDiagnostics)>> task = await Task.Factory.StartNew(
+                    function: () =>
+                    {
+                        return this.ReadItemAsync(container, tokenSource.Token);
+                    });
+                tasks.Add(task);
+            }
+
+            delayHttpRequest = true;
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            while(this.TaskCount < tasks.Count && stopwatch.Elapsed.TotalSeconds < 90)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(10));
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(60));
+
+            tokenSource.Cancel();
+
+            await Task.WhenAll(tasks);
+
+            List<Record> dateToTime = new();
+            foreach (Task<List<(DateTime, CosmosDiagnostics)>> task in tasks)
+            {
+                foreach ((DateTime time, CosmosDiagnostics diagnostic) in task.Result)
+                {
+                    long value = (long)diagnostic.GetClientElapsedTime().TotalMilliseconds;
+                    dateToTime.Add(new Record
+                    {
+                        DateTime = time.ToString("O"),
+                        Latency = value,
+                        Hit410 = ((CosmosTraceDiagnostics)diagnostic).IsGoneExceptionHit()
+                    });
+                }
+            }
+
+            string json = JsonConvert.SerializeObject(dateToTime);
+            Console.WriteLine(json);
+            //LongConcurrentHistogram histogram = new(
+            //    lowestTrackableValue: 1, 
+            //    highestTrackableValue: 100000, 
+            //    numberOfSignificantValueDigits: 5);
+
+            //foreach(Task<List<CosmosDiagnostics>> task in tasks)
+            //{
+            //    foreach(CosmosDiagnostics diagnostic in task.Result)
+            //    {
+            //        long value = (long)diagnostic.GetClientElapsedTime().TotalMilliseconds;
+            //        histogram.RecordValue(value);
+            //    }
+            //}
+
+            //string s = histogram.ToString();
+            //Console.WriteLine();
+        }
+
+        public class Record 
+        {
+            public string DateTime { get; set; }
+            public long Latency { get; set; }
+            public bool Hit410 { get; set; }
+        }
+
+
+        public int TaskCount = 0;
+
+        private async Task<List<(DateTime, CosmosDiagnostics)>> ReadItemAsync(Container container, CancellationToken token)
+        {
+            ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
+            await container.CreateItemAsync(toDoActivity);
+
+            Interlocked.Increment(ref this.TaskCount);
+            List<(DateTime, CosmosDiagnostics)> cosmosDiagnostics = new();
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    var response = await container.ReadItemAsync<ToDoActivity>(toDoActivity.id, new Cosmos.PartitionKey(toDoActivity.pk));
+                    cosmosDiagnostics.Add((DateTime.UtcNow, response.Diagnostics));
+                }catch(CosmosException ce)
+                {
+                    cosmosDiagnostics.Add((DateTime.UtcNow, ce.Diagnostics));
+                }
+            }
+
+            return cosmosDiagnostics;
+        }
+        
         [TestMethod]
         public async Task ValidateExceptionOnInitTask()
         {
