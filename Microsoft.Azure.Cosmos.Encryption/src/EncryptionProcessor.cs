@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
@@ -19,8 +18,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal static class EncryptionProcessor
     {
-        public static readonly int TotalCpuCount = Environment.ProcessorCount;
-
         private static readonly CosmosJsonDotNetSerializer BaseSerializer = new CosmosJsonDotNetSerializer(
             new JsonSerializerSettings()
             {
@@ -62,8 +59,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
 
-            List<Task> encryptionTasksList = new ();
-
             foreach (string propertyName in encryptionSettings.PropertiesToEncrypt)
             {
                 // possibly a wrong path configured in the Client Encryption Policy, ignore.
@@ -80,44 +75,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     throw new ArgumentException($"Invalid Encryption Setting for the Property:{propertyName}. ");
                 }
 
-                encryptionTasksList.Add(EncryptJTokenAsync(
+                await EncryptJTokenAsync(
                     propertyToEncrypt.Value,
                     settingforProperty,
-                    cancellationToken));
+                    cancellationToken);
 
-                // limit to number of cores.
-                if (encryptionTasksList.Count == TotalCpuCount)
-                {
-                    await Task.WhenAll(encryptionTasksList);
-                    foreach (Task encryptionTask in encryptionTasksList)
-                    {
-                        if (encryptionTask.IsFaulted || !encryptionTask.IsCompleted)
-                        {
-                            Debug.Fail($"Failed to encrypt the document");
-                        }
-
-                        propertiesEncryptedCount++;
-                    }
-
-                    encryptionTasksList.Clear();
-                }
-            }
-
-            // run remaining.
-            if (encryptionTasksList.Count > 0)
-            {
-                await Task.WhenAll(encryptionTasksList);
-                foreach (Task encryptionTask in encryptionTasksList)
-                {
-                    if (encryptionTask.IsFaulted || !encryptionTask.IsCompleted)
-                    {
-                        Debug.Fail($"Failed to encrypt the document");
-                    }
-
-                    propertiesEncryptedCount++;
-                }
-
-                encryptionTasksList.Clear();
+                propertiesEncryptedCount++;
             }
 
             Stream result = EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
@@ -196,7 +159,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             int totalPropertiesDecryptedCount = 0;
-            List<Task<(JObject, int)>> decryptionTasksList = new ();
             foreach (JToken value in documents)
             {
                 if (value is not JObject document)
@@ -204,42 +166,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continue;
                 }
 
-                decryptionTasksList.Add(EncryptionProcessor.DecryptAsync(
+                (_, int propertiesDecrypted) = await EncryptionProcessor.DecryptAsync(
                     document,
                     encryptionSettings,
-                    cancellationToken));
+                    cancellationToken);
 
-                if (decryptionTasksList.Count == TotalCpuCount)
-                {
-                    await Task.WhenAll(decryptionTasksList);
-                    foreach (Task<(JObject, int)> decryptionTask in decryptionTasksList)
-                    {
-                        if (decryptionTask.IsFaulted || !decryptionTask.IsCompleted)
-                        {
-                            Debug.Fail($"Failed to decrypt the document");
-                        }
-
-                        totalPropertiesDecryptedCount += (await decryptionTask).Item2;
-                    }
-
-                    decryptionTasksList.Clear();
-                }
-            }
-
-            if (decryptionTasksList.Count > 0)
-            {
-                await Task.WhenAll(decryptionTasksList);
-                foreach (Task<(JObject, int)> decryptionTask in decryptionTasksList)
-                {
-                    if (decryptionTask.IsFaulted || !decryptionTask.IsCompleted)
-                    {
-                        Debug.Fail($"Failed to decrypt the document");
-                    }
-
-                    totalPropertiesDecryptedCount += (await decryptionTask).Item2;
-                }
-
-                decryptionTasksList.Clear();
+                totalPropertiesDecryptedCount += propertiesDecrypted;
             }
 
             operationDiagnostics?.End(totalPropertiesDecryptedCount);
@@ -440,8 +372,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken)
         {
             int propertiesDecryptedCount = 0;
-
-            List<Task> decryptionTasksList = new List<Task>();
             foreach (string propertyName in encryptionSettings.PropertiesToEncrypt)
             {
                 JProperty propertyToDecrypt = document.Property(propertyName);
@@ -454,43 +384,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         throw new ArgumentException($"Invalid Encryption Setting for Property:{propertyName}. ");
                     }
 
-                    decryptionTasksList.Add(DecryptJTokenAsync(
+                    await DecryptJTokenAsync(
                         propertyToDecrypt.Value,
                         settingsForProperty,
-                        cancellationToken));
-
-                    if (decryptionTasksList.Count == TotalCpuCount)
-                    {
-                        await Task.WhenAll(decryptionTasksList);
-                        foreach (Task decryptionTask in decryptionTasksList)
-                        {
-                            if (decryptionTask.IsFaulted || !decryptionTask.IsCompleted)
-                            {
-                                Debug.Fail($"Failed to decrypt the document");
-                            }
-
-                            propertiesDecryptedCount++;
-                        }
-
-                        decryptionTasksList.Clear();
-                    }
-                }
-            }
-
-            if (decryptionTasksList.Count > 0)
-            {
-                await Task.WhenAll(decryptionTasksList);
-                foreach (Task decryptionTask in decryptionTasksList)
-                {
-                    if (decryptionTask.IsFaulted || !decryptionTask.IsCompleted)
-                    {
-                        Debug.Fail($"Failed to decrypt the document");
-                    }
+                        cancellationToken);
 
                     propertiesDecryptedCount++;
                 }
-
-                decryptionTasksList.Clear();
             }
 
             return propertiesDecryptedCount;
