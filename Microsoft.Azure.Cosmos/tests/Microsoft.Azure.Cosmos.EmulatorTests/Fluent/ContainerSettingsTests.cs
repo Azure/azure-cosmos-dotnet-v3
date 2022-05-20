@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(4, spatialPath.SpatialTypes.Count); // All SpatialTypes are returned
 
             Assert.AreEqual(1, responseProperties.ClientEncryptionPolicy.IncludedPaths.Count());
-            Assert.IsTrue(responseProperties.ClientEncryptionPolicy.PolicyFormatVersion <= 1);
+            Assert.IsTrue(responseProperties.ClientEncryptionPolicy.PolicyFormatVersion <= 2);
             ClientEncryptionIncludedPath clientEncryptionIncludedPath = responseProperties.ClientEncryptionPolicy.IncludedPaths.First();
             Assert.IsTrue(this.VerifyClientEncryptionIncludedPath(clientEncryptionIncludedPath1, clientEncryptionIncludedPath));
         }

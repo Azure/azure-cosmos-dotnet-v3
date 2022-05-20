@@ -1514,6 +1514,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                         EncryptionType = "Randomized"
                     },
+                    new ClientEncryptionIncludedPath()
+                    {
+                        Path = "/path1",
+                        ClientEncryptionKeyId = "dekId1",
+                        EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                        EncryptionType = "Randomized"
+                    },
                 };
 
                 ContainerProperties setting = new ContainerProperties()
@@ -1528,7 +1535,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (ArgumentException ex)
             {
-                Assert.IsTrue(ex.Message.Contains("Paths which are part of the partition key may not be included in the ClientEncryptionPolicy."));
+                Assert.IsTrue(ex.Message.Contains("Path: /users which is part of the partition key has to be encrypted with Deterministic type Encryption."));
+            }
+
+            try
+            {
+                Collection<ClientEncryptionIncludedPath> pathsToEncryptWithPartitionKey = new Collection<ClientEncryptionIncludedPath>()
+                {
+                    new ClientEncryptionIncludedPath()
+                    {
+                        Path = partitionKeyPath,
+                        ClientEncryptionKeyId = "dekId1",
+                        EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                        EncryptionType = "Deterministic"
+                    },
+                    new ClientEncryptionIncludedPath()
+                    {
+                        Path = "/id",
+                        ClientEncryptionKeyId = "dekId1",
+                        EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                        EncryptionType = "Randomized"
+                    },
+                };
+
+                ContainerProperties setting = new ContainerProperties()
+                {
+                    Id = containerName,
+                    PartitionKey = new Documents.PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = Documents.PartitionKind.Hash },
+                    ClientEncryptionPolicy = new ClientEncryptionPolicy(pathsToEncryptWithPartitionKey)
+                };
+
+                await this.cosmosDatabase.CreateContainerAsync(setting);
+                Assert.Fail("Creating container should have failed.");
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("Only Deterministic encryption type supported for path: /id. "));
             }
         }
 

@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
         {
             ClientEncryptionPolicy.ValidateIncludedPaths(includedPaths);
             this.IncludedPaths = includedPaths;
-            this.PolicyFormatVersion = 1;
+            this.PolicyFormatVersion = 2;
         }
 
         [JsonConstructor]
@@ -55,22 +55,22 @@ namespace Microsoft.Azure.Cosmos
         internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
 
         /// <summary>
-        /// Ensures that partition key paths are not specified in the client encryption policy for encryption.
+        /// Ensures that partition key paths specified in the client encryption policy for encryption are encrypted using Deterministic encryption algorithm.
         /// </summary>
         /// <param name="partitionKeyPathTokens">Tokens corresponding to validated partition key.</param>
-        internal void ValidatePartitionKeyPathsAreNotEncrypted(IReadOnlyList<IReadOnlyList<string>> partitionKeyPathTokens)
+        internal void ValidatePartitionKeyPathsIfEncrypted(IReadOnlyList<IReadOnlyList<string>> partitionKeyPathTokens)
         {
             Debug.Assert(partitionKeyPathTokens != null);
-            IEnumerable<string> propertiesToEncrypt = this.IncludedPaths.Select(p => p.Path.Substring(1));
+
             foreach (IReadOnlyList<string> tokensInPath in partitionKeyPathTokens)
             {
                 Debug.Assert(tokensInPath != null);
                 if (tokensInPath.Count > 0)
                 {
                     string topLevelToken = tokensInPath.First();
-                    if (propertiesToEncrypt.Contains(topLevelToken))
+                    if (string.Equals(this.IncludedPaths.Where(p => p.Path.Substring(1).Equals(topLevelToken)).Select(et => et.EncryptionType).FirstOrDefault(), "Randomized"))
                     {
-                        throw new ArgumentException($"Paths which are part of the partition key may not be included in the {nameof(ClientEncryptionPolicy)}.", nameof(ContainerProperties.ClientEncryptionPolicy));
+                        throw new ArgumentException($"Path: /{topLevelToken} which is part of the partition key has to be encrypted with Deterministic type Encryption.");
                     }
                 }
             }
@@ -104,8 +104,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             if (clientEncryptionIncludedPath.Path[0] != '/'
-                || clientEncryptionIncludedPath.Path.LastIndexOf('/') != 0
-                || string.Equals(clientEncryptionIncludedPath.Path.Substring(1), "id"))
+                || clientEncryptionIncludedPath.Path.LastIndexOf('/') != 0)
             {
                 throw new ArgumentException($"Invalid path '{clientEncryptionIncludedPath.Path ?? string.Empty}'.");
             }
@@ -118,6 +117,12 @@ namespace Microsoft.Azure.Cosmos
             if (string.IsNullOrWhiteSpace(clientEncryptionIncludedPath.EncryptionType))
             {
                 throw new ArgumentNullException(nameof(clientEncryptionIncludedPath.EncryptionType));
+            }
+
+            if (string.Equals(clientEncryptionIncludedPath.Path.Substring(1), "id") &&
+                string.Equals(clientEncryptionIncludedPath.EncryptionType, "Randomized"))
+            {
+                throw new ArgumentException($"Only Deterministic encryption type is supported for path: {clientEncryptionIncludedPath.Path}. ");
             }
 
             if (!string.Equals(clientEncryptionIncludedPath.EncryptionType, "Deterministic") &&
