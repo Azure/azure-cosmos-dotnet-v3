@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (encryptionSettings.PropertiesToEncrypt.Any())
             {
-                streamPayload = EncryptionProcessor.EncryptAsync(
+               (streamPayload, _) = EncryptionProcessor.EncryptAsync(
                     streamPayload,
                     encryptionSettings,
                     operationDiagnostics: null,
@@ -75,6 +75,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string id,
             TransactionalBatchItemRequestOptions requestOptions = null)
         {
+            EncryptionSettings encryptionSettings = this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: default)
+                .ConfigureAwait(false)
+                .GetAwaiter()
+                .GetResult();
+
+            if (encryptionSettings.PropertiesToEncrypt.Any())
+            {
+                id = this.encryptionContainer.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(id, encryptionSettings, cancellationToken: default)
+                    .ConfigureAwait(false)
+                    .GetAwaiter()
+                    .GetResult();
+            }
+
             this.transactionalBatch = this.transactionalBatch.DeleteItem(
                 id,
                 requestOptions);
@@ -86,6 +99,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string id,
             TransactionalBatchItemRequestOptions requestOptions = null)
         {
+            EncryptionSettings encryptionSettings = this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: default)
+                .ConfigureAwait(false)
+                .GetAwaiter()
+                .GetResult();
+
+            if (encryptionSettings.PropertiesToEncrypt.Any())
+            {
+                id = this.encryptionContainer.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(id, encryptionSettings, cancellationToken: default)
+                    .ConfigureAwait(false)
+                    .GetAwaiter()
+                    .GetResult();
+            }
+
             this.transactionalBatch = this.transactionalBatch.ReadItem(
                 id,
                 requestOptions);
@@ -117,11 +143,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (encryptionSettings.PropertiesToEncrypt.Any())
             {
-                streamPayload = EncryptionProcessor.EncryptAsync(
+                (streamPayload, _) = EncryptionProcessor.EncryptAsync(
                     streamPayload,
                     encryptionSettings,
                     operationDiagnostics: null,
                     cancellationToken: default)
+                    .ConfigureAwait(false)
+                    .GetAwaiter()
+                    .GetResult();
+
+                id = this.encryptionContainer.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(id, encryptionSettings, cancellationToken: default)
                     .ConfigureAwait(false)
                     .GetAwaiter()
                     .GetResult();
@@ -156,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (encryptionSettings.PropertiesToEncrypt.Any())
             {
-                streamPayload = EncryptionProcessor.EncryptAsync(
+                (streamPayload,_) = EncryptionProcessor.EncryptAsync(
                     streamPayload,
                     encryptionSettings,
                     operationDiagnostics: null,
@@ -263,6 +294,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 .ConfigureAwait(false)
                 .GetAwaiter()
                 .GetResult();
+
+            if (encryptionSettings.PropertiesToEncrypt.Any())
+            {
+                id = this.encryptionContainer.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(id, encryptionSettings, cancellationToken: default)
+                    .ConfigureAwait(false)
+                    .GetAwaiter()
+                    .GetResult();
+            }
 
             this.transactionalBatch = this.transactionalBatch.PatchItem(
                 id,

@@ -17,14 +17,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private readonly Dictionary<string, EncryptionSettingForProperty> encryptionSettingsDictByPropertyName;
 
-        private EncryptionSettings(string containerRidValue)
+        private EncryptionSettings(string containerRidValue, string partitionKeyPath)
         {
             this.ContainerRidValue = containerRidValue;
+            this.PartitionKeyPath = partitionKeyPath;
             this.encryptionSettingsDictByPropertyName = new Dictionary<string, EncryptionSettingForProperty>();
             this.PropertiesToEncrypt = this.encryptionSettingsDictByPropertyName.Keys;
         }
 
         public string ContainerRidValue { get; }
+
+        public string PartitionKeyPath { get; }
 
         public IEnumerable<string> PropertiesToEncrypt { get; }
 
@@ -74,10 +77,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             // set the Container Rid.
             string containerRidValue = containerResponse.Resource.SelfLink.Split('/').ElementAt(3);
 
+            string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
+
             // set the ClientEncryptionPolicy for the Settings.
             ClientEncryptionPolicy clientEncryptionPolicy = containerResponse.Resource.ClientEncryptionPolicy;
 
-            EncryptionSettings encryptionSettings = new EncryptionSettings(containerRidValue);
+            EncryptionSettings encryptionSettings = new EncryptionSettings(containerRidValue, partitionKeyPath);
 
             if (clientEncryptionPolicy != null)
             {

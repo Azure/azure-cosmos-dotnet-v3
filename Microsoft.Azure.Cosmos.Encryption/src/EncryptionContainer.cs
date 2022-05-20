@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -98,13 +99,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cancellationToken);
         }
 
-        public override Task<ItemResponse<T>> DeleteItemAsync<T>(
+        public override async Task<ItemResponse<T>> DeleteItemAsync<T>(
             string id,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return this.container.DeleteItemAsync<T>(
+            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
+            if (encryptionSettings.PropertiesToEncrypt.Any())
+            {
+                id = await this.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(id, encryptionSettings, cancellationToken);
+            }
+
+            return await this.container.DeleteItemAsync<T>(
                 id,
                 partitionKey,
                 requestOptions,
@@ -411,6 +418,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
             QueryRequestOptions requestOptions = null)
         {
             QueryRequestOptions clonedRequestOptions = requestOptions != null ? (QueryRequestOptions)requestOptions.ShallowCopy() : new QueryRequestOptions();
+            EncryptionSettings encryptionSettings = this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                obsoleteEncryptionSettings: null,
+                cancellationToken: default)
+                .ConfigureAwait(false)
+                .GetAwaiter()
+                .GetResult();
+
+            if (requestOptions != null && requestOptions.PartitionKey.HasValue)
+            {
+                clonedRequestOptions.PartitionKey = this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(
+                    requestOptions.PartitionKey.Value,
+                    encryptionSettings,
+                    cancellationToken: default)
+                    .ConfigureAwait(false)
+                    .GetAwaiter()
+                    .GetResult();
+            }
 
             return new EncryptionFeedIterator(
                 this.container.GetItemQueryStreamIterator(
@@ -427,6 +451,24 @@ namespace Microsoft.Azure.Cosmos.Encryption
             QueryRequestOptions requestOptions = null)
         {
             QueryRequestOptions clonedRequestOptions = requestOptions != null ? (QueryRequestOptions)requestOptions.ShallowCopy() : new QueryRequestOptions();
+
+            EncryptionSettings encryptionSettings = this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                obsoleteEncryptionSettings: null,
+                cancellationToken: default)
+                .ConfigureAwait(false)
+                .GetAwaiter()
+                .GetResult();
+
+            if (requestOptions != null && requestOptions.PartitionKey.HasValue)
+            {
+                clonedRequestOptions.PartitionKey = this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(
+                    requestOptions.PartitionKey.Value,
+                    encryptionSettings,
+                    cancellationToken: default)
+                    .ConfigureAwait(false)
+                    .GetAwaiter()
+                    .GetResult();
+            }
 
             return new EncryptionFeedIterator(
                 this.container.GetItemQueryStreamIterator(
@@ -724,12 +766,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
 #if ENCRYPTIONPREVIEW
-        public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+        public override async Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
             Cosmos.PartitionKey partitionKey,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return this.container.DeleteAllItemsByPartitionKeyStreamAsync(
+            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
+            partitionKey = (PartitionKey)await this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(partitionKey, encryptionSettings, cancellationToken);
+            return await this.container.DeleteAllItemsByPartitionKeyStreamAsync(
                 partitionKey,
                 requestOptions,
                 cancellationToken);
@@ -739,7 +783,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             FeedRange feedRange,
             CancellationToken cancellationToken = default)
         {
-            return this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
+            IEnumerable<string> partitionKeyRange =  this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
         }
 #endif
 
@@ -857,6 +901,45 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return encryptedPatchOperations;
         }
 
+        internal async Task<string> CheckIfIdIsEncryptedAndGetEncryptedIdAsync(
+            string id,
+            EncryptionSettings encryptionSettings,
+            CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return id;
+            }
+
+            EncryptionSettingForProperty encryptionSettingForProperty = encryptionSettings.GetEncryptionSettingForProperty("id");
+
+            if (encryptionSettingForProperty == null)
+            {
+                return id;
+            }
+
+            Stream valueStream = this.CosmosSerializer.ToStream(id);
+
+            Stream encryptedIdStream = await EncryptionProcessor.EncryptValueStreamAsync(
+                valueStream,
+                encryptionSettingForProperty,
+                cancellationToken);
+
+            if (encryptedIdStream != null)
+            {
+                string encryptedId = null;
+                using (StreamReader reader = new StreamReader(encryptedIdStream))
+                {
+                    encryptedId = await reader.ReadToEndAsync();
+                }
+
+                byte[] plainTextBytes = Encoding.UTF8.GetBytes(JToken.Parse(encryptedId).ToString());
+                return Convert.ToBase64String(plainTextBytes);
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// Returns a cloned copy of the passed RequestOptions if passed else creates a new ItemRequestOptions.
         /// </summary>
@@ -867,6 +950,47 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions clonedRequestOptions = itemRequestOptions != null ? (ItemRequestOptions)itemRequestOptions.ShallowCopy() : new ItemRequestOptions();
 
             return clonedRequestOptions;
+        }
+
+        private async Task<PartitionKey?> CheckIfPkIsEncryptedAndGetEncryptedPkAsync(
+            PartitionKey partitionKey,
+            EncryptionSettings encryptionSettings,
+            CancellationToken cancellationToken)
+        {
+            if (partitionKey == null || (partitionKey != null && partitionKey.RawPartitionKeyValue == null))
+            {
+                return partitionKey;
+            }
+
+            EncryptionSettingForProperty encryptionSettingForProperty = encryptionSettings.GetEncryptionSettingForProperty(
+                encryptionSettings.PartitionKeyPath.Substring(1));
+
+            if (encryptionSettingForProperty == null)
+            {
+                return partitionKey;
+            }
+
+            Stream valueStream = this.CosmosSerializer.ToStream(partitionKey.RawPartitionKeyValue);
+
+            Stream encryptedPartitionKey = await EncryptionProcessor.EncryptValueStreamAsync(
+                valueStream,
+                encryptionSettingForProperty,
+                cancellationToken);
+
+            if (encryptedPartitionKey != null)
+            {
+                string encryptedPK = null;
+                using (StreamReader reader = new StreamReader(encryptedPartitionKey))
+                {
+                    encryptedPK = await reader.ReadToEndAsync();
+                }
+
+                JToken encryptedKey = JToken.Parse(encryptedPK);
+
+                return new PartitionKey(encryptedKey.ToString());
+            }
+
+            return null;
         }
 
         private async Task<ResponseMessage> CreateItemHelperAsync(
@@ -886,11 +1010,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
-            streamPayload = await EncryptionProcessor.EncryptAsync(
+
+            PartitionKey encryptedPartitionKey;
+            (streamPayload, encryptedPartitionKey) = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 encryptionSettings,
                 encryptionDiagnosticsContext,
                 cancellationToken);
+
+            if (encryptedPartitionKey != null)
+            {
+                partitionKey = encryptedPartitionKey;
+            }
 
             // Clone the request options since we modify it to set AddRequestHeaders to add additional headers.
             ItemRequestOptions clonedRequestOptions = EncryptionContainerGetClonedItemRequestOptions(requestOptions);
@@ -922,6 +1053,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken)
         {
             EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
+
             if (!encryptionSettings.PropertiesToEncrypt.Any())
             {
                 return await this.container.ReadItemStreamAsync(
@@ -935,6 +1067,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions clonedRequestOptions = EncryptionContainerGetClonedItemRequestOptions(requestOptions);
 
             encryptionSettings.SetRequestHeaders(clonedRequestOptions);
+
+            partitionKey = (PartitionKey)await this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(partitionKey, encryptionSettings, cancellationToken);
+            id = await this.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(id, encryptionSettings, cancellationToken);
 
             ResponseMessage responseMessage = await this.container.ReadItemStreamAsync(
                 id,
@@ -980,11 +1115,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
-            streamPayload = await EncryptionProcessor.EncryptAsync(
+
+            PartitionKey encryptedPartitionKey;
+            (streamPayload, encryptedPartitionKey) = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 encryptionSettings,
                 encryptionDiagnosticsContext,
                 cancellationToken);
+
+            if (encryptedPartitionKey != null)
+            {
+                partitionKey = encryptedPartitionKey;
+            }
 
             ItemRequestOptions clonedRequestOptions = requestOptions;
 
@@ -993,9 +1135,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             encryptionSettings.SetRequestHeaders(clonedRequestOptions);
 
+            string encryptedId = await this.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(id, encryptionSettings, cancellationToken);
             ResponseMessage responseMessage = await this.container.ReplaceItemStreamAsync(
                 streamPayload,
-                id,
+                encryptedId,
                 partitionKey,
                 clonedRequestOptions,
                 cancellationToken);
@@ -1034,11 +1177,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
-            streamPayload = await EncryptionProcessor.EncryptAsync(
+
+            PartitionKey encryptedPartitionKey;
+            (streamPayload, encryptedPartitionKey) = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 encryptionSettings,
                 encryptionDiagnosticsContext,
                 cancellationToken);
+
+            if (encryptedPartitionKey != null)
+            {
+                partitionKey = encryptedPartitionKey;
+            }
 
             ItemRequestOptions clonedRequestOptions = requestOptions;
 
@@ -1095,6 +1245,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 encryptionDiagnosticsContext,
                 cancellationToken);
 
+            partitionKey = (PartitionKey)await this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(partitionKey, encryptionSettings, cancellationToken);
+            id = await this.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(id, encryptionSettings, cancellationToken);
             ResponseMessage responseMessage = await this.container.PatchItemStreamAsync(
                 id,
                 partitionKey,
@@ -1159,8 +1311,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             encryptionSettings.SetRequestHeaders(clonedRequestOptions);
 
+            List<(string, PartitionKey)> encryptedItemList = new List<(string, PartitionKey)>();
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                encryptedItemList.Add((await this.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(items[i].id, encryptionSettings, cancellationToken), items[i].partitionKey));
+            }
+
             ResponseMessage responseMessage = await this.container.ReadManyItemsStreamAsync(
-                items,
+                encryptedItemList,
                 clonedRequestOptions,
                 cancellationToken);
 

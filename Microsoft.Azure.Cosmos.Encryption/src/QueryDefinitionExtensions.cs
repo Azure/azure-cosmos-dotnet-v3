@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.IO;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -97,6 +98,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 Stream valueStream = encryptionContainer.CosmosSerializer.ToStream(value);
                 Stream encryptedValueStream = await EncryptionProcessor.EncryptValueStreamAsync(valueStream, settingsForProperty, cancellationToken);
+
+                if (path.Substring(1).Equals("id"))
+                {
+                    byte[] plainTextBytes = Encoding.UTF8.GetBytes(EncryptionProcessor.BaseSerializer.FromStream<string>(encryptedValueStream));
+                    string encryptedId = Convert.ToBase64String(plainTextBytes);
+                    encryptedValueStream = EncryptionProcessor.BaseSerializer.ToStream(encryptedId);
+                }
+
                 queryDefinitionwithEncryptedValues.WithParameterStream(name, encryptedValueStream);
 
                 return queryDefinitionwithEncryptedValues;

@@ -23,6 +23,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public const string AllowCachedReadsHeader = "x-ms-cosmos-allow-cachedreads";
         public const string DatabaseRidHeader = "x-ms-cosmos-database-rid";
         public const string SubStatusHeader = "x-ms-substatus";
-        public const int SupportedClientEncryptionPolicyFormatVersion = 1;
+        public const int SupportedClientEncryptionPolicyFormatVersion = 2;
     }
 }
