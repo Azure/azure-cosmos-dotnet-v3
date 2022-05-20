@@ -80,9 +80,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             {
                                 int count = Interlocked.Increment(ref directCalls);
 
-                                if(count == 80 || (blockWhileRefreshing != null && blockWhileRefreshing == uri))
+                                if(count ==300 || (blockWhileRefreshing != null && blockWhileRefreshing == uri))
                                 {
-                                    if(count == 80)
+                                    if(count == 300)
                                     {
                                         blockWhileRefreshing = uri;
                                     }
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CancellationTokenSource tokenSource = new CancellationTokenSource();
             List<Task<List<(DateTime, CosmosDiagnostics)>>> tasks = new();
 
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 5; i++)
             {
                 Task<List<(DateTime, CosmosDiagnostics)>> task = await Task.Factory.StartNew(
                     function: () =>
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await Task.Delay(TimeSpan.FromSeconds(10));
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(60));
+            await Task.Delay(TimeSpan.FromSeconds(20));
 
             tokenSource.Cancel();
 
