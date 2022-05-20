@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                                 cosmosClientContext.ClientOptions.AllowBulkExecution);
 
             this.ConsistencyConfig = new ConsistencyConfig(cosmosClientContext.ClientOptions.ConsistencyLevel,
-                                                    cosmosClientContext.ClientOptions.ApplicationPreferredRegions);
+                                                    cosmosClientContext.ClientOptions.ApplicationPreferredRegions, cosmosClientContext.ClientOptions.ApplicationRegion);
 
             this.cachedNumberOfClientCreated = CosmosClient.numberOfClientsCreated;
             this.cachedNumberOfActiveClient = CosmosClient.NumberOfActiveClients;
