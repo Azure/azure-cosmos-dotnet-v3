@@ -49,7 +49,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     if (delayHttpRequest)
                     {
-                        await Task.Delay(TimeSpan.FromSeconds(10));
+                        delayHttpRequest = false;
+                        for(int i = 0; i < 10; i++)
+                        {
+                            await Task.Delay(TimeSpan.FromSeconds(1));
+                        }
+                        
                         blockWhileRefreshing = null;
                     }
                     
@@ -81,15 +86,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                     {
                                         blockWhileRefreshing = uri;
                                     }
-                                    
-                                    return new StoreResponse()
-                                    {
-                                        Status = 410,
-                                        Headers = new StoreResponseNameValueCollection()
-                                        {
-                                            SubStatus = "0"
-                                        }
-                                    };
+
+                                    throw new GoneException("mock failure");
                                 }
                             }
 
@@ -136,11 +134,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 foreach ((DateTime time, CosmosDiagnostics diagnostic) in task.Result)
                 {
                     long value = (long)diagnostic.GetClientElapsedTime().TotalMilliseconds;
+                    bool hitgone = ((CosmosTraceDiagnostics)diagnostic).IsGoneExceptionHit();
                     dateToTime.Add(new Record
                     {
                         DateTime = time.ToString("O"),
                         Latency = value,
-                        Hit410 = ((CosmosTraceDiagnostics)diagnostic).IsGoneExceptionHit()
+                        Hit410 = hitgone,
                     });
                 }
             }
