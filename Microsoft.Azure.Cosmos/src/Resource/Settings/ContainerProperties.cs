@@ -703,7 +703,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.ClientEncryptionPolicy != null)
             {
-                this.ClientEncryptionPolicy.ValidatePartitionKeyPathsIfAny(this.PartitionKeyPathTokens);
+                this.ClientEncryptionPolicy.ValidatePartitionKeyPathsIfEncrypted(this.PartitionKeyPathTokens);
             }
         }
     }

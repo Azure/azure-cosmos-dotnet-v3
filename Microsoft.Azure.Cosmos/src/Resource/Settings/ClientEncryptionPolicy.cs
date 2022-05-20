@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
         /// Ensures that partition key paths specified in the client encryption policy for encryption are encrypted using Deterministic encryption algorithm.
         /// </summary>
         /// <param name="partitionKeyPathTokens">Tokens corresponding to validated partition key.</param>
-        internal void ValidatePartitionKeyPathsIfAny(IReadOnlyList<IReadOnlyList<string>> partitionKeyPathTokens)
+        internal void ValidatePartitionKeyPathsIfEncrypted(IReadOnlyList<IReadOnlyList<string>> partitionKeyPathTokens)
         {
             Debug.Assert(partitionKeyPathTokens != null);
 
