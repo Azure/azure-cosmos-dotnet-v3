@@ -170,14 +170,15 @@ namespace Microsoft.Azure.Cosmos.Routing
             { 
                 cancellationToken.ThrowIfCancellationRequested();
 
+                RequestNameValueCollection headers = new RequestNameValueCollection();
                 using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                        OperationType.Read,
                        ResourceType.Collection,
                        collectionLink,
                        AuthorizationTokenType.PrimaryMasterKey,
-                       new StoreRequestNameValueCollection()))
+                       headers))
                 {
-                    request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r");
+                    headers.XDate = DateTime.UtcNow.ToString("r");
 
                     request.RequestContext.ClientRequestStatistics = 
                         clientSideRequestStatistics ?? new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
@@ -196,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         AuthorizationTokenType.PrimaryMasterKey,
                         childTrace);
 
-                    request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
+                    headers.Authorization = authorizationToken;
 
                     using (new ActivityScope(Guid.NewGuid()))
                     {
