@@ -119,6 +119,12 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(clientEncryptionIncludedPath.EncryptionType));
             }
 
+            if (string.Equals(clientEncryptionIncludedPath.Path.Substring(1), "id") &&
+                string.Equals(clientEncryptionIncludedPath.EncryptionType, "Randomized"))
+            {
+                throw new ArgumentException($"Only Deterministic encryption type is supported for path: {clientEncryptionIncludedPath.Path}. ");
+            }
+
             if (!string.Equals(clientEncryptionIncludedPath.EncryptionType, "Deterministic") &&
                 !string.Equals(clientEncryptionIncludedPath.EncryptionType, "Randomized"))
             {
