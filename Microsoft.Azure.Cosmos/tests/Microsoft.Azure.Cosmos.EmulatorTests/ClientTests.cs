@@ -96,20 +96,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 });
 
             Cosmos.Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync("testdb");
-            Container container = await database.CreateContainerIfNotExistsAsync("test", "/pk", throughput: 10000);
+            Container container = await database.CreateContainerIfNotExistsAsync("testCache", "/pk", throughput: 7000);
 
             ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
             await container.CreateItemAsync(toDoActivity);
 
             CancellationTokenSource tokenSource = new CancellationTokenSource();
-            List<Task<List<(DateTime, CosmosDiagnostics)>>> tasks = new();
+            List<Task<List<(DateTime, CosmosDiagnostics, int)>>> tasks = new();
 
             for (int i = 0; i < 5; i++)
             {
-                Task<List<(DateTime, CosmosDiagnostics)>> task = await Task.Factory.StartNew(
+                Task<List<(DateTime, CosmosDiagnostics, int)>> task = await Task.Factory.StartNew(
                     function: () =>
                     {
-                        return this.ReadItemAsync(container, tokenSource.Token);
+                        return this.ReadItemAsync(container, i, tokenSource.Token);
                     });
                 tasks.Add(task);
             }
@@ -129,9 +129,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await Task.WhenAll(tasks);
 
             List<Record> dateToTime = new();
-            foreach (Task<List<(DateTime, CosmosDiagnostics)>> task in tasks)
+            foreach (Task<List<(DateTime, CosmosDiagnostics, int)>> task in tasks)
             {
-                foreach ((DateTime time, CosmosDiagnostics diagnostic) in task.Result)
+                foreach ((DateTime time, CosmosDiagnostics diagnostic, int taskNum) in task.Result)
                 {
                     long value = (long)diagnostic.GetClientElapsedTime().TotalMilliseconds;
                     bool hitgone = ((CosmosTraceDiagnostics)diagnostic).IsGoneExceptionHit();
@@ -140,6 +140,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         DateTime = time.ToString("O"),
                         Latency = value,
                         Hit410 = hitgone,
+                        TaskNum = taskNum,
+                        Diagnostics = diagnostic.ToString()
                     });
                 }
             }
@@ -169,27 +171,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public string DateTime { get; set; }
             public long Latency { get; set; }
             public bool Hit410 { get; set; }
+            public int TaskNum { get; set; }
+            public string Diagnostics { get; set; }
         }
 
 
         public int TaskCount = 0;
 
-        private async Task<List<(DateTime, CosmosDiagnostics)>> ReadItemAsync(Container container, CancellationToken token)
+        private async Task<List<(DateTime, CosmosDiagnostics, int)>> ReadItemAsync(
+            Container container, 
+            int taskNum,
+            CancellationToken token)
         {
             ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
             await container.CreateItemAsync(toDoActivity);
 
             Interlocked.Increment(ref this.TaskCount);
-            List<(DateTime, CosmosDiagnostics)> cosmosDiagnostics = new();
+            List<(DateTime, CosmosDiagnostics, int)> cosmosDiagnostics = new();
             while (!token.IsCancellationRequested)
             {
                 try
                 {
                     var response = await container.ReadItemAsync<ToDoActivity>(toDoActivity.id, new Cosmos.PartitionKey(toDoActivity.pk));
-                    cosmosDiagnostics.Add((DateTime.UtcNow, response.Diagnostics));
+                    cosmosDiagnostics.Add((DateTime.UtcNow, response.Diagnostics, taskNum));
                 }catch(CosmosException ce)
                 {
-                    cosmosDiagnostics.Add((DateTime.UtcNow, ce.Diagnostics));
+                    cosmosDiagnostics.Add((DateTime.UtcNow, ce.Diagnostics, taskNum));
                 }
             }
 
