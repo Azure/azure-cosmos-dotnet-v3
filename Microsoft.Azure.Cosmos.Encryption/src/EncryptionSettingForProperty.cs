@@ -81,8 +81,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     // bail out if this fails.
                     protectedDataEncryptionKey = await this.ForceRefreshGatewayCacheAndBuildProtectedDataEncryptionKeyAsync(
                         existingCekEtag: clientEncryptionKeyProperties.ETag,
-                        cancellationToken: cancellationToken,
-                        refreshRetriedOnException: exOnRetry);
+                        refreshRetriedOnException: exOnRetry,
+                        cancellationToken: cancellationToken);
                 }
             }
 
@@ -101,8 +101,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>ProtectedDataEncryptionKey object. </returns>
         private async Task<ProtectedDataEncryptionKey> ForceRefreshGatewayCacheAndBuildProtectedDataEncryptionKeyAsync(
             string existingCekEtag,
-            CancellationToken cancellationToken,
-            Exception refreshRetriedOnException)
+            Exception refreshRetriedOnException,
+            CancellationToken cancellationToken)
         {
             ClientEncryptionKeyProperties clientEncryptionKeyProperties;
             try
