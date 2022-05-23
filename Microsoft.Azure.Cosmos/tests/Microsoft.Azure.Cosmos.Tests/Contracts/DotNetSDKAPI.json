@@ -5447,6 +5447,18 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.PartitionKey Null;IsInitOnly:True;IsStatic:True;"
         },
+        "System.Object get_RawPartitionKeyValue()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Object get_RawPartitionKeyValue();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Object RawPartitionKeyValue": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Object RawPartitionKeyValue;CanRead:True;CanWrite:False;System.Object get_RawPartitionKeyValue();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.String SystemKeyName": {
           "Type": "Field",
           "Attributes": [],
@@ -5471,6 +5483,11 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(Double), Void .ctor(Double)]"
+        },
+        "Void .ctor(Int64)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(Int64), Void .ctor(Int64)]"
         },
         "Void .ctor(System.String)": {
           "Type": "Constructor",
