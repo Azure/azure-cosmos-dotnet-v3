@@ -265,7 +265,7 @@ namespace Microsoft.Azure.Cosmos
                             return responseMessage;
                         }
 
-                        bool isOutOfRetries = CosmosHttpClientCore.IsOutOfRetries(timeoutPolicy, startDateTimeUtc, timeoutEnumerator);
+                        bool isOutOfRetries = timeoutPolicy is HttpTimeoutPolicyNoRetry || CosmosHttpClientCore.IsOutOfRetries(timeoutPolicy, startDateTimeUtc, timeoutEnumerator);
                         if (isOutOfRetries)
                         {
                             return responseMessage;
