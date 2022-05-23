@@ -1570,7 +1570,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (ArgumentException ex)
             {
-                Assert.IsTrue(ex.Message.Contains("Only Deterministic encryption type supported for path: /id. "));
+                Assert.IsTrue(ex.Message.Contains("Only Deterministic encryption type is supported for path: /id."));
             }
         }
 
