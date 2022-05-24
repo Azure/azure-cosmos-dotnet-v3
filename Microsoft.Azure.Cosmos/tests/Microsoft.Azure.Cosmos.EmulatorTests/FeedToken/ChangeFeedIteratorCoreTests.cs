@@ -701,7 +701,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             // FF does not work with StartFromBeginning currently, so we capture an initial continuation.
             FeedIterator<ToDoActivityWithMetadata> fullFidelityIterator = container.GetChangeFeedIterator<ToDoActivityWithMetadata>(
                 ChangeFeedStartFrom.Now(),
-                ChangeFeedMode.AllOperations);
+                ChangeFeedMode.FullFidelity);
             string initialContinuation = null;
             while (fullFidelityIterator.HasMoreResults)
             {
@@ -725,7 +725,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             // Resume Change Feed and verify we pickup all the events
             fullFidelityIterator = container.GetChangeFeedIterator<ToDoActivityWithMetadata>(
                 ChangeFeedStartFrom.ContinuationToken(initialContinuation),
-                ChangeFeedMode.AllOperations);
+                ChangeFeedMode.FullFidelity);
             int detectedEvents = 0;
             bool hasInserts = false;
             bool hasDeletes = false;
@@ -843,7 +843,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             // FF does not work with StartFromBeginning currently, capture error
             FeedIterator<ToDoActivityWithMetadata> fullFidelityIterator = container.GetChangeFeedIterator<ToDoActivityWithMetadata>(
                 ChangeFeedStartFrom.Beginning(),
-                ChangeFeedMode.AllOperations);
+                ChangeFeedMode.FullFidelity);
 
             CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => fullFidelityIterator.ReadNextAsync());
             Assert.AreEqual(HttpStatusCode.BadRequest, cosmosException.StatusCode, "Full Fidelity Change Feed does not work with StartFromBeginning currently.");

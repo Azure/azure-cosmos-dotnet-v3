@@ -5,7 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     /// <summary>
-    /// The typed response that contains the current, previous, and metadata change feed resource when <see cref="ChangeFeedMode"/> is initialized to <see cref="ChangeFeedMode.AllOperations"/>.
+    /// The typed response that contains the current, previous, and metadata change feed resource when <see cref="ChangeFeedMode"/> is initialized to <see cref="ChangeFeedMode.FullFidelity"/>.
     /// </summary>
 #if PREVIEW
     public

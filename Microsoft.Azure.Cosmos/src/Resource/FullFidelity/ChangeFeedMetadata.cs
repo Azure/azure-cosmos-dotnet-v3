@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
 
     /// <summary>
-    /// The metadata of a change feed resource with <see cref="ChangeFeedMode"/> is initialized to <see cref="ChangeFeedMode.AllOperations"/>.
+    /// The metadata of a change feed resource with <see cref="ChangeFeedMode"/> is initialized to <see cref="ChangeFeedMode.FullFidelity"/>.
     /// </summary>
 #if PREVIEW
     public
@@ -19,40 +19,40 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// New instance of meta data for <see cref="ItemChanges{T}"/> created.
         /// </summary>
-        /// <param name="crts"></param>
-        /// <param name="currentLSN"></param>
+        /// <param name="conflictResolutionTimestamp"></param>
+        /// <param name="currentLogSequenceNumber"></param>
         /// <param name="operationType"></param>
-        /// <param name="previousLSN"></param>
+        /// <param name="previousLogSequenceNumber"></param>
         public ChangeFeedMetadata(
-            DateTime crts, 
-            long currentLSN, 
+            DateTime conflictResolutionTimestamp, 
+            long currentLogSequenceNumber, 
             ChangeFeedOperationType operationType, 
-            long previousLSN)
+            long previousLogSequenceNumber)
         {
-            this.CRTS = crts;
-            this.CurrentLSN = currentLSN;
+            this.ConflictResolutionTimestamp = conflictResolutionTimestamp;
+            this.CurrentLogSequenceNumber = currentLogSequenceNumber;
             this.OperationType = operationType;
-            this.PreviousLSN = previousLSN;
+            this.PreviousLogSequenceNumber = previousLogSequenceNumber;
         }
 
         /// <summary>
         /// The conflict resolution timestamp.
         /// </summary>
-        public DateTime CRTS { get; set; }
+        public DateTime ConflictResolutionTimestamp { get; set; }
 
         /// <summary>
         /// The current logical sequence number.
         /// </summary>
-        public long CurrentLSN { get; set; }
+        public long CurrentLogSequenceNumber { get; set; }
 
         /// <summary>
         /// The change feed operation type.
         /// </summary>
-        internal ChangeFeedOperationType OperationType { get; set; }
+        public ChangeFeedOperationType OperationType { get; set; }
 
         /// <summary>
         /// The previous logical sequence number.
         /// </summary>
-        public long PreviousLSN { get; set; }
+        public long PreviousLogSequenceNumber { get; set; }
     }
 }

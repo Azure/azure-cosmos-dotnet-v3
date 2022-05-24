@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// <example>
     /// The example below creates a new container with a custom change feed policy for full fidelity change feed with a retention window of 5 minutes - so intermediary snapshots of changes as well as deleted documents would be
     /// available for processing for 5 minutes before they vanish. 
-    /// Processing the change feed with <see cref="ChangeFeedMode.AllOperations"/> will only be able within this retention window - if you attempt to process a change feed after more
+    /// Processing the change feed with <see cref="ChangeFeedMode.FullFidelity"/> will only be able within this retention window - if you attempt to process a change feed after more
     /// than the retention window (5 minutes in this sample) an error (Status Code 400) will be returned. 
     /// It would still be possible to process changes using <see cref="ChangeFeedMode.Incremental"/> mode even when configuring a full fidelity change
     /// feed policy with retention window on the container and when using Incremental mode it doesn't matter whether your are out of the retention window or not.

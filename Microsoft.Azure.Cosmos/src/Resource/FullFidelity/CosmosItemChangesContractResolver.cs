@@ -18,8 +18,9 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly Dictionary<TargetProperty, SourceProperty> PropertyMappings = new Dictionary<TargetProperty, SourceProperty>
             {
-                { "CurrentLSN", "lsn" },
-                { "PreviousLSN", "previousImageLSN" },
+                { nameof(ChangeFeedMetadata.CurrentLogSequenceNumber), "lsn" },
+                { nameof(ChangeFeedMetadata.PreviousLogSequenceNumber), "previousImageLSN" },
+                { nameof(ChangeFeedMetadata.ConflictResolutionTimestamp), "crts" },
             };
 
         /// <summary>
