@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
         class ChangeFeedMetadata
     {
         /// <summary>
-        /// New instance of meta data for <see cref="ItemChanges{T}"/> created.
+        /// New instance of meta data for <see cref="ChangeFeedItemChanges{T}"/> created.
         /// </summary>
         /// <param name="conflictResolutionTimestamp"></param>
         /// <param name="currentLogSequenceNumber"></param>
@@ -38,21 +38,21 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The conflict resolution timestamp.
         /// </summary>
-        public DateTime ConflictResolutionTimestamp { get; set; }
+        public DateTime ConflictResolutionTimestamp { get; }
 
         /// <summary>
         /// The current logical sequence number.
         /// </summary>
-        public long CurrentLogSequenceNumber { get; set; }
+        public long CurrentLogSequenceNumber { get; }
 
         /// <summary>
         /// The change feed operation type.
         /// </summary>
-        public ChangeFeedOperationType OperationType { get; set; }
+        public ChangeFeedOperationType OperationType { get; }
 
         /// <summary>
         /// The previous logical sequence number.
         /// </summary>
-        public long PreviousLogSequenceNumber { get; set; }
+        public long PreviousLogSequenceNumber { get; }
     }
 }

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
 #else
     internal
 #endif  
-        class ItemChanges<T>
+        class ChangeFeedItemChanges<T>
     {
         /// <summary>
         /// New instance of ItemChanges that contain change feed resource along with metadata.
@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="current"></param>
         /// <param name="changeFeedMetadata"></param>
         /// <param name="previous"></param>
-        public ItemChanges(T current, ChangeFeedMetadata changeFeedMetadata, T previous)
+        public ChangeFeedItemChanges(T current, ChangeFeedMetadata changeFeedMetadata, T previous)
         {
             this.Current = current;
             this.Metadata = changeFeedMetadata;

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using TargetProperty = System.String;
 
     /// <summary>
-    /// Used by JsonSerializer to resolve a JsonContract for <see cref="ItemChanges{T}"/> that also contains <see cref="ChangeFeedMetadata"/>.
+    /// Used by JsonSerializer to resolve a JsonContract for <see cref="ChangeFeedItemChanges{T}"/> that also contains <see cref="ChangeFeedMetadata"/>.
     /// </summary>
     public class CosmosItemChangesContractResolver : DefaultContractResolver
     {

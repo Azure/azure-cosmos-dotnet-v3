@@ -50,7 +50,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Compile Remove="Resource\FullFidelity\DateTimeOffsetConverter.cs" />
 		<Compile Remove="RuntimePerfCounters.cs" />
 	</ItemGroup>
 

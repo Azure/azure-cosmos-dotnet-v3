@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos
                 return this.patchOperationSerializer;
             }
 
-            if (inputType.IsGenericType && inputType.GetGenericTypeDefinition() == typeof(ItemChanges<>))
+            if (inputType.IsGenericType && inputType.GetGenericTypeDefinition() == typeof(ChangeFeedItemChanges<>))
             {
                 if (this.itemChangesSerializer == null)
                 {

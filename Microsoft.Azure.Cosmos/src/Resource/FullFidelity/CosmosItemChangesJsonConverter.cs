@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json.Linq;
 
     /// <summary>
-    /// Used to convert <see cref="ItemChanges{T}"/> that also contains <see cref="ChangeFeedMetadata"/> to and from JSON.
+    /// Used to convert <see cref="ChangeFeedItemChanges{T}"/> that also contains <see cref="ChangeFeedMetadata"/> to and from JSON.
     /// </summary>
     internal sealed class CosmosItemChangesJsonConverter : JsonConverter
     {
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>true/false</returns>
         public override bool CanConvert(Type objectType)
         {
-            return objectType.IsGenericType && objectType.GetGenericTypeDefinition() == typeof(ItemChanges<>);
+            return objectType.IsGenericType && objectType.GetGenericTypeDefinition() == typeof(ChangeFeedItemChanges<>);
         }
 
         /// <summary>
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="objectType"></param>
         /// <param name="existingValue"></param>
         /// <param name="serializer"></param>
-        /// <returns><see cref="ItemChanges{T}"/></returns>
+        /// <returns><see cref="ChangeFeedItemChanges{T}"/></returns>
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
             if (reader.TokenType == JsonToken.StartObject)
