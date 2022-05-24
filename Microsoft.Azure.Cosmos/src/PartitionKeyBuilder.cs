@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             partitionKeyInternal = new Documents.PartitionKey(valueArray).InternalKey;
-            return new PartitionKey(partitionKeyInternal);
+            return new PartitionKey(partitionKeyInternal, valueArray);
         }
     }
 }
