@@ -15,13 +15,16 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private readonly Collection<ClientEncryptionIncludedPath> clientEncryptionIncludedPaths = new Collection<ClientEncryptionIncludedPath>();
         private readonly ContainerBuilder parent;
         private readonly Action<ClientEncryptionPolicy> attachCallback;
+        private readonly int policyFormatVersion;
 
         internal ClientEncryptionPolicyDefinition(
             ContainerBuilder parent,
-            Action<ClientEncryptionPolicy> attachCallback)
+            Action<ClientEncryptionPolicy> attachCallback,
+            int policyFormatVersion = 1)
         {
             this.parent = parent;
             this.attachCallback = attachCallback;
+            this.policyFormatVersion = (policyFormatVersion > 2 || policyFormatVersion < 1) ? throw new ArgumentException($"Supported versions of client encryption policy are 1 and 2. ") : policyFormatVersion;
         }
 
         /// <summary>
@@ -41,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>An instance of the parent.</returns>
         public ContainerBuilder Attach()
         {
-            this.attachCallback(new ClientEncryptionPolicy(this.clientEncryptionIncludedPaths));
+            this.attachCallback(new ClientEncryptionPolicy(this.clientEncryptionIncludedPaths, this.policyFormatVersion));
             return this.parent;
         }
     }

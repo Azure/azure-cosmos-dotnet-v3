@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
         {
             ClientEncryptionPolicy.ValidateIncludedPaths(includedPaths, policyFormatVersion);
             this.IncludedPaths = includedPaths;
-            this.PolicyFormatVersion = policyFormatVersion;
+            this.PolicyFormatVersion = (policyFormatVersion > 2 || policyFormatVersion < 1) ? throw new ArgumentException($"Supported versions of client encryption policy are 1 and 2. ") : policyFormatVersion;
         }
 
         [JsonConstructor]

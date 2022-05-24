@@ -601,26 +601,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await TestCommon.CreateClientEncryptionKey("dekId1", databaseInlineCore);
             await TestCommon.CreateClientEncryptionKey("dekId2", databaseInlineCore);
 
+            // version 2
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
             ClientEncryptionIncludedPath path1 = new ClientEncryptionIncludedPath()
             {
-                Path = "/path1",
+                Path = partitionKeyPath,
                 ClientEncryptionKeyId = "dekId1",
-                EncryptionType = "Randomized",
+                EncryptionType = "Deterministic",
                 EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256"
             };
 
             ClientEncryptionIncludedPath path2 = new ClientEncryptionIncludedPath()
             {
-                Path = "/path2",
+                Path = "/id",
                 ClientEncryptionKeyId = "dekId2",
-                EncryptionType = "Randomized",
+                EncryptionType = "Deterministic",
                 EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
-            
+
             ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
-                .WithClientEncryptionPolicy()
+                .WithClientEncryptionPolicy(2)
                     .WithIncludedPath(path1)
                     .WithIncludedPath(path2)
                     .Attach()
@@ -638,6 +639,47 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(this.VerifyClientEncryptionIncludedPath(path2, clientEncryptionIncludedPath));
 
             ContainerResponse readResponse = await container.ReadContainerAsync();
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);
+
+            // version 1
+            containerName = Guid.NewGuid().ToString();
+            partitionKeyPath = "/users";
+            path1 = new ClientEncryptionIncludedPath()
+            {
+                Path = "/path1",
+                ClientEncryptionKeyId = "dekId1",
+                EncryptionType = "Randomized",
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256"
+            };
+
+            path2 = new ClientEncryptionIncludedPath()
+            {
+                Path = "/path2",
+                ClientEncryptionKeyId = "dekId2",
+                EncryptionType = "Randomized",
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+            };
+            
+            containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
+                .WithClientEncryptionPolicy()
+                    .WithIncludedPath(path1)
+                    .WithIncludedPath(path2)
+                    .Attach()
+                .CreateAsync();
+
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            container = containerResponse;
+            responseSettings = containerResponse;
+
+            Assert.IsNotNull(responseSettings.ClientEncryptionPolicy);
+            Assert.AreEqual(2, responseSettings.ClientEncryptionPolicy.IncludedPaths.Count());
+            clientEncryptionIncludedPath = responseSettings.ClientEncryptionPolicy.IncludedPaths.First();
+            Assert.IsTrue(this.VerifyClientEncryptionIncludedPath(path1, clientEncryptionIncludedPath));
+            clientEncryptionIncludedPath = responseSettings.ClientEncryptionPolicy.IncludedPaths.Last();
+            Assert.IsTrue(this.VerifyClientEncryptionIncludedPath(path2, clientEncryptionIncludedPath));
+
+            readResponse = await container.ReadContainerAsync();
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);
 
@@ -736,6 +778,76 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (ArgumentException ex)
             {
                 Assert.IsTrue(ex.Message.Contains("EncryptionAlgorithm should be 'AEAD_AES_256_CBC_HMAC_SHA256'. "));
+            }
+
+            // invalid policy version for partition key encryption
+            path1.EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256";
+            path1.Path = partitionKeyPath;
+            try
+            {
+                ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
+                    .WithClientEncryptionPolicy()
+                        .WithIncludedPath(path1)
+                        .Attach()
+                    .CreateAsync();
+
+                Assert.Fail("CreateCollection with invalid ClientEncryptionPolicy should have failed.");
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("Path: /users which is part of the partition key cannot be encrypted with PolicyFormatVersion: 1. Please use PolicyFormatVersion: 2."), ex.Message);
+            }
+
+            // invalid policy version for id encryption
+            path1.Path = "/id";
+            try
+            {
+                ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
+                    .WithClientEncryptionPolicy()
+                        .WithIncludedPath(path1)
+                        .Attach()
+                    .CreateAsync();
+
+                Assert.Fail("CreateCollection with invalid ClientEncryptionPolicy should have failed.");
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("Path: /id cannot be encrypted with PolicyFormatVersion: 1. Please use PolicyFormatVersion: 2."), ex.Message);
+            }
+
+            // invalid encryption type for id encryption
+            path1.EncryptionType = "Randomized";
+            path1.Path = partitionKeyPath;
+            try
+            {
+                ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
+                    .WithClientEncryptionPolicy(2)
+                        .WithIncludedPath(path1)
+                        .Attach()
+                    .CreateAsync();
+
+                Assert.Fail("CreateCollection with invalid ClientEncryptionPolicy should have failed.");
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("Path: /users which is part of the partition key has to be encrypted with Deterministic type Encryption."), ex.Message);
+            }
+
+            // invalid encryption type for id encryption
+            path1.Path = "/id";
+            try
+            {
+                ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
+                    .WithClientEncryptionPolicy(2)
+                        .WithIncludedPath(path1)
+                        .Attach()
+                    .CreateAsync();
+
+                Assert.Fail("CreateCollection with invalid ClientEncryptionPolicy should have failed.");
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("Only Deterministic encryption type is supported for path: /id."), ex.Message);
             }
         }
 

@@ -4176,10 +4176,10 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ContainerProperties Build();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.Fluent.ClientEncryptionPolicyDefinition WithClientEncryptionPolicy()": {
+        "Microsoft.Azure.Cosmos.Fluent.ClientEncryptionPolicyDefinition WithClientEncryptionPolicy(Int32)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.ClientEncryptionPolicyDefinition WithClientEncryptionPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.ClientEncryptionPolicyDefinition WithClientEncryptionPolicy(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.Fluent.ConflictResolutionDefinition WithConflictResolution()": {
           "Type": "Method",
