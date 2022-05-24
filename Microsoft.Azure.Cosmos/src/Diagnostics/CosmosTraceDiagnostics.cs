@@ -111,17 +111,12 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override int GetFailedRequestCount()
         {
-            return this.WalkTraceTreeForFailedRequestCount(this.Value);
-        }
-
-        private int WalkTraceTreeForFailedRequestCount(ITrace currentTrace)
-        {
-            if (currentTrace == null)
+            if (this.Value == null)
             {
                 return 0;
             }
 
-            return currentTrace.Summary.GetFailedCount();
+            return this.Value.Summary.GetFailedCount();
         }
 
     }
