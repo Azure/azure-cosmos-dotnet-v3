@@ -996,10 +996,10 @@
           ],
           "MethodInfo": "System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath] IncludedPaths;CanRead:True;CanWrite:True;System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath] get_IncludedPaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void .ctor(System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath])": {
+        "Void .ctor(System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath], Int32)": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "[Void .ctor(System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath]), Void .ctor(System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath])]"
+          "MethodInfo": "[Void .ctor(System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath], Int32), Void .ctor(System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath], Int32)]"
         }
       },
       "NestedTypes": {}
@@ -5488,6 +5488,11 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(Int64), Void .ctor(Int64)]"
+        },
+        "Void .ctor(Single)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(Single), Void .ctor(Single)]"
         },
         "Void .ctor(System.String)": {
           "Type": "Constructor",
