@@ -1564,7 +1564,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (ArgumentException ex)
             {
-                Assert.IsTrue(ex.Message.Contains("Duplicate Path found."), ex.Message);
+                Assert.IsTrue(ex.Message.Contains("Duplicate Path found: /path1."), ex.Message);
             }
 
             try

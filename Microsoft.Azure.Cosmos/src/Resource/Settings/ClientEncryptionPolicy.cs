@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
                 ClientEncryptionPolicy.ValidateClientEncryptionIncludedPath(path, policyFormatVersion);
                 if (includedPathsList.Contains(path.Path))
                 {
-                    throw new ArgumentException("Duplicate Path found.", nameof(clientEncryptionIncludedPath));
+                    throw new ArgumentException($"Duplicate Path found: {path.Path}.");
                 }
 
                 includedPathsList.Add(path.Path);
