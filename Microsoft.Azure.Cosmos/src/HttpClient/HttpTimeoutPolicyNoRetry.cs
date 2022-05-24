@@ -17,7 +17,10 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
-        private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelays = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>();
+        private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelays = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
+        {
+            (TimeSpan.FromSeconds(65), TimeSpan.Zero)
+        };
 
         public override string TimeoutPolicyName => HttpTimeoutPolicyNoRetry.Name;
 

@@ -265,6 +265,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             int count = 0;
             async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
             {
+                if(count == 0)
+                {
+                    Assert.IsFalse(cancellationToken.IsCancellationRequested);
+                }
                 count++;
 
                 throw new OperationCanceledException("API with exception");
@@ -302,7 +306,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 @"dbs/1889fcb0-7d02-41a4-94c9-189f6aa1b444/colls/c264ae0f-7708-46fb-a015-29a40ea3c18b",
                 new MemoryStream(),
                 AuthorizationTokenType.PrimaryMasterKey,
-                new StoreRequestNameValueCollection());
+                new Documents.Collections.RequestNameValueCollection());
 
             HttpTimeoutPolicy retryPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(documentServiceRequest);
             Assert.AreEqual(HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance, retryPolicy);
