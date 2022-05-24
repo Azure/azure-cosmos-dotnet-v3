@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
@@ -91,7 +90,9 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private static void ValidateIncludedPaths(IEnumerable<ClientEncryptionIncludedPath> clientEncryptionIncludedPath, int policyFormatVersion)
+        private static void ValidateIncludedPaths(
+            IEnumerable<ClientEncryptionIncludedPath> clientEncryptionIncludedPath,
+            int policyFormatVersion)
         {
             List<string> includedPathsList = new List<string>();
             foreach (ClientEncryptionIncludedPath path in clientEncryptionIncludedPath)
@@ -106,7 +107,9 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private static void ValidateClientEncryptionIncludedPath(ClientEncryptionIncludedPath clientEncryptionIncludedPath, int policyFormatVersion)
+        private static void ValidateClientEncryptionIncludedPath(
+            ClientEncryptionIncludedPath clientEncryptionIncludedPath,
+            int policyFormatVersion)
         {
             if (clientEncryptionIncludedPath == null)
             {
