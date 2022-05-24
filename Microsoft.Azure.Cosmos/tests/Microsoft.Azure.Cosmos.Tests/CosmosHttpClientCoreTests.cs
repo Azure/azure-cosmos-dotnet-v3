@@ -265,6 +265,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             int count = 0;
             async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
             {
+                if(count == 0)
+                {
+                    Assert.IsFalse(cancellationToken.IsCancellationRequested);
+                }
                 count++;
 
                 throw new OperationCanceledException("API with exception");
