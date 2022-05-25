@@ -31,8 +31,140 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
             await asyncCache.GetAsync(
                 "test",
-                () => throw new NotFoundException("testNotFoundException"),
-                forceRefresh);
+                async (_) =>
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(5));
+                    throw new NotFoundException("testNotFoundException");
+                },
+                (_) => forceRefresh);
+        }
+
+        [TestMethod]
+        public async Task ValidateMultipleBackgroundRefreshesScenario()
+        {
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
+
+            string expectedValue = "ResponseValue";
+            string response = await asyncCache.GetAsync(
+                "test",
+                async (_) =>
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(5));
+                    return expectedValue;
+                },
+                (_) => false);
+
+            Assert.AreEqual(expectedValue, response);
+
+            for (int i = 0; i < 10; i++)
+            {
+                string forceRefreshResponse = await asyncCache.GetAsync(
+                    key: "test",
+                    singleValueInitFunc: async (_) =>
+                    {
+                        await Task.Delay(TimeSpan.FromMilliseconds(5));
+                        return expectedValue + i;
+                    },
+                    forceRefresh: (_) => true);
+
+                Assert.AreEqual(expectedValue + i, forceRefreshResponse);
+            }
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(NotFoundException))]
+        public async Task ValidateNegativeNotAwaitedScenario()
+        {
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
+            Task task1 = asyncCache.GetAsync(
+                "test",
+                async (_) =>
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(5));
+                    throw new NotFoundException("testNotFoundException");
+                },
+                (_) => false);
+
+            try
+            {
+                await asyncCache.GetAsync(
+                    "test",
+                    (_) => throw new BadRequestException("testBadRequestException"),
+                    (_) => false);
+                Assert.Fail("Should have thrown a NotFoundException");
+            }
+            catch (NotFoundException)
+            {
+
+            }
+
+            await task1;
+        }
+
+        [TestMethod]
+        public async Task ValidateNotFoundOnBackgroundRefreshRemovesFromCacheScenario()
+        {
+            string value1 = "Response1Value";
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
+            string response1 = await asyncCache.GetAsync(
+                "test",
+                async (_) =>
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(5));
+                    return value1;
+                },
+                (staleValue) =>
+                {
+                    Assert.AreEqual(null, staleValue);
+                    return false;
+                });
+
+            Assert.AreEqual(value1, response1);
+
+            string response2 = await asyncCache.GetAsync(
+                "test",
+                async (_) =>
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(5));
+                    throw new Exception("Should use cached value");
+                },
+                 (staleValue) =>
+                 {
+                     Assert.AreEqual(value1, staleValue);
+                     return false;
+                 });
+
+            Assert.AreEqual(value1, response2);
+
+            NotFoundException notFoundException = new NotFoundException("Item was deleted");
+            try
+            {
+                await asyncCache.GetAsync(
+                    "test",
+                    async (_) =>
+                    {
+                        await Task.Delay(TimeSpan.FromMilliseconds(5));
+                        throw notFoundException;
+                    },
+                    (_) => true);
+                Assert.Fail("Should have thrown a NotFoundException");
+            }
+            catch (NotFoundException exception)
+            {
+                Assert.AreEqual(notFoundException, exception);
+            }
+
+            string valueAfterNotFound = "response4Value";
+            string response4 = await asyncCache.GetAsync(
+                "test",
+                async (_) =>
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(5));
+                    return valueAfterNotFound;
+                },
+                (_) => false);
+
+            Assert.AreEqual(valueAfterNotFound, response4);
         }
 
         [TestMethod]
@@ -42,28 +174,30 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
             string result = await asyncCache.GetAsync(
                 "test",
-                () => Task.FromResult("test2"),
-                false);
+                (_) => Task.FromResult("test2"),
+                (_) => false);
 
             string cachedResults = await asyncCache.GetAsync(
                 "test",
-                () => throw new Exception("should not refresh"),
-                false);
+                (_) => throw new Exception("should not refresh"),
+                (_) => false);
 
+            string oldValue = null;
             Task<string> updateTask = asyncCache.GetAsync(
-                "test",
-                async () =>
+                key: "test",
+                singleValueInitFunc: async (staleValue) =>
                 {
+                    oldValue = staleValue;
                     await Task.Delay(TimeSpan.FromSeconds(1));
                     return "Test3";
                 },
-                true);
+                forceRefresh: (_) => true);
 
             Stopwatch concurrentOperationStopwatch = Stopwatch.StartNew();
             string concurrentUpdateTask = await asyncCache.GetAsync(
                 "test",
-                () => throw new Exception("should not refresh"),
-                false);
+                (_) => throw new Exception("should not refresh"),
+                (_) => false);
             Assert.AreEqual("test2", result);
             concurrentOperationStopwatch.Stop();
 
@@ -71,6 +205,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             result = await updateTask;
             Assert.AreEqual("Test3", result);
+            Assert.AreEqual(oldValue, "test2", "The call back was not done.");
         }
 
         [TestMethod]
@@ -79,15 +214,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
             string result = await asyncCache.GetAsync(
-                "test",
-                () => Task.FromResult("test2"),
-                false);
+                key: "test",
+                singleValueInitFunc: (_) => Task.FromResult("test2"),
+                forceRefresh: (_) => false);
             Assert.AreEqual("test2", result);
 
             string cachedResults = await asyncCache.GetAsync(
-                "test",
-                () => throw new Exception("should not refresh"),
-                false);
+                key: "test",
+                singleValueInitFunc: (_) => throw new Exception("should not refresh"),
+                forceRefresh: (_) => false);
             Assert.AreEqual("test2", cachedResults);
 
             // Simulate a slow connection on a refresh operation. The async call will
@@ -98,8 +233,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 try
                 {
                     await asyncCache.GetAsync(
-                        "test",
-                        async () =>
+                        key: "test",
+                        singleValueInitFunc: async (_) =>
                         {
                             while (delayException)
                             {
@@ -108,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
                             throw new NotFoundException("testNotFoundException");
                         },
-                        true);
+                        forceRefresh: (_) => true);
                     Assert.Fail();
                 }
                 catch (NotFoundException nfe)
@@ -118,9 +253,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             });
 
             cachedResults = await asyncCache.GetAsync(
-               "test",
-               () => throw new Exception("should not refresh"),
-               false);
+               key: "test",
+               singleValueInitFunc: (_) => throw new Exception("should not refresh"),
+               forceRefresh: (_) => false);
             Assert.AreEqual("test2", cachedResults);
 
             delayException = false;
@@ -140,13 +275,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             for (int i = 0; i < 500; i++)
             {
                 tasks.Add(Task.Run(() => asyncCache.GetAsync(
-                    "key",
-                    () =>
+                    key: "key",
+                    singleValueInitFunc: (_) =>
                     {
                         Interlocked.Increment(ref totalLazyCalls);
                         return Task.FromResult("Test");
                     },
-                    forceRefresh: false)));
+                    forceRefresh: (_) => false)));
             }
 
             await Task.WhenAll(tasks);
@@ -171,14 +306,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                     try
                     {
                         await asyncCache.GetAsync(
-                            "key",
-                            async () =>
+                            key: "key",
+                            singleValueInitFunc: async (_) =>
                             {
                                 Interlocked.Increment(ref totalLazyCalls);
                                 await Task.Delay(random.Next(0, 3));
                                 throw new NotFoundException("test");
                             },
-                            forceRefresh: false);
+                            forceRefresh: (_) => false);
                         Assert.Fail();
                     }
                     catch (DocumentClientException dce)
@@ -202,15 +337,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             try
             {
                 await asyncCache.GetAsync(
-                    "key",
-                    async () =>
+                    key: "key",
+                    singleValueInitFunc: async (_) =>
                     {
                         // Use a dummy await to make it simulate a real async network call
                         await Task.CompletedTask;
                         Interlocked.Increment(ref totalLazyCalls);
                         throw new DocumentClientException("test", HttpStatusCode.NotFound, SubStatusCodes.Unknown);
                     },
-                    forceRefresh: false);
+                    forceRefresh: (_) => false);
                 Assert.Fail();
             }
             catch (DocumentClientException dce)
@@ -225,15 +360,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             try
             {
                 await asyncCache.GetAsync(
-                    "key",
-                    async () =>
+                    key: "key",
+                    singleValueInitFunc: async (_) =>
                     {
                         // Use a dummy await to make it simulate a real async network call
                         await Task.CompletedTask;
                         Interlocked.Increment(ref totalLazyCalls);
                         throw new DocumentClientException("test", HttpStatusCode.BadRequest, SubStatusCodes.Unknown);
                     },
-                    forceRefresh: false);
+                    forceRefresh: (_) => false);
                 Assert.Fail();
             }
             catch (DocumentClientException dce)
@@ -245,15 +380,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             // Verify cache success after failures
             totalLazyCalls = 0;
             string result = await asyncCache.GetAsync(
-                    "key",
-                    async () =>
+                    key: "key",
+                    singleValueInitFunc: async (_) =>
                     {
                         // Use a dummy await to make it simulate a real async network call
                         await Task.CompletedTask;
                         Interlocked.Increment(ref totalLazyCalls);
                         return "Test3";
                     },
-                    forceRefresh: false);
+                    forceRefresh: (_) => false);
             Assert.AreEqual(1, totalLazyCalls);
             Assert.AreEqual("Test3", result);
         }

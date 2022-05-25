@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos
     using Client;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Tests for <see cref="SessionContainer"/> class.
@@ -47,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
                     sessionContainer.SetSessionToken(
                         collectionResourceId,
                         collectionFullname,
-                        new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, $"{partitionKeyRangeId}:{lsn}" } });
+                        new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, $"{partitionKeyRangeId}:{lsn}" } });
                 }
             }
 
@@ -96,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
             sessionContainer.SetSessionToken(
                 collectionResourceId,
                 collectionFullname,
-                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=0" } }
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=0" } }
             );
 
             using (DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(OperationType.Read, "dbs/db1/colls/collName2/docs/42", ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null))
@@ -116,13 +117,13 @@ namespace Microsoft.Azure.Cosmos
             sessionContainer.SetSessionToken(
                 collectionResourceId,
                 collectionFullname,
-                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
             );
 
             sessionContainer.SetSessionToken(
                 collectionResourceId,
                 collectionFullname,
-                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_1:1#101#4=90#5=1" } }
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_1:1#101#4=90#5=1" } }
             );
 
 
@@ -149,13 +150,13 @@ namespace Microsoft.Azure.Cosmos
             sessionContainer.SetSessionToken(
                 collectionResourceId,
                 collectionFullname,
-                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
             );
 
             sessionContainer.SetSessionToken(
                 collectionResourceId,
                 collectionFullname,
-                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_1:1#101#4=90#5=1" } }
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_1:1#101#4=90#5=1" } }
             );
 
 
@@ -182,13 +183,13 @@ namespace Microsoft.Azure.Cosmos
             sessionContainer.SetSessionToken(
                 collectionResourceId,
                 collectionFullname,
-                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
             );
 
             sessionContainer.SetSessionToken(
                 collectionResourceId,
                 collectionFullname,
-                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_1:1#101#4=90#5=1" } }
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_1:1#101#4=90#5=1" } }
             );
 
 
@@ -211,13 +212,13 @@ namespace Microsoft.Azure.Cosmos
             sessionContainer.SetSessionToken(
                 collectionResourceId,
                 collectionFullname,
-                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
             );
 
             sessionContainer.SetSessionToken(
                 collectionResourceId,
                 collectionFullname,
-                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_1:1#101#4=90#5=1" } }
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_1:1#101#4=90#5=1" } }
             );
 
 
@@ -240,13 +241,13 @@ namespace Microsoft.Azure.Cosmos
             sessionContainer.SetSessionToken(
                 collectionResourceId,
                 collectionFullname,
-                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
             );
 
             sessionContainer.SetSessionToken(
                 collectionResourceId,
                 collectionFullname,
-                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_1:1#101#4=90#5=1" } }
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_1:1#101#4=90#5=1" } }
             );
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, collectionResourceId, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null))
@@ -269,13 +270,13 @@ namespace Microsoft.Azure.Cosmos
             sessionContainer.SetSessionToken(
                 collectionResourceId1,
                 collectionFullname,
-                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
             );
 
             sessionContainer.SetSessionToken(
                 collectionResourceId1,
                 collectionFullname,
-                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_1:1#101#4=90#5=1" } }
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_1:1#101#4=90#5=1" } }
             );
 
             var collectionResourceId2 = ResourceId.NewDocumentCollectionId(42, 130).DocumentCollectionId.ToString();
@@ -298,13 +299,13 @@ namespace Microsoft.Azure.Cosmos
             sessionContainer.SetSessionToken(
                 collectionResourceId,
                 collectionFullname,
-                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
             );
 
             sessionContainer.SetSessionToken(
                 collectionResourceId,
                 collectionFullname,
-                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_1:1#101#4=90#5=1" } }
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_1:1#101#4=90#5=1" } }
             );
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, collectionResourceId, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null))
@@ -329,7 +330,7 @@ namespace Microsoft.Azure.Cosmos
             sessionContainer.SetSessionToken(
                 collectionResourceId,
                 collectionFullname,
-                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
             );
 
             // check that can read from cache based on resource-id
@@ -374,7 +375,7 @@ namespace Microsoft.Azure.Cosmos
             sessionContainer.SetSessionToken(
                 collectionResourceId,
                 collectionFullname,
-                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
             );
 
             // check that can read from cache based on resource-id
@@ -419,7 +420,7 @@ namespace Microsoft.Azure.Cosmos
             sessionContainer.SetSessionToken(
                 collectionResourceId1,
                 collectionFullname1,
-                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
             );
 
             var collectionResourceId2 = ResourceId.NewDocumentCollectionId(42, 130).DocumentCollectionId.ToString();
@@ -428,7 +429,7 @@ namespace Microsoft.Azure.Cosmos
             sessionContainer.SetSessionToken(
                 collectionResourceId2,
                 collectionFullname2,
-                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
             );
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, collectionResourceId1, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null))
@@ -463,7 +464,7 @@ namespace Microsoft.Azure.Cosmos
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
-            sessionContainer.SetSessionToken(null, new StoreRequestNameValueCollection());
+            sessionContainer.SetSessionToken(null, new RequestNameValueCollection());
         }
 
         [TestMethod]
@@ -480,7 +481,7 @@ namespace Microsoft.Azure.Cosmos
 
                 Assert.IsFalse(request.IsNameBased);
 
-                sessionContainer.SetSessionToken(request, new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } });
+                sessionContainer.SetSessionToken(request, new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } });
             }
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, collectionResourceId1, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null))
@@ -513,7 +514,7 @@ namespace Microsoft.Azure.Cosmos
 
                 sessionContainer.SetSessionToken(
                     request,
-                    new StoreRequestNameValueCollection() {
+                    new RequestNameValueCollection() {
                         { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" },
                         { HttpConstants.HttpHeaders.OwnerFullName, collectionFullname2 }
                     }
@@ -552,7 +553,7 @@ namespace Microsoft.Azure.Cosmos
 
                 sessionContainer.SetSessionToken(
                     request,
-                    new StoreRequestNameValueCollection() {
+                    new RequestNameValueCollection() {
                         { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" },
                         { HttpConstants.HttpHeaders.OwnerId, collectionResourceId2 }
                     }
@@ -588,7 +589,7 @@ namespace Microsoft.Azure.Cosmos
 
                 Assert.IsTrue(request.IsNameBased);
 
-                sessionContainer.SetSessionToken(request, new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } });
+                sessionContainer.SetSessionToken(request, new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } });
             }
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, collectionResourceId1, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null))
@@ -623,7 +624,7 @@ namespace Microsoft.Azure.Cosmos
 
                 sessionContainer.SetSessionToken(
                     request,
-                    new StoreRequestNameValueCollection() {
+                    new RequestNameValueCollection() {
                         { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" },
                         { HttpConstants.HttpHeaders.OwnerId, collectionResourceId2 }
                     }
@@ -657,7 +658,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 request.ResourceId = collectionResourceId1;
 
-                sessionContainer.SetSessionToken(request, new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1" } });
+                sessionContainer.SetSessionToken(request, new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1" } });
             }
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, collectionResourceId1, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null))
@@ -687,14 +688,14 @@ namespace Microsoft.Azure.Cosmos
             {
                 request.ResourceId = collectionResourceId1;
 
-                sessionContainer.SetSessionToken(request, new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#105#4=90#5=1" } });
+                sessionContainer.SetSessionToken(request, new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#105#4=90#5=1" } });
             }
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, collectionFullname1 + "/docs/42", ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null))
             {
                 request.ResourceId = collectionResourceId1;
 
-                sessionContainer.SetSessionToken(request, new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } });
+                sessionContainer.SetSessionToken(request, new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } });
             }
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, collectionResourceId1, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null))
@@ -717,14 +718,14 @@ namespace Microsoft.Azure.Cosmos
             {
                 request.ResourceId = collectionResourceId1;
 
-                sessionContainer.SetSessionToken(request, new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } });
+                sessionContainer.SetSessionToken(request, new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } });
             }
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, collectionFullname1 + "/docs/42", ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null))
             {
                 request.ResourceId = collectionResourceId1;
 
-                sessionContainer.SetSessionToken(request, new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#105#4=90#5=1" } });
+                sessionContainer.SetSessionToken(request, new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#105#4=90#5=1" } });
             }
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, collectionResourceId1, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null))
@@ -746,7 +747,7 @@ namespace Microsoft.Azure.Cosmos
             sessionContainer.SetSessionToken(
                 collectionResourceId,
                 collectionFullname + "/docs/42",
-                new StoreRequestNameValueCollection()
+                new RequestNameValueCollection()
                 {
                     { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" }
                 }
@@ -765,7 +766,7 @@ namespace Microsoft.Azure.Cosmos
             sessionContainer.SetSessionToken(
                 collectionResourceId,
                 collectionFullname + "/docs/42",
-                new StoreRequestNameValueCollection()
+                new RequestNameValueCollection()
             );
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, collectionResourceId, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null))
@@ -794,17 +795,134 @@ namespace Microsoft.Azure.Cosmos
             sessionContainer.SetSessionToken(
                 oldCollectionResourceId,
                 collectionFullname,
-                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
             );
 
             sessionContainer.SetSessionToken(
                 newCollectionResourceId,
                 collectionFullname,
-                new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#101#4=90#5=1" } }
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#101#4=90#5=1" } }
             );
 
             Assert.IsTrue(string.IsNullOrEmpty(sessionContainer.GetSessionToken(string.Format("dbs/{0}/colls/{1}", dbResourceId, oldCollectionResourceId))));
             Assert.IsFalse(string.IsNullOrEmpty(sessionContainer.GetSessionToken(string.Format("dbs/{0}/colls/{1}", dbResourceId, newCollectionResourceId))));
         }
+
+        /// <summary>
+        /// Use the session token of the parent if request comes for a child
+        /// </summary>
+        [TestMethod]
+        public void TestResolveSessionTokenFromParent_Gateway_AfterSplit()
+        {
+            SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
+
+            string collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionFullname = "dbs/db1/colls/collName";
+
+            // Set token for the parent
+            string parentPKRangeId = "0";
+            string parentSession = "1#100#4=90#5=1";
+            sessionContainer.SetSessionToken(
+                collectionResourceId,
+                collectionFullname,
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, $"{parentPKRangeId}:{parentSession}" } }
+            );
+
+            // We send requests for the children
+
+            string childPKRangeId = "1";
+            string childPKRangeId2 = "1";
+
+            DocumentServiceRequest documentServiceRequestToChild1 = DocumentServiceRequest.CreateFromName(OperationType.Read, "dbs/db1/colls/collName/docs/42", ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null);
+
+            documentServiceRequestToChild1.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange()
+            {
+                Id = childPKRangeId,
+                MinInclusive = "",
+                MaxExclusive = "AA",
+                Parents = new Collection<string>() { parentPKRangeId } // PartitionKeyRange says who is the parent
+            };
+
+            string resolvedToken = sessionContainer.ResolvePartitionLocalSessionTokenForGateway(
+                documentServiceRequestToChild1,
+                childPKRangeId);// For one of the children
+
+            Assert.AreEqual($"{childPKRangeId}:{parentSession}", resolvedToken);
+
+            DocumentServiceRequest documentServiceRequestToChild2 = DocumentServiceRequest.CreateFromName(OperationType.Read, "dbs/db1/colls/collName/docs/42", ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null);
+
+            documentServiceRequestToChild2.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange()
+            {
+                Id = childPKRangeId2,
+                MinInclusive = "AA",
+                MaxExclusive = "FF",
+                Parents = new Collection<string>() { parentPKRangeId } // PartitionKeyRange says who is the parent
+            };
+
+            resolvedToken = sessionContainer.ResolvePartitionLocalSessionTokenForGateway(
+                documentServiceRequestToChild2,
+                childPKRangeId2);// For the other child
+
+            Assert.AreEqual($"{childPKRangeId2}:{parentSession}", resolvedToken);
+        }
+
+        // <summary>
+        /// Use the session token of the parent if request comes for a child when 2 parents are present
+        /// </summary>
+        [TestMethod]
+        public void TestResolveSessionTokenFromParent_Gateway_AfterMerge()
+        {
+            SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
+
+            string collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionFullname = "dbs/db1/colls/collName";
+
+            // Set tokens for the parents
+            string parentPKRangeId = "0";
+            int maxGlobalLsn = 100;
+            int maxLsnRegion1 = 200;
+            int maxLsnRegion2 = 300;
+            int maxLsnRegion3 = 400;
+
+            // Generate 2 tokens, one has max global but lower regional, the other lower global but higher regional
+            // Expect the merge to contain all the maxes
+            string parentSession = $"1#{maxGlobalLsn}#1={maxLsnRegion1 - 1}#2={maxLsnRegion2}#3={maxLsnRegion3 - 1}";
+            sessionContainer.SetSessionToken(
+                collectionResourceId,
+                collectionFullname,
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, $"{parentPKRangeId}:{parentSession}" } }
+            );
+
+            string parent2PKRangeId = "1";
+            string parent2Session = $"1#{maxGlobalLsn - 1}#1={maxLsnRegion1}#2={maxLsnRegion2 - 1}#3={maxLsnRegion3}";
+            sessionContainer.SetSessionToken(
+                collectionResourceId,
+                collectionFullname,
+                new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, $"{parent2PKRangeId}:{parent2Session}" } }
+            );
+
+            string tokenWithAllMax = $"1#{maxGlobalLsn}#1={maxLsnRegion1}#2={maxLsnRegion2}#3={maxLsnRegion3}";
+
+            // Request for a child from both parents
+            string childPKRangeId = "2";
+
+            DocumentServiceRequest documentServiceRequestToChild1 = DocumentServiceRequest.CreateFromName(OperationType.Read, "dbs/db1/colls/collName/docs/42", ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null);
+
+            documentServiceRequestToChild1.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange()
+            {
+                Id = childPKRangeId,
+                MinInclusive = "",
+                MaxExclusive = "FF",
+                Parents = new Collection<string>() { parentPKRangeId, parent2PKRangeId } // PartitionKeyRange says who are the parents
+            };
+
+            string resolvedToken = sessionContainer.ResolvePartitionLocalSessionTokenForGateway(
+                documentServiceRequestToChild1,
+                childPKRangeId);// For one of the children
+
+            // Expect the resulting token is for the child partition but containing all maxes of the lsn of the parents
+            Assert.AreEqual($"{childPKRangeId}:{tokenWithAllMax}", resolvedToken);
+        }
+
     }
 }

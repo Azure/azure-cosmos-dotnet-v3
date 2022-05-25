@@ -762,7 +762,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             Mock<CosmosQueryClient> mockCosmosQueryClient = new Mock<CosmosQueryClient>();
             NetworkAttachedDocumentContainer container = new NetworkAttachedDocumentContainer(
                 mockContainerInternal.Object,
-                mockCosmosQueryClient.Object);
+                mockCosmosQueryClient.Object,
+                Guid.NewGuid());
 
             FeedRangeState<ChangeFeedState> state = new FeedRangeState<ChangeFeedState>();
             ChangeFeedPaginationOptions options = new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental);

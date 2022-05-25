@@ -19,6 +19,7 @@
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
 
     [VisualStudio.TestTools.UnitTesting.TestClass]
+    [TestCategory("UpdateContract")]
     public sealed class EndToEndTraceWriterBaselineTests : BaselineTests<EndToEndTraceWriterBaselineTests.Input, EndToEndTraceWriterBaselineTests.Output>
     {
         public static CosmosClient client;
@@ -290,6 +291,51 @@
                 endLineNumber = GetLineNumber();
 
                 inputs.Add(new Input("ChangeFeed Public API Typed", traceForest, startLineNumber, endLineNumber));
+            }
+            //----------------------------------------------------------------
+
+            //----------------------------------------------------------------
+            //  ChangeFeed Estimator
+            //----------------------------------------------------------------
+            {
+                Container leaseContainer = await EndToEndTraceWriterBaselineTests.database.CreateContainerAsync(
+                    id: Guid.NewGuid().ToString(),
+                    partitionKeyPath: "/id");
+
+                ChangeFeedProcessor processor = container
+                .GetChangeFeedProcessorBuilder(
+                    processorName: "test",
+                    onChangesDelegate: (IReadOnlyCollection<dynamic> docs, CancellationToken token) => Task.CompletedTask)
+                .WithInstanceName("random")
+                .WithLeaseContainer(leaseContainer)
+                .Build();
+
+                await processor.StartAsync();
+
+                // Letting processor initialize
+                await Task.Delay(2000);
+
+                await processor.StopAsync();
+
+                startLineNumber = GetLineNumber();
+                ChangeFeedEstimator estimator = container.GetChangeFeedEstimator(
+                    "test",
+                    leaseContainer);
+                using FeedIterator<ChangeFeedProcessorState> feedIterator = estimator.GetCurrentStateIterator();
+
+                List<ITrace> traces = new List<ITrace>();
+
+                while (feedIterator.HasMoreResults)
+                {
+                    FeedResponse<ChangeFeedProcessorState> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                    traces.Add(trace);
+                }
+
+                ITrace traceForest = TraceJoiner.JoinTraces(traces);
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("Change Feed Estimator", traceForest, startLineNumber, endLineNumber));
             }
             //----------------------------------------------------------------
 
@@ -1178,6 +1224,11 @@
                 return; // skip test for read many as the queries are done in parallel
             }
 
+            if (trace.Name == "Change Feed Estimator Read Next Async")
+            {
+                return; // Change Feed Estimator issues parallel requests
+            }
+
             if (trace.Children.Count == 0)
             {
                 // Base case
@@ -1243,9 +1294,9 @@
                                 .Select(x => x != string.Empty ? x.Substring("            ".Length) : string.Empty))
                     + Environment.NewLine;
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    throw ex;
+                    throw;
                 }
                 xmlWriter.WriteCData(setup ?? "asdf");
                 xmlWriter.WriteEndElement();
@@ -1299,8 +1350,6 @@
 
             public Guid Id => Guid.Empty;
 
-            public CallerInfo CallerInfo => new CallerInfo("MemberName", "FilePath", 42);
-
             public DateTime StartTime => DateTime.MinValue;
 
             public TimeSpan Duration => TimeSpan.Zero;
@@ -1314,6 +1363,8 @@
             public IReadOnlyList<ITrace> Children => this.children;
 
             public IReadOnlyDictionary<string, object> Data => this.data;
+
+            public IReadOnlyList<(string, Uri)> RegionsContacted => new List<(string, Uri)>();
 
             public void AddDatum(string key, TraceDatum traceDatum)
             {
@@ -1335,12 +1386,12 @@
             {
             }
 
-            public ITrace StartChild(string name, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
+            public ITrace StartChild(string name)
             {
-                return this.StartChild(name, TraceComponent.Unknown, TraceLevel.Info, memberName, sourceFilePath, sourceLineNumber);
+                return this.StartChild(name, TraceComponent.Unknown, TraceLevel.Info);
             }
 
-            public ITrace StartChild(string name, TraceComponent component, TraceLevel level, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
+            public ITrace StartChild(string name, TraceComponent component, TraceLevel level)
             {
                 TraceForBaselineTesting child = new TraceForBaselineTesting(name, level, component, parent: this);
                 this.AddChild(child);
@@ -1355,6 +1406,22 @@
             public static TraceForBaselineTesting GetRootTrace()
             {
                 return new TraceForBaselineTesting("Trace For Baseline Testing", TraceLevel.Info, TraceComponent.Unknown, parent: null);
+            }
+
+            public void UpdateRegionContacted(TraceDatum traceDatum)
+            {
+                //NoImplementation
+            }
+
+            public void AddOrUpdateDatum(string key, object value)
+            {
+                if (key.Contains("CPU"))
+                {
+                    // Redacted To Not Change The Baselines From Run To Run
+                    return;
+                }
+
+                this.data[key] = "Redacted To Not Change The Baselines From Run To Run";
             }
         }
 

@@ -1379,7 +1379,7 @@
         public override QueryPlanBaselineTestOutput ExecuteTest(QueryPlanBaselineTestInput input)
         {
             TryCatch<PartitionedQueryExecutionInfoInternal> info = QueryPartitionProviderTestInstance.Object.TryGetPartitionedQueryExecutionInfoInternal(
-                input.SqlQuerySpec,
+                JsonConvert.SerializeObject(input.SqlQuerySpec),
                 input.PartitionKeyDefinition,
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: false,
@@ -1465,11 +1465,6 @@
 
         public override bool Equals(object obj)
         {
-            if (object.ReferenceEquals(this, obj))
-            {
-                return true;
-            }
-
             if (obj is GetPartitionedQueryExecutionInfoOptions other)
             {
                 return this.AllowNonValueAggregateQuery == other.AllowNonValueAggregateQuery

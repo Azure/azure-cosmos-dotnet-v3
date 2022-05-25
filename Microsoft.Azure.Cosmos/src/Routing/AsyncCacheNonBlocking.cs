@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     /// <summary>
     /// This is a thread safe AsyncCache that allows refreshing values in the background.
@@ -22,23 +23,40 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private readonly ConcurrentDictionary<TKey, AsyncLazyWithRefreshTask<TValue>> values;
+        private readonly Func<Exception, bool> removeFromCacheOnBackgroundRefreshException;
 
-        private readonly IEqualityComparer<TValue> valueEqualityComparer;
         private readonly IEqualityComparer<TKey> keyEqualityComparer;
         private bool isDisposed;
 
         public AsyncCacheNonBlocking(
-            IEqualityComparer<TValue> valueEqualityComparer,
+            Func<Exception, bool> removeFromCacheOnBackgroundRefreshException = null,
             IEqualityComparer<TKey> keyEqualityComparer = null)
         {
             this.keyEqualityComparer = keyEqualityComparer ?? EqualityComparer<TKey>.Default;
             this.values = new ConcurrentDictionary<TKey, AsyncLazyWithRefreshTask<TValue>>(this.keyEqualityComparer);
-            this.valueEqualityComparer = valueEqualityComparer;
+            this.removeFromCacheOnBackgroundRefreshException = removeFromCacheOnBackgroundRefreshException ?? AsyncCacheNonBlocking<TKey, TValue>.RemoveNotFoundFromCacheOnException;
         }
 
         public AsyncCacheNonBlocking()
-            : this(valueEqualityComparer: EqualityComparer<TValue>.Default, keyEqualityComparer: null)
+            : this(removeFromCacheOnBackgroundRefreshException: null, keyEqualityComparer: null)
         {
+        }
+
+        private static bool RemoveNotFoundFromCacheOnException(Exception e)
+        {
+            if (e is Documents.DocumentClientException dce
+                && dce.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return true;
+            }
+
+            if (e is CosmosException cosmosException
+                && cosmosException.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -67,19 +85,61 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public async Task<TValue> GetAsync(
            TKey key,
-           Func<Task<TValue>> singleValueInitFunc,
-           bool forceRefresh)
+           Func<TValue, Task<TValue>> singleValueInitFunc,
+           Func<TValue, bool> forceRefresh)
         {
             if (this.values.TryGetValue(key, out AsyncLazyWithRefreshTask<TValue> initialLazyValue))
             {
-                if (!forceRefresh)
+                try
                 {
-                    return await initialLazyValue.GetValueAsync();
+                    TValue cachedResult = await initialLazyValue.GetValueAsync();
+                    if (forceRefresh == null || !forceRefresh(cachedResult))
+                    {
+                        return cachedResult;
+                    }
+                }
+                catch (Exception e)
+                {
+                    // This is needed for scenarios where the initial GetAsync was
+                    // called but never awaited.
+                    if (initialLazyValue.ShouldRemoveFromCacheThreadSafe())
+                    {
+                        bool removed = this.TryRemove(key);
+
+                        DefaultTrace.TraceError(
+                            "AsyncCacheNonBlocking Failed GetAsync. key: {0}, tryRemoved: {1}, Exception: {2}",
+                            key,
+                            removed,
+                            e);
+                    }
+
+                    throw;
                 }
 
-                return await initialLazyValue.CreateAndWaitForBackgroundRefreshTaskAsync(
-                    singleValueInitFunc,
-                    () => this.TryRemove(key));
+                try
+                {
+                    return await initialLazyValue.CreateAndWaitForBackgroundRefreshTaskAsync(
+                       createRefreshTask: singleValueInitFunc);
+                }
+                catch (Exception e)
+                {
+                    if (initialLazyValue.ShouldRemoveFromCacheThreadSafe())
+                    {
+                        DefaultTrace.TraceError(
+                            "AsyncCacheNonBlocking.GetAsync with ForceRefresh Failed. key: {0}, Exception: {1}",
+                            key,
+                            e);
+
+                        // In some scenarios when a background failure occurs like a 404
+                        // the initial cache value should be removed.
+                        if (this.removeFromCacheOnBackgroundRefreshException(e))
+                        {
+                            this.TryRemove(key);
+                        }
+                    }
+
+                    throw;
+                }
             }
 
             // The AsyncLazyWithRefreshTask is lazy and won't create the task until GetValue is called.
@@ -140,8 +200,11 @@ namespace Microsoft.Azure.Cosmos
         private sealed class AsyncLazyWithRefreshTask<T>
         {
             private readonly CancellationToken cancellationToken;
-            private readonly Func<Task<T>> createValueFunc;
+            private readonly Func<T, Task<T>> createValueFunc;
             private readonly object valueLock = new object();
+            private readonly object removedFromCacheLock = new object();
+
+            private bool removedFromCache = false;
             private Task<T> value;
             private Task<T> refreshInProgress;
 
@@ -156,7 +219,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             public AsyncLazyWithRefreshTask(
-                Func<Task<T>> taskFactory,
+                Func<T, Task<T>> taskFactory,
                 CancellationToken cancellationToken)
             {
                 this.cancellationToken = cancellationToken;
@@ -187,14 +250,13 @@ namespace Microsoft.Azure.Cosmos
                     }
 
                     this.cancellationToken.ThrowIfCancellationRequested();
-                    this.value = this.createValueFunc();
+                    this.value = this.createValueFunc(default);
                     return this.value;
                 }
             }
 
             public async Task<T> CreateAndWaitForBackgroundRefreshTaskAsync(
-                Func<Task<T>> createRefreshTask,
-                Action callbackOnRefreshFailure)
+                Func<T, Task<T>> createRefreshTask)
             {
                 this.cancellationToken.ThrowIfCancellationRequested();
 
@@ -205,11 +267,21 @@ namespace Microsoft.Azure.Cosmos
                     return await valueSnapshot;
                 }
 
+                // The above check handles the scenario where this value task is still processing.
+                // It will only get here if the valueSnapshot is completed. This is needed for the
+                // callback to compare the original value to the new value.
+                T originalValue = default;
+                if (valueSnapshot != null)
+                {
+                    originalValue = await valueSnapshot;
+                }
+
                 // Use a local reference to avoid it being updated between the check and the await
                 Task<T> refresh = this.refreshInProgress;
                 if (AsyncLazyWithRefreshTask<T>.IsTaskRunning(refresh))
                 {
-                    return await refresh;
+                    T result = await refresh;
+                    return result;
                 }
 
                 bool createdTask = false;
@@ -222,7 +294,7 @@ namespace Microsoft.Azure.Cosmos
                     else
                     {
                         createdTask = true;
-                        this.refreshInProgress = createRefreshTask();
+                        this.refreshInProgress = createRefreshTask(originalValue);
                         refresh = this.refreshInProgress;
                     }
                 }
@@ -230,31 +302,38 @@ namespace Microsoft.Azure.Cosmos
                 // Await outside the lock to prevent lock contention
                 if (!createdTask)
                 {
-                    return await refresh;
+                    T result = await refresh;
+                    return result;
                 }
 
                 // It's possible multiple callers entered the method at the same time. The lock above ensures
                 // only a single one will create the refresh task. If this caller created the task await for the
                 // result and update the value.
-                try
+                T itemResult = await refresh;
+                lock (this)
                 {
-                    T itemResult = await refresh;
-                    lock (this)
+                    this.value = Task.FromResult(itemResult);
+                }
+
+                return itemResult;
+            }
+
+            public bool ShouldRemoveFromCacheThreadSafe()
+            {
+                if (this.removedFromCache)
+                {
+                    return false;
+                }
+
+                lock (this.removedFromCacheLock)
+                {
+                    if (this.removedFromCache)
                     {
-                        this.value = Task.FromResult(itemResult);
+                        return false;
                     }
 
-                    return itemResult;
-                }
-                catch (Exception e)
-                {
-                    // faulted with exception
-                    DefaultTrace.TraceError(
-                        "AsyncLazyWithRefreshTask Failed with: {0}",
-                        e.ToString());
-
-                    callbackOnRefreshFailure();
-                    throw;
+                    this.removedFromCache = true;
+                    return true;
                 }
             }
 

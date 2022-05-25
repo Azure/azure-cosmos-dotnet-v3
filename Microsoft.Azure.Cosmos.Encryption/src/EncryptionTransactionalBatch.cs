@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private readonly CosmosSerializer cosmosSerializer;
         private readonly EncryptionContainer encryptionContainer;
+        private readonly EncryptionDiagnosticsContext encryptionDiagnosticsContext;
         private TransactionalBatch transactionalBatch;
 
         public EncryptionTransactionalBatch(
@@ -28,6 +29,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.transactionalBatch = transactionalBatch ?? throw new ArgumentNullException(nameof(transactionalBatch));
             this.encryptionContainer = encryptionContainer ?? throw new ArgumentNullException(nameof(encryptionContainer));
             this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
+            this.encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
+            this.encryptionDiagnosticsContext.Begin(Constants.DiagnosticsEncryptOperation);
         }
 
         public override TransactionalBatch CreateItem<T>(
@@ -182,6 +185,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             EncryptionSettings encryptionSettings = await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
             TransactionalBatchResponse response;
+
+            this.encryptionDiagnosticsContext.End();
+
             if (!encryptionSettings.PropertiesToEncrypt.Any())
             {
                 return await this.transactionalBatch.ExecuteAsync(requestOptions, cancellationToken);
@@ -196,19 +202,27 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 response = await this.transactionalBatch.ExecuteAsync(clonedRequestOptions, cancellationToken);
             }
 
-            // FIXME this should check for BadRequest StatusCode too, requires a service fix to return 400 instead of -1 which is currently returned.
-            if (string.Equals(response.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
+            if (response.StatusCode == HttpStatusCode.BadRequest && string.Equals(response.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
             {
                 await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(
                     obsoleteEncryptionSettings: encryptionSettings,
                     cancellationToken: cancellationToken);
 
-                throw new CosmosException(
-                    "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + response.ErrorMessage,
+                // no access to the encryption diagnostics. Just pass empty encryption diagnostics for now.
+                EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
+                EncryptionCosmosDiagnostics encryptionDiagnostics = new EncryptionCosmosDiagnostics(
+                    response.Diagnostics,
+                    encryptionDiagnosticsContext.EncryptContent,
+                    encryptionDiagnosticsContext.DecryptContent,
+                    encryptionDiagnosticsContext.TotalProcessingDuration);
+
+                throw new EncryptionCosmosException(
+                    "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Retrying may fix the issue. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + response.ErrorMessage,
                     HttpStatusCode.BadRequest,
                     int.Parse(Constants.IncorrectContainerRidSubStatus),
                     response.Headers.ActivityId,
-                    response.Headers.RequestCharge);
+                    response.Headers.RequestCharge,
+                    encryptionDiagnostics);
             }
 
             return await this.DecryptTransactionalBatchResponseAsync(
@@ -270,8 +284,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             List<TransactionalBatchOperationResult> decryptedTransactionalBatchOperationResults = new List<TransactionalBatchOperationResult>();
 
-            EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
-            encryptionDiagnosticsContext.Begin(Constants.DiagnosticsDecryptOperation);
+            this.encryptionDiagnosticsContext.Begin(Constants.DiagnosticsDecryptOperation);
 
             foreach (TransactionalBatchOperationResult result in response)
             {
@@ -291,11 +304,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
-            encryptionDiagnosticsContext.End();
+            this.encryptionDiagnosticsContext.End();
             EncryptionCosmosDiagnostics encryptionDiagnostics = new EncryptionCosmosDiagnostics(
                 response.Diagnostics,
-                encryptContent: null,
-                decryptContent: encryptionDiagnosticsContext.DecryptContent);
+                encryptContent: this.encryptionDiagnosticsContext.EncryptContent,
+                decryptContent: this.encryptionDiagnosticsContext.DecryptContent,
+                this.encryptionDiagnosticsContext.TotalProcessingDuration);
 
             return new EncryptionTransactionalBatchResponse(
                 decryptedTransactionalBatchOperationResults,

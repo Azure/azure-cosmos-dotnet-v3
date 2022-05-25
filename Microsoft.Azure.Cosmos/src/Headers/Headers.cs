@@ -18,6 +18,9 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="RequestMessage"/>
     public class Headers : IEnumerable
     {
+        internal static readonly string SDKSUPPORTEDCAPABILITIES = SDKSupportedCapabilitiesHelpers.GetSDKSupportedCapabilities().ToString(
+            CultureInfo.InvariantCulture);
+
         internal virtual SubStatusCodes SubStatusCode
         {
             get => Headers.GetSubStatusCodes(this.SubStatusCodeLiteral);
@@ -207,12 +210,48 @@ namespace Microsoft.Azure.Cosmos
             set => this.CosmosMessageHeaders.BackendRequestDurationMilliseconds = value;
         }
 
+        internal virtual string ConsistencyLevel
+        {
+            get => this.CosmosMessageHeaders.ConsistencyLevel;
+            set => this.CosmosMessageHeaders.ConsistencyLevel = value;
+        }
+
+        internal virtual string SDKSupportedCapabilities
+        {
+            get => this.CosmosMessageHeaders.SDKSupportedCapabilities;
+            set => this.CosmosMessageHeaders.SDKSupportedCapabilities = value;
+        }
+
+        internal virtual string ContentSerializationFormat
+        {
+            get => this.CosmosMessageHeaders.ContentSerializationFormat;
+            set => this.CosmosMessageHeaders.ContentSerializationFormat = value;
+        }
+
+        internal virtual string ReadFeedKeyType
+        {
+            get => this.CosmosMessageHeaders.ReadFeedKeyType;
+            set => this.CosmosMessageHeaders.ReadFeedKeyType = value;
+        }
+
+        internal virtual string StartEpk
+        {
+            get => this.CosmosMessageHeaders.StartEpk;
+            set => this.CosmosMessageHeaders.StartEpk = value;
+        }
+
+        internal virtual string EndEpk
+        {
+            get => this.CosmosMessageHeaders.EndEpk;
+            set => this.CosmosMessageHeaders.EndEpk = value;
+        }
+
         /// <summary>
         /// Creates a new instance of <see cref="Headers"/>.
         /// </summary>
         public Headers()
         {
-            this.CosmosMessageHeaders = new StoreRequestNameValueCollection();
+            this.CosmosMessageHeaders = new StoreRequestHeaders();
         }
 
         internal Headers(INameValueCollection nameValueCollection)

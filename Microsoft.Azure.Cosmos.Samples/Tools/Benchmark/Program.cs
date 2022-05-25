@@ -136,8 +136,8 @@ namespace CosmosBenchmark
                         Program.ClearCoreSdkListeners();
                     }
 
-                    IExecutionStrategy execution = IExecutionStrategy.StartNew(config, benchmarkOperationFactory);
-                    runSummary = await execution.ExecuteAsync(taskCount, opsPerTask, config.TraceFailures, 0.01);
+                    IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory);
+                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask,  0.01);
                 }
 
                 if (config.CleanupOnFinish)
@@ -145,24 +145,6 @@ namespace CosmosBenchmark
                     Console.WriteLine($"Deleting Database {config.Database}");
                     await database.DeleteStreamAsync();
                 }
-
-                runSummary.WorkloadType = config.WorkloadType;
-                runSummary.id = $"{DateTime.UtcNow:yyyy-MM-dd:HH-mm}-{config.CommitId}";
-                runSummary.Commit = config.CommitId;
-                runSummary.CommitDate = config.CommitDate;
-                runSummary.CommitTime = config.CommitTime;
-
-                runSummary.Date = DateTime.UtcNow.ToString("yyyy-MM-dd");
-                runSummary.Time = DateTime.UtcNow.ToString("HH-mm");
-                runSummary.BranchName = config.BranchName;
-                runSummary.TotalOps = config.ItemCount;
-                runSummary.Concurrency = taskCount;
-                runSummary.Database = config.Database;
-                runSummary.Container = config.Container;
-                runSummary.AccountName = config.EndPoint;
-                runSummary.pk = config.ResultsPartitionKeyValue;
-                runSummary.MaxTcpConnectionsPerEndpoint = config.MaxTcpConnectionsPerEndpoint;
-                runSummary.MaxRequestsPerTcpConnection = config.MaxRequestsPerTcpConnection;
 
                 string consistencyLevel = config.ConsistencyLevel;
                 if (string.IsNullOrWhiteSpace(consistencyLevel))

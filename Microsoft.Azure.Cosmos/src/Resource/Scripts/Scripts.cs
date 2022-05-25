@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                     CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// This method creates a query for stored procedures under a container using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for stored procedures under a container using a SQL statement with parameterized values. It returns a FeedIterator.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             QueryRequestOptions requestOptions = null);
 
         /// <summary>
-        /// This method creates a query for stored procedures under a container using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for stored procedures under a container using a SQL statement with parameterized values. It returns a FeedIterator.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
@@ -145,7 +145,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         /// <summary>
         /// This method creates a query for stored procedures under a container using a SQL statement. It returns a FeedIterator.
-        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
@@ -178,7 +177,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         /// <summary>
         /// This method creates a query for stored procedures under a container using a SQL statement. It returns a FeedIterator.
-        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
@@ -531,7 +529,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// This method creates a query for triggers under a container using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for triggers under a container using a SQL statement with parameterized values. It returns a FeedIterator.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
@@ -565,7 +563,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             QueryRequestOptions requestOptions = null);
 
         /// <summary>
-        /// This method creates a query for triggers under a container using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for triggers under a container using a SQL statement with parameterized values. It returns a FeedIterator.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
@@ -607,7 +605,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         /// <summary>
         /// This method creates a query for triggers under a container using a SQL statement. It returns a FeedIterator.
-        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
@@ -640,7 +637,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         /// <summary>
         /// This method creates a query for triggers under a container using a SQL statement. It returns a FeedIterator.
-        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
@@ -797,7 +793,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// This method creates a query for user defined functions under a container using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for user defined functions under a container using a SQL statement with parameterized values. It returns a FeedIterator.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
@@ -831,7 +827,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             QueryRequestOptions requestOptions = null);
 
         /// <summary>
-        /// This method creates a query for user defined functions under a container using a SQL statement. It returns a FeedIterator.
+        /// This method creates a query for user defined functions under a container using a SQL statement with parameterized values. It returns a FeedIterator.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
@@ -873,7 +869,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         /// <summary>
         /// This method creates a query for user defined functions under a container using a SQL statement. It returns a FeedIterator.
-        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
@@ -906,7 +901,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         /// <summary>
         /// This method creates a query for user defined functions under a container using a SQL statement. It returns a FeedIterator.
-        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>

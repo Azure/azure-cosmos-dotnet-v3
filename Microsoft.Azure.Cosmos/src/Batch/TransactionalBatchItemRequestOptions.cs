@@ -4,6 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow.IO;
+    using Microsoft.Azure.Documents;
+
     /// <summary>
     /// <see cref="RequestOptions"/> that applies to an operation within a <see cref="TransactionalBatch"/>.
     /// </summary>
@@ -36,7 +40,6 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-            RequestOptions requestOptions = itemRequestOptions;
             TransactionalBatchItemRequestOptions batchItemRequestOptions = new TransactionalBatchItemRequestOptions
             {
                 IndexingDirective = itemRequestOptions.IndexingDirective,
@@ -47,6 +50,79 @@ namespace Microsoft.Azure.Cosmos
                 IsEffectivePartitionKeyRouting = itemRequestOptions.IsEffectivePartitionKeyRouting
             };
             return batchItemRequestOptions;
+        }
+
+        internal virtual Result WriteRequestProperties(ref RowWriter writer, bool pkWritten)
+        {
+            if (this.Properties == null)
+            {
+                return Result.Success;
+            }
+
+            if (this.Properties.TryGetValue(WFConstants.BackendHeaders.BinaryId, out object binaryIdObj)
+                && binaryIdObj is byte[] binaryId)
+            {
+                Result r = writer.WriteBinary("binaryId", binaryId);
+                if (r != Result.Success)
+                {
+                    return r;
+                }
+            }
+
+            if (this.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj)
+                && epkObj is byte[] epk)
+            {
+                Result r = writer.WriteBinary("effectivePartitionKey", epk);
+                if (r != Result.Success)
+                {
+                    return r;
+                }
+            }
+
+            if (!pkWritten && this.Properties.TryGetValue(HttpConstants.HttpHeaders.PartitionKey, out object pkStrObj)
+                && pkStrObj is string pkString)
+            {
+                Result r = writer.WriteString("partitionKey", pkString);
+                if (r != Result.Success)
+                {
+                    return r;
+                }
+            }
+
+            if (this.Properties.TryGetValue(WFConstants.BackendHeaders.TimeToLiveInSeconds, out object ttlObj)
+                && ttlObj is string ttlStr && int.TryParse(ttlStr, out int ttl))
+            {
+                Result r = writer.WriteInt32("timeToLiveInSeconds", ttl);
+                if (r != Result.Success)
+                {
+                    return r;
+                }
+            }
+
+            return Result.Success;
+        }
+
+        internal virtual int GetRequestPropertiesSerializationLength()
+        {
+            if (this.Properties == null)
+            {
+                return 0;
+            }
+
+            int length = 0;
+            if (this.Properties.TryGetValue(WFConstants.BackendHeaders.BinaryId, out object binaryIdObj)
+                && binaryIdObj is byte[] binaryId)
+            {
+                length += binaryId.Length;
+            }
+
+            if (this.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj)
+                && epkObj is byte[] epk)
+            {
+                length += epk.Length;
+            }
+
+            return length;
         }
     }
 }

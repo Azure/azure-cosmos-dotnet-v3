@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Net;
     using System.Text;
     using System.Threading;
@@ -39,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
     ///                 ApplicationRegion = Regions.EastUS2,
     ///             });
     /// 
-    /// Database db = await client.CreateDatabaseAsync("database-id");
+    /// Database db = await cosmosClient.CreateDatabaseAsync("database-id");
     /// Container container = await db.CreateContainerAsync("container-id");
     /// 
     /// // Dispose cosmosClient at application exit
@@ -61,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
     ///                 ApplicationRegion = Regions.EastUS2,
     ///             });
     /// 
-    /// Database db = await client.CreateDatabaseAsync("database-id");
+    /// Database db = await cosmosClient.CreateDatabaseAsync("database-id");
     /// Container container = await db.CreateContainerAsync("container-id");
     /// 
     /// // Dispose cosmosClient at application exit
@@ -80,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
     ///     .WithApplicationRegion("East US 2")
     ///     .Build();
     /// 
-    /// Database db = await client.CreateDatabaseAsync("database-id")
+    /// Database db = await cosmosClient.CreateDatabaseAsync("database-id")
     /// Container container = await db.CreateContainerAsync("container-id");
     /// 
     /// // Dispose cosmosClient at application exit
@@ -96,14 +97,17 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
     public class CosmosClient : IDisposable
     {
+        internal readonly string Id = Guid.NewGuid().ToString();
+
         private readonly string DatabaseRootUri = Paths.Databases_Root;
         private ConsistencyLevel? accountConsistencyLevel;
         private bool isDisposed = false;
+        private object disposedLock = new object();
 
         internal static int numberOfClientsCreated;
-        internal DateTime? DisposedDateTimeUtc { get; private set; } = null;
+        internal static int NumberOfActiveClients;
 
-        internal ClientTelemetry Telemetry;
+        internal DateTime? DisposedDateTimeUtc { get; private set; } = null;
 
         static CosmosClient()
         {
@@ -118,7 +122,16 @@ namespace Microsoft.Azure.Cosmos
             // Shall revisit on feedback
             // NOTE: Native ServiceInteropWrapper.AssembliesExist has appsettings dependency which are proofed for CTL (native dll entry) scenarios.
             // Revert of this depends on handling such in direct assembly
-            //ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => true);
+            // ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => true);
+
+            Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace.InitEventListener();
+
+            // If a debugger is not attached remove the DefaultTraceListener. 
+            // DefaultTraceListener can cause lock contention leading to availability issues
+            if (!Debugger.IsAttached)
+            {
+                CosmosClient.RemoveDefaultTraceListener();
+            }
         }
 
         /// <summary>
@@ -135,7 +148,7 @@ namespace Microsoft.Azure.Cosmos
         /// of the application which enables efficient connection management and performance. Please refer to the
         /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
         /// </summary>
-        /// <param name="connectionString">The connection string to the cosmos account. ex: https://mycosmosaccount.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
+        /// <param name="connectionString">The connection string to the cosmos account. ex: AccountEndpoint=https://XXXXX.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
         /// <param name="clientOptions">(Optional) client options</param>
         /// <example>
         /// The CosmosClient is created with the connection string and configured to use "East US 2" region.
@@ -254,10 +267,11 @@ namespace Microsoft.Azure.Cosmos
             clientOptions ??= new CosmosClientOptions();
 
             this.ClientId = this.IncrementNumberOfClientsCreated();
+            
             this.ClientContext = ClientContextCore.Create(
                 this,
                 clientOptions);
-  
+
             this.ClientConfigurationTraceDatum = new ClientConfigurationTraceDatum(this.ClientContext, DateTime.UtcNow);
         }
 
@@ -320,7 +334,7 @@ namespace Microsoft.Azure.Cosmos
         /// of the application which enables efficient connection management and performance. Please refer to the
         /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
         /// </summary>
-        /// <param name="connectionString">The connection string to the cosmos account. ex: https://mycosmosaccount.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
+        /// <param name="connectionString">The connection string to the cosmos account. ex: AccountEndpoint=https://XXXXX.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
         /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
         /// <param name="cosmosClientOptions">(Optional) client options</param>
         /// <param name="cancellationToken">(Optional) Cancellation Token</param>
@@ -439,6 +453,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The <see cref="Cosmos.CosmosClientOptions"/> used initialize CosmosClient.
         /// </summary>
+        /// <remarks>This property is read-only. Modifying any options after the client has been created has no effect on the existing client instance.</remarks>
         public virtual CosmosClientOptions ClientOptions => this.ClientContext.ClientOptions;
 
         /// <summary>
@@ -449,12 +464,7 @@ namespace Microsoft.Azure.Cosmos
         /// a custom container that modifies the response. For example the client encryption
         /// uses this to decrypt responses before returning to the caller.
         /// </remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        virtual CosmosResponseFactory ResponseFactory => this.ClientContext.ResponseFactory;
+        public virtual CosmosResponseFactory ResponseFactory => this.ClientContext.ResponseFactory;
 
         /// <summary>
         /// Gets the endpoint Uri for the Azure Cosmos DB service.
@@ -881,7 +891,6 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// This method creates a query for databases under an Cosmos DB Account using a SQL statement. It returns a FeedIterator.
-        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
@@ -934,7 +943,6 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// This method creates a query for databases under an Cosmos DB Account using a SQL statement. It returns a FeedIterator.
-        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
@@ -1031,6 +1039,31 @@ namespace Microsoft.Azure.Cosmos
                          trace,
                          cancellationToken);
                  });
+        }
+
+        /// <summary>
+        /// Removes the DefaultTraceListener which causes locking issues which leads to avability problems. 
+        /// </summary>
+        private static void RemoveDefaultTraceListener()
+        {
+            if (Core.Trace.DefaultTrace.TraceSource.Listeners.Count > 0)
+            {
+                List<DefaultTraceListener> removeDefaultTraceListeners = new List<DefaultTraceListener>();
+                foreach (object traceListnerObject in Core.Trace.DefaultTrace.TraceSource.Listeners)
+                {
+                    // The TraceSource already has the default trace listener
+                    if (traceListnerObject is DefaultTraceListener defaultTraceListener)
+                    {
+                        removeDefaultTraceListeners.Add(defaultTraceListener);
+                    }
+                }
+
+                // Remove all the default trace listeners
+                foreach (DefaultTraceListener defaultTraceListener in removeDefaultTraceListeners)
+                {
+                    Core.Trace.DefaultTrace.TraceSource.Listeners.Remove(defaultTraceListener);
+                }
+            }
         }
 
         internal virtual async Task<ConsistencyLevel> GetAccountConsistencyLevelAsync()
@@ -1201,7 +1234,25 @@ namespace Microsoft.Azure.Cosmos
 
         private int IncrementNumberOfClientsCreated()
         {
+            this.IncrementNumberOfActiveClients();
+
             return Interlocked.Increment(ref numberOfClientsCreated);
+        }
+
+        private int IncrementNumberOfActiveClients()
+        {
+            return Interlocked.Increment(ref NumberOfActiveClients);
+        }
+
+        private int DecrementNumberOfActiveClients()
+        {
+            // In case dispose is called multiple times. Check if at least 1 active client is there
+            if (NumberOfActiveClients > 0)
+            {
+                return Interlocked.Decrement(ref NumberOfActiveClients);
+            }
+
+            return 0;
         }
 
         private async Task InitializeContainerAsync(string databaseId, string containerId, CancellationToken cancellationToken = default)
@@ -1249,18 +1300,22 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="disposing">True if disposing</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (!this.isDisposed)
+            lock (this.disposedLock)
             {
-                this.DisposedDateTimeUtc = DateTime.UtcNow;
-
-                if (disposing)
+                if (this.isDisposed == true)
                 {
-                    this.ClientContext.Dispose();
-                    this.Telemetry?.Dispose();
+                    return;
                 }
-
                 this.isDisposed = true;
             }
+
+            this.DisposedDateTimeUtc = DateTime.UtcNow;
+
+            if (disposing)
+            {
+                this.ClientContext.Dispose();
+                this.DecrementNumberOfActiveClients();
+            }   
         }
     }
 }

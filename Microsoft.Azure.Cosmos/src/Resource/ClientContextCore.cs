@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -111,17 +112,28 @@ namespace Microsoft.Azure.Cosmos
             ClientTelemetry telemetry = null;
             if (connectionPolicy.EnableClientTelemetry)
             {
-                telemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
-                     documentClient: documentClient,
-                     userAgent: connectionPolicy.UserAgentContainer.UserAgent,
-                     connectionMode: connectionPolicy.ConnectionMode,
-                     authorizationTokenProvider: cosmosClient.AuthorizationTokenProvider,
-                     diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
-                     preferredRegions: clientOptions.ApplicationPreferredRegions);
+                try
+                {
+                    telemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
+                        clientId: cosmosClient.Id,
+                        documentClient: documentClient,
+                        userAgent: connectionPolicy.UserAgentContainer.UserAgent,
+                        connectionMode: connectionPolicy.ConnectionMode,
+                        authorizationTokenProvider: cosmosClient.AuthorizationTokenProvider,
+                        diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
+                        preferredRegions: clientOptions.ApplicationPreferredRegions);
+
+                } 
+                catch (Exception ex)
+                {
+                    DefaultTrace.TraceInformation($"Error While starting Telemetry Job : {ex.Message}. Hence disabling Client Telemetry");
+                    connectionPolicy.EnableClientTelemetry = false;
+                }
+               
             } 
             else
             {
-                DefaultTrace.TraceInformation("Telemetry Disabled.");
+                DefaultTrace.TraceInformation("Client Telemetry Disabled.");
             }
 
             if (requestInvokerHandler == null)
@@ -216,6 +228,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
+            Func<TResult, OpenTelemetryResponse> openTelemetry = null,
             TraceComponent traceComponent = TraceComponent.Transport,
             Tracing.TraceLevel traceLevel = Tracing.TraceLevel.Info)
         {
@@ -223,11 +236,13 @@ namespace Microsoft.Azure.Cosmos
                 this.OperationHelperWithRootTraceAsync(operationName, 
                                                        requestOptions, 
                                                        task,
+                                                       openTelemetry,
                                                        traceComponent,
                                                        traceLevel) :
                 this.OperationHelperWithRootTraceWithSynchronizationContextAsync(operationName, 
                                                                   requestOptions, 
                                                                   task,
+                                                                  openTelemetry,
                                                                   traceComponent,
                                                                   traceLevel);
         }
@@ -236,6 +251,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
+            Func<TResult, OpenTelemetryResponse> openTelemetry,
             TraceComponent traceComponent,
             Tracing.TraceLevel traceLevel)
         {
@@ -247,7 +263,9 @@ namespace Microsoft.Azure.Cosmos
 
                 return await this.RunWithDiagnosticsHelperAsync(
                     trace,
-                    task);
+                    task,
+                    openTelemetry,
+                    operationName);
             }
         }
 
@@ -255,6 +273,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
+            Func<TResult, OpenTelemetryResponse> openTelemetry,
             TraceComponent traceComponent,
             Tracing.TraceLevel traceLevel)
         {
@@ -273,7 +292,9 @@ namespace Microsoft.Azure.Cosmos
 
                     return await this.RunWithDiagnosticsHelperAsync(
                         trace,
-                        task);
+                        task,
+                        openTelemetry,
+                        operationName);
                 }
             });
         }
@@ -436,9 +457,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (disposing)
                 {
+                    this.telemetry?.Dispose();
                     this.batchExecutorCache.Dispose();
                     this.DocumentClient.Dispose();
-                    this.telemetry?.Dispose();
                 }
 
                 this.isDisposed = true;
@@ -447,20 +468,32 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<TResult> RunWithDiagnosticsHelperAsync<TResult>(
             ITrace trace,
-            Func<ITrace, Task<TResult>> task)
+            Func<ITrace, Task<TResult>> task,
+            Func<TResult, OpenTelemetryResponse> openTelemetry,
+            string operationName)
         {
+            using (OpenTelemetryCoreRecorder recorder = OpenTelemetryRecorderFactory.CreateRecorder(operationName))
             using (new ActivityScope(Guid.NewGuid()))
             {
                 try
                 {
-                    return await task(trace).ConfigureAwait(false);
+                    TResult result = await task(trace).ConfigureAwait(false);
+                    if (openTelemetry != null && recorder.IsEnabled)
+                    {
+                        OpenTelemetryResponse response = openTelemetry(result);
+                        recorder.Record(response);
+                    }
+
+                    return result;
                 }
                 catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                 {
+                    recorder.MarkFailed(oe);
                     throw new CosmosOperationCanceledException(oe, trace);
                 }
                 catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
                 {
+                    recorder.MarkFailed(objectDisposed);
                     throw new CosmosObjectDisposedException(
                         objectDisposed, 
                         this.client, 
@@ -468,6 +501,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
                 {
+                    recorder.MarkFailed(nullRefException);
                     throw new CosmosNullReferenceException(
                         nullRefException,
                         trace);

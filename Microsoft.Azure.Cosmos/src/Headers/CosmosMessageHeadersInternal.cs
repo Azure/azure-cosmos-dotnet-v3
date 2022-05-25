@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
-    internal abstract class CosmosMessageHeadersInternal : INameValueCollection
+    internal abstract class CosmosMessageHeadersInternal
     {
         public virtual string Authorization
         {
@@ -141,6 +141,44 @@ namespace Microsoft.Azure.Cosmos
             set => this.SetProperty(HttpConstants.HttpHeaders.PageSize, value);
         }
 
+        public virtual string ConsistencyLevel
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.ConsistencyLevel);
+            set => this.SetProperty(HttpConstants.HttpHeaders.ConsistencyLevel, value);
+        }
+
+        public virtual string SDKSupportedCapabilities
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.SDKSupportedCapabilities);
+            set => this.SetProperty(HttpConstants.HttpHeaders.SDKSupportedCapabilities, value);
+        }
+
+        public virtual string ContentSerializationFormat
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.ContentSerializationFormat);
+            set => this.SetProperty(HttpConstants.HttpHeaders.ContentSerializationFormat, value);
+        }
+
+        public virtual string ReadFeedKeyType
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.ReadFeedKeyType);
+            set => this.SetProperty(HttpConstants.HttpHeaders.ReadFeedKeyType, value);
+        }
+
+        public virtual string StartEpk
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.StartEpk);
+            set => this.SetProperty(HttpConstants.HttpHeaders.StartEpk, value);
+        }
+
+        public virtual string EndEpk
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.EndEpk);
+            set => this.SetProperty(HttpConstants.HttpHeaders.EndEpk, value);
+        }
+
+        public abstract INameValueCollection INameValueCollection { get; }
+
         public virtual string this[string headerName] 
         {
             get
@@ -170,17 +208,9 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract string[] AllKeys();
 
-        public abstract void Clear();
-
         public abstract int Count();
 
-        public abstract INameValueCollection Clone();
-
         public abstract string[] GetValues(string key);
-
-        public abstract IEnumerable<string> Keys();
-
-        public abstract NameValueCollection ToNameValueCollection();
 
         protected void SetProperty(
            string headerName,
@@ -244,11 +274,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.Set(key, collection[key]);
             }
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return this.GetEnumerator();
         }
     }
 }

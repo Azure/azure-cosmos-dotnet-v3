@@ -1,0 +1,74 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter on Method value]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NumericField == DisplayClass.ambientContext.MethodAccess()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["NumericField"] = 1)]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter on Field value]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NumericField == DisplayClass.ambientContext.FieldAccess))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["NumericField"] = 2)]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter on Property value]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NumericField == DisplayClass.ambientContext.PropertyAccess))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["NumericField"] = 3)]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter on Static Field value]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NumericField == AmbientContextObject.StaticFieldAccess))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["NumericField"] = 4)]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter on Static Property value]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NumericField == AmbientContextObject.StaticPropertyAccess))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["NumericField"] = 5)]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter on Const value]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NumericField == 6))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["NumericField"] = 6)]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

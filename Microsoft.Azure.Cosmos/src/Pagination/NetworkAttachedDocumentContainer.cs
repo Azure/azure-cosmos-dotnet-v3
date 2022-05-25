@@ -33,10 +33,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
         private readonly ChangeFeedRequestOptions changeFeedRequestOptions;
         private readonly string resourceLink;
         private readonly ResourceType resourceType;
+        private readonly Guid correlatedActivityId;
 
         public NetworkAttachedDocumentContainer(
             ContainerInternal container,
             CosmosQueryClient cosmosQueryClient,
+            Guid correlatedActivityId,
             QueryRequestOptions queryRequestOptions = null,
             ChangeFeedRequestOptions changeFeedRequestOptions = null,
             string resourceLink = null,
@@ -48,6 +50,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             this.changeFeedRequestOptions = changeFeedRequestOptions;
             this.resourceLink = resourceLink ?? this.container.LinkUri;
             this.resourceType = resourceType;
+            this.correlatedActivityId = correlatedActivityId;
         }
 
         public Task<TryCatch> MonadicSplitAsync(
@@ -189,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                     if (readFeedPaginationOptions.JsonSerializationFormat.HasValue)
                     {
-                        request.Headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = readFeedPaginationOptions.JsonSerializationFormat.Value.ToContentSerializationFormatString();
+                        request.Headers.ContentSerializationFormat = readFeedPaginationOptions.JsonSerializationFormat.Value.ToContentSerializationFormatString();
                     }
 
                     foreach (KeyValuePair<string, string> kvp in readFeedPaginationOptions.AdditionalHeaders)
@@ -257,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 this.resourceLink,
                 this.resourceType,
                 Documents.OperationType.Query,
-                Guid.NewGuid(),
+                this.correlatedActivityId,
                 feedRangeState.FeedRange,
                 queryRequestOptions,
                 sqlQuerySpec,
@@ -293,7 +296,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 {
                     if (changeFeedPaginationOptions.PageSizeLimit.HasValue)
                     {
-                        request.Headers[HttpConstants.HttpHeaders.PageSize] = changeFeedPaginationOptions.PageSizeLimit.Value.ToString();
+                        request.Headers.PageSize = changeFeedPaginationOptions.PageSizeLimit.Value.ToString();
                     }
 
                     feedRangeState.State.Accept(ChangeFeedStateRequestMessagePopulator.Singleton, request);
@@ -302,7 +305,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                     if (changeFeedPaginationOptions.JsonSerializationFormat.HasValue)
                     {
-                        request.Headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = changeFeedPaginationOptions.JsonSerializationFormat.Value.ToContentSerializationFormatString();
+                        request.Headers.ContentSerializationFormat = changeFeedPaginationOptions.JsonSerializationFormat.Value.ToContentSerializationFormatString();
                     }
 
                     foreach (KeyValuePair<string, string> kvp in changeFeedPaginationOptions.AdditionalHeaders)

@@ -79,6 +79,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(
             SqlQuerySpec sqlQuerySpec,
+            ResourceType resourceType,
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
@@ -87,8 +88,20 @@ namespace Microsoft.Azure.Cosmos
             bool allowDCount,
             CancellationToken cancellationToken)
         {
+            string queryString = null;
+            if (sqlQuerySpec != null)
+            {
+                using (Stream stream = this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType))
+                {
+                    using (StreamReader reader = new StreamReader(stream))
+                    {
+                        queryString = reader.ReadToEnd();
+                    }
+                }
+            }
+            
             return (await this.documentClient.QueryPartitionProvider).TryGetPartitionedQueryExecutionInfo(
-                querySpec: sqlQuerySpec,
+                querySpecJsonString: queryString,
                 partitionKeyDefinition: partitionKeyDefinition,
                 requireFormattableOrderByQuery: requireFormattableOrderByQuery,
                 isContinuationExpected: isContinuationExpected,
@@ -131,6 +144,7 @@ namespace Microsoft.Azure.Cosmos
                         continuationToken);
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
+                    cosmosRequestMessage.Headers.Add(WFConstants.BackendHeaders.CorrelatedActivityId, clientQueryCorrelationId.ToString());
                 },
                 trace: trace,
                 cancellationToken: cancellationToken);
@@ -149,6 +163,7 @@ namespace Microsoft.Azure.Cosmos
             SqlQuerySpec sqlQuerySpec,
             PartitionKey? partitionKey,
             string supportedQueryFeatures,
+            Guid clientQueryCorrelationId,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -167,6 +182,7 @@ namespace Microsoft.Azure.Cosmos
                     requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQueryPlanRequest, bool.TrueString);
                     requestMessage.Headers.Add(HttpConstants.HttpHeaders.SupportedQueryFeatures, supportedQueryFeatures);
                     requestMessage.Headers.Add(HttpConstants.HttpHeaders.QueryVersion, new Version(major: 1, minor: 0).ToString());
+                    requestMessage.Headers.Add(WFConstants.BackendHeaders.CorrelatedActivityId, clientQueryCorrelationId.ToString());
                     requestMessage.UseGatewayMode = true;
                 },
                 trace: trace,
