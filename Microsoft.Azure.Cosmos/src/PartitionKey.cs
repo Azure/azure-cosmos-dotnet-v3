@@ -39,11 +39,6 @@ namespace Microsoft.Azure.Cosmos
         public static readonly string SystemKeyPath = Documents.PartitionKey.SystemKeyPath;
 
         /// <summary>
-        /// The raw partition key value. This is used by Cosmos DB client side encryption SDK to encrypt partition key values.
-        /// </summary>
-        public object RawPartitionKeyValue { get; }
-
-        /// <summary>
         /// Gets the value provided at initialization.
         /// </summary>
         internal PartitionKeyInternal InternalKey { get; }
@@ -62,12 +57,10 @@ namespace Microsoft.Azure.Cosmos
             if (partitionKeyValue == null)
             {
                 this.InternalKey = PartitionKey.NullPartitionKeyInternal;
-                this.RawPartitionKeyValue = null;
             }
             else
             {
                 this.InternalKey = new Documents.PartitionKey(partitionKeyValue).InternalKey;
-                this.RawPartitionKeyValue = partitionKeyValue;
             }
             this.IsNone = false;
         }
@@ -80,7 +73,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.InternalKey = partitionKeyValue ? TruePartitionKeyInternal : FalsePartitionKeyInternal;
             this.IsNone = false;
-            this.RawPartitionKeyValue = partitionKeyValue;
         }
 
         /// <summary>
@@ -91,29 +83,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.InternalKey = new Documents.PartitionKey(partitionKeyValue).InternalKey;
             this.IsNone = false;
-            this.RawPartitionKeyValue = partitionKeyValue;
-        }
-
-        /// <summary>
-        /// Creates a new partition key value.
-        /// </summary>
-        /// <param name="partitionKeyValue">The value to use as partition key.</param>
-        public PartitionKey(float partitionKeyValue)
-        {
-            this.InternalKey = new Documents.PartitionKey(partitionKeyValue).InternalKey;
-            this.IsNone = false;
-            this.RawPartitionKeyValue = partitionKeyValue;
-        }
-
-        /// <summary>
-        /// Creates a new partition key value.
-        /// </summary>
-        /// <param name="partitionKeyValue">The value to use as partition key.</param>
-        public PartitionKey(long partitionKeyValue)
-        {
-            this.InternalKey = new Documents.PartitionKey(partitionKeyValue).InternalKey;
-            this.IsNone = false;
-            this.RawPartitionKeyValue = partitionKeyValue;
         }
 
         /// <summary>
@@ -124,7 +93,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.InternalKey = new Documents.PartitionKey(value).InternalKey;
             this.IsNone = false;
-            this.RawPartitionKeyValue = value;
         }
 
         /// <summary>
@@ -135,19 +103,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.InternalKey = partitionKeyInternal;
             this.IsNone = false;
-            this.RawPartitionKeyValue = partitionKeyInternal;
-        }
-
-        /// <summary>
-        /// Creates a new partition key value.
-        /// </summary>
-        /// <param name="partitionKeyInternal">The value to use as partition key.</param>
-        /// <param name="rawPartitionKeyValue"> Raw partition key values. </param>
-        internal PartitionKey(PartitionKeyInternal partitionKeyInternal, object rawPartitionKeyValue)
-        {
-            this.InternalKey = partitionKeyInternal;
-            this.IsNone = false;
-            this.RawPartitionKeyValue = rawPartitionKeyValue;
         }
 
         /// <summary>
@@ -159,7 +114,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.InternalKey = partitionKeyInternal;
             this.IsNone = isNone;
-            this.RawPartitionKeyValue = partitionKeyInternal;
         }
 
         /// <summary>
