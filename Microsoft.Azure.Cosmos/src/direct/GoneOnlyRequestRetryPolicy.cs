@@ -48,13 +48,15 @@ namespace Microsoft.Azure.Documents
                 return true;
             }
 
+            SubStatusCodes exceptionSubStatusCode = DocumentClientException.GetExceptionSubStatusForGoneRetryPolicy(exception);
+
             TimeSpan elapsed = this.durationTimer.Elapsed;
             if (elapsed >= this.retryTimeout)
             {
                 DefaultTrace.TraceInformation("GoneOnlyRequestRetryPolicy - timeout {0}, elapsed {1}", this.retryTimeout, elapsed);
 
                 this.durationTimer.Stop();
-                shouldRetryResult = ShouldRetryResult.NoRetry(new ServiceUnavailableException(exception));
+                shouldRetryResult = ShouldRetryResult.NoRetry(new ServiceUnavailableException(exception, exceptionSubStatusCode));
                 return true;
             }
 
@@ -71,7 +73,7 @@ namespace Microsoft.Azure.Documents
                     DefaultTrace.TraceInformation("GoneOnlyRequestRetryPolicy - timeout {0}, elapsed {1}, backoffTime {2}", this.retryTimeout, elapsed, backoffTime);
 
                     this.durationTimer.Stop();
-                    shouldRetryResult = ShouldRetryResult.NoRetry(new ServiceUnavailableException(exception));
+                    shouldRetryResult = ShouldRetryResult.NoRetry(new ServiceUnavailableException(exception, exceptionSubStatusCode));
                     return true;
                 }
             }

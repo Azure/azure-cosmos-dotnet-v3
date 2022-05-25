@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Documents
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// The base class for client exceptions in the Azure Cosmos DB service.
@@ -88,11 +89,6 @@ namespace Microsoft.Azure.Documents
         {
             this.responseHeaders = new StoreResponseNameValueCollection();
             this.StatusCode = statusCode;
-            this.substatus = substatusCode;
-            if (this.substatus.HasValue)
-            {
-                this.responseHeaders[WFConstants.BackendHeaders.SubStatus] = ((int)this.substatus).ToString(CultureInfo.InvariantCulture);
-            }
 
             if (responseHeaders != null)
             {
@@ -100,6 +96,13 @@ namespace Microsoft.Azure.Documents
                 {
                     this.responseHeaders.Add(header.Key, string.Join(",", header.Value));
                 }
+            }
+
+            // Update SubStatus in the headers if present
+            this.substatus = substatusCode;
+            if (this.substatus.HasValue)
+            {
+                this.responseHeaders[WFConstants.BackendHeaders.SubStatus] = ((int)this.substatus).ToString(CultureInfo.InvariantCulture);
             }
 
             // Stamp the ambient activity ID (if present) over the server's response ActivityId (if present).
@@ -133,8 +136,11 @@ namespace Microsoft.Azure.Documents
             Uri requestUri = null)
             : this(message, innerException, responseHeaders, statusCode, requestUri)
         {
-            this.substatus = substatusCode;
-            this.responseHeaders[WFConstants.BackendHeaders.SubStatus] = ((int)this.substatus).ToString(CultureInfo.InvariantCulture);
+            if (substatusCode.HasValue)
+            {
+                this.substatus = substatusCode;
+                this.responseHeaders[WFConstants.BackendHeaders.SubStatus] = ((int)this.substatus).ToString(CultureInfo.InvariantCulture);
+            }
         }
 
         internal DocumentClientException(string message,
@@ -542,6 +548,37 @@ namespace Microsoft.Azure.Documents
             }
 
             return this.substatus != null ? this.substatus.Value : SubStatusCodes.Unknown;
+        }
+
+        internal static SubStatusCodes GetExceptionSubStatusForGoneRetryPolicy(Exception exception)
+        {
+            SubStatusCodes exceptionSubStatus = SubStatusCodes.Unknown;
+            if (exception is DocumentClientException dce)
+            {
+                // convert known 410 substatus codes to specific 503 substatus codes.
+                if (dce is PartitionIsMigratingException)
+                {
+                    exceptionSubStatus = SubStatusCodes.Server_CompletingPartitionMigrationExceededRetryLimit;
+                }
+                else if (dce is InvalidPartitionException)
+                {
+                    exceptionSubStatus = SubStatusCodes.Server_NameCacheIsStaleExceededRetryLimit;
+                }
+                else if (dce is PartitionKeyRangeIsSplittingException)
+                {
+                    exceptionSubStatus = SubStatusCodes.Server_CompletingSplitExceededRetryLimit;
+                }
+                else if (dce is PartitionKeyRangeGoneException)
+                {
+                    exceptionSubStatus = SubStatusCodes.Server_PartitionKeyRangeGoneExceededRetryLimit;
+                }
+                else
+                {
+                    exceptionSubStatus = dce.GetSubStatus();
+                }
+            }
+
+            return exceptionSubStatus;
         }
 
         private static string SerializeHTTPResponseHeaders(INameValueCollection responseHeaders)

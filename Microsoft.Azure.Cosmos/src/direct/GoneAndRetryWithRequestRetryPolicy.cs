@@ -50,6 +50,7 @@ namespace Microsoft.Azure.Documents
         private int? currentBackoffMillisecondsForRetryWith;
 
         private RetryWithException lastRetryWithException = null;
+        private Exception previousException = null; // Used in case of timeouts during retries
 
         private readonly int waitTimeInMilliseconds;
         private readonly int waitTimeInMillisecondsForRetryWith;
@@ -133,7 +134,7 @@ namespace Microsoft.Azure.Documents
                 {
                     DefaultTrace.TraceWarning(
                         "The GoneAndRetryWithRequestRetryPolicy is configured with disableRetryWithPolicy to true. Retries on 449(RetryWith) exceptions has been disabled. This is by design to allow users to handle the exception: {0}", 
-                        exception.ToStringWithData());
+                        exception.ToStringWithMessageAndData());
                     this.durationTimer.Stop();
                     shouldRetryResult = ShouldRetryResult.NoRetry();
                     return true;
@@ -179,6 +180,15 @@ namespace Microsoft.Azure.Documents
                         else
                         {
                             DefaultTrace.TraceError("{0}. Will fail the request. {1}", message, exception?.ToStringWithData() ?? response?.StatusCode.ToString());
+                            SubStatusCodes exceptionSubStatus = DocumentClientException.GetExceptionSubStatusForGoneRetryPolicy(exception);
+                            if (exceptionSubStatus == SubStatusCodes.TimeoutGenerated410)
+                            {
+                                // If it was a gone exception becuase of a timeout (thrown when the lower layers themselves are retrying like in the StoreReader), take the substatus of the previous exception
+                                if (this.previousException != null)
+                                {
+                                    exceptionSubStatus = DocumentClientException.GetExceptionSubStatusForGoneRetryPolicy(this.previousException);
+                                }
+                            }
 
                             if (this.detectConnectivityIssues &&
                                 request.RequestContext.ClientRequestStatistics != null &&
@@ -190,7 +200,8 @@ namespace Microsoft.Azure.Documents
                                     RMResources.ClientCpuOverload,
                                     request.RequestContext.ClientRequestStatistics.FailedReplicas.Count,
                                     request.RequestContext.ClientRequestStatistics.RegionsContacted.Count == 0 ?
-                                        1 : request.RequestContext.ClientRequestStatistics.RegionsContacted.Count));
+                                        1 : request.RequestContext.ClientRequestStatistics.RegionsContacted.Count),
+                                SubStatusCodes.Client_CPUOverload);
                             }
                             else if (this.detectConnectivityIssues &&
                                     request.RequestContext.ClientRequestStatistics != null &&
@@ -201,7 +212,8 @@ namespace Microsoft.Azure.Documents
                                     RMResources.ClientCpuThreadStarvation,
                                     request.RequestContext.ClientRequestStatistics.FailedReplicas.Count,
                                     request.RequestContext.ClientRequestStatistics.RegionsContacted.Count == 0 ?
-                                        1 : request.RequestContext.ClientRequestStatistics.RegionsContacted.Count));
+                                        1 : request.RequestContext.ClientRequestStatistics.RegionsContacted.Count),
+                                SubStatusCodes.Client_ThreadStarvation);
                             }
                             else if (this.detectConnectivityIssues &&
                                     request.RequestContext.ClientRequestStatistics != null &&
@@ -213,11 +225,12 @@ namespace Microsoft.Azure.Documents
                                         request.RequestContext.ClientRequestStatistics.FailedReplicas.Count,
                                         request.RequestContext.ClientRequestStatistics.RegionsContacted.Count == 0 ?
                                             1 : request.RequestContext.ClientRequestStatistics.RegionsContacted.Count),
-                                    exception);
+                                    exception,
+                                    exceptionSubStatus);
                             }
                             else
                             {
-                                exceptionToThrow = new ServiceUnavailableException(exception);
+                                exceptionToThrow = new ServiceUnavailableException(exception, exceptionSubStatus);
                             }
                         }
                     }
@@ -292,8 +305,9 @@ namespace Microsoft.Azure.Documents
                 if (this.attemptCountInvalidPartition++ > 2)
                 {
                     // for third InvalidPartitionException, stop retrying.
+                    SubStatusCodes exceptionSubStatusCode = DocumentClientException.GetExceptionSubStatusForGoneRetryPolicy(exception);
                     DefaultTrace.TraceCritical("Received second InvalidPartitionException after backoff/retry. Will fail the request. {0}", exception?.ToStringWithData() ?? response?.StatusCode.ToString());
-                    shouldRetryResult = ShouldRetryResult.NoRetry(new ServiceUnavailableException(exception));
+                    shouldRetryResult = ShouldRetryResult.NoRetry(new ServiceUnavailableException(exception, exceptionSubStatusCode));
                     return true;
                 }
 
@@ -333,6 +347,7 @@ namespace Microsoft.Azure.Documents
                 exception?.ToStringWithData() ?? response?.StatusCode.ToString());
 
             shouldRetryResult = ShouldRetryResult.RetryAfter(backoffTime);
+            this.previousException = exception;
 
             // Update context
             this.ExecuteContext.ForceRefresh = forceRefreshAddressCache;
@@ -352,7 +367,8 @@ namespace Microsoft.Azure.Documents
         private static bool IsBaseGone(TResponse response, Exception exception)
         {
             return exception is GoneException 
-                || (response?.StatusCode == HttpStatusCode.Gone && response?.SubStatusCode == SubStatusCodes.Unknown);
+                || (response?.StatusCode == HttpStatusCode.Gone && 
+                   (response?.SubStatusCode == SubStatusCodes.Unknown || (response != null && response.SubStatusCode.IsSDKGeneratedSubStatus())));
         }
 
         private static bool IsPartitionIsMigrating(TResponse response, Exception exception)

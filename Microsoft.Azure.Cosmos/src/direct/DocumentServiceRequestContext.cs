@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Collections.Generic;
+    using System.Net;
     using Microsoft.Azure.Documents.Routing;
 
     internal sealed class DocumentServiceRequestContext
@@ -15,6 +16,13 @@ namespace Microsoft.Azure.Documents
         public RequestChargeTracker RequestChargeTracker { get; set; }
 
         public bool ForceRefreshAddressCache { get; set; }
+
+        /// <summary>
+        /// PartitionAddressInformation hash code is used in the cache
+        /// refresh scenarios to avoid doing a refresh when another
+        /// request already completed one.
+        /// </summary>
+        public int LastPartitionAddressInformationHashCode { get; set; }
 
         public StoreResult QuorumSelectedStoreResponse { get; set; }
 
@@ -101,6 +109,30 @@ namespace Microsoft.Azure.Documents
         public bool IsRetry { get; set; }
 
         /// <summary>
+        /// Set of all failed enpoints for a DSR. Used for prioritizing replica selection
+        /// </summary>
+        public Lazy<HashSet<TransportAddressUri>> FailedEndpoints { get; private set; }
+
+        public DocumentServiceRequestContext()
+        {
+            this.FailedEndpoints = new Lazy<HashSet<TransportAddressUri>>();
+        }
+
+        public void AddToFailedEndpoints(Exception storeException, TransportAddressUri targetUri)
+        {
+            // Add to the FailedEnpoints hashset only for 408, 410, >= 500 to avoid the respective replica on retries
+            if (storeException is DocumentClientException dce)
+            {
+                if (dce.StatusCode == HttpStatusCode.Gone ||
+                    dce.StatusCode == HttpStatusCode.RequestTimeout ||
+                    (int)dce.StatusCode >= 500)
+                {
+                    this.FailedEndpoints.Value.Add(targetUri);
+                }
+            }
+        }
+
+        /// <summary>
         /// Sets routing directive for <see cref="GlobalEndpointManager"/> to resolve
         /// the request to endpoint based on location index
         /// </summary>
@@ -171,6 +203,8 @@ namespace Microsoft.Azure.Documents
             requestContext.EnsureCollectionExistsCheck = this.EnsureCollectionExistsCheck;
             requestContext.EnableConnectionStateListener = this.EnableConnectionStateListener;
             requestContext.LocalRegionRequest = this.LocalRegionRequest;
+            requestContext.FailedEndpoints = this.FailedEndpoints;
+            requestContext.LastPartitionAddressInformationHashCode = this.LastPartitionAddressInformationHashCode;
 
             return requestContext;
         }

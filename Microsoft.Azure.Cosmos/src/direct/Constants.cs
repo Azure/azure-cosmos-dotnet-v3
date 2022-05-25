@@ -161,6 +161,7 @@ namespace Microsoft.Azure.Documents
             public const string SubRegionId = "subRegionId";
             public const string InstanceSize = "instanceSize";
             public const string Status = "status";
+            public const string IsMerged = "merged";
             public const string RequestedStatus = "requestedStatus";
             public const string ExtendedStatus = "extendedStatus";
             public const string ExtendedResult = "extendedResult";
@@ -219,6 +220,8 @@ namespace Microsoft.Azure.Documents
             public const string DatabaseAccountOfferType = "databaseAccountOfferType";
             public const string Type = "type";
             public const string TargetType = "targetType";
+            public const string TargetSku = "targetSku";
+            public const string TargetTier = "targetTier";
             public const string Error = "error";
             public const string State = "state";
             public const string RegistrationDate = "registrationDate";
@@ -280,6 +283,8 @@ namespace Microsoft.Azure.Documents
             public const string EnableBinaryEncodingOfContent = "enableBinaryEncodingOfContent";
             public const string SkipMigrateToComputeDatabaseCollectionChecks = "skipMigrateToComputeDatabaseCollectionChecks";
             public const string UseApiOperationHandler = "UseApiOperationHandler";
+            public const string AccountKeyManagementType = "accountKeyManagementType";
+            public const string UserName = "userName";
 
             public const string MasterValue = "masterValue";
             public const string SecondaryValue = "secondaryValue";
@@ -510,7 +515,6 @@ namespace Microsoft.Azure.Documents
             public const string PeriodicModeProperties = "periodicModeProperties";
             public const string ContinuousModeProperties = "continuousModeProperties";
             public const string BackupPolicyMigrationState = "migrationState";
-            public const string AllowRevokedAccountToBeForceDeleted = "allowRevokedAccountToBeForceDeleted";
 
             // PITR Migration
             public const string PitrMigrationState = "pitrMigrationState";
@@ -522,6 +526,7 @@ namespace Microsoft.Azure.Documents
             public const string LastPitrStandardOptInTimestamp = "lastPitrStandardOptInTimestamp";
             public const string LastPitrBasicOptInTimestamp = "lastPitrBasicOptInTimestamp";
             public const string PitrMigrationStartTimestamp = "startTime";
+            public const string TargetPitrSku = "targetPitrSku";
 
             // Backup Storage Accounts
             public const string BackupStorageAccountsEnabled = "BackupStorageAccountsEnabled";
@@ -533,6 +538,8 @@ namespace Microsoft.Azure.Documents
             public const string EnableDedicatedStorageAccounts = "enableDedicatedStorageAccounts";
             public const string EnableSystemSnapshots = "enableSystemSnapshots";
             public const string BackupStorageRedundancies = "backupStorageRedundancies";
+            public const string StorageAccountName = "storageAccountName";
+            public const string StorageAccountLocation = "storageAccountLocation";
 
             // Restore Policy
             public const string RestorePolicy = "restorePolicy";
@@ -559,6 +566,7 @@ namespace Microsoft.Azure.Documents
             public const string RestoreWithSourceGlobalDatabaseAccountInstanceId = "restoreWithSourceGlobalDatabaseAccountInstanceId";
             public const string DatabasesToRestore = "databasesToRestore";
             public const string TableNames = "tableNames";
+            public const string IsInAccountRestoreCapabilityEnabled = "isInAccountRestoreCapabilityEnabled";
 
             // Backup Hold
             public const string BackupHoldTimeInDays = "backupHoldTimeInDays";
@@ -796,6 +804,7 @@ namespace Microsoft.Azure.Documents
             public const string AutopilotThroughputPolicyIncrementPercent = "incrementPercent";
 
             public const string PhysicalPartitionThroughputInfo = "physicalPartitionThroughputInfo";
+            public const string PhysicalPartitionThroughputInfoCollection = "physicalPartitionThroughputInfoCollection";
             public const string PhysicalPartitionId = "id";
             public const string PhysicalPartitionThroughput = "throughput";
             public const string PhysicalPartitionStorageInKB = "storageInKB";
@@ -803,6 +812,7 @@ namespace Microsoft.Azure.Documents
             public const string EnableAdaptiveRu = "enableAdaptiveRU";
 
             public const string EnablePartitionMerge = "enablePartitionMerge";
+            public const string IsDryRun = "IsDryRun";
 
             // EnforceRUPerGB
             public const string EnforceRUPerGB = "enforceRUPerGB";
@@ -816,6 +826,7 @@ namespace Microsoft.Azure.Documents
             public const string IsParallel = "isParallel";
             public const string SasAuthEnabled = "sasAuthEnabled";
             public const string AnalyticsSubDomain = ".analytics.cosmos.";
+            public const string DocumentsSubDomain = ".documents";
 
             // GeoDrReplicaInformationResource
             public const string CurrentProgress = "currentProgress";
@@ -909,7 +920,7 @@ namespace Microsoft.Azure.Documents
             // Property to check if point in time restore is enabled for a global database account
             public const string PitrEnabled = "pitrEnabled";
             public const string PitrSku = "pitrSku";
-            public const string ContinuousBackupSku = "sku";
+            public const string ContinuousBackupTier = "tier";
             public const string EnablePitrMigration = "enablePITRMigration";
             public const string EnableLogstoreHeadStartSequenceVector = "enableLogStoreHeadStartSequenceVector";
 
@@ -929,6 +940,7 @@ namespace Microsoft.Azure.Documents
             public const string EnableApiTypeCheck = "enableApiTypeCheck";
             public const string EnabledApiTypesOverride = "enabledApiTypesOverride";
 
+            public const string ForceDisableFailover = "forceDisableFailover";
             public const string EnableAutomaticFailover = "enableAutomaticFailover";
             public const string SkipGracefulFailoverAttempt = "skipGracefulFailoverAttempt";
             public const string ForceUngracefulFailover = "forceUngracefulFailover";
@@ -1113,6 +1125,7 @@ namespace Microsoft.Azure.Documents
             public const string RetentionPolicy = "retentionPolicy";
             public const string Metrics = "metrics";
             public const string Logs = "logs";
+            public const string CategoryGroup = "categoryGroup";
 
             // Atp(advanced threat protection) Settings
             public const string IsAtpEnabled = "isEnabled";
@@ -1397,11 +1410,12 @@ namespace Microsoft.Azure.Documents
             // Compute MongoClient for RP
             public const string DisableMongoClientWorkflows = "disableMongoClientWorkflows";
 
-            // Enable customer managed key 
+            // Enable customer managed key
             public const string ByokStatus = "byokStatus";
             public const string ByokConfig = "byokConfig";
             public const string EnableBYOKOnExistingCollections = "enableBYOKOnExistingCollections";
             public const string DisableByokReEncryptor = "disableByokReEncryptor";
+            public const string DataEncryptionState = "dataEncryptionState";
 
             // LocationResource
             public const string DeploymentBatch = "deploymentBatch";
@@ -1417,7 +1431,12 @@ namespace Microsoft.Azure.Documents
             public const string HealthServiceName = "healthServiceName";
             public const string SupportsAvailabilityZone = "supportsAvailabilityZone";
             public const string AvailabilityZonesReady = "availabilityZonesReady";
+            public const string ActiveSubRegionId = "activeSubRegionId";
             public const string IsResidencyRestricted = "isResidencyRestricted";
+            public const string RegionalRPLocationForBuildoutStoreFailover = "regionalRPLocationForBuildoutStoreFailover";
+            public const string ManagementStoreName = "managementStoreName";
+            public const string MgmtStoreSubscriptionId = "mgmtStoreSubscriptionId";
+            public const string MgmtStoreResourceGroup = "mgmtStoreResourceGroup";
 
             // This is read by Compute.
             public const string EnablePartitionLevelFailover = "enablePartitionLevelFailover";
@@ -1432,6 +1451,11 @@ namespace Microsoft.Azure.Documents
 
             // Mongo Partial Unique Indexes properties
             public const string EnableConditionalUniqueIndex = "enableConditionalUniqueIndex";
+            public const string EnableUniqueIndexReIndexing = "enableUniqueIndexReIndexing";
+            public const string GenerateUniqueIndexTermsIfUniqueKeyPolicyDiffer = "generateUniqueIndexTermsIfUniqueKeyPolicyDiffer";
+            public const string EnableUseLatestCollectionContent = "enableUseLatestCollectionContent";
+            public const string AllowUniqueIndexModificationOnMaster = "allowUniqueIndexModificationOnMaster";
+            public const string AllowUniqueIndexModificationWhenDataExists = "allowUniqueIndexModificationWhenDataExists";
 
             // UpgradeControlRule
             public const string RuleId = "ruleId";
@@ -1440,13 +1464,25 @@ namespace Microsoft.Azure.Documents
             public const string ActivePeriod = "activePeriod";
             public const string Justification = "justification";
             public const string AdditionalProperties = "additionalProperties";
+
+            // Purview-related properties
+            public const string PurviewEnabled = "purviewEnabled";
+
+            // TLS
+            public const string MinimumAllowedTLSProtocol = "minimumAllowedTLSProtocol";
+            public const string TLS10 = "TLS10";
+            public const string TLS11 = "TLS11";
+            public const string TLS12 = "TLS12";
+
+            // LogStore Storage Account Rollover Timestamp
+            public const string EarliestNextLogStoreStorageAccountKeyRolloverTime = "earliestNextLogStoreStorageAccountKeyRolloverTime";
         }
 
         public static class DocumentResourceExtendedProperties
         {
             public const string Tags = "Tags";
             public const string ResourceGroupName = "ResourceGroupName";
-            public const string SkipDNSUpdateOnFailureDuringFailover = "SkipDNSUpdateOnFailureDuringFailover";            
+            public const string SkipDNSUpdateOnFailureDuringFailover = "SkipDNSUpdateOnFailureDuringFailover";
         }
 
         public static class SnapshotProperties
@@ -1528,6 +1564,7 @@ namespace Microsoft.Azure.Documents
             public const string Package = "Package";
             public const string Application = "App";
             public const string CriContainerd = "CriContainerd";
+            public const string GrowShrink = "GrowShrink";
         }
 
         public static class TracesConstants
@@ -1669,7 +1706,7 @@ namespace Microsoft.Azure.Documents
 
             public const int PitrDefaultBackupIntervalInHours = 168; // Weekly full backups
             public const int PitrDefaultBackupRetentionIntervalInDays = 30;
-            public const int PitrBasicDefaultBackupRetentionIntervalInDays = 1;
+            public const int PitrBasicDefaultBackupRetentionIntervalInDays = 7;
 
             public const int DisableBackupHoldFeature = -1;
             public const string BackupHoldIndefinite = "0";
@@ -1717,6 +1754,7 @@ namespace Microsoft.Azure.Documents
             public const string WildcardDisabled = "wildcardDisabled";
 
             public const string FederatedClientId = "&FederatedClientId=";
+            public const string SourceInternalId = "&SourceInternalId=";
         }
 
         public static class LogStoreConstants

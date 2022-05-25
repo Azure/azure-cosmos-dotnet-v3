@@ -105,7 +105,10 @@ namespace Microsoft.Azure.Documents
             try
             {
                 ReadReplicaResult readQuorumResult = await this.ReadPrimaryInternalAsync(
-                    entity, requiresValidLsn, useSessionToken);
+                        entity, 
+                        requiresValidLsn, 
+                        useSessionToken, 
+                        isRetryAfterRefresh: false);
                 if (entity.RequestContext.PerformLocalRefreshOnGoneException &&
                     readQuorumResult.RetryWithForceRefresh &&
                     !entity.RequestContext.ForceRefreshAddressCache)
@@ -113,12 +116,16 @@ namespace Microsoft.Azure.Documents
                     entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
                     entity.RequestContext.ForceRefreshAddressCache = true;
-                    readQuorumResult = await this.ReadPrimaryInternalAsync(entity, requiresValidLsn, useSessionToken);
+                    readQuorumResult = await this.ReadPrimaryInternalAsync(
+                            entity, 
+                            requiresValidLsn, 
+                            useSessionToken,
+                            isRetryAfterRefresh: true);
                 }
 
                 if (readQuorumResult.Responses.Count == 0)
                 {
-                    throw new GoneException(RMResources.Gone);
+                    throw new GoneException(RMResources.Gone, SubStatusCodes.Server_NoValidStoreResponse);
                 }
 
                 return readQuorumResult.Responses[0];
@@ -205,9 +212,10 @@ namespace Microsoft.Azure.Documents
             bool hasCancellationException = false;
             Exception cancellationException = null;
             Exception exceptionToThrow = null;
+            SubStatusCodes subStatusCodeForException = SubStatusCodes.Unknown;
             IEnumerator<TransportAddressUri> uriEnumerator = this.addressEnumerator
                                                             .GetTransportAddresses(resolveApiResults, 
-                                                                                   entity.RequestContext.ClientRequestStatistics.FailedReplicas)
+                                                                                   entity.RequestContext.FailedEndpoints)
                                                             .GetEnumerator();
 
             // Loop until we have the read quorum number of valid responses or if we have read all the replicas
@@ -237,6 +245,12 @@ namespace Microsoft.Azure.Documents
                 {
                     exceptionToThrow = exception;
 
+                    // Get SubStatusCode
+                    if (exception is DocumentClientException documentClientException)
+                    {
+                        subStatusCodeForException = documentClientException.GetSubStatus();
+                    }
+
                     //All task exceptions are visited below.
                     if (exception is DocumentClientException dce && 
                         (dce.StatusCode == HttpStatusCode.NotFound
@@ -261,6 +275,12 @@ namespace Microsoft.Azure.Documents
                     Task<(StoreResponse response, DateTime endTime)> readTask = readTaskValuePair.Key;
                     (StoreResponse storeResponse, DateTime endTime) = readTask.Status == TaskStatus.RanToCompletion ? readTask.Result : (null, DateTime.UtcNow);
                     Exception storeException = readTask.Exception?.InnerException;
+                    TransportAddressUri targetUri = readTaskValuePair.Value.uri;
+
+                    if (storeException != null)
+                    {
+                        entity.RequestContext.AddToFailedEndpoints(storeException, targetUri);
+                    }
 
                     // IsCanceled can be true with storeException being null if the async call
                     // gets canceled before it gets scheduled.
@@ -270,8 +290,6 @@ namespace Microsoft.Azure.Documents
                         cancellationException ??= storeException;
                         continue;
                     }
-
-                    TransportAddressUri targetUri = readTaskValuePair.Value.uri;
 
                     StoreResult storeResult = StoreResult.CreateStoreResult(
                         storeResponse,
@@ -298,6 +316,11 @@ namespace Microsoft.Azure.Documents
                         readTaskValuePair.Value.startTime,
                         endTime);
 
+                    if (storeResult.Exception != null)
+                    {
+                        StoreResult.VerifyCanContinueOnException(storeResult.Exception);
+                    }
+
                     if (storeResult.IsValid)
                     {
                         if (requestSessionToken == null
@@ -309,16 +332,17 @@ namespace Microsoft.Azure.Documents
                     }
 
                     hasGoneException |= storeResult.StatusCode == StatusCodes.Gone && storeResult.SubStatusCode != SubStatusCodes.NameCacheIsStale;
-                }
 
-                if (responseResult.Count >= replicaCountToRead)
-                {
+                    // Perform address refresh in the background as soon as we hit a GoneException
                     if (hasGoneException && !entity.RequestContext.PerformedBackgroundAddressRefresh)
                     {
                         this.addressSelector.StartBackgroundAddressRefresh(entity);
                         entity.RequestContext.PerformedBackgroundAddressRefresh = true;
                     }
+                }
 
+                if (responseResult.Count >= replicaCountToRead)
+                {
                     return new ReadReplicaResult(false, responseResult);
                 }
 
@@ -337,7 +361,7 @@ namespace Microsoft.Azure.Documents
                     if (!entity.RequestContext.PerformLocalRefreshOnGoneException)
                     {
                         // If we are not supposed to act upon GoneExceptions here, just throw them
-                        throw new GoneException(exceptionToThrow);
+                        throw new GoneException(exceptionToThrow, subStatusCodeForException);
                     }
                     else if (!entity.RequestContext.ForceRefreshAddressCache)
                     {
@@ -361,7 +385,8 @@ namespace Microsoft.Azure.Documents
         private async Task<ReadReplicaResult> ReadPrimaryInternalAsync(
             DocumentServiceRequest entity,
             bool requiresValidLsn,
-            bool useSessionToken)
+            bool useSessionToken,
+            bool isRetryAfterRefresh)
         {
             entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
@@ -418,8 +443,21 @@ namespace Microsoft.Azure.Documents
 
             entity.RequestContext.RequestChargeTracker.AddCharge(storeResult.RequestCharge);
 
+            if (storeResult.Exception != null)
+            {
+                StoreResult.VerifyCanContinueOnException(storeResult.Exception);
+            }
+
             if (storeResult.StatusCode == StatusCodes.Gone && storeResult.SubStatusCode != SubStatusCodes.NameCacheIsStale)
             {
+                if (isRetryAfterRefresh ||
+                    !entity.RequestContext.PerformLocalRefreshOnGoneException ||
+                    entity.RequestContext.ForceRefreshAddressCache)
+                {
+                    // We can throw the exception if we have already performed an address refresh or if PerformLocalRefreshOnGoneException is false
+                    throw new GoneException(RMResources.Gone, storeResult.SubStatusCode);
+                }
+
                 return new ReadReplicaResult(true, new List<StoreResult>());
             }
 

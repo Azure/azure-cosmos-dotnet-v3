@@ -143,16 +143,16 @@
   </data>
   <data name="EnableMultipleWriteLocationsNotSupported" xml:space="preserve">
     <value>Cannot set EnableMultipleWriteLocations on this account type.</value>
-  </data>  
+  </data>
   <data name="PitrNotSupported" xml:space="preserve">
     <value>Pitr is not supported on this account type.</value>
-  </data>  
+  </data>
   <data name="DisableKeyBasedMetadataWriteAccessNotSupported" xml:space="preserve">
     <value>Cannot set DisableKeyBasedMetadataWriteAccess on this account type.</value>
-  </data>  
+  </data>
   <data name="MaterializedViewsNotSupported" xml:space="preserve">
     <value>MaterializedViews is not supported on this account type.</value>
-  </data>  
+  </data>
   <data name="FullFidelityChangeFeedNotSupported" xml:space="preserve">
     <value>Full Fidelity Change Feed is not supported on this account type.</value>
   </data>
@@ -167,13 +167,13 @@
   </data>
   <data name="VirtualNetworkFilterNotSupported" xml:space="preserve">
     <value>Cannot set VirtualNetworkFilter on this account type.</value>
-  </data>   
+  </data>
   <data name="ServerlessNotSupported" xml:space="preserve">
     <value>Serverless offer is not supported on this account type.</value>
-  </data>   
+  </data>
   <data name="IpRangeFilterNotSupported" xml:space="preserve">
     <value>Cannot set IpRangeFilter values on this account type.</value>
-  </data> 
+  </data>
   <data name="EndpointNotFound" xml:space="preserve">
     <value>Unable to retrieve address of endpoint '{0}' from the address '{1}'</value>
   </data>
@@ -316,7 +316,7 @@
     <value>The authorization token is not valid at the current time. Please create another token and retry (token start time: {0}, token expiry time: {1}, current server time: {2}).</value>
   </data>
   <data name="TooManyRequests" xml:space="preserve">
-    <value>The request rate is too large. Please retry after sometime.</value>
+    <value>The request rate is too large. Please retry after sometime. Learn more: http://aka.ms/cosmosdb-error-429</value>
   </data>
   <data name="Unauthorized" xml:space="preserve">
     <value>Unable to authenticate the request. The request requires valid user authentication.</value>
@@ -1120,6 +1120,12 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="CannotRemoveSchemaPolicyFromContainer" xml:space="preserve">
     <value>The container replace request is not allowed since it removes the schema policy from the container {0}.</value>
   </data>
+  <data name="CannotReplaceCassandraConflictPolicyFromContainer" xml:space="preserve">
+    <value>The container replace request is not allowed since it removes the Cassandra conflict resolution policy from the container {0}.</value>
+  </data>
+  <data name="CannotCreateContainerWithoutCassandraConflictPolicy" xml:space="preserve">
+    <value>The container create request is not allowed since it does not contain the Cassandra conflict resolution policy specified for the container {0}.</value>
+  </data>
   <data name="InvalidTypeSystemPolicy" xml:space="preserve">
     <value>Invalid type system '{0}' specified for container {1}.</value>
   </data>
@@ -1182,5 +1188,12 @@ If you would like to serve this query through continuation tokens, then please r
   </data>
   <data name="RbacMissingAction" xml:space="preserve">
     <value>Cannot authorize request since the [Action] to authorize was not found.</value>
+  </data>
+  <data name="SystemDatabaseAccountPitrEnabledNotSupported" xml:space="preserve">
+    <value>System database account {0} cannot be created with Continuous backup mode</value>
+    <comment>{0} = GlobalDatabaseAccountId</comment>
+  </data>
+  <data name="FailoverDisabled" xml:space="preserve">
+    <value>Cannot perform failover as it is disabled for the account.</value>
   </data>
 </root>

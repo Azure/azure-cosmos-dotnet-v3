@@ -922,21 +922,7 @@ namespace Microsoft.Azure.Documents
                             RMResources.Gone,
                             out responseHeaders);
 
-                        uint nSubStatus = 0;
-                        string valueSubStatus = responseHeaders.Get(WFConstants.BackendHeaders.SubStatus);
-                        if (!string.IsNullOrEmpty(valueSubStatus))
-                        {
-                            if (!uint.TryParse(valueSubStatus, NumberStyles.Integer, CultureInfo.InvariantCulture, out nSubStatus))
-                            {
-                                exception = new BadRequestException(
-                                    string.Format(CultureInfo.CurrentUICulture,
-                                        RMResources.ExceptionMessage,
-                                        string.IsNullOrEmpty(errorMessage) ? RMResources.BadRequest : errorMessage),
-                                    responseHeaders,
-                                    physicalAddress);
-                                break;
-                            }
-                        }
+                        uint nSubStatus = TransportClient.GetExceptionSubStatus(responseHeaders, errorMessage, physicalAddress);
 
                         if ((SubStatusCodes)nSubStatus == SubStatusCodes.NameCacheIsStale)
                         {
@@ -987,6 +973,7 @@ namespace Microsoft.Azure.Documents
                                         RMResources.ExceptionMessage,
                                         RMResources.Gone),
                                     responseHeaders,
+                                    (nSubStatus == 0) ? SubStatusCodes.ServerGenerated410 : null, // if substatus is not zero we pass null because the headers will have the correct value 
                                     physicalAddress);
                             break;
                         }
@@ -1047,11 +1034,13 @@ namespace Microsoft.Azure.Documents
 
                 case StatusCodes.ServiceUnavailable:
                     errorMessage = TransportClient.GetErrorResponse(storeResponse, RMResources.ServiceUnavailable, out responseHeaders);
+                    uint substatus = TransportClient.GetExceptionSubStatus(responseHeaders, errorMessage, physicalAddress);
                     exception = new ServiceUnavailableException(
                         string.Format(CultureInfo.CurrentUICulture,
                             RMResources.ExceptionMessage,
                             errorMessage),
                         responseHeaders,
+                        (substatus == 0) ? SubStatusCodes.ServerGenerated503 : null, // if substatus is not zero we pass null because the headers will have the correct value 
                         physicalAddress);
                     break;
 
@@ -1203,6 +1192,31 @@ namespace Microsoft.Azure.Documents
         {
             DefaultTrace.TraceInformation(string.Format(CultureInfo.InvariantCulture, "Listener not found. Store Physical Address {0} ActivityId {1}",
                 physicalAddress, activityId));
+        }
+
+        protected static uint GetExceptionSubStatus(INameValueCollection responseHeaders, string errorMessage, Uri physicalAddress)
+        {
+            uint nSubStatus = 0;
+            if (responseHeaders == null)
+            {
+                return 0;
+            }
+
+            string valueSubStatus = responseHeaders.Get(WFConstants.BackendHeaders.SubStatus);
+            if (!string.IsNullOrEmpty(valueSubStatus))
+            {
+                if (!uint.TryParse(valueSubStatus, NumberStyles.Integer, CultureInfo.InvariantCulture, out nSubStatus))
+                {
+                    throw new BadRequestException(
+                        string.Format(CultureInfo.CurrentUICulture,
+                            RMResources.ExceptionMessage,
+                            string.IsNullOrEmpty(errorMessage) ? RMResources.BadRequest : errorMessage),
+                        responseHeaders,
+                        physicalAddress);
+                }
+            }
+
+            return nSubStatus;
         }
     }
 }

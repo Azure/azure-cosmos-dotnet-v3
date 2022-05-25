@@ -52,6 +52,7 @@ namespace Microsoft.Azure.Documents
         CrossPartitionQueryNotServable = 1004,
         ScriptCompileError = 0xFFFF,    // From ExecuteStoredProcedure.
         AnotherOfferReplaceOperationIsInProgress = 3205,
+        HttpListenerException = 1101,
 
         // 410: StatusCodeType_Gone: substatus
         NameCacheIsStale = 1000,
@@ -60,6 +61,9 @@ namespace Microsoft.Azure.Documents
         CompletingPartitionMigration = 1008,
         LeaseNotFound = 1022,
 
+        // 404: StatusCodeType_NotFound: substatus
+        PartitionMigratingCollectionDeleted = 1031,
+
         // 403: Forbidden Substatus.
         WriteForbidden = 3,
         ProvisionLimitReached = 1005,
@@ -67,6 +71,7 @@ namespace Microsoft.Azure.Documents
         RedundantCollectionPut = 1009,
         SharedThroughputDatabaseQuotaExceeded = 1010,
         SharedThroughputOfferGrowNotNeeded = 1011,
+        PartitionKeyQuotaOverLimit = 1014,
         SharedThroughputDatabaseCollectionCountExceeded = 1019,
         SharedThroughputDatabaseCountExceeded = 1020,
         ComputeInternalError = 1021,
@@ -107,9 +112,10 @@ namespace Microsoft.Azure.Documents
         CanNotAcquireSnapshotOwnerLock = 2005,
         StorageSplitConflictingWithNWayThroughputSplit = 2011,
         MergeIsDisabled = 2012,
-		TombstoneRecordsNotFound = 2015, // Tombstone records were not found because they were purged.
+        TombstoneRecordsNotFound = 2015, // Tombstone records were not found because they were purged.
         InvalidAccountStatus = 2016,
         OfferValidationFailed = 2017,
+        CanNotAquireMasterPartitionAccessLock = 2018,
 
         // 500: InternalServerError
         ConfigurationNameNotEmpty = 3001,
@@ -172,7 +178,28 @@ namespace Microsoft.Azure.Documents
         RbacRequestWasNotAuthorized = 5400,
 
         // 200 OK. List feed throttled response.
-        ListResourceFeedThrottled = 5500
+        ListResourceFeedThrottled = 5500,
+
+        // 401 Unauthorized Exception (mutual TLS client auth failed)
+        MutualTlsClientAuthFailed = 5600,
+
+        // SDK Codes (Client)
+        TransportGenerated410 = 20001,
+        TimeoutGenerated410 = 20002,
+        TransportGenerated503 = 20003,
+        Client_CPUOverload = 20004,
+        Client_ThreadStarvation = 20005,
+
+        //SDK Codes (Server)
+        Server_NameCacheIsStaleExceededRetryLimit = 21001,
+        Server_PartitionKeyRangeGoneExceededRetryLimit = 21002,
+        Server_CompletingSplitExceededRetryLimit = 21003,
+        Server_CompletingPartitionMigrationExceededRetryLimit = 21004,
+        ServerGenerated410 = 21005,
+        Server_GlobalStrongWriteBarrierNotMet = 21006,
+        Server_ReadQuorumNotMet = 21007,
+        ServerGenerated503 = 21008,
+        Server_NoValidStoreResponse = 21009
     }
 
     internal static class StatusCodesExtensions
@@ -197,6 +224,7 @@ namespace Microsoft.Azure.Documents
     internal static class SubStatusCodesExtensions
     {
         private static readonly Dictionary<int, string> CodeNameMap = new Dictionary<int, string>();
+        private static readonly int SDKGeneratedSubStatusStartingCode = 20000;
 
         static SubStatusCodesExtensions()
         {
@@ -210,6 +238,11 @@ namespace Microsoft.Azure.Documents
         public static string ToSubStatusCodeString(this SubStatusCodes code)
         {
             return SubStatusCodesExtensions.CodeNameMap.TryGetValue((int)code, out string value) ? value : code.ToString();
+        }
+
+        public static bool IsSDKGeneratedSubStatus(this SubStatusCodes code)
+        {
+            return ((int)code > SubStatusCodesExtensions.SDKGeneratedSubStatusStartingCode);
         }
     }
 

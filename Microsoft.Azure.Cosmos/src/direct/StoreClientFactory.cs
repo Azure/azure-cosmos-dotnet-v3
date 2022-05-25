@@ -44,7 +44,8 @@ namespace Microsoft.Azure.Documents
             IAddressResolver addressResolver = null, // globalAddressResolver
             TimeSpan localRegionOpenTimeout = default,
             bool enableChannelMultiplexing = false,
-            int rntbdMaxConcurrentOpeningConnectionCount = ushort.MaxValue) // Optional for Rntbd
+            int rntbdMaxConcurrentOpeningConnectionCount = ushort.MaxValue, // Optional for Rntbd
+            MemoryStreamPool memoryStreamPool = null) 
         {
             // <=0 means idle timeout is disabled.
             // valid value: >= 10 minutes
@@ -221,7 +222,8 @@ namespace Microsoft.Azure.Documents
                         CallerId = callerId,
                         ConnectionStateListener = this.connectionStateListener,
                         EnableChannelMultiplexing = enableChannelMultiplexing,
-                        MaxConcurrentOpeningConnectionCount = rntbdMaxConcurrentOpeningConnectionCount
+                        MaxConcurrentOpeningConnectionCount = rntbdMaxConcurrentOpeningConnectionCount,
+                        MemoryStreamPool = memoryStreamPool,
                     });
             }
             else

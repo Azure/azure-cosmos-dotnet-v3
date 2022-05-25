@@ -393,7 +393,7 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        private struct StoreResponseStatistics
+        public struct StoreResponseStatistics
         {
             public DateTime RequestStartTime;
             public DateTime RequestResponseTime;

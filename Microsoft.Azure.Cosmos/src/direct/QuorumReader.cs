@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Documents
                             if (hasPerformedReadFromPrimary)
                             {
                                 DefaultTrace.TraceWarning("QuorumNotSelected: Primary read already attempted. Quorum could not be selected after retrying on secondaries.");
-                                throw new GoneException(RMResources.ReadQuorumNotMet);
+                                throw new GoneException(RMResources.ReadQuorumNotMet, SubStatusCodes.Server_ReadQuorumNotMet);
                             }
 
                             DefaultTrace.TraceWarning("QuorumNotSelected: Quorum could not be selected with read quorum of {0}", readQuorumValue);
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Documents
                             else
                             {
                                 DefaultTrace.TraceWarning("QuorumNotSelected: Could not get successful response from ReadPrimary");
-                                throw new GoneException(RMResources.ReadQuorumNotMet);
+                                throw new GoneException(RMResources.ReadQuorumNotMet, SubStatusCodes.Server_ReadQuorumNotMet);
                             }
                         }
 
@@ -178,7 +178,8 @@ namespace Microsoft.Azure.Documents
             throw new GoneException(
                     string.Format(CultureInfo.CurrentUICulture,
                     RMResources.ReadQuorumNotMet,
-                    readQuorumValue));
+                    readQuorumValue),
+                    SubStatusCodes.Server_ReadQuorumNotMet);
         }
 
         public async Task<StoreResponse> ReadBoundedStalenessAsync(
@@ -222,7 +223,7 @@ namespace Microsoft.Azure.Documents
                             {
                                 DefaultTrace.TraceWarning("QuorumNotSelected: Primary read already attempted. Quorum could not be selected after " +
                                     "retrying on secondaries.");
-                                throw new GoneException(RMResources.ReadQuorumNotMet);
+                                throw new GoneException(RMResources.ReadQuorumNotMet, SubStatusCodes.Server_ReadQuorumNotMet);
                             }
 
                             DefaultTrace.TraceWarning("QuorumNotSelected: Quorum could not be selected with read quorum of {0}", readQuorumValue);
@@ -247,7 +248,7 @@ namespace Microsoft.Azure.Documents
                             else
                             {
                                 DefaultTrace.TraceWarning("QuorumNotSelected: Could not get successful response from ReadPrimary");
-                                throw new GoneException(RMResources.ReadQuorumNotMet);
+                                throw new GoneException(RMResources.ReadQuorumNotMet, SubStatusCodes.Server_ReadQuorumNotMet);
                             }
                         }
                         break;
@@ -265,7 +266,8 @@ namespace Microsoft.Azure.Documents
             throw new GoneException(
                     string.Format(CultureInfo.CurrentUICulture,
                     RMResources.ReadQuorumNotMet,
-                    readQuorumValue));
+                    readQuorumValue),
+                    SubStatusCodes.Server_ReadQuorumNotMet);
         }
 
         private async Task<ReadQuorumResult> ReadQuorumAsync(
@@ -405,7 +407,7 @@ namespace Microsoft.Azure.Documents
                 }
 
                 // throw exeption instead of returning inconsistent result.
-                throw new GoneException(RMResources.ReadQuorumNotMet);
+                throw new GoneException(RMResources.ReadQuorumNotMet, SubStatusCodes.Server_ReadQuorumNotMet);
             }
 
             if (storeResult.CurrentReplicaSetSize > readQuorum)

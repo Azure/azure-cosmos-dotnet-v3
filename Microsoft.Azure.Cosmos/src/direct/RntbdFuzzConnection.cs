@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Documents
     using System.Globalization;
     using System.IO;
     using System.Text;
+    using Microsoft.Azure.Documents.Rntbd;
 
     /// <summary>
     /// Class to fuzz TCP requests

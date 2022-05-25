@@ -88,7 +88,9 @@ namespace Microsoft.Azure.Documents
 
 #if !COSMOSCLIENT
         SystemOperation = 53,
+#endif
         MetadataCheckAccess = 54,
+#if !COSMOSCLIENT
         Prune = 55,
         CreateSystemSnapshot = 56,
 #endif

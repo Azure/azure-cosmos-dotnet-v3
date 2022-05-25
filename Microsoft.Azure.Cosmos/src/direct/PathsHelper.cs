@@ -61,6 +61,17 @@ namespace Microsoft.Azure.Documents
                 return true;
             }
 
+            if (!string.IsNullOrEmpty(resourceUrl) && resourceUrl.Contains(Paths.OperationsPathSegment) &&
+                (resourceUrl.Contains(Paths.MetadataCheckAccessPathSegment)))
+            {
+                // For metadata check access the, the resource path is always root.
+                isFeed = false;
+                resourceIdOrFullName = string.Empty;
+                resourcePath = Paths.Root;
+                isNameBased = true;
+                return true;
+            }
+
             return PathsHelper.TryParsePathSegmentsWithDatabaseAndCollectionNames(resourceUrl, out isFeed, out resourcePath, out resourceIdOrFullName, out isNameBased, out databaseName, out collectionName, clientVersion, false);
         }
 
@@ -1412,6 +1423,8 @@ namespace Microsoft.Azure.Documents
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_MasterInitiatedProgressCoordination;
                 case OperationType.GetAadGroups:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetAadGroups;
+                case OperationType.MetadataCheckAccess:
+                    return Paths.OperationsPathSegment + "/" + Paths.Operations_MetadataCheckAccess;
 #endif
 
                 default:
@@ -1519,7 +1532,9 @@ namespace Microsoft.Azure.Documents
         internal static bool IsNameBased(string resourceIdOrFullName)
         {
             // quick way to tell whether it is resourceId nor not, non conclusively.
-            if (!string.IsNullOrEmpty(resourceIdOrFullName) && resourceIdOrFullName.Length > 4 && resourceIdOrFullName[3] == '/')
+            if (!string.IsNullOrEmpty(resourceIdOrFullName) && 
+                ((resourceIdOrFullName.Length > 4 && resourceIdOrFullName[3] == '/') || 
+                 (resourceIdOrFullName.StartsWith(Paths.InteropUsersPathSegment, StringComparison.OrdinalIgnoreCase))))
             {
                 return true;
             }

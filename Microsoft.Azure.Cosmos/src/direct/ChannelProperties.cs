@@ -16,7 +16,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             int maxConcurrentOpeningConnectionCount,
             TimeSpan receiveHangDetectionTime, TimeSpan sendHangDetectionTime,
             TimeSpan idleTimeout, TimerPool idleTimerPool,
-            RntbdConstants.CallerId callerId, bool enableChannelMultiplexing)
+            RntbdConstants.CallerId callerId, bool enableChannelMultiplexing,
+            MemoryStreamPool memoryStreamPool)
         {
             Debug.Assert(userAgent != null);
             this.UserAgent = userAgent;
@@ -48,6 +49,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.CallerId = callerId;
             this.EnableChannelMultiplexing = enableChannelMultiplexing;
             this.MaxConcurrentOpeningConnectionCount = maxConcurrentOpeningConnectionCount;
+            this.MemoryStreamPool = memoryStreamPool;
         }
 
         public UserAgentContainer UserAgent { get; private set; }
@@ -93,5 +95,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         public bool EnableChannelMultiplexing { get; private set; }
 
         public int MaxConcurrentOpeningConnectionCount { get; private set; }
+
+        public MemoryStreamPool MemoryStreamPool { get; private set; }
     }
 }

@@ -40,10 +40,22 @@ namespace Microsoft.Azure.Documents
 
         public RequestStage CurrentStage { get; private set; }
 
+        // Request Response Size Stats
         public long? RequestSizeInBytes { get; set; }
         public long? RequestBodySizeInBytes { get; set; }
         public long? ResponseMetadataSizeInBytes { get; set; }
         public long? ResponseBodySizeInBytes { get; set; }
+
+        // Service Endpoint Stats (to a single endpoint)
+        public int? NumberOfInflightRequestsToEndpoint { get; set; }
+        public int? NumberOfOpenConnectionsToEndpoint { get; set; } // after this request is assigned to a connection
+
+        // Connection Stats (the connection the request is assigned to)
+        public bool? RequestWaitingForConnectionInitialization { get; set; }
+        public int? NumberOfInflightRequestsInConnection { get; set; }
+        public DateTime? ConnectionLastSendAttemptTime { get; set; }
+        public DateTime? ConnectionLastSendTime { get; set; }
+        public DateTime? ConnectionLastReceiveTime { get; set; }
 
         public void RecordState(RequestStage requestStage)
         {
@@ -175,6 +187,9 @@ namespace Microsoft.Azure.Documents
 
             stringBuilder.Append("]");
 
+            this.AppendServiceEndpointStats(stringBuilder);
+            this.AppendConnectionStats(stringBuilder);
+
             if (this.RequestSizeInBytes.HasValue)
             {
                 stringBuilder.Append(",\"requestSizeInBytes\":");
@@ -199,6 +214,59 @@ namespace Microsoft.Azure.Documents
                 stringBuilder.Append(this.ResponseBodySizeInBytes.Value.ToString(CultureInfo.InvariantCulture));
             }
 
+            stringBuilder.Append("}");
+        }
+
+        private void AppendServiceEndpointStats(StringBuilder stringBuilder)
+        {
+            stringBuilder.Append($",\"serviceEndpointStats\":");
+            stringBuilder.Append("{");
+            if (this.NumberOfInflightRequestsToEndpoint.HasValue)
+            {
+                stringBuilder.Append($"\"inflightRequests\":");
+                stringBuilder.Append(this.NumberOfInflightRequestsToEndpoint.Value.ToString(CultureInfo.InvariantCulture));
+            }
+            if (this.NumberOfOpenConnectionsToEndpoint.HasValue)
+            {
+                stringBuilder.Append($",\"openConnections\":");
+                stringBuilder.Append(this.NumberOfOpenConnectionsToEndpoint.Value.ToString(CultureInfo.InvariantCulture));
+            }
+            stringBuilder.Append("}");
+        }
+
+        private void AppendConnectionStats(StringBuilder stringBuilder)
+        {
+            stringBuilder.Append($",\"connectionStats\":");
+            stringBuilder.Append("{");
+            if (this.RequestWaitingForConnectionInitialization.HasValue)
+            {
+                stringBuilder.Append("\"waitforConnectionInit\":\"");
+                stringBuilder.Append(this.RequestWaitingForConnectionInitialization.Value.ToString());
+                stringBuilder.Append("\"");
+            }
+            if (this.NumberOfInflightRequestsInConnection.HasValue)
+            {
+                stringBuilder.Append(",\"callsPendingReceive\":");
+                stringBuilder.Append(this.NumberOfInflightRequestsInConnection.Value.ToString(CultureInfo.InvariantCulture));
+            }
+            if (this.ConnectionLastSendAttemptTime.HasValue)
+            {
+                stringBuilder.Append(",\"lastSendAttempt\":\"");
+                stringBuilder.Append(this.ConnectionLastSendAttemptTime.Value.ToString("o", CultureInfo.InvariantCulture));
+                stringBuilder.Append("\"");
+            }
+            if (this.ConnectionLastSendTime.HasValue)
+            {
+                stringBuilder.Append(",\"lastSend\":\"");
+                stringBuilder.Append(this.ConnectionLastSendTime.Value.ToString("o", CultureInfo.InvariantCulture));
+                stringBuilder.Append("\"");
+            }
+            if (this.ConnectionLastReceiveTime.HasValue)
+            {
+                stringBuilder.Append(",\"lastReceive\":\"");
+                stringBuilder.Append(this.ConnectionLastReceiveTime.Value.ToString("o", CultureInfo.InvariantCulture));
+                stringBuilder.Append("\"");
+            }
             stringBuilder.Append("}");
         }
 

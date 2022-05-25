@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                             RMResources.ExceptionMessage,
                             RMResources.Gone),
                         inner,
+                        SubStatusCodes.TransportGenerated410,
                             targetAddress,
                         RntbdConnection.LocalIpv4Address);
                 }
@@ -37,6 +38,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                             RMResources.ExceptionMessage,
                             RMResources.Gone),
                         inner,
+                        SubStatusCodes.TransportGenerated410,
                         targetAddress);
                 }
             }
@@ -49,6 +51,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                             RMResources.ExceptionMessage,
                             RMResources.Gone),
                         inner,
+                        SubStatusCodes.TransportGenerated410,
                         targetAddress,
                         RntbdConnection.LocalIpv4Address);
                 }
@@ -59,6 +62,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                             RMResources.ExceptionMessage,
                             RMResources.Gone),
                         inner,
+                        SubStatusCodes.TransportGenerated410,
                         targetAddress);
                 }
             }
@@ -136,6 +140,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     string.Format(CultureInfo.CurrentUICulture,
                         RMResources.ExceptionMessage,
                         RMResources.ChannelClosed),
+                    SubStatusCodes.TransportGenerated503,
                     targetAddress);
             }
             else
@@ -145,6 +150,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         RMResources.ExceptionMessage,
                         RMResources.ChannelClosed),
                     inner,
+                    SubStatusCodes.TransportGenerated503,
                     targetAddress);
             }
 

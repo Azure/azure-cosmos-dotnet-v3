@@ -14,39 +14,46 @@ namespace Microsoft.Azure.Documents
     internal sealed class GoneException : DocumentClientException
     {
         public GoneException()
-            : this(RMResources.Gone)
+            : this(RMResources.Gone, SubStatusCodes.Unknown)
         {
 
         }
 
-        public GoneException(string message, Uri requestUri = null)
-            : this(message, (Exception)null, (HttpResponseHeaders)null, requestUri)
+        public GoneException(string message)
+            : this(message, (Exception)null, (HttpResponseHeaders)null, SubStatusCodes.Unknown)
+        {
+        }
+
+        public GoneException(string message, SubStatusCodes subStatusCode, Uri requestUri = null)
+            : this(message, (Exception)null, (HttpResponseHeaders)null, subStatusCode, requestUri)
         {
         }
 
         public GoneException(string message,
             HttpResponseHeaders headers,
+            SubStatusCodes? subStatusCode,
             Uri requestUri = null)
-            : this(message, null, headers, requestUri)
+            : this(message, null, headers, subStatusCode, requestUri)
         {
         }
 
         public GoneException(string message,
             Exception innerException,
+            SubStatusCodes subStatusCode,
             Uri requestUri = null,
             string localIpAddress = null)
-            : this(message, innerException, (HttpResponseHeaders)null, requestUri)
+            : this(message, innerException, (HttpResponseHeaders)null, subStatusCode, requestUri)
         {
             this.LocalIp = localIpAddress;
         }
 
-        public GoneException(Exception innerException)
-            : this(RMResources.Gone, innerException, (HttpResponseHeaders)null)
+        public GoneException(Exception innerException, SubStatusCodes subStatusCode)
+            : this(RMResources.Gone, innerException, (HttpResponseHeaders)null, subStatusCode)
         {
         }
 
-        public GoneException(string message, INameValueCollection headers, Uri requestUri = null)
-            : base(message, null, headers, HttpStatusCode.Gone, requestUri)
+        public GoneException(string message, INameValueCollection headers, SubStatusCodes? substatusCode, Uri requestUri = null)
+            : base(message, null, headers, HttpStatusCode.Gone, substatusCode, requestUri)
         {
             SetDescription();
         }
@@ -54,8 +61,9 @@ namespace Microsoft.Azure.Documents
         public GoneException(string message,
             Exception innerException,
             HttpResponseHeaders headers,
+            SubStatusCodes? subStatusCode,
             Uri requestUri = null)
-            : base(message, innerException, headers, HttpStatusCode.Gone, requestUri)
+            : base(message, innerException, headers, HttpStatusCode.Gone, requestUri, subStatusCode)
         {
             SetDescription();
         }

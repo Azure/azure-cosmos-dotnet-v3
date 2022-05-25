@@ -71,6 +71,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string LogResults { get; set; }
         public string LSN { get; set; }
         public string MaxResourceQuota { get; set; }
+        public string MergeProgressBlocked { get; set; }
         public string MinimumRUsForOffer { get; set; }
         public string NumberOfReadRegions { get; set; }
         public string OfferReplacePending { get; set; }
@@ -182,6 +183,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.LogResults = null;
             this.LSN = null;
             this.MaxResourceQuota = null;
+            this.MergeProgressBlocked = null;
             this.MinimumRUsForOffer = null;
             this.NumberOfReadRegions = null;
             this.OfferReplacePending = null;
@@ -267,6 +269,7 @@ namespace Microsoft.Azure.Documents.Collections
                 LogResults = this.LogResults,
                 LSN = this.LSN,
                 MaxResourceQuota = this.MaxResourceQuota,
+                MergeProgressBlocked = this.MergeProgressBlocked,
                 MinimumRUsForOffer = this.MinimumRUsForOffer,
                 NumberOfReadRegions = this.NumberOfReadRegions,
                 OfferReplacePending = this.OfferReplacePending,
@@ -605,6 +608,10 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return HttpConstants.HttpHeaders.AppliedPolicyElementId;
             }
+            if (this.MergeProgressBlocked != null)
+            {
+                yield return WFConstants.BackendHeaders.MergeProgressBlocked;
+            }
 
             if(this.lazyNotCommonHeaders.IsValueCreated)
             {
@@ -902,6 +909,10 @@ namespace Microsoft.Azure.Documents.Collections
                         if (this.AppliedPolicyElementId != null)
                         {
                             this.nameValueCollection.Add(HttpConstants.HttpHeaders.AppliedPolicyElementId, this.AppliedPolicyElementId);
+                        }
+                        if (this.MergeProgressBlocked != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.MergeProgressBlocked, this.MergeProgressBlocked);
                         }
                         if(this.lazyNotCommonHeaders.IsValueCreated)
                         {
@@ -1453,6 +1464,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.ReplicaStatusRevoked;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.MergeProgressBlocked, key))
+                    {
+                        return this.MergeProgressBlocked;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.IsRUPerMinuteUsed, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.IsRUPerMinuteUsed;
@@ -1461,6 +1476,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(WFConstants.BackendHeaders.ReplicaStatusRevoked, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.ReplicaStatusRevoked;
+                    }
+
+                    if (string.Equals(WFConstants.BackendHeaders.MergeProgressBlocked, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.MergeProgressBlocked;
                     }
 
                     break;
@@ -2694,6 +2714,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.ReplicaStatusRevoked = value;
                         return;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.MergeProgressBlocked, key))
+                    {
+                        if (throwIfAlreadyExists && this.MergeProgressBlocked != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.MergeProgressBlocked = value;
+                        return;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.IsRUPerMinuteUsed, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.IsRUPerMinuteUsed != null)
@@ -2712,6 +2742,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.ReplicaStatusRevoked = value;
+                        return;
+                    }
+                    if (string.Equals(WFConstants.BackendHeaders.MergeProgressBlocked, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.MergeProgressBlocked != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.MergeProgressBlocked = value;
                         return;
                     }
                     break;

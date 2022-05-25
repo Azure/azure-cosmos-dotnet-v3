@@ -128,9 +128,9 @@ namespace Microsoft.Azure.Documents
                             case (HttpStatusCode)SubStatusCodes.ConfigurationNameNotEmpty:
                                 return new InternalServerErrorException(dce.Message);
                             case HttpStatusCode.ServiceUnavailable:
-                                return new ServiceUnavailableException(dce.Message);
+                                return new ServiceUnavailableException(dce.Message, SubStatusCodes.Unknown);
                             case HttpStatusCode.Gone:
-                                return new GoneException(dce.Message);
+                                return new GoneException(dce.Message, SubStatusCodes.Unknown);
 
                             default:
                                 return dce;

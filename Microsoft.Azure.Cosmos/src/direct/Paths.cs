@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Documents
         public const string Operations_ReadReplicaFromServerPartition = "readreplicafromserverpartition";
         public const string Operations_MasterInitiatedProgressCoordination = "masterinitiatedprogresscoordination";
         public const string Operations_GetAadGroups = "getaadgroups";
+        public const string Operations_MetadataCheckAccess = "metadatacheckaccess";
 
         //databases namespace off of root-------------------
 
@@ -252,6 +253,9 @@ namespace Microsoft.Azure.Documents
 
         // vector clock
         public const string VectorClockPathSegment = "vectorclock";
+
+        // metadata check access
+        public const string MetadataCheckAccessPathSegment = "metadatacheckaccess";
 
         // partition key delete
         public const string PartitionKeyDeletePathSegment = "partitionkeydelete";

@@ -43,7 +43,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 channelProperties.SendHangDetectionTime,
                 channelProperties.IdleTimerPool,
                 channelProperties.IdleTimeout,
-                channelProperties.EnableChannelMultiplexing);
+                channelProperties.EnableChannelMultiplexing,
+                channelProperties.MemoryStreamPool);
             this.timerPool = channelProperties.RequestTimerPool;
             this.requestTimeoutSeconds = (int) channelProperties.RequestTimeout.TotalSeconds;
             this.serverUri = serverUri;
@@ -146,10 +147,15 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             if (!this.isInitializationComplete)
             {
+                transportRequestStats.RequestWaitingForConnectionInitialization = true;
                 DefaultTrace.TraceInformation(
                     "Awaiting RNTBD channel initialization. Request URI: {0}",
                     physicalAddress);
                 await this.initializationTask;
+            }
+            else
+            {
+                transportRequestStats.RequestWaitingForConnectionInitialization = false;
             }
 
             // Waiting for channel initialization to move to Pipelined stage
@@ -185,7 +191,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             Task[] tasks = new Task[2];
             tasks[0] = timer.StartTimerAsync();
             Task<StoreResponse> dispatcherCall = this.dispatcher.CallAsync(callArguments, transportRequestStats);
-            TransportClient.GetTransportPerformanceCounters().LogRntbdBytesSentCount(resourceOperation.resourceType, resourceOperation.operationType, callArguments.PreparedCall?.SerializedRequest.Count);
+            TransportClient.GetTransportPerformanceCounters().LogRntbdBytesSentCount(resourceOperation.resourceType, resourceOperation.operationType, callArguments.PreparedCall?.SerializedRequest.RequestSize);
             tasks[1] = dispatcherCall;
             Task completedTask = await Task.WhenAny(tasks);
             if (object.ReferenceEquals(completedTask, tasks[0]))

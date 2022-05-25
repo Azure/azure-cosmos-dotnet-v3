@@ -178,6 +178,7 @@ namespace Microsoft.Azure.Documents
                                 RMResources.ExceptionMessage,
                                 RMResources.Gone),
                             exception,
+                            SubStatusCodes.TransportGenerated410,
                             null,
                             physicalAddress.ToString());
 
@@ -197,6 +198,7 @@ namespace Microsoft.Azure.Documents
                                 RMResources.ExceptionMessage,
                                 RMResources.Gone),
                             exception,
+                            SubStatusCodes.TransportGenerated410,
                             null,
                             physicalAddress.ToString());
 
@@ -215,6 +217,7 @@ namespace Microsoft.Azure.Documents
                                 RMResources.ServiceUnavailable),
                             exception,
                             null,
+                            SubStatusCodes.Unknown,
                             physicalAddress);
                         serviceUnavailableException.Headers.Add(HttpConstants.HttpHeaders.RequestValidationFailure, "1");
                         serviceUnavailableException.Headers.Add(HttpConstants.HttpHeaders.WriteRequestTriggerAddressRefresh, "1");
@@ -402,6 +405,7 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.DisableRUPerMinuteUsage, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateQueryMetrics, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateIndexMetrics, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.CorrelatedActivityId, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ForceQueryScan, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.RemoteStorageType, request);
@@ -551,6 +555,13 @@ namespace Microsoft.Azure.Documents
                 case OperationType.HeadFeed:
                     httpRequestMessage.RequestUri = HttpTransportClient.GetResourceFeedUri(resourceOperation.resourceType, physicalAddress, request);
                     httpRequestMessage.Method = HttpMethod.Head;
+                    break;
+
+                case OperationType.MetadataCheckAccess:
+                    httpRequestMessage.RequestUri = HttpTransportClient.GetRootOperationUri(physicalAddress, resourceOperation.operationType);
+                    httpRequestMessage.Method = HttpMethod.Post;
+                    Debug.Assert(clonedStream != null);
+                    httpRequestMessage.Content = new StreamContent(clonedStream);
                     break;
 
 #if !COSMOSCLIENT
@@ -1067,6 +1078,7 @@ namespace Microsoft.Azure.Documents
                                 string.Format(CultureInfo.CurrentUICulture,
                                     RMResources.ExceptionMessage,
                                     RMResources.Gone),
+                                SubStatusCodes.Unknown,
                                 response.RequestMessage.RequestUri)
                             {
                                 LSN = responseLSN,
@@ -1122,30 +1134,7 @@ namespace Microsoft.Azure.Documents
 #endif
                             TransportClient.LogGoneException(response.RequestMessage.RequestUri, activityId);
 
-                            uint nSubStatus = 0;
-                            IEnumerable<string> valueSubStatus = null;
-
-                            try
-                            {
-                                valueSubStatus = response.Headers.GetValues(WFConstants.BackendHeaders.SubStatus);
-                                if (valueSubStatus != null && valueSubStatus.Any())
-                                {
-                                    if (!uint.TryParse(valueSubStatus.First(), NumberStyles.Integer, CultureInfo.InvariantCulture, out nSubStatus))
-                                    {
-                                        exception = new InternalServerErrorException(
-                                            string.Format(CultureInfo.CurrentUICulture,
-                                                RMResources.ExceptionMessage,
-                                                RMResources.InvalidBackendResponse),
-                                            response.Headers,
-                                            response.RequestMessage.RequestUri);
-                                        break;
-                                    }
-                                }
-                            }
-                            catch (InvalidOperationException)
-                            {
-                                DefaultTrace.TraceInformation("SubStatus doesn't exist in the header");
-                            }
+                            uint nSubStatus = HttpTransportClient.GetSubsStatusFromHeader(response);
 
                             if ((SubStatusCodes)nSubStatus == SubStatusCodes.NameCacheIsStale)
                             {
@@ -1195,6 +1184,7 @@ namespace Microsoft.Azure.Documents
                                             RMResources.ExceptionMessage,
                                             RMResources.Gone),
                                         response.Headers,
+                                        (nSubStatus == 0) ? SubStatusCodes.ServerGenerated410 : null,
                                         response.RequestMessage.RequestUri);
 
                                 exception.Headers.Set(HttpConstants.HttpHeaders.ActivityId,
@@ -1256,11 +1246,13 @@ namespace Microsoft.Azure.Documents
                         break;
 
                     case HttpStatusCode.ServiceUnavailable:
+                        uint subStatus = HttpTransportClient.GetSubsStatusFromHeader(response);
                         exception = new ServiceUnavailableException(
                             string.Format(CultureInfo.CurrentUICulture,
                                 RMResources.ExceptionMessage,
                                 string.IsNullOrEmpty(errorMessage) ? RMResources.ServiceUnavailable : errorMessage),
                             response.Headers,
+                            (subStatus == 0) ? SubStatusCodes.ServerGenerated503 : null,
                             response.RequestMessage.RequestUri);
                         break;
 
@@ -1339,6 +1331,33 @@ namespace Microsoft.Azure.Documents
                 exception.ResourceAddress = resourceAddress;
                 throw exception;
             }
+        }
+
+        private static uint GetSubsStatusFromHeader(HttpResponseMessage response)
+        {
+            uint nSubStatus = 0;
+            try
+            {
+                IEnumerable<string> valueSubStatus = response.Headers.GetValues(WFConstants.BackendHeaders.SubStatus);
+                if (valueSubStatus != null && valueSubStatus.Any())
+                {
+                    if (!uint.TryParse(valueSubStatus.First(), NumberStyles.Integer, CultureInfo.InvariantCulture, out nSubStatus))
+                    {
+                        throw new InternalServerErrorException(
+                            string.Format(CultureInfo.CurrentUICulture,
+                                RMResources.ExceptionMessage,
+                                RMResources.InvalidBackendResponse),
+                            response.Headers,
+                            response.RequestMessage.RequestUri);
+                    }
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                DefaultTrace.TraceInformation("SubStatus doesn't exist in the header");
+            }
+
+            return nSubStatus;
         }
 
         internal static string GetHeader(string[] names, string[] values, string name)

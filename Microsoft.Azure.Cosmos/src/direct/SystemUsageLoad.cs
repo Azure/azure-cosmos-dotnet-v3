@@ -13,16 +13,19 @@ namespace Microsoft.Azure.Documents.Rntbd
         public readonly float? CpuUsage;
         public readonly long? MemoryAvailable;
         public readonly ThreadInformation ThreadInfo;
+        public readonly int? NumberOfOpenTcpConnections;
 
         public SystemUsageLoad(DateTime timestamp, 
                                ThreadInformation threadInfo,
                                float? cpuUsage = null, 
-                               long? memoryAvailable = null)
+                               long? memoryAvailable = null,
+                               int? numberOfOpenTcpConnection = 0)
         {
             this.Timestamp = timestamp;
             this.CpuUsage = cpuUsage;
             this.MemoryAvailable = memoryAvailable;
             this.ThreadInfo = threadInfo ?? throw new ArgumentNullException("Thread Information can not be null");
+            this.NumberOfOpenTcpConnections = numberOfOpenTcpConnection;
         }
 
         public void AppendJsonString(StringBuilder stringBuilder)
@@ -42,6 +45,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 stringBuilder.Append("\"no info\"");
             }
+            stringBuilder.Append(",\"numberOfOpenTcpConnection\":");
+            stringBuilder.Append(this.NumberOfOpenTcpConnections.HasValue ? this.NumberOfOpenTcpConnections.Value.ToString(CultureInfo.InvariantCulture) : "\"no info\"");
 
             stringBuilder.Append("}");
         }
@@ -49,8 +54,8 @@ namespace Microsoft.Azure.Documents.Rntbd
         public override string ToString()
         {
             return string.Format(
-                CultureInfo.InvariantCulture, "({0:O} => CpuUsage :{1:F3}, MemoryAvailable :{2:F3} {3:F3})",
-                this.Timestamp, this.CpuUsage, this.MemoryAvailable, this.ThreadInfo.ToString());
+                CultureInfo.InvariantCulture, "({0:O} => CpuUsage :{1:F3}, MemoryAvailable :{2:F3} {3:F3}, NumberOfOpenTcpConnection : {4} )",
+                this.Timestamp, this.CpuUsage, this.MemoryAvailable, this.ThreadInfo.ToString(), this.NumberOfOpenTcpConnections);
         }
     }
 }

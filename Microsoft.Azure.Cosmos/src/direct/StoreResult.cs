@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Documents
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Routing;
 
-    internal sealed class StoreResult
+    internal sealed class StoreResult: IDisposable
     {
         private readonly StoreResponse storeResponse;
 
@@ -132,7 +132,6 @@ namespace Microsoft.Azure.Documents
                 DocumentClientException documentClientException = responseException as DocumentClientException;
                 if (documentClientException != null)
                 {
-                    StoreResult.VerifyCanContinueOnException(documentClientException);
                     long quorumAckedLSN = -1;
                     int currentReplicaSetSize = -1;
                     int currentWriteQuorum = -1;
@@ -444,7 +443,7 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        private static void VerifyCanContinueOnException(DocumentClientException ex)
+        internal static void VerifyCanContinueOnException(DocumentClientException ex)
         {
             if ((ex is PartitionKeyRangeGoneException) ||
                 (ex is PartitionKeyRangeIsSplittingException) ||
@@ -464,7 +463,12 @@ namespace Microsoft.Azure.Documents
             {
                 ExceptionDispatchInfo.Capture(ex).Throw();
             }
-        } 
+        }
+
+        public void Dispose()
+        {
+            this.storeResponse?.ResponseBody?.Dispose();
+        }
     }
 
 }

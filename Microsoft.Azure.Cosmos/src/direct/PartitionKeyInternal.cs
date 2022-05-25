@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Documents.Routing
             PartitionKeyDefinition partitionKeyDefinition,
             bool useHashV2asDefault = false)
         {
-            if (partitionKeyDefinition.Paths.Count > 0 && !( partitionKeyDefinition.Kind == PartitionKind.Hash || partitionKeyDefinition.Kind == PartitionKind.MultiHash))
+            if (partitionKeyDefinition.Paths.Count > 0 && !(partitionKeyDefinition.Kind == PartitionKind.Hash || partitionKeyDefinition.Kind == PartitionKind.MultiHash))
             {
                 throw new NotImplementedException("Cannot figure out range boundaries");
             }
@@ -609,15 +609,15 @@ namespace Microsoft.Azure.Documents.Routing
                 using (MemoryStream ms = new MemoryStream())
                 using (BinaryWriter binaryWriter = new BinaryWriter(ms))
                 {
-                        this.Components[i].WriteForHashingV2(binaryWriter);
+                    this.Components[i].WriteForHashingV2(binaryWriter);
 
-                        UInt128 hash128 = MurmurHash3.Hash128(ms.GetBuffer(), (int)ms.Length, UInt128.MinValue);
-                        hash = UInt128.ToByteArray(hash128);
-                        Array.Reverse(hash);
+                    UInt128 hash128 = MurmurHash3.Hash128(ms.GetBuffer(), (int)ms.Length, UInt128.MinValue);
+                    hash = UInt128.ToByteArray(hash128);
+                    Array.Reverse(hash);
 
-                        // Reset 2 most significant bits, as max exclusive value is 'FF'.
-                        // Plus one more just in case.
-                        hash[0] &= 0x3F;
+                    // Reset 2 most significant bits, as max exclusive value is 'FF'.
+                    // Plus one more just in case.
+                    hash[0] &= 0x3F;
                 }
 
                 sb.Append(HexConvert.ToHex(hash, 0, hash.Length));
@@ -758,7 +758,7 @@ namespace Microsoft.Azure.Documents.Routing
                     {
                         if (partitionKeyDefinition.Version == PartitionKeyDefinitionVersion.V1)
                         {
-                            throw new InternalServerErrorException("Unexpected PartitionKeyDefinitionVersion "+ partitionKeyDefinition.Version + " for MultiHash Partition kind");
+                            throw new InternalServerErrorException("Unexpected PartitionKeyDefinitionVersion " + partitionKeyDefinition.Version + " for MultiHash Partition kind");
                         }
 
                         //Extract only the first EPK from a multi-path partition key.
@@ -880,13 +880,10 @@ namespace Microsoft.Azure.Documents.Routing
             }
         }
 
-        public static double GetWidth(string minInclusive, string maxExclusive, PartitionKeyDefinition partitionKeyDefinition)
+        private static double GetWidthForHashPartitioningScheme(string minInclusive, string maxExclusive, PartitionKeyDefinition partitionKeyDefinition)
         {
-            if (partitionKeyDefinition.Kind != PartitionKind.Hash)
-            {
-                throw new InvalidOperationException("Can determine range width only for hash partitioning.");
-            }
-
+            //TODO: Assert a hashversion is always passed.
+            //switch(partitionKeyDefinition.Version)
             switch (partitionKeyDefinition.Version ?? PartitionKeyDefinitionVersion.V1)
             {
                 case PartitionKeyDefinitionVersion.V2:
@@ -899,7 +896,8 @@ namespace Microsoft.Azure.Documents.Routing
                             min = UInt128.FromByteArray(minBytes);
                         }
 
-                        UInt128 max = UInt128.MaxValue;
+                        UInt128 maxHashV2Value = UInt128.FromByteArray(MaxHashV2Value.Bytes);
+                        UInt128 max = maxHashV2Value;
                         if (!maxExclusive.Equals(MaximumExclusiveEffectivePartitionKey, StringComparison.Ordinal))
                         {
                             byte[] maxBytes = PartitionKeyInternal.HexStringToByteArray(maxExclusive);
@@ -907,7 +905,7 @@ namespace Microsoft.Azure.Documents.Routing
                             max = UInt128.FromByteArray(maxBytes);
                         }
 
-                        double width = (1.0 * (max.GetHigh() - min.GetHigh())) / (UInt128.MaxValue.GetHigh() + 1);
+                        double width = (1.0 * (max.GetHigh() - min.GetHigh())) / (maxHashV2Value.GetHigh() + 1);
                         return width;
                     }
                 case PartitionKeyDefinitionVersion.V1:
@@ -936,5 +934,45 @@ namespace Microsoft.Azure.Documents.Routing
                     throw new InternalServerErrorException("Unexpected PartitionKeyDefinitionVersion");
             }
         }
+
+        private static double GetWidthForRangePartitioningScheme(string minInclusive, string maxExclusive, PartitionKeyDefinition partitionKeyDefinition)
+        {
+            throw new InternalServerErrorException("Cannot determine range width for range partitioning.");
+        }
+
+        private static double GetWidthForMultiHashPartitioningScheme(string minInclusive, string maxExclusive, PartitionKeyDefinition partitionKeyDefinition)
+        {
+            //Extract only the first EPK from a multi-path partition key.
+            minInclusive = minInclusive.Substring(0, Math.Min(minInclusive.Length, HashV2EPKLength));
+            maxExclusive = maxExclusive.Substring(0, Math.Min(maxExclusive.Length, HashV2EPKLength));
+
+            UInt128 min = 0;
+            if (!minInclusive.Equals(MinimumInclusiveEffectivePartitionKey, StringComparison.Ordinal))
+            {
+                byte[] minBytes = PartitionKeyInternal.HexStringToByteArray(minInclusive);
+                Array.Reverse(minBytes);
+                min = UInt128.FromByteArray(minBytes);
+            }
+
+            UInt128 maxHashV2Value = UInt128.FromByteArray(MaxHashV2Value.Bytes);
+            UInt128 max = maxHashV2Value;
+            if (!maxExclusive.Equals(MaximumExclusiveEffectivePartitionKey, StringComparison.Ordinal))
+            {
+                byte[] maxBytes = PartitionKeyInternal.HexStringToByteArray(maxExclusive);
+                Array.Reverse(maxBytes);
+                max = UInt128.FromByteArray(maxBytes);
+            }
+
+            double width = (1.0 * (max.GetHigh() - min.GetHigh())) / (maxHashV2Value.GetHigh() + 1);
+            return width;
+        }
+
+        public static double GetWidth(string minInclusive, string maxExclusive, PartitionKeyDefinition partitionKeyDefinition) => partitionKeyDefinition.Kind switch
+        {
+            PartitionKind.Hash => GetWidthForHashPartitioningScheme(minInclusive, maxExclusive, partitionKeyDefinition),
+            PartitionKind.Range => GetWidthForRangePartitioningScheme(minInclusive, maxExclusive, partitionKeyDefinition),
+            PartitionKind.MultiHash => GetWidthForMultiHashPartitioningScheme(minInclusive, maxExclusive, partitionKeyDefinition),
+            _ => throw new InternalServerErrorException("Unknown PartitionKind values, cannot determine range width.")
+        };        
     }
 }

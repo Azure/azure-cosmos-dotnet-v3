@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
 #if NETSTANDARD15 || NETSTANDARD16
@@ -89,7 +88,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                     clientOptions.IdleTimeout,
                     this.idleTimerPool,
                     clientOptions.CallerId,
-                    clientOptions.EnableChannelMultiplexing));
+                    clientOptions.EnableChannelMultiplexing,
+                    clientOptions.MemoryStreamPool));
         }
 
         internal override Task<StoreResponse> InvokeStoreAsync(
@@ -378,6 +378,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             public RntbdConstants.CallerId CallerId { get; set; }
             public bool EnableChannelMultiplexing { get; set; }
 
+            public Microsoft.Azure.Documents.MemoryStreamPool MemoryStreamPool { get; set; }
+
             public UserAgentContainer UserAgent
             {
                 get
@@ -475,6 +477,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 s.AppendLine(this.EnableChannelMultiplexing.ToString());
                 s.Append("  MaxConcurrentOpeningConnectionCount: ");
                 s.AppendLine(this.MaxConcurrentOpeningConnectionCount.ToString(CultureInfo.InvariantCulture));
+                s.Append("  Use_RecyclableMemoryStream: ");
+                s.AppendLine(this.MemoryStreamPool != null ? bool.TrueString : bool.FalseString);
                 return s.ToString();
             }
 

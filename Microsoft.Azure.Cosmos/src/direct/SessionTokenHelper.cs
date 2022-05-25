@@ -168,12 +168,20 @@ namespace Microsoft.Azure.Documents
                 }
                 else if (request.RequestContext.ResolvedPartitionKeyRange.Parents != null)
                 {
+                    ISessionToken parentSessionToken = null;
                     for (int parentIndex = request.RequestContext.ResolvedPartitionKeyRange.Parents.Count - 1; parentIndex >= 0; parentIndex--)
                     {
                         if (partitionKeyRangeIdToTokenMap.TryGetValue(request.RequestContext.ResolvedPartitionKeyRange.Parents[parentIndex], out sessionToken))
                         {
-                            return sessionToken;
+                            // A partition can have more than 1 parent (merge). In that case, we apply Merge to generate a token with both parent's max LSNs
+                            parentSessionToken = parentSessionToken != null ? parentSessionToken.Merge(sessionToken) : sessionToken;
                         }
+                    }
+
+                    // When we don't have the session token for a partition, we can leverage the session token of the parent(s)
+                    if (parentSessionToken != null)
+                    {
+                        return parentSessionToken;
                     }
                 }
             }

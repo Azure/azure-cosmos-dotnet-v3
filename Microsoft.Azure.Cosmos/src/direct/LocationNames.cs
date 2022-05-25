@@ -270,6 +270,11 @@ namespace Microsoft.Azure.Documents
         public const string USSecWest = "USSec West";
 
         /// <summary>
+        /// Name of the Azure USSec West Central region in the Azure Cosmos DB service.
+        /// </summary>
+        internal const string USSecWestCentral = "USSec West Central";
+
+        /// <summary>
         /// Name of the Azure Switzerland North region in the Azure Cosmos DB service.
         /// </summary>
         public const string SwitzerlandNorth = "Switzerland North";
@@ -350,3 +355,4 @@ namespace Microsoft.Azure.Documents
         internal const string ChinaEast3 = "China East 3";
     }
 }
+

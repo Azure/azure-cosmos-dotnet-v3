@@ -187,6 +187,8 @@ namespace Microsoft.Azure.Documents
                         else
                         {
                             DefaultTrace.TraceError("{0}. Will fail the request. {1}", message, exception.ToStringWithData());
+                            SubStatusCodes exceptionSubStatus = DocumentClientException.GetExceptionSubStatusForGoneRetryPolicy(exception);
+
 
                             if (this.detectConnectivityIssues &&
                                 this.request.RequestContext.ClientRequestStatistics != null &&
@@ -197,7 +199,8 @@ namespace Microsoft.Azure.Documents
                                         RMResources.ClientCpuOverload,
                                         this.request.RequestContext.ClientRequestStatistics.FailedReplicas.Count,
                                         this.request.RequestContext.ClientRequestStatistics.RegionsContacted.Count == 0 ?
-                                            1 : this.request.RequestContext.ClientRequestStatistics.RegionsContacted.Count));
+                                            1 : this.request.RequestContext.ClientRequestStatistics.RegionsContacted.Count),
+                                    SubStatusCodes.Client_CPUOverload);
                             }
                             if (this.detectConnectivityIssues &&
                                this.request.RequestContext.ClientRequestStatistics != null &&
@@ -208,7 +211,8 @@ namespace Microsoft.Azure.Documents
                                         RMResources.ClientCpuThreadStarvation,
                                         this.request.RequestContext.ClientRequestStatistics.FailedReplicas.Count,
                                         this.request.RequestContext.ClientRequestStatistics.RegionsContacted.Count == 0 ?
-                                            1 : this.request.RequestContext.ClientRequestStatistics.RegionsContacted.Count));
+                                            1 : this.request.RequestContext.ClientRequestStatistics.RegionsContacted.Count),
+                                    SubStatusCodes.Client_ThreadStarvation);
                             }
                             else if (this.detectConnectivityIssues &&
                                 this.request.RequestContext.ClientRequestStatistics != null &&
@@ -221,11 +225,12 @@ namespace Microsoft.Azure.Documents
                                         this.request.RequestContext.ClientRequestStatistics.FailedReplicas.Count, 
                                         this.request.RequestContext.ClientRequestStatistics.RegionsContacted.Count == 0 ?
                                             1 : this.request.RequestContext.ClientRequestStatistics.RegionsContacted.Count), 
-                                    exception);
+                                    exception,
+                                    exceptionSubStatus);
                             }
                             else
                             {
-                                exceptionToThrow = new ServiceUnavailableException(exception);
+                                exceptionToThrow = new ServiceUnavailableException(exception, exceptionSubStatus);
                             }
                         }
                     }
@@ -272,8 +277,9 @@ namespace Microsoft.Azure.Documents
                 if (this.attemptCountInvalidPartition++ > 2)
                 {
                     // for second InvalidPartitionException, stop retrying.
+                    SubStatusCodes exceptionSubStatusCode = DocumentClientException.GetExceptionSubStatusForGoneRetryPolicy(exception);
                     DefaultTrace.TraceCritical("Received second InvalidPartitionException after backoff/retry. Will fail the request. {0}", exception.ToStringWithData());
-                    return Task.FromResult(ShouldRetryResult<Tuple<bool, bool, TimeSpan, int, int, TimeSpan>>.NoRetry(new ServiceUnavailableException(exception)));
+                    return Task.FromResult(ShouldRetryResult<Tuple<bool, bool, TimeSpan, int, int, TimeSpan>>.NoRetry(new ServiceUnavailableException(exception, exceptionSubStatusCode)));
                 }
 
                 if (this.request != null)

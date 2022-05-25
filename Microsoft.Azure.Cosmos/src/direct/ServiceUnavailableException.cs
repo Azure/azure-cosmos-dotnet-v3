@@ -13,43 +13,42 @@ namespace Microsoft.Azure.Documents
     internal sealed class ServiceUnavailableException : DocumentClientException
     {
         public ServiceUnavailableException()
-            : this(RMResources.ServiceUnavailable)
+            : this(RMResources.ServiceUnavailable, SubStatusCodes.Unknown)
         {
 
         }
 
-        public ServiceUnavailableException(string message, SubStatusCodes subStatusCode)
-            : base(message, HttpStatusCode.ServiceUnavailable, subStatusCode)
+        public ServiceUnavailableException(string message)
+            : this(message, null, null, SubStatusCodes.Unknown)
+        {
+        }
+
+        public ServiceUnavailableException(string message, SubStatusCodes subStatusCode, Uri requestUri = null)
+            : this(message, null, null, subStatusCode, requestUri)
         {
 
         }
 
-        public ServiceUnavailableException(string message, Uri requestUri = null)
-            : this(message, null, null, requestUri)
+        public ServiceUnavailableException(string message, Exception innerException, SubStatusCodes subStatusCode, Uri requestUri = null)
+            : this(message, innerException, null, subStatusCode, requestUri)
         {
 
         }
 
-        public ServiceUnavailableException(string message, Exception innerException, Uri requestUri = null)
-            : this(message, innerException, null, requestUri)
+        public ServiceUnavailableException(string message, HttpResponseHeaders headers, SubStatusCodes? subStatusCode, Uri requestUri = null)
+            : this(message, null, headers, subStatusCode, requestUri)
         {
 
         }
 
-        public ServiceUnavailableException(string message, HttpResponseHeaders headers, Uri requestUri = null)
-            : this(message, null, headers, requestUri)
+        public ServiceUnavailableException(Exception innerException, SubStatusCodes subStatusCode)
+            : this(RMResources.ServiceUnavailable, innerException, null, subStatusCode)
         {
 
         }
 
-        public ServiceUnavailableException(Exception innerException)
-            : this(RMResources.ServiceUnavailable, innerException, null)
-        {
-
-        }
-
-        public ServiceUnavailableException(string message, INameValueCollection headers, Uri requestUri = null)
-            : base(message, null, headers, HttpStatusCode.ServiceUnavailable, requestUri)
+        public ServiceUnavailableException(string message, INameValueCollection headers, SubStatusCodes? subStatusCode, Uri requestUri = null)
+            : base(message, null, headers, HttpStatusCode.ServiceUnavailable, subStatusCode, requestUri)
         {
             SetDescription();
         }
@@ -57,8 +56,9 @@ namespace Microsoft.Azure.Documents
         public ServiceUnavailableException(string message,
             Exception innerException,
             HttpResponseHeaders headers,
+            SubStatusCodes? subStatusCode,
             Uri requestUri = null)
-            : base(message, innerException, headers, HttpStatusCode.ServiceUnavailable, requestUri)
+            : base(message, innerException, headers, HttpStatusCode.ServiceUnavailable, requestUri, subStatusCode)
         {
             SetDescription();
         }

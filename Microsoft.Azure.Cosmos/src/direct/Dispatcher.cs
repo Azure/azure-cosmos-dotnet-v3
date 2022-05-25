@@ -52,6 +52,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         private Task receiveTask = null; // Guarded by callLock.
         // Guarded by callLock.
         private readonly Dictionary<uint, CallInfo> calls = new Dictionary<uint, CallInfo>();
+
         // Guarded by callLock.
         // The call map can become frozen if the underlying connection becomes
         // unusable. This can happen if initialization fails, either the send
@@ -73,12 +74,14 @@ namespace Microsoft.Azure.Documents.Rntbd
             TimeSpan sendHangDetectionTime,
             TimerPool idleTimerPool,
             TimeSpan idleTimeout,
-            bool enableChannelMultiplexing)
+            bool enableChannelMultiplexing,
+            MemoryStreamPool memoryStreamPool)
         {
             this.connection = new Connection(
                 serverUri, hostNameCertificateOverride,
                 receiveHangDetectionTime, sendHangDetectionTime,
-                idleTimeout);
+                idleTimeout,
+                memoryStreamPool);
             this.userAgent = userAgent;
             this.connectionStateListener = connectionStateListener;
             this.serverUri = serverUri;
@@ -223,18 +226,17 @@ namespace Microsoft.Azure.Documents.Rntbd
         public sealed class PrepareCallResult : IDisposable
         {
             private bool disposed = false;
-            private BufferProvider.DisposableBuffer disposableBuffer;
 
-            public PrepareCallResult(uint requestId, Uri uri, BufferProvider.DisposableBuffer serializedRequest)
+            public PrepareCallResult(uint requestId, Uri uri, TransportSerialization.SerializedRequest serializedRequest)
             {
                 this.RequestId = requestId;
                 this.Uri = uri;
-                this.disposableBuffer = serializedRequest;
+                this.SerializedRequest = serializedRequest;
             }
 
             public uint RequestId { get; private set; }
 
-            public ArraySegment<byte> SerializedRequest => this.disposableBuffer.Buffer;
+            public TransportSerialization.SerializedRequest SerializedRequest { get; }
             public Uri Uri { get; private set; }
 
             /// <inheritdoc />
@@ -242,7 +244,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 if (!this.disposed)
                 {
-                    this.disposableBuffer.Dispose();
+                    this.SerializedRequest.Dispose();
                     this.disposed = true;
                 }
             }
@@ -271,7 +273,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
                 int headerSize;
                 int? bodySize;
-                BufferProvider.DisposableBuffer serializedRequest = TransportSerialization.BuildRequest(
+                TransportSerialization.SerializedRequest serializedRequest = TransportSerialization.BuildRequest(
                     request,
                     physicalAddress.PathAndQuery,
                     resourceOperation,
@@ -281,7 +283,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     out bodySize);
 
                 transportRequestStats.RequestBodySizeInBytes = bodySize;
-                transportRequestStats.RequestSizeInBytes = serializedRequest.Buffer.Count;
+                transportRequestStats.RequestSizeInBytes = serializedRequest.RequestSize;
 
                 return new PrepareCallResult(requestId, physicalAddress.Uri, serializedRequest);
             }
@@ -302,6 +304,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 Debug.Assert(!Monitor.IsEntered(this.callLock));
                 lock (this.callLock)
                 {
+                    transportRequestStats.NumberOfInflightRequestsInConnection = this.calls.Count;
                     if (!this.callsAllowed)
                     {
                         Debug.Assert(args.CommonArguments.UserPayload);
@@ -319,7 +322,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                     {
                         await this.connection.WriteRequestAsync(
                             args.CommonArguments,
-                            args.PreparedCall.SerializedRequest);
+                            args.PreparedCall.SerializedRequest,
+                            transportRequestStats);
                         transportRequestStats.RecordState(TransportRequestStats.RequestStage.Sent);
                     }
                     catch (Exception e)
@@ -613,7 +617,10 @@ namespace Microsoft.Azure.Documents.Rntbd
             byte[] contextMessage = TransportSerialization.BuildContextRequest(
                 args.CommonArguments.ActivityId, this.userAgent, args.CallerId, this.enableChannelMultiplexing);
 
-            await this.connection.WriteRequestAsync(args.CommonArguments, new ArraySegment<byte>(contextMessage, 0, contextMessage.Length));
+            await this.connection.WriteRequestAsync(
+                args.CommonArguments, 
+                new TransportSerialization.SerializedRequest(new BufferProvider.DisposableBuffer(contextMessage), requestBody: null),
+                transportRequestStats: null);
 
             // Read the response.
             using Connection.ResponseMetadata responseMd =
@@ -639,16 +646,14 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             if ((UInt32)status < 200 || (UInt32)status >= 400)
             {
-                byte[] errorResponse;
                 Debug.Assert(args.CommonArguments.UserPayload == false);
-                errorResponse = await this.connection.ReadResponseBodyAsync(
+
+                using (MemoryStream errorResponseStream = await this.connection.ReadResponseBodyAsync(
                     new ChannelCommonArguments(activityId,
                         TransportErrorCode.TransportNegotiationTimeout,
-                        args.CommonArguments.UserPayload));
-
-                using (MemoryStream errorReadStream = new MemoryStream(errorResponse))
+                        args.CommonArguments.UserPayload)))
                 {
-                    Error error = Resource.LoadFrom<Error>(errorReadStream);
+                    Error error = Resource.LoadFrom<Error>(errorResponseStream);
 
                     DocumentClientException exception = new DocumentClientException(
                         string.Format(CultureInfo.CurrentUICulture,
@@ -717,8 +722,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     MemoryStream bodyStream = null;
                     if (response.Entity.payloadPresent.value.valueByte != (byte) 0x00)
                     {
-                        byte[] body = await this.connection.ReadResponseBodyAsync(args);
-                        bodyStream = StreamExtension.CreateExportableMemoryStream(body);
+                        bodyStream = await this.connection.ReadResponseBodyAsync(args);
                     }
 
                     this.DispatchRntbdResponse(responseMd, response, header, bodyStream);
@@ -1064,6 +1068,23 @@ namespace Microsoft.Azure.Documents.Rntbd
                     CancellationToken.None,
                     TaskCreationOptions.DenyChildAttach,
                     this.scheduler).ContinueWith(
+                    failedTask =>
+                    {
+                        DefaultTrace.TraceError(
+                            "Unexpected: Rntbd asynchronous completion " +
+                            "call failed. Consuming the task exception asynchronously. " +
+                            "Exception: {0}", failedTask.Exception?.InnerException);
+                    },
+                    TaskContinuationOptions.OnlyOnFaulted);
+            }
+
+            private void RunAsynchronously(Func<Task> action)
+            {
+                Task.Factory.StartNew(
+                    action,
+                    CancellationToken.None,
+                    TaskCreationOptions.DenyChildAttach,
+                    this.scheduler).Unwrap().ContinueWith(
                     failedTask =>
                     {
                         DefaultTrace.TraceError(

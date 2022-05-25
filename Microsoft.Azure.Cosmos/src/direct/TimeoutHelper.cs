@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Documents
             this.cancellationToken.ThrowIfCancellationRequested();
             if (this.IsElapsed())
             {
-                throw new GoneException(RMResources.Gone);
+                throw new GoneException(RMResources.Gone, SubStatusCodes.TimeoutGenerated410);
             }
         }
     }

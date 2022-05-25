@@ -371,6 +371,13 @@ namespace Microsoft.Azure.Documents
 
         public bool ForceNameCacheRefresh { get; set; }
 
+        /// <summary>
+        /// CollectionRoutingMap hash code is used in the cache
+        /// refresh scenarios to avoid doing a refresh when another
+        /// request already completed one.
+        /// </summary>
+        public int LastCollectionRoutingMapHashCode { get; set; }
+
         public bool ForcePartitionKeyRangeRefresh { get; set; }
 
         public bool ForceCollectionRoutingMapRefresh { get; set; }
@@ -995,6 +1002,7 @@ namespace Microsoft.Azure.Documents
                QueryString  = this.QueryString,
                Continuation = this.Continuation,
                ForcePartitionKeyRangeRefresh = this.ForcePartitionKeyRangeRefresh,
+               LastCollectionRoutingMapHashCode = this.LastCollectionRoutingMapHashCode,
                ForceCollectionRoutingMapRefresh = this.ForceCollectionRoutingMapRefresh,
                ForceMasterRefresh = this.ForceMasterRefresh,
                DefaultReplicaIndex = this.DefaultReplicaIndex,

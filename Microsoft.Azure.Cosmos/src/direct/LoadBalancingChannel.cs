@@ -58,7 +58,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                     channelProperties.IdleTimeout,
                     channelProperties.IdleTimerPool,
                     channelProperties.CallerId,
-                    channelProperties.EnableChannelMultiplexing);
+                    channelProperties.EnableChannelMultiplexing,
+                    channelProperties.MemoryStreamPool);
                 this.partitions = new LoadBalancingPartition[channelProperties.PartitionCount];
                 for (int i = 0; i < this.partitions.Length; i++)
                 {
