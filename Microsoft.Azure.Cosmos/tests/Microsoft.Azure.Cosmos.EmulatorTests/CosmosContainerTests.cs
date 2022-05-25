@@ -1419,46 +1419,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ContainerResponse readResponse = await container.ReadContainerAsync();
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);
-
-
-            // with Partition Key paths/ hierarchical partition keys. 
-            containerName = Guid.NewGuid().ToString();
-            setting = new ContainerProperties()
-            {
-                Id = containerName,
-                PartitionKeyPaths = new List<string> { partitionKeyPath, "/path2" },
-                ClientEncryptionPolicy = new ClientEncryptionPolicy(paths, 2)
-            };
-
-            
-            containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(setting);
-            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            container = containerResponse;
-            responseSettings = containerResponse;
-
-            Assert.AreEqual(3, responseSettings.ClientEncryptionPolicy.IncludedPaths.Count());
-            includedPath = responseSettings.ClientEncryptionPolicy.IncludedPaths.ElementAt(0);
-            Assert.AreEqual(partitionKeyPath, includedPath.Path);
-            Assert.AreEqual("dekId1", includedPath.ClientEncryptionKeyId);
-            Assert.AreEqual("AEAD_AES_256_CBC_HMAC_SHA256", includedPath.EncryptionAlgorithm);
-            Assert.AreEqual("Deterministic", includedPath.EncryptionType);
-
-            includedPath = responseSettings.ClientEncryptionPolicy.IncludedPaths.ElementAt(1);
-            Assert.AreEqual("/id", includedPath.Path);
-            Assert.AreEqual("dekId2", includedPath.ClientEncryptionKeyId);
-            Assert.AreEqual("AEAD_AES_256_CBC_HMAC_SHA256", includedPath.EncryptionAlgorithm);
-            Assert.AreEqual("Deterministic", includedPath.EncryptionType);
-
-            includedPath = responseSettings.ClientEncryptionPolicy.IncludedPaths.ElementAt(2);
-            Assert.AreEqual("/path2", includedPath.Path);
-            Assert.AreEqual("dekId2", includedPath.ClientEncryptionKeyId);
-            Assert.AreEqual("AEAD_AES_256_CBC_HMAC_SHA256", includedPath.EncryptionAlgorithm);
-            Assert.AreEqual("Deterministic", includedPath.EncryptionType);
-
-            readResponse = await container.ReadContainerAsync();
-            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);
+            Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);           
 
             // version 1 test.
             containerName = Guid.NewGuid().ToString();
@@ -1508,38 +1469,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             readResponse = await container.ReadContainerAsync();
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);
-
-            // with Partition Key paths/ hierarchical partition keys.
-            containerName = Guid.NewGuid().ToString();
-            setting = new ContainerProperties()
-            {
-                Id = containerName,
-                PartitionKeyPaths = new List<string> { partitionKeyPath, "/users2" },
-                ClientEncryptionPolicy = new ClientEncryptionPolicy(paths)
-            };
-
-            containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(setting);
-            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            container = containerResponse;
-            responseSettings = containerResponse;
-
-            Assert.AreEqual(2, responseSettings.ClientEncryptionPolicy.IncludedPaths.Count());
-            includedPath = responseSettings.ClientEncryptionPolicy.IncludedPaths.ElementAt(0);
-            Assert.AreEqual("/path1", includedPath.Path);
-            Assert.AreEqual("dekId1", includedPath.ClientEncryptionKeyId);
-            Assert.AreEqual("AEAD_AES_256_CBC_HMAC_SHA256", includedPath.EncryptionAlgorithm);
-            Assert.AreEqual("Randomized", includedPath.EncryptionType);
-
-            includedPath = responseSettings.ClientEncryptionPolicy.IncludedPaths.ElementAt(1);
-            Assert.AreEqual("/path2", includedPath.Path);
-            Assert.AreEqual("dekId2", includedPath.ClientEncryptionKeyId);
-            Assert.AreEqual("AEAD_AES_256_CBC_HMAC_SHA256", includedPath.EncryptionAlgorithm);
-            Assert.AreEqual("Deterministic", includedPath.EncryptionType);
-
-            readResponse = await container.ReadContainerAsync();
-            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);
+            Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);           
 
             // replace without updating CEP should be successful
             readResponse.Resource.IndexingPolicy = new Cosmos.IndexingPolicy()
