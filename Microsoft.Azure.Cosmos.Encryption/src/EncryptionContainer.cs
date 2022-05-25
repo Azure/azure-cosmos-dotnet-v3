@@ -783,7 +783,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             FeedRange feedRange,
             CancellationToken cancellationToken = default)
         {
-            IEnumerable<string> partitionKeyRange =  this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
+            return this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
         }
 #endif
 
