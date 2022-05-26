@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
             IntPtr provider;
             TryCatch<IntPtr> tryCreateServiceProvider = QueryPartitionProvider.CreateServiceProvider(configJson);
             Assert.IsFalse(tryCreateServiceProvider.Failed);
+            // Don't leak on tests
             Marshal.Release(tryCreateServiceProvider.Result);
         }
 
