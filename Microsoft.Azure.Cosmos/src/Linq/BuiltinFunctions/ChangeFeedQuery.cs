@@ -147,16 +147,16 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private async Task<DocumentServiceResponse> GetFeedResponseAsync(string resourceLink, ResourceType resourceType, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
-            INameValueCollection headers = new StoreRequestNameValueCollection();
+            RequestNameValueCollection headers = new RequestNameValueCollection();
 
             if (this.feedOptions.MaxItemCount.HasValue)
             {
-                headers.Set(HttpConstants.HttpHeaders.PageSize, this.feedOptions.MaxItemCount.ToString());
+                headers.PageSize = this.feedOptions.MaxItemCount.ToString();
             }
 
             if (this.feedOptions.SessionToken != null)
             {
-                headers.Set(HttpConstants.HttpHeaders.SessionToken, this.feedOptions.SessionToken);
+                headers.SessionToken = this.feedOptions.SessionToken;
             }
 
             if (resourceType.IsPartitioned() && this.feedOptions.PartitionKeyRangeId == null && this.feedOptions.PartitionKey == null)
@@ -167,12 +167,12 @@ namespace Microsoft.Azure.Cosmos.Linq
             // On REST level, change feed is using IfNoneMatch/ETag instead of continuation.
             if (this.nextIfNoneMatch != null)
             {
-                headers.Set(HttpConstants.HttpHeaders.IfNoneMatch, this.nextIfNoneMatch);
+                headers.IfNoneMatch = this.nextIfNoneMatch;
             }
 
             if (this.ifModifiedSince != null)
             {
-                headers.Set(HttpConstants.HttpHeaders.IfModifiedSince, this.ifModifiedSince);
+                headers.IfModifiedSince = this.ifModifiedSince;
             }
 
             headers.Set(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);
@@ -180,12 +180,12 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (this.feedOptions.PartitionKey != null)
             {
                 PartitionKeyInternal partitionKey = this.feedOptions.PartitionKey.InternalKey;
-                headers.Set(HttpConstants.HttpHeaders.PartitionKey, partitionKey.ToJsonString());
+                headers.PartitionKey = partitionKey.ToJsonString();
             }
 
             if (this.feedOptions.IncludeTentativeWrites)
             {
-                headers.Set(HttpConstants.HttpHeaders.IncludeTentativeWrites, bool.TrueString);
+                headers.IncludeTentativeWrites = bool.TrueString;
             }
 
             using (DocumentServiceRequest request = this.client.CreateDocumentServiceRequest(

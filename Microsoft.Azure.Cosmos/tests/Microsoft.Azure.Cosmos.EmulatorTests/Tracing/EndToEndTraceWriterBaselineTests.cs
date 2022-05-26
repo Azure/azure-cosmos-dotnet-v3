@@ -313,7 +313,19 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 await processor.StartAsync();
 
                 // Letting processor initialize
-                await Task.Delay(2000);
+                bool hasLeases = false;
+                while (!hasLeases)
+                {
+                    int leases = leaseContainer.GetItemLinqQueryable<JObject>(true).Count();
+                    if (leases > 1)
+                    {
+                        hasLeases = true;
+                    }
+                    else
+                    {
+                        await Task.Delay(1000);
+                    }
+                }
 
                 await processor.StopAsync();
 
@@ -1355,7 +1367,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             public TimeSpan Duration => TimeSpan.Zero;
 
             public TraceLevel Level { get; }
-
+            
             public TraceSummary Summary { get; }
 
             public TraceComponent Component { get; }

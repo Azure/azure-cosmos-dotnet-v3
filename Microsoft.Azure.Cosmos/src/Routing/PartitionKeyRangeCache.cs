@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             HttpStatusCode lastStatusCode = HttpStatusCode.OK;
             do
             {
-                INameValueCollection headers = new StoreRequestNameValueCollection();
+                INameValueCollection headers = new RequestNameValueCollection();
 
                 headers.Set(HttpConstants.HttpHeaders.PageSize, PageSizeString);
                 headers.Set(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);

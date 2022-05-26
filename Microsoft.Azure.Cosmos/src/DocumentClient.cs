@@ -6732,7 +6732,7 @@ namespace Microsoft.Azure.Cosmos
                 this.isSuccessfullyInitialized,
                 "GetRequestHeaders should be called after initialization task has been awaited to avoid blocking while accessing ConsistencyLevel property");
 
-            INameValueCollection headers = new StoreRequestNameValueCollection();
+            RequestNameValueCollection headers = new RequestNameValueCollection();
 
             if (this.UseMultipleWriteLocations)
             {
@@ -6755,7 +6755,7 @@ namespace Microsoft.Azure.Cosmos
                             this.accountServiceConfiguration.DefaultConsistencyLevel));
                 }
 
-                headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, this.desiredConsistencyLevel.Value.ToString());
+                headers.ConsistencyLevel = this.desiredConsistencyLevel.Value.ToString();
             }
 
             if (options == null)
@@ -6767,11 +6767,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (options.AccessCondition.Type == Documents.Client.AccessConditionType.IfMatch)
                 {
-                    headers.Set(HttpConstants.HttpHeaders.IfMatch, options.AccessCondition.Condition);
+                    headers.IfMatch = options.AccessCondition.Condition;
                 }
                 else
                 {
-                    headers.Set(HttpConstants.HttpHeaders.IfNoneMatch, options.AccessCondition.Condition);
+                    headers.IfNoneMatch = options.AccessCondition.Condition;
                 }
             }
 
