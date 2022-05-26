@@ -32,7 +32,7 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' == 'True' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.27.0-preview" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.27.1-preview" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SdkProjectRef)' == 'True' ">
