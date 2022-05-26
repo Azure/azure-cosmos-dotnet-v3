@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 {
                     processMessageAsyncTrace.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum);
                 }
-               
+
                 return response.ToCosmosResponseMessage(
                     request,
                     serviceRequest.RequestContext.RequestChargeTracker);

@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             TraceLevel level,
             TraceComponent component,
             Trace parent,
-            ISet<(string, Uri)> regionContactedInternal, 
+            ISet<(string, Uri)> regionContactedInternal,
             TraceSummary summary)
         {
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
@@ -61,8 +61,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public IReadOnlyDictionary<string, object> Data => this.data.IsValueCreated ? this.data.Value : Trace.EmptyDictionary;
 
-        public IReadOnlyList<(string, Uri)> RegionsContacted 
-        { 
+        public IReadOnlyList<(string, Uri)> RegionsContacted
+        {
             get
             {
                 lock (this.regionContactedInternal)
@@ -80,12 +80,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
             {
-                if (clientSideRequestStatisticsTraceDatum.RegionsContacted == null || 
+                if (clientSideRequestStatisticsTraceDatum.RegionsContacted == null ||
                             clientSideRequestStatisticsTraceDatum.RegionsContacted.Count == 0)
                 {
                     return;
                 }
-               
+
                 lock (this.regionContactedInternal)
                 {
                     this.regionContactedInternal.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);

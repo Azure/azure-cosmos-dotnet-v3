@@ -401,7 +401,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                     TraceForBaselineTesting rootTrace;
                     using (rootTrace = TraceForBaselineTesting.GetRootTrace())
                     {
-                        ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue,new TraceSummary());
+                        ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue, new TraceSummary());
                         datum.ContactedReplicas.Add(default);
 
                         TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf", default);
@@ -455,7 +455,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                     using (rootTrace = TraceForBaselineTesting.GetRootTrace())
                     {
                         ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue, new TraceSummary());
-                        TraceWriterBaselineTests.SetEndRequestTime(datum,DateTime.MaxValue);
+                        TraceWriterBaselineTests.SetEndRequestTime(datum, DateTime.MaxValue);
 
                         HttpResponseStatistics httpResponseStatistics = new HttpResponseStatistics(
                             DateTime.MinValue,
@@ -864,7 +864,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 .Select(x => x != string.Empty ? x.Substring("            ".Length) : string.Empty))
                     + Environment.NewLine;
                 }
-                catch(Exception)
+                catch (Exception)
                 {
                     throw;
                 }
@@ -987,4 +987,3 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
         }
     }
 }
-
