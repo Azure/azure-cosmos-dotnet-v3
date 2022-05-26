@@ -11,13 +11,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Data.Encryption.Cryptography;
 
     internal sealed class EncryptionSettings
     {
         private readonly Dictionary<string, EncryptionSettingForProperty> encryptionSettingsDictByPropertyName;
 
-        private EncryptionSettings(string containerRidValue, string partitionKeyPath)
+        private EncryptionSettings(string containerRidValue, IReadOnlyList<string> partitionKeyPath)
         {
             this.ContainerRidValue = containerRidValue;
             this.PartitionKeyPath = partitionKeyPath;
@@ -27,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public string ContainerRidValue { get; }
 
-        public string PartitionKeyPath { get; }
+        public IReadOnlyList<string> PartitionKeyPath { get; }
 
         public IEnumerable<string> PropertiesToEncrypt { get; }
 
@@ -77,12 +76,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
             // set the Container Rid.
             string containerRidValue = containerResponse.Resource.SelfLink.Split('/').ElementAt(3);
 
-            string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
+            IReadOnlyList<string> partitionKeyPaths = null;
+
+#if ENCRYPTIONPREVIEW
+            if (containerResponse.Resource.PartitionKeyPaths.Any())
+            {
+                partitionKeyPaths = containerResponse.Resource.PartitionKeyPaths;
+            }
+            else
+#endif
+            {
+                partitionKeyPaths = new List<string> { containerResponse.Resource.PartitionKeyPath };
+            }
 
             // set the ClientEncryptionPolicy for the Settings.
             ClientEncryptionPolicy clientEncryptionPolicy = containerResponse.Resource.ClientEncryptionPolicy;
 
-            EncryptionSettings encryptionSettings = new EncryptionSettings(containerRidValue, partitionKeyPath);
+            EncryptionSettings encryptionSettings = new EncryptionSettings(containerRidValue, partitionKeyPaths);
 
             if (clientEncryptionPolicy != null)
             {

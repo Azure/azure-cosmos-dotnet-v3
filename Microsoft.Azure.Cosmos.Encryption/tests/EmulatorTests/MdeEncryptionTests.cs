@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -73,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 new ClientEncryptionIncludedPath()
                 {
-                    Path = "/Sensitive_StringFormat",
+                    Path = "/PK",
                     ClientEncryptionKeyId = "key1",
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
@@ -169,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             };
 
 
-            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy(paths);
+            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy(paths, 2);
            
 
             ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
@@ -541,8 +542,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await MdeEncryptionTests.ValidateQueryResultsAsync(
                 MdeEncryptionTests.encryptionContainer,
                 string.Format(
-                    "SELECT * FROM c where c.PK = '{0}' and c.NonSensitive = '{1}'",
-                    expectedDoc.PK,
+                    "SELECT * FROM c where c.NonSensitive = '{0}'",
                     expectedDoc.NonSensitive),
                 expectedDoc);
 
@@ -851,7 +851,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             // test GetItemLinqQueryable
             await MdeEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(MdeEncryptionTests.encryptionContainer, testDoc1, testDoc2, null, expectedPropertiesDecryptedCount: 24);
 
-            string query = $"SELECT * FROM c WHERE c.PK in ('{testDoc1.PK}', '{testDoc2.PK}')";
+            string query = $"SELECT * FROM c WHERE c.NonSensitive in ('{testDoc1.NonSensitive}', '{testDoc2.NonSensitive}')";
             await MdeEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(MdeEncryptionTests.encryptionContainer, testDoc1, testDoc2, query, expectedPropertiesDecryptedCount: 24);
 
             // ORDER BY query
@@ -1934,7 +1934,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath> { cepWithPKIdPath1, cepWithPKIdPath2 };
 
-            ClientEncryptionPolicy clientEncryptionPolicyWithRevokedKek = new ClientEncryptionPolicy(paths);
+            ClientEncryptionPolicy clientEncryptionPolicyWithRevokedKek = new ClientEncryptionPolicy(paths, 2);
 
             ContainerProperties containerProperties = new ContainerProperties("StringPkEncContainer", "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyWithRevokedKek };
 
@@ -1948,6 +1948,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, createResponse.Resource);
 
+            ItemResponse<TestDoc> readResponse = await encryptionContainer.ReadItemAsync<TestDoc>(
+               testDoc.Id,
+               new PartitionKey(testDoc.PK));
+
+            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+            VerifyExpectedDocResponse(testDoc, readResponse.Resource);
 
             // encrypt Float type PK
             cepWithPKIdPath1 = new ClientEncryptionIncludedPath()
@@ -1968,7 +1974,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             paths = new Collection<ClientEncryptionIncludedPath> { cepWithPKIdPath1, cepWithPKIdPath2 };
 
-            clientEncryptionPolicyWithRevokedKek = new ClientEncryptionPolicy(paths);
+            clientEncryptionPolicyWithRevokedKek = new ClientEncryptionPolicy(paths, 2);
 
             containerProperties = new ContainerProperties("FloatPkEncContainer", "/Sensitive_FloatFormat") { ClientEncryptionPolicy = clientEncryptionPolicyWithRevokedKek };
 
@@ -1977,9 +1983,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             createResponse = await encryptionContainer.CreateItemAsync(
                 testDoc,
-                new PartitionKey(Double.Parse(testDoc.Sensitive_FloatFormat.ToString())));
+                new PartitionKey(testDoc.Sensitive_FloatFormat));
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, createResponse.Resource);
+
+            // readback
+            readResponse = await encryptionContainer.ReadItemAsync<TestDoc>(
+               testDoc.Id,
+               new PartitionKey(double.Parse(testDoc.Sensitive_FloatFormat.ToString())));
+
+            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+            VerifyExpectedDocResponse(testDoc, readResponse.Resource);
 
             // encrypt bool type PK
             cepWithPKIdPath1 = new ClientEncryptionIncludedPath()
@@ -2000,7 +2014,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             paths = new Collection<ClientEncryptionIncludedPath> { cepWithPKIdPath1, cepWithPKIdPath2 };
 
-            clientEncryptionPolicyWithRevokedKek = new ClientEncryptionPolicy(paths);
+            clientEncryptionPolicyWithRevokedKek = new ClientEncryptionPolicy(paths, 2);
 
             containerProperties = new ContainerProperties("BoolPkEncContainer", "/Sensitive_BoolFormat") { ClientEncryptionPolicy = clientEncryptionPolicyWithRevokedKek };
 
@@ -2012,6 +2026,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 new PartitionKey(testDoc.Sensitive_BoolFormat));
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, createResponse.Resource);
+
+            // read back
+            readResponse = await encryptionContainer.ReadItemAsync<TestDoc>(
+               testDoc.Id,
+               new PartitionKey(testDoc.Sensitive_BoolFormat));
+
+            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+            VerifyExpectedDocResponse(testDoc, readResponse.Resource);
 
             // encrypt Decimal type PK
             cepWithPKIdPath1 = new ClientEncryptionIncludedPath()
@@ -2032,7 +2054,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             paths = new Collection<ClientEncryptionIncludedPath> { cepWithPKIdPath1, cepWithPKIdPath2 };
 
-            clientEncryptionPolicyWithRevokedKek = new ClientEncryptionPolicy(paths);
+            clientEncryptionPolicyWithRevokedKek = new ClientEncryptionPolicy(paths, 2);
 
             containerProperties = new ContainerProperties("DecimalPkEncContainer", "/Sensitive_DecimalFormat") { ClientEncryptionPolicy = clientEncryptionPolicyWithRevokedKek };
 
@@ -2045,37 +2067,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, createResponse.Resource);
 
-            // encrypt int type PK
-            cepWithPKIdPath1 = new ClientEncryptionIncludedPath()
-            {
-                Path = "/Sensitive_IntFormat",
-                ClientEncryptionKeyId = "key1",
-                EncryptionType = "Deterministic",
-                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
-            };
+            // read back
+            readResponse = await encryptionContainer.ReadItemAsync<TestDoc>(
+               testDoc.Id,
+               new PartitionKey(Double.Parse(testDoc.Sensitive_DecimalFormat.ToString())));
 
-            cepWithPKIdPath2 = new ClientEncryptionIncludedPath()
-            {
-                Path = "/id",
-                ClientEncryptionKeyId = "key1",
-                EncryptionType = "Deterministic",
-                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
-            };
+            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+            VerifyExpectedDocResponse(testDoc, readResponse.Resource);
 
-            paths = new Collection<ClientEncryptionIncludedPath> { cepWithPKIdPath1, cepWithPKIdPath2 };
-
-            clientEncryptionPolicyWithRevokedKek = new ClientEncryptionPolicy(paths);
-
-            containerProperties = new ContainerProperties("IntPkEncContainer", "/Sensitive_IntFormat") { ClientEncryptionPolicy = clientEncryptionPolicyWithRevokedKek };
-
-            encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
-            await encryptionContainer.InitializeEncryptionAsync();
-
-            createResponse = await encryptionContainer.CreateItemAsync(
-                testDoc,
-                new PartitionKey(long.Parse(testDoc.Sensitive_IntFormat.ToString())));
-            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
-            VerifyExpectedDocResponse(testDoc, createResponse.Resource);
 
             // encrypt double type PK
             cepWithPKIdPath1 = new ClientEncryptionIncludedPath()
@@ -2096,7 +2095,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             paths = new Collection<ClientEncryptionIncludedPath> { cepWithPKIdPath1, cepWithPKIdPath2 };
 
-            clientEncryptionPolicyWithRevokedKek = new ClientEncryptionPolicy(paths);
+            clientEncryptionPolicyWithRevokedKek = new ClientEncryptionPolicy(paths, 2);
 
             containerProperties = new ContainerProperties("DoublePkEncContainer", "/Sensitive_DoubleFormat") { ClientEncryptionPolicy = clientEncryptionPolicyWithRevokedKek };
 
@@ -2109,7 +2108,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, createResponse.Resource);
 
-            // encrypt long type PK
+            // read back
+            readResponse = await encryptionContainer.ReadItemAsync<TestDoc>(
+               testDoc.Id,
+               new PartitionKey(testDoc.Sensitive_DoubleFormat));
+
+            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+            VerifyExpectedDocResponse(testDoc, readResponse.Resource);
+
+#if ENCRYPTIONPREVIEW
+            // hierarchical
             cepWithPKIdPath1 = new ClientEncryptionIncludedPath()
             {
                 Path = "/Sensitive_LongFormat",
@@ -2120,7 +2128,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             cepWithPKIdPath2 = new ClientEncryptionIncludedPath()
             {
-                Path = "/id",
+                Path = "/Sensitive_BoolFormat",
                 ClientEncryptionKeyId = "key1",
                 EncryptionType = "Deterministic",
                 EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
@@ -2128,35 +2136,34 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             paths = new Collection<ClientEncryptionIncludedPath> { cepWithPKIdPath1, cepWithPKIdPath2 };
 
-            clientEncryptionPolicyWithRevokedKek = new ClientEncryptionPolicy(paths);
+            clientEncryptionPolicyWithRevokedKek = new ClientEncryptionPolicy(paths, 2);
 
-            containerProperties = new ContainerProperties("LongPkEncContainer", "/Sensitive_LongFormat") { ClientEncryptionPolicy = clientEncryptionPolicyWithRevokedKek };
+            containerProperties = new ContainerProperties() 
+            { 
+                Id = "HierarchicalPkEncContainer",
+                PartitionKeyPaths = new List<string> { "/Sensitive_StringFormat", "/Sensitive_BoolFormat" },
+                ClientEncryptionPolicy = clientEncryptionPolicyWithRevokedKek 
+            };
 
             encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
             await encryptionContainer.InitializeEncryptionAsync();
 
+            PartitionKey hirarchicalPk = new PartitionKeyBuilder().Add(testDoc.Sensitive_StringFormat).Add(testDoc.Sensitive_BoolFormat).Build();
+
             createResponse = await encryptionContainer.CreateItemAsync(
                 testDoc,
-                new PartitionKey(testDoc.Sensitive_LongFormat));
+                partitionKey: hirarchicalPk);
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, createResponse.Resource);
 
-            // partition key none
-            testDoc = TestDoc.Create();
-            createResponse = await encryptionContainer.CreateItemAsync(
-               testDoc,
-               PartitionKey.None);
-
-            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
-            VerifyExpectedDocResponse(testDoc, createResponse.Resource);
-
-            ItemResponse<TestDoc> readResponse = await encryptionContainer.ReadItemAsync<TestDoc>(
+            // read back
+            readResponse = await encryptionContainer.ReadItemAsync<TestDoc>(
                testDoc.Id,
-               new PartitionKey(testDoc.Sensitive_LongFormat));
+               hirarchicalPk);
 
             Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, readResponse.Resource);
-
+#endif
         }
 
         [TestMethod]
@@ -2270,7 +2277,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 docPostPatching,
                 HttpStatusCode.OK);
 
-            VerifyDiagnostics(patchResponse.Diagnostics, expectedPropertiesEncryptedCount: 7);
+            VerifyDiagnostics(patchResponse.Diagnostics, expectedPropertiesEncryptedCount: 6);
 
             docPostPatching.Sensitive_ArrayFormat = new TestDoc.Sensitive_ArrayData[]
             {

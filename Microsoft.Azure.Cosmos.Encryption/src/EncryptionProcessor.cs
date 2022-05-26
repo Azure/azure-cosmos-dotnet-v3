@@ -66,6 +66,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 JProperty propertyToEncrypt = itemJObj.Property(propertyName);
                 if (propertyToEncrypt == null)
                 {
+                    if (propertyName.Equals("id"))
+                    {
+                        throw new InvalidOperationException("$ id field which is part of encryption policy is missing.");
+                    }
+
                     continue;
                 }
 
@@ -90,7 +95,25 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 propertiesEncryptedCount++;
             }
 
-            PartitionKey partitionKey = new PartitionKey((string)itemJObj.Property(encryptionSettings.PartitionKeyPath.Substring(1)).Value);
+            PartitionKey partitionKey;
+#if ENCRYPTIONPREVIEW
+            if (encryptionSettings.PartitionKeyPath.Count > 1)
+            {
+                PartitionKeyBuilder partitionKeyBuilder = new PartitionKeyBuilder();
+
+                foreach (string path in encryptionSettings.PartitionKeyPath)
+                {
+                    partitionKeyBuilder.Add((string)itemJObj.Property(path.Substring(1)).Value);
+                }
+
+                partitionKey = partitionKeyBuilder.Build();
+            }
+            else
+#endif
+            {
+                partitionKey = new PartitionKey((string)itemJObj.Property(encryptionSettings.PartitionKeyPath.First().Substring(1)).Value);
+            }
+
             Stream result = EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
             input.Dispose();
 

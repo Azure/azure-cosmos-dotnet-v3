@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Linq;
     using Newtonsoft.Json.Linq;
 
     internal sealed class EncryptionContainer : Container
@@ -109,6 +110,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (encryptionSettings.PropertiesToEncrypt.Any())
             {
                 id = await this.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(id, encryptionSettings, cancellationToken);
+                partitionKey = (PartitionKey)await this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(partitionKey, encryptionSettings, cancellationToken);
             }
 
             return await this.container.DeleteItemAsync<T>(
@@ -272,6 +274,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override TransactionalBatch CreateTransactionalBatch(
             PartitionKey partitionKey)
         {
+            EncryptionSettings encryptionSettings = this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                obsoleteEncryptionSettings: null,
+                cancellationToken: default)
+                .ConfigureAwait(false)
+                .GetAwaiter()
+                .GetResult();
+
+            partitionKey = (PartitionKey)this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(partitionKey, encryptionSettings, default)
+                .ConfigureAwait(false)
+                .GetAwaiter()
+                .GetResult();
+
             return new EncryptionTransactionalBatch(
                 this.container.CreateTransactionalBatch(partitionKey),
                 this,
@@ -957,37 +971,91 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionSettings encryptionSettings,
             CancellationToken cancellationToken)
         {
-            if (partitionKey == null || (partitionKey != null && partitionKey.RawPartitionKeyValue == null))
+            if (partitionKey == null || (partitionKey != null && partitionKey.ToString() == null /*partitionKey.RawPartitionKeyValue == null*/))
             {
                 return partitionKey;
             }
 
-            EncryptionSettingForProperty encryptionSettingForProperty = encryptionSettings.GetEncryptionSettingForProperty(
-                encryptionSettings.PartitionKeyPath.Substring(1));
+            EncryptionSettingForProperty encryptionSettingForProperty;
+            // if (partitionKey.RawPartitionKeyValue is object[] partitionKeyValues)
 
-            if (encryptionSettingForProperty == null)
+            JArray jArray = JArray.Parse(partitionKey.ToString());
+
+#if ENCRYPTIONPREVIEW
+            if (jArray.Count > 1)
             {
-                return partitionKey;
-            }
+                int i = 0;
+                PartitionKeyBuilder partitionKeyBuilder = new PartitionKeyBuilder();
 
-            Stream valueStream = this.CosmosSerializer.ToStream(partitionKey.RawPartitionKeyValue);
-
-            Stream encryptedPartitionKey = await EncryptionProcessor.EncryptValueStreamAsync(
-                valueStream,
-                encryptionSettingForProperty,
-                cancellationToken);
-
-            if (encryptedPartitionKey != null)
-            {
-                string encryptedPK = null;
-                using (StreamReader reader = new StreamReader(encryptedPartitionKey))
+                // partitionKeyBuilder expects the paths and values to be in same order.
+                foreach (string path in encryptionSettings.PartitionKeyPath)
                 {
-                    encryptedPK = await reader.ReadToEndAsync();
+                    encryptionSettingForProperty = encryptionSettings.GetEncryptionSettingForProperty(
+                        path.Substring(1));
+
+                    if (encryptionSettingForProperty == null)
+                    {
+                        // partitionKeyBuilder.Add(partitionKeyValues[i++].ToString());
+                        partitionKeyBuilder.Add(jArray[i++].ToString());
+                        continue;
+                    }
+
+                    // Stream valueStream = this.CosmosSerializer.ToStream(partitionKeyValues[i++]);
+                    Stream valueStream = this.CosmosSerializer.ToStream(jArray[i++]);
+
+                    Stream encryptedPartitionKey = await EncryptionProcessor.EncryptValueStreamAsync(
+                        valueStream,
+                        encryptionSettingForProperty,
+                        cancellationToken);
+
+                    if (encryptedPartitionKey != null)
+                    {
+                        string encryptedPK = null;
+                        using (StreamReader reader = new StreamReader(encryptedPartitionKey))
+                        {
+                            encryptedPK = await reader.ReadToEndAsync();
+                        }
+
+                        JToken encryptedKey = JToken.Parse(encryptedPK);
+
+                        partitionKeyBuilder.Add(encryptedKey.ToString());
+                    }
                 }
 
-                JToken encryptedKey = JToken.Parse(encryptedPK);
+                return partitionKeyBuilder.Build();
+            }
+            else
+#endif
+            {
+                encryptionSettingForProperty = encryptionSettings.GetEncryptionSettingForProperty(
+                    encryptionSettings.PartitionKeyPath.FirstOrDefault().Substring(1));
 
-                return new PartitionKey(encryptedKey.ToString());
+                if (encryptionSettingForProperty == null)
+                {
+                    return partitionKey;
+                }
+
+                Stream valueStream = this.CosmosSerializer.ToStream((JToken)jArray[0]);
+
+                //Stream valueStream = this.CosmosSerializer.ToStream(partitionKey.RawPartitionKeyValue);
+
+                Stream encryptedPartitionKey = await EncryptionProcessor.EncryptValueStreamAsync(
+                    valueStream,
+                    encryptionSettingForProperty,
+                    cancellationToken);
+
+                if (encryptedPartitionKey != null)
+                {
+                    string encryptedPK = null;
+                    using (StreamReader reader = new StreamReader(encryptedPartitionKey))
+                    {
+                        encryptedPK = await reader.ReadToEndAsync();
+                    }
+
+                    JToken encryptedKey = JToken.Parse(encryptedPK);
+
+                    return new PartitionKey(encryptedKey.ToString());
+                }
             }
 
             return null;
@@ -1315,7 +1383,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             for (int i = 0; i < items.Count; i++)
             {
-                encryptedItemList.Add((await this.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(items[i].id, encryptionSettings, cancellationToken), items[i].partitionKey));
+                string id = await this.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(items[i].id, encryptionSettings, cancellationToken);
+                PartitionKey partitionKey = (PartitionKey)await this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(items[i].partitionKey, encryptionSettings, cancellationToken);
+                encryptedItemList.Add((id, partitionKey));
             }
 
             ResponseMessage responseMessage = await this.container.ReadManyItemsStreamAsync(
