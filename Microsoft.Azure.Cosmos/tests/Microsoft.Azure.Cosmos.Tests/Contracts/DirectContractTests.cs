@@ -9,8 +9,11 @@ namespace Microsoft.Azure.Cosmos.Contracts
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Runtime.InteropServices;
     using System.Text;
     using System.Text.RegularExpressions;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -35,7 +38,9 @@ namespace Microsoft.Azure.Cosmos.Contracts
 
             string configJson = "{}";
             IntPtr provider;
-            uint result = ServiceInteropWrapper.CreateServiceProvider(configJson, out provider);
+            TryCatch<IntPtr> tryCreateServiceProvider = QueryPartitionProvider.CreateServiceProvider(configJson);
+            Assert.IsFalse(tryCreateServiceProvider.Failed);
+            Marshal.Release(tryCreateServiceProvider.Result);
         }
 
         [TestMethod]
