@@ -621,7 +621,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
-                .WithClientEncryptionPolicy(2)
+                .WithClientEncryptionPolicy(policyFormatVersion:2)
                     .WithIncludedPath(path1)
                     .WithIncludedPath(path2)
                     .Attach()

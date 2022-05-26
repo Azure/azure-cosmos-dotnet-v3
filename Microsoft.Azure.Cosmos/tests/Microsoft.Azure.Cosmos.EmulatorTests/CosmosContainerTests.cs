@@ -1390,7 +1390,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Id = containerName,
                 PartitionKey = new Documents.PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = Documents.PartitionKind.Hash },
-                ClientEncryptionPolicy = new ClientEncryptionPolicy(paths, 2)
+                ClientEncryptionPolicy = new ClientEncryptionPolicy(includedPaths:paths,policyFormatVersion:2)
             };
 
             ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(setting);
