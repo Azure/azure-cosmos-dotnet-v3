@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json;
     using PartitionKeyDefinition = Documents.PartitionKeyDefinition;
     using PartitionKeyInternal = Documents.Routing.PartitionKeyInternal;
@@ -280,6 +281,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             return TryCatch<PartitionedQueryExecutionInfoInternal>.FromResult(queryInfoInternal);
         }
 
+        internal static TryCatch<IntPtr> CreateServiceProvider(string queryEngineConfiguration)
+        {
+            try
+            {
+                IntPtr serviceProvider = IntPtr.Zero;
+                uint errorCode = ServiceInteropWrapper.CreateServiceProvider(
+                                queryEngineConfiguration,
+                                out serviceProvider);
+                Exception exception = Marshal.GetExceptionForHR((int)errorCode);
+                if (exception != null) throw exception;
+                return TryCatch<IntPtr>.FromResult(serviceProvider);
+            }
+            catch (Exception ex)
+            {
+                return TryCatch<IntPtr>.FromException(ex);
+            }
+        }
+
         ~QueryPartitionProvider()
         {
             this.Dispose(false);
@@ -295,12 +314,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     {
                         if (!this.disposed && this.serviceProvider == IntPtr.Zero)
                         {
-                            uint errorCode = ServiceInteropWrapper.CreateServiceProvider(
-                                this.queryengineConfiguration,
-                                out this.serviceProvider);
+                            TryCatch<IntPtr> tryCreateServiceProvider = QueryPartitionProvider.CreateServiceProvider(this.queryengineConfiguration);
+                            if (tryCreateServiceProvider.Failed)
+                            {
+                                throw ExceptionWithStackTraceException.UnWrapMonadExcepion(tryCreateServiceProvider.Exception, NoOpTrace.Singleton);
+                            }
 
-                            Exception exception = Marshal.GetExceptionForHR((int)errorCode);
-                            if (exception != null) throw exception;
+                            this.serviceProvider = tryCreateServiceProvider.Result;
                         }
                     }
                 }
