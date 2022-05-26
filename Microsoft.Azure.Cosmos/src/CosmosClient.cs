@@ -8,11 +8,14 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Net;
+    using System.Runtime.InteropServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
@@ -118,11 +121,21 @@ namespace Microsoft.Azure.Cosmos
 #endif
             HttpConstants.Versions.CurrentVersionUTF8 = Encoding.UTF8.GetBytes(HttpConstants.Versions.CurrentVersion);
 
-            // V3 always assumes assemblies exists
-            // Shall revisit on feedback
-            // NOTE: Native ServiceInteropWrapper.AssembliesExist has appsettings dependency which are proofed for CTL (native dll entry) scenarios.
-            // Revert of this depends on handling such in direct assembly
-            ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => true);
+            ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() =>
+            {
+                // Attemp to create an instance of the ServiceInterop assembly
+                TryCatch<IntPtr> tryCreateServiceProvider = QueryPartitionProvider.CreateServiceProvider("{}");
+                if (tryCreateServiceProvider.Failed)
+                {
+                    // Failed, either the DLL is not present or one of its dependencies
+                    return false;
+                }
+
+                // Assembly and dependencies are available
+                // Release pointer
+                Marshal.Release(tryCreateServiceProvider.Result);
+                return true;
+            });
 
             Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace.InitEventListener();
 
