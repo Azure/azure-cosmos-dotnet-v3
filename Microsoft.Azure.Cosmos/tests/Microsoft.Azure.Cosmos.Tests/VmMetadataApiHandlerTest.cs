@@ -112,21 +112,26 @@ namespace Microsoft.Azure.Cosmos
 
             HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
             CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
+
             string expectedMsg = "Azure Environment metadata information not available.";
-            bool expectedMsgFound = false;
-            async void TraceHandler(string message)
+            ManualResetEvent manualResetEvent = new ManualResetEvent(false);
+
+            void TraceHandler(string message)
             {
                 Console.WriteLine(message);
                 if (message.Contains(expectedMsg))
                 {
-                    expectedMsgFound = true;
+                    manualResetEvent.Set();
                 }
-                await Task.Delay(500);
             }
+
             DefaultTrace.TraceSource.Listeners.Add(new TestTraceListener { Callback = TraceHandler });
             DefaultTrace.InitEventListener();
+
             VmMetadataApiHandler.TryInitialize(cosmoshttpClient);
-            Assert.IsTrue(expectedMsgFound);
+
+            int timeout = 30000;
+            Assert.IsTrue(manualResetEvent.WaitOne(timeout));
         }
 
         private class MockMessageHandler : HttpMessageHandler
