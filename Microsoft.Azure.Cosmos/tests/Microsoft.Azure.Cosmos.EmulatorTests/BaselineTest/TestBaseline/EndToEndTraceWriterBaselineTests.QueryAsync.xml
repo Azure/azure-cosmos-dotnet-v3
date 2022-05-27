@@ -2924,6 +2924,7 @@
     }
 
     ITrace traceForest = TraceJoiner.JoinTraces(traces);
+    Documents.ServiceInteropWrapper.AssembliesExist = currentLazy;
 ]]></Setup>
     </Input>
     <Output>
