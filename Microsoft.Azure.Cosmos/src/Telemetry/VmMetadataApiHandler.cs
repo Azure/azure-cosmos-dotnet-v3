@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private static bool isInitialized = false;
         private static AzureVMMetadata azMetadata = null;
        
-        internal static void TryInitialize(CosmosHttpClient httpClient)
+        internal static async Task TryInitializeAsync(CosmosHttpClient httpClient)
         {
             if (VmMetadataApiHandler.isInitialized)
             {
@@ -44,12 +44,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 DefaultTrace.TraceInformation("Initializing VM Metadata API ");
 
                 VmMetadataApiHandler.isInitialized = true;
-
-                _ = Task.Run(() => MetadataApiCallAsync(httpClient), default)
-                            .ContinueWith(t => DefaultTrace.TraceWarning($"Exception while making metadata call {t.Exception}"),
-                            TaskContinuationOptions.OnlyOnFaulted);
-
             }
+            try
+            {
+                await MetadataApiCallAsync(httpClient);
+            }
+            catch (Exception e)
+            {
+                DefaultTrace.TraceInformation($"Azure Environment metadata information not available. {e.Message}");
+            }
+
         }
 
         private static async Task MetadataApiCallAsync(CosmosHttpClient httpClient)
