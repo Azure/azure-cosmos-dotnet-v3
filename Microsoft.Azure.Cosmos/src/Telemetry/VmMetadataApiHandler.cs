@@ -44,9 +44,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 DefaultTrace.TraceInformation("Initializing VM Metadata API ");
 
                 VmMetadataApiHandler.isInitialized = true;
+
+                _ = Task.Run(() => MetadataApiCallAsync(httpClient), default);
             }
 
-            _ = Task.Run(() => MetadataApiCallAsync(httpClient), default);
         }
 
         private static async Task MetadataApiCallAsync(CosmosHttpClient httpClient)
