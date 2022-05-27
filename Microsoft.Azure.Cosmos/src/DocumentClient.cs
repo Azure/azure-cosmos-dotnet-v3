@@ -899,7 +899,7 @@ namespace Microsoft.Azure.Cosmos
                 this.receivedResponse);
 
             // Loading VM Information (non blocking call and initialization won't fail if this call fails)
-            Task task = VmMetadataApiHandler.TryInitializeAsync(this.httpClient);
+            VmMetadataApiHandler.TryInitialize(this.httpClient);
 
             if (sessionContainer != null)
             {
