@@ -118,7 +118,6 @@ namespace Microsoft.Azure.Cosmos
 
             void TraceHandler(string message)
             {
-                Console.WriteLine(message);
                 if (message.Contains(expectedMsg))
                 {
                     manualResetEvent.Set();
