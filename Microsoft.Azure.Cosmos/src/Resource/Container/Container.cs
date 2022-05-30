@@ -845,7 +845,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public string status {get; set;}
         /// }
         /// 
-        /// ItemResponse item = await this.container.DeleteItemAsync<ToDoActivity>("partitionKey", "id");
+        /// ItemResponse item = await this.container.DeleteItemAsync<ToDoActivity>("id", "partitionKey");
         /// ]]>
         /// </code>
         /// </example>

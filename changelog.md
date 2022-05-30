@@ -13,6 +13,19 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.27.1"/> [3.27.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.27.1) - 2022-05-25
+### <a name="3.27.1-preview"/> [3.27.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.27.1-preview) - 2022-05-25
+
+#### Added
+- [#3177](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3177) Performance: Adds optimized request headers
+- [#3202](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3202) Diagnostics: Adds Application region into Client Configuration
+- [#3194](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3194) Diagnostics: Adds Processor count
+- [#3180](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3180) Diagnostics: Adds Continuation Token from partition key range cache
+- [#3176](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3176) Diagnostics: Adds request session token
+
+#### Fixed
+- [#3190](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3190) LINQ: Fixes NullReferenceException when using a static field or property. Introduced in 3.27.0 PR [#2924](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2924)
+
 ### <a name="3.27.0"/> [3.27.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.27.0) - 2022-05-06
 ### <a name="3.27.0-preview"/> [3.27.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.27.0-preview) - 2022-05-06
 
