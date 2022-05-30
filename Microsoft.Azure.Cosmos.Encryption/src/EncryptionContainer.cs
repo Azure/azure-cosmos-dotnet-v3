@@ -971,13 +971,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionSettings encryptionSettings,
             CancellationToken cancellationToken)
         {
-            if (partitionKey == null || (partitionKey != null && partitionKey.ToString() == null /*partitionKey.RawPartitionKeyValue == null*/))
+            if (partitionKey == null || (partitionKey != null && (partitionKey == PartitionKey.None || partitionKey == PartitionKey.Null)))
             {
                 return partitionKey;
             }
 
             EncryptionSettingForProperty encryptionSettingForProperty;
-            // if (partitionKey.RawPartitionKeyValue is object[] partitionKeyValues)
 
             JArray jArray = JArray.Parse(partitionKey.ToString());
 
@@ -1036,8 +1035,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
 
                 Stream valueStream = this.CosmosSerializer.ToStream((JToken)jArray[0]);
-
-                //Stream valueStream = this.CosmosSerializer.ToStream(partitionKey.RawPartitionKeyValue);
 
                 Stream encryptedPartitionKey = await EncryptionProcessor.EncryptValueStreamAsync(
                     valueStream,

@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
-    using System.Net.Http.Headers;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -89,6 +88,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 if (propertyName.Equals("id"))
                 {
                     byte[] plainTextBytes = Encoding.UTF8.GetBytes((string)itemJObj["id"]);
+
+                    // id does not support '/','\','?','#'
                     itemJObj["id"] = Convert.ToBase64String(plainTextBytes);
                 }
 
