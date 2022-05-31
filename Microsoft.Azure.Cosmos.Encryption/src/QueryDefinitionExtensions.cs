@@ -102,6 +102,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 if (path.Substring(1).Equals("id"))
                 {
                     byte[] plainTextBytes = Encoding.UTF8.GetBytes(EncryptionProcessor.BaseSerializer.FromStream<string>(encryptedValueStream));
+
+                    // FIXME id does not support '/','\','?','#'
                     string encryptedId = Convert.ToBase64String(plainTextBytes);
                     encryptedValueStream = EncryptionProcessor.BaseSerializer.ToStream(encryptedId);
                 }

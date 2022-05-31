@@ -945,6 +945,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             byte[] plainTextBytes = Encoding.UTF8.GetBytes(JToken.Parse(encryptedId).ToString());
+
+            // FIXME id does not support '/','\','?','#'
             return Convert.ToBase64String(plainTextBytes);
         }
 
@@ -1222,7 +1224,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 streamPayload,
                 encryptionSettings,
                 encryptionDiagnosticsContext,
-                cancellationToken); 
+                cancellationToken);
 
             ItemRequestOptions clonedRequestOptions = requestOptions;
 
