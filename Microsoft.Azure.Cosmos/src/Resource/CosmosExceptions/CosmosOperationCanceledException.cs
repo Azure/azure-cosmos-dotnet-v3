@@ -88,12 +88,12 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override string ToString()
         {
-            return $"{this.originalException} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}";
+            return this.Message;
         }
 
         private Lazy<string> CreateLazyMessage(CancellationToken token)
         {
-            return new Lazy<string>(() => $"{this.originalException.Message} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics} {Environment.NewLine}Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout {Environment.NewLine}Cancellation Token has expired: {token.IsCancellationRequested}");
+            return new Lazy<string>(() => $"{this.originalException.Message} Cancellation Token has expired: {token.IsCancellationRequested}. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
         }
     }
 }
