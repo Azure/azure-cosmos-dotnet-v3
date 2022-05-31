@@ -90,8 +90,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     byte[] plainTextBytes = Encoding.UTF8.GetBytes((string)itemJObj["id"]);
 
-                    // Fixme id does not support '/','\','?','#'
-                    itemJObj["id"] = Convert.ToBase64String(plainTextBytes);
+                    // id does not support '/','\','?','#'
+                    itemJObj["id"] = Uri.EscapeDataString(Convert.ToBase64String(plainTextBytes));
                 }
 
                 propertiesEncryptedCount++;
@@ -409,7 +409,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 if (propertyName.Equals("id") && document.Property(propertyName) != null)
                 {
-                    document["id"] = Encoding.UTF8.GetString(Convert.FromBase64String((string)document[propertyName]));
+                    document["id"] = Encoding.UTF8.GetString(Convert.FromBase64String(Uri.UnescapeDataString((string)document[propertyName])));
                 }
 
                 JProperty propertyToDecrypt = document.Property(propertyName);

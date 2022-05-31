@@ -103,8 +103,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     byte[] plainTextBytes = Encoding.UTF8.GetBytes(EncryptionProcessor.BaseSerializer.FromStream<string>(encryptedValueStream));
 
-                    // FIXME id does not support '/','\','?','#'
-                    string encryptedId = Convert.ToBase64String(plainTextBytes);
+                    // id does not support '/','\','?','#'
+                    string encryptedId = Uri.EscapeDataString(Convert.ToBase64String(plainTextBytes));
                     encryptedValueStream = EncryptionProcessor.BaseSerializer.ToStream(encryptedId);
                 }
 

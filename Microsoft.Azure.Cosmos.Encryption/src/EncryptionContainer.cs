@@ -946,8 +946,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             byte[] plainTextBytes = Encoding.UTF8.GetBytes(JToken.Parse(encryptedId).ToString());
 
-            // FIXME id does not support '/','\','?','#'
-            return Convert.ToBase64String(plainTextBytes);
+            // id does not support '/','\','?','#'
+            return Uri.EscapeDataString(Convert.ToBase64String(plainTextBytes));
         }
 
         /// <summary>
