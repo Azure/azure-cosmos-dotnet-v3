@@ -988,12 +988,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                     if (encryptionSettingForProperty == null)
                     {
-                        // partitionKeyBuilder.Add(partitionKeyValues[i++].ToString());
                         partitionKeyBuilder.Add(jArray[i++].ToString());
                         continue;
                     }
 
-                    // Stream valueStream = this.CosmosSerializer.ToStream(partitionKeyValues[i++]);
                     Stream valueStream = this.CosmosSerializer.ToStream(jArray[i++]);
 
                     Stream encryptedPartitionKey = await EncryptionProcessor.EncryptValueStreamAsync(
