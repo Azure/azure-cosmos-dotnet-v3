@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections;
+    using System.Threading;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
 
@@ -31,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.originalException = originalException ?? throw new ArgumentNullException(nameof(originalException));
             this.Diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
-            this.lazyMessage = this.CreateLazyMessage();
+            this.lazyMessage = this.CreateLazyMessage(originalException.CancellationToken);
         }
 
         internal CosmosOperationCanceledException(
@@ -47,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
 
             trace.AddDatum("Operation Cancelled Exception", originalException);
             this.Diagnostics = new CosmosTraceDiagnostics(trace);
-            this.lazyMessage = this.CreateLazyMessage();
+            this.lazyMessage = this.CreateLazyMessage(originalException.CancellationToken);
         }
 
         /// <inheritdoc/>
@@ -90,9 +91,9 @@ namespace Microsoft.Azure.Cosmos
             return $"{this.originalException} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}";
         }
 
-        private Lazy<string> CreateLazyMessage()
+        private Lazy<string> CreateLazyMessage(CancellationToken token)
         {
-            return new Lazy<string>(() => $"{this.originalException.Message} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
+            return new Lazy<string>(() => $"{this.originalException.Message} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics} {Environment.NewLine}Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout {Environment.NewLine}Cancellation Token has expired: {token.IsCancellationRequested}");
         }
     }
 }

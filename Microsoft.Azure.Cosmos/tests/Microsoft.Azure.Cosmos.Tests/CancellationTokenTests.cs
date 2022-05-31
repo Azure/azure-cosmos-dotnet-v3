@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Net;
@@ -176,6 +177,11 @@ namespace Microsoft.Azure.Cosmos
 
                 ((MockDocumentClient)client.DocumentClient).MockGlobalEndpointManager.Verify(gep => gep.MarkEndpointUnavailableForRead(It.IsAny<Uri>()), Times.Once, "Should had marked the endpoint unavailable");
                 ((MockDocumentClient)client.DocumentClient).MockGlobalEndpointManager.Verify(gep => gep.RefreshLocationAsync(false), Times.Once, "Should had refreshed the account information");
+
+                string expectedHelpLink = "https://aka.ms/cosmosdb-tsg-request-timeout";
+                string expectedCancellationTokenStatus = $"Cancellation Token has expired: {cancellationToken.IsCancellationRequested}";
+                Assert.IsTrue(ex.Message.Contains(expectedHelpLink));
+                Assert.IsTrue(ex.Message.Contains(expectedCancellationTokenStatus));
             }
         }
 
