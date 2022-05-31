@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -129,6 +130,8 @@
             clientConfigurationTraceDatum = (ClientConfigurationTraceDatum)trace.Data["Client Configuration"];
             Assert.IsNotNull(clientConfigurationTraceDatum.SerializedJson);
             Assert.AreEqual(clientConfigurationTraceDatum.ProcessorCount, Environment.ProcessorCount);
+            string deserializedJson = Encoding.UTF8.GetString(clientConfigurationTraceDatum.SerializedJson.Span);
+            Assert.IsTrue(deserializedJson.Contains("ConnectionMode"));
         }
     }
 }
