@@ -2,6 +2,8 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -88,6 +90,13 @@
             Assert.AreEqual(clientConfig.ConsistencyConfig.ApplicationRegion, "East US");
             Assert.IsNull(clientConfig.ConsistencyConfig.PreferredRegions);
 
+            Assert.AreEqual(clientConfig.ConnectionMode, ConnectionMode.Direct);
+            clientOptions.ConnectionMode = ConnectionMode.Gateway;
+            context = ClientContextCore.Create(
+                cosmosClient,
+                clientOptions);
+            clientConfig = new ClientConfigurationTraceDatum(context, DateTime.UtcNow);
+            Assert.AreEqual(clientConfig.ConnectionMode, ConnectionMode.Gateway);
         }
 
         [TestMethod]
@@ -121,6 +130,8 @@
             clientConfigurationTraceDatum = (ClientConfigurationTraceDatum)trace.Data["Client Configuration"];
             Assert.IsNotNull(clientConfigurationTraceDatum.SerializedJson);
             Assert.AreEqual(clientConfigurationTraceDatum.ProcessorCount, Environment.ProcessorCount);
+            string deserializedJson = Encoding.UTF8.GetString(clientConfigurationTraceDatum.SerializedJson.Span);
+            Assert.IsTrue(deserializedJson.Contains("ConnectionMode"));
         }
     }
 }
