@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             {
                 RequestMessage requestMessage = new RequestMessage();
                 enricher(requestMessage);
-                Assert.AreEqual(ChangeFeedModeFullFidelity.FullFidelityHeader, requestMessage.Headers[HttpConstants.HttpHeaders.A_IM]);
+                Assert.AreEqual(HttpConstants.A_IMHeaderValues.FullFidelityFeed, requestMessage.Headers[HttpConstants.HttpHeaders.A_IM]);
                 return true;
             };
 

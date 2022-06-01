@@ -48,25 +48,6 @@
             return (ContainerInternal)response;
         }
 
-        private async Task<ContainerInternal> InitializeLargeContainerAsync()
-        {
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: GetChangeFeedIteratorOperationsLogTests.PartitionKey),
-                throughput: 20000,
-                cancellationToken: this.cancellationToken);
-
-            return (ContainerInternal)response;
-        }
-
-        private async Task<ContainerInternal> InitializeContainerAsync()
-        {
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: GetChangeFeedIteratorOperationsLogTests.PartitionKey),
-                cancellationToken: this.cancellationToken);
-
-            return (ContainerInternal)response;
-        }
-
         /// <summary>
         /// This test will execute <see cref="Container.GetChangeFeedIterator{T}(ChangeFeedStartFrom, ChangeFeedMode, ChangeFeedRequestOptions)"/> in <see cref="ChangeFeedMode.OperationsLog"/> (FullFidelity) with a typed item.
         /// Using FeedRangeEpk.FromPartitionKey.
