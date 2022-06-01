@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
@@ -290,11 +291,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                                 queryEngineConfiguration,
                                 out serviceProvider);
                 Exception exception = Marshal.GetExceptionForHR((int)errorCode);
-                if (exception != null) return TryCatch<IntPtr>.FromException(exception);
+                if (exception != null)
+                {
+                    DefaultTrace.TraceWarning("QueryPartitionProvider.TryCreateServiceProvider failed with exception {0}", exception);
+                    return TryCatch<IntPtr>.FromException(exception);
+                }
+                
                 return TryCatch<IntPtr>.FromResult(serviceProvider);
             }
             catch (Exception ex)
             {
+                DefaultTrace.TraceWarning("QueryPartitionProvider.TryCreateServiceProvider failed with exception {0}", ex);
                 return TryCatch<IntPtr>.FromException(ex);
             }
         }
