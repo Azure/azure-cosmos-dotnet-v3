@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override string ToString()
         {
-            return this.Message;
+            return $"{this.originalException}{Environment.NewLine}{this.lazyMessage}";
         }
 
         private Lazy<string> CreateLazyMessage(CancellationToken token)

@@ -181,6 +181,8 @@ namespace Microsoft.Azure.Cosmos
                 string expectedCancellationTokenStatus = $"Cancellation Token has expired: {cancellationToken.IsCancellationRequested}";
                 Assert.IsTrue(ex.Message.Contains(expectedHelpLink));
                 Assert.IsTrue(ex.Message.Contains(expectedCancellationTokenStatus));
+                Assert.IsTrue(ex.ToString().Contains(expectedHelpLink));
+                Assert.IsTrue(ex.ToString().Contains(expectedCancellationTokenStatus));
             }
         }
 
