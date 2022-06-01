@@ -45,39 +45,44 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 VmMetadataApiHandler.isInitialized = true;
 
-                _ = Task.Run(() => MetadataApiCallAsync(httpClient), default)
-                            .ContinueWith(t => DefaultTrace.TraceWarning($"Exception while making metadata call {t.Exception}"),
-                            TaskContinuationOptions.OnlyOnFaulted);
-
+                _ = Task.Run(() => MetadataApiCallAsync(httpClient), default);
             }
+
         }
 
         private static async Task MetadataApiCallAsync(CosmosHttpClient httpClient)
         {
-            DefaultTrace.TraceInformation($"Loading VM Metadata");
-
-            static ValueTask<HttpRequestMessage> CreateRequestMessage()
+            try
             {
-                HttpRequestMessage request = new HttpRequestMessage()
+                DefaultTrace.TraceInformation($"Loading VM Metadata");
+
+                static ValueTask<HttpRequestMessage> CreateRequestMessage()
                 {
-                    RequestUri = VmMetadataApiHandler.vmMetadataEndpointUrl,
-                    Method = HttpMethod.Get,
-                };
-                request.Headers.Add("Metadata", "true");
+                    HttpRequestMessage request = new HttpRequestMessage()
+                    {
+                        RequestUri = VmMetadataApiHandler.vmMetadataEndpointUrl,
+                        Method = HttpMethod.Get,
+                    };
+                    request.Headers.Add("Metadata", "true");
 
-                return new ValueTask<HttpRequestMessage>(request);
+                    return new ValueTask<HttpRequestMessage>(request);
+                }
+
+                HttpResponseMessage response = await httpClient
+                    .SendHttpAsync(createRequestMessageAsync: CreateRequestMessage,
+                                    resourceType: ResourceType.Telemetry,
+                                    timeoutPolicy: HttpTimeoutPolicyNoRetry.Instance,
+                                    clientSideRequestStatistics: null,
+                                    cancellationToken: default);
+
+                azMetadata = await VmMetadataApiHandler.ProcessResponseAsync(response);
+
+                DefaultTrace.TraceInformation($"Succesfully get Instance Metadata Response : {azMetadata.Compute.VMId}");
             }
-
-            HttpResponseMessage response = await httpClient
-                .SendHttpAsync(createRequestMessageAsync: CreateRequestMessage,
-                                resourceType: ResourceType.Telemetry,
-                                timeoutPolicy: HttpTimeoutPolicyNoRetry.Instance,
-                                clientSideRequestStatistics: null,
-                                cancellationToken: default);
-
-            azMetadata = await VmMetadataApiHandler.ProcessResponseAsync(response);
-
-            DefaultTrace.TraceInformation($"Succesfully get Instance Metadata Response : {azMetadata.Compute.VMId}");
+            catch (Exception e)
+            {
+                DefaultTrace.TraceInformation($"Azure Environment metadata information not available. {e.Message}");
+            }
         }
 
         internal static async Task<AzureVMMetadata> ProcessResponseAsync(HttpResponseMessage httpResponseMessage)
