@@ -4,7 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-### <a name="1.0.1"/> [1.0.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.1) - 2022-05-23
+### <a name="1.0.1"/> [1.0.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.1) - 2022-06-01
 
 #### Added
 - [#3200](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3200) Adds fix to retain the original key vault error/exception and upgrades core SDK package dependency.
