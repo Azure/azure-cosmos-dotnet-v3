@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Added
 - [#3200](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3200) Adds fix to retain the original key vault error/exception and upgrades core SDK package dependency.
 
-### <a name="1.0.0-previewV21"/> [1.0.0-previewV21](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV21) - 2022-05-23
+### <a name="1.0.1-preview"/> [1.0.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.1-preview) - 2022-06-01
 
 #### Added
 - [#3200](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3200) Adds fix to retain the original key vault error/exception and upgrades core SDK preview package dependency.
