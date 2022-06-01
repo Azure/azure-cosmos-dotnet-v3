@@ -5,12 +5,14 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Diagnostics;
     using System.Net;
     using System.Net.Http;
     using System.Reflection;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -103,6 +105,34 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual("vmId:d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd", metadata.Compute.VMId);
         }
 
+        [TestMethod]
+        public void CatchMetadataApiCallExceptionTest()
+        {
+            static Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken) { throw new Exception("error while making API call"); };
+
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
+
+            string expectedMsg = "Azure Environment metadata information not available.";
+            ManualResetEvent manualResetEvent = new ManualResetEvent(false);
+
+            void TraceHandler(string message)
+            {
+                if (message.Contains(expectedMsg))
+                {
+                    manualResetEvent.Set();
+                }
+            }
+
+            DefaultTrace.TraceSource.Listeners.Add(new TestTraceListener { Callback = TraceHandler });
+            DefaultTrace.InitEventListener();
+
+            VmMetadataApiHandler.TryInitialize(cosmoshttpClient);
+
+            int timeout = 30000;
+            Assert.IsTrue(manualResetEvent.WaitOne(timeout));
+        }
+
         private class MockMessageHandler : HttpMessageHandler
         {
             private readonly Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> sendFunc;
@@ -114,6 +144,20 @@ namespace Microsoft.Azure.Cosmos
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 return await this.sendFunc(request, cancellationToken);
+            }
+        }
+        private class TestTraceListener : TraceListener
+        {
+            public Action<string> Callback { get; set; }
+            public override bool IsThreadSafe => true;
+            public override void Write(string message)
+            {
+                this.Callback(message);
+            }
+
+            public override void WriteLine(string message)
+            {
+                this.Callback(message);
             }
         }
     }
