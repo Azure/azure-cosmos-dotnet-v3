@@ -456,6 +456,33 @@
             }
             //----------------------------------------------------------------
 
+            //----------------------------------------------------------------
+            //  Query - Without ServiceInterop
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                Lazy<bool> currentLazy = Documents.ServiceInteropWrapper.AssembliesExist;
+                Documents.ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => false);
+                FeedIterator<JToken> feedIterator = container.GetItemQueryIterator<JToken>(
+                    queryText: "SELECT * FROM c");
+
+                List<ITrace> traces = new List<ITrace>();
+
+                while (feedIterator.HasMoreResults)
+                {
+                    FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                    traces.Add(trace);
+                }
+
+                ITrace traceForest = TraceJoiner.JoinTraces(traces);
+                Documents.ServiceInteropWrapper.AssembliesExist = currentLazy;
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("Query - Without ServiceInterop", traceForest, startLineNumber, endLineNumber));
+            }
+            //----------------------------------------------------------------
+
             this.ExecuteTestSuite(inputs);
         }
 
