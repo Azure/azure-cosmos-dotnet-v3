@@ -482,6 +482,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     stringBuilder.AppendLine($"Machine Id: {VmMetadataApiHandler.GetMachineId()}");
                     stringBuilder.AppendLine($"Number Of Clients Created: {CosmosClient.numberOfClientsCreated}");
                     stringBuilder.AppendLine($"Number Of Active Clients: {CosmosClient.NumberOfActiveClients}");
+                    stringBuilder.AppendLine($"Connection Mode: {clientConfigurationTraceDatum.ConnectionMode}");
                     stringBuilder.AppendLine($"User Agent: {clientConfigurationTraceDatum.UserAgentContainer.UserAgent}");
                     stringBuilder.AppendLine("Connection Config:");
                     stringBuilder.AppendLine($"{space}'gw': {clientConfigurationTraceDatum.GatewayConnectionConfig}");
