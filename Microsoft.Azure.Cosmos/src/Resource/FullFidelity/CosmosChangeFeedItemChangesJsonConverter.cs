@@ -6,14 +6,25 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Used to convert <see cref="ChangeFeedItemChanges{T}"/> that also contains <see cref="ChangeFeedMetadata"/> to and from JSON.
     /// </summary>
-    internal sealed class CosmosItemChangesJsonConverter : JsonConverter
+    internal sealed class CosmosChangeFeedItemChangesJsonConverter : JsonConverter
     {
+        private readonly CosmosSerializer UserSerializer;
+
+        internal CosmosChangeFeedItemChangesJsonConverter(CosmosSerializer userSerializer)
+        {
+            this.UserSerializer = userSerializer ?? throw new ArgumentNullException(nameof(userSerializer));
+        }
+
+        private CosmosChangeFeedItemChangesJsonConverter()
+        {
+        }
+
         /// <summary>
         /// Determines whether this instance can convert the specified object type.
         /// </summary>
@@ -34,17 +45,19 @@ namespace Microsoft.Azure.Cosmos
         /// <returns><see cref="ChangeFeedItemChanges{T}"/></returns>
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
+#if DEBUG
+            StackTrace stackTrace = new StackTrace(new StackFrame(true));
+            Console.WriteLine($"type => {objectType.GetType()} => {Environment.NewLine}{stackTrace}");
+#endif
             if (reader.TokenType == JsonToken.StartObject)
             {
-                JObject jObject = JObject.Load(reader);
-
-                return JsonConvert.DeserializeObject(
-                    value: jObject.ToString(),
-                    type: objectType,
-                    settings: new JsonSerializerSettings
+                JsonSerializer jsonSerializer = JsonSerializer.Create(
+                    new JsonSerializerSettings
                     {
                         ContractResolver = new CosmosItemChangesContractResolver()
                     });
+
+                return jsonSerializer.Deserialize(reader, objectType);
             }
 
             return null;
@@ -61,11 +74,18 @@ namespace Microsoft.Azure.Cosmos
             throw new NotImplementedException();
         }
 
-        internal static CosmosSerializer CreateItemChangesJsonSerializer()
+        internal static CosmosSerializer CreateChangeFeedItemChangesJsonSerializer(
+            CosmosSerializer cosmosSerializer,
+            CosmosSerializer propertiesSerializer)
         {
+            if (propertiesSerializer is CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper)
+            {
+                propertiesSerializer = cosmosJsonSerializerWrapper.InternalJsonSerializer;
+            }
+
             JsonSerializerSettings settings = new JsonSerializerSettings()
             {
-                Converters = new List<JsonConverter>() { new CosmosItemChangesJsonConverter() }
+                Converters = new List<JsonConverter>() { new CosmosChangeFeedItemChangesJsonConverter(cosmosSerializer ?? propertiesSerializer) }
             };
 
             return new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer(settings));

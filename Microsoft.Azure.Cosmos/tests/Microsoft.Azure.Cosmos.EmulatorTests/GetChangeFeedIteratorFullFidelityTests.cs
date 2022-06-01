@@ -2,6 +2,8 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Text.Json;
     using System.Threading.Tasks;
@@ -18,7 +20,7 @@
         [TestInitialize]
         public async Task TestInitialize()
         {
-            await base.TestInit();
+            await base.TestInit(customizeClientBuilder: (b) => b.WithCustomSerializer(new TestItemSerializer()));
         }
 
         [TestCleanup]
@@ -394,8 +396,6 @@
                 {
                     FeedResponse<ChangeFeedItemChanges<Item>> feedResponse = await feedIterator.ReadNextAsync();
 
-                    Console.WriteLine($"feed response status code: {feedResponse.ContinuationToken}, {feedResponse.StatusCode}, {feedIterator.HasMoreResults}");
-
                     if (feedResponse.StatusCode == System.Net.HttpStatusCode.NotModified)
                     {
                         continuation = feedResponse.ContinuationToken;
@@ -408,8 +408,6 @@
                         _ = await container.UpsertItemAsync<Item>(item: new(Id: otherId, Line1: "87 38floor, Witthayu Rd, Lumphini, Pathum Wan District", City: "Bangkok", State: "Thailand", ZipCode: "10330"), partitionKey: otherPartitionKey).ConfigureAwait(false);
                         _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "One Microsoft Way", City: "Redmond", State: "WA", ZipCode: "98052"), partitionKey: partitionKey).ConfigureAwait(false);
                         _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "205 16th St NW", City: "Atlanta", State: "GA", ZipCode: "30363"), partitionKey: partitionKey).ConfigureAwait(false);
-
-                        Console.WriteLine("after operations!");
                     }
                     else
                     {
@@ -598,7 +596,6 @@
                         Assert.AreNotEqual(notExpected: default, actual: firstCreateOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: firstCreateOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreEqual(expected: default, actual: firstCreateOperation.Metadata.PreviousLogSequenceNumber);
-                        Console.WriteLine(firstCreateOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.IsNull(firstCreateOperation.Previous);
 
                         ChangeFeedItemChanges<Item> createOperation = resources[1];
@@ -612,7 +609,6 @@
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreEqual(expected: default, actual: createOperation.Metadata.PreviousLogSequenceNumber);
-                        Console.WriteLine(firstCreateOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.IsNull(createOperation.Previous);
 
                         ChangeFeedItemChanges<Item> replaceOperation = resources[2];
@@ -626,7 +622,6 @@
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.PreviousLogSequenceNumber);
-                        Console.WriteLine(firstCreateOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreEqual(expected: id, actual: replaceOperation.Previous.Id);
                         Assert.AreEqual(expected: "One Microsoft Way", actual: replaceOperation.Previous.Line1);
                         Assert.AreEqual(expected: "Redmond", actual: replaceOperation.Previous.City);
@@ -644,7 +639,6 @@
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.PreviousLogSequenceNumber);
-                        Console.WriteLine(firstCreateOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreEqual(expected: id, actual: deleteOperation.Previous.Id);
                         Assert.AreEqual(expected: "205 16th St NW", actual: deleteOperation.Previous.Line1);
                         Assert.AreEqual(expected: "Atlanta", actual: deleteOperation.Previous.City);
@@ -670,6 +664,47 @@
         [property: JsonProperty("id")] string Id,
         [property: JsonProperty("line1")] string Line1,
         [property: JsonProperty("city")] string City,
-        [property: JsonProperty("state")] string State,
-        [property: JsonProperty("zipCode")] string ZipCode);
+        [property: JsonProperty("zipCode")] string ZipCode,
+        [property: JsonProperty("state")] string State);
+
+    public class TestItemSerializer : CosmosSerializer
+    {
+        public override T FromStream<T>(Stream stream)
+        {
+            using (StreamReader reader = new StreamReader(stream))
+            {
+                string jsonString = reader.ReadToEnd();
+
+#if DEBUG
+                StackTrace stackTrace = new StackTrace(new StackFrame(true));
+                Console.WriteLine($"type => {typeof(T)} => {Environment.NewLine}{stackTrace}");
+#endif
+                T item = JsonConvert.DeserializeObject<T>(jsonString);
+
+                return item;
+            }
+        }
+
+        public override Stream ToStream<T>(T input)
+        {
+            string jsonString = JsonConvert.SerializeObject(input);
+            Stream stream = new MemoryStream();
+
+            using (StreamWriter writer = new StreamWriter(
+                stream: stream,
+                leaveOpen: true))
+            {
+#if DEBUG
+                StackTrace stackTrace = new StackTrace(new StackFrame(true));
+                Console.WriteLine($"type => {typeof(T)} => {Environment.NewLine}{stackTrace}");
+#endif
+                writer.Write(jsonString);
+                writer.Flush();
+            }
+
+            stream.Position = 0;
+
+            return stream;
+        }
+    }
 }

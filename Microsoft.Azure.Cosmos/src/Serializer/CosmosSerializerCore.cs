@@ -34,7 +34,9 @@ namespace Microsoft.Azure.Cosmos
                     cosmosSerializer: null,
                     propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
                 this.patchOperationSerializer = null;
-                this.itemChangesSerializer = CosmosItemChangesJsonConverter.CreateItemChangesJsonSerializer();
+                this.itemChangesSerializer = CosmosChangeFeedItemChangesJsonConverter.CreateChangeFeedItemChangesJsonSerializer(
+                    cosmosSerializer: null,
+                    propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
             }
             else
             {
@@ -45,7 +47,9 @@ namespace Microsoft.Azure.Cosmos
                 this.patchOperationSerializer = PatchOperationsJsonConverter.CreatePatchOperationsSerializer(
                     cosmosSerializer: this.customSerializer,
                     propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
-                this.itemChangesSerializer = CosmosItemChangesJsonConverter.CreateItemChangesJsonSerializer();
+                this.itemChangesSerializer = CosmosChangeFeedItemChangesJsonConverter.CreateChangeFeedItemChangesJsonSerializer(
+                    cosmosSerializer: this.customSerializer,
+                    propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
             }
         }
 
@@ -134,7 +138,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.itemChangesSerializer == null)
                 {
-                    this.itemChangesSerializer = CosmosItemChangesJsonConverter.CreateItemChangesJsonSerializer();
+                    this.itemChangesSerializer = CosmosChangeFeedItemChangesJsonConverter.CreateChangeFeedItemChangesJsonSerializer(
+                        cosmosSerializer: this.customSerializer ?? new CosmosJsonDotNetSerializer(),
+                        propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
                 }
                 return this.itemChangesSerializer;
             }
@@ -172,7 +178,7 @@ namespace Microsoft.Azure.Cosmos
             string directAssemblyName = typeof(Documents.PartitionKeyRange).Assembly.GetName().Name;
             string inputAssemblyName = inputType.Assembly.GetName().Name;
             bool inputIsClientOrDirect = string.Equals(inputAssemblyName, clientAssemblyName) || string.Equals(inputAssemblyName, directAssemblyName);
-            bool typeIsWhiteListed = inputType == typeof(Document);
+            bool typeIsWhiteListed = inputType == typeof(Document) || (inputType.IsGenericType && inputType.GetGenericTypeDefinition() == typeof(ChangeFeedItemChanges<>));
 
             if (!typeIsWhiteListed && inputIsClientOrDirect)
             {
