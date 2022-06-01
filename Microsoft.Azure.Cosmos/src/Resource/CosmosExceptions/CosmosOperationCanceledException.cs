@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly OperationCanceledException originalException;
         private readonly Lazy<string> lazyMessage;
+        private readonly string toStringMessage;
 
         /// <summary>
         /// Create an instance of CosmosOperationCanceledException
@@ -33,6 +34,7 @@ namespace Microsoft.Azure.Cosmos
             this.originalException = originalException ?? throw new ArgumentNullException(nameof(originalException));
             this.Diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
             this.lazyMessage = this.CreateLazyMessage(originalException.CancellationToken);
+            this.toStringMessage = this.CreateToStringMessage(originalException.CancellationToken);
         }
 
         internal CosmosOperationCanceledException(
@@ -49,6 +51,7 @@ namespace Microsoft.Azure.Cosmos
             trace.AddDatum("Operation Cancelled Exception", originalException);
             this.Diagnostics = new CosmosTraceDiagnostics(trace);
             this.lazyMessage = this.CreateLazyMessage(originalException.CancellationToken);
+            this.toStringMessage = this.CreateToStringMessage(originalException.CancellationToken);
         }
 
         /// <inheritdoc/>
@@ -88,12 +91,17 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override string ToString()
         {
-            return $"{this.originalException}{Environment.NewLine}{this.lazyMessage}";
+            return this.toStringMessage;
         }
 
         private Lazy<string> CreateLazyMessage(CancellationToken token)
         {
             return new Lazy<string>(() => $"{this.originalException.Message}{Environment.NewLine}Cancellation Token has expired: {token.IsCancellationRequested}. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
+        }
+
+        private string CreateToStringMessage(CancellationToken token)
+        {
+            return $"{this.originalException}{Environment.NewLine}Cancellation Token has expired: {token.IsCancellationRequested}. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}";
         }
     }
 }
