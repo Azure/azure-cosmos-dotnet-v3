@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http.Headers;
     using System.Reflection;
     using System.Text;
     using System.Threading;
@@ -36,6 +37,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         private static Container encryptionContainer;
         private static Container encryptionContainerForChangeFeed;
         private static TestKeyEncryptionKeyResolver testKeyEncryptionKeyResolver;
+        private static ContainerProperties containerProperties;
+        private static ClientEncryptionPolicy clientEncryptionPolicy;
 
         [ClassInitialize]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "The ClassInitialize method takes a single parameter of type TestContext.")]
@@ -173,13 +176,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy(paths, 2);
            
 
-            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
+            containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
             ContainerProperties containerPropertiesForChangeFeed = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
 
-            encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
+            encryptionContainer = await database.CreateContainerAsync(containerProperties, 20000);
             await encryptionContainer.InitializeEncryptionAsync();
 
-            encryptionContainerForChangeFeed = await database.CreateContainerAsync(containerPropertiesForChangeFeed, 400);
+            encryptionContainerForChangeFeed = await database.CreateContainerAsync(containerPropertiesForChangeFeed, 20000);
             await encryptionContainerForChangeFeed.InitializeEncryptionAsync();
         }
 
@@ -400,7 +403,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await MdeEncryptionTests.ValidateQueryResultsAsync(
                 encryptionContainer,
                 queryDefinition: withEncryptedParameter,
-                expectedDoc: expectedDoc);
+                expectedDocList : new List<TestDoc> { expectedDoc});
 
             // no access to key.
             testKeyEncryptionKeyResolver.RevokeAccessSet = true;
@@ -513,13 +516,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await MdeEncryptionTests.ValidateQueryResultsAsync(
                 MdeEncryptionTests.encryptionContainer,
                 query: null,
-                expectedDoc);
+                expectedDocList: new List<TestDoc> { expectedDoc });
 
             expectedDoc = new TestDoc(testDoc);
             await MdeEncryptionTests.ValidateQueryResultsAsync(
                 MdeEncryptionTests.encryptionContainer,
                 "SELECT * FROM c",
-                expectedDoc);
+                expectedDocList: new List<TestDoc> { expectedDoc });
 
             QueryDefinition withEncryptedParameter = MdeEncryptionTests.encryptionContainer.CreateQueryDefinition(
                   "select * from c where c.id = @theId and c.PK = @thePK");
@@ -544,12 +547,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 string.Format(
                     "SELECT * FROM c where c.NonSensitive = '{0}'",
                     expectedDoc.NonSensitive),
-                expectedDoc);
+                expectedDocList: new List<TestDoc> { expectedDoc });
 
             await MdeEncryptionTests.ValidateQueryResultsAsync(
                 MdeEncryptionTests.encryptionContainer,
                 string.Format("SELECT * FROM c where c.Sensitive_IntFormat = '{0}'", testDoc.Sensitive_IntFormat),
-                expectedDoc: null);
+                expectedDocList: null);
+
+            await MdeEncryptionTests.ValidateQueryResultsAsync(
+                MdeEncryptionTests.encryptionContainer,
+                queryDefinition: new QueryDefinition(
+                    "select * from c where c.id = @theId and c.PK = @thePK")
+                         .WithParameter("@theId", expectedDoc.Id)
+                         .WithParameter("@thePK", expectedDoc.PK),
+                expectedDocList: new List<TestDoc> { expectedDoc });
 
             expectedDoc.Sensitive_IntMultiDimArray = null;
             expectedDoc.Sensitive_ArrayMultiTypes = null;
@@ -567,21 +578,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await MdeEncryptionTests.ValidateQueryResultsAsync(
                 MdeEncryptionTests.encryptionContainer,
                 "SELECT c.id, c.PK, c.NonSensitive, c.NonSensitiveInt FROM c",
-                expectedDoc,
+                expectedDocList: new List<TestDoc> { expectedDoc },
                 expectedPropertiesDecryptedCount: 0);
         }
 
         [TestMethod]
         public async Task QueryOnEncryptedProperties()
         {
-            TestDoc testDoc1 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
+            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
+            Container encryptionQueryContainer = await database.CreateContainerAsync(containerProperties, 20000);
+            TestDoc testDoc1 = await MdeEncryptionTests.MdeCreateItemAsync(encryptionQueryContainer);
+
+            TestDoc testDoc2 = await MdeEncryptionTests.MdeCreateItemAsync(encryptionQueryContainer);
+
+            TestDoc testDoc3 = await MdeEncryptionTests.MdeCreateItemAsync(encryptionQueryContainer);
 
             // string/int
             string[] arrayofStringValues = new string[] { testDoc1.Sensitive_StringFormat, "randomValue", null };
 
-            QueryDefinition withEncryptedParameter = MdeEncryptionTests.encryptionContainer.CreateQueryDefinition(
+            QueryDefinition withEncryptedParameter = encryptionQueryContainer.CreateQueryDefinition(
                     "SELECT * FROM c where array_contains(@Sensitive_StringFormat, c.Sensitive_StringFormat) " +
-                    "AND c.Sensitive_IntArray = @Sensitive_IntArray " +
                     "AND c.Sensitive_NestedObjectFormatL1 = @Sensitive_NestedObjectFormatL1");
 
             await withEncryptedParameter.AddParameterAsync(
@@ -601,13 +617,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             TestDoc expectedDoc = new TestDoc(testDoc1);
             await MdeEncryptionTests.ValidateQueryResultsAsync(
-                MdeEncryptionTests.encryptionContainer,
+                encryptionQueryContainer,
                 queryDefinition:withEncryptedParameter,
-                expectedDoc: expectedDoc);
+                expectedDocList: new List<TestDoc> { expectedDoc });
 
             // bool and float type
 
-            withEncryptedParameter = MdeEncryptionTests.encryptionContainer.CreateQueryDefinition(
+            withEncryptedParameter = encryptionQueryContainer.CreateQueryDefinition(
                     "SELECT * FROM c where c.Sensitive_BoolFormat = @Sensitive_BoolFormat AND c.Sensitive_FloatFormat = @Sensitive_FloatFormat");
 
             await withEncryptedParameter.AddParameterAsync(
@@ -620,44 +636,42 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     testDoc1.Sensitive_FloatFormat,
                     "/Sensitive_FloatFormat");
 
-            expectedDoc = new TestDoc(testDoc1);
             await MdeEncryptionTests.ValidateQueryResultsAsync(
-                MdeEncryptionTests.encryptionContainer,
+                encryptionQueryContainer,
                 queryDefinition: withEncryptedParameter,
-                expectedDoc: expectedDoc);
+                expectedDocList: new List<TestDoc> { testDoc1, testDoc2, testDoc3});
 
             // with encrypted and non encrypted properties
-            TestDoc testDoc2 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
+            TestDoc testDoc4 = await MdeEncryptionTests.MdeCreateItemAsync(encryptionQueryContainer);
             
             withEncryptedParameter =
-                    MdeEncryptionTests.encryptionContainer.CreateQueryDefinition(
+                    encryptionQueryContainer.CreateQueryDefinition(
                     "SELECT * FROM c where c.NonSensitive = @NonSensitive AND c.Sensitive_IntFormat = @Sensitive_IntFormat");
 
             await withEncryptedParameter.AddParameterAsync(
                     "@NonSensitive",
-                    testDoc2.NonSensitive,
+                    testDoc4.NonSensitive,
                     "/NonSensitive");
 
             await withEncryptedParameter.AddParameterAsync(
                     "@Sensitive_IntFormat",
-                    testDoc2.Sensitive_IntFormat,
+                    testDoc4.Sensitive_IntFormat,
                     "/Sensitive_IntFormat");
 
-            expectedDoc = new TestDoc(testDoc2);
+            expectedDoc = new TestDoc(testDoc4);
             await MdeEncryptionTests.ValidateQueryResultsAsync(
-                MdeEncryptionTests.encryptionContainer,
+                encryptionQueryContainer,
                 queryDefinition: withEncryptedParameter,
-                expectedDoc: expectedDoc);
+                expectedDocList: new List<TestDoc> { expectedDoc });
 
             withEncryptedParameter = new QueryDefinition(
                     "SELECT c.Sensitive_DateFormat FROM c");
 
-            FeedIterator<TestDoc> queryResponseIterator;
-            queryResponseIterator = MdeEncryptionTests.encryptionContainer.GetItemQueryIterator<TestDoc>(withEncryptedParameter);
-            FeedResponse<TestDoc> readDocs = await queryResponseIterator.ReadNextAsync();
-
-            Assert.AreNotEqual(0, readDocs.Count);
-            VerifyDiagnostics(readDocs.Diagnostics, encryptOperation: false, expectedPropertiesDecryptedCount: 2);
+            await MdeEncryptionTests.ValidateQueryResultsAsync(
+                 encryptionQueryContainer,
+                 queryDefinition: withEncryptedParameter,
+                 expectedDocList: null,
+                 expectedPropertiesDecryptedCount: 1);
         }
 
         [TestMethod]
@@ -777,12 +791,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [TestMethod]
         public async Task EncryptionReadManyItemAsync()
         {
-            TestDoc testDoc = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
+            TestDoc testDoc1 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
             TestDoc testDoc2 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
 
             List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>
             {
-                (testDoc.Id, new PartitionKey(testDoc.PK)),
+                (testDoc1.Id, new PartitionKey(testDoc1.PK)),
                 (testDoc2.Id, new PartitionKey(testDoc2.PK))
             };
 
@@ -791,7 +805,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             Assert.AreEqual(2, response.Count);
-            VerifyExpectedDocResponse(testDoc, response.Resource.ElementAt(0));
+            VerifyExpectedDocResponse(testDoc1, response.Resource.ElementAt(0));
             VerifyExpectedDocResponse(testDoc2, response.Resource.ElementAt(1));
 
             // stream test.
@@ -807,9 +821,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             if(contentJObjects.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents)
             {
-                VerifyExpectedDocResponse(testDoc, documents.ElementAt(0).ToObject<TestDoc>());
-                VerifyExpectedDocResponse(testDoc2, documents.ElementAt(1).ToObject<TestDoc>());
-                VerifyExpectedDocResponse(testDoc3, documents.ElementAt(2).ToObject<TestDoc>());
+                List<TestDoc> docs = new List<TestDoc>();
+                for(int i = 0; i< documents.Count; i++)
+                {
+                    docs.Add(documents[i].ToObject<TestDoc>());
+                }
+
+                VerifyExpectedDocResponse(testDoc1, docs.Where(doc => doc.Id.Equals(testDoc1.Id)).FirstOrDefault());
+                VerifyExpectedDocResponse(testDoc2, docs.Where(doc => doc.Id.Equals(testDoc2.Id)).FirstOrDefault());
+                VerifyExpectedDocResponse(testDoc3, docs.Where(doc => doc.Id.Equals(testDoc3.Id)).FirstOrDefault());
+
             }
             else
             {
@@ -849,14 +870,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc testDoc2 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
 
             // test GetItemLinqQueryable
-            await MdeEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(MdeEncryptionTests.encryptionContainer, testDoc1, testDoc2, null, expectedPropertiesDecryptedCount: 24);
+            await MdeEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(MdeEncryptionTests.encryptionContainer, testDoc1, testDoc2, null, expectedPropertiesDecryptedCount: 12);
 
-            string query = $"SELECT * FROM c WHERE c.NonSensitive in ('{testDoc1.NonSensitive}', '{testDoc2.NonSensitive}')";
-            await MdeEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(MdeEncryptionTests.encryptionContainer, testDoc1, testDoc2, query, expectedPropertiesDecryptedCount: 24);
+            string query = $"SELECT * FROM c WHERE c.PK in ('{testDoc1.PK}', '{testDoc2.PK}')";
+            await MdeEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(MdeEncryptionTests.encryptionContainer, testDoc1, testDoc2, query, expectedPropertiesDecryptedCount: 12);
 
             // ORDER BY query
             query += " ORDER BY c._ts";
-            await MdeEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(MdeEncryptionTests.encryptionContainer, testDoc1, testDoc2, query, expectedPropertiesDecryptedCount: 24);
+            await MdeEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(MdeEncryptionTests.encryptionContainer, testDoc1, testDoc2, query, expectedPropertiesDecryptedCount: 12);
         }
 
         [TestMethod]
@@ -1387,9 +1408,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 await MdeEncryptionTests.ValidateQueryResultsAsync(
-                    otherEncryptionContainer,
-                    "SELECT * FROM c",
-                    testDoc);
+                       otherEncryptionContainer,
+                       "SELECT * FROM c",
+                       expectedDocList: new List<TestDoc> { testDoc });
 
                 Assert.Fail("ValidateQueryResultAsync should have failed. ");
             }
@@ -1407,8 +1428,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await MdeEncryptionTests.ValidateQueryResultsAsync(
                 otherEncryptionContainer,
                 "SELECT * FROM c",
-                testDoc,
-                expectedPropertiesDecryptedCount: 3);
+                expectedDocList: new List<TestDoc> { testDoc },
+                expectedPropertiesDecryptedCount: 2);
         }
 
         [TestMethod]
@@ -1920,7 +1941,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 await MdeEncryptionTests.ValidateQueryResultsAsync(
                 encryptionContainer,
                 "SELECT * FROM c",
-                testDoc1);
+                expectedDocList: new List<TestDoc> { testDoc1 });
                 Assert.Fail("Query should have failed, since property path /Sensitive_NestedObjectFormatL1 has been encrypted using Cek with revoked access. ");
             }
             catch (CosmosException ex)
@@ -1976,7 +1997,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await MdeEncryptionTests.ValidateQueryResultsAsync(
                 encryptionContainerWithNoPolicy,
                 queryDefinition: withEncryptedParameter,
-                expectedDoc: expectedDoc,
+                expectedDocList: new List<TestDoc> { expectedDoc },
                 decryptOperation: false);
 
             await encryptionContainerWithNoPolicy.DeleteContainerAsync();
@@ -2523,7 +2544,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await MdeEncryptionTests.ValidateQueryResultsAsync(
                 encryptionContainerWithCustomSerializer,
                 queryDefinition: withEncryptedParameter,
-                expectedDoc: expectedDoc);
+                expectedDocList: new List<TestDoc> { expectedDoc });
         }
 
         [TestMethod]
@@ -2581,45 +2602,58 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 queryResponseIterator = container.GetItemQueryIterator<TestDoc>(query);
             }
 
-            FeedResponse<TestDoc> readDocs = await queryResponseIterator.ReadNextAsync();
-            Assert.AreEqual(null, readDocs.ContinuationToken);
+            TestDoc docToValidate1 = null;
+            TestDoc docToValidate2 = null;
+            CosmosDiagnostics doc1ToValidateDiagnostics = null;
+            CosmosDiagnostics doc2ToValidateDiagnostics = null;
 
-            if (query == null)
+            while (queryResponseIterator.HasMoreResults)
             {
-                Assert.IsTrue(readDocs.Count >= 2);
+                FeedResponse<TestDoc> readDocs = await queryResponseIterator.ReadNextAsync();
+                if (docToValidate1 == null)
+                {
+                    docToValidate1 = readDocs.Resource.Where(doc => doc.Id.Equals(testDoc1.Id)).FirstOrDefault();
+                    if(docToValidate1 != null)
+                    {
+                        doc1ToValidateDiagnostics = readDocs.Diagnostics;
+                    }
+                }
+
+                if (docToValidate2 == null)
+                {
+                    docToValidate2 = readDocs.Resource.Where(doc => doc.Id.Equals(testDoc2.Id)).FirstOrDefault();
+                    if (docToValidate2 != null)
+                    {
+                        doc2ToValidateDiagnostics = readDocs.Diagnostics;
+                    }
+                }
+
+                if (readDocs.Count() > 0 && (doc1ToValidateDiagnostics != null || doc2ToValidateDiagnostics != null))
+                {
+                    VerifyDiagnostics(doc1ToValidateDiagnostics ?? doc2ToValidateDiagnostics, encryptOperation: false, expectedPropertiesDecryptedCount: expectedPropertiesDecryptedCount / readDocs.Count());
+                }
+            }
+
+            Assert.IsNotNull(docToValidate1);
+            Assert.IsNotNull(docToValidate2);
+
+            if (compareEncryptedProperty)
+            {
+                VerifyExpectedDocResponse(docToValidate1, testDoc1);
             }
             else
             {
-                Assert.AreEqual(2, readDocs.Count);
+                testDoc1.EqualsExceptEncryptedProperty(docToValidate1);
             }
 
-            for (int index = 0; index < readDocs.Count; index++)
+            if (compareEncryptedProperty)
             {
-                if (readDocs.ElementAt(index).Id.Equals(testDoc1.Id))
-                {
-                    if (compareEncryptedProperty)
-                    {
-                        VerifyExpectedDocResponse(readDocs.ElementAt(index), testDoc1);
-                    }
-                    else
-                    {
-                        testDoc1.EqualsExceptEncryptedProperty(readDocs.ElementAt(index));
-                    }
-                }
-                else if (readDocs.ElementAt(index).Id.Equals(testDoc2.Id))
-                {
-                    if (compareEncryptedProperty)
-                    {
-                        VerifyExpectedDocResponse(readDocs.ElementAt(index), testDoc2);
-                    }
-                    else
-                    {
-                        testDoc2.EqualsExceptEncryptedProperty(readDocs.ElementAt(index));
-                    }
-                }
+                VerifyExpectedDocResponse(docToValidate2, testDoc2);
             }
-            
-            VerifyDiagnostics(readDocs.Diagnostics, encryptOperation: false, expectedPropertiesDecryptedCount: expectedPropertiesDecryptedCount);
+            else
+            {
+                testDoc1.EqualsExceptEncryptedProperty(docToValidate2);
+            }
         }
 
         private static async Task ValidateQueryResponseAsync(
@@ -2631,20 +2665,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             if (query == null)
             {
                 IOrderedQueryable<TestDoc> linqQueryable = container.GetItemLinqQueryable<TestDoc>();
-                feedIterator = container.ToEncryptionStreamIterator(linqQueryable);
+                feedIterator = container.ToEncryptionStreamIterator<TestDoc>(linqQueryable);
             }
             else
             {
                 feedIterator = container.GetItemQueryStreamIterator(query);
             }
 
+            int propertiesDecrypted = 0;
             while (feedIterator.HasMoreResults)
             {
                 ResponseMessage response = await feedIterator.ReadNextAsync();
                 Assert.IsTrue(response.IsSuccessStatusCode);
-                Assert.IsNull(response.ErrorMessage);
-                VerifyDiagnostics(response.Diagnostics, encryptOperation: false, expectedPropertiesDecryptedCount: expectedPropertiesDecryptedCount);
+                Assert.IsNull(response.ErrorMessage);               
+
+                JObject diagnosticsObject = JObject.Parse(response.Diagnostics.ToString());
+
+                JObject encryptionDiagnostics = diagnosticsObject.Value<JObject>(Constants.DiagnosticsEncryptionDiagnostics);
+                Assert.IsNotNull(encryptionDiagnostics);
+
+                JObject decryptOperationDiagnostics = encryptionDiagnostics.Value<JObject>(Constants.DiagnosticsDecryptOperation);
+                propertiesDecrypted += decryptOperationDiagnostics.Value<int>(Constants.DiagnosticsPropertiesDecryptedCount);
             }
+
+            Assert.IsTrue(propertiesDecrypted >= expectedPropertiesDecryptedCount, $"{propertiesDecrypted},{expectedPropertiesDecryptedCount}");
         }
 
         private async Task ValidateChangeFeedIteratorResponse(
@@ -2656,6 +2700,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 ChangeFeedStartFrom.Beginning(),
                 ChangeFeedMode.Incremental);
 
+            List<TestDoc> docs = new List<TestDoc>();
+            int totalDocs = 0;
             while (changeIterator.HasMoreResults)
             {
                 FeedResponse<TestDoc> testDocs = await changeIterator.ReadNextAsync();
@@ -2663,14 +2709,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 {
                     break;
                 }
-
-                Assert.AreEqual(testDocs.Count, 2);
-
-                VerifyExpectedDocResponse(testDoc1, testDocs.Resource.ElementAt(0));
-                VerifyExpectedDocResponse(testDoc2, testDocs.Resource.ElementAt(1));
-
-                VerifyDiagnostics(testDocs.Diagnostics, encryptOperation: false, expectedPropertiesDecryptedCount: 24);
+                totalDocs += testDocs.Count;
+                foreach(TestDoc doc in testDocs)
+                {
+                    docs.Add(doc);
+                    VerifyDiagnostics(testDocs.Diagnostics, encryptOperation: false, expectedPropertiesDecryptedCount: 12);
+                }
             }
+
+            Assert.AreEqual(2, totalDocs);
+
+            VerifyExpectedDocResponse(testDoc1, docs.Where(doc => doc.Id.Equals(testDoc1.Id)).FirstOrDefault());
+            VerifyExpectedDocResponse(testDoc2, docs.Where(doc => doc.Id.Equals(testDoc2.Id)).FirstOrDefault());            
         }
 
         private async Task ValidateChangeFeedProcessorResponse(
@@ -2709,8 +2759,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             Assert.AreEqual(changeFeedReturnedDocs.Count, 2);
 
-            VerifyExpectedDocResponse(testDoc1, changeFeedReturnedDocs[^2]);
-            VerifyExpectedDocResponse(testDoc2, changeFeedReturnedDocs[^1]);
+            VerifyExpectedDocResponse(testDoc1, changeFeedReturnedDocs.Where(doc => doc.Id.Equals(testDoc1.Id)).FirstOrDefault());
+            VerifyExpectedDocResponse(testDoc2, changeFeedReturnedDocs.Where(doc => doc.Id.Equals(testDoc2.Id)).FirstOrDefault());
 
             if (leaseDatabase != null)
             {
@@ -2757,8 +2807,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             Assert.AreEqual(changeFeedReturnedDocs.Count, 2);
 
-            VerifyExpectedDocResponse(testDoc1, changeFeedReturnedDocs[^2]);
-            VerifyExpectedDocResponse(testDoc2, changeFeedReturnedDocs[^1]);
+            VerifyExpectedDocResponse(testDoc1, changeFeedReturnedDocs.Where(doc => doc.Id.Equals(testDoc1.Id)).FirstOrDefault());
+            VerifyExpectedDocResponse(testDoc2, changeFeedReturnedDocs.Where(doc => doc.Id.Equals(testDoc2.Id)).FirstOrDefault());
 
             if (leaseDatabase != null)
             {
@@ -2806,8 +2856,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             Assert.AreEqual(changeFeedReturnedDocs.Count, 2);
 
-            VerifyExpectedDocResponse(testDoc1, changeFeedReturnedDocs[^2]);
-            VerifyExpectedDocResponse(testDoc2, changeFeedReturnedDocs[^1]);
+            VerifyExpectedDocResponse(testDoc1, changeFeedReturnedDocs.Where(doc => doc.Id.Equals(testDoc1.Id)).FirstOrDefault());
+            VerifyExpectedDocResponse(testDoc2, changeFeedReturnedDocs.Where(doc => doc.Id.Equals(testDoc2.Id)).FirstOrDefault());
 
             if (leaseDatabase != null)
             {
@@ -2932,35 +2982,53 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         private static async Task ValidateQueryResultsAsync(
             Container container,
             string query = null,
-            TestDoc expectedDoc = null,
+            List<TestDoc> expectedDocList = null,
             QueryDefinition queryDefinition = null,
             bool decryptOperation = true,
             int expectedPropertiesDecryptedCount = 12)
         {
-            QueryRequestOptions requestOptions = expectedDoc != null
-                ? new QueryRequestOptions()
+            
+            QueryRequestOptions requestOptions = null;
+            if (expectedDocList != null)
+            {
+                if(expectedDocList.Count == 1)
                 {
-                    PartitionKey = new PartitionKey(expectedDoc.PK),
+                    requestOptions = new QueryRequestOptions
+                    {
+                        PartitionKey = new PartitionKey(expectedDocList.FirstOrDefault().PK)
+                    };
                 }
-                : null;
+            }
 
             FeedIterator<TestDoc> queryResponseIterator = query != null
                 ? container.GetItemQueryIterator<TestDoc>(query, requestOptions: requestOptions)
                 : container.GetItemQueryIterator<TestDoc>(queryDefinition, requestOptions: requestOptions);
-            FeedResponse<TestDoc> readDocs = await queryResponseIterator.ReadNextAsync();
-            Assert.AreEqual(null, readDocs.ContinuationToken);
-          
-            if (expectedDoc != null)
+
+            int totalDocs = 0;
+            List<TestDoc> docs = new();
+            while (queryResponseIterator.HasMoreResults)
             {
-                Assert.AreEqual(1, readDocs.Count);
-                TestDoc readDoc = readDocs.Single();
-                VerifyExpectedDocResponse(expectedDoc, readDoc);
-                VerifyDiagnostics(readDocs.Diagnostics, encryptOperation: false, decryptOperation: decryptOperation, expectedPropertiesDecryptedCount: expectedPropertiesDecryptedCount);
+                FeedResponse<TestDoc> readDocs = await queryResponseIterator.ReadNextAsync();
+                totalDocs += readDocs.Count;
+                for (int i = 0; i < readDocs.Count; i++)
+                {
+                    docs.Add(readDocs.ElementAt(i));
+                    VerifyDiagnostics(readDocs.Diagnostics, encryptOperation: false, decryptOperation: decryptOperation, expectedPropertiesDecryptedCount: expectedPropertiesDecryptedCount);
+                }
+
             }
-            else
+
+            if (expectedDocList != null)
             {
-                Assert.AreEqual(0, readDocs.Count);
-            }
+                Assert.IsTrue(totalDocs >= expectedDocList.Count);
+
+                foreach (TestDoc readDoc in docs)
+                {
+                    TestDoc expectedDoc = expectedDocList.Where(doc => doc.Id.Equals(readDoc.Id)).FirstOrDefault();
+                    Assert.IsNotNull(expectedDoc);
+                    VerifyExpectedDocResponse(expectedDoc, readDoc);
+                }
+            }         
         }
 
         private static async Task<ItemResponse<TestDoc>> MdeCreateItemAsync(
@@ -3240,7 +3308,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 if (expectedPropertiesDecryptedCount > 0)
                 {
                     int propertiesDecrypted = decryptOperationDiagnostics.Value<int>(Constants.DiagnosticsPropertiesDecryptedCount);
-                    Assert.IsTrue(propertiesDecrypted >= expectedPropertiesDecryptedCount);
+                    Assert.IsTrue(propertiesDecrypted >= expectedPropertiesDecryptedCount, $"{propertiesDecrypted},{expectedPropertiesDecryptedCount}");
                 }
             }
         }
