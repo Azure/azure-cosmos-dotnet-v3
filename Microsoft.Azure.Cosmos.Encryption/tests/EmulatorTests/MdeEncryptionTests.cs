@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             };
 
 
-            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy(paths, 2);
+            clientEncryptionPolicy = new ClientEncryptionPolicy(paths, 2);
            
 
             containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
@@ -540,7 +540,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await MdeEncryptionTests.ValidateQueryResultsAsync(
                 MdeEncryptionTests.encryptionContainer,
                 queryDefinition: withEncryptedParameter,
-                expectedDoc: expectedDoc);
+                expectedDocList: new List<TestDoc> { expectedDoc });
 
             await MdeEncryptionTests.ValidateQueryResultsAsync(
                 MdeEncryptionTests.encryptionContainer,
@@ -553,14 +553,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 MdeEncryptionTests.encryptionContainer,
                 string.Format("SELECT * FROM c where c.Sensitive_IntFormat = '{0}'", testDoc.Sensitive_IntFormat),
                 expectedDocList: null);
-
-            await MdeEncryptionTests.ValidateQueryResultsAsync(
-                MdeEncryptionTests.encryptionContainer,
-                queryDefinition: new QueryDefinition(
-                    "select * from c where c.id = @theId and c.PK = @thePK")
-                         .WithParameter("@theId", expectedDoc.Id)
-                         .WithParameter("@thePK", expectedDoc.PK),
-                expectedDocList: new List<TestDoc> { expectedDoc });
 
             expectedDoc.Sensitive_IntMultiDimArray = null;
             expectedDoc.Sensitive_ArrayMultiTypes = null;
@@ -872,7 +864,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             // test GetItemLinqQueryable
             await MdeEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(MdeEncryptionTests.encryptionContainer, testDoc1, testDoc2, null, expectedPropertiesDecryptedCount: 12);
 
-            string query = $"SELECT * FROM c WHERE c.PK in ('{testDoc1.PK}', '{testDoc2.PK}')";
+            string query = $"SELECT * FROM c WHERE c.NonSensitive in ('{testDoc1.NonSensitive}', '{testDoc2.NonSensitive}')";
             await MdeEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(MdeEncryptionTests.encryptionContainer, testDoc1, testDoc2, query, expectedPropertiesDecryptedCount: 12);
 
             // ORDER BY query
@@ -2054,7 +2046,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             ContainerProperties containerProperties = new ContainerProperties("StringPkEncContainer", "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyWithRevokedKek };
 
-            Container encryptionContainer = await MdeEncryptionTests.database.CreateContainerAsync(containerProperties, 20000);
+            Container encryptionContainer = await MdeEncryptionTests.database.CreateContainerAsync(containerProperties, 400);
             await encryptionContainer.InitializeEncryptionAsync();
 
             TestDoc testDoc = TestDoc.Create();
@@ -2094,7 +2086,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             containerProperties = new ContainerProperties("FloatPkEncContainer", "/Sensitive_FloatFormat") { ClientEncryptionPolicy = clientEncryptionPolicyWithRevokedKek };
 
-            encryptionContainer = await database.CreateContainerAsync(containerProperties, 20000);
+            encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
             await encryptionContainer.InitializeEncryptionAsync();
 
             createResponse = await encryptionContainer.CreateItemAsync(
