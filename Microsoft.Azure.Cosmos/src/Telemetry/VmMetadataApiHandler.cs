@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>machine id</returns>
         internal static string GetMachineId()
         {
-            if (VmMetadataApiHandler.azMetadata != null)
+            if (!String.IsNullOrWhiteSpace(VmMetadataApiHandler.azMetadata?.Compute?.VMId))
             {
                 return VmMetadataApiHandler.azMetadata.Compute.VMId;
             }
