@@ -962,11 +962,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_DoubleFormat",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
             };
 
-            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy(paths);
+            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy(paths, 2);
 
-            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
+            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/Sensitive_DoubleFormat") { ClientEncryptionPolicy = clientEncryptionPolicy };
 
             Container encryptionContainerToDelete = await database.CreateContainerAsync(containerProperties, 400);
             await encryptionContainerToDelete.InitializeEncryptionAsync();
@@ -981,7 +989,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             Container otherEncryptionContainer = otherDatabase.GetContainer(encryptionContainerToDelete.Id);
 
-            await MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer);
+            TestDoc testDoc = TestDoc.Create();
+            ItemResponse<TestDoc> createResponse = await otherEncryptionContainer.CreateItemAsync(
+                testDoc,
+                new PartitionKey(testDoc.Sensitive_DoubleFormat));
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+            VerifyExpectedDocResponse(testDoc, createResponse.Resource);
 
             // Client 1 Deletes the Container referenced in Client 2 and Recreate with different policy
             using (await database.GetContainer(encryptionContainerToDelete.Id).DeleteContainerStreamAsync())
@@ -1012,9 +1025,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/PK",
+                    ClientEncryptionKeyId = "key2",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
             };
 
-            clientEncryptionPolicy = new ClientEncryptionPolicy(paths);
+            clientEncryptionPolicy = new ClientEncryptionPolicy(paths, 2);
 
             containerProperties = new ContainerProperties(encryptionContainerToDelete.Id, "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
 
@@ -1032,7 +1053,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Assert.Fail("Create operation should have failed with 1024 SubStatusCode. ");
                 }
 
-                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, expectedPropertiesEncryptedCount: 3, expectedPropertiesDecryptedCount: 3);
+                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, expectedPropertiesEncryptedCount: 4, expectedPropertiesDecryptedCount: 3);
                 Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
 
@@ -1062,10 +1083,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Assert.Fail("Bulk operation should have failed with 1024 SubStatusCode.");
                 }
 
-                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, expectedPropertiesEncryptedCount: 3, expectedPropertiesDecryptedCount: 0);
+                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, expectedPropertiesEncryptedCount: 4, expectedPropertiesDecryptedCount: 0);
 
                 Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
-            }
+            }          
 
             tasks = new List<Task>()
             {
@@ -1086,11 +1107,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             // validate if the right policy was used, by reading them all back.
             FeedIterator<TestDoc> queryResponseIterator = otherEncryptionContainer.GetItemQueryIterator<TestDoc>("select * from c");
-
             while (queryResponseIterator.HasMoreResults)
             {
                 FeedResponse<TestDoc> readDocs = await queryResponseIterator.ReadNextAsync();
             }
+
         }
 
         [TestMethod]
@@ -1113,11 +1134,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_DoubleFormat",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
             };
 
-            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy(paths);
+            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy(paths, 2);
 
-            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
+            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/Sensitive_DoubleFormat") { ClientEncryptionPolicy = clientEncryptionPolicy };
 
             Container encryptionContainerToDelete = await database.CreateContainerAsync(containerProperties, 400);
             await encryptionContainerToDelete.InitializeEncryptionAsync();
@@ -1130,7 +1159,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             Container otherEncryptionContainer = otherDatabase.GetContainer(encryptionContainerToDelete.Id);
 
-            await MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer);
+            TestDoc testDoc = TestDoc.Create();
+            ItemResponse<TestDoc> createResponse = await otherEncryptionContainer.CreateItemAsync(
+                testDoc,
+                new PartitionKey(testDoc.Sensitive_DoubleFormat));
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+            VerifyExpectedDocResponse(testDoc, createResponse.Resource);
 
             // Client 1 Deletes the Container referenced in Client 2 and Recreate with different policy
             using (await database.GetContainer(encryptionContainerToDelete.Id).DeleteContainerStreamAsync())
@@ -1153,9 +1187,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/PK",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                }
             };
 
-            clientEncryptionPolicy = new ClientEncryptionPolicy(paths);
+            clientEncryptionPolicy = new ClientEncryptionPolicy(paths, 2);
 
             containerProperties = new ContainerProperties(encryptionContainerToDelete.Id, "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
 
@@ -1174,11 +1216,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Assert.Fail("Create operation should have failed with 1024 SubStatusCode");
                 }
 
-                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, expectedPropertiesEncryptedCount: 2, expectedPropertiesDecryptedCount: 0);
+                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, expectedPropertiesEncryptedCount: 3, expectedPropertiesDecryptedCount: 0);
                 Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
 
-            TestDoc testDoc = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+            testDoc = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
 
             string partitionKey = "thePK";
 
@@ -1245,11 +1287,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_DoubleFormat",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
             };
 
-            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy(paths);
+            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy(paths, 2);
 
-            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
+            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/Sensitive_DoubleFormat") { ClientEncryptionPolicy = clientEncryptionPolicy };
 
             Container encryptionContainerToDelete = await database.CreateContainerAsync(containerProperties, 400);
             await encryptionContainerToDelete.InitializeEncryptionAsync();
@@ -1262,9 +1312,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             Container otherEncryptionContainer = otherDatabase.GetContainer(encryptionContainerToDelete.Id);
 
-            await MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer);
+            TestDoc testDoc = TestDoc.Create();
+            ItemResponse<TestDoc> createResponse = await otherEncryptionContainer.CreateItemAsync(
+                testDoc,
+                new PartitionKey(testDoc.Sensitive_DoubleFormat));
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+            VerifyExpectedDocResponse(testDoc, createResponse.Resource);
 
-            // Client 1 Deletes the Container referenced in Client 2 and Recreate with different policy
+            // Client 1 Deletes the Container referenced in Client 2 and Recreate with different policy, with new Pk path
             using (await database.GetContainer(encryptionContainerToDelete.Id).DeleteContainerStreamAsync())
             { }
 
@@ -1285,40 +1340,56 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/PK",
+                    ClientEncryptionKeyId = "key2",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+
             };
 
-            clientEncryptionPolicy = new ClientEncryptionPolicy(paths);
+            clientEncryptionPolicy = new ClientEncryptionPolicy(paths, 2);
 
             containerProperties = new ContainerProperties(encryptionContainerToDelete.Id, "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
 
             ContainerResponse containerResponse = await database.CreateContainerAsync(containerProperties, 400);
 
+            testDoc = TestDoc.Create();
             try
-            {
-                await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+            {                
+                await encryptionContainerToDelete.CreateItemAsync(
+                    testDoc,
+                    new PartitionKey(testDoc.PK));
                 Assert.Fail("Create operation should have failed. ");
             }
             catch (CosmosException ex)
             {
                 if (ex.SubStatusCode != 1024)
                 {
-                    Assert.Fail("Create operation should have failed with 1024 SubStatusCode .");
+                    Assert.Fail($"Create operation should have failed with 1024 SubStatusCode. Failed with substatus code {ex.SubStatusCode}");
                 }
 
-                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, expectedPropertiesEncryptedCount: 2, expectedPropertiesDecryptedCount: 0);
+                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, expectedPropertiesEncryptedCount: 3, expectedPropertiesDecryptedCount: 0);
 
                 Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
 
-            TestDoc testDoc = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+            createResponse = await encryptionContainerToDelete.CreateItemAsync(
+                testDoc,
+                new PartitionKey(testDoc.PK));
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+            VerifyExpectedDocResponse(testDoc, createResponse.Resource);
 
             // check w.r.t to query if we are able to fail and update the policy
             try
             {
                 await MdeEncryptionTests.ValidateQueryResultsAsync(
-                       otherEncryptionContainer,
-                       "SELECT * FROM c",
-                       testDoc);
+                    otherEncryptionContainer,
+                    "SELECT * FROM c",
+                    testDoc);
 
                 Assert.Fail("ValidateQueryResultAsync should have failed. ");
             }
@@ -1326,7 +1397,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 if (ex.SubStatusCode != 1024)
                 {
-                    Assert.Fail("Query should have failed with 1024 SubStatusCode. ");
+                    Assert.Fail($"Query should have failed with 1024 SubStatusCode. Failed with substatus code {ex.SubStatusCode} ");
                 }
 
                 Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
@@ -1337,7 +1408,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 otherEncryptionContainer,
                 "SELECT * FROM c",
                 testDoc,
-                expectedPropertiesDecryptedCount: 2);
+                expectedPropertiesDecryptedCount: 3);
         }
 
         [TestMethod]
@@ -1360,11 +1431,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_DoubleFormat",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
             };
 
-            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy(paths);
+            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy(paths, 2);
 
-            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
+            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/Sensitive_DoubleFormat") { ClientEncryptionPolicy = clientEncryptionPolicy };
 
             Container encryptionContainerToDelete = await database.CreateContainerAsync(containerProperties, 400);
             await encryptionContainerToDelete.InitializeEncryptionAsync();
@@ -1377,7 +1456,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             Container otherEncryptionContainer = otherDatabase.GetContainer(encryptionContainerToDelete.Id);
 
-            await MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer);
+            TestDoc testDoc = TestDoc.Create();
+            ItemResponse<TestDoc> createResponse = await otherEncryptionContainer.CreateItemAsync(
+                testDoc,
+                new PartitionKey(testDoc.Sensitive_DoubleFormat));
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+            VerifyExpectedDocResponse(testDoc, createResponse.Resource);
 
             // Client 1 Deletes the Container referenced in Client 2 and Recreate with different policy
             using (await database.GetContainer(encryptionContainerToDelete.Id).DeleteContainerStreamAsync())
@@ -1416,9 +1500,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/PK",
+                    ClientEncryptionKeyId = "key2",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
             };
 
-            clientEncryptionPolicy = new ClientEncryptionPolicy(paths);
+            clientEncryptionPolicy = new ClientEncryptionPolicy(paths, 2);
 
             containerProperties = new ContainerProperties(encryptionContainerToDelete.Id, "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
 
@@ -1427,17 +1519,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             // operation fails, policy gets updated.
             try
             {
-                await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+                testDoc = TestDoc.Create();
+                createResponse = await encryptionContainerToDelete.CreateItemAsync(
+                    testDoc,
+                    new PartitionKey(testDoc.PK));
                 Assert.Fail("Create operation should have failed. ");
             }
             catch (CosmosException ex)
             {
                 if (ex.SubStatusCode != 1024)
                 {
-                    Assert.Fail("Create operation should have failed with 1024 SubStatusCode.");
+                    Assert.Fail($"Create operation should have failed with 1024 SubStatusCode. Failed with substatus code {ex.SubStatusCode}");
                 }
 
-                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, expectedPropertiesEncryptedCount: 2, expectedPropertiesDecryptedCount: 0);
+                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, expectedPropertiesEncryptedCount: 3, expectedPropertiesDecryptedCount: 0);
                 Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
             }
 
@@ -1938,7 +2033,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             ContainerProperties containerProperties = new ContainerProperties("StringPkEncContainer", "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyWithRevokedKek };
 
-            Container encryptionContainer = await MdeEncryptionTests.database.CreateContainerAsync(containerProperties, 400);
+            Container encryptionContainer = await MdeEncryptionTests.database.CreateContainerAsync(containerProperties, 20000);
             await encryptionContainer.InitializeEncryptionAsync();
 
             TestDoc testDoc = TestDoc.Create();
@@ -1978,12 +2073,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             containerProperties = new ContainerProperties("FloatPkEncContainer", "/Sensitive_FloatFormat") { ClientEncryptionPolicy = clientEncryptionPolicyWithRevokedKek };
 
-            encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
+            encryptionContainer = await database.CreateContainerAsync(containerProperties, 20000);
             await encryptionContainer.InitializeEncryptionAsync();
 
             createResponse = await encryptionContainer.CreateItemAsync(
                 testDoc,
-                new PartitionKey(testDoc.Sensitive_FloatFormat));
+                new PartitionKey(double.Parse(testDoc.Sensitive_FloatFormat.ToString())));
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, createResponse.Resource);
 

@@ -816,13 +816,59 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionDiagnosticsContext encryptionDiagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (responseMessage.StatusCode == HttpStatusCode.BadRequest &&
-                string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
+            string subStatusCode = responseMessage.Headers.Get(Constants.SubStatusHeader);
+            bool isPartitionKeyMismatch = string.Equals(subStatusCode, Constants.PartitionKeyMismatch);
+            bool isContainerRidIncorrect = string.Equals(subStatusCode, Constants.IncorrectContainerRidSubStatus);
+
+            if (responseMessage.StatusCode == HttpStatusCode.BadRequest && (isContainerRidIncorrect || isPartitionKeyMismatch))
             {
+                // if it was due to partition key mismatch, just check if it was part of client encryption policy, if not we don't
+                // have to refresh the encryption settings.
+                if (isPartitionKeyMismatch)
+                {
+                    if (encryptionSettings.PartitionKeyPath.Count > 1)
+                    {
+                        EncryptionSettingForProperty encryptionSettingForProperty = null;
+                        foreach (string path in encryptionSettings.PartitionKeyPath)
+                        {
+                            encryptionSettingForProperty = encryptionSettings.GetEncryptionSettingForProperty(path.Substring(1));
+
+                            // break on first path encountered.
+                            if (encryptionSettingForProperty != null)
+                            {
+                                break;
+                            }
+                        }
+
+                        // if none of the paths were part of encryption policy
+                        if (encryptionSettingForProperty == null)
+                        {
+                            return;
+                        }
+                    }
+                    else if (encryptionSettings.GetEncryptionSettingForProperty(
+                        encryptionSettings.PartitionKeyPath.FirstOrDefault().Substring(1)) == null)
+                    {
+                        return;
+                    }
+                }
+
+                string currentContainerRid = encryptionSettings.ContainerRidValue;
+
+                // either case we cannot be sure if PartitionKeyMismatch was due us using an invalid setting or we did not encrypt it.
                 // get the latest encryption settings.
-                await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                   obsoleteEncryptionSettings: encryptionSettings,
-                   cancellationToken: cancellationToken);
+                EncryptionSettings updatedEncryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                    obsoleteEncryptionSettings: encryptionSettings,
+                    cancellationToken: cancellationToken);
+
+                string containerRidPostSettingsUpdate = updatedEncryptionSettings.ContainerRidValue;
+
+                // gets returned back due to PartitionKeyMismatch.(in case of batch looks like the container rid check gets done first)
+                // if the container was not recreated, so policy has not changed, just return the original response.
+                if (string.Equals(currentContainerRid, containerRidPostSettingsUpdate))
+                {
+                    return;
+                }
 
                 if (encryptionDiagnosticsContext == null)
                 {
@@ -1065,7 +1111,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
 
-            (streamPayload, partitionKey) = await EncryptionProcessor.EncryptAsync(
+            streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 encryptionSettings,
                 encryptionDiagnosticsContext,
@@ -1076,6 +1122,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             encryptionSettings.SetRequestHeaders(clonedRequestOptions);
 
+            partitionKey = await this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(partitionKey, encryptionSettings, cancellationToken);
             ResponseMessage responseMessage = await this.container.CreateItemStreamAsync(
                 streamPayload,
                 partitionKey,
@@ -1164,7 +1211,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
 
-            (streamPayload, partitionKey) = await EncryptionProcessor.EncryptAsync(
+            streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 encryptionSettings,
                 encryptionDiagnosticsContext,
@@ -1178,6 +1225,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             encryptionSettings.SetRequestHeaders(clonedRequestOptions);
 
             id = await this.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(id, encryptionSettings, cancellationToken);
+            partitionKey = await this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(partitionKey, encryptionSettings, cancellationToken);
             ResponseMessage responseMessage = await this.container.ReplaceItemStreamAsync(
                 streamPayload,
                 id,
@@ -1220,7 +1268,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
 
-            (streamPayload, partitionKey) = await EncryptionProcessor.EncryptAsync(
+            streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 encryptionSettings,
                 encryptionDiagnosticsContext,
@@ -1232,7 +1280,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             clonedRequestOptions = EncryptionContainerGetClonedItemRequestOptions(requestOptions);
 
             encryptionSettings.SetRequestHeaders(clonedRequestOptions);
-
+            partitionKey = await this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(partitionKey, encryptionSettings, cancellationToken);
             ResponseMessage responseMessage = await this.container.UpsertItemStreamAsync(
                 streamPayload,
                 partitionKey,

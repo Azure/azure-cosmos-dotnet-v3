@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Else input stream will be disposed, and a new stream is returned.
         /// In case of an exception, input stream won't be disposed, but position will be end of stream.
         /// </remarks>
-        public static async Task<(Stream, PartitionKey)> EncryptAsync(
+        public static async Task<Stream> EncryptAsync(
             Stream input,
             EncryptionSettings encryptionSettings,
             EncryptionDiagnosticsContext operationDiagnostics,
@@ -97,30 +97,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 propertiesEncryptedCount++;
             }
 
-            PartitionKey partitionKey;
-#if ENCRYPTIONPREVIEW
-            if (encryptionSettings.PartitionKeyPath.Count > 1)
-            {
-                PartitionKeyBuilder partitionKeyBuilder = new PartitionKeyBuilder();
-
-                foreach (string path in encryptionSettings.PartitionKeyPath)
-                {
-                    partitionKeyBuilder.Add((string)itemJObj.Property(path.Substring(1)).Value);
-                }
-
-                partitionKey = partitionKeyBuilder.Build();
-            }
-            else
-#endif
-            {
-                partitionKey = new PartitionKey((string)itemJObj.Property(encryptionSettings.PartitionKeyPath.First().Substring(1)).Value);
-            }
-
             Stream result = EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
             input.Dispose();
 
             operationDiagnostics?.End(propertiesEncryptedCount);
-            return (result, partitionKey);
+            return result;
         }
 
         /// <remarks>

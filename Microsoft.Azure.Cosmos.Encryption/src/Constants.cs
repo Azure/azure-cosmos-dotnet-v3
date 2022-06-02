@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public const string DiagnosticsStartTime = "Start time";
         public const string DocumentsResourcePropertyName = "Documents";
         public const string IncorrectContainerRidSubStatus = "1024";
+        public const string PartitionKeyMismatch = "1001";
 
         // TODO: Good to have constants available in the Cosmos SDK. Tracked via https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2431
         public const string IntendedCollectionHeader = "x-ms-cosmos-intended-collection-rid";

@@ -54,11 +54,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (encryptionSettings.PropertiesToEncrypt.Any())
             {
-               (streamPayload, _) = EncryptionProcessor.EncryptAsync(
-                    streamPayload,
-                    encryptionSettings,
-                    operationDiagnostics: null,
-                    cancellationToken: default)
+               streamPayload = EncryptionProcessor.EncryptAsync(
+                   streamPayload,
+                   encryptionSettings,
+                   operationDiagnostics: null,
+                   cancellationToken: default)
                     .ConfigureAwait(false)
                     .GetAwaiter()
                     .GetResult();
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (encryptionSettings.PropertiesToEncrypt.Any())
             {
-                (streamPayload, _) = EncryptionProcessor.EncryptAsync(
+                streamPayload = EncryptionProcessor.EncryptAsync(
                     streamPayload,
                     encryptionSettings,
                     operationDiagnostics: null,
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (encryptionSettings.PropertiesToEncrypt.Any())
             {
-                (streamPayload,_) = EncryptionProcessor.EncryptAsync(
+                streamPayload = EncryptionProcessor.EncryptAsync(
                     streamPayload,
                     encryptionSettings,
                     operationDiagnostics: null,
