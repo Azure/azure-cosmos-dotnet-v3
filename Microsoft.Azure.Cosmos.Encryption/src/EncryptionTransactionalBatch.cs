@@ -80,13 +80,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 .GetAwaiter()
                 .GetResult();
 
-            if (encryptionSettings.PropertiesToEncrypt.Any())
-            {
-                id = this.encryptionContainer.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(id, encryptionSettings, cancellationToken: default)
-                    .ConfigureAwait(false)
-                    .GetAwaiter()
-                    .GetResult();
-            }
+            id = this.encryptionContainer.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(id, encryptionSettings, cancellationToken: default)
+                .ConfigureAwait(false)
+                .GetAwaiter()
+                .GetResult();
 
             this.transactionalBatch = this.transactionalBatch.DeleteItem(
                 id,
@@ -104,13 +101,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 .GetAwaiter()
                 .GetResult();
 
-            if (encryptionSettings.PropertiesToEncrypt.Any())
-            {
-                id = this.encryptionContainer.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(id, encryptionSettings, cancellationToken: default)
-                    .ConfigureAwait(false)
-                    .GetAwaiter()
-                    .GetResult();
-            }
+            id = this.encryptionContainer.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(id, encryptionSettings, cancellationToken: default)
+                .ConfigureAwait(false)
+                .GetAwaiter()
+                .GetResult();
 
             this.transactionalBatch = this.transactionalBatch.ReadItem(
                 id,
@@ -295,13 +289,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 .GetAwaiter()
                 .GetResult();
 
-            if (encryptionSettings.PropertiesToEncrypt.Any())
-            {
-                id = this.encryptionContainer.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(id, encryptionSettings, cancellationToken: default)
-                    .ConfigureAwait(false)
-                    .GetAwaiter()
-                    .GetResult();
-            }
+            id = this.encryptionContainer.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(id, encryptionSettings, cancellationToken: default)
+                .ConfigureAwait(false)
+                .GetAwaiter()
+                .GetResult();
 
             this.transactionalBatch = this.transactionalBatch.PatchItem(
                 id,

@@ -106,11 +106,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken = default)
         {
             EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
-            if (encryptionSettings.PropertiesToEncrypt.Any())
-            {
-                id = await this.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(id, encryptionSettings, cancellationToken);
-                partitionKey = await this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(partitionKey, encryptionSettings, cancellationToken);
-            }
+
+            id = await this.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(id, encryptionSettings, cancellationToken);
+            partitionKey = await this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(partitionKey, encryptionSettings, cancellationToken);
 
             return await this.container.DeleteItemAsync<T>(
                 id,
@@ -785,7 +783,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken = default)
         {
             EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
-            partitionKey = (PartitionKey)await this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(partitionKey, encryptionSettings, cancellationToken);
+
+            partitionKey = await this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(partitionKey, encryptionSettings, cancellationToken);
+
             return await this.container.DeleteAllItemsByPartitionKeyStreamAsync(
                 partitionKey,
                 requestOptions,
@@ -965,7 +965,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionSettings encryptionSettings,
             CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(id))
+            if (!encryptionSettings.PropertiesToEncrypt.Any() || string.IsNullOrEmpty(id))
             {
                 return id;
             }
@@ -1013,7 +1013,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionSettings encryptionSettings,
             CancellationToken cancellationToken)
         {
-            if (partitionKey == null || (partitionKey != null && (partitionKey == PartitionKey.None || partitionKey == PartitionKey.Null)))
+            if (!encryptionSettings.PropertiesToEncrypt.Any() || partitionKey == null || (partitionKey != null && (partitionKey == PartitionKey.None || partitionKey == PartitionKey.Null)))
             {
                 return partitionKey;
             }
