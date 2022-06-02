@@ -60,6 +60,30 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        public async Task GetVMMachineIdWithNullComputeTest()
+        {
+            static Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                object jsonObject = JsonConvert.DeserializeObject("{\"compute\":null}");
+                string payload = JsonConvert.SerializeObject(jsonObject);
+                HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(payload, Encoding.UTF8, "application/json")
+                };
+                return Task.FromResult(response);
+            }
+
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
+
+            VmMetadataApiHandler.TryInitialize(cosmoshttpClient);
+
+            await Task.Delay(2000);
+            Assert.IsNull(VmMetadataApiHandler.GetMachineInfo());
+            Assert.IsNotNull(VmMetadataApiHandler.GetMachineId());
+        }
+
+        [TestMethod]
         public async Task GetHashedMachineNameAsMachineIdTest()
         {
             string expectedMachineId = "hashedMachineName:" + VmMetadataApiHandler.ComputeHash(Environment.MachineName);
