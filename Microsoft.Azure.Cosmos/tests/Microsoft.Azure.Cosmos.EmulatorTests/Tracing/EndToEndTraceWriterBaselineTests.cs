@@ -19,6 +19,7 @@
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
 
     [VisualStudio.TestTools.UnitTesting.TestClass]
+    [TestCategory("UpdateContract")]
     public sealed class EndToEndTraceWriterBaselineTests : BaselineTests<EndToEndTraceWriterBaselineTests.Input, EndToEndTraceWriterBaselineTests.Output>
     {
         public static CosmosClient client;
@@ -312,7 +313,19 @@
                 await processor.StartAsync();
 
                 // Letting processor initialize
-                await Task.Delay(2000);
+                bool hasLeases = false;
+                while (!hasLeases)
+                {
+                    int leases = leaseContainer.GetItemLinqQueryable<JObject>(true).Count();
+                    if (leases > 1)
+                    {
+                        hasLeases = true;
+                    }
+                    else
+                    {
+                        await Task.Delay(1000);
+                    }
+                }
 
                 await processor.StopAsync();
 
@@ -440,6 +453,33 @@
                 endLineNumber = GetLineNumber();
 
                 inputs.Add(new Input("Query Public API Typed", traceForest, startLineNumber, endLineNumber));
+            }
+            //----------------------------------------------------------------
+
+            //----------------------------------------------------------------
+            //  Query - Without ServiceInterop
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                Lazy<bool> currentLazy = Documents.ServiceInteropWrapper.AssembliesExist;
+                Documents.ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => false);
+                FeedIterator<JToken> feedIterator = container.GetItemQueryIterator<JToken>(
+                    queryText: "SELECT * FROM c");
+
+                List<ITrace> traces = new List<ITrace>();
+
+                while (feedIterator.HasMoreResults)
+                {
+                    FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                    traces.Add(trace);
+                }
+
+                ITrace traceForest = TraceJoiner.JoinTraces(traces);
+                Documents.ServiceInteropWrapper.AssembliesExist = currentLazy;
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("Query - Without ServiceInterop", traceForest, startLineNumber, endLineNumber));
             }
             //----------------------------------------------------------------
 

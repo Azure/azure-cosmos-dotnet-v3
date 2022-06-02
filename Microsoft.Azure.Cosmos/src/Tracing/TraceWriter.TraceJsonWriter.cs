@@ -330,6 +330,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName("OperationType");
                 this.jsonWriter.WriteStringValue(storeResponseStatistics.RequestOperationType.ToString());
 
+                if (!string.IsNullOrEmpty(storeResponseStatistics.RequestSessionToken))
+                {
+                    this.jsonWriter.WriteFieldName("RequestSessionToken");
+                    this.jsonWriter.WriteStringValue(storeResponseStatistics.RequestSessionToken);
+                }
+
                 this.jsonWriter.WriteFieldName("LocationEndpoint");
                 this.WriteStringValueOrNull(storeResponseStatistics.LocationEndpoint?.ToString());
 
@@ -431,6 +437,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName("TransportException");
                 TransportException transportException = storeResult.Exception?.InnerException as TransportException;
                 this.WriteStringValueOrNull(transportException?.Message);
+
+                this.jsonWriter.WriteObjectEnd();
+            }
+
+            public void Visit(PartitionKeyRangeCacheTraceDatum partitionKeyRangeCacheTraceDatum)
+            {
+                this.jsonWriter.WriteObjectStart();
+
+                this.jsonWriter.WriteFieldName("Previous Continuation Token");
+                this.WriteStringValueOrNull(partitionKeyRangeCacheTraceDatum.PreviousContinuationToken);
+
+                this.jsonWriter.WriteFieldName("Continuation Token");
+                this.WriteStringValueOrNull(partitionKeyRangeCacheTraceDatum.ContinuationToken);
 
                 this.jsonWriter.WriteObjectEnd();
             }
@@ -554,6 +573,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     this.jsonWriter.WriteStringValue(value.ToString("o", CultureInfo.InvariantCulture));
                 }
             }
+
         }
     }
 }

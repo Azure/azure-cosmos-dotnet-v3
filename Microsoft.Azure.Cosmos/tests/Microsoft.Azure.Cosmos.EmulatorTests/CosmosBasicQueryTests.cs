@@ -214,8 +214,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     if (callCount > 1)
                     {
-                        INameValueCollection headers = new StoreRequestNameValueCollection();
-                        headers.Add(Documents.HttpConstants.HttpHeaders.RetryAfterInMilliseconds, "42");
+                        INameValueCollection headers = new Documents.Collections.StoreResponseNameValueCollection
+                        {
+                            { Documents.HttpConstants.HttpHeaders.RetryAfterInMilliseconds, "42" }
+                        };
                         activityId = Guid.NewGuid().ToString();
                         headers.Add(Documents.HttpConstants.HttpHeaders.ActivityId, activityId);
                         Documents.DocumentServiceResponse response = new Documents.DocumentServiceResponse(

@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             Func<string, INameValueCollection> getHeadersWithContinuation = (string continuationToken) =>
             {
-                INameValueCollection headers = new StoreRequestNameValueCollection();
+                INameValueCollection headers = new RequestNameValueCollection();
                 headers[HttpConstants.HttpHeaders.Continuation] = continuationToken;
                 return headers;
             };
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             Func<string, INameValueCollection> getHeadersWithContinuation = (string continuationToken) =>
             {
-                INameValueCollection localHeaders = new StoreRequestNameValueCollection();
+                INameValueCollection localHeaders = new RequestNameValueCollection();
                 if (continuationToken != null)
                 {
                     localHeaders[HttpConstants.HttpHeaders.Continuation] = continuationToken;
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                             RoutingMapProvider routingMapProvider = new RoutingMapProvider(routingMap);
                             PartitionRoutingHelper.ResolvedRangeInfo resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(testCase.ProvidedRanges, routingMapProvider, string.Empty, currentRange, null, NoOpTrace.Singleton);
                             actualPartitionKeyRangeIds.Add(resolvedRangeInfo.ResolvedRange.Id);
-                            INameValueCollection headers = new StoreRequestNameValueCollection();
+                            INameValueCollection headers = new RequestNameValueCollection();
 
                             await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, testCase.ProvidedRanges, routingMapProvider, string.Empty, resolvedRangeInfo, NoOpTrace.Singleton);
 
@@ -337,7 +337,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 try
                 {
                     IReadOnlyList<Range<string>> _ = PartitionRoutingHelper.GetProvidedPartitionKeyRanges(
-                        querySpec: new Cosmos.Query.Core.SqlQuerySpec(testcase.Query),
+                        querySpecJsonString: JsonConvert.SerializeObject(new Cosmos.Query.Core.SqlQuerySpec(testcase.Query)),
                         enableCrossPartitionQuery: testcase.EnableCrossPartitionQuery,
                         parallelizeCrossPartitionQuery: false,
                         isContinuationExpected: true,

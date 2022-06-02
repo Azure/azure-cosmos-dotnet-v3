@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             HttpStatusCode lastStatusCode = HttpStatusCode.OK;
             do
             {
-                INameValueCollection headers = new StoreRequestNameValueCollection();
+                INameValueCollection headers = new RequestNameValueCollection();
 
                 headers.Set(HttpConstants.HttpHeaders.PageSize, PageSizeString);
                 headers.Set(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);
@@ -264,6 +264,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 throw new NotFoundException($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: GetRoutingMapForCollectionAsync(collectionRid: {collectionRid}), Range information either doesn't exist or is not complete.");
             }
 
+            trace.AddDatum($"PKRangeCache Info({DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)})",
+                                          new PartitionKeyRangeCacheTraceDatum(
+                                              previousContinuationToken: previousRoutingMap?.ChangeFeedNextIfNoneMatch,
+                                              continuationToken: routingMap.ChangeFeedNextIfNoneMatch));
             return routingMap;
         }
 

@@ -172,12 +172,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCleanup]
         public async Task Cleanup()
         {
-            var isInitializedField = typeof(VmMetadataApiHandler).GetField("isInitialized",
+            FieldInfo isInitializedField = typeof(VmMetadataApiHandler).GetField("isInitialized",
                BindingFlags.Static |
                BindingFlags.NonPublic);
             isInitializedField.SetValue(null, false);
 
-            var azMetadataField = typeof(VmMetadataApiHandler).GetField("azMetadata",
+            FieldInfo azMetadataField = typeof(VmMetadataApiHandler).GetField("azMetadata",
                BindingFlags.Static |
                BindingFlags.NonPublic);
             azMetadataField.SetValue(null, null);
@@ -730,7 +730,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Container container = await this.CreateClientAndContainer(
                                                 mode: mode,
-                                                customHandler: httpHandler);
+                                                customHttpHandler: httpHandler);
             try
             {
                 ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
@@ -944,20 +944,59 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-            Assert.AreEqual(1, machineId.Count);
+            Assert.AreEqual(1, machineId.Count, $"Multiple Machine Id has been generated i.e {JsonConvert.SerializeObject(machineId)}");
 
             if(isAzureInstance.HasValue)
             {
                 if (isAzureInstance.Value)
                 {
-                    Assert.AreEqual("vmId:d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd", machineId.ToList()[0]);
+                    Assert.AreEqual("vmId:d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd", machineId.First(), $"Generated Machine id is : {machineId.First()}");
                 }
                 else
                 {
-                    Assert.AreNotEqual("vmId:d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd", machineId.ToList()[0]);
+                    Assert.AreNotEqual("vmId:d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd", machineId.First(), $"Generated Machine id is : {machineId.First()}");
                 }
             }
 
+        }
+
+        [TestMethod]
+        public async Task CheckMisconfiguredTelemetryEndpoint_should_stop_the_job()
+        {
+            int retryCounter = 0;
+            HttpClientHandlerHelper customHttpHandler = new HttpClientHandlerHelper
+            {
+                RequestCallBack = (request, cancellation) =>
+                {
+                    if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
+                    {
+                        retryCounter++;
+                        throw new Exception("Exception while sending telemetry");
+                    }
+
+                    return null;
+                }
+            };
+
+            Container container = await this.CreateClientAndContainer(
+                mode: ConnectionMode.Direct, 
+                customHttpHandler: customHttpHandler);
+
+            // Create an item
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
+            ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(testItem);
+            ToDoActivity testItemCreated = createResponse.Resource;
+
+            // Read an Item
+            ItemResponse<ToDoActivity> response = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
+
+            await Task.Delay(1500);
+
+            response = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
+
+            await Task.Delay(3500);
+
+            Assert.AreEqual(3, retryCounter);
         }
 
         private static ItemBatchOperation CreateItem(string itemId)
@@ -970,7 +1009,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Microsoft.Azure.Cosmos.ConsistencyLevel? consistency = null,
             bool isLargeContainer = false,
             bool isAzureInstance = false,
-            HttpClientHandlerHelper customHandler = null)
+            HttpClientHandlerHelper customHttpHandler = null)
         {
             if (consistency.HasValue)
             {
@@ -979,13 +1018,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             HttpClientHandlerHelper handlerHelper;
-            if (customHandler == null)
+            if (customHttpHandler == null)
             {
                 handlerHelper = isAzureInstance ? this.httpHandler : this.httpHandlerForNonAzureInstance;
             } 
             else
             {
-                handlerHelper = customHandler;
+                handlerHelper = customHttpHandler;
             }
 
             this.cosmosClientBuilder = this.cosmosClientBuilder
