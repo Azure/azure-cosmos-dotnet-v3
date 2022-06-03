@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 if (this.cachedUserAgentString != this.UserAgentContainer.UserAgent ||
                     this.cachedNumberOfClientCreated != CosmosClient.numberOfClientsCreated ||
                     this.cachedNumberOfActiveClient != CosmosClient.NumberOfActiveClients ||
-                    this.cachedMachineId != VmMetadataApiHandler.GetMachineId())
+                    !ReferenceEquals(this.cachedMachineId, VmMetadataApiHandler.GetMachineId()))
                 {
                     this.cachedNumberOfActiveClient = CosmosClient.NumberOfActiveClients;
                     this.cachedNumberOfClientCreated = CosmosClient.numberOfClientsCreated;
