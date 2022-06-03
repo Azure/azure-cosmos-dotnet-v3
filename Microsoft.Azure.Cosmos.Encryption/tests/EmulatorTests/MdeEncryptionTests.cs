@@ -179,10 +179,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
             ContainerProperties containerPropertiesForChangeFeed = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
 
-            encryptionContainer = await database.CreateContainerAsync(containerProperties, 20000);
+            encryptionContainer = await database.CreateContainerAsync(containerProperties, 15000);
             await encryptionContainer.InitializeEncryptionAsync();
 
-            encryptionContainerForChangeFeed = await database.CreateContainerAsync(containerPropertiesForChangeFeed, 20000);
+            encryptionContainerForChangeFeed = await database.CreateContainerAsync(containerPropertiesForChangeFeed, 15000);
             await encryptionContainerForChangeFeed.InitializeEncryptionAsync();
         }
 
@@ -992,9 +992,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Container encryptionContainerToDelete = await database.CreateContainerAsync(containerProperties, 400);
             await encryptionContainerToDelete.InitializeEncryptionAsync();
 
-            // FIXME Set WithBulkExecution to true post SDK/Backend fix.
             CosmosClient otherClient = TestCommon.CreateCosmosClient(builder => builder
-                .WithBulkExecution(false)
+                .WithBulkExecution(true)
                 .Build());
 
             CosmosClient otherEncryptionClient = otherClient.WithEncryption(new TestKeyEncryptionKeyResolver(), TestKeyEncryptionKeyResolver.Id);
@@ -1077,15 +1076,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc docToUpsert = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
             docToUpsert.Sensitive_StringFormat = "docTobeUpserted";
 
-            List<Task> tasks = new List<Task>()
-            {
-                MdeEncryptionTests.MdeUpsertItemAsync(otherEncryptionContainer, docToUpsert, HttpStatusCode.OK),
-                MdeEncryptionTests.MdeReplaceItemAsync(otherEncryptionContainer, docToReplace),
-                MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer),
-            };
-
+            List<Task> tasks;
             try
             {
+                tasks = new List<Task>()
+                {
+                    MdeEncryptionTests.MdeUpsertItemAsync(otherEncryptionContainer, docToUpsert, HttpStatusCode.OK),
+                    MdeEncryptionTests.MdeReplaceItemAsync(otherEncryptionContainer, docToReplace),
+                    MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer)
+                };
+
                 await Task.WhenAll(tasks);
                 Assert.Fail("Bulk operation should have failed. ");
             }
@@ -1099,7 +1099,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, expectedPropertiesEncryptedCount: 4, expectedPropertiesDecryptedCount: 0);
 
                 Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
-            }          
+            }
 
             tasks = new List<Task>()
             {

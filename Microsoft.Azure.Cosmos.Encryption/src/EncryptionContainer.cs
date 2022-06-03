@@ -1110,7 +1110,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
-
             streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 encryptionSettings,
@@ -1148,7 +1147,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken)
         {
             EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
-
             if (!encryptionSettings.PropertiesToEncrypt.Any())
             {
                 return await this.container.ReadItemStreamAsync(
@@ -1210,7 +1208,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
-
             streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 encryptionSettings,
