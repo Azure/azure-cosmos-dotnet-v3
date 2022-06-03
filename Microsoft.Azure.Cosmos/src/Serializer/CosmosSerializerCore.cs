@@ -21,7 +21,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosSerializer customSerializer;
         private readonly CosmosSerializer sqlQuerySpecSerializer;
         private CosmosSerializer patchOperationSerializer;
-        private CosmosSerializer itemChangesSerializer;
 
         internal CosmosSerializerCore(
             CosmosSerializer customSerializer = null)
@@ -34,9 +33,6 @@ namespace Microsoft.Azure.Cosmos
                     cosmosSerializer: null,
                     propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
                 this.patchOperationSerializer = null;
-                this.itemChangesSerializer = CosmosChangeFeedItemChangesJsonConverter.CreateChangeFeedItemChangesJsonSerializer(
-                    cosmosSerializer: null,
-                    propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
             }
             else
             {
@@ -45,9 +41,6 @@ namespace Microsoft.Azure.Cosmos
                     cosmosSerializer: this.customSerializer,
                     propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
                 this.patchOperationSerializer = PatchOperationsJsonConverter.CreatePatchOperationsSerializer(
-                    cosmosSerializer: this.customSerializer,
-                    propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
-                this.itemChangesSerializer = CosmosChangeFeedItemChangesJsonConverter.CreateChangeFeedItemChangesJsonSerializer(
                     cosmosSerializer: this.customSerializer,
                     propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
             }
@@ -134,17 +127,6 @@ namespace Microsoft.Azure.Cosmos
                 return this.patchOperationSerializer;
             }
 
-            if (inputType.IsGenericType && inputType.GetGenericTypeDefinition() == typeof(ChangeFeedItemChanges<>))
-            {
-                if (this.itemChangesSerializer == null)
-                {
-                    this.itemChangesSerializer = CosmosChangeFeedItemChangesJsonConverter.CreateChangeFeedItemChangesJsonSerializer(
-                        cosmosSerializer: this.customSerializer ?? new CosmosJsonDotNetSerializer(),
-                        propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
-                }
-                return this.itemChangesSerializer;
-            }
-
             if (this.customSerializer == null)
             {
                 return CosmosSerializerCore.propertiesSerializer;
@@ -178,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
             string directAssemblyName = typeof(Documents.PartitionKeyRange).Assembly.GetName().Name;
             string inputAssemblyName = inputType.Assembly.GetName().Name;
             bool inputIsClientOrDirect = string.Equals(inputAssemblyName, clientAssemblyName) || string.Equals(inputAssemblyName, directAssemblyName);
-            bool typeIsWhiteListed = inputType == typeof(Document);
+            bool typeIsWhiteListed = inputType == typeof(Document) || (inputType.IsGenericType && inputType.GetGenericTypeDefinition() == typeof(ChangeFeedItemChanges<>));
 
             if (!typeIsWhiteListed && inputIsClientOrDirect)
             {

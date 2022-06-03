@@ -5,6 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// The metadata of a change feed resource with <see cref="ChangeFeedMode"/> is initialized to <see cref="ChangeFeedMode.FullFidelity"/>.
@@ -38,21 +41,27 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The conflict resolution timestamp.
         /// </summary>
+        [JsonProperty(PropertyName = "crts", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonConverter(typeof(UnixDateTimeConverter))]
         public DateTime ConflictResolutionTimestamp { get; }
 
         /// <summary>
         /// The current logical sequence number.
         /// </summary>
+        [JsonProperty(PropertyName = "lsn", NullValueHandling = NullValueHandling.Ignore)]
         public long CurrentLogSequenceNumber { get; }
 
         /// <summary>
         /// The change feed operation type.
         /// </summary>
+        [JsonProperty(PropertyName = "operationType")]
+        [JsonConverter(typeof(StringEnumConverter))]
         public ChangeFeedOperationType OperationType { get; }
 
         /// <summary>
         /// The previous logical sequence number.
         /// </summary>
+        [JsonProperty(PropertyName = "previousImageLSN", NullValueHandling = NullValueHandling.Ignore)]
         public long PreviousLogSequenceNumber { get; }
     }
 }
