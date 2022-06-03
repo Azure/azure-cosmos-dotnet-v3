@@ -44,5 +44,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [EnumMember(Value = PatchConstants.OperationTypeNames.Increment)]
         Increment,
+
+        /// <summary>
+        /// Operation to move a object/value.
+        /// </summary>
+        [EnumMember(Value = PatchConstants.OperationTypeNames.Move)]
+        Move,
     }
 }

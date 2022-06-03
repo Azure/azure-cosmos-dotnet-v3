@@ -26,6 +26,12 @@ namespace Microsoft.Azure.Cosmos
         public abstract string Path { get; }
 
         /// <summary>
+        /// Source location reference (used in case of move)
+        /// </summary>
+        [JsonProperty(PropertyName = PatchConstants.PropertyNames.From)]
+        public abstract string From { get; }
+
+        /// <summary>
         /// Serializes the value parameter, if specified for the PatchOperation.
         /// </summary>
         /// <param name="cosmosSerializer">Serializer to be used.</param>
@@ -133,6 +139,22 @@ namespace Microsoft.Azure.Cosmos
                 PatchOperationType.Increment,
                 path,
                 value);
+        }
+        
+        /// <summary>
+        /// Create <see cref="PatchOperation"/> to move an object/value.
+        /// </summary>
+        /// <param name="path">Target location reference.</param>
+        /// <param name="from">The source location of the object/value.</param>
+        /// <returns>PatchOperation instance for specified input.</returns>
+        public static PatchOperation Move(
+            string path,
+            string from)
+        {
+            return new PatchOperationCore<string>(
+                PatchOperationType.Move,
+                path,
+                from);
         }
     }
 }

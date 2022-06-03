@@ -14,17 +14,32 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="operationType">Specifies the type of Patch operation.</param>
         /// <param name="path">Specifies the path to target location.</param>
-        /// <param name="value">Specifies the value to be used.</param>
+        /// <param name="value">Specifies the value to be used. In case of move operations it will be a string specifying the source
+        /// location.</param>
         public PatchOperationCore(
             PatchOperationType operationType,
             string path,
             T value)
         {
-            this.OperationType = operationType;
-            this.Path = string.IsNullOrWhiteSpace(path)
-                ? throw new ArgumentNullException(nameof(path))
-                : path;
-            this.Value = value; 
+            if (operationType == PatchOperationType.Move)
+            {
+                this.OperationType = operationType;
+                this.Path = string.IsNullOrWhiteSpace(path)
+                    ? throw new ArgumentNullException(nameof(path))
+                    : path;
+
+                this.From = string.IsNullOrWhiteSpace(value.ToString())
+                    ? throw new ArgumentNullException(nameof(value))
+                    : value.ToString();
+            }
+            else
+            {
+                this.OperationType = operationType;
+                this.Path = string.IsNullOrWhiteSpace(path)
+                    ? throw new ArgumentNullException(nameof(path))
+                    : path;
+                this.Value = value; 
+            }
         }
 
         public override T Value { get; }
@@ -32,6 +47,8 @@ namespace Microsoft.Azure.Cosmos
         public override PatchOperationType OperationType { get; }
 
         public override string Path { get; }
+
+        public override string From { get; }
 
         public override bool TrySerializeValueParameter(
             CosmosSerializer cosmosSerializer,

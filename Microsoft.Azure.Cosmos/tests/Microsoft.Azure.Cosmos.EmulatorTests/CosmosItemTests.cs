@@ -1979,7 +1979,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNull(response.Resource.children[1].nullableInt);
 
             patchOperations.Clear();
-            patchOperations.Add(PatchOperation.Add("/children/0/cost", 1));
+            patchOperations.Add(PatchOperation.Move("/newTaskNum", "/taskNum"));
             //patchOperations.Add(PatchOperation.Set("/random", value));
             // with content response
             response = await containerInternal.PatchItemAsync<ToDoActivity>(
