@@ -19,6 +19,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         private static readonly string Remaining = Guid.NewGuid().ToString();
         private static readonly string Transport = Guid.NewGuid().ToString();
         private static readonly string Rid = Guid.NewGuid().ToString();
+        private static readonly bool Loaded = true;
+        private readonly string AuthValueInstance = HeaderBenchmark.AuthValue;
+        private readonly bool LoadedInstance = HeaderBenchmark.Loaded;
 
         private static readonly RequestNameValueCollection StoreRequestHeaders = new RequestNameValueCollection
         {
@@ -45,6 +48,46 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public HeaderBenchmark()
         {
 
+        }
+
+        [Benchmark]
+        public void EqualCheckObjectRef()
+        {
+            string v = this.AuthValueInstance;
+            if (!object.ReferenceEquals(v, HeaderBenchmark.AuthValue))
+            {
+                throw new Exception();
+            }
+        }
+
+        [Benchmark]
+        public void EqualCheckStringEquals()
+        {
+            string v = this.AuthValueInstance;
+            if (v != HeaderBenchmark.AuthValue)
+            {
+                throw new Exception();
+            }
+        }
+
+        [Benchmark]
+        public void EqualCheckStringEqualsOrdinalIgnoreCase()
+        {
+            string v = this.AuthValueInstance;
+            if (!string.Equals(v, HeaderBenchmark.AuthValue, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new Exception();
+            }
+        }
+
+        [Benchmark]
+        public void EqualCheckBoolCompare()
+        {
+            bool v = this.LoadedInstance;
+            if (v != true)
+            {
+                throw new Exception();
+            }
         }
 
         [Benchmark]
