@@ -1,3 +1,22 @@
+# This branch contains a copy of the direct package files
+This is very useful for troubleshooting issues in the HA/Transport stacks and being able to debug through the entire SDK. Most of the files are in the 'Microsoft.Azure.Cosmos\src\direct' folder. This branch does not include or use the service interop. This do to the difficulty of compiling native code while providing little benefit.
+
+## How to update the branch and direct files
+
+### 1. Merge the latest in github repository
+If there are no breaking changes since the last direct sync everything should build and work correctly. If there are breaking changes the new direct files will need to be updated. Proceed to the next step.
+
+### 2. Update the direct files
+You need to have access to the Cosmos DB msdata repository to do this. It's recommended to sync to the branch the SDK is currently using instead of main branch. The main branch might have breaking or different behavior that is not yet in the direct nuget. Syncing to the direct branch will give the exact code used in the public SDK.
+
+1. Direct version is listed here: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Directory.Build.props#L7
+2. Open msdata repo and navigate to all branches: https://msdata.visualstudio.com/CosmosDB/_git/CosmosDB/branches?_a=all
+3. Find the direct branch under sdkReleases/direct/{actual branch like EN20220301_3.28.1} and favorite it
+4. On your local machine checkout that branch
+5. Run the DirectUpdateFiles.ps1 script that is inside this branch. This assumes the github repo is at 'C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\direct" and the msdata repo is at 'C:\CosmosDB\'. If your repositories are not at that location you will need to update the script: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/direct/main/DirectUpdateFiles.ps1
+6. Try to compile the project. If the build fails because of missing files then the script will need to be updated to include those new files. All the files should be listed in the msdata repo with the project 'Microsoft.Azure.Cosmos.Direct.csproj'
+
+
 [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.Cosmos.svg)](https://www.nuget.org/packages/Microsoft.Azure.Cosmos)
 [![NuGet Prerelease](https://img.shields.io/nuget/vpre/Microsoft.Azure.Cosmos.svg)](https://www.nuget.org/packages/Microsoft.Azure.Cosmos)
 
