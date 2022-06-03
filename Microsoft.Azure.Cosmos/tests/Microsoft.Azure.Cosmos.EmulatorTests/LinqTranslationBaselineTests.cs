@@ -351,6 +351,30 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        public void TestDateTimeJsonConverterTimezones()
+        {
+            const int Records = 10;
+            DateTime midDateTime = new (2016, 9, 13, 0, 0, 0);
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
+                DataObject obj = new() {
+                    IsoTime = LinqTestsCommon.RandomDateTime(random, midDateTime),
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "Test"
+                };
+                return obj;
+            };
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new()
+            {
+                new LinqTestInput("IsoDateTimeConverter LocalTime = filter", b => getQuery(b).Where(doc => doc.IsoTime == new DateTime(2016, 9, 13, 0, 0, 0, DateTimeKind.Local))),
+                new LinqTestInput("IsoDateTimeConverter UniversalTime = filter", b => getQuery(b).Where(doc => doc.IsoTime == new DateTime(2016, 9, 13, 0, 0, 0, DateTimeKind.Utc))),
+            };
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
         public void TestNullableFields()
         {
             const int Records = 5;

@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System;
     using System.Globalization;
     using System.Linq.Expressions;
-    using Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -29,12 +28,6 @@ namespace Microsoft.Azure.Cosmos.Linq
             expr = a => a.StartDate <= localDate;
             sql = SqlTranslator.TranslateExpression(expr.Body);
             Assert.AreEqual("(a[\"StartDate\"] <= \"2022-05-26\")", sql);
-        }
-
-        [TestMethod]
-        public void DateTimeKindIsPreserved_GetItemLinqQueryable()
-        {
-            var container = 
         }
 
         class TestDocument
