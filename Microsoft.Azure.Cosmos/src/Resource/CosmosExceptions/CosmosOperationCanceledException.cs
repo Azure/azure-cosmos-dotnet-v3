@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly OperationCanceledException originalException;
         private readonly Lazy<string> lazyMessage;
         private readonly Lazy<string> toStringMessage;
+        private readonly bool tokenCancellationRequested;
 
         /// <summary>
         /// Create an instance of CosmosOperationCanceledException
@@ -33,8 +34,9 @@ namespace Microsoft.Azure.Cosmos
         {
             this.originalException = originalException ?? throw new ArgumentNullException(nameof(originalException));
             this.Diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
-            this.lazyMessage = this.CreateLazyMessage(originalException.CancellationToken);
-            this.toStringMessage = this.CreateToStringMessage(originalException.CancellationToken);
+            this.tokenCancellationRequested = originalException.CancellationToken.IsCancellationRequested;
+            this.toStringMessage = this.CreateToStringMessage();
+            this.lazyMessage = this.CreateLazyMessage();
         }
 
         internal CosmosOperationCanceledException(
@@ -50,8 +52,9 @@ namespace Microsoft.Azure.Cosmos
 
             trace.AddDatum("Operation Cancelled Exception", originalException);
             this.Diagnostics = new CosmosTraceDiagnostics(trace);
-            this.lazyMessage = this.CreateLazyMessage(originalException.CancellationToken);
-            this.toStringMessage = this.CreateToStringMessage(originalException.CancellationToken);
+            this.tokenCancellationRequested = originalException.CancellationToken.IsCancellationRequested;
+            this.toStringMessage = this.CreateToStringMessage();
+            this.lazyMessage = this.CreateLazyMessage();
         }
 
         /// <inheritdoc/>
@@ -94,14 +97,13 @@ namespace Microsoft.Azure.Cosmos
             return this.toStringMessage.Value;
         }
 
-        private Lazy<string> CreateLazyMessage(CancellationToken token)
+        private Lazy<string> CreateLazyMessage()
         {
-            return new Lazy<string>(() => $"{this.originalException.Message}{Environment.NewLine}Cancellation Token has expired: {token.IsCancellationRequested}. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
+            return new Lazy<string>(() => $"{this.originalException.Message}{Environment.NewLine}Cancellation Token has expired: {this.tokenCancellationRequested}. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
         }
-
-        private Lazy<string> CreateToStringMessage(CancellationToken token)
+        private Lazy<string> CreateToStringMessage()
         {
-            return new Lazy<string>(() => $"{this.originalException}{Environment.NewLine}Cancellation Token has expired: {token.IsCancellationRequested}. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
+            return new Lazy<string>(() => $"{this.originalException}{Environment.NewLine}Cancellation Token has expired: {this.tokenCancellationRequested}. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
         }
     }
 }
