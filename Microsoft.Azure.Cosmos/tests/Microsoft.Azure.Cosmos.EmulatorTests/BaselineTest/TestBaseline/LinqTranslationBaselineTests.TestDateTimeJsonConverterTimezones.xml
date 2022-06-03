@@ -2,25 +2,25 @@
   <Result>
     <Input>
       <Description><![CDATA[IsoDateTimeConverter LocalTime = filter]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc.IsoTime == new DateTime(2016, 9, 13, 0, 0, 0, Local)))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (doc.IsoDateOnly == new DateTime(2016, 9, 13, 0, 0, 0, Local)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["IsoTime"] = "2016-09-13T00:00:00-04:00")]]></SqlQuery>
+WHERE (root["IsoDateOnly"] = "2016-09-13")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[IsoDateTimeConverter UniversalTime = filter]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc.IsoTime == new DateTime(2016, 9, 13, 0, 0, 0, Utc)))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (doc.IsoDateOnly == new DateTime(2016, 9, 13, 0, 0, 0, Utc)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["IsoTime"] = "2016-09-13T00:00:00Z")]]></SqlQuery>
+WHERE (root["IsoDateOnly"] = "2016-09-13")]]></SqlQuery>
     </Output>
   </Result>
 </Results>

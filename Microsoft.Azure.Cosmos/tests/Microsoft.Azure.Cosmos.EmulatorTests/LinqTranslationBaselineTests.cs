@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using Newtonsoft.Json;
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
     using Newtonsoft.Json.Converters;
     using BaselineTest;
@@ -134,6 +135,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             [JsonConverter(typeof(IsoDateTimeConverter))]
             public DateTime IsoTime;
 
+            [JsonConverter(typeof(DateJsonConverter))]
+            public DateTime IsoDateOnly;
+
             // This field should serialize as ISO Date
             // as this is the default DateTimeConverter
             // used by Newtonsoft
@@ -143,6 +147,21 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public string Id;
 
             public string Pk;
+        }
+
+        class DateJsonConverter : IsoDateTimeConverter
+        {
+            public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+            {
+                if (value is DateTime dateTime)
+                {
+                    writer.WriteValue(dateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+                }
+                else
+                {
+                    base.WriteJson(writer, value, serializer);
+                }
+            }
         }
 
         internal class AmbientContextObject
@@ -358,7 +377,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Func<Random, DataObject> createDataObj = (random) =>
             {
                 DataObject obj = new() {
-                    IsoTime = LinqTestsCommon.RandomDateTime(random, midDateTime),
+                    IsoDateOnly = LinqTestsCommon.RandomDateTime(random, midDateTime),
                     Id = Guid.NewGuid().ToString(),
                     Pk = "Test"
                 };
@@ -368,8 +387,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             List<LinqTestInput> inputs = new()
             {
-                new LinqTestInput("IsoDateTimeConverter LocalTime = filter", b => getQuery(b).Where(doc => doc.IsoTime == new DateTime(2016, 9, 13, 0, 0, 0, DateTimeKind.Local))),
-                new LinqTestInput("IsoDateTimeConverter UniversalTime = filter", b => getQuery(b).Where(doc => doc.IsoTime == new DateTime(2016, 9, 13, 0, 0, 0, DateTimeKind.Utc))),
+                new LinqTestInput("IsoDateTimeConverter LocalTime = filter", b => getQuery(b).Where(doc => doc.IsoDateOnly == new DateTime(2016, 9, 13, 0, 0, 0, DateTimeKind.Local))),
+                new LinqTestInput("IsoDateTimeConverter UniversalTime = filter", b => getQuery(b).Where(doc => doc.IsoDateOnly == new DateTime(2016, 9, 13, 0, 0, 0, DateTimeKind.Utc))),
             };
             this.ExecuteTestSuite(inputs);
         }
