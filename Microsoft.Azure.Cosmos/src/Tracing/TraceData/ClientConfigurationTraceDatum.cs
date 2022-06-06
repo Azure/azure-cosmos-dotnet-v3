@@ -66,8 +66,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                     this.cachedNumberOfClientCreated = CosmosClient.numberOfClientsCreated;
                     this.cachedUserAgentString = this.UserAgentContainer.UserAgent;
                     this.cachedMachineId = VmMetadataApiHandler.GetMachineId();
-                    this.cachedSerializedJson = this.GetSerializedDatum();
                     this.cachedVMRegion = VmMetadataApiHandler.GetMachineRegion();
+                    this.cachedSerializedJson = this.GetSerializedDatum();
                 }
 
                 return this.cachedSerializedJson;
