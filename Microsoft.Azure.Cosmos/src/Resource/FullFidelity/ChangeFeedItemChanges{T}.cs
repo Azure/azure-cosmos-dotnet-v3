@@ -42,7 +42,11 @@ namespace Microsoft.Azure.Cosmos
         public ChangeFeedMetadata Metadata { get; set; }
 
         /// <summary>
-        /// The full fidelity change feed previous item.
+        /// The previous image on replace is not going to be exposed by default, this was done to address COGs concerns from PITR.
+        /// For deletes previous image is always going to be provided. To opt-in for previous image for replaces, currently we would
+        ///     need to set naming config for a customer(enablePreviousImageForReplaceInFFCF, that’s to for critical scenarios when
+        ///     there is high business need, no billing is afffected). Later we will add explicit opt-in in Portal, and customer would
+        ///     get a higher bill – these changes need to be developed.
         /// </summary>
         [JsonProperty(PropertyName = "previous", NullValueHandling = NullValueHandling.Ignore)]
         public T Previous { get; set; }

@@ -2,16 +2,36 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.IO;
     using System.Linq;
     using System.Text.Json;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
-    [TestClass]
+    /// <summary>
+    /// Notes:
+    /// 
+    /// 1. Previous on Deletes
+    ///     a. For local emulator (the one we ship to customers to play locally), to change config you can use as you already realized,
+    ///         without restarting the emulator: /overrides=enablePreviousImageForReplaceInFFCF:true;
+    ///     b. For DocumentDB.Emulator, type this in command window: putproperty fabric:/WinFabric/localhost enablePreviousImageForReplaceInFFCF
+    ///         true forcedatastring widecharstring. o You can also use Import-module.\DocumentDBPSModule.psd1 then Connect-WindowsFabricCluster
+    ///         then .\SetNamingConfiguration.ps1 -Federation -ConfigurationName enablePreviousImageForReplaceInFFCF -ConfigurationValue true
+    ///
+    /// 2. TimeToLiveExpired
+    ///     a. For TTL expired docs please check that ExpiredResourcePurger is running. I don’t see it being disabled in local emulator. 
+    ///         You would need to enable traces for local emulator: after you start local emulator, run its .exe again with /StartTraces,
+    ///         after some time run again with /StopTraces, if you get an error, use /startwprtraces and /stopwprtraces. You should see 
+    ///         .ETL file(s) created in emulator dir. You can open these with svcperf (you would need to point it to Server.man manifest 
+    ///         – use recent one from enlistment and use MANIFEST->ADD ETW MANIFEST). Search for ExpiredResourcePurger in ETL traces. 
+    ///         Let us know if that doesn’t work for you or you still have the issue with not seeing TTL-triggered deletes in FFCF.
+    ///         
+    /// 3. Deletes only appear for FullRange change feeds.
+    ///     a. Backend team is addressing this issue.
+    /// </summary>
+        [TestClass]
     [TestCategory("ChangeFeed")]
     public class GetChangeFeedIteratorFullFidelityTests : BaseCosmosClientHelper
     {
@@ -20,7 +40,6 @@
         [TestInitialize]
         public async Task TestInitialize()
         {
-            // await base.TestInit(customizeClientBuilder: (b) => b.WithCustomSerializer(new TestItemSerializer()));
             await base.TestInit();
         }
 
@@ -32,36 +51,47 @@
 
         private async Task<ContainerInternal> InitializeLargeContainerAsync()
         {
+            ContainerProperties containerProperties = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: GetChangeFeedIteratorFullFidelityTests.PartitionKey)
+            {
+                DefaultTimeToLive = 1
+            };
+
             ContainerResponse response = await this.database.CreateContainerAsync(
-                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: GetChangeFeedIteratorFullFidelityTests.PartitionKey),
+                containerProperties,
                 throughput: 20000,
                 cancellationToken: this.cancellationToken);
 
             return (ContainerInternal)response;
         }
 
-        private async Task<ContainerInternal> InitializeContainerAsync()
+        private async Task<ContainerInternal> InitializeContainerAsync(TimeSpan timeToLive)
         {
+            ContainerProperties containerProperties = new(id: Guid.NewGuid().ToString(), partitionKeyPath: GetChangeFeedIteratorFullFidelityTests.PartitionKey)
+            {
+                DefaultTimeToLive = Convert.ToInt32(timeToLive.TotalSeconds),
+            };
+
+            containerProperties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
+
             ContainerResponse response = await this.database.CreateContainerAsync(
-                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: GetChangeFeedIteratorFullFidelityTests.PartitionKey),
+                containerProperties,
                 cancellationToken: this.cancellationToken);
 
             return (ContainerInternal)response;
         }
 
         /// <summary>
-        /// This test will execute <see cref="Container.GetChangeFeedIterator{T}(ChangeFeedStartFrom, ChangeFeedMode, ChangeFeedRequestOptions)"/> in <see cref="ChangeFeedMode.OperationsLog"/> (FullFidelity) with a typed item.
+        /// This test will execute <see cref="Container.GetChangeFeedIterator{T}(ChangeFeedStartFrom, ChangeFeedMode, ChangeFeedRequestOptions)"/> 
+        ///     in <see cref="ChangeFeedMode.FullFidelity"/> with a typed item.
         /// Using FeedRangeEpk.FromPartitionKey.
         /// </summary>
         [TestMethod]
         public async Task FeedRangeEpk_FromPartitionKey_VerifyingWireFormatTests()
         {
-            ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: GetChangeFeedIteratorFullFidelityTests.PartitionKey);
-            properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                properties,
-                cancellationToken: this.cancellationToken);
-            ContainerInternal container = (ContainerInternal)response;
+            TimeSpan ttl = TimeSpan.FromSeconds(1);
+            TimeSpan waitAfterOperations = ttl.Add(TimeSpan.FromSeconds(5));
+
+            ContainerInternal container = await this.InitializeContainerAsync(ttl);
             string id = Guid.NewGuid().ToString();
             string otherId = Guid.NewGuid().ToString();
             using (FeedIterator<ChangeFeedItemChanges<Item>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItemChanges<Item>>(
@@ -77,7 +107,6 @@
                     {
                         continuation = feedResponse.ContinuationToken;
                         Assert.IsNotNull(continuation);
-                        Console.WriteLine(continuation);
 
                         PartitionKey otherPartitionKey = new(otherId);
                         PartitionKey partitionKey = new(id);
@@ -85,11 +114,16 @@
                         _ = await container.UpsertItemAsync<Item>(item: new(Id: otherId, Line1: "87 38floor, Witthayu Rd, Lumphini, Pathum Wan District", City: "Bangkok", State: "Thailand", ZipCode: "10330"), partitionKey: otherPartitionKey).ConfigureAwait(false);
                         _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "One Microsoft Way", City: "Redmond", State: "WA", ZipCode: "98052"), partitionKey: partitionKey).ConfigureAwait(false);
                         _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "205 16th St NW", City: "Atlanta", State: "GA", ZipCode: "30363"), partitionKey: partitionKey).ConfigureAwait(false);
+                        _ = await container.DeleteItemAsync<Item>(id: id, partitionKey: partitionKey);
+
+                        Thread.Sleep(waitAfterOperations);
                     }
                     else
                     {
+#if DEBUG
+                        Console.WriteLine(JsonConvert.SerializeObject(feedResponse.Resource));
+#endif
                         List<ChangeFeedItemChanges<Item>> resources = feedResponse.Resource.ToList();
-
                         GetChangeFeedIteratorFullFidelityTests.AssertGatewayMode(feedResponse);
                         
                         Assert.AreEqual(expected: 2, actual: resources.Count);
@@ -105,7 +139,7 @@
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreEqual(expected: default, actual: createOperation.Metadata.PreviousLogSequenceNumber);
-                        Assert.IsNull(createOperation.Previous);
+                        Assert.IsFalse(createOperation.Metadata.TimeToLiveExpired);
 
                         ChangeFeedItemChanges<Item> replaceOperation = resources[1];
 
@@ -118,11 +152,7 @@
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.PreviousLogSequenceNumber);
-                        Assert.AreEqual(expected: id, actual: replaceOperation.Previous.Id);
-                        Assert.AreEqual(expected: "One Microsoft Way", actual: replaceOperation.Previous.Line1);
-                        Assert.AreEqual(expected: "Redmond", actual: replaceOperation.Previous.City);
-                        Assert.AreEqual(expected: "WA", actual: replaceOperation.Previous.State);
-                        Assert.AreEqual(expected: "98052", actual: replaceOperation.Previous.ZipCode);
+                        Assert.IsFalse(replaceOperation.Metadata.TimeToLiveExpired);
 
                         break;
                     }
@@ -137,12 +167,10 @@
         [TestMethod]
         public async Task FeedRangeEpk_Explicit_FullRange_VerifyingWireFormatTests()
         {
-            ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: GetChangeFeedIteratorFullFidelityTests.PartitionKey);
-            properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                properties,
-                cancellationToken: this.cancellationToken);
-            ContainerInternal container = (ContainerInternal)response;
+            TimeSpan ttl = TimeSpan.FromSeconds(1);
+            TimeSpan waitAfterOperations = ttl.Add(TimeSpan.FromSeconds(5));
+
+            ContainerInternal container = await this.InitializeContainerAsync(ttl);
             string id = Guid.NewGuid().ToString();
             string otherId = Guid.NewGuid().ToString();
             using (FeedIterator<ChangeFeedItemChanges<Item>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItemChanges<Item>>(
@@ -158,7 +186,6 @@
                     {
                         continuation = feedResponse.ContinuationToken;
                         Assert.IsNotNull(continuation);
-                        Console.WriteLine(continuation);
 
                         PartitionKey partitionKey = new(id);
                         PartitionKey otherPartitionKey = new(otherId);
@@ -167,9 +194,14 @@
                         _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "One Microsoft Way", City: "Redmond", State: "WA", ZipCode: "98052"), partitionKey: partitionKey).ConfigureAwait(false);
                         _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "205 16th St NW", City: "Atlanta", State: "GA", ZipCode: "30363"), partitionKey: partitionKey).ConfigureAwait(false);
                         _ = await container.DeleteItemAsync<Item>(id: id, partitionKey: partitionKey);
+
+                        Thread.Sleep(waitAfterOperations);
                     }
                     else
                     {
+#if DEBUG
+                        Console.WriteLine(JsonConvert.SerializeObject(feedResponse.Resource));
+#endif
                         List<ChangeFeedItemChanges<Item>> resources = feedResponse.Resource.ToList();
 
                         GetChangeFeedIteratorFullFidelityTests.AssertGatewayMode(feedResponse);
@@ -187,7 +219,7 @@
                         Assert.AreNotEqual(notExpected: default, actual: firstCreateOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: firstCreateOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreEqual(expected: default, actual: firstCreateOperation.Metadata.PreviousLogSequenceNumber);
-                        Assert.IsNull(firstCreateOperation.Previous);
+                        Assert.IsFalse(firstCreateOperation.Metadata.TimeToLiveExpired);
 
                         ChangeFeedItemChanges<Item> createOperation = resources[1];
 
@@ -200,7 +232,7 @@
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreEqual(expected: default, actual: createOperation.Metadata.PreviousLogSequenceNumber);
-                        Assert.IsNull(createOperation.Previous);
+                        Assert.IsFalse(createOperation.Metadata.TimeToLiveExpired);
 
                         ChangeFeedItemChanges<Item> replaceOperation = resources[2];
 
@@ -213,11 +245,7 @@
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.PreviousLogSequenceNumber);
-                        Assert.AreEqual(expected: id, actual: replaceOperation.Previous.Id);
-                        Assert.AreEqual(expected: "One Microsoft Way", actual: replaceOperation.Previous.Line1);
-                        Assert.AreEqual(expected: "Redmond", actual: replaceOperation.Previous.City);
-                        Assert.AreEqual(expected: "WA", actual: replaceOperation.Previous.State);
-                        Assert.AreEqual(expected: "98052", actual: replaceOperation.Previous.ZipCode);
+                        Assert.IsFalse(replaceOperation.Metadata.TimeToLiveExpired);
 
                         ChangeFeedItemChanges<Item> deleteOperation = resources[3];
 
@@ -230,6 +258,7 @@
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.PreviousLogSequenceNumber);
+                        Assert.IsFalse(deleteOperation.Metadata.TimeToLiveExpired);
                         Assert.AreEqual(expected: id, actual: deleteOperation.Previous.Id);
                         Assert.AreEqual(expected: "205 16th St NW", actual: deleteOperation.Previous.Line1);
                         Assert.AreEqual(expected: "Atlanta", actual: deleteOperation.Previous.City);
@@ -249,12 +278,10 @@
         [TestMethod]
         public async Task FeedRangeEpk_Implicit_FullRange_VerifyingWireFormatTests()
         {
-            ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: GetChangeFeedIteratorFullFidelityTests.PartitionKey);
-            properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                properties,
-                cancellationToken: this.cancellationToken);
-            ContainerInternal container = (ContainerInternal)response;
+            TimeSpan ttl = TimeSpan.FromSeconds(1);
+            TimeSpan waitAfterOperations = ttl.Add(TimeSpan.FromSeconds(5));
+
+            ContainerInternal container = await this.InitializeContainerAsync(ttl);
             string id = Guid.NewGuid().ToString();
             string otherId = Guid.NewGuid().ToString();
             using (FeedIterator<ChangeFeedItemChanges<Item>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItemChanges<Item>>(
@@ -270,7 +297,6 @@
                     {
                         continuation = feedResponse.ContinuationToken;
                         Assert.IsNotNull(continuation);
-                        Console.WriteLine(continuation);
 
                         PartitionKey partitionKey = new(id);
                         PartitionKey otherPartitionKey = new(otherId);
@@ -279,9 +305,14 @@
                         _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "One Microsoft Way", City: "Redmond", State: "WA", ZipCode: "98052"), partitionKey: partitionKey).ConfigureAwait(false);
                         _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "205 16th St NW", City: "Atlanta", State: "GA", ZipCode: "30363"), partitionKey: partitionKey).ConfigureAwait(false);
                         _ = await container.DeleteItemAsync<Item>(id: id, partitionKey: partitionKey);
+
+                        Thread.Sleep(waitAfterOperations);
                     }
                     else
                     {
+#if DEBUG
+                        Console.WriteLine(JsonConvert.SerializeObject(feedResponse.Resource));
+#endif
                         List<ChangeFeedItemChanges<Item>> resources = feedResponse.Resource.ToList();
 
                         GetChangeFeedIteratorFullFidelityTests.AssertGatewayMode(feedResponse);
@@ -299,7 +330,7 @@
                         Assert.AreNotEqual(notExpected: default, actual: firstCreateOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: firstCreateOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreEqual(expected: default, actual: firstCreateOperation.Metadata.PreviousLogSequenceNumber);
-                        Assert.IsNull(firstCreateOperation.Previous);
+                        Assert.IsFalse(firstCreateOperation.Metadata.TimeToLiveExpired);
 
                         ChangeFeedItemChanges<Item> createOperation = resources[1];
 
@@ -312,7 +343,7 @@
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreEqual(expected: default, actual: createOperation.Metadata.PreviousLogSequenceNumber);
-                        Assert.IsNull(createOperation.Previous);
+                        Assert.IsFalse(createOperation.Metadata.TimeToLiveExpired);
 
                         ChangeFeedItemChanges<Item> replaceOperation = resources[2];
 
@@ -325,11 +356,7 @@
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.PreviousLogSequenceNumber);
-                        Assert.AreEqual(expected: id, actual: replaceOperation.Previous.Id);
-                        Assert.AreEqual(expected: "One Microsoft Way", actual: replaceOperation.Previous.Line1);
-                        Assert.AreEqual(expected: "Redmond", actual: replaceOperation.Previous.City);
-                        Assert.AreEqual(expected: "WA", actual: replaceOperation.Previous.State);
-                        Assert.AreEqual(expected: "98052", actual: replaceOperation.Previous.ZipCode);
+                        Assert.IsFalse(replaceOperation.Metadata.TimeToLiveExpired);
 
                         ChangeFeedItemChanges<Item> deleteOperation = resources[3];
 
@@ -342,6 +369,8 @@
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.PreviousLogSequenceNumber);
+                        Assert.IsFalse(deleteOperation.Metadata.TimeToLiveExpired);
+                        Assert.IsNotNull(deleteOperation.Previous);
                         Assert.AreEqual(expected: id, actual: deleteOperation.Previous.Id);
                         Assert.AreEqual(expected: "205 16th St NW", actual: deleteOperation.Previous.Line1);
                         Assert.AreEqual(expected: "Atlanta", actual: deleteOperation.Previous.City);
@@ -361,12 +390,10 @@
         [TestMethod]
         public async Task FeedRangePartitionKeyRange_FromPartitionKey_VerifyingWireFormatTests()
         {
-            ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: GetChangeFeedIteratorFullFidelityTests.PartitionKey);
-            properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                properties,
-                cancellationToken: this.cancellationToken);
-            ContainerInternal container = (ContainerInternal)response;
+            TimeSpan ttl = TimeSpan.FromSeconds(1);
+            TimeSpan waitAfterOperations = ttl.Add(TimeSpan.FromSeconds(5));
+
+            ContainerInternal container = await this.InitializeContainerAsync(ttl);
             string id = Guid.NewGuid().ToString();
             string otherId = Guid.NewGuid().ToString();
             using (FeedIterator<ChangeFeedItemChanges<Item>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItemChanges<Item>>(
@@ -382,7 +409,6 @@
                     {
                         continuation = feedResponse.ContinuationToken;
                         Assert.IsNotNull(continuation);
-                        Console.WriteLine(continuation);
 
                         PartitionKey partitionKey = new(id);
                         PartitionKey otherPartitionKey = new(otherId);
@@ -390,9 +416,15 @@
                         _ = await container.UpsertItemAsync<Item>(item: new(Id: otherId, Line1: "87 38floor, Witthayu Rd, Lumphini, Pathum Wan District", City: "Bangkok", State: "Thailand", ZipCode: "10330"), partitionKey: otherPartitionKey).ConfigureAwait(false);
                         _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "One Microsoft Way", City: "Redmond", State: "WA", ZipCode: "98052"), partitionKey: partitionKey).ConfigureAwait(false);
                         _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "205 16th St NW", City: "Atlanta", State: "GA", ZipCode: "30363"), partitionKey: partitionKey).ConfigureAwait(false);
+                        _ = await container.DeleteItemAsync<Item>(id: id, partitionKey: partitionKey);
+
+                        Thread.Sleep(waitAfterOperations);
                     }
                     else
                     {
+#if DEBUG
+                        Console.WriteLine(JsonConvert.SerializeObject(feedResponse.Resource));
+#endif
                         List<ChangeFeedItemChanges<Item>> resources = feedResponse.Resource.ToList();
 
                         GetChangeFeedIteratorFullFidelityTests.AssertGatewayMode(feedResponse);
@@ -410,7 +442,7 @@
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreEqual(expected: default, actual: createOperation.Metadata.PreviousLogSequenceNumber);
-                        Assert.IsNull(createOperation.Previous);
+                        Assert.IsFalse(createOperation.Metadata.TimeToLiveExpired);
 
                         ChangeFeedItemChanges<Item> replaceOperation = resources[1];
 
@@ -423,11 +455,7 @@
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.PreviousLogSequenceNumber);
-                        Assert.AreEqual(expected: id, actual: replaceOperation.Previous.Id);
-                        Assert.AreEqual(expected: "One Microsoft Way", actual: replaceOperation.Previous.Line1);
-                        Assert.AreEqual(expected: "Redmond", actual: replaceOperation.Previous.City);
-                        Assert.AreEqual(expected: "WA", actual: replaceOperation.Previous.State);
-                        Assert.AreEqual(expected: "98052", actual: replaceOperation.Previous.ZipCode);
+                        Assert.IsFalse(replaceOperation.Metadata.TimeToLiveExpired);
 
                         break;
                     }
@@ -442,12 +470,10 @@
         [TestMethod]
         public async Task FeedRange_FromPartitionKey_VerifyingWireFormatTests()
         {
-            ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: GetChangeFeedIteratorFullFidelityTests.PartitionKey);
-            properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                properties,
-                cancellationToken: this.cancellationToken);
-            ContainerInternal container = (ContainerInternal)response;
+            TimeSpan ttl = TimeSpan.FromSeconds(1);
+            TimeSpan waitAfterOperations = ttl.Add(TimeSpan.FromSeconds(5));
+
+            ContainerInternal container = await this.InitializeContainerAsync(ttl);
             string id = Guid.NewGuid().ToString();
             string otherId = Guid.NewGuid().ToString();
             using (FeedIterator<ChangeFeedItemChanges<Item>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItemChanges<Item>>(
@@ -463,7 +489,6 @@
                     {
                         continuation = feedResponse.ContinuationToken;
                         Assert.IsNotNull(continuation);
-                        Console.WriteLine(continuation);
 
                         PartitionKey partitionKey = new(id);
                         PartitionKey otherPartitionKey = new(otherId);
@@ -471,9 +496,14 @@
                         _ = await container.UpsertItemAsync<Item>(item: new(Id: otherId, Line1: "87 38floor, Witthayu Rd, Lumphini, Pathum Wan District", City: "Bangkok", State: "Thailand", ZipCode: "10330"), partitionKey: otherPartitionKey).ConfigureAwait(false);
                         _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "One Microsoft Way", City: "Redmond", State: "WA", ZipCode: "98052"), partitionKey: partitionKey).ConfigureAwait(false);
                         _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "205 16th St NW", City: "Atlanta", State: "GA", ZipCode: "30363"), partitionKey: partitionKey).ConfigureAwait(false);
+
+                        Thread.Sleep(waitAfterOperations);
                     }
                     else
                     {
+#if DEBUG
+                        Console.WriteLine(JsonConvert.SerializeObject(feedResponse.Resource));
+#endif
                         List<ChangeFeedItemChanges<Item>> itemChanges = feedResponse.Resource.ToList();
 
                         GetChangeFeedIteratorFullFidelityTests.AssertGatewayMode(feedResponse);
@@ -492,10 +522,9 @@
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreEqual(expected: default, actual: createOperation.Metadata.PreviousLogSequenceNumber);
-                        Assert.IsNull(createOperation.Previous);
+                        Assert.IsFalse(createOperation.Metadata.TimeToLiveExpired);
 
                         ChangeFeedItemChanges<Item> replaceOperation = itemChanges[1];
-                        Console.WriteLine(JsonConvert.SerializeObject(replaceOperation));
 
                         Assert.AreEqual(expected: id, actual: replaceOperation.Current.Id);
                         Assert.AreEqual(expected: "205 16th St NW", actual: replaceOperation.Current.Line1);
@@ -507,12 +536,7 @@
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.PreviousLogSequenceNumber);
-                        Assert.IsNotNull(replaceOperation.Previous);
-                        Assert.AreEqual(expected: id, actual: replaceOperation.Previous.Id);
-                        Assert.AreEqual(expected: "One Microsoft Way", actual: replaceOperation.Previous.Line1);
-                        Assert.AreEqual(expected: "Redmond", actual: replaceOperation.Previous.City);
-                        Assert.AreEqual(expected: "WA", actual: replaceOperation.Previous.State);
-                        Assert.AreEqual(expected: "98052", actual: replaceOperation.Previous.ZipCode);
+                        Assert.IsFalse(replaceOperation.Metadata.TimeToLiveExpired);
 
                         break;
                     }
@@ -527,12 +551,10 @@
         [TestMethod]
         public async Task FeedRange_VerifyingWireFormatTests()
         {
-            ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: GetChangeFeedIteratorFullFidelityTests.PartitionKey);
-            properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                properties,
-                cancellationToken: this.cancellationToken);
-            ContainerInternal container = (ContainerInternal)response;
+            TimeSpan ttl = TimeSpan.FromSeconds(1);
+            TimeSpan waitAfterOperations = ttl.Add(TimeSpan.FromSeconds(5));
+
+            ContainerInternal container = await this.InitializeContainerAsync(ttl);
             IReadOnlyList<FeedRange> ranges = await container.GetFeedRangesAsync();
             string id = Guid.NewGuid().ToString();
             string otherId = Guid.NewGuid().ToString();
@@ -550,7 +572,6 @@
                     {
                         continuation = feedResponse.ContinuationToken;
                         Assert.IsNotNull(continuation);
-                        Console.WriteLine(continuation);
 
                         PartitionKey partitionKey = new(id);
                         PartitionKey otherPartitionKey = new(otherId);
@@ -559,9 +580,14 @@
                         _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "One Microsoft Way", City: "Redmond", State: "WA", ZipCode: "98052"), partitionKey: partitionKey).ConfigureAwait(false);
                         _ = await container.UpsertItemAsync<Item>(item: new(Id: id, Line1: "205 16th St NW", City: "Atlanta", State: "GA", ZipCode: "30363"), partitionKey: partitionKey).ConfigureAwait(false);
                         _ = await container.DeleteItemAsync<Item>(id: id, partitionKey: partitionKey);
+
+                        Thread.Sleep(waitAfterOperations);
                     }
                     else
                     {
+#if DEBUG
+                        Console.WriteLine(JsonConvert.SerializeObject(feedResponse.Resource));
+#endif
                         List<ChangeFeedItemChanges<Item>> resources = feedResponse.Resource.ToList();
 
                         GetChangeFeedIteratorFullFidelityTests.AssertGatewayMode(feedResponse);
@@ -579,7 +605,7 @@
                         Assert.AreNotEqual(notExpected: default, actual: firstCreateOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: firstCreateOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreEqual(expected: default, actual: firstCreateOperation.Metadata.PreviousLogSequenceNumber);
-                        Assert.IsNull(firstCreateOperation.Previous);
+                        Assert.IsFalse(firstCreateOperation.Metadata.TimeToLiveExpired);
 
                         ChangeFeedItemChanges<Item> createOperation = resources[1];
 
@@ -592,7 +618,7 @@
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreEqual(expected: default, actual: createOperation.Metadata.PreviousLogSequenceNumber);
-                        Assert.IsNull(createOperation.Previous);
+                        Assert.IsFalse(createOperation.Metadata.TimeToLiveExpired);
 
                         ChangeFeedItemChanges<Item> replaceOperation = resources[2];
 
@@ -605,11 +631,7 @@
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.PreviousLogSequenceNumber);
-                        Assert.AreEqual(expected: id, actual: replaceOperation.Previous.Id);
-                        Assert.AreEqual(expected: "One Microsoft Way", actual: replaceOperation.Previous.Line1);
-                        Assert.AreEqual(expected: "Redmond", actual: replaceOperation.Previous.City);
-                        Assert.AreEqual(expected: "WA", actual: replaceOperation.Previous.State);
-                        Assert.AreEqual(expected: "98052", actual: replaceOperation.Previous.ZipCode);
+                        Assert.IsFalse(replaceOperation.Metadata.TimeToLiveExpired);
 
                         ChangeFeedItemChanges<Item> deleteOperation = resources[3];
 
@@ -622,6 +644,7 @@
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.PreviousLogSequenceNumber);
+                        Assert.IsNotNull(deleteOperation.Previous);
                         Assert.AreEqual(expected: id, actual: deleteOperation.Previous.Id);
                         Assert.AreEqual(expected: "205 16th St NW", actual: deleteOperation.Previous.Line1);
                         Assert.AreEqual(expected: "Atlanta", actual: deleteOperation.Previous.City);
@@ -641,12 +664,10 @@
         [TestMethod]
         public async Task FeedRange_FromPartitionKey_Dynamic_VerifyingWireFormatTests()
         {
-            ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: GetChangeFeedIteratorFullFidelityTests.PartitionKey);
-            properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                properties,
-                cancellationToken: this.cancellationToken);
-            ContainerInternal container = (ContainerInternal)response;
+            TimeSpan ttl = TimeSpan.FromSeconds(1);
+            TimeSpan waitAfterOperations = ttl.Add(TimeSpan.FromSeconds(5));
+
+            ContainerInternal container = await this.InitializeContainerAsync(ttl);
             string id = Guid.NewGuid().ToString();
             string otherId = Guid.NewGuid().ToString();
             using (FeedIterator<dynamic> feedIterator = container.GetChangeFeedIterator<dynamic>(
@@ -669,6 +690,9 @@
                         _ = await container.UpsertItemAsync<dynamic>(item: new { id = otherId, line1 = "87 38floor, Witthayu Rd, Lumphini, Pathum Wan District", city = "Bangkok", state = "Thailand", zipCode = "10330" }, partitionKey: otherPartitionKey).ConfigureAwait(false);
                         _ = await container.UpsertItemAsync<dynamic>(item: new { id, line1 = "One Microsoft Way", city = "Redmond", state = "WA", zipCode = "98052" }, partitionKey: partitionKey).ConfigureAwait(false);
                         _ = await container.UpsertItemAsync<dynamic>(item: new { id, line1 = "205 16th St NW", city = "Atlanta", state = "GA", zipCode = "30363" }, partitionKey: partitionKey).ConfigureAwait(false);
+                        _ = await container.DeleteItemAsync<Item>(id: id, partitionKey: partitionKey);
+
+                        Thread.Sleep(waitAfterOperations);
                     }
                     else
                     {
@@ -694,7 +718,7 @@
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreEqual(expected: default, actual: createOperation.Metadata.PreviousLogSequenceNumber);
-                        Assert.IsNull(createOperation.Previous);
+                        Assert.IsFalse(createOperation.Metadata.TimeToLiveExpired);
 
                         ChangeFeedItemChanges<Item> replaceOperation = itemChanges[1];
 
@@ -708,12 +732,7 @@
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.CurrentLogSequenceNumber);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.PreviousLogSequenceNumber);
-                        Assert.IsNotNull(replaceOperation.Previous);
-                        Assert.AreEqual(expected: id, actual: replaceOperation.Previous.Id);
-                        Assert.AreEqual(expected: "One Microsoft Way", actual: replaceOperation.Previous.Line1);
-                        Assert.AreEqual(expected: "Redmond", actual: replaceOperation.Previous.City);
-                        Assert.AreEqual(expected: "WA", actual: replaceOperation.Previous.State);
-                        Assert.AreEqual(expected: "98052", actual: replaceOperation.Previous.ZipCode);
+                        Assert.IsFalse(replaceOperation.Metadata.TimeToLiveExpired);
 
                         break;
                     }
@@ -724,9 +743,9 @@
         private static void AssertGatewayMode<T>(FeedResponse<T> feedResponse)
         {
             string diagnostics = feedResponse.Diagnostics.ToString();
-            JToken jToken = JToken.Parse(diagnostics);
+            JToken jsonToken = JToken.Parse(diagnostics);
 
-            Assert.IsNotNull(jToken["Summary"]["GatewayCalls"], "'GatewayCalls' is not found in diagnostics. UseGateMode is set to false.");
+            Assert.IsNotNull(jsonToken["Summary"]["GatewayCalls"], "'GatewayCalls' is not found in diagnostics. UseGateMode is set to false.");
         }
     }
 
@@ -736,45 +755,4 @@
         [property: JsonProperty("city")] string City,
         [property: JsonProperty("zipCode")] string ZipCode,
         [property: JsonProperty("state")] string State);
-
-    public class TestItemSerializer : CosmosSerializer
-    {
-        public override T FromStream<T>(Stream stream)
-        {
-            using (StreamReader reader = new StreamReader(stream))
-            {
-                string jsonString = reader.ReadToEnd();
-
-#if DEBUG
-                StackTrace stackTrace = new StackTrace(new StackFrame(true));
-                Console.WriteLine($"type => {typeof(T)} => {Environment.NewLine}{stackTrace}");
-#endif
-                T item = JsonConvert.DeserializeObject<T>(jsonString);
-
-                return item;
-            }
-        }
-
-        public override Stream ToStream<T>(T input)
-        {
-            string jsonString = JsonConvert.SerializeObject(input);
-            Stream stream = new MemoryStream();
-
-            using (StreamWriter writer = new StreamWriter(
-                stream: stream,
-                leaveOpen: true))
-            {
-#if DEBUG
-                StackTrace stackTrace = new StackTrace(new StackFrame(true));
-                Console.WriteLine($"type => {typeof(T)} => {Environment.NewLine}{stackTrace}");
-#endif
-                writer.Write(jsonString);
-                writer.Flush();
-            }
-
-            stream.Position = 0;
-
-            return stream;
-        }
-    }
 }

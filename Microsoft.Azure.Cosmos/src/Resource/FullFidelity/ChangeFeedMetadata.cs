@@ -63,5 +63,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonProperty(PropertyName = "previousImageLSN", NullValueHandling = NullValueHandling.Ignore)]
         public long PreviousLogSequenceNumber { get; }
+
+        /// <summary>
+        /// Used to distinquish explicit deletes (e.g. via DeleteItem) from deletes caused by TTL expiration (a collection may define time-to-live policy for documents).
+        /// </summary>
+        [JsonProperty(PropertyName = "timeToLiveExpired", NullValueHandling= NullValueHandling.Ignore)]
+        public bool TimeToLiveExpired { get; }
     }
 }
