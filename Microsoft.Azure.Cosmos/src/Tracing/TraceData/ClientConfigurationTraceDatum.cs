@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.cachedSerializedJson = this.GetSerializedDatum();
             this.ProcessorCount = Environment.ProcessorCount;
             this.ConnectionMode = cosmosClientContext.ClientOptions.ConnectionMode;
+            this.cachedVMRegion = VmMetadataApiHandler.GetMachineRegion();
         }
 
         public DateTime ClientCreatedDateTimeUtc { get; }
@@ -58,13 +59,15 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 if (this.cachedUserAgentString != this.UserAgentContainer.UserAgent ||
                     this.cachedNumberOfClientCreated != CosmosClient.numberOfClientsCreated ||
                     this.cachedNumberOfActiveClient != CosmosClient.NumberOfActiveClients ||
-                    !ReferenceEquals(this.cachedMachineId, VmMetadataApiHandler.GetMachineId()))
+                    !ReferenceEquals(this.cachedMachineId, VmMetadataApiHandler.GetMachineId()) ||
+                    !ReferenceEquals(this.cachedVMRegion, VmMetadataApiHandler.GetMachineRegion()))
                 {
                     this.cachedNumberOfActiveClient = CosmosClient.NumberOfActiveClients;
                     this.cachedNumberOfClientCreated = CosmosClient.numberOfClientsCreated;
                     this.cachedUserAgentString = this.UserAgentContainer.UserAgent;
                     this.cachedMachineId = VmMetadataApiHandler.GetMachineId();
                     this.cachedSerializedJson = this.GetSerializedDatum();
+                    this.cachedVMRegion = VmMetadataApiHandler.GetMachineRegion();
                 }
 
                 return this.cachedSerializedJson;
@@ -80,6 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private string cachedUserAgentString;
 
         private string cachedMachineId;
+        private string cachedVMRegion;
 
         internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
         {
@@ -95,6 +99,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             jsonTextWriter.WriteStringValue(this.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture));
             jsonTextWriter.WriteFieldName("MachineId");
             jsonTextWriter.WriteStringValue(this.cachedMachineId);
+            if (this.cachedVMRegion != null)
+            {
+                jsonTextWriter.WriteFieldName("VM Region");
+                jsonTextWriter.WriteStringValue(this.cachedVMRegion);
+            }
             jsonTextWriter.WriteFieldName("NumberOfClientsCreated");
             jsonTextWriter.WriteNumber64Value(this.cachedNumberOfClientCreated);
             jsonTextWriter.WriteFieldName("NumberOfActiveClients");
