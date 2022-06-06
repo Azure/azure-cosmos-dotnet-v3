@@ -121,6 +121,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         /// <summary>
+        /// Get Machine Region (If Azure System) else null
+        /// </summary>
+        /// <returns>VM region</returns>
+        internal static string GetMachineRegion()
+        {
+            return VmMetadataApiHandler.azMetadata?.Compute?.Location;
+        }
+
+        /// <summary>
         /// Hash a passed Value
         /// </summary>
         /// <param name="rawData"></param>
