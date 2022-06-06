@@ -57,6 +57,7 @@ namespace Microsoft.Azure.Cosmos
 
             await Task.Delay(2000);
             Assert.AreEqual("vmId:d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd", VmMetadataApiHandler.GetMachineId());
+            Assert.AreEqual(VmMetadataApiHandler.GetMachineRegion(), "eastus");
         }
 
         [TestMethod]
@@ -81,6 +82,7 @@ namespace Microsoft.Azure.Cosmos
             await Task.Delay(2000);
             Assert.IsNull(VmMetadataApiHandler.GetMachineInfo());
             Assert.IsNotNull(VmMetadataApiHandler.GetMachineId());
+            Assert.IsNull(VmMetadataApiHandler.GetMachineRegion());
         }
 
         [TestMethod]
