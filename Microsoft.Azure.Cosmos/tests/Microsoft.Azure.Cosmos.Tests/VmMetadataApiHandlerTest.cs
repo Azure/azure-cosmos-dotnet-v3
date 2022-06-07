@@ -57,6 +57,32 @@ namespace Microsoft.Azure.Cosmos
 
             await Task.Delay(2000);
             Assert.AreEqual("vmId:d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd", VmMetadataApiHandler.GetMachineId());
+            Assert.AreEqual(VmMetadataApiHandler.GetMachineRegion(), "eastus");
+        }
+
+        [TestMethod]
+        public async Task GetVMMachineIdWithNullComputeTest()
+        {
+            static Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                object jsonObject = JsonConvert.DeserializeObject("{\"compute\":null}");
+                string payload = JsonConvert.SerializeObject(jsonObject);
+                HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(payload, Encoding.UTF8, "application/json")
+                };
+                return Task.FromResult(response);
+            }
+
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
+
+            VmMetadataApiHandler.TryInitialize(cosmoshttpClient);
+
+            await Task.Delay(2000);
+            Assert.IsNull(VmMetadataApiHandler.GetMachineInfo());
+            Assert.IsNotNull(VmMetadataApiHandler.GetMachineId());
+            Assert.IsNull(VmMetadataApiHandler.GetMachineRegion());
         }
 
         [TestMethod]
