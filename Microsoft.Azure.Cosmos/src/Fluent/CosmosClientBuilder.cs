@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using System.Collections.Generic;
     using System.Net;
     using System.Net.Http;
+    using System.Threading;
+    using System.Threading.Tasks;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
@@ -128,6 +130,21 @@ namespace Microsoft.Azure.Cosmos.Fluent
             return this.tokenCredential == null ?
                 new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions) :
                 new CosmosClient(this.accountEndpoint, this.tokenCredential, this.clientOptions);
+        }
+
+        /// <summary>
+        /// A method to create the cosmos client and initialize the provided containers.
+        /// </summary>
+        /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
+        /// <param name="cancellationToken">(Optional) Cancellation Token</param>
+        /// <returns>
+        /// A CosmosClient object.
+        /// </returns>
+        public async Task<CosmosClient> BuildAndCreateInitializeAsync(IReadOnlyList<(string databaseId, string containerId)> containers, CancellationToken cancellationToken = default)
+        {
+            return this.tokenCredential == null ?
+                await CosmosClient.CreateAndInitializeAsync(this.accountEndpoint, this.accountKey, containers, this.clientOptions, cancellationToken) :
+                await CosmosClient.CreateAndInitializeAsync(this.accountEndpoint, this.tokenCredential, containers, this.clientOptions, cancellationToken);
         }
 
         /// <summary>
