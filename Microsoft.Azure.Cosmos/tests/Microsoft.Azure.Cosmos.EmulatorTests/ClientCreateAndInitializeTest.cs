@@ -99,7 +99,7 @@
             { ("ClientCreateAndInitializeDatabase", "ClientCreateAndInitializeContainer")};
 
             CosmosClientBuilder builder = new CosmosClientBuilder(endpoint, authKey).WithHttpClientFactory(() => new HttpClient(httpClientHandlerHelper));
-            CosmosClient cosmosClient = await builder.BuildAndCreateInitializeAsync(containers);
+            CosmosClient cosmosClient = await builder.BuildAndInitializeAsync(containers);
             Assert.IsNotNull(cosmosClient);
             int httpCallsMadeAfterCreation = httpCallsMade;
 
