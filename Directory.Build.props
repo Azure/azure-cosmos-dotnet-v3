@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<PropertyGroup>
-		<ClientOfficialVersion>3.27.1</ClientOfficialVersion>
-		<ClientPreviewVersion>3.27.1</ClientPreviewVersion>
+		<ClientOfficialVersion>3.27.2</ClientOfficialVersion>
+		<ClientPreviewVersion>3.27.2</ClientPreviewVersion>
 		<ClientPreviewSuffixVersion>preview</ClientPreviewSuffixVersion>
 		<DirectVersion>3.28.2</DirectVersion>
-		<EncryptionOfficialVersion>1.0.0</EncryptionOfficialVersion>
-		<EncryptionPreviewVersion>1.0.0</EncryptionPreviewVersion>
-		<EncryptionPreviewSuffixVersion>preview20</EncryptionPreviewSuffixVersion>
+		<EncryptionOfficialVersion>1.0.1</EncryptionOfficialVersion>
+		<EncryptionPreviewVersion>1.0.1</EncryptionPreviewVersion>
+		<EncryptionPreviewSuffixVersion>preview</EncryptionPreviewSuffixVersion>
 		<CustomEncryptionVersion>1.0.0-preview03</CustomEncryptionVersion>
 		<HybridRowVersion>1.1.0-preview3</HybridRowVersion>
 		<LangVersion>10.0</LangVersion>
