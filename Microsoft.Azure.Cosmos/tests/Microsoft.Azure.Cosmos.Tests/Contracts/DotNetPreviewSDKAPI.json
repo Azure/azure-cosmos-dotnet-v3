@@ -1,5 +1,162 @@
 {
   "Subclasses": {
+    "Microsoft.Azure.Cosmos.ChangeFeedItemChanges`1;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:True;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.ChangeFeedMetadata get_Metadata()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedMetadata get_Metadata();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedMetadata Metadata[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"metadata\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedMetadata Metadata;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.ChangeFeedMetadata get_Metadata();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Metadata(Microsoft.Azure.Cosmos.ChangeFeedMetadata);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "T Current[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"current\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "T Current;CanRead:True;CanWrite:True;T get_Current();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Current(T);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "T get_Current()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "T get_Current();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "T get_Previous()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "T get_Previous();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "T Previous[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"previous\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "T Previous;CanRead:True;CanWrite:True;T get_Previous();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Previous(T);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(T, Microsoft.Azure.Cosmos.ChangeFeedMetadata, T)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(T, Microsoft.Azure.Cosmos.ChangeFeedMetadata, T), Void .ctor(T, Microsoft.Azure.Cosmos.ChangeFeedMetadata, T)]"
+        },
+        "Void set_Current(T)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Current(T);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_Metadata(Microsoft.Azure.Cosmos.ChangeFeedMetadata)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Metadata(Microsoft.Azure.Cosmos.ChangeFeedMetadata);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_Previous(T)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Previous(T);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.ChangeFeedMetadata;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Boolean get_TimeToLiveExpired()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Boolean get_TimeToLiveExpired();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Boolean TimeToLiveExpired[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"timeToLiveExpired\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "Boolean TimeToLiveExpired;CanRead:True;CanWrite:False;Boolean get_TimeToLiveExpired();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int64 CurrentLogSequenceNumber[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"lsn\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "Int64 CurrentLogSequenceNumber;CanRead:True;CanWrite:False;Int64 get_CurrentLogSequenceNumber();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int64 get_CurrentLogSequenceNumber()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Int64 get_CurrentLogSequenceNumber();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int64 get_PreviousLogSequenceNumber()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Int64 get_PreviousLogSequenceNumber();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int64 PreviousLogSequenceNumber[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"previousImageLSN\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "Int64 PreviousLogSequenceNumber;CanRead:True;CanWrite:False;Int64 get_PreviousLogSequenceNumber();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedOperationType get_OperationType()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedOperationType get_OperationType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedOperationType OperationType[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"operationType\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonConverterAttribute",
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedOperationType OperationType;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.ChangeFeedOperationType get_OperationType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.DateTime ConflictResolutionTimestamp[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"crts\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonConverterAttribute",
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "System.DateTime ConflictResolutionTimestamp;CanRead:True;CanWrite:False;System.DateTime get_ConflictResolutionTimestamp();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.DateTime get_ConflictResolutionTimestamp()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.DateTime get_ConflictResolutionTimestamp();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(System.DateTime, Int64, Microsoft.Azure.Cosmos.ChangeFeedOperationType, Int64)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(System.DateTime, Int64, Microsoft.Azure.Cosmos.ChangeFeedOperationType, Int64), Void .ctor(System.DateTime, Int64, Microsoft.Azure.Cosmos.ChangeFeedOperationType, Int64)]"
+        }
+      },
+      "NestedTypes": {}
+    },
     "Microsoft.Azure.Cosmos.ChangeFeedMode;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
@@ -12,6 +169,38 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedMode get_FullFidelity();IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.ChangeFeedOperationType;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
+      "Subclasses": {},
+      "Members": {
+        "Int32 value__": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedOperationType Create[System.Runtime.Serialization.EnumMemberAttribute(Value = \"create\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedOperationType Create;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedOperationType Delete[System.Runtime.Serialization.EnumMemberAttribute(Value = \"delete\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedOperationType Delete;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedOperationType Replace[System.Runtime.Serialization.EnumMemberAttribute(Value = \"replace\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedOperationType Replace;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}
