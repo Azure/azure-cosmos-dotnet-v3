@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            // Need to set to the root trace, since we don't know which layer of the stack the response message was returned from
+            // Need to set to the root trace, since we don't know which layer of the stack the response message was returned from.
             ITrace rootTrace = trace;
             while (rootTrace.Parent != null)
             {
