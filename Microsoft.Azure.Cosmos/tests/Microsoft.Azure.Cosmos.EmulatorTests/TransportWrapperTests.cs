@@ -98,7 +98,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string message = responseMessage.ErrorMessage;
             Assert.AreEqual(message, responseMessage.CosmosException.Message);
             Assert.IsTrue(message.Contains($"ServiceUnavailable (503); Substatus: {(int)SubStatusCodes.Channel_Closed}; ActivityId:"));
-            Debug.WriteLine(message);
             Assert.IsTrue(message.Contains("Reason: (Channel is closed"), "Should contain exception message");
             string diagnostics = responseMessage.Diagnostics.ToString();
             Assert.IsNotNull(diagnostics);
