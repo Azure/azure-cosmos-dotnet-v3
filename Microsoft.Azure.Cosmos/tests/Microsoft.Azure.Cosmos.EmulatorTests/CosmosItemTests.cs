@@ -1979,7 +1979,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNull(response.Resource.children[1].nullableInt);
 
             patchOperations.Clear();
-            patchOperations.Add(PatchOperation.Move("/newTaskNum", "/taskNum"));
+            patchOperations.Add(PatchOperation.Add("/children/0/cost", 1));
             //patchOperations.Add(PatchOperation.Set("/random", value));
             // with content response
             response = await containerInternal.PatchItemAsync<ToDoActivity>(
@@ -2002,6 +2002,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             Assert.IsNotNull(response.Resource);
             Assert.AreEqual(null, response.Resource.children[0].id);
+            
+            patchOperations.Clear();
+            patchOperations.Add(PatchOperation.Add("/children/1/description","Child#1"));
+            patchOperations.Add(PatchOperation.Move("/description", "/children/0/description"));
+            patchOperations.Add(PatchOperation.Move("/children/0/description", "/children/1/description"));
+            // with content response
+            response = await containerInternal.PatchItemAsync<ToDoActivity>(
+                id: testItem.id,
+                partitionKey: new Cosmos.PartitionKey(testItem.pk),
+                patchOperations: patchOperations);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsNotNull(response.Resource);
+            Assert.AreEqual("testSet", response.Resource.description);
+            Assert.AreEqual("Child#1", response.Resource.children[0].description);
+            Assert.IsNull(response.Resource.children[1].description);
         }
 
         [TestMethod]

@@ -21,9 +21,9 @@ namespace Microsoft.Azure.Cosmos
             string path,
             T value)
         {
+            this.OperationType = operationType;
             if (operationType == PatchOperationType.Move)
             {
-                this.OperationType = operationType;
                 this.Path = string.IsNullOrWhiteSpace(path)
                     ? throw new ArgumentNullException(nameof(path))
                     : path;
@@ -34,7 +34,6 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                this.OperationType = operationType;
                 this.Path = string.IsNullOrWhiteSpace(path)
                     ? throw new ArgumentNullException(nameof(path))
                     : path;
