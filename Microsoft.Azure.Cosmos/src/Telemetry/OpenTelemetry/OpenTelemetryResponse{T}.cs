@@ -9,15 +9,15 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Documents;
 
-    internal sealed class OpenTelemetryResponse : OpenTelemetryResponseCore
+    internal sealed class OpenTelemetryResponse<T> : OpenTelemetryResponseCore
     {
-        public OpenTelemetryResponse(ResponseMessage message)
+        public OpenTelemetryResponse(Response<T> message)
         {
             this.StatusCode = message.StatusCode;
             this.RequestCharge = message.Headers?.RequestCharge;
-            this.RequestContentLength = message.RequestMessage.Headers?.ContentLength;
+           // this.RequestContentLength = message.RequestMessage.Headers?.ContentLength;
             this.ResponseContentLength = message.Headers?.ContentLength;
-            this.ContainerName = message.RequestMessage.ContainerId;
+           // this.ContainerName = message.RequestMessage.ContainerId;
             this.Diagnostics = message.Diagnostics;
             //TODO: ItemCount needs to be added
         }

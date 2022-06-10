@@ -204,7 +204,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadItemAsync),
                 requestOptions,
-                (trace) => base.ReadItemAsync<T>(id, partitionKey, trace, requestOptions, cancellationToken));
+                (trace) => base.ReadItemAsync<T>(id, partitionKey, trace, requestOptions, cancellationToken),
+                (response) => new OpenTelemetryResponse<T>(response));
         }
 
         public override Task<ResponseMessage> UpsertItemStreamAsync(
