@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System;
+    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -116,6 +117,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             using (ITrace gatewayQueryPlanTrace = trace.StartChild("Gateway QueryPlan", TraceComponent.Query, TraceLevel.Info))
             {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                            && Documents.ServiceInteropWrapper.Is64BitProcess)
+                {
+                    // It's Windows and x64, should have loaded the DLL
+                    gatewayQueryPlanTrace.AddDatum("ServiceInterop unavailable", true);
+                }
+                
                 return queryContext.ExecuteQueryPlanRequestAsync(
                     resourceLink,
                     ResourceType.Document,
