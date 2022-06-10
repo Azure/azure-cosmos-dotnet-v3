@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Telemetry.Diagnostics;
 
@@ -96,11 +97,35 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.stopwatch.Stop();
 
             if (this.Parent == null)
-            { 
-                this.CosmosInstrumentation.Record(this);
+            {
+                ICosmosInstrumentation newInstrument = CosmosInstrumentationFactory.Get("RequestDiagnostics");
+
+                CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(this);
+
+                string disgnosticsString = diagnostics.ToString();
+
+                IEnumerable<string> stringEnumerable = SplitByLength(disgnosticsString, 500);
+
+                int counter = 1;
+                foreach (string stringItem in stringEnumerable)
+                {
+                    newInstrument.Record(OTelAttributes.RequestDiagnostics + "." + counter++, stringItem);
+                }
+
+                newInstrument.Dispose();
 
                 this.CosmosInstrumentation.Dispose();
             }
+        }
+
+        public static IEnumerable<string> SplitByLength(string str, int maxLength)
+        {
+            IList<string> datalist = new List<string>();
+            for (int index = 0; index < str.Length; index += maxLength)
+            {
+                datalist.Add(str.Substring(index, Math.Min(maxLength, str.Length - index)));
+            }
+            return datalist;
         }
 
         public ITrace StartChild(

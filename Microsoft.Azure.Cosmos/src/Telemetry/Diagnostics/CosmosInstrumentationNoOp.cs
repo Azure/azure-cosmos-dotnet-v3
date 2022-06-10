@@ -23,10 +23,5 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         {
             // NoOp
         }
-
-        public void Record(ITrace trace)
-        {
-            // NoOp
-        }
     }
 }

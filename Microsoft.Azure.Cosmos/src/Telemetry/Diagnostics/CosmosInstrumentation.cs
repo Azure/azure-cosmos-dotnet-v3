@@ -41,24 +41,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             }
         }
 
-        public void Record(ITrace trace)
-        {
-            if (this.scope.IsEnabled)
-            {
-                CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
-
-                this.Record(OTelAttributes.Region, ClientTelemetryHelper.GetContactedRegions(diagnostics));
-
-                /*if (DiagnosticsFilterHelper.IsAllowed(
-                        latency: diagnostics.GetClientElapsedTime(),
-                        requestcharge: this.requestCharge,
-                        statuscode: this.statusCode))
-                {*/
-                this.Record(OTelAttributes.RequestDiagnostics, diagnostics.ToString());
-                //}
-            }
-        }
-
         public void MarkFailed(Exception exception)
         {
             if (this.scope.IsEnabled)

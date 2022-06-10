@@ -19,8 +19,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     {
         public void Record(string attributeKey, object attributeValue);
 
-        public void Record(ITrace trace);
-
         public void MarkFailed(Exception exception);
     }
 }
