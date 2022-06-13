@@ -30,10 +30,49 @@
     using System.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using System.IO;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SinglePartition;
 
     [TestClass]
     public class PassThroughQueryBaselineTests : BaselineTests<PassThroughQueryTestInput, PassThroughQueryTestOutput>
     {
+        [TestMethod]
+        [Owner("akotalwar")]
+        public void TestPipelineNullContinuationToken()
+        {
+            Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
+
+            TryCatch<IQueryPipelineStage> monadicCreate = TryExecuteQueryPipelineStage.MonadicCreate(
+                documentContainer: mockDocumentContainer.Object,
+                sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
+                targetRange:  FeedRangeEpk.FullRange,
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                partitionKey: null,
+                cancellationToken: default,
+                continuationToken: null);
+            Assert.IsTrue(monadicCreate.Succeeded);
+        }
+
+        [TestMethod]
+        [Owner("akotalwar")]
+        public void TestPipelineSingleContinuationToken()
+        {
+            Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
+
+            TryExecuteContinuationToken token = new TryExecuteContinuationToken(
+                token: "asdf",
+                range: new Documents.Routing.Range<string>("A", "B", true, false));
+
+            TryCatch<IQueryPipelineStage> monadicCreate = TryExecuteQueryPipelineStage.MonadicCreate(
+                documentContainer: mockDocumentContainer.Object,
+                sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
+                targetRange: new FeedRangeEpk(new Documents.Routing.Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)),
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                partitionKey: null,
+                cancellationToken: default,
+                continuationToken: CosmosArray.Create(TryExecuteContinuationToken.ToCosmosElement(token)));
+            Assert.IsTrue(monadicCreate.Succeeded);
+        }
+
         [TestMethod]
         [Owner("akotalwar")]
         public void PositivePassThroughOutput()
@@ -185,12 +224,12 @@
                       cosmosQueryContextCore,
                       inputParameters,
                       NoOpTrace.Singleton);
-            bool result = queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton).Result; 
+            bool result = queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton).Result;
 
             Assert.AreEqual(input.ExpectedPassThrough, inputParameters.SqlQuerySpec.PassThrough);
             Assert.IsNotNull(queryPipelineStage);
             Assert.IsTrue(result);
-
+           
             return new PassThroughQueryTestOutput(inputParameters.SqlQuerySpec.PassThrough);
         }
     }

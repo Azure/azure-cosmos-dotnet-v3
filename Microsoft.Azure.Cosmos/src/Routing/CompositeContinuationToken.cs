@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// </summary>
     internal sealed class CompositeContinuationToken
     {
-        private static class PropertyNames
+        internal static class PropertyNames
         {
             public const string Token = "token";
             public const string Range = "range";

@@ -131,11 +131,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     cancellationToken);
                 cosmosQueryContext.ContainerResourceId = containerQueryProperties.ResourceId;
 
+                List<Documents.PartitionKeyRange> targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
+                   cosmosQueryContext.QueryClient,
+                   cosmosQueryContext.ResourceLink,
+                   queryPlanFromContinuationToken,
+                   containerQueryProperties,
+                   inputParameters.Properties,
+                   inputParameters.InitialFeedRange,
+                   trace);
+
+                // If we have enough information to confirm that the query is single logical/physical partition, then short circuit and send straight to Backend
                 inputParameters.SqlQuerySpec.PassThrough = IsPassThroughCandidate(inputParameters, queryPlanFromContinuationToken);
 
                 if (inputParameters.SqlQuerySpec.PassThrough)
                 {
-                    //TODO: Add new pass through pipeline code here 
+                    return CosmosQueryExecutionContextFactory.TryExecutePassthroughExecutionContext(
+                    documentContainer,
+                    inputParameters,
+                    targetRanges[0],
+                    cancellationToken);
                 }
 
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
@@ -197,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                                 // Only thing that matters is that we target the correct range.
                                 Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
-                                List<Documents.PartitionKeyRange> targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
+                                targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
                                     cosmosQueryContext.ResourceLink,
                                     containerQueryProperties.ResourceId,
                                     inputParameters.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition),
@@ -291,15 +305,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             
             TryCatch<IQueryPipelineStage> tryCreatePipelineStage;
 
-            // After getting the Query Plan if we find out that the query is single logical partition, then short circuit and send straight to Backend
+            // After getting the Query Plan if we find out that the query is single logical/physical partition, then short circuit and send straight to Backend
             inputParameters.SqlQuerySpec.PassThrough = IsPassThroughCandidate(inputParameters, partitionedQueryExecutionInfo);
 
             if (inputParameters.SqlQuerySpec.PassThrough)
             {
                 //TODO: Add new pass through pipeline code here 
+                tryCreatePipelineStage = CosmosQueryExecutionContextFactory.TryExecutePassthroughExecutionContext(
+                   documentContainer,
+                   inputParameters,
+                   targetRanges[0],
+                   cancellationToken);
             }
-
-            if (createPassthroughQuery)
+            else if (createPassthroughQuery)
             {
                 TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
                 if (responseStats != null)
@@ -356,6 +374,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
 
             return tryCreatePipelineStage;
+        }
+        private static TryCatch<IQueryPipelineStage> TryExecutePassthroughExecutionContext(
+            DocumentContainer documentContainer,
+            InputParameters inputParameters,
+            Documents.PartitionKeyRange targetRange,
+            CancellationToken cancellationToken)
+        {
+            // Return a tryExecute context, since we still want to be able to handle splits and concurrency / buffering.
+            return TryExecuteQueryPipelineStage.MonadicCreate(
+                documentContainer: documentContainer,
+                sqlQuerySpec: inputParameters.SqlQuerySpec,
+                targetRange: new FeedRangeEpk(targetRange.ToRange()),
+                queryPaginationOptions: new QueryPaginationOptions(
+                    pageSizeHint: inputParameters.MaxItemCount),
+                partitionKey: inputParameters.PartitionKey,
+                cancellationToken: cancellationToken,
+                continuationToken: inputParameters.InitialUserContinuationToken);
         }
 
         private static TryCatch<IQueryPipelineStage> TryCreatePassthroughQueryExecutionContext(

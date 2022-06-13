@@ -47,6 +47,38 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
                 targetFeedRange);
         }
 
+        public static TryCatch<PartitionMapping<PartitionedToken>> MonadicGetPartitionMappingSingleRange<PartitionedToken>(
+            FeedRangeEpk feedRange,
+            List<PartitionedToken> tokens)
+            where PartitionedToken : IPartitionedToken
+        {
+            if (feedRange == null)
+            {
+                throw new ArgumentNullException(nameof(feedRange));
+            }
+
+            if (tokens == null)
+            {
+                throw new ArgumentNullException(nameof(tokens));
+            }
+
+            if (tokens.Count < 1)
+            {
+                throw new ArgumentException(nameof(feedRange));
+            }
+
+            List<(FeedRangeEpk, PartitionedToken)> splitRangesAndTokens = new List<(FeedRangeEpk, PartitionedToken)>
+            {
+                (feedRange, tokens[0])
+            };
+
+            FeedRangeEpk targetFeedRange = GetTargetFeedRange(tokens);
+            return MonadicConstructPartitionMapping(
+                splitRangesAndTokens,
+                tokens,
+                targetFeedRange);
+        } 
+
         /// <summary>
         /// Merges all the feed ranges as much as possible.
         /// </summary>
