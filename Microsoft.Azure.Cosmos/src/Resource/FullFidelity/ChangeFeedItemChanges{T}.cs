@@ -9,6 +9,45 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The typed response that contains the current, previous, and metadata change feed resource when <see cref="ChangeFeedMode"/> is initialized to <see cref="ChangeFeedMode.FullFidelity"/>.
     /// </summary>
+    /// <example>
+    /// <code>
+    /// <![CDATA[
+    /// public class ToDoActivity
+    /// {
+    ///     public string type { get; set; }
+    ///     public string id { get; set; }
+    ///     public string status { get; set; }
+    /// }
+    /// 
+    /// ChangeFeedMode changeFeedMode = ChangeFeedMode.FullFidelity;
+    /// PartitionKey partitionKey = new PartitionKey(@"learning");
+    /// ChangeFeedStartFrom changeFeedStartFrom = ChangeFeedStartFrom.Now(FeedRange.FromPartitionKey(partitionKey));
+    /// 
+    /// using (FeedIterator<ChangeFeedItemChanges<ToDoActivity>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItemChanges<ToDoActivity>>(
+    ///     changeFeedStartFrom: changeFeedStartFrom,
+    ///     changeFeedMode: changeFeedMode))
+    /// {
+    ///     while (feedIterator.HasMoreResults)
+    ///     {
+    ///         FeedResponse<ChangeFeedItemChanges<ToDoActivity>> feedResponse = await feedIterator.ReadNextAsync();
+    ///         
+    ///         if (feedResponse.StatusCode != HttpStatusCode.NotModified)
+    ///         {
+    ///             IEnumerable<ChangeFeedItemChanges<ToDoActivity>> feedResource = feedResponse.Resource;
+    ///             
+    ///             foreach(ChangeFeedItemChanges<ToDoActivity> itemChanges in feedResource)
+    ///             {
+    ///                 ToDoActivity currentToDoActivity = itemChanges.Current;
+    ///                 ToDoActivity previousToDoActivity = itemChanges.Previous;
+    ///                 ChangeFeedMetadata toDoActivityMetadata = itemChanges.Metadata;
+    ///             }
+    ///         }
+    ///     }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
+    /// <remarks><see cref="ChangeFeedItemChanges{T}"/> is an optional helper class that uses Newtonsoft serialization libraries. Users are welcome to create their own custom helper class.</remarks>
 #if PREVIEW
     public
 #else
@@ -25,14 +64,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The full fidelity change feed metadata.
         /// </summary>
-        /// <example>
-        /// <code>
-        /// <![CDATA[
-        /// //
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <remarks>Remarks.</remarks>
         [JsonProperty(PropertyName = "metadata", NullValueHandling = NullValueHandling.Ignore)]
         public ChangeFeedMetadata Metadata { get; set; }
 

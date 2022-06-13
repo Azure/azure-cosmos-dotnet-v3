@@ -809,9 +809,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             ContainerInternal container = await this.InitializeFFCFContainerAsync(ttl);
             string id = Guid.NewGuid().ToString();
             string otherId = Guid.NewGuid().ToString();
+
+            PartitionKey partitionKey = new PartitionKey(id);
+            ChangeFeedMode changeFeedMode = ChangeFeedMode.FullFidelity;
+            ChangeFeedStartFrom changeFeedStartFrom = ChangeFeedStartFrom.Now(FeedRange.FromPartitionKey(partitionKey));
+
             using (FeedIterator<ChangeFeedItemChanges<Item>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItemChanges<Item>>(
-                changeFeedStartFrom: ChangeFeedStartFrom.Now(FeedRange.FromPartitionKey(new PartitionKey(id))),
-                changeFeedMode: ChangeFeedMode.FullFidelity))
+                changeFeedStartFrom: changeFeedStartFrom,
+                changeFeedMode: changeFeedMode))
             {
                 string continuation = null;
                 while (feedIterator.HasMoreResults)
@@ -823,7 +828,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         continuation = feedResponse.ContinuationToken;
                         Assert.IsNotNull(continuation);
 
-                        PartitionKey partitionKey = new(id);
                         PartitionKey otherPartitionKey = new(otherId);
 
                         _ = await container.UpsertItemAsync<Item>(item: new(Id: otherId, Line1: "87 38floor, Witthayu Rd, Lumphini, Pathum Wan District", City: "Bangkok", State: "Thailand", ZipCode: "10330"), partitionKey: otherPartitionKey).ConfigureAwait(false);
@@ -835,13 +839,20 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 #if DEBUG
                         Console.WriteLine(JsonConvert.SerializeObject(feedResponse.Resource));
 #endif
-                        List<ChangeFeedItemChanges<Item>> itemChanges = feedResponse.Resource.ToList();
+                        IEnumerable<ChangeFeedItemChanges<Item>> itemChanges = feedResponse.Resource;
 
                         ChangeFeedIteratorCoreTests.AssertGatewayMode(feedResponse);
 
-                        Assert.AreEqual(expected: 2, actual: itemChanges.Count);
+                        Assert.AreEqual(expected: 2, actual: itemChanges.Count());
 
-                        ChangeFeedItemChanges<Item> createOperation = itemChanges[0];
+                        foreach(ChangeFeedItemChanges<Item> item in itemChanges)
+                        {
+                            Item current = item.Current;
+                            Item previous = item.Previous;
+                            ChangeFeedMetadata metadata = item.Metadata;
+                        }
+
+                        ChangeFeedItemChanges<Item> createOperation = itemChanges.ElementAtOrDefault(0);
 
                         Assert.AreEqual(expected: id, actual: createOperation.Current.Id);
                         Assert.AreEqual(expected: "One Microsoft Way", actual: createOperation.Current.Line1);
@@ -855,7 +866,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.AreEqual(expected: default, actual: createOperation.Metadata.PreviousLogSequenceNumber);
                         Assert.IsFalse(createOperation.Metadata.TimeToLiveExpired);
 
-                        ChangeFeedItemChanges<Item> replaceOperation = itemChanges[1];
+                        ChangeFeedItemChanges<Item> replaceOperation = itemChanges.ElementAtOrDefault(1);
 
                         Assert.AreEqual(expected: id, actual: replaceOperation.Current.Id);
                         Assert.AreEqual(expected: "205 16th St NW", actual: replaceOperation.Current.Line1);
