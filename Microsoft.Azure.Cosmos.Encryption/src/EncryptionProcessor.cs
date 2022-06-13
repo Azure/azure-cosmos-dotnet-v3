@@ -87,10 +87,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         continue;
                     }
 
-                    byte[] plainTextBytes = Encoding.UTF8.GetBytes((string)itemJObj["id"]);
+                    byte[] encryptedBytes = Encoding.UTF8.GetBytes((string)itemJObj["id"]);
 
                     // id does not support '/','\','?','#'
-                    itemJObj["id"] = Uri.EscapeDataString(Convert.ToBase64String(plainTextBytes));
+                    itemJObj["id"] = Uri.EscapeDataString(Convert.ToBase64String(encryptedBytes));
                 }
 
                 propertiesEncryptedCount++;
