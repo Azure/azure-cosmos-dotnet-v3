@@ -101,10 +101,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (path.Substring(1).Equals("id"))
                 {
-                    byte[] plainTextBytes = Encoding.UTF8.GetBytes(EncryptionProcessor.BaseSerializer.FromStream<string>(encryptedValueStream));
+                    byte[] encryptedBytes = Encoding.UTF8.GetBytes(EncryptionProcessor.BaseSerializer.FromStream<string>(encryptedValueStream));
 
                     // id does not support '/','\','?','#'
-                    string encryptedId = Uri.EscapeDataString(Convert.ToBase64String(plainTextBytes));
+                    string encryptedId = Uri.EscapeDataString(Convert.ToBase64String(encryptedBytes));
                     encryptedValueStream = EncryptionProcessor.BaseSerializer.ToStream(encryptedId);
                 }
 
