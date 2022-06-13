@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                     {
                         Task<ResponseMessage> task = this.resultSetIterator.ReadNextAsync(cancellationToken);
 
-                        if (await Task.WhenAny(task, Task.Delay(30000)) != task)
+                        if (!ReferenceEquals(await Task.WhenAny(task, Task.Delay(this.options.RequestTimeout)), task))
                         {
                             throw CosmosExceptionFactory.CreateRequestTimeoutException("ChangeFeed timed out after 30s.", new Headers());
                         }
