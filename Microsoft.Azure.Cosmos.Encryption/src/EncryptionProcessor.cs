@@ -65,12 +65,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 JProperty propertyToEncrypt = itemJObj.Property(propertyName);
                 if (propertyToEncrypt == null)
                 {
-                    // id is mandatory.
-                    if (propertyName.Equals("id"))
-                    {
-                        throw new InvalidOperationException("$ id field which is part of encryption policy cannot be null.");
-                    }
-
                     continue;
                 }
 
@@ -88,6 +82,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (propertyName.Equals("id"))
                 {
+                    if (propertyToEncrypt.Value.Type == JTokenType.Null)
+                    {
+                        continue;
+                    }
+
                     byte[] plainTextBytes = Encoding.UTF8.GetBytes((string)itemJObj["id"]);
 
                     // id does not support '/','\','?','#'
