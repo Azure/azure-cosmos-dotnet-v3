@@ -27,9 +27,9 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="operationType"></param>
         /// <param name="previousLogSequenceNumber"></param>
         public ChangeFeedMetadata(
-            DateTime conflictResolutionTimestamp, 
-            long currentLogSequenceNumber, 
-            ChangeFeedOperationType operationType, 
+            DateTime conflictResolutionTimestamp,
+            long currentLogSequenceNumber,
+            ChangeFeedOperationType operationType,
             long previousLogSequenceNumber)
         {
             this.ConflictResolutionTimestamp = conflictResolutionTimestamp;

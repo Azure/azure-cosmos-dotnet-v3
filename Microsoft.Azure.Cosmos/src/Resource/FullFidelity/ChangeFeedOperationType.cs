@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Runtime.Serialization;
 
     /// <summary>
-    /// /// The operation type of a change feed resource with <see cref="ChangeFeedMode"/> is initialized to <see cref="ChangeFeedMode.FullFidelity"/>. Upsert operations will yield <see cref="Create"/> or <see cref="Replace"/>.
+    /// The operation type of a change feed resource with <see cref="ChangeFeedMode"/> is initialized to <see cref="ChangeFeedMode.FullFidelity"/>. Upsert operations will yield <see cref="Create"/> or <see cref="Replace"/>.
     /// </summary>
 #if PREVIEW
     public

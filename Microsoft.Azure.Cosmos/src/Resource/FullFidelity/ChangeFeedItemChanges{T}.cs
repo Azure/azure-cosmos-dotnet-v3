@@ -17,19 +17,6 @@ namespace Microsoft.Azure.Cosmos
         class ChangeFeedItemChanges<T>
     {
         /// <summary>
-        /// New instance of ItemChanges that contain change feed resource along with metadata.
-        /// </summary>
-        /// <param name="current"></param>
-        /// <param name="changeFeedMetadata"></param>
-        /// <param name="previous"></param>
-        public ChangeFeedItemChanges(T current, ChangeFeedMetadata changeFeedMetadata, T previous)
-        {
-            this.Current = current;
-            this.Metadata = changeFeedMetadata;
-            this.Previous = previous;
-        }
-
-        /// <summary>
         /// The full fidelity change feed current item.
         /// </summary>
         [JsonProperty(PropertyName = "current")]
@@ -38,6 +25,14 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The full fidelity change feed metadata.
         /// </summary>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// //
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks>Remarks.</remarks>
         [JsonProperty(PropertyName = "metadata", NullValueHandling = NullValueHandling.Ignore)]
         public ChangeFeedMetadata Metadata { get; set; }
 
