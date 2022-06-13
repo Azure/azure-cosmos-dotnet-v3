@@ -159,7 +159,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.Headers,
                     cekProperties,
                     clientEncryptionKey,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    cosmosResponseMessage.RequestMessage);
             });
         }
 

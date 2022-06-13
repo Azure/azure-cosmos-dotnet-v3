@@ -22,20 +22,6 @@ namespace Microsoft.Azure.Cosmos
         // A non-public constructor to ensure the factory is used to create the object.
         // This will prevent memory leaks when handling the HttpResponseMessage.
         internal ClientEncryptionKeyResponse(
-            HttpStatusCode httpStatusCode,
-            Headers headers,
-            ClientEncryptionKeyProperties keyProperties,
-            ClientEncryptionKey key,
-            CosmosDiagnostics diagnostics)
-        {
-            this.StatusCode = httpStatusCode;
-            this.Headers = headers;
-            this.Resource = keyProperties;
-            this.ClientEncryptionKey = key;
-            this.Diagnostics = diagnostics;
-        }
-
-        internal ClientEncryptionKeyResponse(
            HttpStatusCode httpStatusCode,
            Headers headers,
            ClientEncryptionKeyProperties keyProperties,
