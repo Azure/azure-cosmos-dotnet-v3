@@ -35,6 +35,22 @@ namespace Microsoft.Azure.Cosmos
             this.Diagnostics = diagnostics;
         }
 
+        internal ClientEncryptionKeyResponse(
+           HttpStatusCode httpStatusCode,
+           Headers headers,
+           ClientEncryptionKeyProperties keyProperties,
+           ClientEncryptionKey key,
+           CosmosDiagnostics diagnostics,
+           RequestMessage requestMessage)
+        {
+            this.StatusCode = httpStatusCode;
+            this.Headers = headers;
+            this.Resource = keyProperties;
+            this.ClientEncryptionKey = key;
+            this.Diagnostics = diagnostics;
+            this.RequestMessage = requestMessage;
+        }
+
         /// <summary>
         /// The reference to the client encryption key that allows additional operations on it.
         /// </summary>
@@ -60,6 +76,9 @@ namespace Microsoft.Azure.Cosmos
 
         /// <inheritdoc/>
         public override string ETag => this.Headers?.ETag;
+
+        /// <inheritdoc/>
+        public override RequestMessage RequestMessage { get; }
 
         /// <summary>
         /// Get the client encryption key implicitly from an encryption key response.

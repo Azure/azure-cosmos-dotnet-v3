@@ -69,5 +69,10 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the cosmos diagnostics information for the current request to Azure Cosmos DB service
         /// </summary>
         public abstract CosmosDiagnostics Diagnostics { get; }
+
+        /// <summary>
+        /// Gets the original request message
+        /// </summary>
+        public abstract RequestMessage RequestMessage { get; }
     }
 }

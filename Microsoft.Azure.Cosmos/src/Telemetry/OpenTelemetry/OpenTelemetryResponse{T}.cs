@@ -15,9 +15,9 @@ namespace Microsoft.Azure.Cosmos
         {
             this.StatusCode = message.StatusCode;
             this.RequestCharge = message.Headers?.RequestCharge;
-           // this.RequestContentLength = message.RequestMessage.Headers?.ContentLength;
+            this.RequestContentLength = message.RequestMessage.Headers?.ContentLength;
             this.ResponseContentLength = message.Headers?.ContentLength;
-           // this.ContainerName = message.RequestMessage.ContainerId;
+            this.ContainerName = message.RequestMessage.ContainerId;
             this.Diagnostics = message.Diagnostics;
             //TODO: ItemCount needs to be added
         }

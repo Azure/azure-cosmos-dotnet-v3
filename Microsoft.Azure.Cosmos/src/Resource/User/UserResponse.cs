@@ -28,13 +28,15 @@ namespace Microsoft.Azure.Cosmos
             Headers headers,
             UserProperties userProperties,
             User user,
-            CosmosDiagnostics diagnostics)
+            CosmosDiagnostics diagnostics,
+            RequestMessage requestMessage)
         {
             this.StatusCode = httpStatusCode;
             this.Headers = headers;
             this.Resource = userProperties;
             this.User = user;
             this.Diagnostics = diagnostics;
+            this.RequestMessage = requestMessage;   
         }
 
         /// <summary>
@@ -63,6 +65,9 @@ namespace Microsoft.Azure.Cosmos
 
         /// <inheritdoc/>
         public override string ETag => this.Headers?.ETag;
+
+        /// <inheritdoc/>
+        public override RequestMessage RequestMessage { get; }
 
         /// <summary>
         /// Get <see cref="Cosmos.User"/> implicitly from <see cref="UserResponse"/>

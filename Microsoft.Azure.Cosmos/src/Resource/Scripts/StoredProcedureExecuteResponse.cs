@@ -29,12 +29,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
             HttpStatusCode httpStatusCode,
             Headers headers,
             T response,
-            CosmosDiagnostics diagnostics)
+            CosmosDiagnostics diagnostics,
+            RequestMessage requestmessage)
         {
             this.StatusCode = httpStatusCode;
             this.Headers = headers;
             this.Resource = response;
             this.Diagnostics = diagnostics;
+            this.RequestMessage = requestmessage;
         }
 
         /// <inheritdoc/>
@@ -81,5 +83,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 return string.IsNullOrEmpty(logResults) ? logResults : Uri.UnescapeDataString(logResults);
             }
         }
+
+        /// <inheritdoc/>
+        public override RequestMessage RequestMessage { get; }
     }
 }

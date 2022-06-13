@@ -27,12 +27,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
             HttpStatusCode httpStatusCode,
             Headers headers,
             TriggerProperties triggerProperties,
-            CosmosDiagnostics diagnostics)
+            CosmosDiagnostics diagnostics,
+            RequestMessage requestmessage)
         {
             this.StatusCode = httpStatusCode;
             this.Headers = headers;
             this.Resource = triggerProperties;
             this.Diagnostics = diagnostics;
+            this.RequestMessage = requestmessage;
         }
 
         /// <inheritdoc/>
@@ -55,6 +57,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         /// <inheritdoc/>
         public override string ETag => this.Headers?.ETag;
+
+        /// <inheritdoc/>
+        public override RequestMessage RequestMessage { get; }
 
         /// <summary>
         /// Get <see cref="TriggerProperties"/> implicitly from <see cref="TriggerResponse"/>

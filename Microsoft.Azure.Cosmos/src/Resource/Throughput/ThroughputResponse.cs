@@ -28,12 +28,14 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode httpStatusCode,
             Headers headers,
             ThroughputProperties throughputProperties,
-            CosmosDiagnostics diagnostics)
+            CosmosDiagnostics diagnostics,
+            RequestMessage requestMessage)
         {
             this.StatusCode = httpStatusCode;
             this.Headers = headers;
             this.Resource = throughputProperties;
             this.Diagnostics = diagnostics;
+            this.RequestMessage = requestMessage;   
         }
 
         /// <inheritdoc/>
@@ -86,6 +88,9 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
         }
+
+        /// <inheritdoc/>
+        public override RequestMessage RequestMessage { get; }
 
         /// <summary>
         /// Get <see cref="ThroughputProperties"/> implicitly from <see cref="ThroughputResponse"/>

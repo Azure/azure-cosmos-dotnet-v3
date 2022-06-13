@@ -27,12 +27,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
             HttpStatusCode httpStatusCode,
             Headers headers,
             UserDefinedFunctionProperties userDefinedFunctionProperties,
-            CosmosDiagnostics diagnostics)
+            CosmosDiagnostics diagnostics,
+            RequestMessage requestMessage)
         {
             this.StatusCode = httpStatusCode;
             this.Headers = headers;
             this.Resource = userDefinedFunctionProperties;
             this.Diagnostics = diagnostics;
+            this.RequestMessage = requestMessage;
         }
 
         /// <inheritdoc/>
@@ -55,6 +57,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         /// <inheritdoc/>
         public override string ETag => this.Headers?.ETag;
+
+        /// <inheritdoc/>
+        public override RequestMessage RequestMessage { get; }
 
         /// <summary>
         /// Get <see cref="UserDefinedFunctionProperties"/> implicitly from <see cref="UserDefinedFunctionResponse"/>
