@@ -78,8 +78,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             ChangeFeedObserverFactoryCore<MyDocument> factory = new ChangeFeedObserverFactoryCore<MyDocument>(handler, new CosmosSerializerCore(serializer));
             ProcessorOptions options = new ProcessorOptions()
             {
-                FeedPollDelay = TimeSpan.FromMilliseconds(100),
-                RequestTimeout = TimeSpan.FromSeconds(0)
+                RequestTimeout = TimeSpan.FromSeconds(1)
             };
             FeedProcessorCore processor = new FeedProcessorCore(factory.CreateObserver(), mockIterator.Object, options, mockCheckpointer.Object);
             
