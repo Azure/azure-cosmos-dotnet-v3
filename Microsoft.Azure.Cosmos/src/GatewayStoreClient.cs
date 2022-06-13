@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
         {
             using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(request, resourceType, physicalAddress, cancellationToken))
             {
-                return await GatewayStoreClient.ParseResponseAsync(responseMessage, request.SerializerSettings ?? this.SerializerSettings, request);
+                return await GatewayStoreClient.ParseResponseAsync(responseMessage, request.SerializerSettings ?? this.SerializerSettings, request, cancellationToken);
             }
         }
 
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        internal static async Task<DocumentServiceResponse> ParseResponseAsync(HttpResponseMessage responseMessage, JsonSerializerSettings serializerSettings = null, DocumentServiceRequest request = null)
+        internal static async Task<DocumentServiceResponse> ParseResponseAsync(HttpResponseMessage responseMessage, JsonSerializerSettings serializerSettings = null, DocumentServiceRequest request = null, CancellationToken cancellationToken = default)
         {
             using (responseMessage)
             {
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
                 if ((int)responseMessage.StatusCode < 400)
                 {
                     INameValueCollection headers = GatewayStoreClient.ExtractResponseHeaders(responseMessage);
-                    Stream contentStream = await GatewayStoreClient.BufferContentIfAvailableAsync(responseMessage);
+                    Stream contentStream = await GatewayStoreClient.BufferContentIfAvailableAsync(responseMessage, cancellationToken);
                     return new DocumentServiceResponse(
                         body: contentStream,
                         headers: headers,
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
                     && request.IsValidStatusCodeForExceptionlessRetry((int)responseMessage.StatusCode))
                 {
                     INameValueCollection headers = GatewayStoreClient.ExtractResponseHeaders(responseMessage);
-                    Stream contentStream = await GatewayStoreClient.BufferContentIfAvailableAsync(responseMessage);
+                    Stream contentStream = await GatewayStoreClient.BufferContentIfAvailableAsync(responseMessage, cancellationToken);
                     return new DocumentServiceResponse(
                         body: contentStream,
                         headers: headers,
@@ -225,7 +225,7 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        private static async Task<Stream> BufferContentIfAvailableAsync(HttpResponseMessage responseMessage)
+        private static async Task<Stream> BufferContentIfAvailableAsync(HttpResponseMessage responseMessage, CancellationToken cancellationToken)
         {
             if (responseMessage.Content == null)
             {
@@ -233,7 +233,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             MemoryStream bufferedStream = new MemoryStream();
-            await responseMessage.Content.CopyToAsync(bufferedStream);
+            await responseMessage.Content.CopyToAsync(bufferedStream, cancellationToken);
             bufferedStream.Position = 0;
             return bufferedStream;
         }

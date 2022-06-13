@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            return this.ReadNextAsync(NoOpTrace.Singleton);
+            return this.ReadNextAsync(NoOpTrace.Singleton, cancellationToken);
         }
 
         public override async Task<ResponseMessage> ReadNextAsync(
