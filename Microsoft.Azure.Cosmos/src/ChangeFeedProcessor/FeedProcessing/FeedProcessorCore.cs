@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                     do
                     {
                         CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                        cancellationTokenSource.CancelAfter(3000);
+                        cancellationTokenSource.CancelAfter(30000);
                         ResponseMessage response = await this.resultSetIterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
                         if (response.StatusCode != HttpStatusCode.NotModified && !response.IsSuccessStatusCode)
                         {
