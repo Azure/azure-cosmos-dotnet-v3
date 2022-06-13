@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Documents;
 
     internal sealed class FeedProcessorCore : FeedProcessor
     {
@@ -47,7 +48,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 {
                     do
                     {
-                        ResponseMessage response = await this.resultSetIterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
+                        Task<ResponseMessage> task = this.resultSetIterator.ReadNextAsync(cancellationToken);
+
+                        if (await Task.WhenAny(task, Task.Delay(30000)) != task)
+                        {
+                            throw CosmosExceptionFactory.CreateRequestTimeoutException("ChangeFeed timed out after 30s.", new Headers());
+                        }
+
+                        ResponseMessage response = task.Result;
+
                         if (response.StatusCode != HttpStatusCode.NotModified && !response.IsSuccessStatusCode)
                         {
                             DefaultTrace.TraceWarning("unsuccessful feed read: lease token '{0}' status code {1}. substatuscode {2}", this.options.LeaseToken, response.StatusCode, response.Headers.SubStatusCode);
