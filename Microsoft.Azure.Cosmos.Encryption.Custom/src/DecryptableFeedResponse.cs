@@ -63,10 +63,5 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     resource);
             }
         }
-
-#if PREVIEW
-        /// <inheritdoc/>
-        public override RequestMessage RequestMessage => null;
-#endif
     }
 }
