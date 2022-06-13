@@ -26,18 +26,6 @@ namespace Microsoft.Azure.Cosmos
         /// This will prevent memory leaks when handling the CosmosResponseMessage
         /// </summary>
         internal ItemResponse(
-            HttpStatusCode httpStatusCode,
-            Headers headers,
-            T item,
-            CosmosDiagnostics diagnostics)
-        {
-            this.StatusCode = httpStatusCode;
-            this.Headers = headers;
-            this.Resource = item;
-            this.Diagnostics = diagnostics;
-        }
-
-        internal ItemResponse(
            HttpStatusCode httpStatusCode,
            Headers headers,
            T item,

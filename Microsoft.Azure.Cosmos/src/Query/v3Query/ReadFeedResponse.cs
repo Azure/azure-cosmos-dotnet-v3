@@ -9,20 +9,6 @@ namespace Microsoft.Azure.Cosmos
     internal class ReadFeedResponse<T> : FeedResponse<T>
     {
         internal ReadFeedResponse(
-            HttpStatusCode httpStatusCode,
-            IEnumerable<T> resources,
-            int resourceCount,
-            Headers responseMessageHeaders,
-            CosmosDiagnostics diagnostics)
-        {
-            this.Count = resourceCount;
-            this.Headers = responseMessageHeaders;
-            this.StatusCode = httpStatusCode;
-            this.Diagnostics = diagnostics;
-            this.Resource = resources;
-        }
-
-        internal ReadFeedResponse(
          HttpStatusCode httpStatusCode,
          IEnumerable<T> resources,
          int resourceCount,
