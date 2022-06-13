@@ -59,6 +59,35 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
+        public async Task ReadAsyncExpectedTimeoutTest()
+        {
+
+            ChangesHandler<MyDocument> handler = (changes, cancelationToken) =>
+            {
+                IReadOnlyList<MyDocument> list = changes as IReadOnlyList<MyDocument>;
+                Assert.IsNotNull(list);
+                Assert.AreEqual("test", list[0].id);
+                return Task.CompletedTask;
+            };
+            Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
+            Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.OK, true));
+            mockIterator.SetupSequence(i => i.HasMoreResults).Returns(true).Returns(false);
+
+            CustomSerializer serializer = new CustomSerializer();
+            ChangeFeedObserverFactoryCore<MyDocument> factory = new ChangeFeedObserverFactoryCore<MyDocument>(handler, new CosmosSerializerCore(serializer));
+            ProcessorOptions options = new ProcessorOptions()
+            {
+                FeedPollDelay = TimeSpan.FromMilliseconds(100),
+                RequestTimeout = TimeSpan.FromSeconds(0)
+            };
+            FeedProcessorCore processor = new FeedProcessorCore(factory.CreateObserver(), mockIterator.Object, options, mockCheckpointer.Object);
+            
+            CosmosException timeoutException = await Assert.ThrowsExceptionAsync<CosmosException>(() => processor.RunAsync(default));
+            Assert.AreEqual(timeoutException.StatusCode, HttpStatusCode.RequestTimeout);
+        }
+
+        [TestMethod]
         public async Task ThrowsOnFailedCustomSerializer()
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(1000);
