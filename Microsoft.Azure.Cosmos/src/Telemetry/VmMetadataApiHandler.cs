@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>machine id</returns>
         internal static string GetMachineId()
         {
-            if (VmMetadataApiHandler.azMetadata != null)
+            if (!String.IsNullOrWhiteSpace(VmMetadataApiHandler.azMetadata?.Compute?.VMId))
             {
                 return VmMetadataApiHandler.azMetadata.Compute.VMId;
             }
@@ -118,6 +118,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal static Compute GetMachineInfo()
         {
             return VmMetadataApiHandler.azMetadata?.Compute;     
+        }
+
+        /// <summary>
+        /// Get Machine Region (If Azure System) else null
+        /// </summary>
+        /// <returns>VM region</returns>
+        internal static string GetMachineRegion()
+        {
+            return VmMetadataApiHandler.azMetadata?.Compute?.Location;
         }
 
         /// <summary>

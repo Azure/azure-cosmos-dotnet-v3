@@ -551,7 +551,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     else if (memberType == typeof(DateTime))
                     {
                         SqlStringLiteral serializedDateTime = (SqlStringLiteral)right.Literal;
-                        value = DateTime.Parse(serializedDateTime.Value);
+                        value = DateTime.Parse(serializedDateTime.Value, provider: null, DateTimeStyles.RoundtripKind);
                     }
 
                     if (value != default(object))
