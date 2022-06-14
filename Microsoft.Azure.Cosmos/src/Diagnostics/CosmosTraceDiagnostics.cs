@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override int GetFailedRequestCount()
         {
-            if (this.Value == null)
+            if (this.Value == null || this.Value.Summary == null)
             {
                 return 0;
             }
