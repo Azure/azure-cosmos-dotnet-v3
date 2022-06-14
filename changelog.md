@@ -13,6 +13,23 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.28.0"/> [3.28.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.28.0) - 2022-06-14
+### <a name="3.28.0-preview"/> [3.28.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.28.0-preview) - 2022-06-14
+
+#### Added
+- [#3257](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3257) CosmosClientBuilder: Adds BuildAndInitializeAsync to match CosmosClient.CreateAndInitializeAsync
+- [#3211](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3211) Client Encryption: Adds change to allow partition key path and id to be part of client encryption policy
+- [#3236](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3236) MalformedContinuationTokenException: Adds the use of a new substatus code when throwing to programmatically determine the cause of the BadRequest
+- [#3236](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3236) CosmosException: Adds custom messages for Service Unavailable scenarios to guide customer investigation
+
+#### Fixed
+- [#3253](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3253) CosmosOperationCanceledException: Fixes Closure on Cancellation Token status
+- [#3252](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3252) Telemetry: Fixes Inconsistent behavior of VM Metadata Async Initialization
+- [#3224](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3224) LINQ: Fixes preserve DateTime.Kind when passing value to custom JsonConverter (Thanks [@ccurrens](https://github.com/ccurrens))
+- [#3236](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3236) Diagnostics: Fixes Exception caused when checking OS version of some Android Devices
+- [#3236](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3236) Diagnostics: Fixes CPU NaN value causing broken json formatting on some devices
+
+
 ### <a name="3.27.2"/> [3.27.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.27.2) - 2022-06-02
 ### <a name="3.27.2-preview"/> [3.27.2-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.27.2-preview) - 2022-06-02
 
