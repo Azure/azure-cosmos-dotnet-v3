@@ -88,11 +88,23 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Defines the <see cref="ClientEncryptionPolicy"/> for Azure Cosmos container.
+        /// The <see cref="ClientEncryptionPolicy.PolicyFormatVersion"/> will be set to 1.
+        /// </summary>        
+        /// <returns>An instance of <see cref="ClientEncryptionPolicyDefinition"/>.</returns>
+        public ClientEncryptionPolicyDefinition WithClientEncryptionPolicy()
+        {
+            return new ClientEncryptionPolicyDefinition(
+                this,
+                (clientEncryptionPolicy) => this.AddClientEncryptionPolicy(clientEncryptionPolicy), 1);
+        }
+
+        /// <summary>
         /// Defines the ClientEncryptionPolicy for Azure Cosmos container
         /// </summary>
         /// <param name="policyFormatVersion">Version of the client encryption policy definition. Current supported versions are 1 and 2. Default version is 1.</param>
         /// <returns>An instance of <see cref="ClientEncryptionPolicyDefinition"/>.</returns>
-        public ClientEncryptionPolicyDefinition WithClientEncryptionPolicy(int policyFormatVersion = 1)
+        public ClientEncryptionPolicyDefinition WithClientEncryptionPolicy(int policyFormatVersion)
         {
             return new ClientEncryptionPolicyDefinition(
                 this,
