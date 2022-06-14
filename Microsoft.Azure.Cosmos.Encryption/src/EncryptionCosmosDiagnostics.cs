@@ -86,5 +86,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             return stringWriter.ToString();
         }
+
+#if SDKPROJECTREF
+        public override DateTime GetStartTimeUtc()
+        {
+            return this.coreDiagnostics.GetStartTimeUtc();
+        }
+        public override int GetFailedRequestCount()
+        {
+            return this.coreDiagnostics.GetFailedRequestCount();
+        }
+#endif
+
     }
 }

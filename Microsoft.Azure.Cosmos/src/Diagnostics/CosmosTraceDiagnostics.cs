@@ -98,5 +98,26 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             TraceWriter.WriteTrace(jsonTextWriter, this.Value);
             return jsonTextWriter.GetResult();
         }
+
+        public override DateTime GetStartTimeUtc()
+        {
+            if (this.Value == null)
+            {
+                return DateTime.MinValue;
+            }
+
+            return this.Value.StartTime;
+        }
+
+        public override int GetFailedRequestCount()
+        {
+            if (this.Value == null)
+            {
+                return 0;
+            }
+
+            return this.Value.Summary.GetFailedCount();
+        }
+
     }
 }

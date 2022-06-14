@@ -43,27 +43,27 @@ namespace Microsoft.Azure.Cosmos
                 HttpConstants.HttpMethods.Get,
                 AuthorizationTokenType.PrimaryMasterKey);
 
-            IClientSideRequestStatistics stats = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
-            try
+            using (ITrace trace = Trace.GetRootTrace("Account Read", TraceComponent.Transport, TraceLevel.Info))
             {
-                using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(
-                    uri: serviceEndpoint,
-                    additionalHeaders: headers,
-                    resourceType: ResourceType.DatabaseAccount,
-                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
-                    clientSideRequestStatistics: stats,
-                    cancellationToken: default))
+                IClientSideRequestStatistics stats = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary);
+
+                try
                 {
-                    using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
+                    using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(
+                        uri: serviceEndpoint,
+                        additionalHeaders: headers,
+                        resourceType: ResourceType.DatabaseAccount,
+                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
+                        clientSideRequestStatistics: stats,
+                        cancellationToken: default))
                     {
-                        return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
+                        using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
+                        {
+                            return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
+                        }
                     }
                 }
-            }
-            catch (OperationCanceledException ex)
-            {
-                // Catch Operation Cancelled Exception and convert to Timeout 408 if the user did not cancel it.
-                using (ITrace trace = Trace.GetRootTrace("Account Read Exception", TraceComponent.Transport, TraceLevel.Info))
+                catch (OperationCanceledException ex)
                 {
                     trace.AddDatum("Client Side Request Stats", stats);
                     throw CosmosExceptionFactory.CreateRequestTimeoutException(
