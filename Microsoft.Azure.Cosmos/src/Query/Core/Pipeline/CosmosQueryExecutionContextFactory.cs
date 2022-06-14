@@ -146,10 +146,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 if (inputParameters.SqlQuerySpec.PassThrough)
                 {
                     return CosmosQueryExecutionContextFactory.TryExecutePassthroughExecutionContext(
-                    documentContainer,
-                    inputParameters,
-                    targetRanges[0],
-                    cancellationToken);
+                       documentContainer,
+                       inputParameters,
+                       targetRanges[0],
+                       cancellationToken);
                 }
 
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
