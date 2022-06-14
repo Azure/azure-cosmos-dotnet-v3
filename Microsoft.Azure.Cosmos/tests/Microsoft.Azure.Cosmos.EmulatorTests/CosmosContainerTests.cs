@@ -1591,7 +1591,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Id = containerName,
                     PartitionKey = new Documents.PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = Documents.PartitionKind.Hash },
-                    ClientEncryptionPolicy = new ClientEncryptionPolicy(pathsToEncryptWithPartitionKey, 2)
+                    ClientEncryptionPolicy = new ClientEncryptionPolicy(includedPaths: pathsToEncryptWithPartitionKey, policyFormatVersion: 2)
                 };
 
                 await this.cosmosDatabase.CreateContainerAsync(setting);
@@ -1626,7 +1626,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Id = containerName,
                     PartitionKey = new Documents.PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = Documents.PartitionKind.Hash },
-                    ClientEncryptionPolicy = new ClientEncryptionPolicy(pathsToEncryptWithPartitionKey, 2)
+                    ClientEncryptionPolicy = new ClientEncryptionPolicy(includedPaths: pathsToEncryptWithPartitionKey, policyFormatVersion: 2)
                 };
 
                 await this.cosmosDatabase.CreateContainerAsync(setting);
@@ -1712,7 +1712,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Id = containerName,
                     PartitionKeyPaths = new Collection<string> { "/path1", "/id" },
-                    ClientEncryptionPolicy = new ClientEncryptionPolicy(pathsToEncryptWithPartitionKey, 2)
+                    ClientEncryptionPolicy = new ClientEncryptionPolicy(includedPaths: pathsToEncryptWithPartitionKey, policyFormatVersion: 2)
                 };
 
                 await this.cosmosDatabase.CreateContainerAsync(setting);
@@ -1741,7 +1741,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Id = containerName,
                     PartitionKeyPaths = new Collection<string> { partitionKeyPath, "/path1" },
-                    ClientEncryptionPolicy = new ClientEncryptionPolicy(pathsToEncryptWithPartitionKey, 2)
+                    ClientEncryptionPolicy = new ClientEncryptionPolicy(includedPaths: pathsToEncryptWithPartitionKey, policyFormatVersion: 2)
                 };
 
                 await this.cosmosDatabase.CreateContainerAsync(setting);
