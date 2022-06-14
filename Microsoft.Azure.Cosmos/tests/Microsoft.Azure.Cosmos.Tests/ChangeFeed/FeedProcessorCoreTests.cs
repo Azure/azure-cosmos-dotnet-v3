@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .Returns(async () =>
                 {
-                    await Task.Delay(2000);
+                    await Task.Delay(200);
                     return GetResponse(HttpStatusCode.OK, true);
                 });
             mockIterator.SetupSequence(i => i.HasMoreResults).Returns(true).Returns(false);
@@ -86,8 +86,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             };
             FeedProcessorCore processor = new FeedProcessorCore(factory.CreateObserver(), mockIterator.Object, options, mockCheckpointer.Object);
             
-            CosmosException timeoutException = await Assert.ThrowsExceptionAsync<CosmosException>(() => processor.RunAsync(default));
-            Assert.AreEqual(timeoutException.StatusCode, HttpStatusCode.RequestTimeout);
+            try
+            {
+                Task runTask = processor.RunAsync(default);
+                if (!ReferenceEquals(await Task.WhenAny(runTask, Task.Delay(1000)), runTask))
+                {
+                    Assert.Fail("Test timed out without throwing expected CosmosException.");
+                }
+            }
+            catch (CosmosException timeoutException)
+            {
+                Assert.AreEqual(timeoutException.StatusCode, HttpStatusCode.RequestTimeout);
+            }
+
         }
 
         [TestMethod]
