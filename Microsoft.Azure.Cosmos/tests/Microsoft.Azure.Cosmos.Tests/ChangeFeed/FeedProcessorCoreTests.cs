@@ -71,8 +71,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
             Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
             mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
-                .Callback(async (CancellationToken token) => await Task.Delay(2000))
-                .ReturnsAsync(GetResponse(HttpStatusCode.OK, true));
+                .Returns(async () =>
+                {
+                    await Task.Delay(2000);
+                    return GetResponse(HttpStatusCode.OK, true);
+                });
             mockIterator.SetupSequence(i => i.HasMoreResults).Returns(true).Returns(false);
 
             CustomSerializer serializer = new CustomSerializer();
