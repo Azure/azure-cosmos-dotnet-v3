@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
         /// Initializes a new instance of the <see cref="ClientEncryptionPolicy"/> class.
         /// </summary>
         /// <param name="includedPaths">List of paths to include in the policy definition.</param>
-        /// <param name="policyFormatVersion"> Version of the client encryption policy definition. Current supported versions are 1 and 2. Default version is 1. </param>
+        /// <param name="policyFormatVersion"> Version of the client encryption policy definition. Current supported versions are 1 and 2.</param>
         public ClientEncryptionPolicy(IEnumerable<ClientEncryptionIncludedPath> includedPaths, int policyFormatVersion)
         {
             this.PolicyFormatVersion = (policyFormatVersion > 2 || policyFormatVersion < 1) ? throw new ArgumentException($"Supported versions of client encryption policy are 1 and 2. ") : policyFormatVersion;
