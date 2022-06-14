@@ -90,6 +90,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Defines the <see cref="ClientEncryptionPolicy"/> for Azure Cosmos container.
         /// The <see cref="ClientEncryptionPolicy.PolicyFormatVersion"/> will be set to 1.
+        /// Note: If you need to include partition key or id field paths as part of <see cref="ClientEncryptionPolicy"/>, please set <see cref="ClientEncryptionPolicy.PolicyFormatVersion"/> to 2.
         /// </summary>        
         /// <returns>An instance of <see cref="ClientEncryptionPolicyDefinition"/>.</returns>
         public ClientEncryptionPolicyDefinition WithClientEncryptionPolicy()
@@ -101,6 +102,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         /// <summary>
         /// Defines the ClientEncryptionPolicy for Azure Cosmos container
+        /// Note: If you need to include partition key or id field paths as part of <see cref="ClientEncryptionPolicy"/>, please set <see cref="ClientEncryptionPolicy.PolicyFormatVersion"/> to 2.
         /// </summary>
         /// <param name="policyFormatVersion">Version of the client encryption policy definition. Current supported versions are 1 and 2.</param>
         /// <returns>An instance of <see cref="ClientEncryptionPolicyDefinition"/>.</returns>

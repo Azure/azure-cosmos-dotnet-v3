@@ -52,6 +52,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientEncryptionPolicy"/> class.
         /// The <see cref="PolicyFormatVersion"/> will be set to 1.
+        /// Note: If you need to include partition key or id field paths as part of <see cref="ClientEncryptionPolicy"/>, please set <see cref="PolicyFormatVersion"/> to 2.
         /// </summary>
         /// <param name="includedPaths">List of paths to include in the policy definition.</param>        
         public ClientEncryptionPolicy(IEnumerable<ClientEncryptionIncludedPath> includedPaths)
@@ -62,6 +63,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientEncryptionPolicy"/> class.
+        /// Note: If you need to include partition key or id field paths as part of <see cref="ClientEncryptionPolicy"/>, please set <see cref="PolicyFormatVersion"/> to 2.
         /// </summary>
         /// <param name="includedPaths">List of paths to include in the policy definition.</param>
         /// <param name="policyFormatVersion"> Version of the client encryption policy definition. Current supported versions are 1 and 2.</param>
