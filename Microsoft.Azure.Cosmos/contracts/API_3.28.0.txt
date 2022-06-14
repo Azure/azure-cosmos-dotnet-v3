@@ -146,7 +146,8 @@ namespace Microsoft.Azure.Cosmos
     }
     public sealed class ClientEncryptionPolicy
     {
-        public ClientEncryptionPolicy(IEnumerable<ClientEncryptionIncludedPath> includedPaths, int policyFormatVersion=1);
+        public ClientEncryptionPolicy(IEnumerable<ClientEncryptionIncludedPath> includedPaths);
+        public ClientEncryptionPolicy(IEnumerable<ClientEncryptionIncludedPath> includedPaths, int policyFormatVersion);
         public IEnumerable<ClientEncryptionIncludedPath> IncludedPaths { get; }
         public int PolicyFormatVersion { get; }
     }
@@ -1056,7 +1057,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public Task<ContainerResponse> CreateAsync(Nullable<int> throughput=default(Nullable<int>), CancellationToken cancellationToken=default(CancellationToken));
         public Task<ContainerResponse> CreateIfNotExistsAsync(ThroughputProperties throughputProperties, CancellationToken cancellationToken=default(CancellationToken));
         public Task<ContainerResponse> CreateIfNotExistsAsync(Nullable<int> throughput=default(Nullable<int>), CancellationToken cancellationToken=default(CancellationToken));
-        public ClientEncryptionPolicyDefinition WithClientEncryptionPolicy(int policyFormatVersion=1);
+        public ClientEncryptionPolicyDefinition WithClientEncryptionPolicy();
+        public ClientEncryptionPolicyDefinition WithClientEncryptionPolicy(int policyFormatVersion);
         public ConflictResolutionDefinition WithConflictResolution();
         public UniqueKeyDefinition WithUniqueKey();
     }
