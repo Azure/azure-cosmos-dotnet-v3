@@ -1000,6 +1000,11 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath], Int32), Void .ctor(System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath], Int32)]"
+        },
+        "Void .ctor(System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath])": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath]), Void .ctor(System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath])]"
         }
       },
       "NestedTypes": {}
@@ -4175,6 +4180,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ContainerProperties Build();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.ClientEncryptionPolicyDefinition WithClientEncryptionPolicy()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.ClientEncryptionPolicyDefinition WithClientEncryptionPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.Fluent.ClientEncryptionPolicyDefinition WithClientEncryptionPolicy(Int32)": {
           "Type": "Method",
