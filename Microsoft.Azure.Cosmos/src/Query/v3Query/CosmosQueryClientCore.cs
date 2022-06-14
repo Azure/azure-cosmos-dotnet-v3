@@ -86,6 +86,7 @@ namespace Microsoft.Azure.Cosmos
             bool allowNonValueAggregateQuery,
             bool hasLogicalPartitionKey,
             bool allowDCount,
+            bool useSystemPrefix,
             CancellationToken cancellationToken)
         {
             string queryString = null;
@@ -107,7 +108,8 @@ namespace Microsoft.Azure.Cosmos
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
-                allowDCount: allowDCount);
+                allowDCount: allowDCount,
+                useSystemPrefix: useSystemPrefix);
         }
 
         public override async Task<TryCatch<QueryPage>> ExecuteItemQueryAsync(

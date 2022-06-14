@@ -344,6 +344,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                         hasLogicalPartitionKey: testcase.HasLogicalPartitionKey,
                         allowDCount: false,
                         allowNonValueAggregates: true,
+                        useSystemPrefix: false,
                         partitionKeyDefinition: new PartitionKeyDefinition { Paths = new Collection<string> { testcase.PartitionKey }, Kind = PartitionKind.Hash },
                         queryPartitionProvider: QueryPartitionProviderTestInstance.Object,
                         clientApiVersion: testcase.ClientApiVersion,

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 {
     using System;
     using System.Collections.ObjectModel;
+    using System.Configuration;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -37,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
+                It.IsAny<bool>(),
                 It.IsAny<CancellationToken>())).ReturnsAsync(TryCatch<PartitionedQueryExecutionInfo>.FromException(innerException));
 
             Mock<ITrace> trace = new Mock<ITrace>();
@@ -46,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 ResourceType.Document,
                 new Documents.PartitionKeyDefinition() { Paths = new Collection<string>() { "/id" } },
                 hasLogicalPartitionKey: false,
+                useSystemPrefix: false,
                 trace.Object,
                 default));
 
@@ -70,6 +73,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
+                It.IsAny<bool>(),
                 It.IsAny<CancellationToken>())).ReturnsAsync(TryCatch<PartitionedQueryExecutionInfo>.FromException(expectedException));
 
             Mock<ITrace> trace = new Mock<ITrace>();
@@ -79,6 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 ResourceType.Document,
                 new Documents.PartitionKeyDefinition() { Paths = new Collection<string>() { "/id" } },
                 hasLogicalPartitionKey: false,
+                useSystemPrefix: false,
                 trace.Object,
                 default));
 

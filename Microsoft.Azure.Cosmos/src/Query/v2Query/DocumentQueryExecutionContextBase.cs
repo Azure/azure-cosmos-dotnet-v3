@@ -173,7 +173,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
-                allowDCount: allowDCount);
+                allowDCount: allowDCount,
+                useSystemPrefix: false);
             if (!tryGetPartitionedQueryExecutionInfo.Succeeded)
             {
                 throw new BadRequestException(tryGetPartitionedQueryExecutionInfo.Exception);

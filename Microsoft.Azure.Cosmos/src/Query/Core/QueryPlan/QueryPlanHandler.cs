@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using PartitionKeyDefinition = Documents.PartitionKeyDefinition;
@@ -28,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             PartitionKeyDefinition partitionKeyDefinition,
             QueryFeatures supportedQueryFeatures,
             bool hasLogicalPartitionKey,
+            bool useSystemPrefix,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -47,6 +49,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 resourceType,
                 partitionKeyDefinition,
                 hasLogicalPartitionKey,
+                useSystemPrefix,
                 cancellationToken);
             if (!tryGetQueryInfo.Succeeded)
             {
@@ -73,6 +76,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             Documents.ResourceType resourceType,
             PartitionKeyDefinition partitionKeyDefinition,
             bool hasLogicalPartitionKey,
+            bool useSystemPrefix,
             CancellationToken cancellationToken = default)
         {
             if (sqlQuerySpec == null)
@@ -92,6 +96,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 resourceType,
                 partitionKeyDefinition,
                 hasLogicalPartitionKey,
+                useSystemPrefix,
                 cancellationToken);
             if (tryGetQueryInfo.Failed)
             {
@@ -109,6 +114,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             Documents.ResourceType resourceType,
             PartitionKeyDefinition partitionKeyDefinition,
             bool hasLogicalPartitionKey,
+            bool useSystemPrefix,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -122,6 +128,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 allowNonValueAggregateQuery: true,
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
                 allowDCount: true,
+                useSystemPrefix: useSystemPrefix,
                 cancellationToken: cancellationToken);
         }
 

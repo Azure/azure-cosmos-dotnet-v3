@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
@@ -81,6 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 resourceLink: resourceLink,
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
+                useSystemPrefix: QueryIterator.IsSystemPrefixExpected(queryRequestOptions),
                 correlatedActivityId: correlatedActivityId);
 
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
@@ -279,6 +279,22 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             this.queryPipelineStage.DisposeAsync();
             base.Dispose(disposing);
+        }
+
+        internal static bool IsSystemPrefixExpected(QueryRequestOptions queryRequestOptions)
+        {
+            if (queryRequestOptions == null || queryRequestOptions.Properties == null)
+            {
+                return false;
+            }
+
+            if (queryRequestOptions.Properties.TryGetValue("x-ms-query-disableSystemPrefix", out object objDisableSystemPrefix) &&
+                bool.TryParse(objDisableSystemPrefix.ToString(), out bool disableSystemPrefix))
+            {
+                return !disableSystemPrefix;
+            }
+
+            return false;
         }
     }
 }

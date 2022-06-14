@@ -315,6 +315,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         hasLogicalPartitionKey: false,
                         allowDCount: false,
                         allowNonValueAggregates: false,
+                        useSystemPrefix: false,
                         partitionKeyDefinition: partitionKeyDefinition,
                         queryPartitionProvider: queryPartitionProvider,
                         clientApiVersion: version,
