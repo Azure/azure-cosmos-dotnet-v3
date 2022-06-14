@@ -61,7 +61,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public async Task ReadAsyncExpectedTimeoutTest()
         {
-
             ChangesHandler<MyDocument> handler = (changes, cancelationToken) =>
             {
                 IReadOnlyList<MyDocument> list = changes as IReadOnlyList<MyDocument>;
@@ -71,14 +70,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             };
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
             Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
-            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.OK, true));
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
+                .Callback(async (CancellationToken token) => await Task.Delay(2000))
+                .ReturnsAsync(GetResponse(HttpStatusCode.OK, true));
             mockIterator.SetupSequence(i => i.HasMoreResults).Returns(true).Returns(false);
 
             CustomSerializer serializer = new CustomSerializer();
             ChangeFeedObserverFactoryCore<MyDocument> factory = new ChangeFeedObserverFactoryCore<MyDocument>(handler, new CosmosSerializerCore(serializer));
             ProcessorOptions options = new ProcessorOptions()
             {
-                RequestTimeout = TimeSpan.FromSeconds(1)
+                RequestTimeout = TimeSpan.FromMilliseconds(100)
             };
             FeedProcessorCore processor = new FeedProcessorCore(factory.CreateObserver(), mockIterator.Object, options, mockCheckpointer.Object);
             
