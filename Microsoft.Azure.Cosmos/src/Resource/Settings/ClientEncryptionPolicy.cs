@@ -56,8 +56,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="includedPaths">List of paths to include in the policy definition.</param>        
         public ClientEncryptionPolicy(IEnumerable<ClientEncryptionIncludedPath> includedPaths)
-        {            
-            ClientEncryptionPolicy.ValidateIncludedPaths(includedPaths, 1);
+        {
+            this.PolicyFormatVersion = 1;
+            ClientEncryptionPolicy.ValidateIncludedPaths(includedPaths, this.PolicyFormatVersion);
             this.IncludedPaths = includedPaths;
         }
 
