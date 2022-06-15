@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                             throw CosmosExceptionFactory.CreateRequestTimeoutException("Change Feed request timed out", new Headers());
                         }
 
-                        ResponseMessage response = task.Result;
+                        ResponseMessage response = await task;
 
                         if (response.StatusCode != HttpStatusCode.NotModified && !response.IsSuccessStatusCode)
                         {
