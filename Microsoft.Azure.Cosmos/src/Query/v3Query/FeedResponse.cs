@@ -53,6 +53,11 @@ namespace Microsoft.Azure.Cosmos
         public abstract string IndexMetrics { get; }
 
         /// <summary>
+        /// Request Message for this feed response
+        /// </summary>
+        internal override RequestMessage RequestMessage { get; }
+
+        /// <summary>
         /// Get an enumerator of the object.
         /// </summary>
         /// <returns>An instance of an Enumerator</returns>
