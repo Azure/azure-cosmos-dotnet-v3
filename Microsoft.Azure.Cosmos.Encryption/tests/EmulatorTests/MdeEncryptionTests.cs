@@ -1780,14 +1780,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             // and here we would not hit the incorrect container rid issue.
             ClientEncryptionIncludedPath newModifiedPath2 = new ClientEncryptionIncludedPath()
             {
-                Path = "/Sensitive_StringFormat",
+                Path = "/PK",
                 ClientEncryptionKeyId = "myCek",
                 EncryptionType = "Deterministic",
                 EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
 
             Container otherEncryptionContainer2 = await otherDatabase.DefineContainer("otherContainer2", "/PK")
-                .WithClientEncryptionPolicy()
+                .WithClientEncryptionPolicy(policyFormatVersion: 2)
                 .WithIncludedPath(newModifiedPath2)                
                 .Attach()
                 .CreateAsync(throughput: 1000);
