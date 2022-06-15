@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
-            Func<TResult, OpenTelemetryResponseCore> openTelemetry = null,
+            Func<TResult, OpenTelemetryAttributes> openTelemetry = null,
             TraceComponent traceComponent = TraceComponent.Transport,
             Tracing.TraceLevel traceLevel = Tracing.TraceLevel.Info)
         {
@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
-            Func<TResult, OpenTelemetryResponseCore> openTelemetry,
+            Func<TResult, OpenTelemetryAttributes> openTelemetry,
             TraceComponent traceComponent,
             Tracing.TraceLevel traceLevel)
         {
@@ -274,7 +274,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
-            Func<TResult, OpenTelemetryResponseCore> openTelemetry,
+            Func<TResult, OpenTelemetryAttributes> openTelemetry,
             TraceComponent traceComponent,
             Tracing.TraceLevel traceLevel)
         {
@@ -470,7 +470,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task<TResult> RunWithDiagnosticsHelperAsync<TResult>(
             ITrace trace,
             Func<ITrace, Task<TResult>> task,
-            Func<TResult, OpenTelemetryResponseCore> openTelemetry,
+            Func<TResult, OpenTelemetryAttributes> openTelemetry,
             string operationName)
         {
             using (OpenTelemetryCoreRecorder recorder = OpenTelemetryRecorderFactory.CreateRecorder(operationName))
@@ -481,7 +481,7 @@ namespace Microsoft.Azure.Cosmos
                     TResult result = await task(trace).ConfigureAwait(false);
                     if (openTelemetry != null && recorder.IsEnabled)
                     {
-                        OpenTelemetryResponseCore response = openTelemetry(result);
+                        OpenTelemetryAttributes response = openTelemetry(result);
                         recorder.Record(response);
                     }
 

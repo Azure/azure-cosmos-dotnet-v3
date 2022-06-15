@@ -85,6 +85,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         /// <inheritdoc/>
-        public override RequestMessage RequestMessage { get; }
+        internal override RequestMessage RequestMessage { get; }
     }
 }

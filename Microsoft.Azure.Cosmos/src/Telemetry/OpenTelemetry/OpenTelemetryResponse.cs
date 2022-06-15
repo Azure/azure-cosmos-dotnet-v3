@@ -9,9 +9,9 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Documents;
 
-    internal sealed class OpenTelemetryResponse : OpenTelemetryResponseCore
+    internal sealed class OpenTelemetryResponse : OpenTelemetryAttributes
     {
-        public OpenTelemetryResponse(ResponseMessage message)
+        internal OpenTelemetryResponse(ResponseMessage message)
         {
             this.StatusCode = message.StatusCode;
             this.RequestCharge = message.Headers?.RequestCharge;

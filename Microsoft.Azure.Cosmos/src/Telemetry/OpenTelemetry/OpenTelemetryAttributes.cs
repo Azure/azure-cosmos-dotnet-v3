@@ -9,41 +9,41 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
     using System.Net;
     using System.Text;
 
-    internal class OpenTelemetryResponseCore
+    internal class OpenTelemetryAttributes
     {
         /// <summary>
         /// StatusCode
         /// </summary>
-        public HttpStatusCode StatusCode { get; set; }
+        internal HttpStatusCode StatusCode { get; set; }
 
         /// <summary>
         /// RequestCharge
         /// </summary>
-        public double? RequestCharge { get; set; }
+        internal double? RequestCharge { get; set; }
 
         /// <summary>
         /// RequestLength
         /// </summary>
-        public string RequestContentLength { get; set; }
+        internal string RequestContentLength { get; set; }
 
         /// <summary>
         /// ResponseLength
         /// </summary>
-        public string ResponseContentLength { get; set; }
+        internal string ResponseContentLength { get; set; }
 
         /// <summary>
         /// ContainerName
         /// </summary>
-        public string ContainerName { get; set; }
+        internal string ContainerName { get; set; }
 
         /// <summary>
         /// ItemCount
         /// </summary>
-        public string ItemCount { get; set; }
+        internal string ItemCount { get; set; }
 
         /// <summary>
         /// ItemCount
         /// </summary>
-        public CosmosDiagnostics Diagnostics { get; set; }
+        internal CosmosDiagnostics Diagnostics { get; set; }
     }
 }

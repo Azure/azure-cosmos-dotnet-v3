@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override IEnumerable<T> Resource { get; }
 
-        public override RequestMessage RequestMessage { get; }
+        internal override RequestMessage RequestMessage { get; }
 
         internal static QueryResponse<TInput> CreateResponse<TInput>(
             QueryResponse cosmosQueryResponse,

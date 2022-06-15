@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             this.scope.AddAttribute(key, value);
         }
 
-        public void Record(OpenTelemetryResponseCore response)
+        public void Record(OpenTelemetryAttributes response)
         {
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, response.StatusCode);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, response.RequestContentLength);

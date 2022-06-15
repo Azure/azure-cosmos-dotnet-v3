@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public override string ETag => this.Headers?.ETag;
 
         /// <inheritdoc/>
-        public override RequestMessage RequestMessage { get; }
+        internal override RequestMessage RequestMessage { get; }
 
         /// <summary>
         /// Get <see cref="UserDefinedFunctionProperties"/> implicitly from <see cref="UserDefinedFunctionResponse"/>
