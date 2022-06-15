@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        internal override RequestMessage RequestMessage { get; }
+        public override RequestMessage RequestMessage { get; }
 
         /// <inheritdoc/>
         public override Headers Headers { get; }

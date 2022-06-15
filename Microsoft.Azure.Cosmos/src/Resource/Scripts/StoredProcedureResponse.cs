@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public virtual string SessionToken => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.SessionToken);
 
         /// <inheritdoc/>
-        internal override RequestMessage RequestMessage { get; }
+        public override RequestMessage RequestMessage { get; }
 
         /// <summary>
         /// Get <see cref="StoredProcedureProperties"/> implicitly from <see cref="StoredProcedureResponse"/>

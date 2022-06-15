@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
         public override string ETag => this.Headers?.ETag;
 
         /// <inheritdoc/>
-        internal override RequestMessage RequestMessage { get; }
+        public override RequestMessage RequestMessage { get; }
 
         /// <summary>
         /// Get <see cref="Cosmos.Container"/> implicitly from <see cref="ContainerResponse"/>
