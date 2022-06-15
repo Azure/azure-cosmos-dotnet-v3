@@ -55,13 +55,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 {
                     if (!this.cosmosObject.TryGetValue("__sys_rid", out cosmosElement))
                     {
-                        throw new InvalidOperationException($"Underlying object does not have an '_rid' or '__sys_id' field.");
+                        throw new InvalidOperationException($"Underlying object does not have an '_rid' or '__sys_rid' field.");
                     }
                 }
 
                 if (!(cosmosElement is CosmosString cosmosString))
                 {
-                    throw new InvalidOperationException($"'_rid' or '__sys_id' field was not a string.");
+                    throw new InvalidOperationException($"'_rid' or '__sys_rid' field was not a string.");
                 }
 
                 return cosmosString.Value;
