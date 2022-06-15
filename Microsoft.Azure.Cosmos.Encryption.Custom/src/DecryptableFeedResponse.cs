@@ -36,6 +36,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         // TODO: https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2750
         public override string IndexMetrics => null;
 
+        /// <summary>
+        /// Encryption package referring to preview SDK was failing due to this
+        /// </summary>
+        /// <returns></returns>
+#if PREVIEW
+        /// <inheritdoc/>
+        internal override RequestMessage RequestMessage { get; }
+#endif
         public override IEnumerator<T> GetEnumerator()
         {
             return this.Resource.GetEnumerator();
