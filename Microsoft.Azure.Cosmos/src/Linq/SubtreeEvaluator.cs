@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// </summary> 
     internal sealed class SubtreeEvaluator : ExpressionVisitor
     {
-        private HashSet<Expression> candidates;
+        private readonly HashSet<Expression> candidates;
 
         public SubtreeEvaluator(HashSet<Expression> candidates)
         {
@@ -72,10 +72,25 @@ namespace Microsoft.Azure.Cosmos.Linq
             ConstantExpression targetConstant = targetExpression as ConstantExpression;
 
             // If we have a target expression but it cannot be resolved to a constant, then we should skip
-            // using reflectoin here and instead rely on the fallback delegate compilation approach.
+            // using reflection here and instead rely on the fallback delegate compilation approach.
             if (targetExpression is not null && targetConstant is null)
             {
                 return expression;
+            }
+
+            // We need special handling for Nullable<T>.HasValue. This is because most reflection
+            // methods, including property and field accessors, pass instance arguments as object type.
+            // Nullable<T> has special runtime behavior that boxes the value of the nullable instead of the
+            // nullable struct itself. When Nullable<T>.HasValue is false, it is boxed as a null value when
+            // passed to the PropertyInfo/FieldInfo.GetValue. This causes a TargetException to be thrown since
+            // we are trying to evaluate an instance property with a null target.
+            if (targetConstant is { Value: null } &&
+                Nullable.GetUnderlyingType(targetConstant.Type) != null &&
+                memberExpression.Member is {Name: "HasValue"})
+            {
+                // So, if we're calling Nullable<T>.HasValue and targetConstant.Value is null, that means HasValue
+                // would return false. Do that here to work around reflection quirks
+                return Expression.Constant(false);
             }
 
             if (memberExpression.Member is FieldInfo fieldInfo)

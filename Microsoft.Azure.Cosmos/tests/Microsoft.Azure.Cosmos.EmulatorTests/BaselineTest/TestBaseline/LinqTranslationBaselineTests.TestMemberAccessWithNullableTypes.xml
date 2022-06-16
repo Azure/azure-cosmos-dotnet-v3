@@ -1,0 +1,50 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter on null double?]]></Description>
+      <Expression><![CDATA[query.Where(doc => (DisplayClass.nullDouble.HasValue AndAlso (Convert(doc.NumericField, Nullable`1) > DisplayClass.nullDouble)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (false AND (root["NumericField"] > null))]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter on false double?]]></Description>
+      <Expression><![CDATA[query.Where(doc => (DisplayClass.zeroDouble.HasValue AndAlso (Convert(doc.NumericField, Nullable`1) > DisplayClass.zeroDouble)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (true AND (root["NumericField"] > 0))]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter on null bool?]]></Description>
+      <Expression><![CDATA[query.Where(doc => (DisplayClass.nullBool.HasValue AndAlso (Convert(doc.BooleanField, Nullable`1) == DisplayClass.nullBool)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (false AND (root["BooleanField"] = null))]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter on false bool?]]></Description>
+      <Expression><![CDATA[query.Where(doc => (DisplayClass.zeroDouble.HasValue AndAlso (Convert(doc.BooleanField, Nullable`1) == DisplayClass.falseBool)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (true AND (root["BooleanField"] = false))]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

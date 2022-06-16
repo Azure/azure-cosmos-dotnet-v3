@@ -112,6 +112,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public List<int> EnumerableField;
             public Point Point;
             public int? NullableField;
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value false
+            public bool BooleanField;
+#pragma warning restore // Field is never assigned to, and will always have its default value false
 
             [JsonConverter(typeof(StringEnumConverter))]
             public TestEnum EnumField1;
@@ -588,7 +591,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             this.ExecuteTestSuite(inputs);
         }
 
-
         [TestMethod]
         public void TestMemberAccess()
         {
@@ -615,6 +617,28 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("Filter on Static Field value", b => getQuery(b).Where(doc => doc.NumericField == AmbientContextObject.StaticFieldAccess)),
                 new LinqTestInput("Filter on Static Property value", b => getQuery(b).Where(doc => doc.NumericField == AmbientContextObject.StaticPropertyAccess)),
                 new LinqTestInput("Filter on Const value", b => getQuery(b).Where(doc => doc.NumericField == AmbientContextObject.ConstAccess)),
+            };
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestMemberAccessWithNullableTypes()
+        {
+            List<DataObject> testData = new();
+            IOrderedQueryable<DataObject> constantQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+            Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? constantQuery : testData.AsQueryable();
+
+            double? nullDouble = null;
+            double? zeroDouble = 0;
+            bool? nullBool = null;
+            bool? falseBool = false;
+
+            List<LinqTestInput> inputs = new()
+            {
+                new LinqTestInput("Filter on null double?", b => getQuery(b).Where(doc => nullDouble.HasValue && doc.NumericField > nullDouble)),
+                new LinqTestInput("Filter on false double?", b => getQuery(b).Where(doc => zeroDouble.HasValue && doc.NumericField > zeroDouble)),
+                new LinqTestInput("Filter on null bool?", b => getQuery(b).Where(doc => nullBool.HasValue && doc.BooleanField == nullBool)),
+                new LinqTestInput("Filter on false bool?", b => getQuery(b).Where(doc => zeroDouble.HasValue && doc.BooleanField == falseBool)),
             };
             this.ExecuteTestSuite(inputs);
         }
