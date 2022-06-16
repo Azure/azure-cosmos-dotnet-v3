@@ -206,7 +206,6 @@ namespace Microsoft.Azure.Cosmos
         {
             int count = 0;
             double requestCharge = 0;
-            RequestMessage requestMessage = null;
 
             List<FeedResponse<T>> typedResponses = new List<FeedResponse<T>>();
             foreach (List<ResponseMessage> responseMessages in queryResponses)
@@ -220,10 +219,6 @@ namespace Microsoft.Azure.Cosmos
                 {
                     using (responseMessage)
                     {
-                        if (requestMessage == null)
-                        {
-                            requestMessage = responseMessage.RequestMessage;
-                        }
                         responseMessage.EnsureSuccessStatusCode();
                         FeedResponse<T> feedResponse = this.clientContext.ResponseFactory.CreateQueryFeedUserTypeResponse<T>(responseMessage);
                         count += feedResponse.Count;
@@ -246,7 +241,7 @@ namespace Microsoft.Azure.Cosmos
                                         count,
                                         headers,
                                         new CosmosTraceDiagnostics(trace),
-                                        requestMessage);
+                                        null);
         }
 
         private QueryDefinition CreateReadManyQueryDefinitionForId(List<(string, PartitionKey)> items,
