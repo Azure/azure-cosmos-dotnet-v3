@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract CosmosDiagnostics Diagnostics { get; }
 
         /// <summary>
-        /// Gets the original request message
+        /// Gets the original request message (can be NULL)
         /// </summary>
         public abstract RequestMessage RequestMessage { get; }
     }
