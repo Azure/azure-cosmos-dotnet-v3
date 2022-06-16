@@ -30,8 +30,8 @@
     <PackageReference Include="System.Reflection" Version="4.3.0" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
   </ItemGroup>
-
-
+ 
+ 
    <ItemGroup>
     <Compile Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\Utils\ConfigurationManager.cs" Link="Utils\ConfigurationManager.cs" />
   </ItemGroup>
@@ -67,6 +67,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(IsPreview)' == 'True' ">
+    <DefineConstants>$(DefineConstants);ENCRYPTIONPREVIEW</DefineConstants>
+  </PropertyGroup>
+	
   <PropertyGroup Condition=" '$(SdkProjectRef)' == 'True' ">
     <DefineConstants>$(DefineConstants);SDKPROJECTREF</DefineConstants>
   </PropertyGroup>
