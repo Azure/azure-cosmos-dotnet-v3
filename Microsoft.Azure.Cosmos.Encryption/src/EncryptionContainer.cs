@@ -934,7 +934,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 Stream encryptedPropertyValue = await EncryptionProcessor.EncryptValueStreamAsync(
                     valueStreamToEncrypt: valueParam,
                     encryptionSettingForProperty: encryptionSettingForProperty,
-                    shouldEscape: false,
+                    shouldEscape: patchOperation.Path.Split('/')[1].Equals("id"),
                     cancellationToken: cancellationToken);
 
                 propertiesEncryptedCount++;
