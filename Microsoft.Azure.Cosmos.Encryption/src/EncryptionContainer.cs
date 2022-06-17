@@ -1028,9 +1028,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     Stream valueStream = this.CosmosSerializer.ToStream(jArray[i++]);
 
                     Stream encryptedPartitionKey = await EncryptionProcessor.EncryptValueStreamAsync(
-                        valueStream,
-                        encryptionSettingForProperty,
-                        cancellationToken);
+                        valueStreamToEncrypt: valueStream,
+                        encryptionSettingForProperty: encryptionSettingForProperty,
+                        shouldEscape: false,
+                        cancellationToken: cancellationToken);
 
                     if (encryptedPartitionKey != null)
                     {
