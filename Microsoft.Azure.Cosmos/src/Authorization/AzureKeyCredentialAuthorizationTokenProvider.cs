@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Authorization
         
         // keyObject is used to check for refresh 
         private string currentKeyObject = null;
+        private AuthorizationTokenProvider authorizationTokenProvider;
 
         // Internal for unit testing
         internal AuthorizationTokenProvider authorizationTokenProvider;
@@ -48,9 +49,9 @@ namespace Microsoft.Azure.Cosmos.Authorization
         {
             if (this.authorizationTokenProvider != null)
             {
-                this.authorizationTokenProvider.Dispose();
-                this.authorizationTokenProvider = null;
-            }
+            this.authorizationTokenProvider.Dispose();
+            this.authorizationTokenProvider = null;
+        }
         }
 
         public override ValueTask<(string token, string payload)> GetUserAuthorizationAsync(
@@ -114,14 +115,14 @@ namespace Microsoft.Azure.Cosmos.Authorization
 
                         AuthorizationTokenProvider toDispose = newAuthProvider; 
                         if (!Object.ReferenceEquals(newAuthProvider, currentAuthProvider))
-                        {
+                { 
                             // NewAuthProvider =>
                             // 1. Credentials changed
                             // 2. Dispose current token provider
                             this.currentKeyObject = this.azureKeyCredential.Key;
 
                             toDispose = currentAuthProvider;
-                        }
+                }
 
                         toDispose?.Dispose();
                     }
