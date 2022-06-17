@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure;
+    using global::Azure;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
@@ -23,6 +25,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private readonly CosmosClientOptions clientOptions = new CosmosClientOptions();
         private readonly string accountEndpoint;
         private readonly string accountKey;
+        private readonly AzureKeyCredential azureKeyCredential;
         private readonly TokenCredential tokenCredential;
 
         /// <summary>
@@ -70,6 +73,48 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
             this.accountEndpoint = accountEndpoint;
             this.accountKey = authKeyOrResourceToken;
+        }
+
+        /// <summary>
+        /// Initialize a new CosmosConfiguration class that holds all the properties the CosmosClient requires.
+        /// </summary>
+        /// <param name="accountEndpoint">The Uri to the Cosmos Account. Example: https://{Cosmos Account Name}.documents.azure.com:443/ </param>
+        /// <param name="authKeyOrResourceTokenCredential">The key to the account or resource token.</param>
+        /// <example>
+        /// The example below creates a new <see cref="CosmosClientBuilder"/>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+        ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
+        ///     authKeyOrResourceTokenCredential: new AzureKeyCredential("SuperSecretKey"));
+        /// CosmosClient client = cosmosClientBuilder.Build();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <example>
+        /// The example below creates a new <see cref="CosmosClientBuilder"/> with a ConsistencyLevel and a list of preferred locations.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+        ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
+        ///     authKeyOrResourceTokenCredential: new AzureKeyCredential("SuperSecretKey"))
+        /// .WithConsistencyLevel(ConsistencyLevel.Strong)
+        /// .WithApplicationRegion("East US 2");
+        /// CosmosClient client = cosmosClientBuilder.Build();
+        /// ]]>
+        /// </code>
+        /// </example>
+        public CosmosClientBuilder(
+            string accountEndpoint,
+            AzureKeyCredential authKeyOrResourceTokenCredential)
+        {
+            if (string.IsNullOrEmpty(accountEndpoint))
+            {
+                throw new ArgumentNullException(nameof(CosmosClientBuilder.accountEndpoint));
+            }
+
+            this.accountEndpoint = accountEndpoint;
+            this.azureKeyCredential = authKeyOrResourceTokenCredential ?? throw new ArgumentNullException(nameof(authKeyOrResourceTokenCredential));
         }
 
         /// <summary>
@@ -127,9 +172,18 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public CosmosClient Build()
         {
             DefaultTrace.TraceInformation($"CosmosClientBuilder.Build with configuration: {this.clientOptions.GetSerializedConfiguration()}");
-            return this.tokenCredential == null ?
-                new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions) :
-                new CosmosClient(this.accountEndpoint, this.tokenCredential, this.clientOptions);
+
+            if (this.tokenCredential != null)
+            {
+                return new CosmosClient(this.accountEndpoint, this.tokenCredential, this.clientOptions);
+            }
+
+            if (this.azureKeyCredential != null)
+            {
+                return new CosmosClient(this.accountEndpoint, this.azureKeyCredential, this.clientOptions);
+            }
+
+            return new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions);
         }
 
         /// <summary>
@@ -142,9 +196,17 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </returns>
         public Task<CosmosClient> BuildAndInitializeAsync(IReadOnlyList<(string databaseId, string containerId)> containers, CancellationToken cancellationToken = default)
         {
-            return this.tokenCredential == null ?
-                CosmosClient.CreateAndInitializeAsync(this.accountEndpoint, this.accountKey, containers, this.clientOptions, cancellationToken) :
-                CosmosClient.CreateAndInitializeAsync(this.accountEndpoint, this.tokenCredential, containers, this.clientOptions, cancellationToken);
+            if (this.tokenCredential != null)
+            {
+                return CosmosClient.CreateAndInitializeAsync(this.accountEndpoint, this.tokenCredential, containers, this.clientOptions, cancellationToken);
+            }
+
+            if (this.azureKeyCredential != null)
+            {
+                return CosmosClient.CreateAndInitializeAsync(this.accountEndpoint, this.azureKeyCredential, containers, this.clientOptions, cancellationToken);
+            }
+
+            return CosmosClient.CreateAndInitializeAsync(this.accountEndpoint, this.accountKey, containers, this.clientOptions, cancellationToken);
         }
 
         /// <summary>
