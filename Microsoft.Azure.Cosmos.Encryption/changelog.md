@@ -3,6 +3,15 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="2.0.0"/> [2.0.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/2.0.0) - 2022-06-17
+
+#### Added
+- [#3241](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3241) Adds code to support PartitionKey and Id encryption.
+
+### <a name="2.0.0-preview"/> [2.0.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/2.0.0-preview) - 2022-06-17
+
+#### Added
+- [#3241](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3241) Adds code to support PartitionKey and Id encryption.
 
 ### <a name="1.0.1"/> [1.0.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.1) - 2022-06-01
 
