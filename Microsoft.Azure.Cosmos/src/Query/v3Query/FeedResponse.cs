@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Request Message for this feed response
         /// </summary>
-        public override RequestMessage RequestMessage { get; }
+        internal override RequestMessage RequestMessage { get; }
 
         /// <summary>
         /// Get an enumerator of the object.

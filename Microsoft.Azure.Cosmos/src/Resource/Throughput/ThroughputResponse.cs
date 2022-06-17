@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override RequestMessage RequestMessage { get; }
+        internal override RequestMessage RequestMessage { get; }
 
         /// <summary>
         /// Get <see cref="ThroughputProperties"/> implicitly from <see cref="ThroughputResponse"/>

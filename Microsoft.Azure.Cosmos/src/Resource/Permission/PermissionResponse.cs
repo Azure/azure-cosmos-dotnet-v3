@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
         public override string ETag => this.Headers?.ETag;
 
         /// <inheritdoc/>
-        public override RequestMessage RequestMessage { get; }
+        internal override RequestMessage RequestMessage { get; }
 
         /// <summary>
         /// Get <see cref="Cosmos.Permission"/> implicitly from <see cref="PermissionResponse"/>

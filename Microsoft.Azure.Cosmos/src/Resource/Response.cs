@@ -73,6 +73,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the original request message (can be NULL)
         /// </summary>
-        public abstract RequestMessage RequestMessage { get; }
+        internal virtual RequestMessage RequestMessage { get; }
+
     }
 }

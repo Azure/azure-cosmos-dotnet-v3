@@ -372,7 +372,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             public override string IndexMetrics => null;
 
-            public override RequestMessage RequestMessage => null;
+            internal override RequestMessage RequestMessage => null;
 
             public override IEnumerator<ChangeFeedProcessorState> GetEnumerator()
             {
@@ -407,7 +407,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             public override string IndexMetrics => string.Empty;
 
-            public override RequestMessage RequestMessage => null;
+            internal override RequestMessage RequestMessage => null;
 
             public override IEnumerator<ChangeFeedProcessorState> GetEnumerator()
             {

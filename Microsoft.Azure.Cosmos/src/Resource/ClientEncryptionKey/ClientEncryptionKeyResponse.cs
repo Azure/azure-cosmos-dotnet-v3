@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
         public override string ETag => this.Headers?.ETag;
 
         /// <inheritdoc/>
-        public override RequestMessage RequestMessage { get; }
+        internal override RequestMessage RequestMessage { get; }
 
         /// <summary>
         /// Get the client encryption key implicitly from an encryption key response.
