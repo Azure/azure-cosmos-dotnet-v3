@@ -329,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (shouldEscape)
             {
                 // case: id does not support '/','\','?','#'
-                return Encoding.UTF8.GetBytes(Uri.EscapeDataString(Convert.ToBase64String(cipherTextWithTypeMarker)));
+                return Uri.EscapeDataString(Convert.ToBase64String(cipherTextWithTypeMarker));
             }
 
             return cipherTextWithTypeMarker;
@@ -341,16 +341,25 @@ namespace Microsoft.Azure.Cosmos.Encryption
            bool isEscaped,
            CancellationToken cancellationToken)
         {
-            byte[] cipherTextWithTypeMarker = jToken.ToObject<byte[]>();
+            byte[] cipherTextWithTypeMarker = null;
+
+            if (isEscaped)
+            {
+                if (jToken.Type == JTokenType.Null)
+                {
+                    return null;
+                }
+
+                cipherTextWithTypeMarker = Convert.FromBase64String(Uri.UnescapeDataString(jToken.ToObject<string>()));
+            }
+            else
+            {
+                cipherTextWithTypeMarker = jToken.ToObject<byte[]>();
+            }
 
             if (cipherTextWithTypeMarker == null)
             {
                 return null;
-            }
-
-            if (isEscaped)
-            {
-                cipherTextWithTypeMarker = Convert.FromBase64String(Uri.UnescapeDataString(Encoding.UTF8.GetString(cipherTextWithTypeMarker)));
             }
 
             byte[] cipherText = new byte[cipherTextWithTypeMarker.Length - 1];

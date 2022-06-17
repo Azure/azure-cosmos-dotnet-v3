@@ -832,7 +832,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         EncryptionSettingForProperty encryptionSettingForProperty = null;
                         foreach (string path in encryptionSettings.PartitionKeyPaths)
                         {
-                            encryptionSettingForProperty = encryptionSettings.GetEncryptionSettingForProperty(path.Substring(1));
+                            string partitionKeyPath = path.Split('/')[1];
+                            encryptionSettingForProperty = encryptionSettings.GetEncryptionSettingForProperty(partitionKeyPath);
 
                             // break on first path encountered.
                             if (encryptionSettingForProperty != null)
@@ -847,10 +848,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             return;
                         }
                     }
-                    else if (encryptionSettings.GetEncryptionSettingForProperty(
-                        encryptionSettings.PartitionKeyPaths.FirstOrDefault().Substring(1)) == null)
+                    else
                     {
-                        return;
+                        string partitionKeyPath = encryptionSettings.PartitionKeyPaths.Single().Split('/')[1];
+                        if (encryptionSettings.GetEncryptionSettingForProperty(partitionKeyPath) == null)
+                        {
+                            return;
+                        }
                     }
                 }
 
@@ -1016,8 +1020,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 // partitionKeyBuilder expects the paths and values to be in same order.
                 foreach (string path in encryptionSettings.PartitionKeyPaths)
                 {
+                    // case: partition key path is /a/b/c and the client encryption policy has /a in path.
+                    // hence encrypt the partition key value with using its top level path /a since /c would have been encrypted in the document using /a's policy.
+                    string partitionKeyPath = path.Split('/')[1];
+
                     encryptionSettingForProperty = encryptionSettings.GetEncryptionSettingForProperty(
-                        path.Substring(1));
+                        partitionKeyPath);
 
                     if (encryptionSettingForProperty == null)
                     {
@@ -1030,7 +1038,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     Stream encryptedPartitionKey = await EncryptionProcessor.EncryptValueStreamAsync(
                         valueStreamToEncrypt: valueStream,
                         encryptionSettingForProperty: encryptionSettingForProperty,
-                        shouldEscape: path.Substring(1).Equals("id"),
+                        shouldEscape: partitionKeyPath.Equals("id"),
                         cancellationToken: cancellationToken);
 
                     if (encryptedPartitionKey != null)
@@ -1052,8 +1060,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             else
 #endif
             {
+                string partitionKeyPath = encryptionSettings.PartitionKeyPaths.Single().Split('/')[1];
                 encryptionSettingForProperty = encryptionSettings.GetEncryptionSettingForProperty(
-                    encryptionSettings.PartitionKeyPaths.FirstOrDefault().Substring(1));
+                    partitionKeyPath);
 
                 if (encryptionSettingForProperty == null)
                 {
@@ -1065,7 +1074,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 Stream encryptedPartitionKey = await EncryptionProcessor.EncryptValueStreamAsync(
                     valueStreamToEncrypt: valueStream,
                     encryptionSettingForProperty: encryptionSettingForProperty,
-                    shouldEscape: encryptionSettings.PartitionKeyPaths.FirstOrDefault().Substring(1).Equals("id"),
+                    shouldEscape: partitionKeyPath.Equals("id"),
                     cancellationToken: cancellationToken);
 
                 string encryptedPK = null;
