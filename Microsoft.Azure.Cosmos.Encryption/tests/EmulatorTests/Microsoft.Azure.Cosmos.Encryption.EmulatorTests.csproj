@@ -67,7 +67,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(IsPreview)' == 'True' ">
+  <PropertyGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' == 'True' ">
     <DefineConstants>$(DefineConstants);ENCRYPTIONPREVIEW</DefineConstants>
   </PropertyGroup>
 	

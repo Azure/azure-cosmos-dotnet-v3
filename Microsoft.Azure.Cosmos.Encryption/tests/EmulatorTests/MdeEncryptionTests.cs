@@ -2223,7 +2223,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, readResponse.Resource);
 
-#if ENCRYPTIONPREVIEW
+#if SDKPROJECTREF
             // hierarchical
             cepWithPKIdPath1 = new ClientEncryptionIncludedPath()
             {
