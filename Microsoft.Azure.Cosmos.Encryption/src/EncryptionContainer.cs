@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 .GetAwaiter()
                 .GetResult();
 
-            partitionKey = this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(partitionKey, encryptionSettings, default)
+            partitionKey = this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(partitionKey: partitionKey, encryptionSettings: encryptionSettings, cancellationToken: default)
                 .ConfigureAwait(false)
                 .GetAwaiter()
                 .GetResult();
@@ -820,16 +820,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
             bool isPartitionKeyMismatch = string.Equals(subStatusCode, Constants.PartitionKeyMismatch);
             bool isContainerRidIncorrect = string.Equals(subStatusCode, Constants.IncorrectContainerRidSubStatus);
 
+            // if the partition key check is done before container rid check.
             if (responseMessage.StatusCode == HttpStatusCode.BadRequest && (isContainerRidIncorrect || isPartitionKeyMismatch))
             {
-                // if it was due to partition key mismatch, just check if it was part of client encryption policy, if not we don't
-                // have to refresh the encryption settings.
-                if (isPartitionKeyMismatch)
+                // The below code avoids unneccessary force refresh of encryption settings if wrong partition key was passed and the PartitionKeyMismatch was not
+                // due to us not encrypting the partition key because of incorrect cached policy.
+                if (isPartitionKeyMismatch && encryptionSettings.PartitionKeyPaths.Any())
                 {
-                    if (encryptionSettings.PartitionKeyPath.Count > 1)
+                    if (encryptionSettings.PartitionKeyPaths.Count > 1)
                     {
                         EncryptionSettingForProperty encryptionSettingForProperty = null;
-                        foreach (string path in encryptionSettings.PartitionKeyPath)
+                        foreach (string path in encryptionSettings.PartitionKeyPaths)
                         {
                             encryptionSettingForProperty = encryptionSettings.GetEncryptionSettingForProperty(path.Substring(1));
 
@@ -847,7 +848,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         }
                     }
                     else if (encryptionSettings.GetEncryptionSettingForProperty(
-                        encryptionSettings.PartitionKeyPath.FirstOrDefault().Substring(1)) == null)
+                        encryptionSettings.PartitionKeyPaths.FirstOrDefault().Substring(1)) == null)
                     {
                         return;
                     }
@@ -855,7 +856,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 string currentContainerRid = encryptionSettings.ContainerRidValue;
 
-                // either case we cannot be sure if PartitionKeyMismatch was due us using an invalid setting or we did not encrypt it.
+                // either way we cannot be sure if PartitionKeyMismatch was to due us using an invalid setting or we did not encrypt it.
                 // get the latest encryption settings.
                 EncryptionSettings updatedEncryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
                     obsoleteEncryptionSettings: encryptionSettings,
@@ -865,7 +866,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 // gets returned back due to PartitionKeyMismatch.(in case of batch looks like the container rid check gets done first)
                 // if the container was not recreated, so policy has not changed, just return the original response.
-                if (string.Equals(currentContainerRid, containerRidPostSettingsUpdate))
+                if (currentContainerRid == containerRidPostSettingsUpdate)
                 {
                     return;
                 }
@@ -911,11 +912,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
 
                 // get the top level path's encryption setting.
-                EncryptionSettingForProperty settingforProperty = encryptionSettings.GetEncryptionSettingForProperty(
+                EncryptionSettingForProperty encryptionSettingForProperty = encryptionSettings.GetEncryptionSettingForProperty(
                     patchOperation.Path.Split('/')[1]);
 
                 // non-encrypted path
-                if (settingforProperty == null)
+                if (encryptionSettingForProperty == null)
                 {
                     encryptedPatchOperations.Add(patchOperation);
                     continue;
@@ -931,9 +932,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
 
                 Stream encryptedPropertyValue = await EncryptionProcessor.EncryptValueStreamAsync(
-                    valueParam,
-                    settingforProperty,
-                    cancellationToken);
+                    valueStreamToEncrypt: valueParam,
+                    encryptionSettingForProperty: encryptionSettingForProperty,
+                    shouldEscape: false,
+                    cancellationToken: cancellationToken);
 
                 propertiesEncryptedCount++;
 
@@ -980,40 +982,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Stream valueStream = this.CosmosSerializer.ToStream(id);
 
             Stream encryptedIdStream = await EncryptionProcessor.EncryptValueStreamAsync(
-                valueStream,
-                encryptionSettingForProperty,
-                cancellationToken);
-
-            string encryptedId = null;
+                valueStreamToEncrypt: valueStream,
+                encryptionSettingForProperty: encryptionSettingForProperty,
+                shouldEscape: true,
+                cancellationToken: cancellationToken);
             using (StreamReader reader = new StreamReader(encryptedIdStream))
             {
-                encryptedId = await reader.ReadToEndAsync();
+                string encryptedId = await reader.ReadToEndAsync();
+                return JToken.Parse(encryptedId).ToString();
             }
-
-            byte[] plainTextBytes = Encoding.UTF8.GetBytes(JToken.Parse(encryptedId).ToString());
-
-            // id does not support '/','\','?','#'
-            return Uri.EscapeDataString(Convert.ToBase64String(plainTextBytes));
         }
 
-        /// <summary>
-        /// Returns a cloned copy of the passed RequestOptions if passed else creates a new ItemRequestOptions.
-        /// </summary>
-        /// <param name="itemRequestOptions"> Original ItemRequestOptions.</param>
-        /// <returns> ItemRequestOptions.</returns>
-        private static ItemRequestOptions EncryptionContainerGetClonedItemRequestOptions(ItemRequestOptions itemRequestOptions)
-        {
-            ItemRequestOptions clonedRequestOptions = itemRequestOptions != null ? (ItemRequestOptions)itemRequestOptions.ShallowCopy() : new ItemRequestOptions();
-
-            return clonedRequestOptions;
-        }
-
-        private async Task<PartitionKey> CheckIfPkIsEncryptedAndGetEncryptedPkAsync(
+        internal async Task<PartitionKey> CheckIfPkIsEncryptedAndGetEncryptedPkAsync(
             PartitionKey partitionKey,
             EncryptionSettings encryptionSettings,
             CancellationToken cancellationToken)
         {
-            if (!encryptionSettings.PropertiesToEncrypt.Any() || partitionKey == null || (partitionKey != null && (partitionKey == PartitionKey.None || partitionKey == PartitionKey.Null)))
+            if (!encryptionSettings.PartitionKeyPaths.Any() || !encryptionSettings.PropertiesToEncrypt.Any() || partitionKey == null || (partitionKey != null && (partitionKey == PartitionKey.None || partitionKey == PartitionKey.Null)))
             {
                 return partitionKey;
             }
@@ -1029,7 +1014,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 PartitionKeyBuilder partitionKeyBuilder = new PartitionKeyBuilder();
 
                 // partitionKeyBuilder expects the paths and values to be in same order.
-                foreach (string path in encryptionSettings.PartitionKeyPath)
+                foreach (string path in encryptionSettings.PartitionKeyPaths)
                 {
                     encryptionSettingForProperty = encryptionSettings.GetEncryptionSettingForProperty(
                         path.Substring(1));
@@ -1067,7 +1052,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 #endif
             {
                 encryptionSettingForProperty = encryptionSettings.GetEncryptionSettingForProperty(
-                    encryptionSettings.PartitionKeyPath.FirstOrDefault().Substring(1));
+                    encryptionSettings.PartitionKeyPaths.FirstOrDefault().Substring(1));
 
                 if (encryptionSettingForProperty == null)
                 {
@@ -1077,9 +1062,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 Stream valueStream = this.CosmosSerializer.ToStream((JToken)jArray[0]);
 
                 Stream encryptedPartitionKey = await EncryptionProcessor.EncryptValueStreamAsync(
-                    valueStream,
-                    encryptionSettingForProperty,
-                    cancellationToken);
+                    valueStreamToEncrypt: valueStream,
+                    encryptionSettingForProperty: encryptionSettingForProperty,
+                    shouldEscape: false,
+                    cancellationToken: cancellationToken);
 
                 string encryptedPK = null;
                 using (StreamReader reader = new StreamReader(encryptedPartitionKey))
@@ -1091,6 +1077,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 return new PartitionKey(encryptedKey.ToString());
             }
+        }
+
+        /// <summary>
+        /// Returns a cloned copy of the passed RequestOptions if passed else creates a new ItemRequestOptions.
+        /// </summary>
+        /// <param name="itemRequestOptions"> Original ItemRequestOptions.</param>
+        /// <returns> ItemRequestOptions.</returns>
+        private static ItemRequestOptions EncryptionContainerGetClonedItemRequestOptions(ItemRequestOptions itemRequestOptions)
+        {
+            ItemRequestOptions clonedRequestOptions = itemRequestOptions != null ? (ItemRequestOptions)itemRequestOptions.ShallowCopy() : new ItemRequestOptions();
+
+            return clonedRequestOptions;
         }
 
         private async Task<ResponseMessage> CreateItemHelperAsync(

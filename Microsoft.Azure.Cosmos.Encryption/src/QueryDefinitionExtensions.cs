@@ -97,16 +97,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
 
                 Stream valueStream = encryptionContainer.CosmosSerializer.ToStream(value);
-                Stream encryptedValueStream = await EncryptionProcessor.EncryptValueStreamAsync(valueStream, settingsForProperty, cancellationToken);
 
-                if (path.Substring(1).Equals("id"))
-                {
-                    byte[] encryptedBytes = Encoding.UTF8.GetBytes(EncryptionProcessor.BaseSerializer.FromStream<string>(encryptedValueStream));
-
-                    // id does not support '/','\','?','#'
-                    string encryptedId = Uri.EscapeDataString(Convert.ToBase64String(encryptedBytes));
-                    encryptedValueStream = EncryptionProcessor.BaseSerializer.ToStream(encryptedId);
-                }
+                Stream encryptedValueStream = await EncryptionProcessor.EncryptValueStreamAsync(
+                    valueStream,
+                    settingsForProperty,
+                    path.Substring(1).Equals("id"),
+                    cancellationToken);
 
                 queryDefinitionwithEncryptedValues.WithParameterStream(name, encryptedValueStream);
 

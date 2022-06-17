@@ -19,14 +19,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private EncryptionSettings(string containerRidValue, IReadOnlyList<string> partitionKeyPath)
         {
             this.ContainerRidValue = containerRidValue;
-            this.PartitionKeyPath = partitionKeyPath;
+            this.PartitionKeyPaths = partitionKeyPath;
             this.encryptionSettingsDictByPropertyName = new Dictionary<string, EncryptionSettingForProperty>();
             this.PropertiesToEncrypt = this.encryptionSettingsDictByPropertyName.Keys;
         }
 
         public string ContainerRidValue { get; }
 
-        public IReadOnlyList<string> PartitionKeyPath { get; }
+        public IReadOnlyList<string> PartitionKeyPaths { get; }
 
         public IEnumerable<string> PropertiesToEncrypt { get; }
 

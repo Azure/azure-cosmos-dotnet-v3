@@ -78,20 +78,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 await EncryptJTokenAsync(
                     propertyToEncrypt.Value,
                     settingforProperty,
+                    propertyName.Equals("id"),
                     cancellationToken);
-
-                if (propertyName.Equals("id"))
-                {
-                    if (propertyToEncrypt.Value.Type == JTokenType.Null)
-                    {
-                        continue;
-                    }
-
-                    byte[] encryptedBytes = Encoding.UTF8.GetBytes((string)itemJObj["id"]);
-
-                    // id does not support '/','\','?','#'
-                    itemJObj["id"] = Uri.EscapeDataString(Convert.ToBase64String(encryptedBytes));
-                }
 
                 propertiesEncryptedCount++;
             }
@@ -194,30 +182,40 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         internal static async Task<Stream> EncryptValueStreamAsync(
-            Stream valueStream,
-            EncryptionSettingForProperty settingsForProperty,
+            Stream valueStreamToEncrypt,
+            EncryptionSettingForProperty encryptionSettingForProperty,
+            bool shouldEscape,
             CancellationToken cancellationToken)
         {
-            if (valueStream == null)
+            if (valueStreamToEncrypt == null)
             {
-                throw new ArgumentNullException(nameof(valueStream));
+                throw new ArgumentNullException(nameof(valueStreamToEncrypt));
             }
 
-            if (settingsForProperty == null)
+            if (encryptionSettingForProperty == null)
             {
-                throw new ArgumentNullException(nameof(settingsForProperty));
+                throw new ArgumentNullException(nameof(encryptionSettingForProperty));
             }
 
-            JToken propertyValueToEncrypt = EncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);
+            JToken propertyValueToEncrypt = EncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStreamToEncrypt);
 
             JToken encryptedPropertyValue = propertyValueToEncrypt;
+
             if (propertyValueToEncrypt.Type == JTokenType.Object || propertyValueToEncrypt.Type == JTokenType.Array)
             {
-                await EncryptJTokenAsync(encryptedPropertyValue, settingsForProperty, cancellationToken);
+                await EncryptJTokenAsync(
+                    jTokenToEncrypt: encryptedPropertyValue,
+                    encryptionSettingForProperty: encryptionSettingForProperty,
+                    shouldEscape: shouldEscape,
+                    cancellationToken: cancellationToken);
             }
             else
             {
-                encryptedPropertyValue = await SerializeAndEncryptValueAsync(propertyValueToEncrypt, settingsForProperty, cancellationToken);
+                encryptedPropertyValue = await SerializeAndEncryptValueAsync(
+                    jTokenToEncrypt: propertyValueToEncrypt,
+                    encryptionSettingForProperty: encryptionSettingForProperty,
+                    shouldEscape: shouldEscape,
+                    cancellationToken: cancellationToken);
             }
 
             return EncryptionProcessor.BaseSerializer.ToStream(encryptedPropertyValue);
@@ -252,6 +250,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private static async Task EncryptJTokenAsync(
            JToken jTokenToEncrypt,
            EncryptionSettingForProperty encryptionSettingForProperty,
+           bool shouldEscape,
            CancellationToken cancellationToken)
         {
             // Top Level can be an Object
@@ -262,6 +261,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     await EncryptJTokenAsync(
                         jProperty.Value,
                         encryptionSettingForProperty,
+                        shouldEscape,
                         cancellationToken);
                 }
             }
@@ -274,28 +274,42 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         await EncryptJTokenAsync(
                             jTokenToEncrypt[i],
                             encryptionSettingForProperty,
+                            shouldEscape,
                             cancellationToken);
                     }
                 }
             }
             else
             {
-                jTokenToEncrypt.Replace(await SerializeAndEncryptValueAsync(jTokenToEncrypt, encryptionSettingForProperty, cancellationToken));
+                jTokenToEncrypt.Replace(await SerializeAndEncryptValueAsync(
+                    jTokenToEncrypt,
+                    encryptionSettingForProperty,
+                    shouldEscape,
+                    cancellationToken));
             }
 
             return;
         }
 
         private static async Task<JToken> SerializeAndEncryptValueAsync(
-           JToken jToken,
+           JToken jTokenToEncrypt,
            EncryptionSettingForProperty encryptionSettingForProperty,
+           bool shouldEscape,
            CancellationToken cancellationToken)
         {
-            JToken propertyValueToEncrypt = jToken;
+            JToken propertyValueToEncrypt = jTokenToEncrypt;
 
             if (propertyValueToEncrypt.Type == JTokenType.Null)
             {
                 return propertyValueToEncrypt;
+            }
+
+            if (shouldEscape)
+            {
+                if (jTokenToEncrypt.Type != JTokenType.String)
+                {
+                    throw new ArgumentException("Unsupported argument type. The value to escape has to be string type. Please refer to https://aka.ms/CosmosClientEncryption for more details.");
+                }
             }
 
             (TypeMarker typeMarker, byte[] plainText) = Serialize(propertyValueToEncrypt);
@@ -311,12 +325,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
             byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
             cipherTextWithTypeMarker[0] = (byte)typeMarker;
             Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
+
+            if (shouldEscape)
+            {
+                // case: id does not support '/','\','?','#'
+                return Encoding.UTF8.GetBytes(Uri.EscapeDataString(Convert.ToBase64String(cipherTextWithTypeMarker)));
+            }
+
             return cipherTextWithTypeMarker;
         }
 
         private static async Task<JToken> DecryptAndDeserializeValueAsync(
            JToken jToken,
            EncryptionSettingForProperty encryptionSettingForProperty,
+           bool isEscaped,
            CancellationToken cancellationToken)
         {
             byte[] cipherTextWithTypeMarker = jToken.ToObject<byte[]>();
@@ -324,6 +346,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (cipherTextWithTypeMarker == null)
             {
                 return null;
+            }
+
+            if (isEscaped)
+            {
+                cipherTextWithTypeMarker = Convert.FromBase64String(Uri.UnescapeDataString(Encoding.UTF8.GetString(cipherTextWithTypeMarker)));
             }
 
             byte[] cipherText = new byte[cipherTextWithTypeMarker.Length - 1];
@@ -345,6 +372,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private static async Task DecryptJTokenAsync(
             JToken jTokenToDecrypt,
             EncryptionSettingForProperty encryptionSettingForProperty,
+            bool isEscaped,
             CancellationToken cancellationToken)
         {
             if (jTokenToDecrypt.Type == JTokenType.Object)
@@ -354,6 +382,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     await DecryptJTokenAsync(
                         jProperty.Value,
                         encryptionSettingForProperty,
+                        isEscaped,
                         cancellationToken);
                 }
             }
@@ -366,6 +395,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         await DecryptJTokenAsync(
                             jTokenToDecrypt[i],
                             encryptionSettingForProperty,
+                            isEscaped,
                             cancellationToken);
                     }
                 }
@@ -375,6 +405,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 jTokenToDecrypt.Replace(await DecryptAndDeserializeValueAsync(
                     jTokenToDecrypt,
                     encryptionSettingForProperty,
+                    isEscaped,
                     cancellationToken));
             }
         }
@@ -387,11 +418,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             int propertiesDecryptedCount = 0;
             foreach (string propertyName in encryptionSettings.PropertiesToEncrypt)
             {
-                if (propertyName.Equals("id") && document.Property(propertyName) != null)
-                {
-                    document["id"] = Encoding.UTF8.GetString(Convert.FromBase64String(Uri.UnescapeDataString((string)document[propertyName])));
-                }
-
                 JProperty propertyToDecrypt = document.Property(propertyName);
                 if (propertyToDecrypt != null)
                 {
@@ -405,6 +431,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     await DecryptJTokenAsync(
                         propertyToDecrypt.Value,
                         settingsForProperty,
+                        propertyName.Equals("id"),
                         cancellationToken);
 
                     propertiesDecryptedCount++;
