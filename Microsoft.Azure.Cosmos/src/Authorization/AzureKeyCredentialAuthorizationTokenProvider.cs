@@ -49,9 +49,9 @@ namespace Microsoft.Azure.Cosmos.Authorization
         {
             if (this.authorizationTokenProvider != null)
             {
-            this.authorizationTokenProvider.Dispose();
-            this.authorizationTokenProvider = null;
-        }
+                this.authorizationTokenProvider.Dispose();
+                this.authorizationTokenProvider = null;
+            }
         }
 
         public override ValueTask<(string token, string payload)> GetUserAuthorizationAsync(
