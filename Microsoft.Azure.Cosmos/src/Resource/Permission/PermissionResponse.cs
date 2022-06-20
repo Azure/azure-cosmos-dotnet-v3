@@ -28,13 +28,15 @@ namespace Microsoft.Azure.Cosmos
             Headers headers,
             PermissionProperties permissionProperties,
             Permission permission,
-            CosmosDiagnostics diagnostics)
+            CosmosDiagnostics diagnostics,
+            RequestMessage requestMessage)
         {
             this.StatusCode = httpStatusCode;
             this.Headers = headers;
             this.Resource = permissionProperties;
             this.Permission = permission;
             this.Diagnostics = diagnostics;
+            this.RequestMessage = requestMessage;
         }
 
         /// <summary>
@@ -63,6 +65,9 @@ namespace Microsoft.Azure.Cosmos
 
         /// <inheritdoc/>
         public override string ETag => this.Headers?.ETag;
+
+        /// <inheritdoc/>
+        internal override RequestMessage RequestMessage { get; }
 
         /// <summary>
         /// Get <see cref="Cosmos.Permission"/> implicitly from <see cref="PermissionResponse"/>
