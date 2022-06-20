@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly AuthorizationTokenProvider cosmosAuthorization;
         private readonly CosmosHttpClient httpClient;
         private readonly Uri serviceEndpoint;
-        private CancellationToken cancellationToken;
+        private readonly CancellationToken cancellationToken;
 
         // Backlog: Auth abstractions are spilling through. 4 arguments for this CTOR are result of it.
         public GatewayAccountReader(Uri serviceEndpoint,

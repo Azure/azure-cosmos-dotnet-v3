@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos
         //SessionContainer.
         internal ISessionContainer sessionContainer;
 
-        private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
         private AsyncLazy<QueryPartitionProvider> queryPartitionProvider;
 
@@ -1205,7 +1205,7 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            if (this.cancellationTokenSource != null && !this.cancellationTokenSource.IsCancellationRequested)
+            if (!this.cancellationTokenSource.IsCancellationRequested)
             {
                 this.cancellationTokenSource.Cancel();
             }
