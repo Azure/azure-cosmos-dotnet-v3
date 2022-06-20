@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Globalization;
     using System.Net.Http;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
@@ -21,17 +22,20 @@ namespace Microsoft.Azure.Cosmos
         private readonly AuthorizationTokenProvider cosmosAuthorization;
         private readonly CosmosHttpClient httpClient;
         private readonly Uri serviceEndpoint;
+        private CancellationToken cancellationToken;
 
         // Backlog: Auth abstractions are spilling through. 4 arguments for this CTOR are result of it.
         public GatewayAccountReader(Uri serviceEndpoint,
                 AuthorizationTokenProvider cosmosAuthorization,
                 ConnectionPolicy connectionPolicy,
-                CosmosHttpClient httpClient)
+                CosmosHttpClient httpClient,
+                CancellationToken cancellationToken = default)
         {
             this.httpClient = httpClient;
             this.serviceEndpoint = serviceEndpoint;
             this.cosmosAuthorization = cosmosAuthorization ?? throw new ArgumentNullException(nameof(AuthorizationTokenProvider));
             this.connectionPolicy = connectionPolicy;
+            this.cancellationToken = cancellationToken;
         }
 
         private async Task<AccountProperties> GetDatabaseAccountAsync(Uri serviceEndpoint)
@@ -52,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
                     resourceType: ResourceType.DatabaseAccount,
                     timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
                     clientSideRequestStatistics: stats,
-                    cancellationToken: default))
+                    cancellationToken: this.cancellationToken))
                 {
                     using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                     {
@@ -84,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
                 defaultEndpoint: this.serviceEndpoint,
                 locations: this.connectionPolicy.PreferredLocations,
                 getDatabaseAccountFn: this.GetDatabaseAccountAsync,
-                cancellationToken: default);
+                cancellationToken: this.cancellationToken);
 
             return databaseAccount;
         }

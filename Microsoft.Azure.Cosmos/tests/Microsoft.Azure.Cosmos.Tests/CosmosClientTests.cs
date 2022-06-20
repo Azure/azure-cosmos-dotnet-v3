@@ -245,7 +245,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     errors.Add(message);
                 }
-               
             }
 
             DefaultTrace.TraceSource.Listeners.Add(new TestTraceListener { Callback = TraceHandler });
@@ -258,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             string assertMsg = "";
 
-            foreach(string s in errors)
+            foreach (string s in errors)
             {
                 assertMsg += s + "\n";
             }
