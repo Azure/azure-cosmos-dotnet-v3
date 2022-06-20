@@ -28,13 +28,15 @@ namespace Microsoft.Azure.Cosmos
             Headers headers,
             DatabaseProperties databaseProperties,
             Database database,
-            CosmosDiagnostics diagnostics)
+            CosmosDiagnostics diagnostics,
+            RequestMessage requestMessage)
         {
             this.StatusCode = httpStatusCode;
             this.Headers = headers;
             this.Resource = databaseProperties;
             this.Database = database;
             this.Diagnostics = diagnostics;
+            this.RequestMessage = requestMessage;   
         }
 
         /// <summary>
@@ -63,6 +65,9 @@ namespace Microsoft.Azure.Cosmos
 
         /// <inheritdoc/>
         public override string ETag => this.Headers?.ETag;
+
+        /// <inheritdoc/>
+        internal override RequestMessage RequestMessage { get; }
 
         /// <summary>
         /// Get <see cref="Cosmos.Database"/> implicitly from <see cref="DatabaseResponse"/>

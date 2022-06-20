@@ -47,7 +47,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 {
                     do
                     {
-                        ResponseMessage response = await this.resultSetIterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
+                        Task<ResponseMessage> task = this.resultSetIterator.ReadNextAsync(cancellationToken);
+                        
+                        if (!ReferenceEquals(await Task.WhenAny(task, Task.Delay(this.options.RequestTimeout)), task))
+                        {
+                            Task catchExceptionFromTask = task.ContinueWith(task => DefaultTrace.TraceInformation(
+                            "Timed out Change Feed request failed with exception: {2}", task.Exception.InnerException),
+                            TaskContinuationOptions.OnlyOnFaulted);
+                            throw CosmosExceptionFactory.CreateRequestTimeoutException("Change Feed request timed out", new Headers());
+                        }
+
+                        ResponseMessage response = await task;
+
                         if (response.StatusCode != HttpStatusCode.NotModified && !response.IsSuccessStatusCode)
                         {
                             DefaultTrace.TraceWarning("unsuccessful feed read: lease token '{0}' status code {1}. substatuscode {2}", this.options.LeaseToken, response.StatusCode, response.Headers.SubStatusCode);
