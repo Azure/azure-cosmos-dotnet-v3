@@ -66,12 +66,8 @@
     <PlatformTarget>x64</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' == 'True' ">
-    <DefineConstants>$(DefineConstants);ENCRYPTIONPREVIEW</DefineConstants>
-  </PropertyGroup>
 	
-  <PropertyGroup Condition=" '$(SdkProjectRef)' == 'True' ">
+  <PropertyGroup Condition=" '$(SdkProjectRef)' == 'True'">
     <DefineConstants>$(DefineConstants);SDKPROJECTREF</DefineConstants>
   </PropertyGroup>
 </Project>
