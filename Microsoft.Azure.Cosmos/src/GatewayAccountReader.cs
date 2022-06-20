@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     trace.AddDatum("Client Side Request Stats", stats);
                     throw CosmosExceptionFactory.CreateRequestTimeoutException(
-                                                message: ex.Data?["Message"].ToString(),
+                                                message: ex.Message,
                                                 headers: new Headers()
                                                 {
                                                     ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString()
