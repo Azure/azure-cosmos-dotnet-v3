@@ -45,10 +45,10 @@
           ],
           "MethodInfo": "T Previous;CanRead:True;CanWrite:True;T get_Previous();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Previous(T);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void .ctor(T, Microsoft.Azure.Cosmos.ChangeFeedMetadata, T)": {
+        "Void .ctor()": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "[Void .ctor(T, Microsoft.Azure.Cosmos.ChangeFeedMetadata, T), Void .ctor(T, Microsoft.Azure.Cosmos.ChangeFeedMetadata, T)]"
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
         },
         "Void set_Current(T)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
