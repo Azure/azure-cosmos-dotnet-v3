@@ -329,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (shouldEscape)
             {
                 // case: id does not support '/','\','?','#'
-                return Uri.EscapeDataString(Convert.ToBase64String(cipherTextWithTypeMarker));
+                return Convert.ToBase64String(cipherTextWithTypeMarker).Replace("/", "-");
             }
 
             return cipherTextWithTypeMarker;
@@ -350,7 +350,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     return null;
                 }
 
-                cipherTextWithTypeMarker = Convert.FromBase64String(Uri.UnescapeDataString(jToken.ToObject<string>()));
+                cipherTextWithTypeMarker = Convert.FromBase64String(jToken.ToObject<string>().Replace("-", "/"));
             }
             else
             {
