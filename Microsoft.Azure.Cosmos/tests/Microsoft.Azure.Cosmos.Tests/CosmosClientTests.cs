@@ -255,14 +255,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 using CosmosClient cosmos = new(ConnectionString);
             }
 
-            string assertMsg = "";
+            string assertMsg = string.Empty;
 
             foreach (string s in errors)
             {
-                assertMsg += s + "\n";
+                assertMsg += s + Environment.NewLine;
             }
 
-            Assert.AreEqual(0, errors.Count, $"\nErrors found in trace:\n{assertMsg}");
+            Assert.AreEqual(0, errors.Count, $"{Environment.NewLine}Errors found in trace:{Environment.NewLine}{assertMsg}");
         }
 
         private class TestTraceListener : TraceListener
