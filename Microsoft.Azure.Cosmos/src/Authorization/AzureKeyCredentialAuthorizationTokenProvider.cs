@@ -23,9 +23,6 @@ namespace Microsoft.Azure.Cosmos.Authorization
         // Internal for unit testing
         internal AuthorizationTokenProvider authorizationTokenProvider;
 
-        // Internal for unit testing
-        internal AuthorizationTokenProvider authorizationTokenProvider;
-
         public AzureKeyCredentialAuthorizationTokenProvider(
                 AzureKeyCredential azureKeyCredential)
         {
@@ -124,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Authorization
                             this.currentKeyObject = this.azureKeyCredential.Key;
 
                             toDispose = currentAuthProvider;
-                }
+                        }
 
                         toDispose?.Dispose();
                     }
