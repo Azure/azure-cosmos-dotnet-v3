@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Authorization
 
                         AuthorizationTokenProvider toDispose = newAuthProvider; 
                         if (!Object.ReferenceEquals(newAuthProvider, currentAuthProvider))
-                { 
+                        {
                             // NewAuthProvider =>
                             // 1. Credentials changed
                             // 2. Dispose current token provider
