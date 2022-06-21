@@ -24,6 +24,11 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public static string GetMemberName(this MemberInfo memberInfo, CosmosLinqSerializerOptions linqSerializerOptions = null)
         {
+            if (linqSerializerOptions.CustomPropertyNamingHandler != null)
+            {
+                return linqSerializerOptions.CustomPropertyNamingHandler(memberInfo);
+            }
+            
             string memberName = null;
             // Json.Net honors JsonPropertyAttribute more than DataMemberAttribute
             // So we check for JsonPropertyAttribute first.

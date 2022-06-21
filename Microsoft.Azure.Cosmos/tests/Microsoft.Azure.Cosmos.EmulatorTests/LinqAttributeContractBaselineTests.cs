@@ -17,6 +17,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
     using System.Threading.Tasks;
+    using System.Text.Json.Serialization;
+    using System.Reflection;
 
     /// <summary>
     /// Class that tests to see that we honor the attributes for members in a class / struct when we create LINQ queries.
@@ -116,6 +118,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public string DataMember;
 
             /// <summary>
+            /// Member of the Datum class that has a JsonPropertyName attribute.
+            /// </summary>
+            [JsonPropertyName("jsonPropertyName")]
+            public string JsonPropertyName;
+
+            /// <summary>
             /// Member of the Datum class that has no attributes.
             /// </summary>
             [JsonProperty]
@@ -175,6 +183,29 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Assert.AreEqual("dataMember", TypeSystem.GetMemberName(typeof(Datum).GetMember("DataMember").First()));
             Assert.AreEqual("Default", TypeSystem.GetMemberName(typeof(Datum).GetMember("Default").First()));
             Assert.AreEqual("jsonPropertyHasHigherPriority", TypeSystem.GetMemberName(typeof(Datum).GetMember("JsonPropertyAndDataMember").First()));
+        }
+
+        /// <summary>
+        /// With CustomPropertyNamingHandler getting property name from JsonPropertyNameAttribute
+        /// </summary>
+        [TestMethod]
+        public void TestAttributeWithCosmosLinqSerializerOptions()
+        {
+            var option = new CosmosLinqSerializerOptions
+            {
+                CustomPropertyNamingHandler = (memberInfo) =>
+                {
+                    var attr = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(true);
+                    if (attr != null && !string.IsNullOrEmpty(attr.Name))
+                    {
+                        return attr.Name;
+                    }
+
+                    // Use the Property name
+                    return memberInfo.Name;
+                }
+            };
+            Assert.AreEqual("jsonPropertyName", TypeSystem.GetMemberName(typeof(Datum).GetMember("JsonPropertyName").First(), option));
         }
 
         /// <summary>
