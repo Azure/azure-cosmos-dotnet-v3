@@ -100,25 +100,25 @@ namespace Microsoft.Azure.Cosmos.Authorization
 
         private void CheckAndRefreshTokenProvider()
         {
-            if (!object.ReferenceEquals(this.currentKeyObject, this.azureKeyCredential.Key))
+            if (!Object.ReferenceEquals(this.currentKeyObject, this.azureKeyCredential.Key))
             {
                 // Change is immediate for all new reqeust flows (pure compute work and should be very very quick)
                 // With-out lock possibility of concurrent updates (== #inflight reqeust's) but eventually only one will win
                 lock (this.refreshLock)
                 {
                     // Process only if the authProvider is not yet exchanged
-                    if (!object.ReferenceEquals(this.currentKeyObject, this.azureKeyCredential.Key))
+                    if (!Object.ReferenceEquals(this.currentKeyObject, this.azureKeyCredential.Key))
                     {
                         AuthorizationTokenProvider newAuthProvider = AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(this.azureKeyCredential.Key);
                         AuthorizationTokenProvider currentAuthProvider = Interlocked.Exchange(ref this.authorizationTokenProvider, newAuthProvider);
 
                         AuthorizationTokenProvider toDispose = newAuthProvider; 
-                        if (newAuthProvider != currentAuthProvider)
+                        if (!Object.ReferenceEquals(newAuthProvider, currentAuthProvider))
                         {
                             // NewAuthProvider =>
                             // 1. Credentials changed
                             // 2. Dispose current token provider
-                            this.currentKeyObject = this.azureKeyCredential.Key ?? throw new ArgumentNullException($"{nameof(AzureKeyCredential)} has null Key");
+                            this.currentKeyObject = this.azureKeyCredential.Key;
 
                             toDispose = currentAuthProvider;
                         }
