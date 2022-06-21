@@ -170,7 +170,8 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryResponseMessageHeaders responseMessageHeaders,
             CosmosDiagnostics diagnostics,
             CosmosSerializerCore serializerCore,
-            CosmosSerializationFormatOptions serializationOptions)
+            CosmosSerializationFormatOptions serializationOptions,
+            RequestMessage requestMessage)
         {
             this.QueryHeaders = responseMessageHeaders;
             this.Diagnostics = diagnostics;
@@ -183,6 +184,7 @@ namespace Microsoft.Azure.Cosmos
                 serializerCore: serializerCore);
 
             this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(responseMessageHeaders);
+            this.RequestMessage = requestMessage;
         }
 
         public override string ContinuationToken => this.Headers.ContinuationToken;
@@ -210,6 +212,8 @@ namespace Microsoft.Azure.Cosmos
 
         public override IEnumerable<T> Resource { get; }
 
+        internal override RequestMessage RequestMessage { get; }
+
         internal static QueryResponse<TInput> CreateResponse<TInput>(
             QueryResponse cosmosQueryResponse,
             CosmosSerializerCore serializerCore)
@@ -225,7 +229,8 @@ namespace Microsoft.Azure.Cosmos
                     responseMessageHeaders: cosmosQueryResponse.QueryHeaders,
                     diagnostics: cosmosQueryResponse.Diagnostics,
                     serializerCore: serializerCore,
-                    serializationOptions: cosmosQueryResponse.CosmosSerializationOptions);
+                    serializationOptions: cosmosQueryResponse.CosmosSerializationOptions,
+                    requestMessage: cosmosQueryResponse.RequestMessage);
             }
             return queryResponse;
         }
