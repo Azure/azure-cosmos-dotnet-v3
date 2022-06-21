@@ -123,9 +123,7 @@ namespace Microsoft.Azure.Cosmos.Authorization
                             toDispose = currentAuthProvider;
                         }
 
-                        using (toDispose)
-                        {
-                        }
+                        toDispose?.Dispose();
                     }
                 }
             }
