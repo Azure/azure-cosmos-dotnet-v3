@@ -112,18 +112,13 @@ namespace Microsoft.Azure.Cosmos.Authorization
                         AuthorizationTokenProvider newAuthProvider = AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(this.azureKeyCredential.Key);
                         AuthorizationTokenProvider currentAuthProvider = Interlocked.Exchange(ref this.authorizationTokenProvider, newAuthProvider);
 
-                        AuthorizationTokenProvider toDispose = newAuthProvider; 
                         if (!Object.ReferenceEquals(newAuthProvider, currentAuthProvider))
                         {
                             // NewAuthProvider =>
                             // 1. Credentials changed
-                            // 2. Dispose current token provider
-                            this.currentKeyObject = this.azureKeyCredential.Key;
-
-                            toDispose = currentAuthProvider;
+                            // 2. Dispose current token provider: NOT Disposed actively: There might be inflight usage => leaving it to GC finalizers
+                            Interlocked.Exchange(ref this.currentKeyObject, this.azureKeyCredential.Key);
                         }
-
-                        toDispose?.Dispose();
                     }
                 }
             }
