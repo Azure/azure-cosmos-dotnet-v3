@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Authorization
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
     using global::Azure;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -13,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Authorization
 
     internal class AzureKeyCredentialAuthorizationTokenProvider : AuthorizationTokenProvider
     {
+        private readonly object refreshLock = new object();
         private readonly AzureKeyCredential azureKeyCredential;
         
         // keyObject is used to check for refresh 
@@ -100,16 +102,32 @@ namespace Microsoft.Azure.Cosmos.Authorization
         {
             if (!object.ReferenceEquals(this.currentKeyObject, this.azureKeyCredential.Key))
             {
-                this.currentKeyObject = this.azureKeyCredential.Key ?? throw new ArgumentNullException($"{nameof(AzureKeyCredential)} has null Key");
+                // Change is immediate for all new reqeust flows (pure compute work and should be very very quick)
+                // With-out lock possibility of concurrent updates (== #inflight reqeust's) but eventually only one will win
+                lock (this.refreshLock)
+                {
+                    // Process only if the authProvider is not yet exchanged
+                    if (!object.ReferenceEquals(this.currentKeyObject, this.azureKeyCredential.Key))
+                    {
+                        AuthorizationTokenProvider newAuthProvider = AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(this.azureKeyCredential.Key);
+                        AuthorizationTokenProvider currentAuthProvider = Interlocked.Exchange(ref this.authorizationTokenProvider, newAuthProvider);
 
-                // Credentials changed:
-                // 1. Dispose current token provider
-                // 2. Refresh the provider
-                using (this.authorizationTokenProvider) 
-                { 
+                        AuthorizationTokenProvider toDispose = newAuthProvider; 
+                        if (newAuthProvider != currentAuthProvider)
+                        {
+                            // NewAuthProvider =>
+                            // 1. Credentials changed
+                            // 2. Dispose current token provider
+                            this.currentKeyObject = this.azureKeyCredential.Key ?? throw new ArgumentNullException($"{nameof(AzureKeyCredential)} has null Key");
+
+                            toDispose = currentAuthProvider;
+                        }
+
+                        using (toDispose)
+                        {
+                        }
+                    }
                 }
-
-                this.authorizationTokenProvider = AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(this.currentKeyObject);
             }
         }
     }
