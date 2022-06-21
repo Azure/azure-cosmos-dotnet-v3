@@ -1208,6 +1208,7 @@ namespace Microsoft.Azure.Cosmos
             if (!this.cancellationTokenSource.IsCancellationRequested)
             {
                 this.cancellationTokenSource.Cancel();
+                this.cancellationTokenSource.Dispose();
             }
 
             if (this.StoreModel != null)

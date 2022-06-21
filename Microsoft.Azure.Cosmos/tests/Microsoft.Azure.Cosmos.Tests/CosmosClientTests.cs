@@ -252,10 +252,13 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             for (int z = 0; z < 100; ++z)
             {
-                using CosmosClient cosmos = new(ConnectionString);
+                using CosmosClient cosmos = new(ConnectionString, new CosmosClientOptions
+                {
+                    EnableClientTelemetry = true
+                });
             }
 
-            string assertMsg = string.Empty;
+            string assertMsg = String.Empty;
 
             foreach (string s in errors)
             {
