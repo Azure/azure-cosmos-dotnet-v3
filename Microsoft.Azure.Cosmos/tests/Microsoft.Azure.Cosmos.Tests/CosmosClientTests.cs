@@ -563,8 +563,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     }
                     catch (CosmosException ex)
                     {
-                        Assert.AreEqual(statusCode, (int)ex.StatusCode);
-                        Assert.AreEqual(subStatusCode, ex.SubStatusCode);
+                        Assert.AreEqual(statusCode, (int)ex.StatusCode, ex.ToString());
+                        Assert.AreEqual(subStatusCode, ex.SubStatusCode, ex.ToString());
                     }
                 };
 
