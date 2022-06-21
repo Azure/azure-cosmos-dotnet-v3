@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Web;
     using FluentAssertions;
     using global::Azure;
     using global::Azure.Core;
@@ -317,9 +318,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task ValidateAzureKeyCredentialGatewayModeUpdateAsync()
         {
-            int defaultStatusCode = 403;
-            int defaultSubStatusCode = 50000;
-            int authMisMatchStatusCode = 70000;
+            const int defaultStatusCode = 401;
+            const int defaultSubStatusCode = 50000;
+            const int authMisMatchStatusCode = 70000;
 
             string originalKey = CosmosClientTests.NewRamdonMasterKey();
             string newKey = CosmosClientTests.NewRamdonResourceToken();
@@ -341,17 +342,25 @@ namespace Microsoft.Azure.Cosmos.Tests
                         AuthorizationHelper.GetResourceTypeAndIdOrFullName(request.RequestUri, out _, out string resourceType, out string resourceIdValue);
 
                         AuthorizationHelper.ParseAuthorizationToken(authValues.First(),
-                            out ReadOnlyMemory<char> _,
+                            out ReadOnlyMemory<char> authType,
                             out ReadOnlyMemory<char> _,
                             out ReadOnlyMemory<char> tokenFromAuthHeader);
 
-                        bool authValidated = AuthorizationHelper.CheckPayloadUsingKey(
-                            tokenFromAuthHeader,
-                            request.Method.Method,
-                            resourceIdValue,
-                            resourceType,
-                            request.Headers.Aggregate(new NameValueCollectionWrapper(), (c, kvp) => { c.Add(kvp.Key, kvp.Value); return c; }),
-                            currentKey);
+                        bool authValidated = false;
+                        if (MemoryExtensions.Equals(authType.Span, Documents.Constants.Properties.ResourceToken.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                        {
+                            authValidated = HttpUtility.UrlDecode(authValues.First()) == currentKey;
+                        }
+                        else
+                        { 
+                            authValidated = AuthorizationHelper.CheckPayloadUsingKey(
+                                tokenFromAuthHeader,
+                                request.Method.Method,
+                                resourceIdValue,
+                                resourceType,
+                                request.Headers.Aggregate(new NameValueCollectionWrapper(), (c, kvp) => { c.Add(kvp.Key, kvp.Value); return c; }),
+                                currentKey);
+                        }
 
                         int subStatusCode = authValidated ? defaultSubStatusCode : authMisMatchStatusCode;
                         responseMessage.Headers.Add(Documents.WFConstants.BackendHeaders.SubStatus, subStatusCode.ToString());
@@ -395,10 +404,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 await authValidation(defaultStatusCode, authMisMatchStatusCode);
 
                 // Updated Key(V2) and now lets succeed auth validation 
-                currentKey = newKey;
+                Interlocked.Exchange(ref currentKey, newKey);
                 await authValidation(defaultStatusCode, defaultSubStatusCode);
-
-                Assert.AreEqual(typeof(AzureKeyCredentialAuthorizationTokenProvider), client.AuthorizationTokenProvider.GetType());
             }
         }
 
