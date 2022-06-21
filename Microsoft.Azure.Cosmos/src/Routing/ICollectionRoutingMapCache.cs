@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Common
             string collectionRid,
             CollectionRoutingMap previousValue,
             DocumentServiceRequest request,
-            ITrace trace);
+            ITrace trace,
+            CancellationToken cancellationToken = default);
     }
 }

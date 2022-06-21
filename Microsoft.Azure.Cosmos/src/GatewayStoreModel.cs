@@ -64,7 +64,8 @@ namespace Microsoft.Azure.Cosmos
                 this.sessionContainer,
                 this.partitionKeyRangeCache,
                 this.clientCollectionCache,
-                this.endpointManager);
+                this.endpointManager,
+                cancellationToken);
 
             DocumentServiceResponse response;
             try
@@ -240,7 +241,8 @@ namespace Microsoft.Azure.Cosmos
             ISessionContainer sessionContainer,
             PartitionKeyRangeCache partitionKeyRangeCache,
             CollectionCache clientCollectionCache,
-            IGlobalEndpointManager globalEndpointManager)
+            IGlobalEndpointManager globalEndpointManager,
+            CancellationToken cancellationToken = default)
         {
             if (request.Headers == null)
             {
@@ -286,7 +288,8 @@ namespace Microsoft.Azure.Cosmos
                 request,
                 sessionContainer,
                 partitionKeyRangeCache,
-                clientCollectionCache);
+                clientCollectionCache,
+                cancellationToken);
 
             if (isSuccess && !string.IsNullOrEmpty(sessionToken))
             {
@@ -298,7 +301,8 @@ namespace Microsoft.Azure.Cosmos
             DocumentServiceRequest request,
             ISessionContainer sessionContainer,
             PartitionKeyRangeCache partitionKeyRangeCache,
-            CollectionCache clientCollectionCache)
+            CollectionCache clientCollectionCache,
+            CancellationToken cancellationToken = default)
         {
             if (request == null)
             {
@@ -327,7 +331,8 @@ namespace Microsoft.Azure.Cosmos
                     sessionContainer: sessionContainer,
                     partitionKeyRangeCache: partitionKeyRangeCache,
                     clientCollectionCache: clientCollectionCache,
-                    refreshCache: false);
+                    refreshCache: false,
+                    cancellationToken);
 
                 if (isSuccess && sessionContainer is SessionContainer gatewaySessionContainer)
                 {
@@ -348,7 +353,8 @@ namespace Microsoft.Azure.Cosmos
             ISessionContainer sessionContainer,
             PartitionKeyRangeCache partitionKeyRangeCache,
             CollectionCache clientCollectionCache,
-            bool refreshCache)
+            bool refreshCache,
+            CancellationToken cancellationToken = default)
         {
             if (refreshCache)
             {
@@ -369,7 +375,8 @@ namespace Microsoft.Azure.Cosmos
                     collectionRid: collection.ResourceId,
                     previousValue: null,
                     request: request,
-                    NoOpTrace.Singleton);
+                    NoOpTrace.Singleton,
+                    cancellationToken);
 
                 if (refreshCache && collectionRoutingMap != null)
                 {
@@ -377,7 +384,8 @@ namespace Microsoft.Azure.Cosmos
                         collectionRid: collection.ResourceId,
                         previousValue: collectionRoutingMap,
                         request: request,
-                        NoOpTrace.Singleton);
+                        NoOpTrace.Singleton,
+                        cancellationToken);
                 }
 
                 if (collectionRoutingMap != null)

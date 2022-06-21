@@ -266,7 +266,8 @@ namespace Microsoft.Azure.Cosmos
                 collectionRid: collection.ResourceId,
                 previousValue: null,
                 request: request,
-                trace: NoOpTrace.Singleton);
+                trace: NoOpTrace.Singleton,
+                cancellationToken);
 
             if (routingMap != null && request.ForceCollectionRoutingMapRefresh)
             {
@@ -278,7 +279,8 @@ namespace Microsoft.Azure.Cosmos
                     collectionRid: collection.ResourceId,
                     previousValue: routingMap,
                     request: request,
-                    trace: NoOpTrace.Singleton);
+                    trace: NoOpTrace.Singleton,
+                    cancellationToken);
             }
 
             if (request.ForcePartitionKeyRangeRefresh)
@@ -307,7 +309,8 @@ namespace Microsoft.Azure.Cosmos
                         collectionRid: collection.ResourceId,
                         previousValue: null,
                         request: request,
-                        trace: NoOpTrace.Singleton);
+                        trace: NoOpTrace.Singleton,
+                        cancellationToken);
             }
 
             AddressResolver.EnsureRoutingMapPresent(request, routingMap, collection);
@@ -339,7 +342,8 @@ namespace Microsoft.Azure.Cosmos
                             collectionRid: collection.ResourceId,
                             previousValue: null,
                             request: request,
-                            trace: NoOpTrace.Singleton);
+                            trace: NoOpTrace.Singleton,
+                            cancellationToken);
                     }
                 }
 
@@ -349,7 +353,8 @@ namespace Microsoft.Azure.Cosmos
                         collection.ResourceId,
                         previousValue: routingMap,
                         request: request,
-                        trace: NoOpTrace.Singleton);
+                        trace: NoOpTrace.Singleton,
+                        cancellationToken);
                 }
 
                 AddressResolver.EnsureRoutingMapPresent(request, routingMap, collection);
