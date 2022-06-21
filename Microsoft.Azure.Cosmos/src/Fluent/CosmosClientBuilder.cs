@@ -76,10 +76,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Initialize a new CosmosConfiguration class that holds all the properties the CosmosClient requires.
+        /// Initialize a new CosmosConfiguration class that holds all the properties the CosmosClient requires with the account endpoint URI string and AzureKeyCredential.
+        /// AzureKeyCredential enables changing/updating master-key/ResourceToken whle CosmosClient is still in use. 
+        /// 
         /// </summary>
         /// <param name="accountEndpoint">The Uri to the Cosmos Account. Example: https://{Cosmos Account Name}.documents.azure.com:443/ </param>
-        /// <param name="authKeyOrResourceTokenCredential">The key to the account or resource token.</param>
+        /// <param name="authKeyOrResourceTokenCredential">AzureKeyCredential with master-key or resource token.</param>
         /// <example>
         /// The example below creates a new <see cref="CosmosClientBuilder"/>
         /// <code language="c#">
@@ -104,6 +106,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// ]]>
         /// </code>
         /// </example>
+        /// <remarks>AzureKeyCredential enables changing/updating master-key/ResourceToken whle CosmosClient is still in use.</remarks> 
         public CosmosClientBuilder(
             string accountEndpoint,
             AzureKeyCredential authKeyOrResourceTokenCredential)

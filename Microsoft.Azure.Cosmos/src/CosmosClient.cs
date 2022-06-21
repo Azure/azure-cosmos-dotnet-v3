@@ -240,14 +240,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Creates a new CosmosClient with the account endpoint URI string and account key.
+        /// Creates a new CosmosClient with the account endpoint URI string and AzureKeyCredential.
+        /// AzureKeyCredential enables changing/updating master-key/ResourceToken whle CosmosClient is still in use. 
         /// 
         /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
         /// of the application which enables efficient connection management and performance. Please refer to the
         /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
         /// </summary>
         /// <param name="accountEndpoint">The cosmos service endpoint to use</param>
-        /// <param name="authKeyOrResourceTokenCredential">The cosmos account key or resource token to use to use for Cosmos service authentication.</param>
+        /// <param name="authKeyOrResourceTokenCredential">AzureKeyCredential with master-key or resource token..</param>
         /// <param name="clientOptions">(Optional) client options</param>
         /// <example>
         /// The CosmosClient is created with the AccountEndpoint, AccountKey or ResourceToken and configured to use "East US 2" region.
@@ -255,13 +256,19 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// using Microsoft.Azure.Cosmos;
         /// 
+        /// AzureKeyCredential keyCredential = new AzureKeyCredential("account-master-key/ResourceToken");
         /// CosmosClient cosmosClient = new CosmosClient(
         ///             "account-endpoint-from-portal", 
-        ///             new AzureKeyCredential("account-key-from-portal"), 
+        ///             keyCredential, 
         ///             new CosmosClientOptions()
         ///             {
         ///                 ApplicationRegion = Regions.EastUS2,
         ///             });
+        ///             
+        /// ....
+        /// 
+        /// // To udpate key/credentials 
+        /// keyCredential.Update("updated master-key/ResourceToken");
         /// 
         /// // Dispose cosmosClient at application exit
         /// ]]>
@@ -271,6 +278,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Fluent.CosmosClientBuilder"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">Performance Tips</seealso>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk">Diagnose and troubleshoot issues</seealso>
+        /// <remarks>AzureKeyCredential enables changing/updating master-key/ResourceToken whle CosmosClient is still in use.</remarks>
         public CosmosClient(
             string accountEndpoint,
             AzureKeyCredential authKeyOrResourceTokenCredential,
@@ -384,7 +392,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Creates a new CosmosClient with the account endpoint URI string and TokenCredential.
+        /// Creates a new CosmosClient with the account endpoint URI string and AzureKeyCredential.
+        /// AzureKeyCredential enables changing/updating master-key/ResourceToken whle CosmosClient is still in use. 
+        /// 
         /// In addition to that it initializes the client with containers provided i.e The SDK warms up the caches and 
         /// connections before the first call to the service is made. Use this to obtain lower latency while startup of your application.
         /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
@@ -392,7 +402,7 @@ namespace Microsoft.Azure.Cosmos
         /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
         /// </summary>
         /// <param name="accountEndpoint">The cosmos service endpoint to use</param>
-        /// <param name="authKeyOrResourceTokenCredential">The cosmos account key or resource token to use to create the client.</param>
+        /// <param name="authKeyOrResourceTokenCredential">AzureKeyCredential with master-key or resource token.</param>
         /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
         /// <param name="cosmosClientOptions">(Optional) client options</param>
         /// <param name="cancellationToken">(Optional) Cancellation Token</param>
@@ -407,14 +417,21 @@ namespace Microsoft.Azure.Cosmos
         /// List<(string, string)> containersToInitialize = new List<(string, string)>
         /// { ("DatabaseName1", "ContainerName1"), ("DatabaseName2", "ContainerName2") };
         /// 
+        /// AzureKeyCredential keyCredential = new AzureKeyCredential("account-master-key/ResourceToken");
         /// CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync("account-endpoint-from-portal", 
-        ///                                                                         new AzureKeyCredential("account-key-from-portal"),
+        ///                                                                         keyCredential,
         ///                                                                         containersToInitialize)
+        ///             
+        /// ....
+        /// 
+        /// // To udpate key/credentials 
+        /// keyCredential.Update("updated master-key/ResourceToken");
         /// 
         /// // Dispose cosmosClient at application exit
         /// ]]>
         /// </code>
         /// </example>
+        /// <remarks>AzureKeyCredential enables changing/updating master-key/ResourceToken whle CosmosClient is still in use.</remarks> 
         public static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint,
                                                                         AzureKeyCredential authKeyOrResourceTokenCredential,
                                                                         IReadOnlyList<(string databaseId, string containerId)> containers,
