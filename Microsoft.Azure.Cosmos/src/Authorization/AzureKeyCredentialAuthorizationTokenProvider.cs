@@ -46,9 +46,10 @@ namespace Microsoft.Azure.Cosmos.Authorization
 
         public override void Dispose()
         {
-            if (this.authorizationTokenProvider != null)
+            AuthorizationTokenProvider authorizationTokenProvider = this.authorizationTokenProvider;
+            if (authorizationTokenProvider != null)
             {
-                this.authorizationTokenProvider.Dispose();
+                authorizationTokenProvider.Dispose();
                 this.authorizationTokenProvider = null;
             }
         }
