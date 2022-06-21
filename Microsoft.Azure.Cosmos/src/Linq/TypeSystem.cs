@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public static string GetMemberName(this MemberInfo memberInfo, CosmosLinqSerializerOptions linqSerializerOptions = null)
         {
-            if (linqSerializerOptions.CustomPropertyNamingHandler != null)
+            if (linqSerializerOptions != null && linqSerializerOptions.CustomPropertyNamingHandler != null)
             {
                 return linqSerializerOptions.CustomPropertyNamingHandler(memberInfo);
             }
