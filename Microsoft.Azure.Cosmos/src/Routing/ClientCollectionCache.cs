@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         try
                         {
                             using (DocumentServiceResponse response =
-                                await this.storeModel.ProcessMessageAsync(request))
+                                await this.storeModel.ProcessMessageAsync(request, cancellationToken))
                             {
                                 return CosmosResource.FromStream<ContainerProperties>(response);
                             }
