@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
     using Microsoft.Azure.Cosmos.Telemetry;
@@ -152,6 +153,122 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 delayCallBack = true;
                 this.TaskStartedCount = 0;
                 httpCallCount = 0;
+            }
+        }
+
+
+        [TestMethod]
+        public async Task ValidateAzureKeyCredentialDirectModeUpdateAsync()
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+
+            AzureKeyCredential masterKeyCredential = new AzureKeyCredential(authKey);
+            using (CosmosClient client = new CosmosClient(
+                    endpoint,
+                    masterKeyCredential))
+            {
+                string databaseName = Guid.NewGuid().ToString();
+
+                try
+                {
+                    Cosmos.Database database = client.GetDatabase(databaseName);
+                    ResponseMessage responseMessage = await database.ReadStreamAsync();
+                    Assert.AreEqual(HttpStatusCode.NotFound, responseMessage.StatusCode);
+
+                    {
+                        // Random key: Next set of actions are expected to fail => 401 (UnAuthorized)
+                        masterKeyCredential.Update(Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())));
+
+                        responseMessage = await database.ReadStreamAsync();
+                        Assert.AreEqual(HttpStatusCode.Unauthorized, responseMessage.StatusCode);
+                    }
+
+                    {
+                        // Resetting back to master key => 404 (NotFound)
+                        masterKeyCredential.Update(authKey);
+                        responseMessage = await database.ReadStreamAsync();
+                        Assert.AreEqual(HttpStatusCode.NotFound, responseMessage.StatusCode);
+                    }
+
+
+                    // Test with resource token interchageability 
+                    masterKeyCredential.Update(authKey);
+                    database = await client.CreateDatabaseAsync(databaseName);
+
+                    string containerId = Guid.NewGuid().ToString();
+                    ContainerResponse containerResponse = await database.CreateContainerAsync(containerId, "/id");
+                    Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+
+
+                    {
+                        // Resource token with ALL permissoin's
+                        string userId = Guid.NewGuid().ToString();
+                        UserResponse userResponse = await database.CreateUserAsync(userId);
+                        Cosmos.User user = userResponse.User;
+                        Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
+                        Assert.AreEqual(userId, user.Id);
+
+                        string permissionId = Guid.NewGuid().ToString();
+                        PermissionProperties permissionProperties = new PermissionProperties(permissionId, Cosmos.PermissionMode.All, client.GetContainer(databaseName, containerId));
+                        PermissionResponse permissionResponse = await database.GetUser(userId).CreatePermissionAsync(permissionProperties);
+                        Assert.AreEqual(HttpStatusCode.Created, permissionResponse.StatusCode);
+                        Assert.AreEqual(permissionId, permissionResponse.Resource.Id);
+                        Assert.AreEqual(Cosmos.PermissionMode.All, permissionResponse.Resource.PermissionMode);
+                        Assert.IsNotNull(permissionResponse.Resource.Token);
+                        SelflinkValidator.ValidatePermissionSelfLink(permissionResponse.Resource.SelfLink);
+
+                        // Valdiate ALL on contianer
+                        masterKeyCredential.Update(permissionResponse.Resource.Token);
+                        ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+
+                        Cosmos.Container container = client.GetContainer(databaseName, containerId);
+
+                        responseMessage = await container.ReadContainerStreamAsync();
+                        Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+
+                        responseMessage = await container.CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new Cosmos.PartitionKey(item.id));
+                        Assert.AreEqual(HttpStatusCode.Created, responseMessage.StatusCode); // Read Only resorce token
+                    }
+
+                    // Reset to master key for new permission creation
+                    masterKeyCredential.Update(authKey);
+
+                    {
+                        // Resource token with Read-ONLY permissoin's
+                        string userId = Guid.NewGuid().ToString();
+                        UserResponse userResponse = await database.CreateUserAsync(userId);
+                        Cosmos.User user = userResponse.User;
+                        Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
+                        Assert.AreEqual(userId, user.Id);
+
+                        string permissionId = Guid.NewGuid().ToString();
+                        PermissionProperties permissionProperties = new PermissionProperties(permissionId, Cosmos.PermissionMode.Read, client.GetContainer(databaseName, containerId));
+                        PermissionResponse permissionResponse = await database.GetUser(userId).CreatePermissionAsync(permissionProperties);
+                        //Backend returns Created instead of OK
+                        Assert.AreEqual(HttpStatusCode.Created, permissionResponse.StatusCode);
+                        Assert.AreEqual(permissionId, permissionResponse.Resource.Id);
+                        Assert.AreEqual(Cosmos.PermissionMode.Read, permissionResponse.Resource.PermissionMode);
+
+                        // Valdiate read on contianer
+                        masterKeyCredential.Update(permissionResponse.Resource.Token);
+                        ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+
+                        Cosmos.Container container = client.GetContainer(databaseName, containerId);
+
+                        responseMessage = await container.ReadContainerStreamAsync();
+                        Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+
+                        responseMessage = await container.CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new Cosmos.PartitionKey(item.id));
+                        Assert.AreEqual(HttpStatusCode.Forbidden, responseMessage.StatusCode); // Read Only resorce token
+                    }
+                }
+                finally
+                {
+                    // Reset to master key for clean-up
+                    masterKeyCredential.Update(authKey);
+                    await TestCommon.DeleteDatabaseAsync(client, client.GetDatabase(databaseName));
+                }
             }
         }
 

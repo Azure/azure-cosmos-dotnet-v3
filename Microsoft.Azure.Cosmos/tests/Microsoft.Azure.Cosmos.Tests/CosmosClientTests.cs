@@ -6,14 +6,21 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Specialized;
     using System.Globalization;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using FluentAssertions;
+    using global::Azure;
     using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Authorization;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -229,6 +236,180 @@ namespace Microsoft.Azure.Cosmos.Tests
                 HttpClientFactory = () => new HttpClient(),
                 WebProxy = null,
             };
+        }
+
+        [TestMethod]
+        public void ValidateMasterKeyAuthProvider()
+        {
+            string masterKeyCredential = CosmosClientTests.NewRamdonMasterKey();
+
+            using (CosmosClient client = new CosmosClient(
+                    CosmosClientTests.AccountEndpoint,
+                    masterKeyCredential,
+                    new CosmosClientOptions()
+                    {
+                        EnableClientTelemetry = false,
+                    }))
+            {
+                Assert.AreEqual(typeof(AuthorizationTokenProviderMasterKey), client.AuthorizationTokenProvider.GetType());
+            }
+        }
+
+        [TestMethod]
+        public void ValidateResourceTokenAuthProvider()
+        {
+            string resourceToken = CosmosClientTests.NewRamdonResourceToken();
+
+            using (CosmosClient client = new CosmosClient(
+                    CosmosClientTests.AccountEndpoint,
+                    resourceToken,
+                    new CosmosClientOptions()
+                    {
+                        EnableClientTelemetry = false,
+                    }))
+            {
+                Assert.AreEqual(typeof(AuthorizationTokenProviderResourceToken), client.AuthorizationTokenProvider.GetType());
+            }
+        }
+
+        [TestMethod]
+        public void ValidateMasterKeyAzureCredentialAuthProvider()
+        {
+            string originalKey = CosmosClientTests.NewRamdonMasterKey();
+
+            AzureKeyCredential masterKeyCredential = new AzureKeyCredential(originalKey);
+            using (CosmosClient client = new CosmosClient(
+                    CosmosClientTests.AccountEndpoint,
+                    masterKeyCredential,
+                    new CosmosClientOptions()
+                    {
+                        EnableClientTelemetry = false,
+                    }))
+            {
+                Assert.AreEqual(typeof(AzureKeyCredentialAuthorizationTokenProvider), client.AuthorizationTokenProvider.GetType());
+
+                AzureKeyCredentialAuthorizationTokenProvider tokenProvider = (AzureKeyCredentialAuthorizationTokenProvider)client.AuthorizationTokenProvider;
+                Assert.AreEqual(typeof(AuthorizationTokenProviderMasterKey), tokenProvider.authorizationTokenProvider.GetType());
+            }
+        }
+
+        [TestMethod]
+        public void ValidateResourceTokenAzureCredentialAuthProvider()
+        {
+            string resourceToken = CosmosClientTests.NewRamdonResourceToken();
+
+            AzureKeyCredential resourceTokenCredential = new AzureKeyCredential(resourceToken);
+            using (CosmosClient client = new CosmosClient(
+                    CosmosClientTests.AccountEndpoint,
+                    resourceTokenCredential,
+                    new CosmosClientOptions()
+                    {
+                        EnableClientTelemetry = false,
+                    }))
+            {
+                Assert.AreEqual(typeof(AzureKeyCredentialAuthorizationTokenProvider), client.AuthorizationTokenProvider.GetType());
+
+                AzureKeyCredentialAuthorizationTokenProvider tokenProvider = (AzureKeyCredentialAuthorizationTokenProvider)client.AuthorizationTokenProvider;
+                Assert.AreEqual(typeof(AuthorizationTokenProviderResourceToken), tokenProvider.authorizationTokenProvider.GetType());
+            }
+        }
+
+        [TestMethod]
+        public async Task ValidateAzureKeyCredentialGatewayModeUpdateAsync()
+        {
+            int defaultStatusCode = 403;
+            int defaultSubStatusCode = 50000;
+            int authMisMatchStatusCode = 70000;
+
+            string originalKey = CosmosClientTests.NewRamdonMasterKey();
+            string newKey = CosmosClientTests.NewRamdonResourceToken();
+            string currentKey = originalKey;
+
+            Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>();
+            mockHttpHandler.Setup(x => x.SendAsync(
+                    It.IsAny<HttpRequestMessage>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns((HttpRequestMessage request, CancellationToken cancellationToken) => {
+
+                    HttpResponseMessage responseMessage = new HttpResponseMessage((HttpStatusCode)defaultStatusCode);
+                    if (request.RequestUri != VmMetadataApiHandler.vmMetadataEndpointUrl)
+                    {
+                        bool authHeaderPresent = request.Headers.TryGetValues(Documents.HttpConstants.HttpHeaders.Authorization, out IEnumerable<string> authValues);
+                        Assert.IsTrue(authHeaderPresent);
+                        Assert.AreNotEqual(0, authValues.Count());
+
+                        AuthorizationHelper.GetResourceTypeAndIdOrFullName(request.RequestUri, out _, out string resourceType, out string resourceIdValue);
+
+                        AuthorizationHelper.ParseAuthorizationToken(authValues.First(),
+                            out ReadOnlyMemory<char> _,
+                            out ReadOnlyMemory<char> _,
+                            out ReadOnlyMemory<char> tokenFromAuthHeader);
+
+                        bool authValidated = AuthorizationHelper.CheckPayloadUsingKey(
+                            tokenFromAuthHeader,
+                            request.Method.Method,
+                            resourceIdValue,
+                            resourceType,
+                            request.Headers.Aggregate(new NameValueCollectionWrapper(), (c, kvp) => { c.Add(kvp.Key, kvp.Value); return c; }),
+                            currentKey);
+
+                        int subStatusCode = authValidated ? defaultSubStatusCode : authMisMatchStatusCode;
+                        responseMessage.Headers.Add(Documents.WFConstants.BackendHeaders.SubStatus, subStatusCode.ToString());
+                    }
+
+                    return Task.FromResult(responseMessage);
+                });
+
+            AzureKeyCredential masterKeyCredential = new AzureKeyCredential(originalKey);
+            using (CosmosClient client = new CosmosClient(
+                    CosmosClientTests.AccountEndpoint,
+                    masterKeyCredential,
+                    new CosmosClientOptions()
+                    {
+                        HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
+                        EnableClientTelemetry = false,
+                    }))
+            {
+                Container container = client.GetContainer(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+
+                Func<int, int, Task> authValidation = async (int statusCode, int subStatusCode) =>
+                {
+                    try
+                    {
+                        await container.ReadItemAsync<ToDoActivity>(Guid.NewGuid().ToString(), new Cosmos.PartitionKey(Guid.NewGuid().ToString()));
+
+                        Assert.Fail("Expected client to throw a authentication exception");
+                    }
+                    catch (CosmosException ex)
+                    {
+                        Assert.AreEqual(statusCode, (int)ex.StatusCode);
+                        Assert.AreEqual(subStatusCode, ex.SubStatusCode);
+                    }
+                };
+
+                // Key(V1)
+                await authValidation(defaultStatusCode, defaultSubStatusCode);
+
+                // Update key(V2) and let the auth validation fail 
+                masterKeyCredential.Update(newKey);
+                await authValidation(defaultStatusCode, authMisMatchStatusCode);
+
+                // Updated Key(V2) and now lets succeed auth validation 
+                currentKey = newKey;
+                await authValidation(defaultStatusCode, defaultSubStatusCode);
+
+                Assert.AreEqual(typeof(AzureKeyCredentialAuthorizationTokenProvider), client.AuthorizationTokenProvider.GetType());
+            }
+        }
+
+        private static string NewRamdonMasterKey()
+        {
+            return Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()));
+        }
+
+        private static string NewRamdonResourceToken()
+        {
+            return "type=resource&ver=1.0&sig="  + Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()));
         }
     }
 }

@@ -17,7 +17,9 @@ namespace Microsoft.Azure.Cosmos.Authorization
         
         // keyObject is used to check for refresh 
         private string currentKeyObject = null;
-        private AuthorizationTokenProvider authorizationTokenProvider;
+
+        // Internal for unit testing
+        internal AuthorizationTokenProvider authorizationTokenProvider;
 
         public AzureKeyCredentialAuthorizationTokenProvider(
                 AzureKeyCredential azureKeyCredential)
