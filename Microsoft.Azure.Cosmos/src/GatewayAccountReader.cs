@@ -65,6 +65,8 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
             catch (OperationCanceledException ex)
+            // this is the DocumentClient token, which only gets cancelled upon disposal
+            when (!this.cancellationToken.IsCancellationRequested) 
             {
                 // Catch Operation Cancelled Exception and convert to Timeout 408 if the user did not cancel it.
                 using (ITrace trace = Trace.GetRootTrace("Account Read Exception", TraceComponent.Transport, TraceLevel.Info))
