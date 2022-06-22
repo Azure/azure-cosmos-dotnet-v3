@@ -52,11 +52,56 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
         }
 
-        public void MarkFailed(Exception exception)
+        public void MarkFailed(CosmosException exception)
         {
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, exception.StatusCode);
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, exception.RequestCharge);
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics));
+
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionStacktrace, exception.StackTrace);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType());
+
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, exception.Diagnostics.ToString());
+
+            this.scope.Failed(exception);
+        }
+
+        public void MarkFailed(CosmosNullReferenceException exception)
+        {
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics));
+
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionStacktrace, exception.StackTrace);
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType());
+
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, exception.Diagnostics.ToString());
+
+            this.scope.Failed(exception);
+        }
+
+        public void MarkFailed(CosmosObjectDisposedException exception)
+        {
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics));
+
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionStacktrace, exception.StackTrace);
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType());
+
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, exception.Diagnostics.ToString());
+
+            this.scope.Failed(exception);
+        }
+
+        public void MarkFailed(CosmosOperationCanceledException exception)
+        {
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics));
+
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionStacktrace, exception.StackTrace);
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType());
+
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, exception.Diagnostics.ToString());
 
             this.scope.Failed(exception);
         }
