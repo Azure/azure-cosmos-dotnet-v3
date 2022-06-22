@@ -99,6 +99,11 @@ namespace Microsoft.Azure.Cosmos.Authorization
                     payload);
         }
 
+        public override TimeSpan GetLifeTIme()
+        {
+            return this.authorizationTokenProvider.GetLifeTIme();
+        }
+
         private void CheckAndRefreshTokenProvider()
         {
             if (!Object.ReferenceEquals(this.currentKeyObject, this.azureKeyCredential.Key))

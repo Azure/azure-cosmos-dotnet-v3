@@ -121,14 +121,34 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 {
                     response = await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
                 }
+                catch (DocumentClientException dce)
+                {
+                    // Enrich diagnostics context in-case of auth failures 
+                    if (dce?.StatusCode == System.Net.HttpStatusCode.Unauthorized || dce?.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                    {
+                        TimeSpan authProvideLifeSpan = ((AuthorizationTokenProvider)this.client.DocumentClient.cosmosAuthorization).GetLifeTIme();
+                        processMessageAsyncTrace.AddDatum("AuthProvider LifeSpan InSec", (int)authProvideLifeSpan.TotalSeconds);
+                    }
+
+                    throw;
+                }
                 finally
                 {
                     processMessageAsyncTrace.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum);
                 }
                
-                return response.ToCosmosResponseMessage(
+                ResponseMessage responseMessage = response.ToCosmosResponseMessage(
                     request,
                     serviceRequest.RequestContext.RequestChargeTracker);
+
+                // Enrich diagnostics context in-case of auth failures 
+                if (responseMessage?.StatusCode == System.Net.HttpStatusCode.Unauthorized || responseMessage?.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                {
+                    TimeSpan authProvideLifeSpan = ((AuthorizationTokenProvider)this.client.DocumentClient.cosmosAuthorization).GetLifeTIme();
+                    processMessageAsyncTrace.AddDatum("AuthProvider LifeSpan InSec", authProvideLifeSpan.TotalSeconds);
+                }
+
+                return responseMessage;
             }
         }
 

@@ -182,6 +182,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         responseMessage = await database.ReadStreamAsync();
                         Assert.AreEqual(HttpStatusCode.Unauthorized, responseMessage.StatusCode);
+
+                        string diagnostics = responseMessage.Diagnostics.ToString();
+                        Assert.IsTrue(diagnostics.Contains("AuthProvider LifeSpan InSec"));
                     }
 
                     {
@@ -261,6 +264,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         responseMessage = await container.CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new Cosmos.PartitionKey(item.id));
                         Assert.AreEqual(HttpStatusCode.Forbidden, responseMessage.StatusCode); // Read Only resorce token
+                    }
+
+                    {
+
+                        // Reset to master key for new permission creation
+                        masterKeyCredential.Update(Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())));
+
+                        ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+                        Cosmos.Container container = client.GetContainer(databaseName, containerId);
+
+                        responseMessage = await container.CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new Cosmos.PartitionKey(item.id));
+                        Assert.AreEqual(HttpStatusCode.Unauthorized, responseMessage.StatusCode); // Read Only resorce token
+
+                        string diagnostics = responseMessage.Diagnostics.ToString();
+                        Assert.IsTrue(diagnostics.Contains("AuthProvider LifeSpan InSec"));
                     }
                 }
                 finally
