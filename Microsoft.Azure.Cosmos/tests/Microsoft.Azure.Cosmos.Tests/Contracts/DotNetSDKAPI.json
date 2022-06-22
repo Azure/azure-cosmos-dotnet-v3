@@ -3244,10 +3244,29 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy PropertyNamingPolicy;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy get_PropertyNamingPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_PropertyNamingPolicy(Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Func`2[System.Reflection.MemberInfo,System.String] CustomPropertyNamingHandler": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Func`2[System.Reflection.MemberInfo,System.String] CustomPropertyNamingHandler;CanRead:True;CanWrite:True;System.Func`2[System.Reflection.MemberInfo,System.String] get_CustomPropertyNamingHandler();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_CustomPropertyNamingHandler(System.Func`2[System.Reflection.MemberInfo,System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Func`2[System.Reflection.MemberInfo,System.String] get_CustomPropertyNamingHandler()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Func`2[System.Reflection.MemberInfo,System.String] get_CustomPropertyNamingHandler();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Void .ctor()": {
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(), Void .ctor()]"
+        },
+        "Void set_CustomPropertyNamingHandler(System.Func`2[System.Reflection.MemberInfo,System.String])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_CustomPropertyNamingHandler(System.Func`2[System.Reflection.MemberInfo,System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_PropertyNamingPolicy(Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
