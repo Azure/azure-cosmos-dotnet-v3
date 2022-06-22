@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Collections.Specialized;
     using System.Globalization;
     using System.Linq;
@@ -18,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using FluentAssertions;
     using global::Azure;
     using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Authorization;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Telemetry;
@@ -417,6 +419,56 @@ namespace Microsoft.Azure.Cosmos.Tests
         private static string NewRamdonResourceToken()
         {
             return "type=resource&ver=1.0&sig="  + Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()));
+        }
+
+        [TestMethod]
+        public void CosmosClientEarlyDisposeTest()
+        {
+            string disposeErrorMsg = "Cannot access a disposed object";
+            HashSet<string> errors = new HashSet<string>();
+
+            void TraceHandler(string message)
+            {
+                if (message.Contains(disposeErrorMsg))
+                {
+                    errors.Add(message);
+                }
+            }
+
+            DefaultTrace.TraceSource.Listeners.Add(new TestTraceListener { Callback = TraceHandler });
+            DefaultTrace.InitEventListener();
+
+            for (int z = 0; z < 100; ++z)
+            {
+                using CosmosClient cosmos = new(ConnectionString, new CosmosClientOptions
+                {
+                    EnableClientTelemetry = true
+                });
+            }
+
+            string assertMsg = String.Empty;
+
+            foreach (string s in errors)
+            {
+                assertMsg += s + Environment.NewLine;
+            }
+
+            Assert.AreEqual(0, errors.Count, $"{Environment.NewLine}Errors found in trace:{Environment.NewLine}{assertMsg}");
+        }
+
+        private class TestTraceListener : TraceListener
+        {
+            public Action<string> Callback { get; set; }
+            public override bool IsThreadSafe => true;
+            public override void Write(string message)
+            {
+                this.Callback(message);
+            }
+
+            public override void WriteLine(string message)
+            {
+                this.Callback(message);
+            }
         }
     }
 }
