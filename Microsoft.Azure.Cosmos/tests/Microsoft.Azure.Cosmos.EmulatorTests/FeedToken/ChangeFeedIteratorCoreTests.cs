@@ -900,7 +900,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             string otherId = Guid.NewGuid().ToString();
 
             using (FeedIterator<ChangeFeedItemChanges<Item>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItemChanges<Item>>(
-                changeFeedStartFrom: ChangeFeedStartFrom.Now(ranges[0]),
+                changeFeedStartFrom: ChangeFeedStartFrom.Now(),
                 changeFeedMode: ChangeFeedMode.FullFidelity))
             {
                 string continuation = null;
