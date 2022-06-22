@@ -163,11 +163,13 @@ namespace Microsoft.Azure.Cosmos
         //SessionContainer.
         internal ISessionContainer sessionContainer;
 
+        private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+
         private AsyncLazy<QueryPartitionProvider> queryPartitionProvider;
 
         private DocumentClientEventSource eventSource;
         private Func<bool, Task<bool>> initializeTaskFactory;
-        internal AsyncCacheNonBlocking<string, bool> initTaskCache = new AsyncCacheNonBlocking<string, bool>();
+        internal AsyncCacheNonBlocking<string, bool> initTaskCache;
 
         private JsonSerializerSettings serializerSettings;
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
@@ -218,6 +220,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel);
+            this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
+
         }
 
         /// <summary>
@@ -459,6 +463,7 @@ namespace Microsoft.Azure.Cosmos
             this.cosmosAuthorization = cosmosAuthorization ?? throw new ArgumentNullException(nameof(cosmosAuthorization));
             this.transportClientHandlerFactory = transportClientHandlerFactory;
             this.IsLocalQuorumConsistency = isLocalQuorumConsistency;
+            this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -1198,6 +1203,12 @@ namespace Microsoft.Azure.Cosmos
             if (this.isDisposed)
             {
                 return;
+            }
+
+            if (!this.cancellationTokenSource.IsCancellationRequested)
+            {
+                this.cancellationTokenSource.Cancel();
+                this.cancellationTokenSource.Dispose();
             }
 
             if (this.StoreModel != null)
@@ -6596,7 +6607,8 @@ namespace Microsoft.Azure.Cosmos
                     serviceEndpoint: this.ServiceEndpoint,
                     cosmosAuthorization: this.cosmosAuthorization,
                     connectionPolicy: this.ConnectionPolicy,
-                    httpClient: this.httpClient);
+                    httpClient: this.httpClient,
+                    cancellationToken: this.cancellationTokenSource.Token);
 
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 
