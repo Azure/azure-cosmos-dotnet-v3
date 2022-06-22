@@ -26,16 +26,21 @@ namespace Microsoft.Azure.Cosmos
         /// This will prevent memory leaks when handling the CosmosResponseMessage
         /// </summary>
         internal ItemResponse(
-            HttpStatusCode httpStatusCode,
-            Headers headers,
-            T item,
-            CosmosDiagnostics diagnostics)
+           HttpStatusCode httpStatusCode,
+           Headers headers,
+           T item,
+           CosmosDiagnostics diagnostics,
+           RequestMessage requestMessage)
         {
             this.StatusCode = httpStatusCode;
             this.Headers = headers;
             this.Resource = item;
             this.Diagnostics = diagnostics;
+            this.RequestMessage = requestMessage;
         }
+
+        /// <inheritdoc/>
+        internal override RequestMessage RequestMessage { get; }
 
         /// <inheritdoc/>
         public override Headers Headers { get; }
