@@ -862,7 +862,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.IsNotNull(createOperation.Metadata);
                         Assert.AreEqual(expected: ChangeFeedOperationType.Create, actual: createOperation.Metadata.OperationType);
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.ConflictResolutionTimestamp);
-                        Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.CurrentLogSequenceNumber);
+                        Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.LogSequenceNumber);
                         Assert.AreEqual(expected: default, actual: createOperation.Metadata.PreviousLogSequenceNumber);
                         Assert.IsFalse(createOperation.Metadata.TimeToLiveExpired);
 
@@ -876,7 +876,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.IsNotNull(createOperation.Metadata);
                         Assert.AreEqual(expected: ChangeFeedOperationType.Replace, actual: replaceOperation.Metadata.OperationType);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.ConflictResolutionTimestamp);
-                        Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.CurrentLogSequenceNumber);
+                        Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.LogSequenceNumber);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.PreviousLogSequenceNumber);
                         Assert.IsFalse(replaceOperation.Metadata.TimeToLiveExpired);
 
@@ -941,7 +941,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.AreEqual(expected: "10330", actual: firstCreateOperation.Current.ZipCode);
                         Assert.AreEqual(expected: ChangeFeedOperationType.Create, actual: firstCreateOperation.Metadata.OperationType);
                         Assert.AreNotEqual(notExpected: default, actual: firstCreateOperation.Metadata.ConflictResolutionTimestamp);
-                        Assert.AreNotEqual(notExpected: default, actual: firstCreateOperation.Metadata.CurrentLogSequenceNumber);
+                        Assert.AreNotEqual(notExpected: default, actual: firstCreateOperation.Metadata.LogSequenceNumber);
                         Assert.AreEqual(expected: default, actual: firstCreateOperation.Metadata.PreviousLogSequenceNumber);
                         Assert.IsFalse(firstCreateOperation.Metadata.TimeToLiveExpired);
 
@@ -954,7 +954,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.AreEqual(expected: "98052", actual: createOperation.Current.ZipCode);
                         Assert.AreEqual(expected: ChangeFeedOperationType.Create, actual: createOperation.Metadata.OperationType);
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.ConflictResolutionTimestamp);
-                        Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.CurrentLogSequenceNumber);
+                        Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.LogSequenceNumber);
                         Assert.AreEqual(expected: default, actual: createOperation.Metadata.PreviousLogSequenceNumber);
                         Assert.IsFalse(createOperation.Metadata.TimeToLiveExpired);
 
@@ -967,7 +967,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.AreEqual(expected: "30363", actual: replaceOperation.Current.ZipCode);
                         Assert.AreEqual(expected: ChangeFeedOperationType.Replace, actual: replaceOperation.Metadata.OperationType);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.ConflictResolutionTimestamp);
-                        Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.CurrentLogSequenceNumber);
+                        Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.LogSequenceNumber);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.PreviousLogSequenceNumber);
                         Assert.IsFalse(replaceOperation.Metadata.TimeToLiveExpired);
 
@@ -980,7 +980,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.IsNull(deleteOperation.Current.ZipCode);
                         Assert.AreEqual(expected: ChangeFeedOperationType.Delete, actual: deleteOperation.Metadata.OperationType);
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.ConflictResolutionTimestamp);
-                        Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.CurrentLogSequenceNumber);
+                        Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.LogSequenceNumber);
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.PreviousLogSequenceNumber);
                         Assert.IsNotNull(deleteOperation.Previous);
                         Assert.AreEqual(expected: id, actual: deleteOperation.Previous.Id);
@@ -1050,7 +1050,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.IsNotNull(createOperation.Metadata);
                         Assert.AreEqual(expected: ChangeFeedOperationType.Create, actual: createOperation.Metadata.OperationType);
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.ConflictResolutionTimestamp);
-                        Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.CurrentLogSequenceNumber);
+                        Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.LogSequenceNumber);
                         Assert.AreEqual(expected: default, actual: createOperation.Metadata.PreviousLogSequenceNumber);
                         Assert.IsFalse(createOperation.Metadata.TimeToLiveExpired);
 
@@ -1064,7 +1064,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.IsNotNull(createOperation.Metadata);
                         Assert.AreEqual(expected: ChangeFeedOperationType.Replace, actual: replaceOperation.Metadata.OperationType);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.ConflictResolutionTimestamp);
-                        Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.CurrentLogSequenceNumber);
+                        Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.LogSequenceNumber);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.PreviousLogSequenceNumber);
                         Assert.IsFalse(replaceOperation.Metadata.TimeToLiveExpired);
 

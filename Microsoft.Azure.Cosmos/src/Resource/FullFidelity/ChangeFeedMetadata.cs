@@ -23,17 +23,17 @@ namespace Microsoft.Azure.Cosmos
         /// New instance of meta data for <see cref="ChangeFeedItemChanges{T}"/> created.
         /// </summary>
         /// <param name="conflictResolutionTimestamp"></param>
-        /// <param name="currentLogSequenceNumber"></param>
+        /// <param name="logSequenceNumber"></param>
         /// <param name="operationType"></param>
         /// <param name="previousLogSequenceNumber"></param>
         public ChangeFeedMetadata(
             DateTime conflictResolutionTimestamp,
-            long currentLogSequenceNumber,
+            long logSequenceNumber,
             ChangeFeedOperationType operationType,
             long previousLogSequenceNumber)
         {
             this.ConflictResolutionTimestamp = conflictResolutionTimestamp;
-            this.CurrentLogSequenceNumber = currentLogSequenceNumber;
+            this.LogSequenceNumber = logSequenceNumber;
             this.OperationType = operationType;
             this.PreviousLogSequenceNumber = previousLogSequenceNumber;
         }
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
         /// The current logical sequence number.
         /// </summary>
         [JsonProperty(PropertyName = "lsn", NullValueHandling = NullValueHandling.Ignore)]
-        public long CurrentLogSequenceNumber { get; }
+        public long LogSequenceNumber { get; }
 
         /// <summary>
         /// The change feed operation type.
