@@ -1444,9 +1444,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual async Task EnsureValidClientAsync(ITrace trace)
         {
-            this.ThrowIfDisposed();
-
-            if (this.isSuccessfullyInitialized)
+            if (this.cancellationTokenSource.IsCancellationRequested || this.isSuccessfullyInitialized)
             {
                 return;
             }
