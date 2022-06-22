@@ -115,9 +115,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             public override CosmosException Visit(MalformedContinuationTokenException malformedContinuationTokenException, ITrace trace)
             {
+                Headers headers = new Headers()
+                {
+                    SubStatusCode = Documents.SubStatusCodes.MalformedContinuationToken
+                }; 
                 return CosmosExceptionFactory.CreateBadRequestException(
                     message: malformedContinuationTokenException.Message,
-                    headers: new Headers(),
+                    headers: headers,
                     stackTrace: malformedContinuationTokenException.StackTrace,
                     innerException: malformedContinuationTokenException,
                     trace: trace);

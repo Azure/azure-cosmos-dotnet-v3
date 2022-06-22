@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -228,7 +229,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
-            Func<TResult, OpenTelemetryResponse> openTelemetry = null,
+            Func<TResult, OpenTelemetryAttributes> openTelemetry = null,
             TraceComponent traceComponent = TraceComponent.Transport,
             Tracing.TraceLevel traceLevel = Tracing.TraceLevel.Info)
         {
@@ -251,7 +252,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
-            Func<TResult, OpenTelemetryResponse> openTelemetry,
+            Func<TResult, OpenTelemetryAttributes> openTelemetry,
             TraceComponent traceComponent,
             Tracing.TraceLevel traceLevel)
         {
@@ -273,7 +274,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
-            Func<TResult, OpenTelemetryResponse> openTelemetry,
+            Func<TResult, OpenTelemetryAttributes> openTelemetry,
             TraceComponent traceComponent,
             Tracing.TraceLevel traceLevel)
         {
@@ -469,7 +470,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task<TResult> RunWithDiagnosticsHelperAsync<TResult>(
             ITrace trace,
             Func<ITrace, Task<TResult>> task,
-            Func<TResult, OpenTelemetryResponse> openTelemetry,
+            Func<TResult, OpenTelemetryAttributes> openTelemetry,
             string operationName)
         {
             using (OpenTelemetryCoreRecorder recorder = OpenTelemetryRecorderFactory.CreateRecorder(operationName))
@@ -480,7 +481,7 @@ namespace Microsoft.Azure.Cosmos
                     TResult result = await task(trace).ConfigureAwait(false);
                     if (openTelemetry != null && recorder.IsEnabled)
                     {
-                        OpenTelemetryResponse response = openTelemetry(result);
+                        OpenTelemetryAttributes response = openTelemetry(result);
                         recorder.Record(response);
                     }
 

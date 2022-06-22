@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     using System.Net;
     using global::Azure.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal struct OpenTelemetryCoreRecorder : IDisposable
@@ -31,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             this.scope.AddAttribute(key, value);
         }
 
-        public void Record(OpenTelemetryResponse response)
+        public void Record(OpenTelemetryAttributes response)
         {
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, response.StatusCode);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, response.RequestContentLength);
