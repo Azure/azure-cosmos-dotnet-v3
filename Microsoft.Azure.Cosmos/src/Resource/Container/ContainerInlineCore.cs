@@ -557,7 +557,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(DeleteAllItemsByPartitionKeyStreamAsync),
                 requestOptions,
-                (trace) => base.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey, trace, requestOptions, cancellationToken));
+                (trace) => base.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey, trace, requestOptions, cancellationToken),
+                (response) => new OpenTelemetryResponse(response));
         }
     }
 }

@@ -46,6 +46,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static readonly string nonPartitionItemId = "fixed-Container-Item";
         private static readonly string undefinedPartitionItemId = "undefined-partition-Item";
 
+        [ClassInitialize]
+        public static void ClassInit(TestContext context)
+        {
+            OpenTelemetryTests.ClassInitialize(context);
+        }
+
+        [ClassCleanup]
+        public static void FinalCleanup()
+        {
+            OpenTelemetryTests.FinalCleanup();
+        }
+
         [TestInitialize]
         public async Task TestInitialize()
         {

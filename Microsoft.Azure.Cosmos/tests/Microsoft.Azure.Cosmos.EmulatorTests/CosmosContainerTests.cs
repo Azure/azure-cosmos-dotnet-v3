@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -22,6 +23,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private CosmosClient cosmosClient = null;
         private Cosmos.Database cosmosDatabase = null;
+
+        [ClassInitialize]
+        public static void ClassInit(TestContext context)
+        {
+            OpenTelemetryTests.ClassInitialize(context);
+        }
+
+        [ClassCleanup]
+        public static void Cleanup()
+        {
+            OpenTelemetryTests.FinalCleanup();
+        }
+
         private static long ToEpoch(DateTime dateTime)
         {
             return (long)(dateTime - new DateTime(1970, 1, 1)).TotalSeconds;
