@@ -124,9 +124,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 catch (DocumentClientException dce)
                 {
                     // Enrich diagnostics context in-case of auth failures 
-                    if (dce?.StatusCode == System.Net.HttpStatusCode.Unauthorized || dce?.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                    if (dce.StatusCode == System.Net.HttpStatusCode.Unauthorized || dce.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        TimeSpan authProvideLifeSpan = ((AuthorizationTokenProvider)this.client.DocumentClient.cosmosAuthorization).GetLifeTIme();
+                        TimeSpan authProvideLifeSpan = ((AuthorizationTokenProvider)this.client.DocumentClient.cosmosAuthorization).GetAge();
                         processMessageAsyncTrace.AddDatum("AuthProvider LifeSpan InSec", (int)authProvideLifeSpan.TotalSeconds);
                     }
 
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 // Enrich diagnostics context in-case of auth failures 
                 if (responseMessage?.StatusCode == System.Net.HttpStatusCode.Unauthorized || responseMessage?.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
-                    TimeSpan authProvideLifeSpan = ((AuthorizationTokenProvider)this.client.DocumentClient.cosmosAuthorization).GetLifeTIme();
+                    TimeSpan authProvideLifeSpan = ((AuthorizationTokenProvider)this.client.DocumentClient.cosmosAuthorization).GetAge();
                     processMessageAsyncTrace.AddDatum("AuthProvider LifeSpan InSec", authProvideLifeSpan.TotalSeconds);
                 }
 

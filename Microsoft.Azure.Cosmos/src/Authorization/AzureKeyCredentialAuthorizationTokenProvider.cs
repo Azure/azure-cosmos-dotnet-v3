@@ -46,12 +46,8 @@ namespace Microsoft.Azure.Cosmos.Authorization
 
         public override void Dispose()
         {
-            AuthorizationTokenProvider authorizationTokenProvider = this.authorizationTokenProvider;
-            if (authorizationTokenProvider != null)
-            {
-                authorizationTokenProvider.Dispose();
-                this.authorizationTokenProvider = null;
-            }
+            this.authorizationTokenProvider?.Dispose();
+            this.authorizationTokenProvider = null;
         }
 
         public override ValueTask<(string token, string payload)> GetUserAuthorizationAsync(
@@ -99,9 +95,9 @@ namespace Microsoft.Azure.Cosmos.Authorization
                     payload);
         }
 
-        public override TimeSpan GetLifeTIme()
+        public override TimeSpan GetAge()
         {
-            return this.authorizationTokenProvider.GetLifeTIme();
+            return this.authorizationTokenProvider.GetAge();
         }
 
         private void CheckAndRefreshTokenProvider()

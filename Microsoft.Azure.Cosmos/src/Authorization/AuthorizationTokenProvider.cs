@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
             string authorizationToken,
             string payload);
 
-        public virtual TimeSpan GetLifeTIme()
+        public virtual TimeSpan GetAge()
         {
             return DateTime.UtcNow.Subtract(this.creationTime);
         }
