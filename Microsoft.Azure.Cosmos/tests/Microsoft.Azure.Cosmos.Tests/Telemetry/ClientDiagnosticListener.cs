@@ -112,6 +112,18 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private void AssertTags(string name, IEnumerable<KeyValuePair<string, string>> tags)
         {
+
+            List<string> nontestableOperations = new List<string>()
+            {
+                "Cosmos.Typed FeedIterator ReadNextAsync",
+                "Cosmos.FeedIterator Read Next Async"
+            };
+
+            if(nontestableOperations.Contains(name))
+            {
+                return;
+            }
+
             int countwithSystemException = tags.Count((tag) => tag.Value != null && tag.Value.Contains("System.Exception"));
             int countwithException = tags.Count((tag) => tag.Key.Contains("exception"));
             if (countwithSystemException > 0)
