@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
+namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
@@ -131,7 +131,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Console.WriteLine("Total Count :: " + tags.Count());
             Console.WriteLine();
 
-            Assert.IsTrue(tags.Count() >= 10, $"Number of tags are {tags.Count()} instead of 10 or more for {name}");
+            int countwithSystemException = tags.Count((tag) => (tag.Value != null && tag.Value.Contains("System.Exception")));
+            int countwithException = tags.Count((tag) => tag.Key.Contains("exception"));
+            if (countwithSystemException > 0)
+            {
+                Assert.IsTrue(tags.Count() == 6, $"Number of tags are {tags.Count()} instead of 6 or more for {name}");
+            }
+            else if(countwithException > 0)
+            {
+                Assert.IsTrue(tags.Count() == 8, $"Number of tags are {tags.Count()} instead of 8 or more for {name}");
+            }
+            else
+            {
+                Assert.IsTrue(tags.Count() == 10 || tags.Count() == 11, $"Number of tags are {tags.Count()} instead of 10 or 11 or more for {name}");
+            }
+           
         }
 
         public void OnNext(DiagnosticListener value)
