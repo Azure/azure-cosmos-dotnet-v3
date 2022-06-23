@@ -112,38 +112,19 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private void AssertTags(string name, IEnumerable<KeyValuePair<string, string>> tags)
         {
-
-            List<string> nontestableOperations = new List<string>()
-            {
-                "Cosmos.Typed FeedIterator ReadNextAsync",
-                "Cosmos.FeedIterator Read Next Async"
-            };
-
-            if(nontestableOperations.Contains(name))
-            {
-                return;
-            }
-
-            foreach (KeyValuePair<string, string> tag in tags)
-            {
-                Console.WriteLine(name + " => " + tag.Key + " : " + tag.Value);
-            }
-            Console.WriteLine("Total Count :: " + tags.Count());
-            Console.WriteLine();
-
-            int countwithSystemException = tags.Count((tag) => (tag.Value != null && tag.Value.Contains("System.Exception")));
+            int countwithSystemException = tags.Count((tag) => tag.Value != null && tag.Value.Contains("System.Exception"));
             int countwithException = tags.Count((tag) => tag.Key.Contains("exception"));
             if (countwithSystemException > 0)
             {
-                Assert.IsTrue(tags.Count() == 6, $"Number of tags are {tags.Count()} instead of 6 or more for {name}");
+                Assert.IsTrue(tags.Count() >= 6, $"Number of tags are {tags.Count()} instead of 6 or more for {name}");
             }
             else if(countwithException > 0)
             {
-                Assert.IsTrue(tags.Count() == 8, $"Number of tags are {tags.Count()} instead of 8 or more for {name}");
+                Assert.IsTrue(tags.Count() >= 8, $"Number of tags are {tags.Count()} instead of 8 or more for {name}");
             }
             else
             {
-                Assert.IsTrue(tags.Count() == 10 || tags.Count() == 11, $"Number of tags are {tags.Count()} instead of 10 or 11 or more for {name}");
+                Assert.IsTrue(tags.Count() >= 10, $"Number of tags are {tags.Count()} instead of 10 or 11 or more for {name}");
             }
            
         }
