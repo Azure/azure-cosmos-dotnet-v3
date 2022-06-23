@@ -13,8 +13,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Net.Http.Headers;
-    using System.Runtime.Serialization;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -29,7 +27,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using JsonReader = Json.JsonReader;
-    using JsonSerializer = Json.JsonSerializer;
     using JsonWriter = Json.JsonWriter;
     using PartitionKey = Documents.PartitionKey;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
@@ -45,18 +42,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static readonly string nonPartitionItemId = "fixed-Container-Item";
         private static readonly string undefinedPartitionItemId = "undefined-partition-Item";
-
-        [ClassInitialize]
-        public static void ClassInit(TestContext context)
-        {
-            OpenTelemetryTests.ClassInitialize(context);
-        }
-
-        [ClassCleanup]
-        public static void FinalCleanup()
-        {
-            OpenTelemetryTests.FinalCleanup();
-        }
 
         [TestInitialize]
         public async Task TestInitialize()

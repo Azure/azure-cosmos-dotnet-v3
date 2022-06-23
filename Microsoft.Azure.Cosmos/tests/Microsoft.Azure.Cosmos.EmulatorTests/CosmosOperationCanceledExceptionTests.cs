@@ -7,26 +7,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class CosmosOperationCanceledExceptionTests : BaseCosmosClientHelper
     {
         private ContainerInternal Container = null;
-
-        [ClassInitialize]
-        public static void ClassInit(TestContext context)
-        {
-           OpenTelemetryTests.ClassInitialize(context);
-        }
-
-        [ClassCleanup]
-        public static void FinalCleanup()
-        {
-           OpenTelemetryTests.FinalCleanup();
-        }
 
         [TestInitialize]
         public async Task TestInitialize()

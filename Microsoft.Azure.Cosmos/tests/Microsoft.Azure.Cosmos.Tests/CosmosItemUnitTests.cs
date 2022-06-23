@@ -20,6 +20,18 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class CosmosItemUnitTests
     {
+        [ClassInitialize]
+        public static void ClassInit(TestContext context)
+        {
+            OpenTelemetryTests.ClassInitialize(context);
+        }
+
+        [ClassCleanup]
+        public static void FinalCleanup()
+        {
+            OpenTelemetryTests.FinalCleanup();
+        }
+
         [TestMethod]
         public async Task TestItemPartitionKeyTypes()
         {
