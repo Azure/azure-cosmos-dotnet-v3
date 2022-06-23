@@ -66,7 +66,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreatePermissionAsync),
                 requestOptions,
-                (trace) => base.CreatePermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken));
+                (trace) => base.CreatePermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken),
+                (response) => new OpenTelemetryResponse<PermissionProperties>(response));
         }
 
         public override Task<PermissionResponse> UpsertPermissionAsync(

@@ -116,7 +116,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<string> nontestableOperations = new List<string>()
             {
                 "Cosmos.Typed FeedIterator ReadNextAsync",
-                "Cosmos.FeedIterator Read Next Async"
+                "Cosmos.FeedIterator Read Next Async",
+                "Cosmos.ValidateActivityIdWithSynchronizationContext",
+                "Cosmos.ValidateActivityId"
             };
 
             if(nontestableOperations.Contains(name))
