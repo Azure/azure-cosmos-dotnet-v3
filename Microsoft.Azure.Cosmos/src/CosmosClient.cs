@@ -393,7 +393,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Creates a new CosmosClient with the account endpoint URI string and AzureKeyCredential.
-        /// AzureKeyCredential enables changing/updating master-key/ResourceToken whle CosmosClient is still in use. 
+        /// AzureKeyCredential enables changing/updating master-key/ResourceToken while CosmosClient is still in use. 
         /// 
         /// In addition to that it initializes the client with containers provided i.e The SDK warms up the caches and 
         /// connections before the first call to the service is made. Use this to obtain lower latency while startup of your application.
