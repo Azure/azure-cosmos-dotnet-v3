@@ -491,6 +491,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     CosmosOperationCanceledException operationCancelledException = new CosmosOperationCanceledException(oe, trace);
                     recorder.MarkFailed(operationCancelledException);
+                    
                     throw operationCancelledException;
                 }
                 catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
@@ -515,6 +516,13 @@ namespace Microsoft.Azure.Cosmos
                 catch (CosmosException ex)
                 {
                     recorder.MarkFailed(ex);
+
+                    throw ex;
+                }
+                catch (Exception ex)
+                {
+                    recorder.MarkFailed(ex);
+
                     throw ex;
                 }
             }
