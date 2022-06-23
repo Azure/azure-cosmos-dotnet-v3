@@ -241,7 +241,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Creates a new CosmosClient with the account endpoint URI string and AzureKeyCredential.
-        /// AzureKeyCredential enables changing/updating master-key/ResourceToken whle CosmosClient is still in use. 
+        /// AzureKeyCredential enables changing/updating master-key/ResourceToken while CosmosClient is still in use. 
         /// 
         /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
         /// of the application which enables efficient connection management and performance. Please refer to the
