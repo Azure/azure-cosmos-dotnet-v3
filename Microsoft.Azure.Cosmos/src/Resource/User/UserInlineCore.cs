@@ -28,7 +28,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadAsync),
                 requestOptions,
-                (trace) => base.ReadAsync(requestOptions, trace, cancellationToken));
+                (trace) => base.ReadAsync(requestOptions, trace, cancellationToken),
+                (response) => new OpenTelemetryResponse<UserProperties>(response));
         }
 
         public override Task<UserResponse> ReplaceAsync(
@@ -39,7 +40,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReplaceAsync),
                 requestOptions,
-                (trace) => base.ReplaceAsync(userProperties, requestOptions, trace, cancellationToken));
+                (trace) => base.ReplaceAsync(userProperties, requestOptions, trace, cancellationToken),
+                (response) => new OpenTelemetryResponse<UserProperties>(response));
         }
 
         public override Task<UserResponse> DeleteAsync(
@@ -49,7 +51,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(DeleteAsync),
                 requestOptions,
-                (trace) => base.DeleteAsync(requestOptions, trace, cancellationToken));
+                (trace) => base.DeleteAsync(requestOptions, trace, cancellationToken),
+                (response) => new OpenTelemetryResponse<UserProperties>(response));
         }
 
         public override Permission GetPermission(string id)
@@ -79,7 +82,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(UpsertPermissionAsync),
                 requestOptions,
-                (trace) => base.UpsertPermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken));
+                (trace) => base.UpsertPermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken),
+                (response) => new OpenTelemetryResponse<PermissionProperties>(response));
         }
 
         public override FeedIterator<T> GetPermissionQueryIterator<T>(
