@@ -6,11 +6,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    public abstract class OpenTelemetryTests
+    public static class OpenTelemetryTests
     {
         private static ClientDiagnosticListener testListener;
 
-        public static void ClassInitialize(TestContext context)
+        public static void ClassInitialize()
         {
             OpenTelemetryTests.testListener = new ClientDiagnosticListener("Azure.Cosmos");
         }

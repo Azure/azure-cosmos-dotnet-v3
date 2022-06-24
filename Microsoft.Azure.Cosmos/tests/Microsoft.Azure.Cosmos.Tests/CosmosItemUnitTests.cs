@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ClassInitialize]
         public static void ClassInit(TestContext context)
         {
-            OpenTelemetryTests.ClassInitialize(context);
+            OpenTelemetryTests.ClassInitialize();
         }
 
         [ClassCleanup]
