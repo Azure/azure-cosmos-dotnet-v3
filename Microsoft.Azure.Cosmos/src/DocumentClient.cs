@@ -1434,19 +1434,9 @@ namespace Microsoft.Azure.Cosmos
                                 this.rntbdPortReuseMode);
         }
 
-        private void ThrowIfDisposed()
-        {
-            if (this.isDisposed)
-            {
-                throw new ObjectDisposedException("DocumentClient");
-            }
-        }
-
         internal virtual async Task EnsureValidClientAsync(ITrace trace)
         {
-            this.ThrowIfDisposed();
-
-            if (this.isSuccessfullyInitialized)
+            if (this.cancellationTokenSource.IsCancellationRequested || this.isSuccessfullyInitialized)
             {
                 return;
             }
