@@ -251,7 +251,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestScenario scenario = new TestScenario
             {
                 Name = nameof(IdWithAllowedSpecialCharacters),
-                Id = "WithAllowedSpecial+-@()^${}[]!_Chars",
+                Id = "WithAllowedSpecial,=.:~+-@()^${}[]!_Chars",
+                Gateway = new TestScenarioExpectations
+                {
+                    TransportMode = ConnectionMode.Gateway,
+                    ExpectedCreateStatusCode = HttpStatusCode.Created,
+                    ExpectedReadStatusCode = HttpStatusCode.OK,
+                    ExpectedReplaceStatusCode = HttpStatusCode.OK,
+                    ExpectedDeleteStatusCode = HttpStatusCode.NoContent
+                },
+                Direct = new TestScenarioExpectations
+                {
+                    TransportMode = ConnectionMode.Direct,
+                    ExpectedCreateStatusCode = HttpStatusCode.Created,
+                    ExpectedReadStatusCode = HttpStatusCode.OK,
+                    ExpectedReplaceStatusCode = HttpStatusCode.OK,
+                    ExpectedDeleteStatusCode = HttpStatusCode.NoContent
+                },
+            };
+
+            await this.ExecuteTestCase(scenario);
+        }
+
+        [TestMethod]
+        public async Task IdWithBase64EncodedIdCharacters()
+        {
+            string base64EncodedId = "BQE1D3PdG4N4bzU9TKaCIM3qc0TVcZ2/Y3jnsRfwdHC1ombkX3F1dot/SG0/UTq9AbgdX3kOWoP6qL6lJqWeKgV3zwWWPZO/t5X0ehJzv9LGkWld07LID2rhWhGT6huBM6Q=";
+            string safeBase64EncodedId = base64EncodedId.Replace("/", "-");
+
+            TestScenario scenario = new TestScenario
+            {
+                Name = nameof(IdWithAllowedSpecialCharacters),
+                Id = safeBase64EncodedId,
                 Gateway = new TestScenarioExpectations
                 {
                     TransportMode = ConnectionMode.Gateway,
