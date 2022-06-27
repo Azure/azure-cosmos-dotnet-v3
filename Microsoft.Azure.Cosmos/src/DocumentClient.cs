@@ -1446,7 +1446,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ThrowIfDisposed();
 
-            if (this.isSuccessfullyInitialized)
+            if (this.cancellationTokenSource.IsCancellationRequested || this.isSuccessfullyInitialized)
             {
                 return;
             }
