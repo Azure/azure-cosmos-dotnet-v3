@@ -24,7 +24,7 @@ namespace HdrHistogram
         /// <returns>The number of system timer ticks that represent the <paramref name="seconds"/>.</returns>
         public static long Seconds(long seconds)
         {
-            return Stopwatch.Frequency * seconds;
+            return ValueStopwatch.Frequency * seconds;
         }
 
         /// <summary>

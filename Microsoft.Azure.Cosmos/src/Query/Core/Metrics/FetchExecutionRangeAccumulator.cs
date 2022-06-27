@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     sealed class FetchExecutionRangeAccumulator
     {
         private readonly DateTime constructionTime;
-        private readonly Stopwatch stopwatch;
+        private readonly ValueStopwatch stopwatch;
         private List<FetchExecutionRange> fetchExecutionRanges;
         private DateTime startTime;
         private DateTime endTime;
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         {
             this.constructionTime = DateTime.UtcNow;
             // This stopwatch is always running and is only used to calculate deltas that are synchronized with the construction time.
-            this.stopwatch = Stopwatch.StartNew();
+            this.stopwatch = ValueStopwatch.StartNew();
             this.fetchExecutionRanges = new List<FetchExecutionRange>();
         }
 

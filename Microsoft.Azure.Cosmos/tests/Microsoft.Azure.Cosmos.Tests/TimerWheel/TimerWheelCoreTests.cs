@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             const int resolution = 500;
             using TimerWheelCore wheel = new TimerWheelCore(TimeSpan.FromMilliseconds(resolution), 10); // 10 buckets of 500 ms go up to 5000ms
             TimerWheelTimer timer = wheel.CreateTimer(TimeSpan.FromMilliseconds(timerTimeout));
-            Stopwatch stopwatch = Stopwatch.StartNew();
+            ValueStopwatch stopwatch = ValueStopwatch.StartNew();
             await timer.StartTimerAsync();
             stopwatch.Stop();
         }
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             using TimerWheelCore wheel = new TimerWheelCore(TimeSpan.FromMilliseconds(resolution), 10); // 10 buckets of 500 ms go up to 5000ms
             TimerWheelTimer timer = wheel.CreateTimer(TimeSpan.FromMilliseconds(timerTimeout));
             TimerWheelTimer timer2 = wheel.CreateTimer(TimeSpan.FromMilliseconds(timerTimeout));
-            Stopwatch stopwatch = Stopwatch.StartNew();
+            ValueStopwatch stopwatch = ValueStopwatch.StartNew();
             await Task.WhenAll(timer.StartTimerAsync(), timer2.StartTimerAsync());
             stopwatch.Stop();
         }
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 int estimatedTimeout = (i + 1) * timerTimeout;
                 TimerWheelTimer timer = wheel.CreateTimer(TimeSpan.FromMilliseconds(estimatedTimeout));
                 tasks.Add(Task.Run(async () => {
-                    Stopwatch stopwatch = Stopwatch.StartNew();
+                    ValueStopwatch stopwatch = ValueStopwatch.StartNew();
                     await timer.StartTimerAsync();
                     stopwatch.Stop();
                     return (estimatedTimeout,stopwatch.ElapsedMilliseconds);

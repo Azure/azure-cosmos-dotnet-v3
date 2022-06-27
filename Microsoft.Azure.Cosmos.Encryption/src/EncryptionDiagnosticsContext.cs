@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     internal sealed class EncryptionDiagnosticsContext
     {
         private DateTime startTime;
-        private Stopwatch stopwatch;
+        private ValueStopwatch stopwatch;
         private bool isDecryptionOperation;
 
         public EncryptionDiagnosticsContext()
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public void Begin(string operation)
         {
-            this.stopwatch = Stopwatch.StartNew();
+            this.stopwatch = ValueStopwatch.StartNew();
             this.startTime = DateTime.UtcNow;
 
             switch (operation)

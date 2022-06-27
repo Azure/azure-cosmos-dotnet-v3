@@ -112,8 +112,8 @@
         private async Task GetIteratorResponse<T>(FeedIterator<T> feedIterator)
         {
             MetricsAccumulator metricsAccumulator = new MetricsAccumulator();
-            Stopwatch totalTime = new Stopwatch();
-            Stopwatch getTraceTime = new Stopwatch();
+            ValueStopwatch totalTime = new ValueStopwatch();
+            ValueStopwatch getTraceTime = new ValueStopwatch();
             string diagnosticDataPath = Path.GetFullPath(DiagnosticsDataFileName);
             while (feedIterator.HasMoreResults)
             {

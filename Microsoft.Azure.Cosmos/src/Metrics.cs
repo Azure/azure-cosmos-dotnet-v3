@@ -9,11 +9,11 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class Metrics
     {
-        private readonly Stopwatch stopwatch;
+        private readonly ValueStopwatch stopwatch;
 
         public Metrics()
         {
-            this.stopwatch = new Stopwatch();
+            this.stopwatch = new ValueStopwatch();
         }
 
         public int Count

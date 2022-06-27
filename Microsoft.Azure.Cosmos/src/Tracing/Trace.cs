@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         private static readonly IReadOnlyDictionary<string, object> EmptyDictionary = new Dictionary<string, object>();
         private readonly List<ITrace> children;
         private readonly Lazy<Dictionary<string, object>> data;
-        private readonly Stopwatch stopwatch;
+        private readonly ValueStopwatch stopwatch;
         private readonly ISet<(string, Uri)> regionContactedInternal;
 
         private Trace(
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Id = Guid.NewGuid();
             this.StartTime = DateTime.UtcNow;
-            this.stopwatch = Stopwatch.StartNew();
+            this.stopwatch = ValueStopwatch.StartNew();
             this.Level = level;
             this.Component = component;
             this.Parent = parent;
