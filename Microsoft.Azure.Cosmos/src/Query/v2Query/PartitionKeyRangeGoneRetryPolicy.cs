@@ -125,8 +125,7 @@ namespace Microsoft.Azure.Cosmos
                         collectionRid: collection.ResourceId,
                         previousValue: null,
                         request: request,
-                        trace: this.trace,
-                        cancellationToken);
+                        trace: this.trace);
 
                     if (routingMap != null)
                     {
@@ -135,8 +134,7 @@ namespace Microsoft.Azure.Cosmos
                             collectionRid: collection.ResourceId,
                             previousValue: routingMap,
                             request: request,
-                            trace: this.trace,
-                            cancellationToken);
+                            trace: this.trace);
                     }
                 }
 

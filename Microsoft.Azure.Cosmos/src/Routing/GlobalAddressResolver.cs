@@ -86,8 +86,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     collectionRid: collection.ResourceId,
                     previousValue: null,
                     request: null,
-                    trace: NoOpTrace.Singleton,
-                    cancellationToken);
+                    trace: NoOpTrace.Singleton);
 
             if (routingMap == null)
             {

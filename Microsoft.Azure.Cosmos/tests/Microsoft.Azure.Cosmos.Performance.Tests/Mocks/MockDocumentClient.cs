@@ -188,8 +188,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                             It.IsAny<string>(),
                             It.IsAny<CollectionRoutingMap>(),
                             It.IsAny<DocumentServiceRequest>(),
-                            It.IsAny<ITrace>(),
-                            It.IsAny<CancellationToken>()
+                            It.IsAny<ITrace>()
                         )
                 ).Returns(Task.FromResult<CollectionRoutingMap>(routingMap));
 

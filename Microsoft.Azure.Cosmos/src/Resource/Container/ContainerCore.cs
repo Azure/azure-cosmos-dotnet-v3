@@ -508,8 +508,7 @@ namespace Microsoft.Azure.Cosmos
                 collectionRid,
                 previousValue: null,
                 request: null,
-                NoOpTrace.Singleton,
-                cancellationToken);
+                NoOpTrace.Singleton);
 
             // Not found.
             if (collectionRoutingMap == null)
@@ -523,8 +522,7 @@ namespace Microsoft.Azure.Cosmos
                     collectionRid,
                     previousValue: null,
                     request: null,
-                    NoOpTrace.Singleton,
-                    cancellationToken);
+                    NoOpTrace.Singleton);
             }
 
             return collectionRoutingMap;

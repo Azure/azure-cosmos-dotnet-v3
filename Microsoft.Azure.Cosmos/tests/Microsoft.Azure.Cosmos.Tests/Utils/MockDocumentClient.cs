@@ -232,8 +232,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                             It.IsAny<string>(),
                             It.IsAny<CollectionRoutingMap>(),
                             It.IsAny<DocumentServiceRequest>(),
-                            It.IsAny<ITrace>(),
-                            It.IsAny<CancellationToken>()
+                            It.IsAny<ITrace>()
                         )
                 ).Returns(Task.FromResult<CollectionRoutingMap>(null));
             this.partitionKeyRangeCache.Setup(
