@@ -328,8 +328,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (shouldEscape)
             {
-                // case: id does not support '/','\','?','#'
-                return Convert.ToBase64String(cipherTextWithTypeMarker).Replace("/", "-");
+                // case: id does not support '/','\','?','#'. Convert Base64 string to Uri safe string
+                return Convert.ToBase64String(cipherTextWithTypeMarker).Replace("/", "-").Replace("=", "@").Replace("+", "*");
             }
 
             return cipherTextWithTypeMarker;
@@ -350,7 +350,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     return null;
                 }
 
-                cipherTextWithTypeMarker = Convert.FromBase64String(jToken.ToObject<string>().Replace("-", "/"));
+                cipherTextWithTypeMarker = Convert.FromBase64String(jToken.ToObject<string>().Replace("-", "/").Replace("@", "=").Replace("*", "+"));
             }
             else
             {
