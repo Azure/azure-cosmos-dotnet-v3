@@ -95,6 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings
             {
                 Formatting = Formatting.Indented,
+                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
             };
             string json = @"[123.0]";
             PartitionKeyInternal partitionKey = PartitionKeyInternal.FromJsonString(json);
