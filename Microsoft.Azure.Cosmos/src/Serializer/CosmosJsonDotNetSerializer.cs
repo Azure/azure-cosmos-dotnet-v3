@@ -51,7 +51,8 @@ namespace Microsoft.Azure.Cosmos
                 Formatting = cosmosSerializerOptions.Indented ? Formatting.Indented : Formatting.None,
                 ContractResolver = cosmosSerializerOptions.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase
                     ? new CamelCasePropertyNamesContractResolver()
-                    : null
+                    : null,
+                MaxDepth = 128 // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
             };
 
             this.SerializerSettings = jsonSerializerSettings;

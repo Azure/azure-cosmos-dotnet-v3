@@ -8,6 +8,9 @@ namespace Microsoft.Azure.Cosmos
 
     internal static class DefaultJsonSerializationSettings
     {
-        public static readonly JsonSerializerSettings Value = new JsonSerializerSettings();
+        public static readonly JsonSerializerSettings Value = new JsonSerializerSettings()
+        {
+            MaxDepth = 128 // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+        };
     }
 }

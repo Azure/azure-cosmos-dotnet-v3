@@ -77,7 +77,8 @@ namespace Microsoft.Azure.Cosmos
 
             JsonSerializerSettings settings = new JsonSerializerSettings()
             {
-                Converters = new List<JsonConverter>() { new CosmosSqlQuerySpecJsonConverter(cosmosSerializer ?? propertiesSerializer) }
+                Converters = new List<JsonConverter>() { new CosmosSqlQuerySpecJsonConverter(cosmosSerializer ?? propertiesSerializer) },
+                MaxDepth = 128 // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
             };
 
             return new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer(settings));
