@@ -61,7 +61,7 @@ jobs:
       versioningScheme: OFF
 
 - job:
-  displayName: PREVIEW Encryption EmulatorTests ${{ parameters.BuildConfiguration }}
+  displayName: Preview Encryption EmulatorTests ${{ parameters.BuildConfiguration }}
   pool:
     vmImage: ${{ parameters.VmImage }}
 
