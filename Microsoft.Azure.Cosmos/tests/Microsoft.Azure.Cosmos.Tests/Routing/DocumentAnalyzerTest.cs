@@ -287,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                                 {
                                     new IsoDateTimeConverter()
                                 },
-                                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+                                MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
                             });
                         return str.Substring(1, str.Length - 2);
                     }),
@@ -315,7 +315,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             sd,
                             new JsonSerializerSettings()
                             {
-                                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+                                MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
                             }),
                         partitionKeyDefinition);
 

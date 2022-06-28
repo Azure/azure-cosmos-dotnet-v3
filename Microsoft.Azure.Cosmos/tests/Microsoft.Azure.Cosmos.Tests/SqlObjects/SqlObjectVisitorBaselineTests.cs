@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
             {
                 JsonSerializerSettings settings = new JsonSerializerSettings()
                 {
-                    MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+                    MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
                 };
                 settings.Converters.Add(new StringEnumConverter());
                 return settings;

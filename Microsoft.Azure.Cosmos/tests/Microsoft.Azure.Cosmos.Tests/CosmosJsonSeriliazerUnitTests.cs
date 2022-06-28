@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             string propertyJson = JsonConvert.SerializeObject(property, new JsonSerializerSettings()
             {
                 Formatting = Formatting.None,
-                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+                MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
             });
             Assert.AreEqual(defaultThroughputJson, propertyJson);
         }
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             string propertyJson = JsonConvert.SerializeObject(property, new JsonSerializerSettings()
             {
                 Formatting = Formatting.None,
-                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+                MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
             });
 
             Assert.AreEqual(defaultJson, propertyJson);
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             JsonSerializerSettings settings = new JsonSerializerSettings()
             {
                 NullValueHandling = NullValueHandling.Ignore,
-                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+                MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
             };
 
             ToDoActivity toDoActivityNoDescription = new ToDoActivity()

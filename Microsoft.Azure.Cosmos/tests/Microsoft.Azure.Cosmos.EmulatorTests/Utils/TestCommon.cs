@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new JsonSerializerSettings()
                 {
                     ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
-                    MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+                    MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
                 },
                 apiType,
                 recievedResponseEventHandler);

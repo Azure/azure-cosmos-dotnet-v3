@@ -289,7 +289,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     new JsonSerializerSettings()
                     {
                         NullValueHandling = NullValueHandling.Ignore,
-                        MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+                        MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
                     })
             };
 
@@ -878,7 +878,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
             {
                 Converters = new List<JsonConverter>() { new CosmosSerializerHelper.FormatNumbersAsTextConverter() },
-                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+                MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
             };
 
             List<QueryDefinition> queryDefinitions = new List<QueryDefinition>()
@@ -1005,7 +1005,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
             {
                 Converters = new List<JsonConverter>() { new CosmosSerializerHelper.FormatNumbersAsTextConverter() },
-                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+                MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
             };
 
             int toStreamCount = 0;
@@ -2368,7 +2368,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             JsonSerializerSettings jsonSettings = new JsonSerializerSettings
             {
                 DateFormatString = "dd / MM / yy hh:mm",
-                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+                MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
             };
             string dateJson = JsonConvert.SerializeObject(patchDate, jsonSettings);
 

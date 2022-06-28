@@ -321,7 +321,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new DocumentClientEventSource(),
                 new JsonSerializerSettings()
                 {
-                    MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+                    MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
                 },
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
         }

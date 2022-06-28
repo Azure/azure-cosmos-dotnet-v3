@@ -277,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                    new JsonSerializerSettings
                    {
                        DateParseHandling = DateParseHandling.None,
-                       MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+                       MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
                    });
 
             return TryCatch<PartitionedQueryExecutionInfoInternal>.FromResult(queryInfoInternal);

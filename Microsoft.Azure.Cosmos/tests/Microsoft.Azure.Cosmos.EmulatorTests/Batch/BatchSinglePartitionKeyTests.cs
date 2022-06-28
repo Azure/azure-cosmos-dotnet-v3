@@ -710,7 +710,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             JsonSerializerSettings jsonSettings = new JsonSerializerSettings
             {
-                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+                MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
                 DateFormatString = "yyyy--MM--dd hh:mm"
             };
             string dateJson = JsonConvert.SerializeObject(patchDate, jsonSettings);
