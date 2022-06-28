@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -66,6 +66,10 @@ namespace Microsoft.Azure.Cosmos
                             return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
                         }
                     }
+                }
+                catch (ObjectDisposedException) when (this.cancellationToken.IsCancellationRequested)
+                {
+                    throw new OperationCanceledException($"Client is being disposed for {serviceEndpoint} at {DateTime.UtcNow}, cancelling further operations.");
                 }
                 catch (OperationCanceledException ex)
                 {
