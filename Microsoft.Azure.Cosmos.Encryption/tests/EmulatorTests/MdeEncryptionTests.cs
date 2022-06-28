@@ -2271,7 +2271,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                testDoc.Id,
                hirarchicalPk);
 
-            Assert.AreEqual(HttpStatusCode.Created, readResponse.StatusCode);
+            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, readResponse.Resource);
 #endif
         }
