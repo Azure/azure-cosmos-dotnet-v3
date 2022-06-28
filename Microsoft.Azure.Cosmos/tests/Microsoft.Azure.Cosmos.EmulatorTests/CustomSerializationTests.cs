@@ -571,7 +571,7 @@ function bulkImport(docs) {
                 MissingMemberHandling = MissingMemberHandling.Ignore
             };
 
-            serializerSettings.Binder = new CommonSerializationBinder();
+            serializerSettings.SerializationBinder = new CommonSerializationBinder();
             serializerSettings.Converters =
                 serializerSettings.Converters.Concat(
                     new JsonConverter[]
@@ -734,7 +734,7 @@ function bulkImport(docs) {
         }
 
 #pragma warning disable CS0618 
-        private sealed class CommonSerializationBinder : Newtonsoft.Json.SerializationBinder
+        private sealed class CommonSerializationBinder : ISerializationBinder
 #pragma warning restore CS0618 
         {
             private readonly ConcurrentDictionary<Type, string> _typeToNameMapping;
@@ -746,7 +746,7 @@ function bulkImport(docs) {
                 this._nameToTypeMapping = new ConcurrentDictionary<string, Type>();
             }
 
-            public override Type BindToType(string assemblyName, string typeName)
+            public Type BindToType(string assemblyName, string typeName)
             {
                 if (assemblyName == null)
                 {
@@ -771,7 +771,7 @@ function bulkImport(docs) {
                 return Type.GetType(string.Format("{0}, {1}", typeName, assemblyName), true);
             }
 
-            public override void BindToName(Type serializedType, out string assemblyName, out string typeName)
+            public void BindToName(Type serializedType, out string assemblyName, out string typeName)
             {
                 assemblyName = null;
                 typeName = this._typeToNameMapping.GetOrAdd(serializedType, _ =>
