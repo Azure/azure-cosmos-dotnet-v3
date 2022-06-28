@@ -452,6 +452,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
                 {
                     DateParseHandling = DateParseHandling.None,
+                    MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
                 };
 
                 itemJObj = JsonSerializer.Create(jsonSerializerSettings).Deserialize<JObject>(jsonTextReader);
