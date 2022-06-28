@@ -708,8 +708,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, batchResponse[0].StatusCode);
             Assert.AreEqual(HttpStatusCode.OK, batchResponse[1].StatusCode);
 
-            JsonSerializerSettings jsonSettings = new JsonSerializerSettings();
-            jsonSettings.DateFormatString = "yyyy--MM--dd hh:mm";
+            JsonSerializerSettings jsonSettings = new JsonSerializerSettings
+            {
+                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+                DateFormatString = "yyyy--MM--dd hh:mm"
+            };
             string dateJson = JsonConvert.SerializeObject(patchDate, jsonSettings);
 
             // regular container

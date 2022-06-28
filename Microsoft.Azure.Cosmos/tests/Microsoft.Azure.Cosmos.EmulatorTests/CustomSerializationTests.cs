@@ -128,7 +128,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             JsonSerializerSettings serializerSettings = new JsonSerializerSettings
             {
-                DateParseHandling = DateParseHandling.None
+                DateParseHandling = DateParseHandling.None,
+                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
             };
 
             this.SetupDateTimeScenario(serializerSettings, jsonProperty, out client, out originalDocument, out createdDocument, out partitionedDocument);
@@ -165,7 +166,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             JsonSerializerSettings serializerSettings = new JsonSerializerSettings
             {
-                DateParseHandling = DateParseHandling.None
+                DateParseHandling = DateParseHandling.None,
+                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
             };
 
             this.SetupDateTimeScenario(serializerSettings, jsonProperty, out client, out originalDocument, out createdDocument, out partitionedDocument);
@@ -189,7 +191,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             JsonSerializerSettings serializerSettings = new JsonSerializerSettings
             {
-                DateParseHandling = DateParseHandling.None
+                DateParseHandling = DateParseHandling.None,
+                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
             };
 
             this.SetupDateTimeScenario(serializerSettings, jsonProperty, out client, out originalDocument, out createdDocument, out partitionedDocument);
@@ -233,6 +236,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             JsonSerializerSettings serializerSettings = new JsonSerializerSettings
             {
                 MissingMemberHandling = MissingMemberHandling.Error,
+                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
             };
 
             StoredProcedure storedProcedureDef = new StoredProcedure();
@@ -337,7 +341,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void TestStoredProcedure()
         {
             // Create a document client with a customer json serializer settings
-            JsonSerializerSettings serializerSettings = new JsonSerializerSettings();
+            JsonSerializerSettings serializerSettings = new JsonSerializerSettings()
+            {
+                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+            };
             serializerSettings.Converters.Add(new ObjectStringJsonConverter<SerializedObject>(_ => _.Name, _ => SerializedObject.Parse(_)));
             ConnectionPolicy connectionPolicy = new ConnectionPolicy { ConnectionMode = ConnectionMode.Gateway };
             ConsistencyLevel defaultConsistencyLevel = ConsistencyLevel.Session;
@@ -451,7 +458,8 @@ function bulkImport(docs) {
                 Converters =
                 {
                     new ObjectStringJsonConverter<SerializedObject>(_ => _.Name, _ => SerializedObject.Parse(_))
-                }
+                },
+                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
             };
 
             CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => cosmosClientBuilder.WithCustomSerializer(new CustomJsonSerializer(jsonSerializerSettings)));
@@ -568,7 +576,8 @@ function bulkImport(docs) {
             JsonSerializerSettings serializerSettings = new JsonSerializerSettings
             {
                 ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
-                MissingMemberHandling = MissingMemberHandling.Ignore
+                MissingMemberHandling = MissingMemberHandling.Ignore,
+                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
             };
 
             serializerSettings.Binder = new CommonSerializationBinder();

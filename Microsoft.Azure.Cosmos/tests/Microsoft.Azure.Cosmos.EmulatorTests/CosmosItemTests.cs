@@ -288,7 +288,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Serializer = new CosmosJsonDotNetSerializer(
                     new JsonSerializerSettings()
                     {
-                        NullValueHandling = NullValueHandling.Ignore
+                        NullValueHandling = NullValueHandling.Ignore,
+                        MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
                     })
             };
 
@@ -876,7 +877,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
             {
-                Converters = new List<JsonConverter>() { new CosmosSerializerHelper.FormatNumbersAsTextConverter() }
+                Converters = new List<JsonConverter>() { new CosmosSerializerHelper.FormatNumbersAsTextConverter() },
+                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
             };
 
             List<QueryDefinition> queryDefinitions = new List<QueryDefinition>()
@@ -1002,7 +1004,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //with Custom Serializer.
             JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
             {
-                Converters = new List<JsonConverter>() { new CosmosSerializerHelper.FormatNumbersAsTextConverter() }
+                Converters = new List<JsonConverter>() { new CosmosSerializerHelper.FormatNumbersAsTextConverter() },
+                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
             };
 
             int toStreamCount = 0;
@@ -2362,8 +2365,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 patchOperations: patchOperations,
                 requestOptions);
 
-            JsonSerializerSettings jsonSettings = new JsonSerializerSettings();
-            jsonSettings.DateFormatString = "dd / MM / yy hh:mm";
+            JsonSerializerSettings jsonSettings = new JsonSerializerSettings
+            {
+                DateFormatString = "dd / MM / yy hh:mm",
+                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+            };
             string dateJson = JsonConvert.SerializeObject(patchDate, jsonSettings);
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
