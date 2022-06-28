@@ -62,6 +62,8 @@ jobs:
 
 - job:
   displayName: Preview Encryption EmulatorTests ${{ parameters.BuildConfiguration }}
+  timeoutInMinutes: 90
+  condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
     vmImage: ${{ parameters.VmImage }}
 
@@ -76,6 +78,8 @@ jobs:
       packageType: 'sdk'
       version: '6.x'
 
+  - template:  emulator-setup.yml
+
   - task: DotNetCoreCLI@2
     displayName: PREVIEW Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     condition: succeeded()
@@ -83,8 +87,8 @@ jobs:
       command: test
       projects: 'Microsoft.Azure.Cosmos.Encryption/tests/EmulatorTests/*.csproj'
       arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:IsPreview=true /p:OS=${{ parameters.OS }}
-      publishTestResults: true
       nugetConfigPath: NuGet.config
+      publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
 - job:
