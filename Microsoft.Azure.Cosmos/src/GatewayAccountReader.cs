@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (ObjectDisposedException) when (this.cancellationToken.IsCancellationRequested)
             {
-                throw new OperationCanceledException("Client is being disposed, cancelling further operations.");
+                throw new OperationCanceledException($"Client is being disposed for {serviceEndpoint} at {DateTime.UtcNow}, cancelling further operations.");
             }
             catch (OperationCanceledException ex)
             // this is the DocumentClient token, which only gets cancelled upon disposal
