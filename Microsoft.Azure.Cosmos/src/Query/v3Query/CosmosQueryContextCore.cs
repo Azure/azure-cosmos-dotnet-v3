@@ -81,6 +81,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 sqlQuerySpec,
                 partitionKey,
                 supportedQueryFeatures,
+                this.CorrelatedActivityId,
                 trace,
                 cancellationToken);
         }

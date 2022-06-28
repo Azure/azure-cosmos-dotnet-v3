@@ -1471,7 +1471,6 @@
     │   │       └── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
     │   │           └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   ├── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   │   └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Get Child Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
     │       └── [,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
@@ -1589,15 +1588,7 @@
           "name": "[,FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "children": [
-            {
-              "name": "Prefetch",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
-              "duration in milliseconds": 0
-            }
-          ]
+          "duration in milliseconds": 0
         },
         {
           "name": "Get Child Ranges",

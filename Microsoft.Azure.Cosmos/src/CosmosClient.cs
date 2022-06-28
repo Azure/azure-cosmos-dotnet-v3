@@ -8,11 +8,14 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Net;
+    using System.Runtime.InteropServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
@@ -40,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
     ///                 ApplicationRegion = Regions.EastUS2,
     ///             });
     /// 
-    /// Database db = await client.CreateDatabaseAsync("database-id");
+    /// Database db = await cosmosClient.CreateDatabaseAsync("database-id");
     /// Container container = await db.CreateContainerAsync("container-id");
     /// 
     /// // Dispose cosmosClient at application exit
@@ -62,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
     ///                 ApplicationRegion = Regions.EastUS2,
     ///             });
     /// 
-    /// Database db = await client.CreateDatabaseAsync("database-id");
+    /// Database db = await cosmosClient.CreateDatabaseAsync("database-id");
     /// Container container = await db.CreateContainerAsync("container-id");
     /// 
     /// // Dispose cosmosClient at application exit
@@ -81,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
     ///     .WithApplicationRegion("East US 2")
     ///     .Build();
     /// 
-    /// Database db = await client.CreateDatabaseAsync("database-id")
+    /// Database db = await cosmosClient.CreateDatabaseAsync("database-id")
     /// Container container = await db.CreateContainerAsync("container-id");
     /// 
     /// // Dispose cosmosClient at application exit
@@ -97,11 +100,16 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
     public class CosmosClient : IDisposable
     {
+        internal readonly string Id = Guid.NewGuid().ToString();
+
         private readonly string DatabaseRootUri = Paths.Databases_Root;
         private ConsistencyLevel? accountConsistencyLevel;
         private bool isDisposed = false;
+        private object disposedLock = new object();
 
         internal static int numberOfClientsCreated;
+        internal static int NumberOfActiveClients;
+
         internal DateTime? DisposedDateTimeUtc { get; private set; } = null;
 
         static CosmosClient()
@@ -113,11 +121,21 @@ namespace Microsoft.Azure.Cosmos
 #endif
             HttpConstants.Versions.CurrentVersionUTF8 = Encoding.UTF8.GetBytes(HttpConstants.Versions.CurrentVersion);
 
-            // V3 always assumes assemblies exists
-            // Shall revisit on feedback
-            // NOTE: Native ServiceInteropWrapper.AssembliesExist has appsettings dependency which are proofed for CTL (native dll entry) scenarios.
-            // Revert of this depends on handling such in direct assembly
-            ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => true);
+            ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() =>
+            {
+                // Attemp to create an instance of the ServiceInterop assembly
+                TryCatch<IntPtr> tryCreateServiceProvider = QueryPartitionProvider.TryCreateServiceProvider("{}");
+                if (tryCreateServiceProvider.Failed)
+                {
+                    // Failed, either the DLL is not present or one of its dependencies
+                    return false;
+                }
+
+                // Assembly and dependencies are available
+                // Release pointer
+                Marshal.Release(tryCreateServiceProvider.Result);
+                return true;
+            });
 
             Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace.InitEventListener();
 
@@ -143,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
         /// of the application which enables efficient connection management and performance. Please refer to the
         /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
         /// </summary>
-        /// <param name="connectionString">The connection string to the cosmos account. ex: https://mycosmosaccount.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
+        /// <param name="connectionString">The connection string to the cosmos account. ex: AccountEndpoint=https://XXXXX.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
         /// <param name="clientOptions">(Optional) client options</param>
         /// <example>
         /// The CosmosClient is created with the connection string and configured to use "East US 2" region.
@@ -262,6 +280,7 @@ namespace Microsoft.Azure.Cosmos
             clientOptions ??= new CosmosClientOptions();
 
             this.ClientId = this.IncrementNumberOfClientsCreated();
+            
             this.ClientContext = ClientContextCore.Create(
                 this,
                 clientOptions);
@@ -328,7 +347,7 @@ namespace Microsoft.Azure.Cosmos
         /// of the application which enables efficient connection management and performance. Please refer to the
         /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
         /// </summary>
-        /// <param name="connectionString">The connection string to the cosmos account. ex: https://mycosmosaccount.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
+        /// <param name="connectionString">The connection string to the cosmos account. ex: AccountEndpoint=https://XXXXX.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
         /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
         /// <param name="cosmosClientOptions">(Optional) client options</param>
         /// <param name="cancellationToken">(Optional) Cancellation Token</param>
@@ -447,6 +466,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The <see cref="Cosmos.CosmosClientOptions"/> used initialize CosmosClient.
         /// </summary>
+        /// <remarks>This property is read-only. Modifying any options after the client has been created has no effect on the existing client instance.</remarks>
         public virtual CosmosClientOptions ClientOptions => this.ClientContext.ClientOptions;
 
         /// <summary>
@@ -457,12 +477,7 @@ namespace Microsoft.Azure.Cosmos
         /// a custom container that modifies the response. For example the client encryption
         /// uses this to decrypt responses before returning to the caller.
         /// </remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        virtual CosmosResponseFactory ResponseFactory => this.ClientContext.ResponseFactory;
+        public virtual CosmosResponseFactory ResponseFactory => this.ClientContext.ResponseFactory;
 
         /// <summary>
         /// Gets the endpoint Uri for the Azure Cosmos DB service.
@@ -889,7 +904,6 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// This method creates a query for databases under an Cosmos DB Account using a SQL statement. It returns a FeedIterator.
-        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
@@ -942,7 +956,6 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// This method creates a query for databases under an Cosmos DB Account using a SQL statement. It returns a FeedIterator.
-        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
@@ -1234,7 +1247,25 @@ namespace Microsoft.Azure.Cosmos
 
         private int IncrementNumberOfClientsCreated()
         {
+            this.IncrementNumberOfActiveClients();
+
             return Interlocked.Increment(ref numberOfClientsCreated);
+        }
+
+        private int IncrementNumberOfActiveClients()
+        {
+            return Interlocked.Increment(ref NumberOfActiveClients);
+        }
+
+        private int DecrementNumberOfActiveClients()
+        {
+            // In case dispose is called multiple times. Check if at least 1 active client is there
+            if (NumberOfActiveClients > 0)
+            {
+                return Interlocked.Decrement(ref NumberOfActiveClients);
+            }
+
+            return 0;
         }
 
         private async Task InitializeContainerAsync(string databaseId, string containerId, CancellationToken cancellationToken = default)
@@ -1282,17 +1313,22 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="disposing">True if disposing</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (!this.isDisposed)
+            lock (this.disposedLock)
             {
-                this.DisposedDateTimeUtc = DateTime.UtcNow;
-
-                if (disposing)
+                if (this.isDisposed == true)
                 {
-                    this.ClientContext.Dispose();
+                    return;
                 }
-
                 this.isDisposed = true;
             }
+
+            this.DisposedDateTimeUtc = DateTime.UtcNow;
+
+            if (disposing)
+            {
+                this.ClientContext.Dispose();
+                this.DecrementNumberOfActiveClients();
+            }   
         }
     }
 }

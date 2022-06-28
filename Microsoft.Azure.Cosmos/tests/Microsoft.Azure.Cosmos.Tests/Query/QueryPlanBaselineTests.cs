@@ -1379,7 +1379,7 @@
         public override QueryPlanBaselineTestOutput ExecuteTest(QueryPlanBaselineTestInput input)
         {
             TryCatch<PartitionedQueryExecutionInfoInternal> info = QueryPartitionProviderTestInstance.Object.TryGetPartitionedQueryExecutionInfoInternal(
-                input.SqlQuerySpec,
+                JsonConvert.SerializeObject(input.SqlQuerySpec),
                 input.PartitionKeyDefinition,
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: false,

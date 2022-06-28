@@ -12,12 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// See <see cref="Database"/> for operations to create and enumerate client encryption keys.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-        abstract class ClientEncryptionKey
+    public abstract class ClientEncryptionKey
     {
         /// <summary>
         /// The unique identifier of the client encryption key.

@@ -7,9 +7,12 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class ClientSideRequestStatisticsTraceDatumTests
@@ -59,6 +62,38 @@
             await this.ConcurrentUpdateTestHelper<ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics>(
                 (clientSideRequestStatistics, cancellationToken) => this.UpdateHttpResponsesInBackground(clientSideRequestStatistics, cancellationToken),
                 (clientSideRequestStatistics) => clientSideRequestStatistics.HttpResponseStatisticsList);
+        }
+
+        [TestMethod]
+        public void DuplicateContactedReplicasTests()
+        {
+            ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+            clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress1.com")));
+            clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
+            clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
+            clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
+            clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
+            clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress3.com")));
+            ITrace trace = Trace.GetRootTrace("test");
+            trace.AddDatum("stats", clientSideRequestStatisticsTraceDatum);
+            string json = new CosmosTraceDiagnostics(trace).ToString();
+            JObject jobject = JObject.Parse(json);
+            JToken contactedReplicas = jobject["data"]["stats"]["ContactedReplicas"];
+            Assert.AreEqual(3, contactedReplicas.Count());
+            int count = contactedReplicas[0]["Count"].Value<int>();
+            Assert.AreEqual(1, count);
+            string uri = contactedReplicas[0]["Uri"].Value<string>();
+            Assert.AreEqual("http://storephysicaladdress1.com/", uri);
+
+            count = contactedReplicas[1]["Count"].Value<int>();
+            Assert.AreEqual(4, count);
+            uri = contactedReplicas[1]["Uri"].Value<string>();
+            Assert.AreEqual("http://storephysicaladdress2.com/", uri);
+
+            count = contactedReplicas[2]["Count"].Value<int>();
+            Assert.AreEqual(1, count);
+            uri = contactedReplicas[2]["Uri"].Value<string>();
+            Assert.AreEqual("http://storephysicaladdress3.com/", uri);
         }
 
         [TestMethod]

@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using Newtonsoft.Json;
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
     using Newtonsoft.Json.Converters;
     using BaselineTest;
@@ -134,6 +135,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             [JsonConverter(typeof(IsoDateTimeConverter))]
             public DateTime IsoTime;
 
+            [JsonConverter(typeof(DateJsonConverter))]
+            public DateTime IsoDateOnly;
+
             // This field should serialize as ISO Date
             // as this is the default DateTimeConverter
             // used by Newtonsoft
@@ -143,6 +147,39 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public string Id;
 
             public string Pk;
+        }
+
+        class DateJsonConverter : IsoDateTimeConverter
+        {
+            public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+            {
+                if (value is DateTime dateTime)
+                {
+                    writer.WriteValue(dateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+                }
+                else
+                {
+                    base.WriteJson(writer, value, serializer);
+                }
+            }
+        }
+
+        internal class AmbientContextObject
+        {
+            public double FieldAccess;
+
+            public double PropertyAccess { get; set; }
+
+            public double MethodAccess()
+            {
+                return 1.0;
+            }
+
+            public static double StaticFieldAccess = 4.0;
+
+            public static double StaticPropertyAccess => 5.0;
+
+            public const double ConstAccess = 6.0;
         }
 
         [TestMethod]
@@ -328,6 +365,30 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("Default (ISO) = filter", b => getQuery(b).Where(doc => doc.DefaultTime == new DateTime(2016, 9, 13, 0, 0, 0))),
                 new LinqTestInput("Default (ISO) > filter", b => getQuery(b).Where(doc => doc.DefaultTime > new DateTime(2016, 9, 13, 0, 0, 0))),
                 new LinqTestInput("Default (ISO) < filter", b => getQuery(b).Where(doc => doc.DefaultTime < new DateTime(2016, 9, 13, 0, 0, 0)))
+            };
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestDateTimeJsonConverterTimezones()
+        {
+            const int Records = 10;
+            DateTime midDateTime = new (2016, 9, 13, 0, 0, 0);
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
+                DataObject obj = new() {
+                    IsoDateOnly = LinqTestsCommon.RandomDateTime(random, midDateTime),
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "Test"
+                };
+                return obj;
+            };
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new()
+            {
+                new LinqTestInput("IsoDateTimeConverter LocalTime = filter", b => getQuery(b).Where(doc => doc.IsoDateOnly == new DateTime(2016, 9, 13, 0, 0, 0, DateTimeKind.Local))),
+                new LinqTestInput("IsoDateTimeConverter UniversalTime = filter", b => getQuery(b).Where(doc => doc.IsoDateOnly == new DateTime(2016, 9, 13, 0, 0, 0, DateTimeKind.Utc))),
             };
             this.ExecuteTestSuite(inputs);
         }
@@ -523,6 +584,37 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 // Truncate
                 new LinqTestInput("Truncate decimal", b => getQuery(b).Select(doc => Math.Truncate((decimal)doc.NumericField))),
                 new LinqTestInput("Truncate double", b => getQuery(b).Select(doc => Math.Truncate((double)doc.NumericField)))
+            };
+            this.ExecuteTestSuite(inputs);
+        }
+
+
+        [TestMethod]
+        public void TestMemberAccess()
+        {
+            AmbientContextObject ambientContext = new AmbientContextObject
+            {
+                FieldAccess = 2.0,
+                PropertyAccess = 3.0
+            };
+
+            List<DataObject> testData = new List<DataObject>();
+            IOrderedQueryable<DataObject> constantQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+            Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? constantQuery : testData.AsQueryable();
+            
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                // This test case will use the legacy delegate compilation expression evaluator
+                new LinqTestInput("Filter on Method value", b => getQuery(b).Where(doc => doc.NumericField == ambientContext.MethodAccess())),
+
+                // These test cases will use the new reflection-based member access expression evaluator
+                // to avoid the acquisition of a global lock when compiling the delegate (yielding a substantial
+                // performance boost, especially under highly concurrent workloads).
+                new LinqTestInput("Filter on Field value", b => getQuery(b).Where(doc => doc.NumericField == ambientContext.FieldAccess)),
+                new LinqTestInput("Filter on Property value", b => getQuery(b).Where(doc => doc.NumericField == ambientContext.PropertyAccess)),
+                new LinqTestInput("Filter on Static Field value", b => getQuery(b).Where(doc => doc.NumericField == AmbientContextObject.StaticFieldAccess)),
+                new LinqTestInput("Filter on Static Property value", b => getQuery(b).Where(doc => doc.NumericField == AmbientContextObject.StaticPropertyAccess)),
+                new LinqTestInput("Filter on Const value", b => getQuery(b).Where(doc => doc.NumericField == AmbientContextObject.ConstAccess)),
             };
             this.ExecuteTestSuite(inputs);
         }

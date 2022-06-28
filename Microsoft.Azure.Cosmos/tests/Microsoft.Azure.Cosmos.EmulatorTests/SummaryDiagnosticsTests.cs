@@ -119,7 +119,7 @@
             ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
             SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
             Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value.Keys.Count, 2);
-            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value[(410, 0)], 3);
+            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value[(410, (int)SubStatusCodes.TransportGenerated410)], 3);
             Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value[(201, 0)], 1);
         }
     }

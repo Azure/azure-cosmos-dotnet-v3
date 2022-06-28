@@ -59,7 +59,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string containerId,
             Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor,
             bool useGatewayMode = false,
-            Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> interceptorWithStoreResult = null)
+            Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> interceptorWithStoreResult = null,
+            ISessionContainer sessionContainer = null)
         {
             CosmosClient clientWithIntercepter = TestCommon.CreateCosmosClient(
                builder =>
@@ -67,6 +68,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                    if (useGatewayMode)
                    {
                        builder.WithConnectionModeGateway();
+                   }
+
+                   if (sessionContainer != null)
+                   {
+                       builder.WithSessionContainer(sessionContainer);
                    }
 
                    builder.WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
@@ -87,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             if (request.ResourceType == ResourceType.Document)
             {
-                StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+                RequestNameValueCollection headers = new();
                 headers.Add(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
                 headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.WriteForbidden).ToString(CultureInfo.InvariantCulture));
                 headers.Add(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, TimeSpan.FromMilliseconds(100).TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
@@ -160,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             if (request.ResourceType == ResourceType.Document)
             {
-                StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+                RequestNameValueCollection headers = new();
                 headers.Add(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
                 headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.WriteForbidden).ToString(CultureInfo.InvariantCulture));
                 headers.Add(HttpConstants.HttpHeaders.RequestCharge, ((double)9001).ToString(CultureInfo.InvariantCulture));

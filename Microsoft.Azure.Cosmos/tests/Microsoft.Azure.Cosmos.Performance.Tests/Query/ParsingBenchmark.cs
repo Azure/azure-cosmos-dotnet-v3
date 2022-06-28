@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
 
     [MemoryDiagnoser]
     public class ParsingBenchmark
@@ -118,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private static void ParseUsingNativeParser(SqlQuerySpec sqlQuerySpec)
         {
             TryCatch<PartitionedQueryExecutionInfo> tryGetQueryPlan = QueryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
-                querySpec: sqlQuerySpec,
+                querySpecJsonString: JsonConvert.SerializeObject(sqlQuerySpec),
                 partitionKeyDefinition: PartitionKeyDefinition,
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: false,

@@ -103,6 +103,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
         void AddDatum(string key, object value);
 
         /// <summary>
+        /// Updates the given datum in this trace instance if exists, otherwise Add
+        /// </summary>
+        /// <param name="key">The key to associate the datum.</param>
+        /// <param name="value">The datum itself.</param>
+        void AddOrUpdateDatum(string key, object value);
+
+        /// <summary>
         /// Adds a trace children that is already completed.
         /// </summary>
         /// <param name="trace">Existing trace.</param>

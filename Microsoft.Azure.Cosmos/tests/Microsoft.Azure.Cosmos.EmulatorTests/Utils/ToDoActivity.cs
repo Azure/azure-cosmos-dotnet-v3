@@ -43,7 +43,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return base.GetHashCode();
         }
 
-        public static async Task<IList<ToDoActivity>> CreateRandomItems(Container container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
+        public static async Task<IList<ToDoActivity>> CreateRandomItems(
+            Container container, 
+            int pkCount, 
+            int perPKItemCount = 1,
+            bool randomPartitionKey = true,
+            bool randomTaskNumber = false)
         {
             Assert.IsFalse(!randomPartitionKey && pkCount > 1);
 
@@ -58,7 +63,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 for (int j = 0; j < perPKItemCount; j++)
                 {
-                    ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity(pk);
+                    ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity(
+                        pk: pk, 
+                        id: null, 
+                        randomTaskNumber: randomTaskNumber);
 
                     createdList.Add(temp);
 
@@ -69,7 +77,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return createdList;
         }
 
-        public static ToDoActivity CreateRandomToDoActivity(string pk = null, string id = null)
+        public static ToDoActivity CreateRandomToDoActivity(
+            string pk = null, 
+            string id = null,
+            bool randomTaskNumber = false)
         {
             if (string.IsNullOrEmpty(pk))
             {
@@ -79,12 +90,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 id = Guid.NewGuid().ToString();
             }
+
+            int taskNum = 42;
+            if (randomTaskNumber)
+            {
+                taskNum = Random.Shared.Next();
+            }
+
             return new ToDoActivity()
             {
                 id = id,
                 description = "CreateRandomToDoActivity",
                 pk = pk,
-                taskNum = 42,
+                taskNum = taskNum,
                 cost = double.MaxValue,
                 CamelCase = "camelCase",
                 children = new ToDoActivity[]

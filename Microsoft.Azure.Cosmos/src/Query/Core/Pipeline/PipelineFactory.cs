@@ -63,6 +63,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             sqlQuerySpec = !string.IsNullOrEmpty(queryInfo.RewrittenQuery) ? new SqlQuerySpec(queryInfo.RewrittenQuery, sqlQuerySpec.Parameters) : sqlQuerySpec;
 
+            PrefetchPolicy prefetchPolicy = DeterminePrefetchPolicy(queryInfo);
+
             MonadicCreatePipelineStage monadicCreatePipelineStage;
             if (queryInfo.HasOrderBy)
             {
@@ -87,6 +89,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     targetRanges: targetRanges,
                     queryPaginationOptions: queryPaginationOptions,
                     partitionKey: partitionKey,
+                    prefetchPolicy: prefetchPolicy,
                     maxConcurrency: maxConcurrency,
                     continuationToken: continuationToken,
                     cancellationToken: cancellationToken);
@@ -177,6 +180,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             return monadicCreatePipelineStage(requestContinuationToken, requestCancellationToken)
                 .Try<IQueryPipelineStage>(onSuccess: (stage) => new SkipEmptyPageQueryPipelineStage(stage, requestCancellationToken));
+        }
+
+        private static PrefetchPolicy DeterminePrefetchPolicy(QueryInfo queryInfo)
+        {
+            if (!queryInfo.HasDCount && queryInfo.HasAggregates && !queryInfo.HasGroupBy)
+            {
+                return PrefetchPolicy.PrefetchAll;
+            }
+
+            return PrefetchPolicy.PrefetchSinglePage;
         }
     }
 }

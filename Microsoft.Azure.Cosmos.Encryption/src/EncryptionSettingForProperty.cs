@@ -50,7 +50,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 // Here a request is sent out to unwrap using the Master Key configured via the Key Encryption Key.
                 protectedDataEncryptionKey = await this.BuildProtectedDataEncryptionKeyAsync(
                     clientEncryptionKeyProperties,
-                    this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyWrapProvider,
                     this.ClientEncryptionKeyId,
                     cancellationToken);
             }
@@ -73,7 +72,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     // try to build the ProtectedDataEncryptionKey. If it fails, try to force refresh the gateway cache and get the latest client encryption key.
                     protectedDataEncryptionKey = await this.BuildProtectedDataEncryptionKeyAsync(
                         clientEncryptionKeyProperties,
-                        this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyWrapProvider,
                         this.ClientEncryptionKeyId,
                         cancellationToken);
                 }
@@ -83,6 +81,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     // bail out if this fails.
                     protectedDataEncryptionKey = await this.ForceRefreshGatewayCacheAndBuildProtectedDataEncryptionKeyAsync(
                         existingCekEtag: clientEncryptionKeyProperties.ETag,
+                        refreshRetriedOnException: exOnRetry,
                         cancellationToken: cancellationToken);
                 }
             }
@@ -102,6 +101,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>ProtectedDataEncryptionKey object. </returns>
         private async Task<ProtectedDataEncryptionKey> ForceRefreshGatewayCacheAndBuildProtectedDataEncryptionKeyAsync(
             string existingCekEtag,
+            Exception refreshRetriedOnException,
             CancellationToken cancellationToken)
         {
             ClientEncryptionKeyProperties clientEncryptionKeyProperties;
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     // looks like the key was never rewrapped with a valid Key Encryption Key.
                     throw new EncryptionCosmosException(
                         $"The Client Encryption Key with key id:{this.ClientEncryptionKeyId} on database:{this.encryptionContainer.Database.Id} and container:{this.encryptionContainer.Id} , needs to be rewrapped with a valid Key Encryption Key using RewrapClientEncryptionKeyAsync. " +
-                        $" The Key Encryption Key used to wrap the Client Encryption Key has been revoked: {ex.Message}." +
+                        $" The Key Encryption Key used to wrap the Client Encryption Key has been revoked: {refreshRetriedOnException.Message}. {ex.Message}." +
                         $" Please refer to https://aka.ms/CosmosClientEncryption for more details. ",
                         HttpStatusCode.BadRequest,
                         int.Parse(Constants.IncorrectContainerRidSubStatus),
@@ -141,7 +141,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ProtectedDataEncryptionKey protectedDataEncryptionKey = await this.BuildProtectedDataEncryptionKeyAsync(
                 clientEncryptionKeyProperties,
-                this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyWrapProvider,
                 this.ClientEncryptionKeyId,
                 cancellationToken);
 
@@ -150,7 +149,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private async Task<ProtectedDataEncryptionKey> BuildProtectedDataEncryptionKeyAsync(
             ClientEncryptionKeyProperties clientEncryptionKeyProperties,
-            EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             string keyId,
             CancellationToken cancellationToken)
         {
@@ -161,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                         clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
                         clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
-                        encryptionKeyWrapProvider.EncryptionKeyStoreProviderImpl);
+                        this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProviderImpl);
 
                     ProtectedDataEncryptionKey protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
                         keyId,

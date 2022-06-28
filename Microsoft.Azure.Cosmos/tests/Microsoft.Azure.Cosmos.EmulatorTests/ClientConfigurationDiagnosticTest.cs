@@ -2,6 +2,8 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -74,6 +76,27 @@
 
             ConsistencyConfig consistencyConfig = cosmosClient.ClientConfigurationTraceDatum.ConsistencyConfig;
             Assert.AreEqual(consistencyConfig.ConsistencyLevel.Value, ConsistencyLevel.Session);
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions 
+            {
+                ApplicationRegion = "East US"
+            };
+
+            CosmosClientContext context = ClientContextCore.Create(
+                cosmosClient,
+                clientOptions);
+
+            ClientConfigurationTraceDatum clientConfig = new ClientConfigurationTraceDatum(context, DateTime.UtcNow);
+            Assert.AreEqual(clientConfig.ConsistencyConfig.ApplicationRegion, "East US");
+            Assert.IsNull(clientConfig.ConsistencyConfig.PreferredRegions);
+
+            Assert.AreEqual(clientConfig.ConnectionMode, ConnectionMode.Direct);
+            clientOptions.ConnectionMode = ConnectionMode.Gateway;
+            context = ClientContextCore.Create(
+                cosmosClient,
+                clientOptions);
+            clientConfig = new ClientConfigurationTraceDatum(context, DateTime.UtcNow);
+            Assert.AreEqual(clientConfig.ConnectionMode, ConnectionMode.Gateway);
         }
 
         [TestMethod]
@@ -81,14 +104,16 @@
         {
             List<string> preferredRegions = new List<string> { "EastUS", "WestUs" };
             ConsistencyLevel consistencyLevel = ConsistencyLevel.Session;
+            string appRegion = "EastUS";
 
-            ConsistencyConfig consistencyConfig = new ConsistencyConfig(consistencyLevel, preferredRegions);
-            Assert.AreEqual(consistencyConfig.ToString(), "(consistency: Session, prgns:[EastUS, WestUs])");
+            ConsistencyConfig consistencyConfig = new ConsistencyConfig(consistencyLevel, preferredRegions, appRegion);
+            Assert.AreEqual(consistencyConfig.ToString(), "(consistency: Session, prgns:[EastUS, WestUs], apprgn: EastUS)");
 
             ConsistencyConfig consistencyConfigWithNull = new ConsistencyConfig(consistencyLevel: null,
-                                                                                preferredRegions: null);
+                                                                                preferredRegions: null,
+                                                                                applicationRegion: null);
 
-            Assert.AreEqual(consistencyConfigWithNull.ToString(), "(consistency: NotSet, prgns:[])");
+            Assert.AreEqual(consistencyConfigWithNull.ToString(), "(consistency: NotSet, prgns:[], apprgn: )");
         }
 
         [TestMethod]
@@ -104,6 +129,9 @@
             trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
             clientConfigurationTraceDatum = (ClientConfigurationTraceDatum)trace.Data["Client Configuration"];
             Assert.IsNotNull(clientConfigurationTraceDatum.SerializedJson);
+            Assert.AreEqual(clientConfigurationTraceDatum.ProcessorCount, Environment.ProcessorCount);
+            string deserializedJson = Encoding.UTF8.GetString(clientConfigurationTraceDatum.SerializedJson.Span);
+            Assert.IsTrue(deserializedJson.Contains("ConnectionMode"));
         }
     }
 }

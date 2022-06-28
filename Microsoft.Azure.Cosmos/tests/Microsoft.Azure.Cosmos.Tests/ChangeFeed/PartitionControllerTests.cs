@@ -268,6 +268,53 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock.Get(this.leaseManager)
                 .Verify(manager => manager.ReleaseAsync(this.lease), Times.Once);
+
+            this.healthMonitor
+                .Verify(m => m.NotifyLeaseReleaseAsync(this.lease.CurrentLeaseToken), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task Controller_ShouldNotify_IfProcessingFails_EvenOnLeaseLost()
+        {
+            Mock.Get(this.partitionProcessor)
+                .Reset();
+
+            Mock<PartitionSupervisor> supervisor = new Mock<PartitionSupervisor>();
+
+            Exception exception = new NotImplementedException();
+
+            ManualResetEvent manualResetEvent = new ManualResetEvent(false);
+
+            // Fail on Release
+            Mock.Get(this.leaseManager)
+                .Setup(manager => manager.ReleaseAsync(this.lease))
+                .ThrowsAsync(new Exceptions.LeaseLostException());
+
+            supervisor
+                .Setup(s => s.RunAsync(It.IsAny<CancellationToken>()))
+                .Callback((CancellationToken ct) =>
+                {
+                    manualResetEvent.Set();
+                    throw exception;
+                });
+
+            Mock.Get(this.partitionSupervisorFactory)
+                .Setup(f => f.Create(this.lease))
+                .Returns(supervisor.Object);
+
+            await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
+
+            bool timeout = manualResetEvent.WaitOne(100);
+            Assert.IsTrue(timeout, "Partition supervisor not started");
+
+            this.healthMonitor
+                .Verify(m => m.NotifyErrorAsync(this.lease.CurrentLeaseToken, exception), Times.Once);
+
+            Mock.Get(this.leaseManager)
+                .Verify(manager => manager.ReleaseAsync(this.lease), Times.Once);
+
+            this.healthMonitor
+                .Verify(m => m.NotifyLeaseReleaseAsync(this.lease.CurrentLeaseToken), Times.Once);
         }
 
         [TestMethod]
@@ -326,6 +373,80 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             this.healthMonitor
                 .Verify(m => m.NotifyLeaseReleaseAsync(this.lease.CurrentLeaseToken), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task AddLease_ShouldNotify_IfLeaseReleaseThrowsUnknown()
+        {
+            Mock.Get(this.partitionProcessor)
+                .Reset();
+
+            Mock.Get(this.leaseManager)
+                .Reset();
+
+            // Fail on Acquire to trigger Release
+            Mock.Get(this.leaseManager)
+                .Setup(manager => manager.AcquireAsync(this.lease))
+                .ThrowsAsync(new NullReferenceException());
+
+            // Fail on Release
+            Mock.Get(this.leaseManager)
+                .Setup(manager => manager.ReleaseAsync(this.lease))
+                .ThrowsAsync(new ArgumentException());
+
+            await Assert.ThrowsExceptionAsync<NullReferenceException>(() => this.sut.AddOrUpdateLeaseAsync(this.lease)).ConfigureAwait(false);
+
+            Mock.Get(this.partitionProcessor)
+                .Verify(processor => processor.RunAsync(It.IsAny<CancellationToken>()), Times.Never);
+
+            // Notify the Acquire error
+            this.healthMonitor
+                .Verify(m => m.NotifyErrorAsync(this.lease.CurrentLeaseToken, It.Is<Exception>(ex => ex is NullReferenceException)), Times.Once);
+
+            // Notify the Release error
+            this.healthMonitor
+                .Verify(m => m.NotifyErrorAsync(this.lease.CurrentLeaseToken, It.Is<Exception>(ex => ex is ArgumentException)), Times.Once);
+
+            this.healthMonitor
+                .Verify(m => m.NotifyLeaseAcquireAsync(this.lease.CurrentLeaseToken), Times.Never);
+
+            this.healthMonitor
+                .Verify(m => m.NotifyLeaseReleaseAsync(this.lease.CurrentLeaseToken), Times.Never);
+        }
+
+        [TestMethod]
+        public async Task AddLease_ShouldNotify_IfLeaseReleaseThrowsLeaseLost()
+        {
+            Mock.Get(this.partitionProcessor)
+                .Reset();
+
+            Mock.Get(this.leaseManager)
+                .Reset();
+
+            // Fail on Acquire to trigger Release
+            Mock.Get(this.leaseManager)
+                .Setup(manager => manager.AcquireAsync(this.lease))
+                .ThrowsAsync(new NullReferenceException());
+
+            // Fail on Release
+            Mock.Get(this.leaseManager)
+                .Setup(manager => manager.ReleaseAsync(this.lease))
+                .ThrowsAsync(new Exceptions.LeaseLostException());
+
+            await Assert.ThrowsExceptionAsync<NullReferenceException>(() => this.sut.AddOrUpdateLeaseAsync(this.lease)).ConfigureAwait(false);
+
+            Mock.Get(this.partitionProcessor)
+                .Verify(processor => processor.RunAsync(It.IsAny<CancellationToken>()), Times.Never);
+
+            // Notify the Acquire error
+            this.healthMonitor
+                .Verify(m => m.NotifyErrorAsync(this.lease.CurrentLeaseToken, It.Is<Exception>(ex => ex is NullReferenceException)), Times.Once);
+
+            this.healthMonitor
+                .Verify(m => m.NotifyLeaseAcquireAsync(this.lease.CurrentLeaseToken), Times.Never);
+
+            this.healthMonitor
+                .Verify(m => m.NotifyLeaseReleaseAsync(this.lease.CurrentLeaseToken), Times.Never);
         }
 
         [TestMethod]

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -23,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
     internal sealed class QueryIterator : FeedIteratorInternal
     {
+        private static readonly string CorrelatedActivityIdKeyName = "Query Correlated ActivityId";
         private static readonly IReadOnlyList<CosmosElement> EmptyPage = new List<CosmosElement>();
 
         private readonly CosmosQueryContextCore cosmosQueryContext;
@@ -30,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly CosmosSerializationFormatOptions cosmosSerializationFormatOptions;
         private readonly RequestOptions requestOptions;
         private readonly CosmosClientContext clientContext;
+        private readonly Guid correlatedActivityId;
 
         private bool hasMoreResults;
 
@@ -38,7 +41,8 @@ namespace Microsoft.Azure.Cosmos.Query
             IQueryPipelineStage cosmosQueryExecutionContext,
             CosmosSerializationFormatOptions cosmosSerializationFormatOptions,
             RequestOptions requestOptions,
-            CosmosClientContext clientContext)
+            CosmosClientContext clientContext,
+            Guid correlatedActivityId)
         {
             this.cosmosQueryContext = cosmosQueryContext ?? throw new ArgumentNullException(nameof(cosmosQueryContext));
             this.queryPipelineStage = cosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
@@ -46,6 +50,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.requestOptions = requestOptions;
             this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
             this.hasMoreResults = true;
+            this.correlatedActivityId = correlatedActivityId;
         }
 
         public static QueryIterator Create(
@@ -67,6 +72,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 queryRequestOptions = new QueryRequestOptions();
             }
 
+            Guid correlatedActivityId = Guid.NewGuid();
             CosmosQueryContextCore cosmosQueryContext = new CosmosQueryContextCore(
                 client: client,
                 resourceTypeEnum: Documents.ResourceType.Document,
@@ -75,11 +81,12 @@ namespace Microsoft.Azure.Cosmos.Query
                 resourceLink: resourceLink,
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
-                correlatedActivityId: Guid.NewGuid());
+                correlatedActivityId: correlatedActivityId);
 
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 containerCore,
                 client,
+                correlatedActivityId,
                 queryRequestOptions);
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
@@ -100,7 +107,8 @@ namespace Microsoft.Azure.Cosmos.Query
                                         innerException: tryParse.Exception)),
                                 queryRequestOptions.CosmosSerializationFormatOptions,
                                 queryRequestOptions,
-                                clientContext);
+                                clientContext,
+                                correlatedActivityId);
                         }
 
                         requestContinuationToken = tryParse.Result;
@@ -139,7 +147,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 CosmosQueryExecutionContextFactory.Create(documentContainer, cosmosQueryContext, inputParameters, NoOpTrace.Singleton),
                 queryRequestOptions.CosmosSerializationFormatOptions,
                 queryRequestOptions,
-                clientContext);
+                clientContext,
+                correlatedActivityId);
         }
 
         public override bool HasMoreResults => this.hasMoreResults;
@@ -154,6 +163,23 @@ namespace Microsoft.Azure.Cosmos.Query
             if (trace == null)
             {
                 throw new ArgumentNullException(nameof(trace));
+            }
+
+            // If Correlated Id already exists and is different, add a new one in comma separated list
+            // Scenario: A new iterator is created with same ContinuationToken and Trace 
+            if (trace.Data.TryGetValue(QueryIterator.CorrelatedActivityIdKeyName, out object correlatedActivityIds))
+            {
+                List<string> correlatedIdList = correlatedActivityIds.ToString().Split(',').ToList();
+                if (!correlatedIdList.Contains(this.correlatedActivityId.ToString()))
+                {
+                    correlatedIdList.Add(this.correlatedActivityId.ToString());
+                    trace.AddOrUpdateDatum(QueryIterator.CorrelatedActivityIdKeyName,
+                                            string.Join(",", correlatedIdList));
+                }
+            }
+            else
+            {
+                trace.AddDatum(QueryIterator.CorrelatedActivityIdKeyName, this.correlatedActivityId.ToString());
             }
 
             TryCatch<QueryPage> tryGetQueryPage;
@@ -176,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             this.cosmosQueryContext.ContainerResourceId)
                         {
                             RequestCharge = default,
-                            ActivityId = Guid.Empty.ToString(),
+                            ActivityId = this.correlatedActivityId.ToString(),
                             SubStatusCode = Documents.SubStatusCodes.Unknown
                         },
                         trace: trace);

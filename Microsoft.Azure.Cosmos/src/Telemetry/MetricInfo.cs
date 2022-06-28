@@ -21,11 +21,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         public MetricInfo(string metricsName, 
             string unitName, 
-            double mean, 
-            long count, 
-            long min, 
-            long max, 
-            IReadOnlyDictionary<double, double> percentiles)
+            double mean = 0, 
+            long count = 0, 
+            long min = 0, 
+            long max = 0, 
+            IReadOnlyDictionary<double, double> percentiles = null)
             : this(metricsName, unitName)
         {
             this.Mean = mean;

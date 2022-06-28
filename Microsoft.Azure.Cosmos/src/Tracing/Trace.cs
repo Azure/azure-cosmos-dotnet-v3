@@ -108,15 +108,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
             TraceComponent component,
             TraceLevel level)
         {
+            if (this.Parent != null && !this.stopwatch.IsRunning)
+            {
+                return this.Parent.StartChild(name, component, level);
+            }
+
             Trace child = new Trace(
                 name: name,
                 level: level,
                 component: component,
                 parent: this,
-                regionContactedInternal: this.regionContactedInternal);
-
+                regionContactedInternal: this.regionContactedInternal);           
+            
             this.AddChild(child);
-
             return child;
         }
 
@@ -158,6 +162,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public void AddDatum(string key, object value)
         {
             this.data.Value.Add(key, value);
+        }
+
+        public void AddOrUpdateDatum(string key, object value)
+        {
+            this.data.Value[key] = value;
         }
     }
 }

@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos
             // Flow the pageSize only when we are not doing client eval
             if (this.MaxItemCount.HasValue)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.PageSize, this.MaxItemCount.ToString());
+                request.Headers.CosmosMessageHeaders.PageSize = this.MaxItemCount.ToString();
             }
 
             if (this.MaxConcurrency.HasValue && this.MaxConcurrency > 0)
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.CosmosSerializationFormatOptions != null)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, this.CosmosSerializationFormatOptions.ContentSerializationFormat);
+                request.Headers.CosmosMessageHeaders.ContentSerializationFormat = this.CosmosSerializationFormatOptions.ContentSerializationFormat;
             }
 
             if (this.StartId != null)
@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.PopulateIndexMetrics.HasValue)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.PopulateIndexMetrics, this.PopulateIndexMetrics.ToString());
+                request.Headers.CosmosMessageHeaders.Add(HttpConstants.HttpHeaders.PopulateIndexMetrics, this.PopulateIndexMetrics.ToString());
             }
 
             DedicatedGatewayRequestOptions.PopulateMaxIntegratedCacheStalenessOption(this.DedicatedGatewayRequestOptions, request);

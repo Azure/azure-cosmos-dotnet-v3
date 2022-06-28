@@ -6,6 +6,7 @@
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -71,6 +72,34 @@
             };
 
             CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync(endpoint, authKey, containers, cosmosClientOptions);
+            Assert.IsNotNull(cosmosClient);
+            int httpCallsMadeAfterCreation = httpCallsMade;
+
+            ContainerInternal container = (ContainerInternal)cosmosClient.GetContainer("ClientCreateAndInitializeDatabase", "ClientCreateAndInitializeContainer");
+            ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>("1", new Cosmos.PartitionKey("Status1"));
+            Assert.AreEqual(httpCallsMade, httpCallsMadeAfterCreation);
+            cosmosClient.Dispose();
+        }
+
+        [TestMethod]
+        public async Task CreateAndInitializeWithCosmosClientBuilderTest()
+        {
+            int httpCallsMade = 0;
+            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper
+            {
+                RequestCallBack = (request, cancellationToken) =>
+                {
+                    httpCallsMade++;
+                    return null;
+                }
+            };
+
+            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+            List<(string, string)> containers = new List<(string, string)>
+            { ("ClientCreateAndInitializeDatabase", "ClientCreateAndInitializeContainer")};
+
+            CosmosClientBuilder builder = new CosmosClientBuilder(endpoint, authKey).WithHttpClientFactory(() => new HttpClient(httpClientHandlerHelper));
+            CosmosClient cosmosClient = await builder.BuildAndInitializeAsync(containers);
             Assert.IsNotNull(cosmosClient);
             int httpCallsMadeAfterCreation = httpCallsMade;
 

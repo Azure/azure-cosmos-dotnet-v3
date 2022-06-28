@@ -734,7 +734,7 @@
     │   │                                               [Client Side Request Stats]
     │   │                                               Redacted To Not Change The Baselines From Run To Run
     │   │                                           )
-    │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+    │   └── Feed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
@@ -760,7 +760,7 @@
     │   │                                           [Client Side Request Stats]
     │   │                                           Redacted To Not Change The Baselines From Run To Run
     │   │                                       )
-    │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+    │   └── Feed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
@@ -786,7 +786,7 @@
     │   │                                           [Client Side Request Stats]
     │   │                                           Redacted To Not Change The Baselines From Run To Run
     │   │                                       )
-    │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+    │   └── Feed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
@@ -812,7 +812,7 @@
         │                                           [Client Side Request Stats]
         │                                           Redacted To Not Change The Baselines From Run To Run
         │                                       )
-        └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+        └── Feed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -1031,7 +1031,7 @@
           ]
         },
         {
-          "name": "POCO Materialization",
+          "name": "Feed Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -1142,7 +1142,7 @@
           ]
         },
         {
-          "name": "POCO Materialization",
+          "name": "Feed Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -1253,7 +1253,7 @@
           ]
         },
         {
-          "name": "POCO Materialization",
+          "name": "Feed Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -1364,7 +1364,7 @@
           ]
         },
         {
-          "name": "POCO Materialization",
+          "name": "Feed Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -2112,7 +2112,7 @@
     │   │                                               [Client Side Request Stats]
     │   │                                               Redacted To Not Change The Baselines From Run To Run
     │   │                                           )
-    │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+    │   └── Feed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
@@ -2138,7 +2138,7 @@
     │   │                                           [Client Side Request Stats]
     │   │                                           Redacted To Not Change The Baselines From Run To Run
     │   │                                       )
-    │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+    │   └── Feed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
@@ -2164,7 +2164,7 @@
     │   │                                           [Client Side Request Stats]
     │   │                                           Redacted To Not Change The Baselines From Run To Run
     │   │                                       )
-    │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+    │   └── Feed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
@@ -2190,7 +2190,7 @@
         │                                           [Client Side Request Stats]
         │                                           Redacted To Not Change The Baselines From Run To Run
         │                                       )
-        └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+        └── Feed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -2409,7 +2409,7 @@
           ]
         },
         {
-          "name": "POCO Materialization",
+          "name": "Feed Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -2520,7 +2520,7 @@
           ]
         },
         {
-          "name": "POCO Materialization",
+          "name": "Feed Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -2631,7 +2631,7 @@
           ]
         },
         {
-          "name": "POCO Materialization",
+          "name": "Feed Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -2742,7 +2742,7 @@
           ]
         },
         {
-          "name": "POCO Materialization",
+          "name": "Feed Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0

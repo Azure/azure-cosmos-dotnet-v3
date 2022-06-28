@@ -369,7 +369,6 @@ namespace Microsoft.Azure.Cosmos
                     collectionRid: collection.ResourceId,
                     previousValue: null,
                     request: request,
-                    cancellationToken: CancellationToken.None,
                     NoOpTrace.Singleton);
 
                 if (refreshCache && collectionRoutingMap != null)
@@ -378,7 +377,6 @@ namespace Microsoft.Azure.Cosmos
                         collectionRid: collection.ResourceId,
                         previousValue: collectionRoutingMap,
                         request: request,
-                        cancellationToken: CancellationToken.None,
                         NoOpTrace.Singleton);
                 }
 

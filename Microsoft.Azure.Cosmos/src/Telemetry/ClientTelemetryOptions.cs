@@ -4,17 +4,14 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
-    using System.Net.Http;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     internal static class ClientTelemetryOptions
     {
         // ConversionFactor used in Histogram calculation to maintain precision or to collect data in desired unit
-        internal const double HistogramPrecisionFactor = 100;
+        internal const int HistogramPrecisionFactor = 100;
         internal const double TicksToMsFactor = TimeSpan.TicksPerMillisecond;
         internal const int KbToMbFactor = 1024;
 
@@ -38,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         // Expecting histogram to have Minimum CPU Usage of .001% and Maximum CPU Usage of 999.99%
         internal const long CpuMax = 99999;
         internal const long CpuMin = 1;
-        internal const int CpuPrecision = 2; 
+        internal const int CpuPrecision = 2;
         internal const String CpuName = "CPU";
         internal const String CpuUnit = "Percentage";
 
@@ -49,7 +46,30 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const String MemoryName = "MemoryRemaining";
         internal const String MemoryUnit = "MB";
 
-        internal const string DefaultVmMetadataUrL = "http://169.254.169.254/metadata/instance?api-version=2020-06-01";
+        // Expecting histogram to have Minimum Available Threads = 0 and Maximum Available Threads = it can be any anything depends on the machine
+        internal const long AvailableThreadsMax = Int64.MaxValue;
+        internal const long AvailableThreadsMin = 1;
+        internal const int AvailableThreadsPrecision = 2;
+        internal const String AvailableThreadsName = "SystemPool_AvailableThreads";
+        internal const String AvailableThreadsUnit = "ThreadCount";
+
+        // Expecting histogram to have Minimum ThreadWaitIntervalInMs of 1 and Maximum ThreadWaitIntervalInMs of 1 second
+        internal const long ThreadWaitIntervalInMsMax = TimeSpan.TicksPerSecond;
+        internal const long ThreadWaitIntervalInMsMin = 1;
+        internal const int ThreadWaitIntervalInMsPrecision = 2;
+        internal const string ThreadWaitIntervalInMsName = "SystemPool_ThreadWaitInterval";
+        internal const string ThreadWaitIntervalInMsUnit = "MilliSecond";
+
+        // Expecting histogram to have Minimum Number of TCP connections as 1 and Maximum Number Of TCP connection as 70000
+        internal const long NumberOfTcpConnectionMax = 70000;
+        internal const long NumberOfTcpConnectionMin = 1;
+        internal const int NumberOfTcpConnectionPrecision = 2;
+        internal const string NumberOfTcpConnectionName = "RntbdOpenConnections";
+        internal const string NumberOfTcpConnectionUnit = "Count";
+
+        internal const string IsThreadStarvingName = "SystemPool_IsThreadStarving_True";
+        internal const string IsThreadStarvingUnit = "Count";
+
         internal const double DefaultTimeStampInSeconds = 600;
         internal const double Percentile50 = 50.0;
         internal const double Percentile90 = 90.0;
@@ -68,7 +88,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         internal static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
 
-        private static Uri vmMetadataUrl;
         private static Uri clientTelemetryEndpoint;
         private static string environmentName;
         private static TimeSpan scheduledTimeSpan = TimeSpan.Zero;
@@ -82,22 +101,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             DefaultTrace.TraceInformation($"Telemetry Flag is set to {isTelemetryEnabled}");
 
             return isTelemetryEnabled;
-        }
-
-        internal static Uri GetVmMetadataUrl()
-        {
-            if (vmMetadataUrl == null)
-            {
-                string vmMetadataUrlProp = ConfigurationManager.GetEnvironmentVariable<string>(
-                   EnvPropsClientTelemetryVmMetadataUrl, DefaultVmMetadataUrL);
-                if (!String.IsNullOrEmpty(vmMetadataUrlProp))
-                {
-                    vmMetadataUrl = new Uri(vmMetadataUrlProp);
-                }
-
-                DefaultTrace.TraceInformation($"VM metadata URL for telemetry {vmMetadataUrlProp}");
-            }
-            return vmMetadataUrl;
         }
 
         internal static TimeSpan GetScheduledTimeSpan()
@@ -128,16 +131,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             }
             return scheduledTimeSpan;
-        }
-
-        internal static async Task<AzureVMMetadata> ProcessResponseAsync(HttpResponseMessage httpResponseMessage)
-        {
-            if (httpResponseMessage.Content == null)
-            {
-                return null;
-            }
-            string jsonVmInfo = await httpResponseMessage.Content.ReadAsStringAsync();
-            return JObject.Parse(jsonVmInfo).ToObject<AzureVMMetadata>();
         }
 
         internal static string GetHostInformation(Compute vmInformation)
