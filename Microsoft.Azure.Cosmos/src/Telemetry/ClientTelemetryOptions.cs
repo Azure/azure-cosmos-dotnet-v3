@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings 
         { 
             NullValueHandling = NullValueHandling.Ignore,
-            MaxDepth = 128 // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+            MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
         };
 
         private static Uri clientTelemetryEndpoint;

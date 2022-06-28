@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     new PatchOperationsJsonConverter(cosmosSerializer)
                 },
-                MaxDepth = 128 // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+                MaxDepth = 128, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
             };
 
             return new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer(settings));
