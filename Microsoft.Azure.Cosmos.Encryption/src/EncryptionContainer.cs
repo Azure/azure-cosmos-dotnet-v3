@@ -817,8 +817,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken)
         {
             string subStatusCode = responseMessage.Headers.Get(Constants.SubStatusHeader);
-            bool isPartitionKeyMismatch = string.Equals(subStatusCode, Constants.PartitionKeyMismatch);
-            bool isContainerRidIncorrect = string.Equals(subStatusCode, Constants.IncorrectContainerRidSubStatus);
+            bool isPartitionKeyMismatch = string.Equals(subStatusCode, Constants.PartitionKeyMismatch, StringComparison.InvariantCultureIgnoreCase);
+            bool isContainerRidIncorrect = string.Equals(subStatusCode, Constants.IncorrectContainerRidSubStatus, StringComparison.InvariantCultureIgnoreCase);
 
             // if the partition key check is done before container rid check.
             if (responseMessage.StatusCode == HttpStatusCode.BadRequest && (isContainerRidIncorrect || isPartitionKeyMismatch))
