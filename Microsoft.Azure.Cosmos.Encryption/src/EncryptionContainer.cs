@@ -938,7 +938,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 Stream encryptedPropertyValue = await EncryptionProcessor.EncryptValueStreamAsync(
                     valueStreamToEncrypt: valueParam,
                     encryptionSettingForProperty: encryptionSettingForProperty,
-                    shouldEscape: patchOperation.Path.Split('/')[1].Equals("id"),
+                    shouldEscape: patchOperation.Path.Split('/')[1] == "id",
                     cancellationToken: cancellationToken);
 
                 propertiesEncryptedCount++;
@@ -1038,7 +1038,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     Stream encryptedPartitionKey = await EncryptionProcessor.EncryptValueStreamAsync(
                         valueStreamToEncrypt: valueStream,
                         encryptionSettingForProperty: encryptionSettingForProperty,
-                        shouldEscape: partitionKeyPath.Equals("id"),
+                        shouldEscape: partitionKeyPath == "id",
                         cancellationToken: cancellationToken);
 
                     if (encryptedPartitionKey != null)
@@ -1074,7 +1074,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 Stream encryptedPartitionKey = await EncryptionProcessor.EncryptValueStreamAsync(
                     valueStreamToEncrypt: valueStream,
                     encryptionSettingForProperty: encryptionSettingForProperty,
-                    shouldEscape: partitionKeyPath.Equals("id"),
+                    shouldEscape: partitionKeyPath == "id",
                     cancellationToken: cancellationToken);
 
                 string encryptedPK = null;

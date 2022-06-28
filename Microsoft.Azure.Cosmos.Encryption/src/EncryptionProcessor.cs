@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 await EncryptJTokenAsync(
                     propertyToEncrypt.Value,
                     settingforProperty,
-                    propertyName.Equals("id"),
+                    propertyName == "id",
                     cancellationToken);
 
                 propertiesEncryptedCount++;
@@ -442,7 +442,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     await DecryptJTokenAsync(
                         propertyToDecrypt.Value,
                         settingsForProperty,
-                        propertyName.Equals("id"),
+                        propertyName == "id",
                         cancellationToken);
 
                     propertiesDecryptedCount++;
@@ -474,29 +474,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private static string ConvertToBase64UriSafeString(byte[] byteToProcess)
         {
-            IDictionary<string, string> charactersToReplace = new Dictionary<string, string>()
-            {
-                { "/", "-" },
-                { "=", "@" },
-                { "+", "*" },
-            };
-
-            Regex regex = new Regex(string.Join("|", charactersToReplace.Keys.Select(key => Regex.Escape(key))));
-            return regex.Replace(Convert.ToBase64String(byteToProcess), key => charactersToReplace[key.Value]);
+            string base64String = Convert.ToBase64String(byteToProcess);
+            return new StringBuilder(base64String, base64String.Length).Replace("/", "-").Replace("=", "@").Replace("+", "*").ToString();
         }
 
         private static byte[] ConvertFromBase64UriSafeString(string stringToProcess)
         {
-            IDictionary<string, string> charactersToReplace = new Dictionary<string, string>()
-            {
-                { "-", "/" },
-                { "@", "=" },
-                { "*", "+" },
-            };
-
-            Regex regex = new Regex(string.Join("|", charactersToReplace.Keys.Select(key => Regex.Escape(key))));
-
-            return Convert.FromBase64String(regex.Replace(stringToProcess, key => charactersToReplace[key.Value]));
+            StringBuilder fromUriSafeString = new StringBuilder(stringToProcess, stringToProcess.Length).Replace("-", "/").Replace("@", "=").Replace("*", "+");
+            return Convert.FromBase64String(fromUriSafeString.ToString());
         }
     }
 }
