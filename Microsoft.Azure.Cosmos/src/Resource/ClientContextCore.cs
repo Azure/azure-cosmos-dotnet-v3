@@ -502,7 +502,7 @@ namespace Microsoft.Azure.Cosmos
                         trace);
                     recorder.MarkFailed(objectDisposedException);
 
-                    throw objectDisposed;
+                    throw objectDisposedException;
                 }
                 catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
                 {
@@ -511,7 +511,7 @@ namespace Microsoft.Azure.Cosmos
                         trace);
                     recorder.MarkFailed(nullException);
 
-                    throw nullRefException;
+                    throw nullException;
                 }
                 catch (CosmosException cex)
                 {
