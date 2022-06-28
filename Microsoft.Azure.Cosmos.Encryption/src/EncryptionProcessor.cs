@@ -5,10 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Text;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Data.Encryption.Cryptography;
@@ -329,7 +331,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (shouldEscape)
             {
                 // case: id does not support '/','\','?','#'. Convert Base64 string to Uri safe string
-                return Convert.ToBase64String(cipherTextWithTypeMarker).Replace("/", "-").Replace("=", "@").Replace("+", "*");
+                return ConvertToBase64UriSafeString(cipherTextWithTypeMarker);
             }
 
             return cipherTextWithTypeMarker;
@@ -350,7 +352,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     return null;
                 }
 
-                cipherTextWithTypeMarker = Convert.FromBase64String(jToken.ToObject<string>().Replace("-", "/").Replace("@", "=").Replace("*", "+"));
+                cipherTextWithTypeMarker = ConvertFromBase64UriSafeString(jToken.ToObject<string>());
             }
             else
             {
@@ -468,6 +470,33 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             return itemJObj;
+        }
+
+        private static string ConvertToBase64UriSafeString(byte[] byteToProcess)
+        {
+            IDictionary<string, string> charactersToReplace = new Dictionary<string, string>()
+            {
+                { "/", "-" },
+                { "=", "@" },
+                { "+", "*" },
+            };
+
+            Regex regex = new Regex(string.Join("|", charactersToReplace.Keys.Select(key => Regex.Escape(key))));
+            return regex.Replace(Convert.ToBase64String(byteToProcess), key => charactersToReplace[key.Value]);
+        }
+
+        private static byte[] ConvertFromBase64UriSafeString(string stringToProcess)
+        {
+            IDictionary<string, string> charactersToReplace = new Dictionary<string, string>()
+            {
+                { "-", "/" },
+                { "@", "=" },
+                { "*", "+" },
+            };
+
+            Regex regex = new Regex(string.Join("|", charactersToReplace.Keys.Select(key => Regex.Escape(key))));
+
+            return Convert.FromBase64String(regex.Replace(stringToProcess, key => charactersToReplace[key.Value]));
         }
     }
 }
