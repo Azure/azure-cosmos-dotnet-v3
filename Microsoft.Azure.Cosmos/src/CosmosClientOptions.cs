@@ -165,9 +165,9 @@ namespace Microsoft.Azure.Cosmos
 
             set
             {
-                if (value.Seconds < 0)
+                if (value.TotalSeconds <= 0)
                 {
-                    throw new ArgumentOutOfRangeException($"{nameof(this.RequestTimeout)} can not be set less than 1 second. This must be set in the Timespan of seconds.");
+                    throw new ArgumentOutOfRangeException(nameof(this.RequestTimeout), "Timeout can not be set less than 1 second. This must be set in the Timespan of seconds.");
                 }
 
                 this.requestTimeout = value;
