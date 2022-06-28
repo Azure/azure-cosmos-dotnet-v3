@@ -230,8 +230,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 defaultConsistencyLevel,
                 new JsonSerializerSettings()
                 {
-                    ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
-                    MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+                    ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor
                 },
                 apiType,
                 recievedResponseEventHandler);

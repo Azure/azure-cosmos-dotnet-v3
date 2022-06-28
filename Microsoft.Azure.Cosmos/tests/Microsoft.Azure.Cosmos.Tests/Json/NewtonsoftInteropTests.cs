@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             DateFormatHandling = DateFormatHandling.IsoDateFormat,
             DateParseHandling = DateParseHandling.None,
-            MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
         };
 
         [TestInitialize]

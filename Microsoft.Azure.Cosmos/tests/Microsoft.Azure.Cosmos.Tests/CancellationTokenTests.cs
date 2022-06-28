@@ -215,10 +215,7 @@ namespace Microsoft.Azure.Cosmos
                 sessionContainer,
                 Cosmos.ConsistencyLevel.Eventual,
                 new DocumentClientEventSource(),
-                new JsonSerializerSettings() 
-                {
-                    MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
-                },
+                new JsonSerializerSettings(),
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
         }
 

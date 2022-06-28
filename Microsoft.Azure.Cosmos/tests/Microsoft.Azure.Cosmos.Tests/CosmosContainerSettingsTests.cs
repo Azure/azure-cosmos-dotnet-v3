@@ -183,8 +183,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             JsonSerializerSettings jsonSettings = new JsonSerializerSettings
             {
-                NullValueHandling = NullValueHandling.Ignore,
-                MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+                NullValueHandling = NullValueHandling.Ignore
             };
 
             // HAKC: Work-around till BE fixes defaults 

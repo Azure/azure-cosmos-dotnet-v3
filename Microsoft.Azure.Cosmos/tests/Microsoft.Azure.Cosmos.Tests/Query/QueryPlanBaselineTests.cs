@@ -1583,8 +1583,7 @@
                 JsonSerializerSettings settings = new JsonSerializerSettings
                 {
                     DateParseHandling = DateParseHandling.None,
-                    Formatting = Newtonsoft.Json.Formatting.None,
-                    MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+                    Formatting = Newtonsoft.Json.Formatting.None
                 };
                 string minRangeString = JsonConvert.SerializeObject(JsonConvert.DeserializeObject(range.Min.ToJsonString(), settings), settings);
                 string maxRangeString = JsonConvert.SerializeObject(JsonConvert.DeserializeObject(range.Max.ToJsonString(), settings), settings);
