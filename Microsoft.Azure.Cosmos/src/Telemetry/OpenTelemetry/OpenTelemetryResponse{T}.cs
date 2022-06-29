@@ -4,12 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
-    using System.Net;
-    using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
-    using Microsoft.Azure.Documents;
 
     internal sealed class OpenTelemetryResponse<T> : OpenTelemetryAttributes
     {
@@ -18,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.StatusCode = responseMessage.StatusCode;
             this.RequestCharge = responseMessage.Headers?.RequestCharge;
-            this.ResponseContentLength = responseMessage?.Headers?.ContentLength ?? "0"; 
+            this.ResponseContentLength = responseMessage?.Headers?.ContentLength ?? "NA"; 
             this.Diagnostics = responseMessage.Diagnostics;
             this.ItemCount = responseMessage.Headers?.ItemCount;
         }
@@ -28,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.StatusCode = responseMessage.StatusCode;
             this.RequestCharge = responseMessage.Headers?.RequestCharge;
-            this.ResponseContentLength = responseMessage?.Headers?.ContentLength ?? "0";
+            this.ResponseContentLength = responseMessage?.Headers?.ContentLength ?? "NA";
             this.Diagnostics = responseMessage.Diagnostics;
             this.ItemCount = responseMessage.Headers?.ItemCount;
         }

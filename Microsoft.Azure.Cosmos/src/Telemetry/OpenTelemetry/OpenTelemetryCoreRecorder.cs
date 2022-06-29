@@ -5,11 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
     using System;
-    using System.Net;
     using global::Azure.Core.Pipeline;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
-    using Microsoft.Azure.Cosmos.Tracing;
 
     internal struct OpenTelemetryCoreRecorder : IDisposable
     {
