@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestCharge = responseMessage.Headers?.RequestCharge;
             this.ResponseContentLength = OpenTelemetryResponse.GetPayloadSize(responseMessage);
             this.Diagnostics = responseMessage.Diagnostics;
-            //TODO: ItemCount needs to be added
+            this.ItemCount = responseMessage.Headers?.ItemCount;
         }
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 return Convert.ToString(response.Content.Length);
             }
-            return response?.Headers?.ContentLength ?? "0";
+            return response?.Headers?.ContentLength ?? "NA";
         }
     }
 }
