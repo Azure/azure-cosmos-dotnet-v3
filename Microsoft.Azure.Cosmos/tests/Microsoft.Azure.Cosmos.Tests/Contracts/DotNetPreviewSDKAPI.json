@@ -91,19 +91,12 @@
           ],
           "MethodInfo": "Boolean TimeToLiveExpired;CanRead:True;CanWrite:False;Boolean get_TimeToLiveExpired();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Int64 CurrentLogSequenceNumber[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"lsn\")]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
-          "MethodInfo": "Int64 CurrentLogSequenceNumber;CanRead:True;CanWrite:False;Int64 get_CurrentLogSequenceNumber();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Int64 get_CurrentLogSequenceNumber()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Int64 get_LogSequenceNumber()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Int64 get_CurrentLogSequenceNumber();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Int64 get_LogSequenceNumber();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Int64 get_PreviousLogSequenceNumber()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -111,6 +104,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Int64 get_PreviousLogSequenceNumber();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int64 LogSequenceNumber[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"lsn\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "Int64 LogSequenceNumber;CanRead:True;CanWrite:False;Int64 get_LogSequenceNumber();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Int64 PreviousLogSequenceNumber[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"previousImageLSN\")]": {
           "Type": "Property",
