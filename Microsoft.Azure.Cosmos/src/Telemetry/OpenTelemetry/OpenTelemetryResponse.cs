@@ -24,6 +24,20 @@ namespace Microsoft.Azure.Cosmos
             //TODO: ItemCount needs to be added
         }
 
+        /// <summary>
+        /// No request message in TransactionalBatchresponse
+        /// </summary>
+        /// <param name="responseMessage"></param>
+        internal OpenTelemetryResponse(TransactionalBatchResponse responseMessage)
+           : base(null)
+        {
+            // TODO: Add Request Information in TransactionalBatchResponse
+            this.StatusCode = responseMessage.StatusCode;
+            this.RequestCharge = responseMessage.Headers?.RequestCharge;
+            this.Diagnostics = responseMessage.Diagnostics;
+            //TODO: ItemCount needs to be added
+        }
+
         private static string GetPayloadSize(ResponseMessage response)
         {
             if (response?.Content != null

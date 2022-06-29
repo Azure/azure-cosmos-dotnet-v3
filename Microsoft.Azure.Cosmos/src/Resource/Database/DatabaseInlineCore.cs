@@ -93,7 +93,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateUserAsync),
                 requestOptions,
-                (trace) => base.CreateUserAsync(id, requestOptions, trace, cancellationToken));
+                (trace) => base.CreateUserAsync(id, requestOptions, trace, cancellationToken),
+                (response) => new OpenTelemetryResponse<UserProperties>(response));
         }
 
         public override ContainerBuilder DefineContainer(
@@ -242,7 +243,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadThroughputAsync),
                 requestOptions,
-                (trace) => base.ReadThroughputAsync(requestOptions, trace, cancellationToken));
+                (trace) => base.ReadThroughputAsync(requestOptions, trace, cancellationToken),
+                (response) => new OpenTelemetryResponse<ThroughputProperties>(response));
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -253,7 +255,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReplaceThroughputAsync),
                 requestOptions,
-                (trace) => base.ReplaceThroughputAsync(throughput, requestOptions, trace, cancellationToken));
+                (trace) => base.ReplaceThroughputAsync(throughput, requestOptions, trace, cancellationToken),
+                (response) => new OpenTelemetryResponse<ThroughputProperties>(response));
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -264,7 +267,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReplaceThroughputAsync),
                 requestOptions,
-                (trace) => base.ReplaceThroughputAsync(throughputProperties, requestOptions, trace, cancellationToken));
+                (trace) => base.ReplaceThroughputAsync(throughputProperties, requestOptions, trace, cancellationToken),
+                (response) => new OpenTelemetryResponse<ThroughputProperties>(response));
         }
 
         public override Task<ContainerResponse> CreateContainerAsync(
@@ -314,7 +318,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(UpsertUserAsync),
                 requestOptions,
-                (trace) => base.UpsertUserAsync(id, requestOptions, trace, cancellationToken));
+                (trace) => base.UpsertUserAsync(id, requestOptions, trace, cancellationToken),
+                (response) => new OpenTelemetryResponse<UserProperties>(response));
         }
 
         public override ClientEncryptionKey GetClientEncryptionKey(string id)
@@ -338,7 +343,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateClientEncryptionKeyAsync),
                 requestOptions,
-                (trace) => base.CreateClientEncryptionKeyAsync(trace, clientEncryptionKeyProperties, requestOptions, cancellationToken));
+                (trace) => base.CreateClientEncryptionKeyAsync(trace, clientEncryptionKeyProperties, requestOptions, cancellationToken),
+                (response) => new OpenTelemetryResponse<ClientEncryptionKeyProperties>(response));
         }
     }
 }
