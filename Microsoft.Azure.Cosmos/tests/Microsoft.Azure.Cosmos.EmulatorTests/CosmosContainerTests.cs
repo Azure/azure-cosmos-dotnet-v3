@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -21,7 +22,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private CosmosClient cosmosClient = null;
         private Cosmos.Database cosmosDatabase = null;
-
         private static long ToEpoch(DateTime dateTime)
         {
             return (long)(dateTime - new DateTime(1970, 1, 1)).TotalSeconds;
