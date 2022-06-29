@@ -6,11 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.IO;
-    using System.Net;
-    using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
-    using Microsoft.Azure.Documents;
 
     internal sealed class OpenTelemetryResponse : OpenTelemetryAttributes
     {
@@ -35,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
             this.StatusCode = responseMessage.StatusCode;
             this.RequestCharge = responseMessage.Headers?.RequestCharge;
             this.Diagnostics = responseMessage.Diagnostics;
-            //TODO: ItemCount needs to be added
+            this.ItemCount = responseMessage.Headers?.ItemCount;
         }
 
         private static string GetPayloadSize(ResponseMessage response)
