@@ -60,11 +60,9 @@ namespace Microsoft.Azure.Cosmos
                         timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
                         clientSideRequestStatistics: stats,
                         cancellationToken: default))
+                    using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                     {
-                        using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
-                        {
-                            return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
-                        }
+                        return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
                     }
                 }
                 catch (OperationCanceledException ex)

@@ -24,23 +24,23 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// This represent the start time of the request.
+        /// This represents the start time of the request.
         /// </summary>
         /// <returns>This returns the start time of the request.</returns>
         public virtual DateTime GetStartTimeUtc()
         {
             // Default implementation avoids breaking change for users upgrading.
-            throw new NotImplementedException($"CosmosDiagnostics.GetStartTimeUtc");
+             throw new NotImplementedException($"{nameof(CosmosDiagnostics)}.{nameof(GetStartTimeUtc)})");
         }
 
         /// <summary>
-        ///  This represent the count of failed requests.
+        ///  This represents the count of failed requests.
         /// </summary>
         /// <returns>The count of failed requests with cosmos service.</returns>
         public virtual int GetFailedRequestCount()
         {
             // Default implementation avoids breaking change for users upgrading.
-            throw new NotImplementedException($"CosmosDiagnostics.GetFailedRequestCount");
+            throw new NotImplementedException($"{nameof(CosmosDiagnostics)}.{nameof(GetFailedRequestCount)}");
         }
 
         /// <summary>

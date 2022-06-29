@@ -117,7 +117,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             }
 
             return this.Value.Summary.GetFailedCount();
-        }
-
+       }
     }
 }
