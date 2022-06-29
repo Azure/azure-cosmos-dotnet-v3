@@ -115,7 +115,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadThroughputAsync),
                 requestOptions,
-                (trace) => base.ReadThroughputAsync(requestOptions, trace, cancellationToken));
+                (trace) => base.ReadThroughputAsync(requestOptions, trace, cancellationToken),
+                (response) => new OpenTelemetryResponse<ThroughputProperties>(response));
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -126,7 +127,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReplaceThroughputAsync),
                 requestOptions,
-                (trace) => base.ReplaceThroughputAsync(throughput, trace, requestOptions, cancellationToken));
+                (trace) => base.ReplaceThroughputAsync(throughput, trace, requestOptions, cancellationToken),
+                (response) => new OpenTelemetryResponse<ThroughputProperties>(response));
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -137,7 +139,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReplaceThroughputAsync),
                 requestOptions,
-                (trace) => base.ReplaceThroughputAsync(throughputProperties, trace, requestOptions, cancellationToken));
+                (trace) => base.ReplaceThroughputAsync(throughputProperties, trace, requestOptions, cancellationToken),
+                (response) => new OpenTelemetryResponse<ThroughputProperties>(response));
         }
 
         public override Task<ThroughputResponse> ReadThroughputIfExistsAsync(RequestOptions requestOptions, CancellationToken cancellationToken)
@@ -145,7 +148,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadThroughputIfExistsAsync),
                 requestOptions,
-                (trace) => base.ReadThroughputIfExistsAsync(requestOptions, trace, cancellationToken));
+                (trace) => base.ReadThroughputIfExistsAsync(requestOptions, trace, cancellationToken),
+                (response) => new OpenTelemetryResponse<ThroughputProperties>(response));
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(ThroughputProperties throughput, RequestOptions requestOptions, CancellationToken cancellationToken)
@@ -153,7 +157,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReplaceThroughputIfExistsAsync),
                 requestOptions,
-                (trace) => base.ReplaceThroughputIfExistsAsync(throughput, trace, requestOptions, cancellationToken));
+                (trace) => base.ReplaceThroughputIfExistsAsync(throughput, trace, requestOptions, cancellationToken),
+                (response) => new OpenTelemetryResponse<ThroughputProperties>(response));
         }
 
         public override Task<ResponseMessage> CreateItemStreamAsync(
@@ -347,7 +352,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadManyItemsStreamAsync),
                 null,
-                (trace) => base.ReadManyItemsStreamAsync(items, trace, readManyRequestOptions, cancellationToken));
+                (trace) => base.ReadManyItemsStreamAsync(items, trace, readManyRequestOptions, cancellationToken),
+                (response) => new OpenTelemetryResponse(response));
         }
 
         public override Task<FeedResponse<T>> ReadManyItemsAsync<T>(
@@ -358,7 +364,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadManyItemsAsync),
                 null,
-                (trace) => base.ReadManyItemsAsync<T>(items, trace, readManyRequestOptions, cancellationToken));
+                (trace) => base.ReadManyItemsAsync<T>(items, trace, readManyRequestOptions, cancellationToken),
+                (response) => new OpenTelemetryResponse<T>(response));
         }
 
         public override FeedIterator GetItemQueryStreamIterator(

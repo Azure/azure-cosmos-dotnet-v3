@@ -22,5 +22,15 @@ namespace Microsoft.Azure.Cosmos
             this.Diagnostics = responseMessage.Diagnostics;
             //TODO: ItemCount needs to be added
         }
+
+        internal OpenTelemetryResponse(FeedResponse<T> responseMessage)
+           : base(responseMessage.RequestMessage)
+        {
+            this.StatusCode = responseMessage.StatusCode;
+            this.RequestCharge = responseMessage.Headers?.RequestCharge;
+            this.ResponseContentLength = responseMessage?.Headers?.ContentLength ?? "0";
+            this.Diagnostics = responseMessage.Diagnostics;
+            //TODO: ItemCount needs to be added
+        }
     }
 }
