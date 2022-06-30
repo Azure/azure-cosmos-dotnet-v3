@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Authorization
     using System.Globalization;
     using System.Text;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
