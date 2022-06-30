@@ -146,6 +146,16 @@ namespace Microsoft.Azure.Cosmos
         public const string ChinaEast2 = "China East 2";
 
         /// <summary>
+        /// Name of the Azure China North 3 region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string ChinaNorth3 = "China North 3";
+
+        /// <summary>
+        /// Name of the Azure China East 3 region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string ChinaEast3 = "China East 3";
+
+        /// <summary>
         /// Name of the Azure Korea South region in the Azure Cosmos DB service.
         /// </summary>
         public const string KoreaSouth = "Korea South";
