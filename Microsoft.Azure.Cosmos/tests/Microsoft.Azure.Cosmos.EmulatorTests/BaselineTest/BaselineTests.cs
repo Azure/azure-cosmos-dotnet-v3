@@ -111,6 +111,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
                 writer.WriteEndDocument();
             }
 
+            // Remove ATTRIBUTE-VALUE tag as some of these values can change with different runs
             // Compare the output to the baseline and fail if they differ.
             string outputText = Regex.Replace(Regex.Replace(File.ReadAllText(outputPath), @"\s+", string.Empty), @"<ATTRIBUTE-VALUE>.*</ATTRIBUTE-VALUE>", string.Empty);
             string baselineText = Regex.Replace(Regex.Replace(File.ReadAllText(baselinePath), @"\s+", string.Empty), @"<ATTRIBUTE-VALUE>.*</ATTRIBUTE-VALUE>", string.Empty);

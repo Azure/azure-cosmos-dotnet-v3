@@ -923,5 +923,7 @@ namespace Microsoft.Azure.Cosmos
                 return objectType == typeof(DateTime);
             }
         }
+
+        internal bool IsOpenTelemetryFeatureEnabled { get; set; }
     }
 }
