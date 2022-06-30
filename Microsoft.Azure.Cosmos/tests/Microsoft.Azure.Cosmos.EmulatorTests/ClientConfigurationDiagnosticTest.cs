@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -132,6 +133,28 @@
             Assert.AreEqual(clientConfigurationTraceDatum.ProcessorCount, Environment.ProcessorCount);
             string deserializedJson = Encoding.UTF8.GetString(clientConfigurationTraceDatum.SerializedJson.Span);
             Assert.IsTrue(deserializedJson.Contains("ConnectionMode"));
+        }
+
+        [TestMethod]
+        public async Task VerifyDiagnosticsOrderTest()
+        {
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            ItemResponse<ToDoActivity> response = await this.Container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
+            ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
+            TestCommon.CreateCosmosClient();
+            CancellationToken token = new CancellationToken(canceled: true);
+            try
+            {
+                response = await this.Container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk), cancellationToken: token);
+                Assert.Fail("Test should throw/catch a CosmosOperationCanceledException");
+            }
+            catch (CosmosOperationCanceledException oce)
+            {
+                IReadOnlyList<ITrace> children = ((CosmosTraceDiagnostics)oce.Diagnostics).Value.Children;
+                ITrace exceptionChild = children[^1];
+                Assert.AreEqual("CosmosOperationCanceledException", exceptionChild.Name);
+                Assert.IsNotNull(exceptionChild.Data["Operation Cancelled Exception"]);
+            }
         }
     }
 }
