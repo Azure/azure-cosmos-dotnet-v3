@@ -477,13 +477,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private static string ConvertToBase64UriSafeString(byte[] byteToProcess)
         {
             string base64String = Convert.ToBase64String(byteToProcess);
-            return new StringBuilder(base64String, base64String.Length).Replace("/", "-").Replace("=", "@").Replace("+", "*").ToString();
+
+            // Base 64 Encoding with URL and Filename Safe Alphabet  https://datatracker.ietf.org/doc/html/rfc4648#section-5
+            return new StringBuilder(base64String, base64String.Length).Replace("/", "_").Replace("+", "-").ToString();
         }
 
-        private static byte[] ConvertFromBase64UriSafeString(string stringToProcess)
+        private static byte[] ConvertFromBase64UriSafeString(string uriSafeBase64STring)
         {
-            StringBuilder fromUriSafeString = new StringBuilder(stringToProcess, stringToProcess.Length).Replace("-", "/").Replace("@", "=").Replace("*", "+");
-            return Convert.FromBase64String(fromUriSafeString.ToString());
+            StringBuilder fromUriSafeBase64String = new StringBuilder(uriSafeBase64STring, uriSafeBase64STring.Length).Replace("_", "/").Replace("-", "+");
+            return Convert.FromBase64String(fromUriSafeBase64String.ToString());
         }
     }
 }
