@@ -22,8 +22,7 @@ namespace Microsoft.Azure.Cosmos
         private const string MacSignatureString = "to sign";
         private const string EnableAuthFailureTracesConfig = "enableAuthFailureTraces";
         private readonly Lazy<bool> enableAuthFailureTraces;
-        private readonly IComputeHash authKeyHashFunction;
-        private bool isDisposed = false;
+        private IComputeHash authKeyHashFunction;
 
         public AuthorizationTokenProviderMasterKey(IComputeHash computeHash)
         {
@@ -211,17 +210,8 @@ namespace Microsoft.Azure.Cosmos
         // other objects. Only unmanaged resources can be disposed.
         private void Dispose(bool disposing)
         {
-            // Check to see if Dispose has already been called.
-            if (!this.isDisposed)
-            {
-                // If disposing equals true, dispose all managed and unmanaged resources.
-                if (disposing)
-                {
-                    this.authKeyHashFunction.Dispose();
-                }
-
-                this.isDisposed = true;
-            }
+            this.authKeyHashFunction?.Dispose();
+            this.authKeyHashFunction = null;
         }
 
         // Use C# finalizer syntax for finalization code.

@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     // Enrich diagnostics context in-case of auth failures 
                     if (dce.StatusCode == System.Net.HttpStatusCode.Unauthorized || dce.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        TimeSpan authProvideLifeSpan = ((AuthorizationTokenProvider)this.client.DocumentClient.cosmosAuthorization).GetAge();
+                        TimeSpan authProvideLifeSpan = this.client.DocumentClient.cosmosAuthorization.GetAge();
                         processMessageAsyncTrace.AddDatum("AuthProvider LifeSpan InSec", authProvideLifeSpan.TotalSeconds);
                     }
 
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 // Enrich diagnostics context in-case of auth failures 
                 if (responseMessage?.StatusCode == System.Net.HttpStatusCode.Unauthorized || responseMessage?.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
-                    TimeSpan authProvideLifeSpan = ((AuthorizationTokenProvider)this.client.DocumentClient.cosmosAuthorization).GetAge();
+                    TimeSpan authProvideLifeSpan = this.client.DocumentClient.cosmosAuthorization.GetAge();
                     processMessageAsyncTrace.AddDatum("AuthProvider LifeSpan InSec", authProvideLifeSpan.TotalSeconds);
                 }
 
