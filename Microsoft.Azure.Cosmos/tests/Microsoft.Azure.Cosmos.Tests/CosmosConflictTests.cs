@@ -17,18 +17,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class CosmosConflictTests
     {
-        [ClassInitialize]
-        public static void ClassInit(TestContext context)
-        {
-            OpenTelemetryTests.ClassInitialize();
-        }
-
-        [ClassCleanup]
-        public static void FinalCleanup()
-        {
-            OpenTelemetryTests.FinalCleanup();
-        }
-
         [TestMethod]
         public async Task ConflictsFeedSetsPartitionKeyRangeIdentity()
         {
