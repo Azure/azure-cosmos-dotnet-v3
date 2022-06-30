@@ -473,7 +473,16 @@ namespace Microsoft.Azure.Cosmos
             Func<TResult, OpenTelemetryAttributes> openTelemetry,
             string operationName)
         {
-            using (OpenTelemetryCoreRecorder recorder = OpenTelemetryRecorderFactory.CreateRecorder(operationName))
+            bool isOTelFeatureEnabled = this.ClientOptions.IsOpenTelemetryFeatureEnabled;
+
+#if PREVIEW
+            isOTelFeatureEnabled = true;
+#endif
+
+            using (OpenTelemetryCoreRecorder recorder = 
+                                OpenTelemetryRecorderFactory.CreateRecorder(
+                                    operationName: operationName, 
+                                    isFeatureEnabled: isOTelFeatureEnabled))
             using (new ActivityScope(Guid.NewGuid()))
             {
                 try
