@@ -37,10 +37,10 @@ namespace Microsoft.Azure.Cosmos
         private static string GetPayloadSize(ResponseMessage response)
         {
             if (response?.Content != null
-                    && response.Content.CanRead
+                    && response.Content.CanSeek
                     && response.Content is MemoryStream)
             {
-                return Convert.ToString(response.Content.Length);
+                return response.Content.Length.ToString();
             }
             return response?.Headers?.ContentLength ?? "NA";
         }

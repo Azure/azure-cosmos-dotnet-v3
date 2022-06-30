@@ -23,18 +23,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class CosmosBadReplicaTests
     {
-        [ClassInitialize]
-        public static void ClassInit(TestContext context)
-        {
-            OpenTelemetryTests.ClassInitialize();
-        }
-
-        [ClassCleanup]
-        public static void FinalCleanup()
-        {
-            OpenTelemetryTests.FinalCleanup();
-        }
-
         [TestMethod]
         [Timeout(30000)]
         public async Task TestGoneFromServiceScenarioAsync()
