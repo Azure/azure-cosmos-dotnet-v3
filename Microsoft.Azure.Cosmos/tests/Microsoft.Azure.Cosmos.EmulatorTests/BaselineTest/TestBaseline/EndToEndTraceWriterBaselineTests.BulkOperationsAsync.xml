@@ -39,6 +39,7 @@
     ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │       │   (
     │   │       │       [System Info]
@@ -95,6 +96,12 @@
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
+            {
+              "name": "Get Collection Cache",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            },
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
               "id": "00000000-0000-0000-0000-000000000000",
@@ -157,6 +164,17 @@
     }
   ]
 }]]></Json>
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>11.43</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>11.43</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>11.43</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>11.43</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>11.43</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>11.43</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>11.43</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>11.43</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>11.43</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>11.43</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE></ACTIVITY>
+</OTelActivities>
     </Output>
   </Result>
   <Result>
@@ -199,6 +217,7 @@
     ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │       │   (
     │   │       │       [System Info]
@@ -255,6 +274,12 @@
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
+            {
+              "name": "Get Collection Cache",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            },
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
               "id": "00000000-0000-0000-0000-000000000000",
@@ -317,6 +342,7 @@
     }
   ]
 }]]></Json>
+      <OTelActivities />
     </Output>
   </Result>
   <Result>
@@ -359,6 +385,7 @@
     ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │       │   (
     │   │       │       [System Info]
@@ -415,6 +442,12 @@
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
+            {
+              "name": "Get Collection Cache",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            },
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
               "id": "00000000-0000-0000-0000-000000000000",
@@ -477,6 +510,7 @@
     }
   ]
 }]]></Json>
+      <OTelActivities />
     </Output>
   </Result>
   <Result>
@@ -519,6 +553,7 @@
     ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │       │   (
     │   │       │       [System Info]
@@ -575,6 +610,12 @@
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
+            {
+              "name": "Get Collection Cache",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            },
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
               "id": "00000000-0000-0000-0000-000000000000",
@@ -637,6 +678,7 @@
     }
   ]
 }]]></Json>
+      <OTelActivities />
     </Output>
   </Result>
   <Result>
@@ -679,6 +721,7 @@
     ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │       │   (
     │   │       │       [System Info]
@@ -735,6 +778,12 @@
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
+            {
+              "name": "Get Collection Cache",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            },
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
               "id": "00000000-0000-0000-0000-000000000000",
@@ -797,6 +846,7 @@
     }
   ]
 }]]></Json>
+      <OTelActivities />
     </Output>
   </Result>
   <Result>
@@ -839,6 +889,7 @@
     ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │       │   (
     │   │       │       [System Info]
@@ -895,6 +946,12 @@
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
+            {
+              "name": "Get Collection Cache",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            },
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
               "id": "00000000-0000-0000-0000-000000000000",
@@ -957,6 +1014,7 @@
     }
   ]
 }]]></Json>
+      <OTelActivities />
     </Output>
   </Result>
   <Result>
@@ -999,6 +1057,7 @@
     ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │       │   (
     │   │       │       [System Info]
@@ -1055,6 +1114,12 @@
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
+            {
+              "name": "Get Collection Cache",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            },
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
               "id": "00000000-0000-0000-0000-000000000000",
@@ -1117,6 +1182,7 @@
     }
   ]
 }]]></Json>
+      <OTelActivities />
     </Output>
   </Result>
   <Result>
@@ -1159,6 +1225,7 @@
     ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │       │   (
     │   │       │       [System Info]
@@ -1215,6 +1282,12 @@
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
+            {
+              "name": "Get Collection Cache",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            },
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
               "id": "00000000-0000-0000-0000-000000000000",
@@ -1277,6 +1350,7 @@
     }
   ]
 }]]></Json>
+      <OTelActivities />
     </Output>
   </Result>
   <Result>
@@ -1319,6 +1393,7 @@
     ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │       │   (
     │   │       │       [System Info]
@@ -1375,6 +1450,12 @@
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
+            {
+              "name": "Get Collection Cache",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            },
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
               "id": "00000000-0000-0000-0000-000000000000",
@@ -1437,6 +1518,7 @@
     }
   ]
 }]]></Json>
+      <OTelActivities />
     </Output>
   </Result>
   <Result>
@@ -1479,6 +1561,7 @@
     ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │       │   (
     │   │       │       [System Info]
@@ -1535,6 +1618,12 @@
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
+            {
+              "name": "Get Collection Cache",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            },
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
               "id": "00000000-0000-0000-0000-000000000000",
@@ -1597,6 +1686,7 @@
     }
   ]
 }]]></Json>
+      <OTelActivities />
     </Output>
   </Result>
   <Result>
@@ -1652,6 +1742,7 @@
     ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │       │   (
     │   │       │       [System Info]
@@ -1692,6 +1783,7 @@
     ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │       │   (
     │   │       │       [System Info]
@@ -1732,6 +1824,7 @@
     ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │       │   (
     │   │       │       [System Info]
@@ -1772,6 +1865,7 @@
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+        │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
         │       │   (
         │       │       [System Info]
@@ -1849,166 +1943,11 @@
           "duration in milliseconds": 0,
           "children": [
             {
-              "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
+              "name": "Get Collection Cache",
               "id": "00000000-0000-0000-0000-000000000000",
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {
-                "System Info": "Redacted To Not Change The Baselines From Run To Run"
-              },
-              "children": [
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "children": [
-                    {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "children": [
-                        {
-                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "children": [
-                            {
-                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {
-                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                              }
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "children": [
-                        {
-                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "children": [
-                            {
-                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {
-                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                              }
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "children": [
-                        {
-                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "children": [
-                            {
-                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {
-                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                              }
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "children": [
-                        {
-                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "children": [
-                            {
-                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {
-                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                              }
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "name": "Create Trace",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        }
-      ]
-    },
-    {
-      "name": "Batch Retry Async",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "children": [
-        {
-          "name": "Get Collection Cache",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        }
-      ]
-    },
-    {
-      "name": "Batch Dispatch Async",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "children": [
-        {
-          "name": "Using Wait",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        },
-        {
-          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "children": [
+              "duration in milliseconds": 0
+            },
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
               "id": "00000000-0000-0000-0000-000000000000",
@@ -2171,6 +2110,12 @@
           "duration in milliseconds": 0,
           "children": [
             {
+              "name": "Get Collection Cache",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            },
+            {
               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
               "id": "00000000-0000-0000-0000-000000000000",
               "start time": "12:00:00:000",
@@ -2331,6 +2276,179 @@
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
+            {
+              "name": "Get Collection Cache",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            },
+            {
+              "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {
+                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+              },
+              "children": [
+                {
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "children": [
+                    {
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "children": [
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "children": [
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "children": [
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "children": [
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Create Trace",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0
+        }
+      ]
+    },
+    {
+      "name": "Batch Retry Async",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "children": [
+        {
+          "name": "Get Collection Cache",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0
+        }
+      ]
+    },
+    {
+      "name": "Batch Dispatch Async",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "children": [
+        {
+          "name": "Using Wait",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0
+        },
+        {
+          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Get Collection Cache",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            },
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
               "id": "00000000-0000-0000-0000-000000000000",
@@ -2462,6 +2580,12 @@
     }
   ]
 }]]></Json>
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>TooManyRequests</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>0</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>exception.message</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Response status code does not indicate success: TooManyRequests (429); Substatus: 3; ActivityId: cf23fe6b-b049-4518-b286-172f45528041; Reason: ();</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>exception.stacktrace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>   at Microsoft.Azure.Cosmos.ResponseMessage.EnsureSuccessStatusCode() in C:\Azure\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Handler\ResponseMessage.cs:line 181
+   at Microsoft.Azure.Cosmos.CosmosResponseFactoryCore.ProcessMessage[T](ResponseMessage responseMessage, Func`2 createResponse) in C:\Azure\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Resource\CosmosResponseFactoryCore.cs:line 262
+   at Microsoft.Azure.Cosmos.CosmosResponseFactoryCore.CreateItemResponse[T](ResponseMessage responseMessage) in C:\Azure\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Resource\CosmosResponseFactoryCore.cs:line 87
+   at Microsoft.Azure.Cosmos.ContainerCore.CreateItemAsync[T](T item, ITrace trace, Nullable`1 partitionKey, ItemRequestOptions requestOptions, CancellationToken cancellationToken) in C:\Azure\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Resource\Container\ContainerCore.Items.cs:line 91
+   at Microsoft.Azure.Cosmos.ClientContextCore.RunWithDiagnosticsHelperAsync[TResult](ITrace trace, Func`2 task, Func`2 openTelemetry, String operationName) in C:\Azure\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Resource\ClientContextCore.cs:line 481</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>exception.type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.Azure.Cosmos.CosmosException</ATTRIBUTE-VALUE></ACTIVITY>
+</OTelActivities>
     </Output>
   </Result>
 </Results>

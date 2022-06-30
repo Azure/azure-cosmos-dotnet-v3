@@ -24,6 +24,7 @@
     │       Redacted To Not Change The Baselines From Run To Run
     │   )
     └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+        ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
             │   (
             │       [System Info]
@@ -55,6 +56,12 @@
       "duration in milliseconds": 0,
       "children": [
         {
+          "name": "Get Collection Cache",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0
+        },
+        {
           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
@@ -102,6 +109,8 @@
     }
   ]
 }]]></Json>
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.CreateItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>225</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Created</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>5.52</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+</OTelActivities>
     </Output>
   </Result>
   <Result>
@@ -123,6 +132,7 @@
     │       Redacted To Not Change The Baselines From Run To Run
     │   )
     └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+        ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
             │   (
             │       [System Info]
@@ -154,6 +164,12 @@
       "duration in milliseconds": 0,
       "children": [
         {
+          "name": "Get Collection Cache",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0
+        },
+        {
           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
@@ -201,6 +217,8 @@
     }
   ]
 }]]></Json>
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.ReadItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>225</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>2</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+</OTelActivities>
     </Output>
   </Result>
   <Result>
@@ -230,6 +248,7 @@
     │       Redacted To Not Change The Baselines From Run To Run
     │   )
     └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+        ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
             │   (
             │       [System Info]
@@ -261,107 +280,11 @@
       "duration in milliseconds": 0,
       "children": [
         {
-          "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
+          "name": "Get Collection Cache",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "data": {
-            "System Info": "Redacted To Not Change The Baselines From Run To Run"
-          },
-          "children": [
-            {
-              "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "children": [
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "children": [
-                    {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "children": [
-                        {
-                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}]]></Json>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description>Point Delete</Description>
-      <Setup><![CDATA[
-    ItemRequestOptions requestOptions = new ItemRequestOptions();
-    ContainerInternal containerInternal = (ContainerInternal)container;
-    ResponseMessage itemResponse = await containerInternal.DeleteItemStreamAsync(
-        id: "9001",
-        partitionKey: new PartitionKey("9001"),
-        requestOptions: requestOptions);
-
-    ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
-]]></Setup>
-    </Input>
-    <Output>
-      <Text><![CDATA[.
-└── DeleteItemStreamAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    │   (
-    │       [Client Configuration]
-    │       Redacted To Not Change The Baselines From Run To Run
-    │   )
-    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-        └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-            │   (
-            │       [System Info]
-            │       Redacted To Not Change The Baselines From Run To Run
-            │   )
-            └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-                └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-                    └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-                        └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-                                (
-                                    [Client Side Request Stats]
-                                    Redacted To Not Change The Baselines From Run To Run
-                                )
-]]></Text>
-      <Json><![CDATA[{
-  "Summary": {},
-  "name": "DeleteItemStreamAsync",
-  "id": "00000000-0000-0000-0000-000000000000",
-  "start time": "12:00:00:000",
-  "duration in milliseconds": 0,
-  "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
-  },
-  "children": [
-    {
-      "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "children": [
+          "duration in milliseconds": 0
+        },
         {
           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
           "id": "00000000-0000-0000-0000-000000000000",
@@ -410,6 +333,119 @@
     }
   ]
 }]]></Json>
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.ReplaceItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>244</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>10.67</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+</OTelActivities>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Point Delete</Description>
+      <Setup><![CDATA[
+    ItemRequestOptions requestOptions = new ItemRequestOptions();
+    ContainerInternal containerInternal = (ContainerInternal)container;
+    ResponseMessage itemResponse = await containerInternal.DeleteItemStreamAsync(
+        id: "9001",
+        partitionKey: new PartitionKey("9001"),
+        requestOptions: requestOptions);
+
+    ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── DeleteItemStreamAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │   (
+    │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │   )
+    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+        ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            │   (
+            │       [System Info]
+            │       Redacted To Not Change The Baselines From Run To Run
+            │   )
+            └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+                                (
+                                    [Client Side Request Stats]
+                                    Redacted To Not Change The Baselines From Run To Run
+                                )
+]]></Text>
+      <Json><![CDATA[{
+  "Summary": {},
+  "name": "DeleteItemStreamAsync",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+  },
+  "children": [
+    {
+      "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "children": [
+        {
+          "name": "Get Collection Cache",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0
+        },
+        {
+          "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {
+            "System Info": "Redacted To Not Change The Baselines From Run To Run"
+          },
+          "children": [
+            {
+              "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "children": [
+                {
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "children": [
+                    {
+                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "children": [
+                        {
+                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {
+                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}]]></Json>
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.DeleteItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NoContent</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NoContent</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>5.9</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+</OTelActivities>
     </Output>
   </Result>
 </Results>
