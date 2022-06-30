@@ -1208,8 +1208,9 @@ namespace Microsoft.Azure.Cosmos
             if (!this.cancellationTokenSource.IsCancellationRequested)
             {
                 this.cancellationTokenSource.Cancel();
-                this.cancellationTokenSource.Dispose();
             }
+
+            this.cancellationTokenSource.Dispose();
 
             if (this.StoreModel != null)
             {
@@ -1434,19 +1435,9 @@ namespace Microsoft.Azure.Cosmos
                                 this.rntbdPortReuseMode);
         }
 
-        private void ThrowIfDisposed()
-        {
-            if (this.isDisposed)
-            {
-                throw new ObjectDisposedException("DocumentClient");
-            }
-        }
-
         internal virtual async Task EnsureValidClientAsync(ITrace trace)
         {
-            this.ThrowIfDisposed();
-
-            if (this.isSuccessfullyInitialized)
+            if (this.cancellationTokenSource.IsCancellationRequested || this.isSuccessfullyInitialized)
             {
                 return;
             }
