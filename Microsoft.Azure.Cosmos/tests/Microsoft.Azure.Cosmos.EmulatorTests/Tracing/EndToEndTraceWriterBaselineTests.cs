@@ -13,6 +13,7 @@
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
+    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
@@ -26,9 +27,13 @@
         public static Database database;
         public static Container container;
 
+        private static OpenTelemetryListener testListener;
+
         [ClassInitialize()]
         public static async Task ClassInitAsync(TestContext context)
         {
+            testListener = new OpenTelemetryListener("Azure.Cosmos");
+
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(useGateway: false);
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
                     Guid.NewGuid().ToString(),
@@ -63,6 +68,8 @@
         [TestMethod]
         public async Task ReadFeedAsync()
         {
+            testListener.ResetAttributes();
+
             List<Input> inputs = new List<Input>();
 
             int startLineNumber;
@@ -87,7 +94,15 @@
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("ReadFeed", traceForest, startLineNumber, endLineNumber));
+                inputs.Add(new Input(
+                                    description: "ReadFeed", 
+                                    trace: traceForest,
+                                    startLineNumber: startLineNumber,
+                                    endLineNumber: endLineNumber, 
+                                    oTelActivities: testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
+
             }
             //----------------------------------------------------------------
 
@@ -110,7 +125,14 @@
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("ReadFeed Typed", traceForest, startLineNumber, endLineNumber));
+                inputs.Add(new Input(
+                                description: "ReadFeed Typed", 
+                                trace: traceForest,
+                                startLineNumber: startLineNumber,
+                                endLineNumber: endLineNumber,
+                                oTelActivities: testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -134,7 +156,14 @@
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("ReadFeed Public API", traceForest, startLineNumber, endLineNumber));
+                inputs.Add(new Input(
+                                description: "ReadFeed Public API", 
+                                trace: traceForest,
+                                startLineNumber: startLineNumber,
+                                endLineNumber: endLineNumber,
+                                oTelActivities: testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -158,7 +187,9 @@
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("ReadFeed Public API Typed", traceForest, startLineNumber, endLineNumber));
+                inputs.Add(new Input("ReadFeed Public API Typed", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -198,7 +229,9 @@
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("ChangeFeed", traceForest, startLineNumber, endLineNumber));
+                inputs.Add(new Input("ChangeFeed", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -228,7 +261,9 @@
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("ChangeFeed Typed", traceForest, startLineNumber, endLineNumber));
+                inputs.Add(new Input("ChangeFeed Typed", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -259,7 +294,9 @@
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("ChangeFeed Public API", traceForest, startLineNumber, endLineNumber));
+                inputs.Add(new Input("ChangeFeed Public API", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //---------------------------------------------------------------- 
 
@@ -290,7 +327,9 @@
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("ChangeFeed Public API Typed", traceForest, startLineNumber, endLineNumber));
+                inputs.Add(new Input("ChangeFeed Public API Typed", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -347,7 +386,9 @@
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Change Feed Estimator", traceForest, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Change Feed Estimator", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -381,7 +422,9 @@
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Query", traceForest, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Query", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -404,7 +447,9 @@
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Query Typed", traceForest, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Query Typed", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -428,7 +473,9 @@
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Query Public API", traceForest, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Query Public API", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -452,7 +499,9 @@
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Query Public API Typed", traceForest, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Query Public API Typed", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -479,7 +528,9 @@
                 Documents.ServiceInteropWrapper.AssembliesExist = currentLazy;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Query - Without ServiceInterop", traceForest, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Query - Without ServiceInterop", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -510,7 +561,9 @@
                 ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Write", trace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Point Write", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -526,7 +579,9 @@
                 ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Read", trace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Point Read", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -550,7 +605,9 @@
                 ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Replace", trace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Point Replace", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -590,7 +647,9 @@
                 ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Delete", trace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Point Delete", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -623,7 +682,9 @@
                 ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Write", trace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Point Write", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -639,7 +700,9 @@
                 ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Read", trace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Point Read", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -663,7 +726,9 @@
                 ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Replace", trace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Point Replace", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -706,7 +771,9 @@
                 ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Delete", trace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Point Delete", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -753,7 +820,9 @@
                 }
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Operation with Request Timeout", trace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Point Operation with Request Timeout", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -798,7 +867,9 @@
                 }
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Operation With Throttle", trace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Point Operation With Throttle", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -874,7 +945,9 @@
                     }
 
                     endLineNumber = GetLineNumber();
-                    inputs.Add(new Input($"Point Operation With Forbidden + Max Count = {maxCount}", trace, startLineNumber, endLineNumber));
+                    inputs.Add(new Input($"Point Operation With Forbidden + Max Count = {maxCount}", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                    testListener.ResetAttributes();
                 }
 
                 // Check if the exception message is not growing exponentially
@@ -921,7 +994,9 @@
                 }
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Operation with Service Unavailable", trace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Point Operation with Service Unavailable", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -970,7 +1045,9 @@
                 ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Batch Operation", trace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Batch Operation", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -1016,7 +1093,9 @@
 
                 foreach (ITrace trace in traces)
                 {
-                    inputs.Add(new Input("Bulk Operation", trace, startLineNumber, endLineNumber));
+                    inputs.Add(new Input("Bulk Operation", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                    testListener.ResetAttributes();
                 }
             }
             //----------------------------------------------------------------
@@ -1063,7 +1142,9 @@
                 }
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Bulk Operation With Throttle", trace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Bulk Operation With Throttle", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
 
             this.ExecuteTestSuite(inputs);
@@ -1097,7 +1178,9 @@
                 await databaseResponse.Database.DeleteAsync();
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Custom Handler", trace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Custom Handler", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -1114,7 +1197,9 @@
                 await databaseResponse.Database.DeleteAsync();
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Custom Handler", trace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Custom Handler", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -1153,7 +1238,9 @@
                 }
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Read Many Stream Api", trace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Read Many Stream Api", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -1166,7 +1253,9 @@
                 ITrace trace = ((CosmosTraceDiagnostics)feedResponse.Diagnostics).Value;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Read Many Typed Api", trace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Read Many Typed Api", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -1180,13 +1269,22 @@
             string text = TraceWriter.TraceToText(traceForBaselineTesting);
             string json = TraceWriter.TraceToJson(traceForBaselineTesting);
 
+            StringBuilder oTelActivitiesString = new StringBuilder();
+            if (input.OTelActivities != null)
+            {
+                foreach (string attributes in input.OTelActivities)
+                {
+                    oTelActivitiesString.AppendLine(attributes);
+                }
+            }
+          
             AssertTraceProperites(input.Trace);
             Assert.IsTrue(text.Contains("Client Side Request Stats"), $"All diagnostics should have request stats: {text}");
             Assert.IsTrue(json.Contains("Client Side Request Stats"), $"All diagnostics should have request stats: {json}");
             Assert.IsTrue(text.Contains("Client Configuration"), $"All diagnostics should have Client Configuration: {text}");
             Assert.IsTrue(json.Contains("Client Configuration"), $"All diagnostics should have Client Configuration: {json}");
             
-            return new Output(text, JToken.Parse(json).ToString(Newtonsoft.Json.Formatting.Indented));
+            return new Output(text, JToken.Parse(json).ToString(Newtonsoft.Json.Formatting.Indented), oTelActivitiesString.ToString());
         }
 
         private static TraceForBaselineTesting CreateTraceForBaslineTesting(ITrace trace, TraceForBaselineTesting parent)
@@ -1298,12 +1396,13 @@
         {
             private static readonly string[] sourceCode = File.ReadAllLines($"Tracing\\{nameof(EndToEndTraceWriterBaselineTests)}.cs");
 
-            internal Input(string description, ITrace trace, int startLineNumber, int endLineNumber)
+            internal Input(string description, ITrace trace, int startLineNumber, int endLineNumber, List<string> oTelActivities)
                 : base(description)
             {
                 this.Trace = trace ?? throw new ArgumentNullException(nameof(trace));
                 this.StartLineNumber = startLineNumber;
                 this.EndLineNumber = endLineNumber;
+                this.OTelActivities = oTelActivities;
             }
 
             internal ITrace Trace { get; }
@@ -1311,6 +1410,8 @@
             public int StartLineNumber { get; }
 
             public int EndLineNumber { get; }
+
+            public List<string> OTelActivities { get; }
 
             public override void SerializeAsXml(XmlWriter xmlWriter)
             {
@@ -1330,7 +1431,7 @@
                         .Join(
                             Environment.NewLine,
                             codeSnippet
-                                .Select(x => x != string.Empty ? x.Substring("            ".Length) : string.Empty))
+                                .Select(x => x != string.Empty ? x["            ".Length..] : string.Empty))
                     + Environment.NewLine;
                 }
                 catch (Exception)
@@ -1344,15 +1445,22 @@
 
         public sealed class Output : BaselineTestOutput
         {
-            public Output(string text, string json)
+            public Output(string text, string json, string oTelActivities)
             {
                 this.Text = text ?? throw new ArgumentNullException(nameof(text));
                 this.Json = json ?? throw new ArgumentNullException(nameof(json));
+
+                if(oTelActivities != null)
+                {
+                    this.OTelActivities = oTelActivities;
+                }
             }
 
             public string Text { get; }
 
             public string Json { get; }
+
+            public string OTelActivities { get; }
 
             public override void SerializeAsXml(XmlWriter xmlWriter)
             {
@@ -1363,6 +1471,13 @@
                 xmlWriter.WriteStartElement(nameof(this.Json));
                 xmlWriter.WriteCData(this.Json);
                 xmlWriter.WriteEndElement();
+
+                if (this.OTelActivities != null)
+                {
+                    xmlWriter.WriteStartElement(nameof(this.OTelActivities));
+                    xmlWriter.WriteRaw(this.OTelActivities);
+                    xmlWriter.WriteEndElement();
+                }
             }
         }
 
@@ -1466,7 +1581,7 @@
 
         private sealed class RequestHandlerSleepHelper : RequestHandler
         {
-            TimeSpan timeToSleep;
+            readonly TimeSpan timeToSleep;
 
             public RequestHandlerSleepHelper(TimeSpan timeToSleep)
             {
