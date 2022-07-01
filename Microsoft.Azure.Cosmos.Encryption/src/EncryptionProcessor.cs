@@ -18,13 +18,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal static class EncryptionProcessor
     {
-        public static readonly CosmosJsonDotNetSerializer BaseSerializer = new CosmosJsonDotNetSerializer(
-            new JsonSerializerSettings()
-            {
-                DateParseHandling = DateParseHandling.None,
-                MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
-            });
-
         private static readonly SqlSerializerFactory SqlSerializerFactory = SqlSerializerFactory.Default;
 
         // UTF-8 Encoding
@@ -38,6 +31,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Long = 4,
             String = 5,
         }
+
+        public static CosmosJsonDotNetSerializer BaseSerializer { get; } = new CosmosJsonDotNetSerializer(
+            new JsonSerializerSettings()
+            {
+                DateParseHandling = DateParseHandling.None,
+                MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+            });
 
         /// <remarks>
         /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.
@@ -477,6 +477,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string base64String = Convert.ToBase64String(bytesToProcess);
 
             // Base 64 Encoding with URL and Filename Safe Alphabet  https://datatracker.ietf.org/doc/html/rfc4648#section-5
+            // https://docs.microsoft.com/en-us/azure/cosmos-db/concepts-limits#per-item-limits, due to base64 conversion and encryption
+            // the permissible size of the property will further reduce.
             return new StringBuilder(base64String, base64String.Length).Replace("/", "_").Replace("+", "-").ToString();
         }
 
