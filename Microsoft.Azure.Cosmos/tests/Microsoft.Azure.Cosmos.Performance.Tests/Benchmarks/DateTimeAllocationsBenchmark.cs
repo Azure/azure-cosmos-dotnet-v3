@@ -9,9 +9,9 @@
     using System.Threading.Tasks;
 
     [MemoryDiagnoser]
-    public class AuthAllocationsBenchmark
+    public class DateTimeAllocationsBenchmark
     {
-        public AuthAllocationsBenchmark() 
+        public DateTimeAllocationsBenchmark() 
         { 
         }
 
