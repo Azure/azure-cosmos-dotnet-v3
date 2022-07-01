@@ -750,6 +750,24 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             QueryRequestOptions clonedRequestOptions = requestOptions != null ? (QueryRequestOptions)requestOptions.ShallowCopy() : new QueryRequestOptions();
 
+            EncryptionSettings encryptionSettings = this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                obsoleteEncryptionSettings: null,
+                cancellationToken: default)
+                .ConfigureAwait(false)
+                .GetAwaiter()
+                .GetResult();
+
+            if (requestOptions != null && requestOptions.PartitionKey.HasValue)
+            {
+                clonedRequestOptions.PartitionKey = this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(
+                    requestOptions.PartitionKey.Value,
+                    encryptionSettings,
+                    cancellationToken: default)
+                    .ConfigureAwait(false)
+                    .GetAwaiter()
+                    .GetResult();
+            }
+
             return new EncryptionFeedIterator(
                 this.container.GetItemQueryStreamIterator(
                     feedRange,
