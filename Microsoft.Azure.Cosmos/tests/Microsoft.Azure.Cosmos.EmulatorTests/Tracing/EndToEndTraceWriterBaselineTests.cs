@@ -59,6 +59,8 @@
 
                 await container.CreateItemAsync(JToken.Parse(cosmosObject.ToString()));
             }
+
+            testListener.ResetAttributes();
         }
 
         [ClassCleanup()]
@@ -1124,6 +1126,7 @@
                 await Task.WhenAll(createItemsTasks);
 
                 List<ITrace> traces = new List<ITrace>();
+                List<List<string>> oTelActivities = new List<List<string>>();
                 foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
                 {
                     ItemResponse<ToDoActivity> itemResponse = await createTask;
@@ -1131,16 +1134,19 @@
 
                     ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
                     traces.Add(trace);
+                    oTelActivities.Add(testListener.GetRecordedAttributes());
+
+                    testListener.ResetAttributes();
                 }
 
                 endLineNumber = GetLineNumber();
 
+                int count = 0;
                 foreach (ITrace trace in traces)
                 {
-                    inputs.Add(new Input("Bulk Operation", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
-
-                    testListener.ResetAttributes();
+                    inputs.Add(new Input("Bulk Operation", trace, startLineNumber, endLineNumber, oTelActivities[count++]));
                 }
+                
             }
             //----------------------------------------------------------------
 
