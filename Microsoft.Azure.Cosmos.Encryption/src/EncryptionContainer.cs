@@ -740,9 +740,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
 
-            partitionKey = await this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(partitionKey, encryptionSettings, cancellationToken);
+            (partitionKey, _) = await this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(partitionKey, encryptionSettings, cancellationToken);
 
-            return await this.container.DeleteAllItemsByPartitionKeyStreamAsync(
+            return await this.Container.DeleteAllItemsByPartitionKeyStreamAsync(
                 partitionKey,
                 requestOptions,
                 cancellationToken);
@@ -752,7 +752,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             FeedRange feedRange,
             CancellationToken cancellationToken = default)
         {
-            return this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
+            return this.Container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
         }
 #endif
 
