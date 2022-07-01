@@ -16,6 +16,7 @@
     await Task.WhenAll(createItemsTasks);
 
     List<ITrace> traces = new List<ITrace>();
+    List<List<string>> oTelActivities = new List<List<string>>();
     foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
     {
         ItemResponse<ToDoActivity> itemResponse = await createTask;
@@ -23,6 +24,9 @@
 
         ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
         traces.Add(trace);
+        oTelActivities.Add(testListener.GetRecordedAttributes());
+
+        testListener.ResetAttributes();
     }
 
 ]]></Setup>
@@ -184,6 +188,7 @@
     await Task.WhenAll(createItemsTasks);
 
     List<ITrace> traces = new List<ITrace>();
+    List<List<string>> oTelActivities = new List<List<string>>();
     foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
     {
         ItemResponse<ToDoActivity> itemResponse = await createTask;
@@ -191,6 +196,9 @@
 
         ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
         traces.Add(trace);
+        oTelActivities.Add(testListener.GetRecordedAttributes());
+
+        testListener.ResetAttributes();
     }
 
 ]]></Setup>
@@ -352,6 +360,7 @@
     await Task.WhenAll(createItemsTasks);
 
     List<ITrace> traces = new List<ITrace>();
+    List<List<string>> oTelActivities = new List<List<string>>();
     foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
     {
         ItemResponse<ToDoActivity> itemResponse = await createTask;
@@ -359,6 +368,9 @@
 
         ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
         traces.Add(trace);
+        oTelActivities.Add(testListener.GetRecordedAttributes());
+
+        testListener.ResetAttributes();
     }
 
 ]]></Setup>
@@ -520,6 +532,7 @@
     await Task.WhenAll(createItemsTasks);
 
     List<ITrace> traces = new List<ITrace>();
+    List<List<string>> oTelActivities = new List<List<string>>();
     foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
     {
         ItemResponse<ToDoActivity> itemResponse = await createTask;
@@ -527,6 +540,9 @@
 
         ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
         traces.Add(trace);
+        oTelActivities.Add(testListener.GetRecordedAttributes());
+
+        testListener.ResetAttributes();
     }
 
 ]]></Setup>
@@ -688,6 +704,7 @@
     await Task.WhenAll(createItemsTasks);
 
     List<ITrace> traces = new List<ITrace>();
+    List<List<string>> oTelActivities = new List<List<string>>();
     foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
     {
         ItemResponse<ToDoActivity> itemResponse = await createTask;
@@ -695,6 +712,9 @@
 
         ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
         traces.Add(trace);
+        oTelActivities.Add(testListener.GetRecordedAttributes());
+
+        testListener.ResetAttributes();
     }
 
 ]]></Setup>
@@ -856,6 +876,7 @@
     await Task.WhenAll(createItemsTasks);
 
     List<ITrace> traces = new List<ITrace>();
+    List<List<string>> oTelActivities = new List<List<string>>();
     foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
     {
         ItemResponse<ToDoActivity> itemResponse = await createTask;
@@ -863,6 +884,9 @@
 
         ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
         traces.Add(trace);
+        oTelActivities.Add(testListener.GetRecordedAttributes());
+
+        testListener.ResetAttributes();
     }
 
 ]]></Setup>
@@ -1024,6 +1048,7 @@
     await Task.WhenAll(createItemsTasks);
 
     List<ITrace> traces = new List<ITrace>();
+    List<List<string>> oTelActivities = new List<List<string>>();
     foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
     {
         ItemResponse<ToDoActivity> itemResponse = await createTask;
@@ -1031,6 +1056,9 @@
 
         ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
         traces.Add(trace);
+        oTelActivities.Add(testListener.GetRecordedAttributes());
+
+        testListener.ResetAttributes();
     }
 
 ]]></Setup>
@@ -1192,6 +1220,7 @@
     await Task.WhenAll(createItemsTasks);
 
     List<ITrace> traces = new List<ITrace>();
+    List<List<string>> oTelActivities = new List<List<string>>();
     foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
     {
         ItemResponse<ToDoActivity> itemResponse = await createTask;
@@ -1199,6 +1228,9 @@
 
         ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
         traces.Add(trace);
+        oTelActivities.Add(testListener.GetRecordedAttributes());
+
+        testListener.ResetAttributes();
     }
 
 ]]></Setup>
@@ -1360,6 +1392,7 @@
     await Task.WhenAll(createItemsTasks);
 
     List<ITrace> traces = new List<ITrace>();
+    List<List<string>> oTelActivities = new List<List<string>>();
     foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
     {
         ItemResponse<ToDoActivity> itemResponse = await createTask;
@@ -1367,6 +1400,9 @@
 
         ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
         traces.Add(trace);
+        oTelActivities.Add(testListener.GetRecordedAttributes());
+
+        testListener.ResetAttributes();
     }
 
 ]]></Setup>
@@ -1528,6 +1564,7 @@
     await Task.WhenAll(createItemsTasks);
 
     List<ITrace> traces = new List<ITrace>();
+    List<List<string>> oTelActivities = new List<List<string>>();
     foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
     {
         ItemResponse<ToDoActivity> itemResponse = await createTask;
@@ -1535,6 +1572,9 @@
 
         ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
         traces.Add(trace);
+        oTelActivities.Add(testListener.GetRecordedAttributes());
+
+        testListener.ResetAttributes();
     }
 
 ]]></Setup>
