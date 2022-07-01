@@ -262,6 +262,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             };
 
             await Task.WhenAll(tasks);
+            encryptionCosmosClientWithBulk.Dispose();
         }
 
         [TestMethod]
@@ -419,6 +420,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             VerifyExpectedDocResponse(testDoc, createResponse.Resource);
 
             testKeyEncryptionKeyResolver.RevokeAccessSet = false;
+            encryptionCosmosClient.Dispose();
         }
 
 
@@ -469,6 +471,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Forbidden)
             {
             }
+
+            encryptedclientForRestrictedUser.Dispose();
         }
 
         [TestMethod]
@@ -1123,6 +1127,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 FeedResponse<TestDoc> readDocs = await queryResponseIterator.ReadNextAsync();
             }
 
+            otherEncryptionClient.Dispose();
         }
 
         [TestMethod]
@@ -1276,6 +1281,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             TransactionalBatchOperationResult<TestDoc> doc2 = batchResponse.GetOperationResultAtIndex<TestDoc>(1);
             VerifyExpectedDocResponse(doc2ToCreate, doc2.Resource);
+
+            otherEncryptionClient.Dispose();
         }       
 
         [TestMethod]
@@ -1420,6 +1427,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 "SELECT * FROM c",
                 expectedDocList: new List<TestDoc> { testDoc },
                 expectedPropertiesDecryptedCount: 2);
+
+            otherEncryptionClient.Dispose();
         }
 
         [TestMethod]
@@ -1617,6 +1626,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             // retry post policy refresh.
             await MdeEncryptionTests.MdePatchItemAsync(otherEncryptionContainer, patchOperations, docPostPatching, HttpStatusCode.OK);
+
+            otherEncryptionClient.Dispose();
         }
 
         [TestMethod]
@@ -1844,6 +1855,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
 
             await mainClient.GetDatabase("databaseToBeDeleted").DeleteStreamAsync();
+
+            encryptionCosmosClient.Dispose();
+            otherEncryptionClient.Dispose();
+            otherEncryptionClient2.Dispose();
         }
 
         [TestMethod]
@@ -1949,6 +1964,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             // Should fail but will try to fetch the lastest from the Backend and updates the cache.
             await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
             testKeyEncryptionKeyResolver.RevokeAccessSet = false;
+
+            encryptionCosmosClient.Dispose();
         }
 
         [TestMethod]
@@ -2538,6 +2555,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 encryptionContainerWithCustomSerializer,
                 queryDefinition: withEncryptedParameter,
                 expectedDocList: new List<TestDoc> { expectedDoc });
+
+            encryptionCosmosClientWithCustomSerializer.Dispose();
         }
 
         [TestMethod]
