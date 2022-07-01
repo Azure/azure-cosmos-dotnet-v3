@@ -2222,7 +2222,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, readResponse.Resource);
 
-#if ENCRYPTIONPREVIEW
+#if ENCRYPTIONTESTPREVIEW
             // hierarchical
             cepWithPKIdPath1 = new ClientEncryptionIncludedPath()
             {
@@ -2270,7 +2270,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                testDoc.Id,
                hirarchicalPk);
 
-            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+            Assert.AreEqual(HttpStatusCode.Created, readResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, readResponse.Resource);
 #endif
         }
