@@ -86,7 +86,7 @@ jobs:
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos.Encryption/tests/EmulatorTests/*.csproj'
-      arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:IsPreview=true /p:OS=${{ parameters.OS }}
+      arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:IsPreview=true /p:SdkProjectRef=false /p:OS=${{ parameters.OS }}
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.Encryption.EmulatorTests
