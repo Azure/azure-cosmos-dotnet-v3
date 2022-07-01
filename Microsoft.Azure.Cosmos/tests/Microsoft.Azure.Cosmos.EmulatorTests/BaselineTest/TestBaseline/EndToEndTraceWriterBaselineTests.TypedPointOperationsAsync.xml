@@ -25,7 +25,6 @@
     ├── Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-    │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │       │   (
     │       │       [System Info]
@@ -77,12 +76,6 @@
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
-        {
-          "name": "Get Collection Cache",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        },
         {
           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
           "id": "00000000-0000-0000-0000-000000000000",
@@ -160,7 +153,6 @@
     │       Redacted To Not Change The Baselines From Run To Run
     │   )
     ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-    │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │       │   (
     │       │       [System Info]
@@ -192,12 +184,6 @@
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
-        {
-          "name": "Get Collection Cache",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        },
         {
           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
           "id": "00000000-0000-0000-0000-000000000000",
@@ -284,7 +270,6 @@
     │   )
     ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-    │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │       │   (
     │       │       [System Info]
@@ -322,12 +307,6 @@
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
-        {
-          "name": "Get Collection Cache",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        },
         {
           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
           "id": "00000000-0000-0000-0000-000000000000",
@@ -407,7 +386,6 @@
     │       Redacted To Not Change The Baselines From Run To Run
     │   )
     ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-    │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │       │   (
     │       │       [System Info]
@@ -439,12 +417,6 @@
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
-        {
-          "name": "Get Collection Cache",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        },
         {
           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
           "id": "00000000-0000-0000-0000-000000000000",

@@ -1076,16 +1076,22 @@
                 CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder.WithBulkExecution(true));
                 Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
                 List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
+
+                List<List<string>> oTelActivities = new List<List<string>>();
                 for (int i = 0; i < 10; i++)
                 {
                     ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
                     createItemsTasks.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.id)));
+
+                    oTelActivities.Add(testListener.GetRecordedAttributes());
+
+                    testListener.ResetAttributes();
                 }
 
                 await Task.WhenAll(createItemsTasks);
 
                 List<ITrace> traces = new List<ITrace>();
-                List<List<string>> oTelActivities = new List<List<string>>();
+             
                 foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
                 {
                     ItemResponse<ToDoActivity> itemResponse = await createTask;
@@ -1093,9 +1099,6 @@
 
                     ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
                     traces.Add(trace);
-                    oTelActivities.Add(testListener.GetRecordedAttributes());
-
-                    testListener.ResetAttributes();
                 }
 
                 endLineNumber = GetLineNumber();

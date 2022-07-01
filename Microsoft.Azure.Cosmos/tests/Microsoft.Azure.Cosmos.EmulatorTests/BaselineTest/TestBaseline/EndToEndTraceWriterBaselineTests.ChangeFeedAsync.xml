@@ -53,7 +53,6 @@
     │   │                   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │                   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │                   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   │                   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │                   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       │   (
     │   │                       │       [System Info]
@@ -81,7 +80,6 @@
     │   │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                   │   (
     │   │                   │       [System Info]
@@ -109,7 +107,6 @@
     │   │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                   │   (
     │   │                   │       [System Info]
@@ -137,7 +134,6 @@
     │   │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                   │   (
     │   │                   │       [System Info]
@@ -165,7 +161,6 @@
         │   │           ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │   │           ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │   │           ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-        │   │           ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │   │           └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
         │   │               │   (
         │   │               │       [System Info]
@@ -186,7 +181,6 @@
         │       │           ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │       │           ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │       │           ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-        │       │           ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │       │           └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
         │       │               │   (
         │       │               │       [System Info]
@@ -206,7 +200,6 @@
         │       │           ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │       │           ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │       │           ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-        │       │           ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │       │           └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
         │       │               │   (
         │       │               │       [System Info]
@@ -226,7 +219,6 @@
         │                   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │                   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │                   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-        │                   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │                   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
         │                       │   (
         │                       │       [System Info]
@@ -406,12 +398,6 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
@@ -526,12 +512,6 @@
                         },
                         {
                           "name": "Try Get Overlapping Ranges",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0
-                        },
-                        {
-                          "name": "Get Collection Cache",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0
@@ -654,12 +634,6 @@
                           "duration in milliseconds": 0
                         },
                         {
-                          "name": "Get Collection Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0
-                        },
-                        {
                           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "start time": "12:00:00:000",
@@ -772,12 +746,6 @@
                         },
                         {
                           "name": "Try Get Overlapping Ranges",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0
-                        },
-                        {
-                          "name": "Get Collection Cache",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0
@@ -900,12 +868,6 @@
                           "duration in milliseconds": 0
                         },
                         {
-                          "name": "Get Collection Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0
-                        },
-                        {
                           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "start time": "12:00:00:000",
@@ -998,12 +960,6 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
@@ -1085,12 +1041,6 @@
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
-                              "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
@@ -1182,12 +1132,6 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
@@ -1257,10 +1201,10 @@
     }
   ]
 }]]></Json>
-      <OTelActivities><ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>6417</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>2.64</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>8012</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3.68</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>8769</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3.34</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>7579</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>6402</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>2.64</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>8740</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3.8</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>7337</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>8307</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
 <ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NotModified</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NotModified</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>8</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
 </OTelActivities>
     </Output>
@@ -1320,7 +1264,6 @@
     │   │                   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │                   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │                   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   │                   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │                   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       │   (
     │   │                       │       [System Info]
@@ -1349,7 +1292,6 @@
     │   │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                   │   (
     │   │                   │       [System Info]
@@ -1378,7 +1320,6 @@
     │   │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                   │   (
     │   │                   │       [System Info]
@@ -1407,7 +1348,6 @@
         │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │               ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │               ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-        │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │               └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
         │                   │   (
         │                   │       [System Info]
@@ -1588,12 +1528,6 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
@@ -1714,12 +1648,6 @@
                         },
                         {
                           "name": "Try Get Overlapping Ranges",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0
-                        },
-                        {
-                          "name": "Get Collection Cache",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0
@@ -1848,12 +1776,6 @@
                           "duration in milliseconds": 0
                         },
                         {
-                          "name": "Get Collection Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0
-                        },
-                        {
                           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "start time": "12:00:00:000",
@@ -1977,12 +1899,6 @@
                           "duration in milliseconds": 0
                         },
                         {
-                          "name": "Get Collection Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0
-                        },
-                        {
                           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "start time": "12:00:00:000",
@@ -2057,9 +1973,9 @@
   ]
 }]]></Json>
       <OTelActivities><ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>2.64</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3.68</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3.34</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3.8</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
 <ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NotModified</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NotModified</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>8</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
 </OTelActivities>
     </Output>
@@ -2120,7 +2036,6 @@
     │   │                   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │                   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │                   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   │                   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │                   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       │   (
     │   │                       │       [System Info]
@@ -2148,7 +2063,6 @@
     │   │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                   │   (
     │   │                   │       [System Info]
@@ -2176,7 +2090,6 @@
     │   │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                   │   (
     │   │                   │       [System Info]
@@ -2204,7 +2117,6 @@
         │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │               ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │               ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-        │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │               └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
         │                   │   (
         │                   │       [System Info]
@@ -2384,12 +2296,6 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
@@ -2504,12 +2410,6 @@
                         },
                         {
                           "name": "Try Get Overlapping Ranges",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0
-                        },
-                        {
-                          "name": "Get Collection Cache",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0
@@ -2632,12 +2532,6 @@
                           "duration in milliseconds": 0
                         },
                         {
-                          "name": "Get Collection Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0
-                        },
-                        {
                           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "start time": "12:00:00:000",
@@ -2755,12 +2649,6 @@
                           "duration in milliseconds": 0
                         },
                         {
-                          "name": "Get Collection Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0
-                        },
-                        {
                           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "start time": "12:00:00:000",
@@ -2828,10 +2716,10 @@
     }
   ]
 }]]></Json>
-      <OTelActivities><ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>6417</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>2.64</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>8012</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3.68</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>8769</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3.34</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>7579</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>6402</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>2.64</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>8740</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3.8</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>7337</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>8307</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
 <ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NotModified</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NotModified</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>8</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
 </OTelActivities>
     </Output>
@@ -2892,7 +2780,6 @@
     │   │                   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │                   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │                   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   │                   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │                   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       │   (
     │   │                       │       [System Info]
@@ -2921,7 +2808,6 @@
     │   │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                   │   (
     │   │                   │       [System Info]
@@ -2950,7 +2836,6 @@
     │   │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   │               └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                   │   (
     │   │                   │       [System Info]
@@ -2979,7 +2864,6 @@
         │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │               ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │               ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-        │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │               └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
         │                   │   (
         │                   │       [System Info]
@@ -3160,12 +3044,6 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0
-                            },
-                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
@@ -3286,12 +3164,6 @@
                         },
                         {
                           "name": "Try Get Overlapping Ranges",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0
-                        },
-                        {
-                          "name": "Get Collection Cache",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0
@@ -3420,12 +3292,6 @@
                           "duration in milliseconds": 0
                         },
                         {
-                          "name": "Get Collection Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0
-                        },
-                        {
                           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "start time": "12:00:00:000",
@@ -3549,12 +3415,6 @@
                           "duration in milliseconds": 0
                         },
                         {
-                          "name": "Get Collection Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0
-                        },
-                        {
                           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "start time": "12:00:00:000",
@@ -3629,9 +3489,9 @@
   ]
 }]]></Json>
       <OTelActivities><ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>2.64</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3.68</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3.34</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3.8</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>3.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
 <ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NotModified</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NotModified</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>8</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
 </OTelActivities>
     </Output>
@@ -3667,7 +3527,6 @@
         │   )
         ├── Initialize Lease Store(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-        │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
         │       │   (
         │       │       [System Info]
@@ -3682,7 +3541,6 @@
         │                               Redacted To Not Change The Baselines From Run To Run
         │                           )
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-        │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
         │       │   (
         │       │       [System Info]
@@ -3697,7 +3555,6 @@
         │                               Redacted To Not Change The Baselines From Run To Run
         │                           )
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-        │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
         │       │   (
         │       │       [System Info]
@@ -3712,7 +3569,6 @@
         │                               Redacted To Not Change The Baselines From Run To Run
         │                           )
         └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-            ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
             └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
                 │   (
                 │       [System Info]
@@ -3756,11 +3612,57 @@
           "duration in milliseconds": 0,
           "children": [
             {
-              "name": "Get Collection Cache",
+              "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
               "id": "00000000-0000-0000-0000-000000000000",
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0
-            },
+              "duration in milliseconds": 0,
+              "data": {
+                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+              },
+              "children": [
+                {
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "children": [
+                    {
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "children": [
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "children": [
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
               "id": "00000000-0000-0000-0000-000000000000",
@@ -3814,12 +3716,6 @@
           "duration in milliseconds": 0,
           "children": [
             {
-              "name": "Get Collection Cache",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
-              "duration in milliseconds": 0
-            },
-            {
               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
               "id": "00000000-0000-0000-0000-000000000000",
               "start time": "12:00:00:000",
@@ -3871,70 +3767,6 @@
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
-            {
-              "name": "Get Collection Cache",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
-              "duration in milliseconds": 0
-            },
-            {
-              "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {
-                "System Info": "Redacted To Not Change The Baselines From Run To Run"
-              },
-              "children": [
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "children": [
-                    {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "children": [
-                        {
-                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "children": [
-                            {
-                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {
-                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                              }
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "children": [
-            {
-              "name": "Get Collection Cache",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
-              "duration in milliseconds": 0
-            },
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
               "id": "00000000-0000-0000-0000-000000000000",
@@ -4002,13 +3834,13 @@
 <ACTIVITY><OPERATION>Cosmos.Change Feed Processor Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NotModified</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NotModified</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>2</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>0</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
 <ACTIVITY><OPERATION>Cosmos.ReplaceItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>11.43</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
 <ACTIVITY><OPERATION>Cosmos.Change Feed Processor Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NotModified</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NotModified</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>2</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>0</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.ReplaceItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>11.43</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Change Feed Processor Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NotModified</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NotModified</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>2</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>0</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.ReplaceItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>11.43</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Change Feed Processor Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NotModified</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NotModified</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>2</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>0</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
 <ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>5.78</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.ReplaceItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>11.43</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.Change Feed Processor Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NotModified</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NotModified</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>2</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>0</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.ReplaceItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>11.43</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.Change Feed Processor Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NotModified</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NotModified</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>2</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>0</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.ReadItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>447</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>2</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
 <ACTIVITY><OPERATION>Cosmos.ReadItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>459</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>2</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.ReadItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>447</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>2</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
 <ACTIVITY><OPERATION>Cosmos.ReadItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>459</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>2</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
 <ACTIVITY><OPERATION>Cosmos.ReadItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>445</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>2</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
 <ACTIVITY><OPERATION>Cosmos.ReplaceItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>11.24</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
@@ -4016,7 +3848,7 @@
 <ACTIVITY><OPERATION>Cosmos.ReplaceItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>11.24</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
 <ACTIVITY><OPERATION>Cosmos.ReplaceItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>11.24</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
 <ACTIVITY><OPERATION>Cosmos.ReadAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>2</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.FeedIterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>1845</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>5.86</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>4</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.FeedIterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>1846</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>5.86</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>4</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
 <ACTIVITY><OPERATION>Cosmos.Change Feed Estimator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>NA</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>OK</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>8</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-VALUE></ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
 </OTelActivities>
     </Output>
