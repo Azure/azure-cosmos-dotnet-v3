@@ -5,12 +5,10 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Text;
-    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Data.Encryption.Cryptography;
@@ -474,17 +472,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return itemJObj;
         }
 
-        private static string ConvertToBase64UriSafeString(byte[] byteToProcess)
+        private static string ConvertToBase64UriSafeString(byte[] bytesToProcess)
         {
-            string base64String = Convert.ToBase64String(byteToProcess);
+            string base64String = Convert.ToBase64String(bytesToProcess);
 
             // Base 64 Encoding with URL and Filename Safe Alphabet  https://datatracker.ietf.org/doc/html/rfc4648#section-5
             return new StringBuilder(base64String, base64String.Length).Replace("/", "_").Replace("+", "-").ToString();
         }
 
-        private static byte[] ConvertFromBase64UriSafeString(string uriSafeBase64STring)
+        private static byte[] ConvertFromBase64UriSafeString(string uriSafeBase64String)
         {
-            StringBuilder fromUriSafeBase64String = new StringBuilder(uriSafeBase64STring, uriSafeBase64STring.Length).Replace("_", "/").Replace("-", "+");
+            StringBuilder fromUriSafeBase64String = new StringBuilder(uriSafeBase64String, uriSafeBase64String.Length).Replace("_", "/").Replace("-", "+");
             return Convert.FromBase64String(fromUriSafeBase64String.ToString());
         }
     }

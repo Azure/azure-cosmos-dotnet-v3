@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -817,8 +816,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken)
         {
             string subStatusCode = responseMessage.Headers.Get(Constants.SubStatusHeader);
-            bool isPartitionKeyMismatch = string.Equals(subStatusCode, Constants.PartitionKeyMismatch, StringComparison.InvariantCultureIgnoreCase);
-            bool isContainerRidIncorrect = string.Equals(subStatusCode, Constants.IncorrectContainerRidSubStatus, StringComparison.InvariantCultureIgnoreCase);
+            bool isPartitionKeyMismatch = string.Equals(subStatusCode, Constants.PartitionKeyMismatch);
+            bool isContainerRidIncorrect = string.Equals(subStatusCode, Constants.IncorrectContainerRidSubStatus);
 
             // if the partition key check is done before container rid check.
             if (responseMessage.StatusCode == HttpStatusCode.BadRequest && (isContainerRidIncorrect || isPartitionKeyMismatch))
@@ -827,34 +826,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 // due to us not encrypting the partition key because of incorrect cached policy.
                 if (isPartitionKeyMismatch && encryptionSettings.PartitionKeyPaths.Any())
                 {
-                    if (encryptionSettings.PartitionKeyPaths.Count > 1)
+                    EncryptionSettingForProperty encryptionSettingForProperty = null;
+                    foreach (string path in encryptionSettings.PartitionKeyPaths)
                     {
-                        EncryptionSettingForProperty encryptionSettingForProperty = null;
-                        foreach (string path in encryptionSettings.PartitionKeyPaths)
-                        {
-                            string partitionKeyPath = path.Split('/')[1];
-                            encryptionSettingForProperty = encryptionSettings.GetEncryptionSettingForProperty(partitionKeyPath);
+                        string partitionKeyPath = path.Split('/')[1];
+                        encryptionSettingForProperty = encryptionSettings.GetEncryptionSettingForProperty(partitionKeyPath);
 
-                            // break on first path encountered.
-                            if (encryptionSettingForProperty != null)
-                            {
-                                break;
-                            }
-                        }
-
-                        // if none of the paths were part of encryption policy
-                        if (encryptionSettingForProperty == null)
+                        // break on first path encountered.
+                        if (encryptionSettingForProperty != null)
                         {
-                            return;
+                            break;
                         }
                     }
-                    else
+
+                    // if none of the paths were part of encryption policy
+                    if (encryptionSettingForProperty == null)
                     {
-                        string partitionKeyPath = encryptionSettings.PartitionKeyPaths.Single().Split('/')[1];
-                        if (encryptionSettings.GetEncryptionSettingForProperty(partitionKeyPath) == null)
-                        {
-                            return;
-                        }
+                        return;
                     }
                 }
 
@@ -1033,7 +1021,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         continue;
                     }
 
-                    Stream valueStream = this.CosmosSerializer.ToStream(jArray[i++]);
+                    Stream valueStream = EncryptionProcessor.BaseSerializer.ToStream(jArray[i++]);
 
                     Stream encryptedPartitionKey = await EncryptionProcessor.EncryptValueStreamAsync(
                         valueStreamToEncrypt: valueStream,
@@ -1041,18 +1029,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         shouldEscape: partitionKeyPath == "id",
                         cancellationToken: cancellationToken);
 
-                    if (encryptedPartitionKey != null)
+                    string encryptedPK = null;
+                    using (StreamReader reader = new StreamReader(encryptedPartitionKey))
                     {
-                        string encryptedPK = null;
-                        using (StreamReader reader = new StreamReader(encryptedPartitionKey))
-                        {
-                            encryptedPK = await reader.ReadToEndAsync();
-                        }
-
-                        JToken encryptedKey = JToken.Parse(encryptedPK);
-
-                        partitionKeyBuilder.Add(encryptedKey.ToString());
+                        encryptedPK = await reader.ReadToEndAsync();
                     }
+
+                    JToken encryptedKey = JToken.Parse(encryptedPK);
+
+                    partitionKeyBuilder.Add(encryptedKey.ToString());
                 }
 
                 return partitionKeyBuilder.Build();
@@ -1069,7 +1054,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     return partitionKey;
                 }
 
-                Stream valueStream = this.CosmosSerializer.ToStream((JToken)jArray[0]);
+                Stream valueStream = EncryptionProcessor.BaseSerializer.ToStream(jArray[0]);
 
                 Stream encryptedPartitionKey = await EncryptionProcessor.EncryptValueStreamAsync(
                     valueStreamToEncrypt: valueStream,
@@ -1405,7 +1390,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             for (int i = 0; i < items.Count; i++)
             {
                 string id = await this.CheckIfIdIsEncryptedAndGetEncryptedIdAsync(items[i].id, encryptionSettings, cancellationToken);
-                PartitionKey partitionKey = (PartitionKey)await this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(items[i].partitionKey, encryptionSettings, cancellationToken);
+                PartitionKey partitionKey = await this.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(items[i].partitionKey, encryptionSettings, cancellationToken);
                 encryptedItemList.Add((id, partitionKey));
             }
 

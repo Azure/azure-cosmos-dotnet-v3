@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 Stream encryptedValueStream = await EncryptionProcessor.EncryptValueStreamAsync(
                     valueStream,
                     settingsForProperty,
-                    path.Substring(1) == "id",
+                    path == "/id",
                     cancellationToken);
 
                 queryDefinitionwithEncryptedValues.WithParameterStream(name, encryptedValueStream);
