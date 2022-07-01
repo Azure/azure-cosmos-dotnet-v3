@@ -5,12 +5,22 @@
 namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
     using System;
+    using System.Collections.Generic;
     using global::Azure.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
 
     internal struct OpenTelemetryCoreRecorder : IDisposable
     {
         private readonly DiagnosticScope scope;
+
+        internal static IDictionary<Type, Action<Exception, DiagnosticScope>> oTelCompatibleExceptions = new Dictionary<Type, Action<Exception, DiagnosticScope>>()
+        {
+            { typeof(CosmosNullReferenceException), (exception, scope) => CosmosNullReferenceException.RecordOtelAttributes((CosmosNullReferenceException)exception, scope)},
+            { typeof(CosmosObjectDisposedException), (exception, scope) => CosmosObjectDisposedException.RecordOtelAttributes((CosmosObjectDisposedException)exception, scope)},
+            { typeof(CosmosOperationCanceledException), (exception, scope) => CosmosOperationCanceledException.RecordOtelAttributes((CosmosOperationCanceledException)exception, scope)},
+            { typeof(CosmosException), (exception, scope) => CosmosException.RecordOtelAttributes((CosmosException)exception, scope)},
+            { typeof(ChangeFeedProcessorUserException), (exception, scope) => ChangeFeedProcessorUserException.RecordOtelAttributes((ChangeFeedProcessorUserException)exception, scope)}
+        };
 
         public OpenTelemetryCoreRecorder(DiagnosticScope scope)
         {
@@ -52,51 +62,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         public void MarkFailed<T>(T exception)
              where T : Exception
         {
-            string exceptionMessage = null;
-
-            if (exception is CosmosException cosmosException)
-            {
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, cosmosException.StatusCode);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, cosmosException.RequestCharge);
-
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(cosmosException.Diagnostics));
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, cosmosException.Diagnostics);
-
-                exceptionMessage = cosmosException.Message;
-            }
-
-            if (exception is CosmosNullReferenceException cosmosNullReferenceException)
-            {
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(cosmosNullReferenceException.Diagnostics));
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, cosmosNullReferenceException.Diagnostics);
-
-                exceptionMessage = cosmosNullReferenceException.GetBaseException().Message;
-            }
-
-            if (exception is CosmosObjectDisposedException cosmosObjectDisposedException)
-            {
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(cosmosObjectDisposedException.Diagnostics));
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, cosmosObjectDisposedException.Diagnostics);
-
-                exceptionMessage = cosmosObjectDisposedException.Message;
-            }
-
-            if (exception is CosmosOperationCanceledException cosmosOperationCanceledException)
-            {
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(cosmosOperationCanceledException.Diagnostics));
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, cosmosOperationCanceledException.Diagnostics);
-
-                exceptionMessage = cosmosOperationCanceledException.GetBaseException().Message;
-            }
-
-            if (exceptionMessage == null)
-            {
-                exceptionMessage = exception.Message;
-            }
-
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exceptionMessage);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionStacktrace, exception.StackTrace);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType());
+
+            if (OpenTelemetryCoreRecorder.oTelCompatibleExceptions.TryGetValue(exception.GetType(), out Action<Exception, DiagnosticScope> value))
+            {
+                value.Invoke(exception, this.scope);
+            } 
+            else
+            {
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
+            }
 
             this.scope.Failed(exception);
         }
