@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.AreEqual(HttpStatusCode.Unauthorized, responseMessage.StatusCode);
 
                         string diagnostics = responseMessage.Diagnostics.ToString();
-                        Assert.IsTrue(diagnostics.Contains("AuthProvider LifeSpan InSec"));
+                        Assert.IsTrue(diagnostics.Contains("AuthProvider LifeSpan InSec"), diagnostics.ToString());
                     }
 
                     {
@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.AreEqual(HttpStatusCode.Unauthorized, responseMessage.StatusCode); // Read Only resorce token
 
                         string diagnostics = responseMessage.Diagnostics.ToString();
-                        Assert.IsTrue(diagnostics.Contains("AuthProvider LifeSpan InSec"));
+                        Assert.IsTrue(diagnostics.Contains("AuthProvider LifeSpan InSec"), diagnostics.ToString());
                     }
                 }
                 finally
