@@ -473,7 +473,7 @@ namespace Microsoft.Azure.Cosmos
             Func<TResult, OpenTelemetryAttributes> openTelemetry,
             string operationName)
         {
-            bool isOTelFeatureEnabled = this.ClientOptions.IsOpenTelemetryFeatureEnabled;
+            bool isOTelFeatureEnabled = this.clientOptions.IsOpenTelemetryFeatureEnabled;
 
 #if PREVIEW
             isOTelFeatureEnabled = true;
