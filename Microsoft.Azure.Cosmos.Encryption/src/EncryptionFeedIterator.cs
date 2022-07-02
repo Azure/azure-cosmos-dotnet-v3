@@ -148,8 +148,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private async Task GetIteratorWithEncryptionHeaderAndEncryptPartitionKeyIfRequiredAsync(EncryptionSettings encryptionSettings)
         {
+            encryptionSettings.SetRequestHeaders(this.requestOptions);
+
             // should be fine, flag is set at the end of init
-            if (this.isIteratorInitialized)
+            if (this.isIteratorInitialized || this.queryType == QueryType.QueryWithOutEncryptedPk)
             {
                 return;
             }
@@ -160,9 +162,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     try
                     {
-                        encryptionSettings.SetRequestHeaders(this.requestOptions);
-
-                        if (this.queryType != QueryType.QueryWithOutEncryptedPk && this.requestOptions is QueryRequestOptions queryRequestOptions)
+                        if (this.requestOptions is QueryRequestOptions queryRequestOptions)
                         {
                             if (queryRequestOptions != null && queryRequestOptions.PartitionKey.HasValue)
                             {
