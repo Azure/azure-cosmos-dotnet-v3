@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class EncryptionFeedIterator : FeedIterator
     {
-        private readonly object singleIteratorInitLock = new object();
+        private readonly SemaphoreSlim singleIteratorInitSema = new SemaphoreSlim(1, 1);
         private readonly EncryptionContainer encryptionContainer;
         private readonly RequestOptions requestOptions;
         private readonly QueryDefinition queryDefinition;
@@ -148,60 +148,68 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private async Task GetIteratorWithEncryptionHeaderAndEncryptPartitionKeyIfRequiredAsync(EncryptionSettings encryptionSettings)
         {
-            if (!this.isIteratorInitialized)
-            {
-                lock (this.singleIteratorInitLock)
-                {
-                    if (this.isIteratorInitialized)
-                    {
-                        return;
-                    }
-                }
-            }
-            else
+            // should be fine, flag is set at the end of init
+            if (this.isIteratorInitialized)
             {
                 return;
             }
 
-            encryptionSettings.SetRequestHeaders(this.requestOptions);
-
-            if (this.queryType != QueryType.QueryWithOutEncryptedPk && this.requestOptions is QueryRequestOptions queryRequestOptions)
+            if (await this.singleIteratorInitSema.WaitAsync(-1))
             {
-                if (queryRequestOptions != null && queryRequestOptions.PartitionKey.HasValue)
+                if (!this.isIteratorInitialized)
                 {
-                    (queryRequestOptions.PartitionKey, bool isPkEncrypted) = await this.encryptionContainer.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(
-                        queryRequestOptions.PartitionKey.Value,
-                        encryptionSettings,
-                        cancellationToken: default);
-
-                    if (!isPkEncrypted)
+                    try
                     {
+                        encryptionSettings.SetRequestHeaders(this.requestOptions);
+
+                        if (this.queryType != QueryType.QueryWithOutEncryptedPk && this.requestOptions is QueryRequestOptions queryRequestOptions)
+                        {
+                            if (queryRequestOptions != null && queryRequestOptions.PartitionKey.HasValue)
+                            {
+                                (queryRequestOptions.PartitionKey, bool isPkEncrypted) = await this.encryptionContainer.CheckIfPkIsEncryptedAndGetEncryptedPkAsync(
+                                    queryRequestOptions.PartitionKey.Value,
+                                    encryptionSettings,
+                                    cancellationToken: default);
+
+                                if (!isPkEncrypted)
+                                {
+                                    this.isIteratorInitialized = true;
+                                    return;
+                                }
+                            }
+
+                            // we rebuild iterators which take in request options with partiton key and if partition key was encrypted.
+                            this.FeedIterator = this.queryType switch
+                            {
+                                QueryType.QueryTextType => this.encryptionContainer.Container.GetItemQueryStreamIterator(
+                                    this.queryText,
+                                    this.continuationToken,
+                                    queryRequestOptions),
+                                QueryType.QueryDefinitionType => this.encryptionContainer.Container.GetItemQueryStreamIterator(
+                                    this.queryDefinition,
+                                    this.continuationToken,
+                                    queryRequestOptions),
+                                QueryType.QueryDefinitionWithFeedRangeType => this.encryptionContainer.Container.GetItemQueryStreamIterator(
+                                    this.feedRange,
+                                    this.queryDefinition,
+                                    this.continuationToken,
+                                    queryRequestOptions),
+                                _ => this.FeedIterator,
+                            };
+                        }
+
                         this.isIteratorInitialized = true;
-                        return;
+                    }
+                    finally
+                    {
+                        this.singleIteratorInitSema.Release(1);
                     }
                 }
-
-                // we rebuild iterators which take in request options with partiton key and if partition key was encrypted.
-                this.FeedIterator = this.queryType switch
+                else
                 {
-                    QueryType.QueryTextType => this.encryptionContainer.Container.GetItemQueryStreamIterator(
-                        this.queryText,
-                        this.continuationToken,
-                        queryRequestOptions),
-                    QueryType.QueryDefinitionType => this.encryptionContainer.Container.GetItemQueryStreamIterator(
-                        this.queryDefinition,
-                        this.continuationToken,
-                        queryRequestOptions),
-                    QueryType.QueryDefinitionWithFeedRangeType => this.encryptionContainer.Container.GetItemQueryStreamIterator(
-                        this.feedRange,
-                        this.queryDefinition,
-                        this.continuationToken,
-                        queryRequestOptions),
-                    _ => this.FeedIterator,
-                };
+                    this.singleIteratorInitSema.Release(1);
+                }
             }
-
-            this.isIteratorInitialized = true;
         }
     }
 }
