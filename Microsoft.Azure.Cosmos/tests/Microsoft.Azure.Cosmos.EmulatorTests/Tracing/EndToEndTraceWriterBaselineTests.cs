@@ -1108,7 +1108,6 @@
             int startLineNumber;
             int endLineNumber;
 
-            Console.WriteLine("RUnning bulk");
             //----------------------------------------------------------------
             //  Standard Bulk
             //----------------------------------------------------------------
@@ -1127,7 +1126,7 @@
 
                     oTelActivities.Add(testListener.GetRecordedAttributes());
 
-                  //  testListener.ResetAttributes();
+                    testListener.ResetAttributes();
                 }
 
                 await Task.WhenAll(createItemsTasks);

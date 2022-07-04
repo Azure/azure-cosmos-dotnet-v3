@@ -81,6 +81,11 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
+
+#if PREVIEW
+            this.IsOpenTelemetryFeatureEnabled = true;
+#endif
+
         }
 
         /// <summary>
