@@ -39,6 +39,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             this.scope.AddAttribute(key, value);
         }
 
+        /// <summary>
+        /// Record attributes from response
+        /// </summary>
+        /// <param name="response"></param>
         public void Record(OpenTelemetryAttributes response)
         {
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, response.StatusCode);
@@ -59,22 +63,46 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
         }
 
-        public void MarkFailed<T>(T exception)
-             where T : Exception
+        /// <summary>
+        /// Record attributes during exception
+        /// </summary>
+        /// <param name="exception"></param>
+        public void MarkFailed(Exception exception)
         {
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionStacktrace, exception.StackTrace);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType());
 
-            if (OpenTelemetryCoreRecorder.oTelCompatibleExceptions.TryGetValue(exception.GetType(), out Action<Exception, DiagnosticScope> value))
-            {
-                value.Invoke(exception, this.scope);
-            } 
-            else
+            // If Exception is not registered with open Telemetry
+            if (!OpenTelemetryCoreRecorder.IsExceptionRegistered(exception, this.scope))
             {
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
             }
 
             this.scope.Failed(exception);
+        }
+
+        /// <summary>
+        /// Checking if passed exception is registered with Open telemetry or Not
+        /// </summary>
+        /// <param name="exception"></param>
+        /// <param name="scope"></param>
+        /// <returns>tru/false</returns>
+        internal static bool IsExceptionRegistered(Exception exception, DiagnosticScope scope)
+        {
+            bool isExceptionRegistered = false;
+            foreach (KeyValuePair<Type, Action<Exception, DiagnosticScope>> registeredExceptionHandlers in OpenTelemetryCoreRecorder.oTelCompatibleExceptions)
+            {
+                Type exceptionType = exception.GetType();
+                if (registeredExceptionHandlers.Key.IsAssignableFrom(exceptionType))
+                {
+                    registeredExceptionHandlers.Value(exception, scope);
+
+                    isExceptionRegistered = true;
+                    break;
+                }
+            }
+
+            return isExceptionRegistered;
         }
 
         public void Dispose()
