@@ -9,36 +9,36 @@ variables:
   Packaging.EnableSBOMSigning: true
 
 stages:
-- stage:
-  displayName: Gate 
-  jobs:
-    - template:  templates/static-tools.yml
-      parameters:
-        BuildConfiguration: $(BuildConfiguration)
-        VmImage: $(VmImage)
+# - stage:
+#   displayName: Gate 
+#   jobs:
+#     - template:  templates/static-tools.yml
+#       parameters:
+#         BuildConfiguration: $(BuildConfiguration)
+#         VmImage: $(VmImage)
 
-    - template:  templates/build-test.yml
-      parameters:
-        BuildConfiguration: $(BuildConfiguration)
-        Arguments: $(ReleaseArguments)
-        VmImage: $(VmImage)
+#     - template:  templates/build-test.yml
+#       parameters:
+#         BuildConfiguration: $(BuildConfiguration)
+#         Arguments: $(ReleaseArguments)
+#         VmImage: $(VmImage)
 
 - stage:
   displayName: Publish 
   jobs:
+    - template:  templates/nuget-pack.yml
+      parameters:
+        BuildConfiguration: Release
+        Arguments: $(ReleaseArguments)
+        VmImage: $(VmImage)
+        GenerateSymbols: true
+        OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
+
     - job:
       pool:
         vmImage: $(VmImage)
     
       steps:
-      - template:  templates/nuget-pack.yml
-        parameters:
-          BuildConfiguration: Release
-          Arguments: $(ReleaseArguments)
-          VmImage: $(VmImage)
-          GenerateSymbols: true
-          OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
-
       - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
         inputs:
           BuildDropPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
