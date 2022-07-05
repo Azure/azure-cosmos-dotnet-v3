@@ -22,7 +22,7 @@ jobs:
       configuration: $(BuildConfiguration)
       nugetConfigPath: NuGet.config
       projects: Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj 
-      arguments: --configuration $(BuildConfiguration) -p:Optimize=true 
+      arguments: --configuration ${{ parameters.BuildConfiguration }} -p:Optimize=true 
       versioningScheme: OFF
 
   - task: DotNetCoreCLI@2
@@ -31,7 +31,7 @@ jobs:
       command: custom
       projects: 'Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj'
       custom: pack
-      arguments: '-v detailed -c $(BuildConfiguration) --no-build --no-restore -o "${{ parameters.OutputPath }}"'
+      arguments: '-v detailed -c ${{ parameters.BuildConfiguration }} --no-build --no-restore -o "${{ parameters.OutputPath }}"'
 
   - ${{ if eq(parameters.GenerateSymbols, true) }}:
     - task: DotNetCoreCLI@2
@@ -40,4 +40,4 @@ jobs:
         command: custom
         projects: 'Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj'
         custom: pack
-        arguments: '-v detailed -c $(BuildConfiguration) --no-build --include-symbols /p:SymbolPackageFormat=snupkg --no-restore -o "${{ parameters.OutputPath }}"'
+        arguments: '-v detailed -c ${{ parameters.BuildConfiguration }} --no-build --include-symbols /p:SymbolPackageFormat=snupkg --no-restore -o "${{ parameters.OutputPath }}"'
