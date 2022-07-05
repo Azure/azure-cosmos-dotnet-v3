@@ -5493,7 +5493,7 @@ namespace Microsoft.Azure.Cosmos
                         AuthorizationTokenType.PrimaryMasterKey,
                         headers))
                     {
-                        request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r");
+                        request.Headers[HttpConstants.HttpHeaders.XDate] = Rfc1123DateTimeCache.UtcNow();
                         if (options?.PartitionKeyRangeId == null)
                         {
                             await this.AddPartitionKeyInformationAsync(
