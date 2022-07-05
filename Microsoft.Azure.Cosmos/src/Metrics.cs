@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Diagnostics;
     using System.Globalization;
+    using Microsoft.Azure.Documents;
 
     internal sealed class Metrics
     {

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Accumulator that acts as a builder of FetchExecutionRanges

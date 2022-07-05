@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System.Diagnostics;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// This class keeps track of scheduling metrics for a single process using a stopwatch interface.

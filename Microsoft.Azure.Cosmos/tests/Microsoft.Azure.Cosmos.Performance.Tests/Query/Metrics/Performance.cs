@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Query.Metrics
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using System.Diagnostics;
     using BenchmarkDotNet.Attributes;
+    using Microsoft.Azure.Documents;
 
     public class Performance
     {

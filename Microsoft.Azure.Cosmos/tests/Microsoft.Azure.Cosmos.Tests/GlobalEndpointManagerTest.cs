@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Tests for <see cref="GlobalEndpointManager"/>

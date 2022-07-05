@@ -17,6 +17,7 @@
  */
 
 using System.Diagnostics;
+using Microsoft.Azure.Documents;
 
 namespace HdrHistogram
 {

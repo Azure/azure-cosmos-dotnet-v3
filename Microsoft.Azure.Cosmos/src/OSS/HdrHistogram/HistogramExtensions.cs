@@ -23,6 +23,7 @@ using System.IO;
 using System.Linq;
 using HdrHistogram.Iteration;
 using HdrHistogram.Output;
+using Microsoft.Azure.Documents;
 
 namespace HdrHistogram
 {
