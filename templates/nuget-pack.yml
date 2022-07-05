@@ -9,7 +9,7 @@ parameters:
   GenerateSymbols: true
 
 jobs:
-- job:
+- job: GenerateNUgetPackages
   displayName: Generate Nuget packages
   pool:
     vmImage: ${{ parameters.VmImage }}
