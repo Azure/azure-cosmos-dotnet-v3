@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationTokenType tokenType)
         {
             // this is masterkey authZ
-            headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
+            headers[HttpConstants.HttpHeaders.XDate] = Rfc1123DateTimeCache.UtcNow();
 
             string authorizationToken = AuthorizationHelper.GenerateKeyAuthorizationSignature(
                 requestVerb,
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace)
         {
             // this is masterkey authZ
-            headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
+            headers[HttpConstants.HttpHeaders.XDate] = Rfc1123DateTimeCache.UtcNow();
 
             string authorizationToken = AuthorizationHelper.GenerateKeyAuthorizationSignature(
                 requestVerb,
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos
             string verb,
             AuthorizationTokenType tokenType)
         {
-            string dateTime = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
+            string dateTime = Rfc1123DateTimeCache.UtcNow();
             headersCollection[HttpConstants.HttpHeaders.XDate] = dateTime;
 
             string token = AuthorizationHelper.GenerateKeyAuthorizationSignature(
