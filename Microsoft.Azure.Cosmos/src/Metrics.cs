@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class Metrics
     {
-        private readonly ValueStopwatch stopwatch;
+        private ValueStopwatch stopwatch;
 
         public Metrics()
         {

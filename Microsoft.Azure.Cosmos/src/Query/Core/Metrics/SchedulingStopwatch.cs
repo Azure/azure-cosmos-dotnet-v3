@@ -17,17 +17,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <summary>
         /// Stopwatch used to measure turnaround time.
         /// </summary>
-        private readonly ValueStopwatch turnaroundTimeStopwatch;
+        private ValueStopwatch turnaroundTimeStopwatch;
 
         /// <summary>
         /// Stopwatch used to measure response time.
         /// </summary>
-        private readonly ValueStopwatch responseTimeStopwatch;
+        private ValueStopwatch responseTimeStopwatch;
 
         /// <summary>
         /// Stopwatch used to measure runtime.
         /// </summary>
-        private readonly ValueStopwatch runTimeStopwatch;
+        private ValueStopwatch runTimeStopwatch;
 
         /// <summary>
         /// Number of times the process was preempted.

@@ -17,8 +17,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
         private static readonly IReadOnlyDictionary<string, object> EmptyDictionary = new Dictionary<string, object>();
         private readonly List<ITrace> children;
         private readonly Lazy<Dictionary<string, object>> data;
-        private readonly ValueStopwatch stopwatch;
         private readonly ISet<(string, Uri)> regionContactedInternal;
+        private ValueStopwatch stopwatch;
 
         private Trace(
             string name,

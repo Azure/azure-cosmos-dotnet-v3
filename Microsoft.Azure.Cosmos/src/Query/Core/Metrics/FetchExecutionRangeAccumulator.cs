@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     sealed class FetchExecutionRangeAccumulator
     {
         private readonly DateTime constructionTime;
-        private readonly ValueStopwatch stopwatch;
+        private ValueStopwatch stopwatch;
         private List<FetchExecutionRange> fetchExecutionRanges;
         private DateTime startTime;
         private DateTime endTime;
