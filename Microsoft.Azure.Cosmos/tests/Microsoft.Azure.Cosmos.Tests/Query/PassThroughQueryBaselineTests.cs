@@ -30,7 +30,7 @@
     using System.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using System.IO;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SinglePartition;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery;
 
     [TestClass]
     public class PassThroughQueryBaselineTests : BaselineTests<PassThroughQueryTestInput, PassThroughQueryTestOutput>
@@ -71,6 +71,99 @@
                 cancellationToken: default,
                 continuationToken: CosmosArray.Create(TryExecuteContinuationToken.ToCosmosElement(token)));
             Assert.IsTrue(monadicCreate.Succeeded);
+        }
+
+        // this test checks that the pipeline takes a query to the backend and returns its associated document(s). 
+        [TestMethod]
+        public async Task TestPassThroughPipelineForBackendDocumentsAsync()
+        {
+            async Task<IQueryPipelineStage> CreateTryExecutePipelineStateAsync(IDocumentContainer documentContainer, CosmosElement continuationToken)
+            { 
+                List<FeedRangeEpk> targetRanges = await documentContainer.GetFeedRangesAsync(
+                        trace: NoOpTrace.Singleton,
+                        cancellationToken: default);
+                FeedRangeEpk firstRange = targetRanges[0];
+
+                TryCatch<IQueryPipelineStage> monadicQueryPipelineStage = TryExecuteQueryPipelineStage.MonadicCreate(
+                documentContainer: documentContainer,
+                sqlQuerySpec: new SqlQuerySpec("SELECT VALUE COUNT(1) FROM c"),
+                targetRange: firstRange,
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                partitionKey: new Cosmos.PartitionKey("/pk"),
+                cancellationToken: default,
+                continuationToken: continuationToken);
+                
+                Assert.IsTrue(monadicQueryPipelineStage.Succeeded);
+                IQueryPipelineStage queryPipelineStage = monadicQueryPipelineStage.Result;
+
+                return queryPipelineStage;
+            }
+
+            int numItems = 1;
+            IDocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems);
+            IQueryPipelineStage queryPipelineStage = await CreateTryExecutePipelineStateAsync(inMemoryCollection, continuationToken: null);
+            List<CosmosElement> documents = new List<CosmosElement>();
+            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
+            {
+                TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
+                tryGetPage.ThrowIfFailed();
+              
+                documents.AddRange(tryGetPage.Result.Documents);
+            }
+
+            Assert.AreEqual(numItems, documents.Count);
+        }
+
+        private static async Task<IDocumentContainer> CreateDocumentContainerAsync(
+            int numItems,
+            FlakyDocumentContainer.FailureConfigs failureConfigs = null)
+        {
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
+            {
+                Paths = new System.Collections.ObjectModel.Collection<string>()
+                {
+                    "/pk"
+                },
+                Kind = PartitionKind.Hash,
+                Version = PartitionKeyDefinitionVersion.V2,
+            };
+
+            IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(partitionKeyDefinition);
+            if (failureConfigs != null)
+            {
+                monadicDocumentContainer = new FlakyDocumentContainer(monadicDocumentContainer, failureConfigs);
+            }
+
+            DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
+
+            for (int i = 0; i < 3; i++)
+            {
+                IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(
+                    trace: NoOpTrace.Singleton,
+                    cancellationToken: default);
+                foreach (FeedRangeInternal range in ranges)
+                {
+                    await documentContainer.SplitAsync(range, cancellationToken: default);
+                }
+
+                await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+            }
+
+            for (int i = 0; i < numItems; i++)
+            {
+                // Insert an item
+                CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
+                while (true)
+                {
+                    TryCatch<Record> monadicCreateRecord = await documentContainer.MonadicCreateItemAsync(item, cancellationToken: default);
+                    if (monadicCreateRecord.Succeeded)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            return documentContainer;
         }
 
         [TestMethod]
@@ -225,7 +318,7 @@
                       inputParameters,
                       NoOpTrace.Singleton);
             bool result = queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton).Result;
-
+            
             Assert.AreEqual(input.ExpectedPassThrough, inputParameters.SqlQuerySpec.PassThrough);
             Assert.IsNotNull(queryPipelineStage);
             Assert.IsTrue(result);

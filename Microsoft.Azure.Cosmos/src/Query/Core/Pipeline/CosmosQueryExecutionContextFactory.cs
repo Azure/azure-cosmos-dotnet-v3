@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Tokens;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.SqlObjects;
@@ -478,7 +479,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         }
 
         /// <summary>
-        /// Gets the list of partition key ranges. 
+        /// Gets the list of partition key ranges.
         /// 1. Check partition key range id
         /// 2. Check Partition key
         /// 3. Check the effective partition key

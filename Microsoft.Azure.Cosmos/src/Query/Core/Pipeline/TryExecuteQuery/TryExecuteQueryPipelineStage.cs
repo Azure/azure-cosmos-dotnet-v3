@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
 {
     using System;
     using System.Collections.Generic;
@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SinglePartition;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
     using static Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.PartitionMapper;
@@ -25,38 +24,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     internal sealed class TryExecuteQueryPipelineStage : IQueryPipelineStage
     {
         private readonly QueryPartitionRangePageAsyncEnumerator queryPartitionRangePageAsyncEnumerator;
-        private CancellationToken cancellationToken;
 
         private TryExecuteQueryPipelineStage(
-            QueryPartitionRangePageAsyncEnumerator queryPartitionRangePageAsyncEnumerator,
-            CancellationToken cancellationToken)
+            QueryPartitionRangePageAsyncEnumerator queryPartitionRangePageAsyncEnumerator)
         {
             this.queryPartitionRangePageAsyncEnumerator = queryPartitionRangePageAsyncEnumerator ?? throw new ArgumentNullException(nameof(queryPartitionRangePageAsyncEnumerator));
-            this.cancellationToken = cancellationToken;
         }
+
         public TryCatch<QueryPage> Current { get; private set; } 
 
         public ValueTask DisposeAsync()
         {
             return this.queryPartitionRangePageAsyncEnumerator.DisposeAsync();
         }
-        private static CreatePartitionRangePageAsyncEnumerator<QueryPage, QueryState> MakeCreateFunction(
-            IQueryDataSource queryDataSource,
-            SqlQuerySpec sqlQuerySpec,
-            QueryPaginationOptions queryPaginationOptions,
-            Cosmos.PartitionKey? partitionKey,
-            CancellationToken cancellationToken) => (FeedRangeState<QueryState> feedRangeState) => new QueryPartitionRangePageAsyncEnumerator(
-                queryDataSource,
-                sqlQuerySpec,
-                feedRangeState,
-                partitionKey,
-                queryPaginationOptions,
-                cancellationToken);
+
         public void SetCancellationToken(CancellationToken cancellationToken)
         {
-            this.cancellationToken = cancellationToken;
             this.queryPartitionRangePageAsyncEnumerator.SetCancellationToken(cancellationToken);
         }
+
         public async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
             if (trace == null)
@@ -70,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 return false;
             }
 
-            TryCatch<QueryPage> partitionPage = this.queryPartitionRangePageAsyncEnumerator.Current;
+            TryCatch<QueryPage> partitionPage = this.queryPartitionRangePageAsyncEnumerator.Current; // something wrong with this line. Most likely queryPartitionRangePageAsyncEnumerator is null 
             if (partitionPage.Failed)
             {
                 this.Current = TryCatch<QueryPage>.FromException(partitionPage.Exception);
@@ -78,29 +64,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             }
 
             Page<QueryState> partitionPageResult = partitionPage.Result;
-            QueryPage backendQueryPage = (QueryPage)partitionPageResult;
-            QueryState crossPartitionState = partitionPageResult.State;
+            QueryPage backendQueryPage = partitionPage.Result;
+            QueryState partitionState = partitionPageResult.State;
 
             QueryState queryState;
-            if (crossPartitionState == null)
+            if (partitionState == null)
             {
                 queryState = null;
             }
             else
             {
-                List<ParallelContinuationToken> activeParallelContinuationTokens = new List<ParallelContinuationToken>();
-                QueryState firstState = (QueryState)crossPartitionState;
+                TryExecuteContinuationToken tryExecuteContinuationToken;
+                QueryState firstState = (QueryState)partitionState;
                 {
-                    ParallelContinuationToken firstParallelContinuationToken = new ParallelContinuationToken(
-                        token: firstState != null ? ((CosmosString)firstState.Value).Value : null,
+                    tryExecuteContinuationToken = new TryExecuteContinuationToken(
+                        token: (firstState?.Value as CosmosString)?.Value,
                         range: ((FeedRangeEpk)this.queryPartitionRangePageAsyncEnumerator.FeedRangeState.FeedRange).Range);
-
-                    activeParallelContinuationTokens.Add(firstParallelContinuationToken);
                 }
 
-                IEnumerable<CosmosElement> cosmosElementContinuationTokens = activeParallelContinuationTokens
-                    .Select(token => ParallelContinuationToken.ToCosmosElement(token));
-                CosmosArray cosmosElementParallelContinuationTokens = CosmosArray.Create(cosmosElementContinuationTokens);
+                CosmosElement cosmosElementContinuationToken = TryExecuteContinuationToken.ToCosmosElement(tryExecuteContinuationToken);
+                CosmosArray cosmosElementParallelContinuationTokens = CosmosArray.Create(cosmosElementContinuationToken);
 
                 queryState = new QueryState(cosmosElementParallelContinuationTokens);
             }
@@ -111,13 +94,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 backendQueryPage.ActivityId,
                 backendQueryPage.ResponseLengthInBytes,
                 backendQueryPage.CosmosQueryExecutionInfo,
-                backendQueryPage.DisallowContinuationTokenMessage,
+                null,
                 backendQueryPage.AdditionalHeaders,
                 queryState);
 
             this.Current = TryCatch<QueryPage>.FromResult(crossPartitionQueryPage);
             return true;
         }
+
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
               IDocumentContainer documentContainer,
               SqlQuerySpec sqlQuerySpec,
@@ -148,9 +132,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 queryPaginationOptions: queryPaginationOptions,
                 cancellationToken: cancellationToken);
 
-            TryExecuteQueryPipelineStage stage = new TryExecuteQueryPipelineStage(partitionPageEnumerator, cancellationToken);
+            TryExecuteQueryPipelineStage stage = new TryExecuteQueryPipelineStage(partitionPageEnumerator);
             return TryCatch<IQueryPipelineStage>.FromResult(stage);
         }
+
         private static TryCatch<FeedRangeState<QueryState>> MonadicExtractState(
             CosmosElement continuationToken,
             FeedRangeEpk range)
@@ -158,7 +143,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             if (continuationToken == null)
             {
                 // Full fan out to the ranges with null continuations
-                // FeedRangeState<QueryState> fullFanOutState = new (range.Select(range => new FeedRangeState<QueryState>(range, (QueryState)null)).ToArray());
                 FeedRangeState<QueryState> fullFanOutState = new (range, (QueryState)null);
                 return TryCatch<FeedRangeState<QueryState>>.FromResult(fullFanOutState);
             }
@@ -213,25 +197,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             }
 
             return TryCatch<FeedRangeState<QueryState>>.FromResult(feedRangeState);
-        }
-        private sealed class Comparer : IComparer<PartitionRangePageAsyncEnumerator<QueryPage, QueryState>>
-        {
-            public static readonly Comparer Singleton = new Comparer();
-
-            public int Compare(
-                PartitionRangePageAsyncEnumerator<QueryPage, QueryState> partitionRangePageEnumerator1,
-                PartitionRangePageAsyncEnumerator<QueryPage, QueryState> partitionRangePageEnumerator2)
-            {
-                if (object.ReferenceEquals(partitionRangePageEnumerator1, partitionRangePageEnumerator2))
-                {
-                    return 0;
-                }
-
-                // Either both don't have results or both do.
-                return string.CompareOrdinal(
-                    ((FeedRangeEpk)partitionRangePageEnumerator1.FeedRangeState.FeedRange).Range.Min,
-                    ((FeedRangeEpk)partitionRangePageEnumerator2.FeedRangeState.FeedRange).Range.Min);
-            }
         }
     }
 }
