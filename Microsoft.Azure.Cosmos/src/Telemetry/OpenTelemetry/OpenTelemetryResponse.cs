@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos
             // TODO: Add Request Information in TransactionalBatchResponse
             this.StatusCode = responseMessage.StatusCode;
             this.RequestCharge = responseMessage.Headers?.RequestCharge;
+            this.ResponseContentLength = responseMessage?.Headers?.ContentLength ?? "NA";
             this.Diagnostics = responseMessage.Diagnostics;
             this.ItemCount = responseMessage.Headers?.ItemCount;
         }

@@ -10,9 +10,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     {
         private static DiagnosticScopeFactory ScopeFactory { get; set; } 
 
-        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName, bool isFeatureEnabled)
+        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName, CosmosClientContext clientContext)
         {
-            if (isFeatureEnabled)
+            if (clientContext.ClientOptions.IsOpenTelemetryFeatureEnabled)
             {
                 ScopeFactory = new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
                                                     resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
@@ -23,9 +23,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
                 if (scope.IsEnabled)
                 {
-                    scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, "cosmosdb");
-
-                    return new OpenTelemetryCoreRecorder(scope);
+                    return new OpenTelemetryCoreRecorder(scope, operationName, clientContext);
                 }
             }
 
