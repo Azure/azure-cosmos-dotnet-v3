@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
     using System;
     using System.Collections.Generic;
+    using System.Text;
     using global::Azure.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
 
@@ -48,6 +49,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.MachineId, VmMetadataApiHandler.GetMachineId());
 
+            string netPeerName = new StringBuilder()
+                                        .Append(clientContext.DocumentClient?.AccountProperties?.Id)
+                                        .Append("_")
+                                        .Append(VmMetadataApiHandler.GetMachineInfo()?.AzEnvironment ?? "NonAzureCloud")
+                                        .ToString();
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.NetPeerName, netPeerName);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext.Client.ClientId);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode, clientContext.ClientOptions.ConnectionMode);
