@@ -119,7 +119,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private void RecordAttributes(string name, IEnumerable<KeyValuePair<string, string>> tags)
         {
-            Console.WriteLine(name);
             StringBuilder builder = new StringBuilder();
             builder.Append("<ACTIVITY>")
                    .Append("<OPERATION>")

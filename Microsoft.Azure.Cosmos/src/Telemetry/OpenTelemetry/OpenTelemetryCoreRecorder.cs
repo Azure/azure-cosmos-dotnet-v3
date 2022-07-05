@@ -51,8 +51,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
             string netPeerName = new StringBuilder()
                                         .Append(clientContext.DocumentClient?.AccountProperties?.Id)
-                                        .Append("_")
-                                        .Append(VmMetadataApiHandler.GetMachineInfo()?.AzEnvironment ?? "NonAzureCloud")
+                                        .Append("(")
+                                        .Append(VmMetadataApiHandler.GetCloudInformation())
+                                        .Append(")")
                                         .ToString();
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.NetPeerName, netPeerName);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext.Client.ClientId);
