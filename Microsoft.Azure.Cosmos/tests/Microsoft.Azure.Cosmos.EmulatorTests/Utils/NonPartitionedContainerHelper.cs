@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static string GetUtcDateTime()
         {
-            return DateTime.UtcNow.ToString("r");
+            return Rfc1123DateTimeCache.UtcNow();
         }
     }
 }
