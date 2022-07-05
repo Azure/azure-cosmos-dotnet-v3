@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Tests for <see cref="GlobalEndpointManager"/>
@@ -320,7 +321,7 @@ namespace Microsoft.Azure.Cosmos
                 slowPrimaryRegionHelper.ShouldDelayRequest = (uri) => uri == defaultEndpoint || uri == new Uri(databaseAccount.ReadLocationsInternal.First().Endpoint);
                 slowPrimaryRegionHelper.ShouldFailRequest = slowPrimaryRegionHelper.ShouldDelayRequest;
 
-                Stopwatch stopwatch = Stopwatch.StartNew();
+                ValueStopwatch stopwatch = ValueStopwatch.StartNew();
                 globalEndpointResult = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
                     defaultEndpoint: defaultEndpoint,
                     locations: new List<string>(){
@@ -548,7 +549,7 @@ namespace Microsoft.Azure.Cosmos
             DefaultTrace.TraceSource.Listeners.Add(new TestTraceListener { Callback = TraceHandler });
             DefaultTrace.InitEventListener();
 
-            Stopwatch stopwatch = Stopwatch.StartNew();
+            ValueStopwatch stopwatch = ValueStopwatch.StartNew();
             // Wait for the trace message saying the background refresh occurred
             while (!isGlobalEndpointRefreshStarted)
             {
