@@ -35,6 +35,7 @@ jobs:
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
     GenerateSymbols: false
+    OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/Release/Microsoft.Azure.Cosmos'
 
 - template:  templates/build-ctl.yml
   parameters:

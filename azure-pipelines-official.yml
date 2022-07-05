@@ -37,6 +37,7 @@ stages:
           Arguments: $(ReleaseArguments)
           VmImage: $(VmImage)
           GenerateSymbols: true
+          OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
 
       - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
         inputs:
