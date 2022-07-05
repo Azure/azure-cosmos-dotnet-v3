@@ -6331,6 +6331,11 @@
           "Attributes": [],
           "MethodInfo": "System.String ChinaEast2;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String ChinaEast3": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String ChinaEast3;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String ChinaNorth": {
           "Type": "Field",
           "Attributes": [],
@@ -6340,6 +6345,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String ChinaNorth2;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String ChinaNorth3": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String ChinaNorth3;IsInitOnly:False;IsStatic:True;"
         },
         "System.String EastAsia": {
           "Type": "Field",

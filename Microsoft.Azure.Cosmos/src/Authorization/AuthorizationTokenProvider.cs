@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
             string verb, 
             string resourceId)
         {
-            request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
+            request.Headers[HttpConstants.HttpHeaders.XDate] = Rfc1123DateTimeCache.UtcNow();
 
             request.Headers[HttpConstants.HttpHeaders.Authorization] = (await this.GetUserAuthorizationAsync(
                 resourceId ?? request.ResourceAddress,
