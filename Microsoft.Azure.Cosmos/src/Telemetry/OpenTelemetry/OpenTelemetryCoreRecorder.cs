@@ -89,7 +89,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         /// <returns>tru/false</returns>
         internal static bool IsExceptionRegistered(Exception exception, DiagnosticScope scope)
         {
-            bool isExceptionRegistered = false;
             foreach (KeyValuePair<Type, Action<Exception, DiagnosticScope>> registeredExceptionHandlers in OpenTelemetryCoreRecorder.oTelCompatibleExceptions)
             {
                 Type exceptionType = exception.GetType();
@@ -97,12 +96,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                 {
                     registeredExceptionHandlers.Value(exception, scope);
 
-                    isExceptionRegistered = true;
-                    break;
+                    return true;
                 }
             }
 
-            return isExceptionRegistered;
+            return false;
         }
 
         public void Dispose()
