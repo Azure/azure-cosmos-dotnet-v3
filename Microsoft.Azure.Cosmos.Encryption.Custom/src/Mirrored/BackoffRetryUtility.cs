@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 TimeSpan backoffTime = result.BackoffTime;
                 if (inBackoffAlternateCallbackMethod != null && result.BackoffTime >= minBackoffForInBackoffCallback)
                 {
-                    ValueStopwatch stopwatch = new ValueStopwatch();
+                    Stopwatch stopwatch = new Stopwatch();
                     try
                     {
                         stopwatch.Start();
