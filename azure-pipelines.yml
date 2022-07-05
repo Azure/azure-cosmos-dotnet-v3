@@ -29,6 +29,13 @@ jobs:
 #    Arguments: $(DebugArguments)
 #    VmImage: $(VmImage)
 
+- template:  templates/nuget-pack.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage: $(VmImage)
+    GenerateSymbols: false
+
 - template:  templates/build-ctl.yml
   parameters:
     BuildConfiguration: Release
