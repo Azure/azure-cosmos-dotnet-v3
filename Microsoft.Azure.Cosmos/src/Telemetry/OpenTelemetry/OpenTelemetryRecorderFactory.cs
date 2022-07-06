@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
         public static OpenTelemetryCoreRecorder CreateRecorder(string operationName, CosmosClientContext clientContext)
         {
-            if (clientContext.ClientOptions.IsOpenTelemetryFeatureEnabled)
+            if (clientContext.ClientOptions.EnableOpenTelemetry)
             {
                 ScopeFactory = new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
                                                     resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
