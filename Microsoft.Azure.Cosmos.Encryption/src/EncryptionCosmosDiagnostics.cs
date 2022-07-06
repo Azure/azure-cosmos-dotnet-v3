@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
 #if SDKPROJECTREF
-        public override DateTime GetStartTimeUtc()
+        public override DateTime? GetStartTimeUtc()
         {
             return this.coreDiagnostics.GetStartTimeUtc();
         }
