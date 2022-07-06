@@ -7,7 +7,10 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections;
     using System.Threading;
+    using global::Azure.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
@@ -107,6 +110,18 @@ namespace Microsoft.Azure.Cosmos
         private Lazy<string> CreateToStringMessage()
         {
             return new Lazy<string>(() => $"{this.originalException}{Environment.NewLine}Cancellation Token has expired: {this.tokenCancellationRequested}. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
+        }
+
+        /// <summary>
+        /// RecordOtelAttributes
+        /// </summary>
+        /// <param name="exception"></param>
+        /// <param name="scope"></param>
+        internal static void RecordOtelAttributes(CosmosOperationCanceledException exception, DiagnosticScope scope)
+        {
+            scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics));
+            scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, exception.Diagnostics);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.GetBaseException().Message);
         }
     }
 }
