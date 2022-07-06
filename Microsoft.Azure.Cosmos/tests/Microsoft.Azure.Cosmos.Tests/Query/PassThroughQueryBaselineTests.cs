@@ -31,6 +31,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using System.IO;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
 
     [TestClass]
     public class PassThroughQueryBaselineTests : BaselineTests<PassThroughQueryTestInput, PassThroughQueryTestOutput>
@@ -43,7 +44,7 @@
 
             TryCatch<IQueryPipelineStage> monadicCreate = TryExecuteQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
-                sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
+                sqlQuerySpec: new SqlQuerySpec("SELECT VALUE COUNT(1) FROM c"),
                 targetRange:  FeedRangeEpk.FullRange,
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
@@ -64,7 +65,7 @@
 
             TryCatch<IQueryPipelineStage> monadicCreate = TryExecuteQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
-                sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
+                sqlQuerySpec: new SqlQuerySpec("SELECT VALUE COUNT(1) FROM c"),
                 targetRange: new FeedRangeEpk(new Documents.Routing.Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)),
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
@@ -73,45 +74,102 @@
             Assert.IsTrue(monadicCreate.Succeeded);
         }
 
-        // this test checks that the pipeline takes a query to the backend and returns its associated document(s). 
+        // test checks that the pipeline can take a query to the backend and returns its associated document(s). 
         [TestMethod]
         public async Task TestPassThroughPipelineForBackendDocumentsAsync()
         {
-            async Task<IQueryPipelineStage> CreateTryExecutePipelineStateAsync(IDocumentContainer documentContainer, CosmosElement continuationToken)
-            { 
-                List<FeedRangeEpk> targetRanges = await documentContainer.GetFeedRangesAsync(
-                        trace: NoOpTrace.Singleton,
-                        cancellationToken: default);
-                FeedRangeEpk firstRange = targetRanges[0];
-
-                TryCatch<IQueryPipelineStage> monadicQueryPipelineStage = TryExecuteQueryPipelineStage.MonadicCreate(
-                documentContainer: documentContainer,
-                sqlQuerySpec: new SqlQuerySpec("SELECT VALUE COUNT(1) FROM c"),
-                targetRange: firstRange,
-                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
-                partitionKey: new Cosmos.PartitionKey("/pk"),
-                cancellationToken: default,
-                continuationToken: continuationToken);
-                
-                Assert.IsTrue(monadicQueryPipelineStage.Succeeded);
-                IQueryPipelineStage queryPipelineStage = monadicQueryPipelineStage.Result;
-
-                return queryPipelineStage;
-            }
-
-            int numItems = 1;
+            int numItems = 10;
+            string query = "SELECT VALUE COUNT(1) FROM c";
             IDocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems);
-            IQueryPipelineStage queryPipelineStage = await CreateTryExecutePipelineStateAsync(inMemoryCollection, continuationToken: null);
-            List<CosmosElement> documents = new List<CosmosElement>();
+            IQueryPipelineStage queryPipelineStage = await CreateTryExecutePipelineStateAsync(inMemoryCollection, query, continuationToken: null);
+            int documentCountInSinglePartition = 0;
+
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
                 TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
                 tryGetPage.ThrowIfFailed();
-              
+         
+                documentCountInSinglePartition = Int32.Parse(tryGetPage.Result.Documents[0].ToString());
+            }
+            
+            Assert.AreEqual(documentCountInSinglePartition, 4);
+        }
+
+        // test checks that the pipeline can take a query to the backend and returns its associated document(s) + continuation token.
+        [TestMethod]
+        public async Task TestPassThroughPipelineForContinuationTokenAsync()
+        {
+            int numItems = 100;
+            string query = "SELECT * FROM c";
+            IDocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems);
+            IQueryPipelineStage queryPipelineStage = await CreateTryExecutePipelineStateAsync(inMemoryCollection, query, continuationToken: null);
+            List<CosmosElement> documents = new List<CosmosElement>();
+            int continuationTokenCount = 0;
+
+            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
+            {
+                TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
+                tryGetPage.ThrowIfFailed();
+
                 documents.AddRange(tryGetPage.Result.Documents);
+
+                if (tryGetPage.Result.State == null)
+                {
+                    break;
+                }
+                else 
+                { 
+                    queryPipelineStage = await CreateTryExecutePipelineStateAsync(inMemoryCollection, query, continuationToken: tryGetPage.Result.State.Value);
+                }
+
+                continuationTokenCount++;
             }
 
-            Assert.AreEqual(numItems, documents.Count);
+            Assert.AreEqual(continuationTokenCount, 2);
+            Assert.AreEqual(documents.Count, 17);
+        }
+
+        private static async Task<IQueryPipelineStage> CreateTryExecutePipelineStateAsync(IDocumentContainer documentContainer, string query, CosmosElement continuationToken)
+        {
+            List<FeedRangeEpk> targetRanges = await documentContainer.GetFeedRangesAsync(
+                    trace: NoOpTrace.Singleton,
+                    cancellationToken: default);
+            FeedRangeEpk firstRange = targetRanges[0];
+
+            TryCatch<IQueryPipelineStage> monadicQueryPipelineStage = TryExecuteQueryPipelineStage.MonadicCreate(
+            documentContainer: documentContainer,
+            sqlQuerySpec: new SqlQuerySpec(query),
+            targetRange: firstRange,
+            queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+            partitionKey: null,
+            cancellationToken: default,
+            continuationToken: continuationToken);
+
+            Assert.IsTrue(monadicQueryPipelineStage.Succeeded);
+            IQueryPipelineStage queryPipelineStage = monadicQueryPipelineStage.Result;
+
+            return queryPipelineStage;
+        }
+
+        private static async Task<IQueryPipelineStage> CreateParallelPipelineStateAsync(IDocumentContainer documentContainer, string query, CosmosElement continuationToken)
+        {
+            TryCatch<IQueryPipelineStage> monadicQueryPipelineStage = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
+                 documentContainer: documentContainer,
+                 sqlQuerySpec: new SqlQuerySpec(query),
+                 targetRanges: await documentContainer.GetFeedRangesAsync(
+                     trace: NoOpTrace.Singleton,
+                     cancellationToken: default),
+                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                 partitionKey: null,
+                 maxConcurrency: 10,
+                 prefetchPolicy: true ? PrefetchPolicy.PrefetchAll : PrefetchPolicy.PrefetchSinglePage,
+                 cancellationToken: default,
+                 continuationToken: continuationToken);
+
+            Assert.IsTrue(monadicQueryPipelineStage.Succeeded);
+            IQueryPipelineStage queryPipelineStage = monadicQueryPipelineStage.Result;
+
+            return queryPipelineStage;
         }
 
         private static async Task<IDocumentContainer> CreateDocumentContainerAsync(

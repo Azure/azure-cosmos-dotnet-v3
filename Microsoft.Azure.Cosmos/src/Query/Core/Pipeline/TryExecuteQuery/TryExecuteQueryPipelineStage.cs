@@ -56,26 +56,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
                 return false;
             }
 
-            TryCatch<QueryPage> partitionPage = this.queryPartitionRangePageAsyncEnumerator.Current; // something wrong with this line. Most likely queryPartitionRangePageAsyncEnumerator is null 
+            TryCatch<QueryPage> partitionPage = this.queryPartitionRangePageAsyncEnumerator.Current;
             if (partitionPage.Failed)
             {
                 this.Current = TryCatch<QueryPage>.FromException(partitionPage.Exception);
                 return true;
             }
 
-            Page<QueryState> partitionPageResult = partitionPage.Result;
             QueryPage backendQueryPage = partitionPage.Result;
-            QueryState partitionState = partitionPageResult.State;
 
             QueryState queryState;
-            if (partitionState == null)
+            if (backendQueryPage.State == null)
             {
                 queryState = null;
             }
             else
             {
                 TryExecuteContinuationToken tryExecuteContinuationToken;
-                QueryState firstState = (QueryState)partitionState;
+                QueryState firstState = backendQueryPage.State;
                 {
                     tryExecuteContinuationToken = new TryExecuteContinuationToken(
                         token: (firstState?.Value as CosmosString)?.Value,

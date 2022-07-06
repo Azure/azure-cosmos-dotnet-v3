@@ -382,7 +382,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             Documents.PartitionKeyRange targetRange,
             CancellationToken cancellationToken)
         {
-            // Return a tryExecute context, since we still want to be able to handle splits and concurrency / buffering.
+            // Return a tryExecute context
             return TryExecuteQueryPipelineStage.MonadicCreate(
                 documentContainer: documentContainer,
                 sqlQuerySpec: inputParameters.SqlQuerySpec,
