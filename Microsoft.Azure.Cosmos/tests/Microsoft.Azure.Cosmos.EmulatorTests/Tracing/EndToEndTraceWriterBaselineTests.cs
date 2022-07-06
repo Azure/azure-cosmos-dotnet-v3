@@ -4,11 +4,13 @@
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Xml;
+    using global::Azure;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
@@ -484,6 +486,45 @@
             //----------------------------------------------------------------
 
             this.ExecuteTestSuite(inputs);
+        }
+
+
+        [TestMethod]
+        public async Task ValidateInvalidCredentialsTraceAsync()
+        {
+            string authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = Utils.ConfigurationManager.AppSettings["GatewayEndpoint"];
+
+            AzureKeyCredential masterKeyCredential = new AzureKeyCredential(authKey);
+            using (CosmosClient client = new CosmosClient(
+                    endpoint,
+                    masterKeyCredential))
+            {
+
+                try
+                {
+                    string databaseName = Guid.NewGuid().ToString();
+                    Cosmos.Database database = client.GetDatabase(databaseName);
+                    ResponseMessage responseMessage = await database.ReadStreamAsync();
+                    Assert.AreEqual(HttpStatusCode.NotFound, responseMessage.StatusCode);
+
+                    {
+                        // Random key: Next set of actions are expected to fail => 401 (UnAuthorized)
+                        masterKeyCredential.Update(Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())));
+
+                        responseMessage = await database.ReadStreamAsync();
+                        Assert.AreEqual(HttpStatusCode.Unauthorized, responseMessage.StatusCode);
+
+                        string diagnostics = responseMessage.Diagnostics.ToString();
+                        Assert.IsTrue(diagnostics.Contains("AuthProvider LifeSpan InSec"), diagnostics.ToString());
+                    }
+                }
+                finally
+                {
+                    // Reset to master key for clean-up
+                    masterKeyCredential.Update(authKey);
+                }
+            }
         }
 
         [TestMethod]
