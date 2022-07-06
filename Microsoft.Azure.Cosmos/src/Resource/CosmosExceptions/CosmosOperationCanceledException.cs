@@ -50,7 +50,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            trace.AddDatum("Operation Cancelled Exception", originalException);
+            using (ITrace child = trace.StartChild("CosmosOperationCanceledException"))
+            {
+                child.AddDatum("Operation Cancelled Exception", originalException);
+            }
             this.Diagnostics = new CosmosTraceDiagnostics(trace);
             this.tokenCancellationRequested = originalException.CancellationToken.IsCancellationRequested;
             this.toStringMessage = this.CreateToStringMessage();
