@@ -924,6 +924,9 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// Enable OpenTelemetry and start emiting activities for each operations
+        /// </summary>
 #if PREVIEW
         public
 #else
