@@ -727,7 +727,8 @@ namespace Microsoft.Azure.Cosmos
                         requestOptions: requestOptions,
                         trace: trace,
                         cancellationToken: cancellationToken);
-                });
+                },
+                (response) => new OpenTelemetryResponse<DatabaseProperties>(response));
         }
 
         /// <summary>
@@ -771,7 +772,8 @@ namespace Microsoft.Azure.Cosmos
                         requestOptions: requestOptions,
                         trace: trace,
                         cancellationToken: cancellationToken);
-                });
+                },
+                (response) => new OpenTelemetryResponse<DatabaseProperties>(response));
         }
 
         /// <summary>
@@ -863,7 +865,8 @@ namespace Microsoft.Azure.Cosmos
 
                     return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), readResponseAfterConflict);
                 }
-            });
+            },
+                (response) => new OpenTelemetryResponse<DatabaseProperties>(response));
         }
 
         /// <summary>
@@ -1163,7 +1166,8 @@ namespace Microsoft.Azure.Cosmos
                          requestOptions,
                          trace,
                          cancellationToken);
-                 });
+                 },
+                 (response) => new OpenTelemetryResponse(response));
         }
 
         /// <summary>
@@ -1257,7 +1261,8 @@ namespace Microsoft.Azure.Cosmos
                         requestOptions,
                         trace,
                         cancellationToken);
-                });
+                },
+                (response) => new OpenTelemetryResponse(response));
         }
 
         private async Task<DatabaseResponse> CreateDatabaseInternalAsync(

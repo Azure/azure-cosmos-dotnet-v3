@@ -423,6 +423,21 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Enable OpenTelemetry and start emiting activities for each operations
+        /// </summary>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            CosmosClientBuilder EnableOpenTelemetry()
+        {
+            this.clientOptions.EnableOpenTelemetry = true;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the connection mode to Gateway. This is used by the client when connecting to the Azure Cosmos DB service.
         /// </summary>
         /// <param name="maxConnectionLimit">The number specifies the time to wait for response to come back from network peer. Default is 60 connections</param>
