@@ -99,11 +99,11 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return jsonTextWriter.GetResult();
         }
 
-        public override DateTime GetStartTimeUtc()
+        public override DateTime? GetStartTimeUtc()
         {
-            if (this.Value == null)
+            if (this.Value == null || this.Value.StartTime == null)
             {
-                return DateTime.MinValue;
+                return null;
             }
 
             return this.Value.StartTime;

@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         /// This represents the start time of the request.
         /// </summary>
         /// <returns>This returns the start time of the request.</returns>
-        public virtual DateTime GetStartTimeUtc()
+        public virtual DateTime? GetStartTimeUtc()
         {
             // Default implementation avoids breaking change for users upgrading.
              throw new NotImplementedException($"{nameof(CosmosDiagnostics)}.{nameof(GetStartTimeUtc)})");
