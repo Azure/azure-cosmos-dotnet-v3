@@ -516,12 +516,6 @@ namespace Microsoft.Azure.Cosmos
 
                     throw nullException;
                 }
-                catch (CosmosException cex)
-                {
-                    recorder.MarkFailed(cex);
-
-                    throw;
-                }
                 catch (Exception ex)
                 {
                     recorder.MarkFailed(ex);
