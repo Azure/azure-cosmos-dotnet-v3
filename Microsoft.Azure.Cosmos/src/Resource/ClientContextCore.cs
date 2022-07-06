@@ -476,7 +476,7 @@ namespace Microsoft.Azure.Cosmos
             using (OpenTelemetryCoreRecorder recorder = 
                                 OpenTelemetryRecorderFactory.CreateRecorder(
                                     operationName: operationName, 
-                                    isFeatureEnabled: this.clientOptions.IsOpenTelemetryFeatureEnabled))
+                                    isFeatureEnabled: this.clientOptions.EnableOpenTelemetry))
             using (new ActivityScope(Guid.NewGuid()))
             {
                 try
@@ -515,12 +515,6 @@ namespace Microsoft.Azure.Cosmos
                     recorder.MarkFailed(nullException);
 
                     throw nullException;
-                }
-                catch (CosmosException cex)
-                {
-                    recorder.MarkFailed(cex);
-
-                    throw;
                 }
                 catch (Exception ex)
                 {

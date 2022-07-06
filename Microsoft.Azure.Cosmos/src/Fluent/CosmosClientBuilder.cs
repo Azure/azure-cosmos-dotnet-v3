@@ -423,11 +423,16 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Enable OpenTelemetry
+        /// Enable OpenTelemetry and start emiting activities for each operations
         /// </summary>
-        internal CosmosClientBuilder EnableOpenTelemetry()
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            CosmosClientBuilder EnableOpenTelemetry()
         {
-            this.clientOptions.IsOpenTelemetryFeatureEnabled = true;
+            this.clientOptions.EnableOpenTelemetry = true;
             return this;
         }
 
