@@ -425,6 +425,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Enable OpenTelemetry and start emiting activities for each operations
         /// </summary>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
 #if PREVIEW
         public
 #else
