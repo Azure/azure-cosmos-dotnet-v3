@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 },
                 forceRefresh: (_) => true);
 
-            Stopwatch concurrentOperationStopwatch = Stopwatch.StartNew();
+            ValueStopwatch concurrentOperationStopwatch = ValueStopwatch.StartNew();
             string concurrentUpdateTask = await asyncCache.GetAsync(
                 "test",
                 (_) => throw new Exception("should not refresh"),

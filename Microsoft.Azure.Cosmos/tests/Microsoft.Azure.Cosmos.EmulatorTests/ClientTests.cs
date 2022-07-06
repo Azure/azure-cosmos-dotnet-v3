@@ -133,8 +133,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     tasks.Add(this.ReadNotFound(container));
                 }
-            
-                Stopwatch sw = Stopwatch.StartNew();
+
+                ValueStopwatch sw = ValueStopwatch.StartNew();
                 while(this.TaskStartedCount < 10 && sw.Elapsed.TotalSeconds < 2)
                 {
                     await Task.Delay(TimeSpan.FromMilliseconds(50));
