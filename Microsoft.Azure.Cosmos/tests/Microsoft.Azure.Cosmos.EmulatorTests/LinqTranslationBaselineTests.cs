@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // of the enum definition
             public TestEnum2 EnumNumber;
 
-            [JsonConverter(typeof(UnixDateTimeConverter))]
+            [JsonConverter(typeof(Documents.UnixDateTimeConverter))]
             public DateTime UnixTime;
 
             [JsonConverter(typeof(IsoDateTimeConverter))]

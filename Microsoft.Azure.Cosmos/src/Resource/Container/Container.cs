@@ -734,14 +734,14 @@ namespace Microsoft.Azure.Cosmos
         /// }*/
         /// 
         /// List<PatchOperation> patchOperations = new List<PatchOperation>()
-        ///                                             {
-        ///                                                 PatchOperation.CreateAddOperation("/daysOfWeek", new string[]{"Monday", "Thursday"}),
-        ///                                                 PatchOperation.CreateReplaceOperation("/frequency", 2),
-        ///                                                 PatchOperation.CreateRemoveOperation("/description")
-        ///                                             };
+        /// {
+        ///     PatchOperation.Add("/daysOfWeek", new string[]{"Monday", "Thursday"}),
+        ///     PatchOperation.Replace("/frequency", 2),
+        ///     PatchOperation.Remove("/description")
+        /// };
         /// 
-        /// ItemResponse item = await this.container.PatchItemAsync<dynamic>(toDoActivity.id, new PartitionKey(toDoActivity.status), patchOperations);
-        /// /* item = {
+        /// ItemResponse<dynamic> item = await this.container.PatchItemAsync<dynamic>(toDoActivity.id, new PartitionKey(toDoActivity.status), patchOperations);
+        /// /* item.Resource = {
         ///     "id" : "someId",
         ///     "status" : "someStatusPK",
         ///     "description" : null,

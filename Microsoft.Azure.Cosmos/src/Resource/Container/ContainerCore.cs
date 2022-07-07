@@ -556,7 +556,8 @@ namespace Microsoft.Azure.Cosmos
                     responseMessage.StatusCode,
                     responseMessage.Headers,
                     null,
-                    new CosmosTraceDiagnostics(trace));
+                    new CosmosTraceDiagnostics(trace),
+                    responseMessage.RequestMessage);
             }
 
             responseMessage.EnsureSuccessStatusCode();

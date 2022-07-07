@@ -126,7 +126,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static CosmosClient CreateCosmosClient(
             bool useGateway,
-            Action<CosmosClientBuilder> customizeClientBuilder = null)
+            Action<CosmosClientBuilder> customizeClientBuilder = null,
+            bool isOpenTelemetryFeatureEnabled = false)
         {
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
 
@@ -135,6 +136,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (useGateway)
             {
                 cosmosClientBuilder.WithConnectionModeGateway();
+            }
+
+            if (isOpenTelemetryFeatureEnabled)
+            {
+                cosmosClientBuilder.EnableOpenTelemetry();
             }
 
             return cosmosClientBuilder.Build();
@@ -262,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (string.IsNullOrEmpty(key)) throw new ArgumentException("key");
             if (headers == null) throw new ArgumentNullException("headers");
 
-            string xDate = DateTime.UtcNow.ToString("r");
+            string xDate = Rfc1123DateTimeCache.UtcNow();
 
             client.DefaultRequestHeaders.Remove(HttpConstants.HttpHeaders.XDate);
             client.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.XDate, xDate);

@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -346,10 +347,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<object>>>(),
-                It.IsAny<Func<object, OpenTelemetryResponse>>(),
+                It.IsAny<Func<object, OpenTelemetryAttributes>>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<object>>, Func<object, OpenTelemetryResponse>, TraceComponent, TraceLevel>(
+               .Returns<string, RequestOptions, Func<ITrace, Task<object>>, Func<object, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
                 (operationName, requestOptions, func, oTelFunc, comp, level) => func(NoOpTrace.Singleton));
 
             mockContext.Setup(x => x.Client).Returns(MockCosmosUtil.CreateMockCosmosClient());
