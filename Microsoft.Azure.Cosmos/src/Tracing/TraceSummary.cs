@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     /// <summary>
     /// The total count of failed requests for an <see cref="ITrace"/>.
     /// </summary>
-    public class TraceSummary
+    internal class TraceSummary
     {
         /// <summary>
         ///  The total count of failed requests for an <see cref="ITrace"/>
