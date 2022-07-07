@@ -923,5 +923,15 @@ namespace Microsoft.Azure.Cosmos
                 return objectType == typeof(DateTime);
             }
         }
+
+        /// <summary>
+        /// Enable OpenTelemetry and start emiting activities for each operations
+        /// </summary>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            bool EnableOpenTelemetry { get; set; }
     }
 }

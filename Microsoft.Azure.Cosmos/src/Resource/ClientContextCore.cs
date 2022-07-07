@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
-            Func<TResult, OpenTelemetryAttributes> openTelemetry = null,
+            Func<TResult, OpenTelemetryAttributes> openTelemetry,
             TraceComponent traceComponent = TraceComponent.Transport,
             Tracing.TraceLevel traceLevel = Tracing.TraceLevel.Info)
         {
@@ -473,7 +473,10 @@ namespace Microsoft.Azure.Cosmos
             Func<TResult, OpenTelemetryAttributes> openTelemetry,
             string operationName)
         {
-            using (OpenTelemetryCoreRecorder recorder = OpenTelemetryRecorderFactory.CreateRecorder(operationName))
+            using (OpenTelemetryCoreRecorder recorder = 
+                                OpenTelemetryRecorderFactory.CreateRecorder(
+                                    operationName: operationName, 
+                                    isFeatureEnabled: this.clientOptions.EnableOpenTelemetry))
             using (new ActivityScope(Guid.NewGuid()))
             {
                 try
@@ -489,23 +492,35 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                 {
-                    recorder.MarkFailed(oe);
-                    throw new CosmosOperationCanceledException(oe, trace);
+                    CosmosOperationCanceledException operationCancelledException = new CosmosOperationCanceledException(oe, trace);
+                    recorder.MarkFailed(operationCancelledException);
+                    
+                    throw operationCancelledException;
                 }
                 catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
                 {
-                    recorder.MarkFailed(objectDisposed);
-                    throw new CosmosObjectDisposedException(
-                        objectDisposed, 
-                        this.client, 
+                    CosmosObjectDisposedException objectDisposedException = new CosmosObjectDisposedException(
+                        objectDisposed,
+                        this.client,
                         trace);
+                    recorder.MarkFailed(objectDisposedException);
+
+                    throw objectDisposedException;
                 }
                 catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
                 {
-                    recorder.MarkFailed(nullRefException);
-                    throw new CosmosNullReferenceException(
+                    CosmosNullReferenceException nullException = new CosmosNullReferenceException(
                         nullRefException,
                         trace);
+                    recorder.MarkFailed(nullException);
+
+                    throw nullException;
+                }
+                catch (Exception ex)
+                {
+                    recorder.MarkFailed(ex);
+
+                    throw;
                 }
             }
         }
