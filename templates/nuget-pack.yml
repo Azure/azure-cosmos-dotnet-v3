@@ -6,7 +6,8 @@ parameters:
   VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
   OS: 'Windows'
   OutputPath: ''
-  GenerateSymbols: true
+  ReleasePackage: false
+  BlobVersion: ''
 
 jobs:
 - job: GenerateNugetPackages
@@ -33,7 +34,7 @@ jobs:
       custom: pack
       arguments: '-v detailed -c ${{ parameters.BuildConfiguration }} --no-build --no-restore -o "${{ parameters.OutputPath }}"'
 
-  - ${{ if eq(parameters.GenerateSymbols, true) }}:
+  - ${{ if eq(parameters.ReleasePackage, true) }}:
     - task: DotNetCoreCLI@2
       displayName: 'Create SDK NuGet Symbols Package'
       inputs: 
@@ -41,3 +42,25 @@ jobs:
         projects: 'Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj'
         custom: pack
         arguments: '-v detailed -c ${{ parameters.BuildConfiguration }} --no-build --include-symbols /p:SymbolPackageFormat=snupkg --no-restore -o "${{ parameters.OutputPath }}"'
+    - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+      inputs:
+        BuildDropPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
+
+    - task: AzureFileCopy@2
+      displayName: ' Copy Artifacts to Azure SDK Release blob storage'
+      condition: and(succeeded(),ne(parameters.BlobVersion, ''))
+      inputs:
+        SourcePath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
+        azureSubscription: azuresdkpartnerdrops
+        Destination: AzureBlob
+        storage: azuresdkpartnerdrops
+        ContainerName: 'drops'
+        BlobPrefix: 'cosmosdb/csharp/$(BlobVersion)'
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifacts: Microsoft.Azure.Cosmos'
+      inputs:
+        artifactName: Microsoft.Azure.Cosmos
+
+    - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
+      displayName: 'Component Detection'

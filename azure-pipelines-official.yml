@@ -31,35 +31,6 @@ stages:
         BuildConfiguration: Release
         Arguments: $(ReleaseArguments)
         VmImage: $(VmImage)
-        GenerateSymbols: true
+        ReleasePackage: true
         OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
-
-    - job:
-      dependsOn: GenerateNugetPackages
-      pool:
-        vmImage: $(VmImage)
-    
-      steps:
-      - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
-        inputs:
-          BuildDropPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
-
-      - task: AzureFileCopy@2
-        displayName: ' Copy Artifacts to Azure SDK Release blob storage'
-        condition: and(succeeded(),ne(variables['BlobVersion'], ''))
-        inputs:
-          SourcePath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
-          azureSubscription: azuresdkpartnerdrops
-          Destination: AzureBlob
-          storage: azuresdkpartnerdrops
-          ContainerName: 'drops'
-          BlobPrefix: 'cosmosdb/csharp/$(BlobVersion)'
-
-      - task: PublishBuildArtifacts@1
-        displayName: 'Publish Artifacts: Microsoft.Azure.Cosmos'
-        inputs:
-          artifactName: Microsoft.Azure.Cosmos
-
-      - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
-        displayName: 'Component Detection'
-#
+        BlobVersion: variables['BlobVersion']
