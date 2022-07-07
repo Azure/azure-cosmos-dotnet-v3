@@ -9,19 +9,19 @@ variables:
   Packaging.EnableSBOMSigning: true
 
 stages:
-# - stage:
-#   displayName: Gate 
-#   jobs:
-#     - template:  templates/static-tools.yml
-#       parameters:
-#         BuildConfiguration: $(BuildConfiguration)
-#         VmImage: $(VmImage)
+- stage:
+  displayName: Gate 
+  jobs:
+    - template:  templates/static-tools.yml
+      parameters:
+        BuildConfiguration: $(BuildConfiguration)
+        VmImage: $(VmImage)
 
-#     - template:  templates/build-test.yml
-#       parameters:
-#         BuildConfiguration: $(BuildConfiguration)
-#         Arguments: $(ReleaseArguments)
-#         VmImage: $(VmImage)
+    - template:  templates/build-test.yml
+      parameters:
+        BuildConfiguration: $(BuildConfiguration)
+        Arguments: $(ReleaseArguments)
+        VmImage: $(VmImage)
 
 - stage:
   displayName: Publish 
