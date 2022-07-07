@@ -23,8 +23,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
                 if (scope.IsEnabled)
                 {
-                    scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, "cosmosdb");
-
                     return new OpenTelemetryCoreRecorder(scope, operationName, clientContext);
                 }
             }
