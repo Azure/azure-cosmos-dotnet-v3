@@ -21,7 +21,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     internal static class VmMetadataApiHandler
     {
         internal static readonly Uri vmMetadataEndpointUrl = new ("http://169.254.169.254/metadata/instance?api-version=2020-06-01");
-        
+        private static readonly string nonAzureCloud = "NonAzureCloud";
+
         private static readonly object lockObject = new object();
 
         private static bool isInitialized = false;
@@ -127,6 +128,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal static string GetMachineRegion()
         {
             return VmMetadataApiHandler.azMetadata?.Compute?.Location;
+        }
+
+        /// <summary>
+        /// Get Machine Region (If Azure System) else null
+        /// </summary>
+        /// <returns>VM region</returns>
+        internal static string GetCloudInformation()
+        {
+            return VmMetadataApiHandler.azMetadata?.Compute?.AzEnvironment ?? VmMetadataApiHandler.nonAzureCloud;
         }
 
         /// <summary>

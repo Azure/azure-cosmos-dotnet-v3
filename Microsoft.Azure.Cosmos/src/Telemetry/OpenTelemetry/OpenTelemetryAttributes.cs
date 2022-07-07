@@ -11,7 +11,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
         internal OpenTelemetryAttributes(RequestMessage requestMessage)
         {
             this.RequestContentLength = requestMessage?.Headers?.ContentLength ?? "NA";
-            this.ContainerName = requestMessage?.ContainerId;
+            this.ContainerName = requestMessage?.ContainerId ?? "NA";
+            this.DatabaseName = requestMessage?.DatabaseId ?? "NA";
         }
 
         /// <summary>
@@ -33,6 +34,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
         /// ResponseLength
         /// </summary>
         internal string ResponseContentLength { get; set; }
+
+        /// <summary>
+        /// DatabaseName
+        /// </summary>
+        internal string DatabaseName { get; set; }
 
         /// <summary>
         /// ContainerName

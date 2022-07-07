@@ -6,11 +6,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
     using System;
     using System.Collections.Generic;
+    using System.Text;
     using global::Azure.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
 
     internal struct OpenTelemetryCoreRecorder : IDisposable
     {
+        private const string CosmosDb = "cosmosdb";
+
         private readonly DiagnosticScope scope;
 
         internal static IDictionary<Type, Action<Exception, DiagnosticScope>> oTelCompatibleExceptions = new Dictionary<Type, Action<Exception, DiagnosticScope>>()
@@ -22,13 +25,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             { typeof(ChangeFeedProcessorUserException), (exception, scope) => ChangeFeedProcessorUserException.RecordOtelAttributes((ChangeFeedProcessorUserException)exception, scope)}
         };
 
-        public OpenTelemetryCoreRecorder(DiagnosticScope scope)
+        public OpenTelemetryCoreRecorder(DiagnosticScope scope, string operationName, CosmosClientContext clientContext)
         {
             this.scope = scope;
 
             if (this.scope.IsEnabled)
             {
                 this.scope.Start();
+                this.Record(operationName, clientContext);
             }
         }
 
@@ -40,18 +44,42 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         }
 
         /// <summary>
+        /// System Level and Client level attributes
+        /// </summary>
+        /// <param name="operationName"></param>
+        /// <param name="clientContext"></param>
+        private void Record(string operationName, CosmosClientContext clientContext)
+        {
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb);
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.MachineId, VmMetadataApiHandler.GetMachineId());
+
+            string netPeerName = new StringBuilder()
+                                        .Append(clientContext.DocumentClient?.AccountProperties?.Id)
+                                        .Append("(")
+                                        .Append(VmMetadataApiHandler.GetCloudInformation())
+                                        .Append(")")
+                                        .ToString();
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.NetPeerName, netPeerName);
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext.Client.ClientId);
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent);
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode, clientContext.ClientOptions.ConnectionMode);
+        }
+
+        /// <summary>
         /// Record attributes from response
         /// </summary>
         /// <param name="response"></param>
         public void Record(OpenTelemetryAttributes response)
         {
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, response.StatusCode);
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbName, response.DatabaseName);
+
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, response.ContainerName);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, response.RequestContentLength);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, response.ResponseContentLength);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, response.StatusCode);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, response.RequestCharge);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, response.ItemCount);
-
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics));
 
             if (this.IsEnabled && DiagnosticsFilterHelper.IsAllowed(
