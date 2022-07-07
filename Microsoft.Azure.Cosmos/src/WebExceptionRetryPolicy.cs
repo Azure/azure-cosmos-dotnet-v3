@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
         private const int initialBackoffSeconds = 1;
         private const int backoffMultiplier = 2;
 
-        private Stopwatch durationTimer = new Stopwatch();
+        private ValueStopwatch durationTimer = new ValueStopwatch();
         private int attemptCount = 1;
 
         // Don't penalise first retry with delay.
