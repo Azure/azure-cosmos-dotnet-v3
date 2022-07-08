@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                                         .Append(")")
                                         .ToString();
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.NetPeerName, netPeerName);
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext.Client.ClientId);
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext.Client.Id);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode, clientContext.ClientOptions.ConnectionMode);
         }
