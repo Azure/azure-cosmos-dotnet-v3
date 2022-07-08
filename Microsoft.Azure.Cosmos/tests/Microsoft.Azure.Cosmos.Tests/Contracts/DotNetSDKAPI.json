@@ -10125,27 +10125,6 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Tracing.TraceSummary;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {
-        "Int32 GetFailedCount()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Int32 GetFailedCount();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void .ctor()": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "[Void .ctor(), Void .ctor()]"
-        },
-        "Void IncrementFailedCount()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void IncrementFailedCount();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        }
-      },
-      "NestedTypes": {}
-    },
     "Microsoft.Azure.Cosmos.TransactionalBatch;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
