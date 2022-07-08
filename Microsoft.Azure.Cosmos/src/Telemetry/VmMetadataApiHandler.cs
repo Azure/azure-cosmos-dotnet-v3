@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     internal static class VmMetadataApiHandler
     {
         internal static readonly Uri vmMetadataEndpointUrl = new ("http://169.254.169.254/metadata/instance?api-version=2020-06-01");
-        private static readonly string nonAzureCloud = "NonAzureCloud";
+        private static readonly string nonAzureCloud = "NonAzureVM";
 
         private static readonly object lockObject = new object();
 

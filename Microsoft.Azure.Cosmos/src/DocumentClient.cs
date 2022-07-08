@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
         //Consistency
         private Documents.ConsistencyLevel? desiredConsistencyLevel;
 
-        private CosmosAccountServiceConfiguration accountServiceConfiguration;
+        internal CosmosAccountServiceConfiguration accountServiceConfiguration { get; private set; }
 
         private ClientCollectionCache collectionCache;
 
@@ -175,8 +175,6 @@ namespace Microsoft.Azure.Cosmos
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
         private event EventHandler<ReceivedResponseEventArgs> receivedResponse;
         private Func<TransportClient, TransportClient> transportClientHandlerFactory;
-
-        internal AccountProperties AccountProperties { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
@@ -6362,8 +6360,6 @@ namespace Microsoft.Azure.Cosmos
 
                 AccountProperties databaseAccount = await gatewayModel.GetDatabaseAccountAsync(CreateRequestMessage,
                                                                                                clientSideRequestStatistics: null);
-                this.AccountProperties = databaseAccount;
-
                 this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && databaseAccount.EnableMultipleWriteLocations;
                 return databaseAccount;
             }
@@ -6608,7 +6604,6 @@ namespace Microsoft.Azure.Cosmos
 
             await this.accountServiceConfiguration.InitializeAsync();
             AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
-            this.AccountProperties = accountProperties;
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
 
             this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
