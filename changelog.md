@@ -27,7 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#3320](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3320) Performance: Adds use of ValueStopwatch instead of Stopwatch
 - [#3276](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3276) KeyRefresh: Adds AzureKeyCredential support to enable key refresh scenarios
 - [#3322](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3322) Query: Adds new DLL dependencies for ServiceInterop.dll
-- [#3273](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3273) Linq: Adds support constant evaluation of `Nullable<T>.HasValue` (Thanks [@ccurrens](https://github.com/ccurrens))
 
 #### Fixed
 - [#3278](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3278), [#3310](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3310) CosmosClient: Fixes ObjectDisposedException during Background Refresh by adding Cancellation Token
