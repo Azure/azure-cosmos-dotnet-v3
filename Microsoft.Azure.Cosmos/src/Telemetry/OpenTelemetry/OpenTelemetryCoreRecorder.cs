@@ -25,14 +25,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             { typeof(ChangeFeedProcessorUserException), (exception, scope) => ChangeFeedProcessorUserException.RecordOtelAttributes((ChangeFeedProcessorUserException)exception, scope)}
         };
 
-        public OpenTelemetryCoreRecorder(DiagnosticScope scope, string operationName, CosmosClientContext clientContext)
+        public OpenTelemetryCoreRecorder(DiagnosticScope scope)
         {
             this.scope = scope;
 
             if (this.scope.IsEnabled)
             {
                 this.scope.Start();
-                this.Record(operationName, clientContext);
             }
         }
 
@@ -48,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         /// </summary>
         /// <param name="operationName"></param>
         /// <param name="clientContext"></param>
-        private void Record(string operationName, CosmosClientContext clientContext)
+        public void Record(string operationName, CosmosClientContext clientContext)
         {
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
