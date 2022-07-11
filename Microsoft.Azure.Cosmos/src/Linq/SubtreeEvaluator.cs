@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             // we are trying to evaluate an instance property with a null target.
             if (targetConstant.Value == null &&
                 Nullable.GetUnderlyingType(targetConstant.Type) != null &&
-                memberExpression.Member is {Name: "HasValue"})
+                memberExpression.Member.Name == "HasValue")
             {
                 // So, if we're calling Nullable<T>.HasValue and targetConstant.Value is null, that means HasValue
                 // would return false. Do that here to work around reflection quirks
