@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos
 
                 try
                 {
-                    Stopwatch stopwatch = Stopwatch.StartNew();
+                    ValueStopwatch stopwatch = ValueStopwatch.StartNew();
 
                     PartitionKeyRangeBatchExecutionResult result = await this.executor(serverRequest, trace, cancellationToken);
 
