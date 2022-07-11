@@ -484,7 +484,7 @@ namespace Microsoft.Azure.Cosmos
                     TResult result = await task(trace).ConfigureAwait(false);
                     if (openTelemetry != null && recorder.IsEnabled)
                     {
-                        // Record client information
+                        // Record client and other information
                         recorder.Record(operationName, this);
 
                         // Record request response information
