@@ -98,11 +98,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             if (this.Parent == null)
             {
-                ICosmosInstrumentation newInstrument = CosmosInstrumentationFactory.Get("RequestDiagnostics");
+                //ICosmosInstrumentation newInstrument = CosmosInstrumentationFactory.Get("RequestDiagnostics");
 
                 CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(this);
 
-                string disgnosticsString = diagnostics.ToString();
+                CosmosDbEventSource.Singleton.RecordRequestDiagnostics(diagnostics.ToString());
+
+                /*string disgnosticsString = diagnostics.ToString();
 
                 IEnumerable<string> stringEnumerable = SplitByLength(disgnosticsString, 500);
 
@@ -112,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     newInstrument.Record(OTelAttributes.RequestDiagnostics + "." + counter++, stringItem);
                 }
 
-                newInstrument.Dispose();
+                newInstrument.Dispose();*/
 
                 this.CosmosInstrumentation.Dispose();
             }

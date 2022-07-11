@@ -7,11 +7,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.Tracing;
     using System.Linq;
     using System.Reflection;
     using System.Threading;
+    using global::Azure.Core.Shared;
 
-    public class ClientDiagnosticListener : IObserver<KeyValuePair<string, object>>, IObserver<DiagnosticListener>, IDisposable
+    public class ClientDiagnosticListener : EventListener, IObserver<KeyValuePair<string, object>>, IObserver<DiagnosticListener>, IDisposable
     {
         private readonly Func<string, bool> sourceNameFilter;
         private readonly AsyncLocal<bool> collectThisStack;
@@ -35,6 +37,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.sourceNameFilter = filter;
             this.scopeStartCallback = scopeStartCallback;
             DiagnosticListener.AllListeners.Subscribe(this);
+        }
+
+        private readonly Action<EventWrittenEventArgs, string> log;
+        private readonly EventLevel level;
+
+        public ClientDiagnosticListener(Action<EventWrittenEventArgs, string> log, EventLevel level)
+        {
+            this.log = log ?? throw new ArgumentNullException(nameof(log));
+
+            this.level = level;
+
+            foreach (EventSource eventSource in this.eventSources)
+            {
+                this.OnEventSourceCreated(eventSource);
+            }
+
+            this.eventSources.Clear();
         }
 
         public void OnCompleted()
@@ -114,11 +133,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private void AssertTags(string name, IEnumerable<KeyValuePair<string, string>> tags)
         {
-            foreach(KeyValuePair<string, string> tag in tags)
+            Console.WriteLine("==============");
+            Console.WriteLine("Total Activity Attributes Count :: " + tags.Count());
+            foreach (KeyValuePair<string, string> tag in tags)
             {
                 Console.WriteLine(name + " => " + tag.Key + " : " + tag.Value);
             }
-            Console.WriteLine("Total Count :: " + tags.Count());
+
             Console.WriteLine();
         }
 
@@ -136,12 +157,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             if (this.subscriptions == null)
             {
                 return;
             }
+
+            this.eventSources.Clear();
 
             List<IDisposable> subscriptions;
             lock (this.Scopes)
@@ -247,6 +270,53 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             action?.Invoke(scope.Exception);
 
             return scope;
+        }
+
+        private readonly List<EventSource> eventSources = new List<EventSource>();
+
+        /// <summary>
+        /// The trait name that has to be present on all event sources collected by this listener.
+        /// </summary>
+        public const string TraitName = "AzureEventSource";
+        /// <summary>
+        /// The trait value that has to be present on all event sources collected by this listener.
+        /// </summary>
+        public const string TraitValue = "true";
+
+        /// <inheritdoc />
+        /// <inheritdoc />
+        protected sealed override void OnEventSourceCreated(EventSource eventSource)
+        {
+            base.OnEventSourceCreated(eventSource);
+
+            if (this.log == null)
+            {
+                this.eventSources.Add(eventSource);
+            }
+
+            if (eventSource.GetTrait(TraitName) == TraitValue)
+            {
+               this.EnableEvents(eventSource, this.level);
+            }
+        }
+
+        /// <inheritdoc />
+        protected sealed override void OnEventWritten(EventWrittenEventArgs eventData)
+        {
+            // Workaround https://github.com/dotnet/corefx/issues/42600
+            if (eventData.EventId == -1)
+            {
+                return;
+            }
+
+            // There is a very tight race during the AzureEventSourceListener creation where EnableEvents was called
+            // and the thread producing events not observing the `_log` field assignment
+            this.log?.Invoke(eventData, EventSourceEventFormatting.Format(eventData));
+        }
+
+        public static ClientDiagnosticListener CreateConsoleLogger(EventLevel level = EventLevel.Informational)
+        {
+            return new ClientDiagnosticListener((eventData, text) => Console.WriteLine("[{1}] {0}: {2}", eventData.EventSource.Name, eventData.Level, text), level);
         }
 
         public class ProducedDiagnosticScope

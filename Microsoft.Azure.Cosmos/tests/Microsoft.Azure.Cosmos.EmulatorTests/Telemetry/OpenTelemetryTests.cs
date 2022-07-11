@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public static void ClassInitialize(TestContext context)
         {
             OpenTelemetryTests.testListener = new ClientDiagnosticListener("Azure.Cosmos");
+            ClientDiagnosticListener.CreateConsoleLogger();
         }
 
         [TestInitialize]
