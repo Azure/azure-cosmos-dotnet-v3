@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             ITrace trace) // unused, use token based upon what is passed in constructor 
         {
             // this is masterkey authZ
-            headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
+            headers[HttpConstants.HttpHeaders.XDate] = Rfc1123DateTimeCache.UtcNow();
 
             string authorization = AuthorizationHelper.GenerateKeyAuthorizationSignature(
                     verb: requestVerb,
