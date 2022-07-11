@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [JsonIgnore]
-        internal string NetPeerName => new StringBuilder()
+        internal string AccountNameWithCloudInformation => new StringBuilder()
                                         .Append(this.Id)
                                         .Append("(")
                                         .Append(VmMetadataApiHandler.GetCloudInformation())
