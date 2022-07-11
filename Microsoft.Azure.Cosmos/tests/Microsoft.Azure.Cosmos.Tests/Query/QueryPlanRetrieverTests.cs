@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 {
     using System;
     using System.Collections.ObjectModel;
-    using System.Configuration;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
