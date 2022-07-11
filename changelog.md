@@ -13,12 +13,12 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### <a name="3.29.0-preview"/> [3.29.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.29.0-preview) - 2022-07-08
+### <a name="3.29.0-preview"/> [3.29.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.29.0-preview) - 2022-07-11
 
 #### Added
 - [#3277](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3277), [#3261](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3261) Open Telemetry: Adds Open Telemetry support
 
-### <a name="3.29.0"/> [3.29.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.298.0) - 2022-07-08
+### <a name="3.29.0"/> [3.29.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.29.0) - 2022-07-11
 
 #### Added
 - [#3265](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3265), [#3285](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3285) Change Feed Processor: Adds Task.Delay check to prevent stalling
