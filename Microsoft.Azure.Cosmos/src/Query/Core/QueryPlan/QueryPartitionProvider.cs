@@ -195,6 +195,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             }
 
             PartitionKind partitionKind = partitionKeyDefinition.Kind;
+            GeospatialType defaultGeopatialType = GeospatialType.Geography;
 
             this.Initialize();
 
@@ -204,21 +205,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             unsafe
             {
+                ServiceInteropWrapper.PartitionKeyRangesApiOptions partitionKeyRangesApiOptions =
+                    new ServiceInteropWrapper.PartitionKeyRangesApiOptions()
+                    {
+                        bAllowDCount = Convert.ToInt32(allowDCount),
+                        bAllowNonValueAggregateQuery = Convert.ToInt32(allowNonValueAggregateQuery),
+                        bHasLogicalPartitionKey = Convert.ToInt32(hasLogicalPartitionKey),
+                        bIsContinuationExpected = Convert.ToInt32(isContinuationExpected),
+                        bRequireFormattableOrderByQuery = Convert.ToInt32(requireFormattableOrderByQuery),
+                        bUseSystemPrefix = Convert.ToInt32(useSystemPrefix),
+                        eGeospatialType = Convert.ToInt32(defaultGeopatialType),
+                        ePartitionKind = Convert.ToInt32(partitionKind)
+                    };
+
                 fixed (byte* bytePtr = buffer)
                 {
                     errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery3(
                         this.serviceProvider,
                         querySpecJsonString,
-                        requireFormattableOrderByQuery,
-                        isContinuationExpected,
-                        allowNonValueAggregateQuery,
-                        hasLogicalPartitionKey,
-                        allowDCount,
-                        useSystemPrefix,
+                        partitionKeyRangesApiOptions,
                         allParts,
                         partsLengths,
                         (uint)partitionKeyDefinition.Paths.Count,
-                        partitionKind,
                         new IntPtr(bytePtr),
                         (uint)buffer.Length,
                         out serializedQueryExecutionInfoResultLength);
@@ -235,16 +243,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                             errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery3(
                                 this.serviceProvider,
                                 querySpecJsonString,
-                                requireFormattableOrderByQuery,
-                                isContinuationExpected,
-                                allowNonValueAggregateQuery,
-                                hasLogicalPartitionKey, // has logical partition key
-                                allowDCount,
-                                useSystemPrefix,
+                                partitionKeyRangesApiOptions,
                                 allParts,
                                 partsLengths,
                                 (uint)partitionKeyDefinition.Paths.Count,
-                                partitionKind,
                                 new IntPtr(bytePtr2),
                                 (uint)buffer.Length,
                                 out serializedQueryExecutionInfoResultLength);
