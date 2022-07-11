@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Text;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -234,6 +236,14 @@ namespace Microsoft.Azure.Cosmos
                 return new Dictionary<string, object>();
             }
         }
+
+        [JsonIgnore]
+        internal string NetPeerName => new StringBuilder()
+                                        .Append(this.Id)
+                                        .Append("(")
+                                        .Append(VmMetadataApiHandler.GetCloudInformation())
+                                        .Append(")")
+                                        .ToString();
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
