@@ -53,8 +53,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.MachineId, VmMetadataApiHandler.GetMachineId());
-
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.NetPeerName, clientContext.DocumentClient?.accountServiceConfiguration?.AccountProperties?.AccountNameWithCloudInformation);
+            
+            string netPeerName = clientContext.DocumentClient?.accountServiceConfiguration?.AccountProperties?.AccountNameWithCloudInformation;
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.NetPeerName, netPeerName);
 
             // Client Information
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext.Client.Id);

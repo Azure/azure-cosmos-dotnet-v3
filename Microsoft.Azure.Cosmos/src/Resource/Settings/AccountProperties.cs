@@ -237,14 +237,29 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        [JsonIgnore]
-        internal string AccountNameWithCloudInformation => new StringBuilder()
-                                        .Append(this.Id)
-                                        .Append("(")
-                                        .Append(VmMetadataApiHandler.GetCloudInformation())
-                                        .Append(")")
-                                        .ToString();
+        private string accountNameWithCloudInformation;
 
+        [JsonIgnore]
+        internal string AccountNameWithCloudInformation
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(this.accountNameWithCloudInformation))
+                {
+                    return this.accountNameWithCloudInformation;
+                }
+
+                this.accountNameWithCloudInformation = new StringBuilder()
+                                       .Append(this.Id)
+                                       .Append("(")
+                                       .Append(VmMetadataApiHandler.GetCloudInformation())
+                                       .Append(")")
+                                       .ToString();
+
+                return this.accountNameWithCloudInformation;
+            }
+        }
+       
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
