@@ -84,7 +84,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             // nullable struct itself. When Nullable<T>.HasValue is false, it is boxed as a null value when
             // passed to the PropertyInfo/FieldInfo.GetValue. This causes a TargetException to be thrown since
             // we are trying to evaluate an instance property with a null target.
-            if (targetConstant.Value == null &&
+            if (targetConstant != null &&
+                targetConstant.Value == null &&
                 Nullable.GetUnderlyingType(targetConstant.Type) != null &&
                 memberExpression.Member.Name == "HasValue")
             {
