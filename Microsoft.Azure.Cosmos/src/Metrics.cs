@@ -6,14 +6,15 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Diagnostics;
     using System.Globalization;
+    using Microsoft.Azure.Documents;
 
     internal sealed class Metrics
     {
-        private readonly Stopwatch stopwatch;
+        private ValueStopwatch stopwatch;
 
         public Metrics()
         {
-            this.stopwatch = new Stopwatch();
+            this.stopwatch = new ValueStopwatch();
         }
 
         public int Count
