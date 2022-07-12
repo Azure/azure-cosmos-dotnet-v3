@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Fixed
 - [#3278](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3278), [#3310](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3310) CosmosClient: Fixes ObjectDisposedException during Background Refresh by adding Cancellation Token
 - [#3309](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3309) Documentation: Fixes Container.PatchItemAsync example
-- [#3309](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3309) Serialization: Fixes default JsonSerializerSettings for [GHSA-5crp-9r3c-p9vr](https://github.com/advisories/GHSA-5crp-9r3c-p9vr)
+- [#3313](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3313) Serialization: Fixes default JsonSerializerSettings for [GHSA-5crp-9r3c-p9vr](https://github.com/advisories/GHSA-5crp-9r3c-p9vr)
 - [#3319](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3319) OperationCanceledException: Adds Exception Trace as Child to reduce noise on the top level of Diagnostics
 - [#3308](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3308) ObjectDisposedException: Fixes ObjectDisposedException during Bounded Staleness/Strong barrier requests
 
