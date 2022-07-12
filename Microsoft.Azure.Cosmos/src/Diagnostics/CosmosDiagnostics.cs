@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual DateTime? GetStartTimeUtc()
         {
             // Default implementation avoids breaking change for users upgrading.
-             throw new NotImplementedException($"{nameof(CosmosDiagnostics)}.{nameof(GetStartTimeUtc)})");
+            throw new NotImplementedException($"{nameof(CosmosDiagnostics)}.{nameof(GetStartTimeUtc)})");
         }
 
         /// <summary>
