@@ -33,9 +33,24 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
         [TestMethod]
         public void TestParse()
         {
+            // base-64 encoded 
             Assert.IsTrue(IndexUtilizationInfo.TryCreateFromDelimitedString("ewogICAgIlV0aWxpemVkU2luZ2xlSW5kZXhlcyI6IFsKICAgICAgICB7CiAgICAgICAgICAgICJGaWx0ZXJFeHByZXNzaW9uIjogIihST09ULm5hbWUgPSBcIkp1bGllblwiKSIsCiAgICAgICAgICAgICJJbmRleFNwZWMiOiAiXC9uYW1lXC8 / IiwKICAgICAgICAgICAgIkZpbHRlclByZWNpc2VTZXQiOiB0cnVlLAogICAgICAgICAgICAiSW5kZXhQcmVjaXNlU2V0IjogdHJ1ZSwKICAgICAgICAgICAgIkluZGV4SW1wYWN0U2NvcmUiOiAiSGlnaCIKICAgICAgICB9LAogICAgICAgIHsKICAgICAgICAgICAgIkZpbHRlckV4cHJlc3Npb24iOiAiKFJPT1QuYWdlID4gMTIpIiwKICAgICAgICAgICAgIkluZGV4U3BlYyI6ICJcL2FnZVwvPyIsCiAgICAgICAgICAgICJGaWx0ZXJQcmVjaXNlU2V0IjogdHJ1ZSwKICAgICAgICAgICAgIkluZGV4UHJlY2lzZVNldCI6IHRydWUsCiAgICAgICAgICAgICJJbmRleEltcGFjdFNjb3JlIjogIkhpZ2giCiAgICAgICAgfQogICAgXSwKICAgICJQb3RlbnRpYWxTaW5nbGVJbmRleGVzIjogW10sCiAgICAiVXRpbGl6ZWRDb21wb3NpdGVJbmRleGVzIjogW10sCiAgICAiUG90ZW50aWFsQ29tcG9zaXRlSW5kZXhlcyI6IFsKICAgICAgICB7CiAgICAgICAgICAgICJJbmRleFNwZWNzIjogWwogICAgICAgICAgICAgICAgIlwvbmFtZSBBU0MiLAogICAgICAgICAgICAgICAgIlwvYWdlIEFTQyIKICAgICAgICAgICAgXSwKICAgICAgICAgICAgIkluZGV4UHJlY2lzZVNldCI6IGZhbHNlLAogICAgICAgICAgICAiSW5kZXhJbXBhY3RTY29yZSI6ICJIaWdoIgogICAgICAgIH0KICAgIF0KfQ == ",
                 out IndexUtilizationInfo parsedInfo));
             Assert.IsNotNull(parsedInfo);
+
+            Assert.IsTrue(IndexUtilizationInfo.TryCreateFromDelimitedString("",
+                out IndexUtilizationInfo parsedInfo2));
+            Assert.IsNotNull(parsedInfo2);
+
+        }
+
+        [TestMethod]
+        public void TestParseNegative()
+        {
+            Assert.IsTrue(IndexUtilizationInfo.TryCreateFromDelimitedString("",
+               out IndexUtilizationInfo parsedInfo));
+            Assert.IsNotNull(parsedInfo);
+
         }
 
         [TestMethod]
