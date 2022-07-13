@@ -943,6 +943,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             Assert.AreEqual(1, detectedEvents, "Only one changed feed document should be returned which matches the query");
 
             // Delete an item and check that change feed query runs on previous image
+            await container.DeleteItemAsync<Document>("id2", new Cosmos.PartitionKey("pkey1"));
             await container.DeleteItemAsync<Document>("id3", new Cosmos.PartitionKey("pkey1"));
 
             fullFidelityIterator = container.GetChangeFeedIteratorWithQuery<Document>(
