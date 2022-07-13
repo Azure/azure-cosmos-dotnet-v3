@@ -53,10 +53,9 @@
             Container container,
             IReadOnlyList<CosmosObject> documents)
         {
-            await QueryTestsBase.NoOp();
-
-            string[] expected = new[] { "documentId2", "documentId5", "documentId8" };
-            List<CosmosElement> query = await QueryTestsBase.RunQueryAsync(
+            string[] expectedOrdered = new[] { "documentId2", "documentId5", "documentId8" };
+            string[] expectedAll = new[] { "documentId1", "documentId2", "documentId3", "documentId4", "documentId5", "documentId6", "documentId7", "documentId8", "documentId9" };
+            List<CosmosElement> results = await QueryTestsBase.RunQueryAsync(
                 container,
                 "SELECT r.id FROM r ORDER BY r.prop DESC",
                 new QueryRequestOptions()
@@ -65,9 +64,12 @@
                     MaxConcurrency = 1,
                 });
 
-            Assert.AreEqual(
-                string.Join(", ", expected),
-                string.Join(", ", query.Select(doc => ((CosmosString)(doc as CosmosObject)["id"]).Value)));
+            string[] actual = results
+                .Select(doc => ((CosmosString)(doc as CosmosObject)["id"]).Value.ToString())
+                .ToArray();
+
+            CollectionAssert.AreEqual(expectedOrdered, actual.Take(expectedOrdered.Length).ToArray());
+            CollectionAssert.AreEquivalent(expectedAll, actual);
         }
 
         [TestMethod]
