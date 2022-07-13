@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new ValueTask<HttpRequestMessage>(httpRequestMessage),
                 ResourceType.Collection,
                 timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
-                new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
+                new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow,new TraceSummary()),
                 default);
 
             Assert.AreEqual(httpRequestMessage, responseMessage.RequestMessage);
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                         resourceType: ResourceType.Collection,
                         timeoutPolicy: currentTimeoutPolicy.Key,
-                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
                         cancellationToken: default);
 
                 Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                     resourceType: ResourceType.Collection,
                     timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
-                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
+                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
                     cancellationToken: default);
 
             Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                     resourceType: ResourceType.Collection,
                     timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
-                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
+                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
                     cancellationToken: default);
              
             Assert.AreEqual(HttpStatusCode.RequestTimeout, responseMessage.StatusCode, "Should be a request timeout");
@@ -248,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                         resourceType: ResourceType.Collection,
                         timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
-                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
                         cancellationToken: default);
             }
             catch (Exception ex)
@@ -286,7 +286,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                         resourceType: ResourceType.Collection,
                         timeoutPolicy: HttpTimeoutPolicyNoRetry.Instance,
-                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
                         cancellationToken: default);
             }
             catch (Exception ex)
@@ -343,7 +343,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     result: new HttpRequestMessage(HttpMethod.Post, new Uri("http://localhost"))),
                     resourceType: ResourceType.Document,
                     timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
-                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
+                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
                     cancellationToken: default);
 
             Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
