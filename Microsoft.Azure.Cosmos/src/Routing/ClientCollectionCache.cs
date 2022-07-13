@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                        AuthorizationTokenType.PrimaryMasterKey,
                        headers))
                 {
-                    headers.XDate = DateTime.UtcNow.ToString("r");
+                    headers.XDate = Rfc1123DateTimeCache.UtcNow();
 
                     request.RequestContext.ClientRequestStatistics = 
                         clientSideRequestStatistics ?? new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);

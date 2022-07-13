@@ -7,7 +7,10 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections;
     using System.Globalization;
+    using global::Azure.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
@@ -85,6 +88,18 @@ namespace Microsoft.Azure.Cosmos
         public override string ToString()
         {
             return $"{this.Message} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics} StackTrace: {this.StackTrace}";
+        }
+
+        /// <summary>
+        /// RecordOtelAttributes
+        /// </summary>
+        /// <param name="exception"></param>
+        /// <param name="scope"></param>
+        internal static void RecordOtelAttributes(CosmosObjectDisposedException exception, DiagnosticScope scope)
+        {
+            scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics));
+            scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, exception.Diagnostics);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
         }
     }
 }
