@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
 
     [SDK.EmulatorTests.TestClass]
@@ -698,6 +699,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 cancellationToken: this.cancellationToken);
 
             ContainerInternal container = (ContainerInternal)response;
+
             // FF does not work with StartFromBeginning currently, so we capture an initial continuation.
             FeedIterator<ToDoActivityWithMetadata> fullFidelityIterator = container.GetChangeFeedIterator<ToDoActivityWithMetadata>(
                 ChangeFeedStartFrom.Now(),
@@ -850,6 +852,125 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             Assert.IsTrue(cosmosException.Message.Contains("FullFidelity Change Feed must have valid If-None-Match header."));
         }
 
+        /// <summary>
+        /// This test validates Full Fidelity Change Feed with query support by inserting and deleting documents and verifying it returns the query matched documents
+        /// </summary>
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_WithQuery()
+        {
+            await this.ValidateChangeFeedIteratorCore_WithQuery(useGateway: false);
+            await this.ValidateChangeFeedIteratorCore_WithQuery(useGateway: true);
+        }
+
+        private async Task ValidateChangeFeedIteratorCore_WithQuery(
+            bool useGateway)
+        {
+            await this.Cleanup();
+
+            this.cancellationTokenSource = new CancellationTokenSource();
+            this.cancellationToken = this.cancellationTokenSource.Token;
+            this.cosmosClient = TestCommon.CreateCosmosClient(useGateway: useGateway);
+            this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString(),
+                cancellationToken: this.cancellationToken);
+
+            ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/pkey");
+            properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
+            ContainerResponse response = await this.database.CreateContainerAsync(
+                properties,
+                cancellationToken: this.cancellationToken);
+
+            ChangeFeedQuerySpec querySpec = new ChangeFeedQuerySpec(
+                "select * from c where c.city = 'city3'",
+                enableQueryOnPreviousImage: true);
+            ContainerCore container = (ContainerCore)response;
+            // FF does not work with StartFromBeginning currently, so we capture an initial continuation.
+            FeedIterator<Document> fullFidelityIterator = container.GetChangeFeedIteratorWithQuery<Document>(
+                ChangeFeedStartFrom.Now(),
+                ChangeFeedMode.FullFidelity,
+                null,
+                querySpec);
+
+            string initialContinuation = null;
+            while (fullFidelityIterator.HasMoreResults)
+            {
+                FeedResponse<Document> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
+                initialContinuation = feedResponse.ContinuationToken;
+
+                if (feedResponse.StatusCode == HttpStatusCode.NotModified)
+                {
+                    break;
+                }
+            }
+
+            // Insert documents
+            for (int i = 1; i < 5; i++)
+            {
+                Document doc = new Document()
+                {
+                    Id = "id",
+                    City = "city",
+                    Pkey = "pkey1"
+                };
+                doc.Id += i.ToString();
+                doc.City += i.ToString();
+                await container.CreateItemAsync<Document>(doc, new Cosmos.PartitionKey("pkey1"));
+            }
+
+            // Resume Change Feed and verify we pickup the events where documents matches the query
+            fullFidelityIterator = container.GetChangeFeedIteratorWithQuery<Document>(
+                ChangeFeedStartFrom.ContinuationToken(initialContinuation),
+                ChangeFeedMode.FullFidelity,
+                null,
+                querySpec);
+            int detectedEvents = 0;
+
+            while (fullFidelityIterator.HasMoreResults)
+            {
+                FeedResponse<Document> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
+
+                foreach (Document item in feedResponse)
+                {
+                    Assert.AreEqual("id3", item.Id);
+                }
+
+                detectedEvents += feedResponse.Count;
+                initialContinuation = feedResponse.ContinuationToken;
+                if (feedResponse.StatusCode == HttpStatusCode.NotModified)
+                {
+                    break;
+                }
+            }
+            Assert.AreEqual(1, detectedEvents, "Only one changed feed document should be returned which matches the query");
+
+            // Delete an item and check that change feed query runs on previous image
+            await container.DeleteItemAsync<Document>("id3", new Cosmos.PartitionKey("pkey1"));
+
+            fullFidelityIterator = container.GetChangeFeedIteratorWithQuery<Document>(
+                ChangeFeedStartFrom.ContinuationToken(initialContinuation),
+                ChangeFeedMode.FullFidelity,
+                null,
+                querySpec);
+            detectedEvents = 0;
+            while (fullFidelityIterator.HasMoreResults)
+            {
+                FeedResponse<Document> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
+
+                foreach (Document item in feedResponse)
+                {
+                    Assert.AreEqual("id3", item.metadata.previousImage.Id);
+                    Assert.AreEqual("delete", item.metadata.operationType);
+                }
+
+                detectedEvents += feedResponse.Count;
+
+                if (feedResponse.StatusCode == HttpStatusCode.NotModified)
+                {
+                    break;
+                }
+            }
+            Assert.AreEqual(1, detectedEvents, "Only one changed feed document should be returned which matches the query");
+        }
+
         private async Task<IList<ToDoActivity>> CreateRandomItems(ContainerInternal container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
             Assert.IsFalse(!randomPartitionKey && perPKItemCount > 1);
@@ -887,6 +1008,31 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             [JsonProperty("operationType")]
             public string operationType { get; set; }
         }
+
+        public class Document
+        {
+            [JsonProperty(PropertyName = "id")]
+            public string Id { get; set; }
+
+            [JsonProperty(PropertyName = "city")]
+            public string City { get; set; }
+
+            [JsonProperty(PropertyName = "pkey")]
+            public string Pkey { get; set; }
+
+            [JsonProperty("_metadata")]
+            public DocumentMetadata metadata { get; set; }
+        }
+
+        public class DocumentMetadata
+        {
+            [JsonProperty("operationType")]
+            public string operationType { get; set; }
+
+            [JsonProperty("previousImage")]
+            public Document previousImage { get; set; }
+        }
+
 
         private class CancellationTokenRequestHandler : RequestHandler
         {

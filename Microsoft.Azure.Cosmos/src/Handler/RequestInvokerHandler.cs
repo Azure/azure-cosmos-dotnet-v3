@@ -144,7 +144,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 try
                 {
-                    HttpMethod method = RequestInvokerHandler.GetHttpMethod(resourceType, operationType);
+                    HttpMethod method = RequestInvokerHandler.GetHttpMethod(resourceType, operationType, streamPayload != null);
+
                     RequestMessage request = new RequestMessage(
                         method,
                         resourceUriString,
@@ -280,6 +281,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         request.Headers.ContentType = RuntimeConstants.MediaTypes.JsonPatch;
                     }
 
+                    if (ChangeFeedHelper.isChangeFeedWithQueryRequest(operationType, streamPayload != null))
+                    {
+                        request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
+                        request.Headers.Add(HttpConstants.HttpHeaders.ContentType, RuntimeConstants.MediaTypes.QueryJson);
+                    }
+
                     if (cosmosContainerCore != null)
                     {
                         request.ContainerId = cosmosContainerCore?.Id;
@@ -298,7 +305,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         internal static HttpMethod GetHttpMethod(
             ResourceType resourceType,
-            OperationType operationType)
+            OperationType operationType,
+            bool hasStreamPayload = false)
         {
             if (operationType == OperationType.Create ||
                 operationType == OperationType.Upsert ||
@@ -310,6 +318,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 operationType == OperationType.CompleteUserTransaction ||
                 (resourceType == ResourceType.PartitionKey && operationType == OperationType.Delete))
             {
+                return HttpMethod.Post;
+            }
+            else if (ChangeFeedHelper.isChangeFeedWithQueryRequest(operationType, hasStreamPayload))
+            {
+                // ChangeFeed with payload is a CF with query support and will
+                // be a POST request.
                 return HttpMethod.Post;
             }
             else if (operationType == OperationType.Read ||

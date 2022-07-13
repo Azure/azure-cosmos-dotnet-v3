@@ -8,8 +8,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Globalization;
+    using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
@@ -286,6 +288,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 throw new ArgumentNullException(nameof(changeFeedPaginationOptions));
             }
 
+            MemoryStream memoryStream = null;
+            if (changeFeedPaginationOptions.changeFeedQuerySpec != null && changeFeedPaginationOptions.changeFeedQuerySpec.QueryText != null)
+            {
+                string queryText = Newtonsoft.Json.JsonConvert.SerializeObject(changeFeedPaginationOptions.changeFeedQuerySpec);
+                memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(queryText));
+            }
+
             ResponseMessage responseMessage = await this.container.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.Document,
@@ -314,7 +323,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     }
                 },
                 feedRange: feedRangeState.FeedRange,
-                streamPayload: default,
+                streamPayload: memoryStream ?? default,
                 trace: trace,
                 cancellationToken: cancellationToken);
 

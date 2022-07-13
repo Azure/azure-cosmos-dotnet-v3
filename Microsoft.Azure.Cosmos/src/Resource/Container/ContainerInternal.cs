@@ -191,5 +191,17 @@ namespace Microsoft.Azure.Cosmos
 
             public QueryIterator QueryIterator { get; }
         }
+
+        public abstract FeedIterator GetChangeFeedStreamIteratorWithQuery(
+            ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null,
+            ChangeFeedQuerySpec changeFeedQuerySpec = null);
+
+        public abstract FeedIterator<T> GetChangeFeedIteratorWithQuery<T>(
+           ChangeFeedStartFrom changeFeedStartFrom,
+           ChangeFeedMode changeFeedMode,
+           ChangeFeedRequestOptions changeFeedRequestOptions = null,
+           ChangeFeedQuerySpec changeFeedQuerySpec = null);
     }
 }
