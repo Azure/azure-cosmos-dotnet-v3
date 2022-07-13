@@ -49,12 +49,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                     {
                         Task<ResponseMessage> task = this.resultSetIterator.ReadNextAsync(cancellationToken);
                         
-                        if (!ReferenceEquals(await Task.WhenAny(task, Task.Delay(this.options.RequestTimeout)), task))
+                        using (CancellationTokenSource cts = new CancellationTokenSource())
                         {
-                            Task catchExceptionFromTask = task.ContinueWith(task => DefaultTrace.TraceInformation(
-                            "Timed out Change Feed request failed with exception: {2}", task.Exception.InnerException),
-                            TaskContinuationOptions.OnlyOnFaulted);
-                            throw CosmosExceptionFactory.CreateRequestTimeoutException("Change Feed request timed out", new Headers());
+                            if (!ReferenceEquals(await Task.WhenAny(task, Task.Delay(this.options.RequestTimeout, cts.Token)), task))
+                            {
+                                Task catchExceptionFromTask = task.ContinueWith(task => DefaultTrace.TraceInformation(
+                                "Timed out Change Feed request failed with exception: {2}", task.Exception.InnerException),
+                                TaskContinuationOptions.OnlyOnFaulted);
+                                throw CosmosExceptionFactory.CreateRequestTimeoutException("Change Feed request timed out", new Headers());
+                            }
+                            else
+                            {
+                                cts.Cancel();
+                            }
                         }
 
                         ResponseMessage response = await task;
