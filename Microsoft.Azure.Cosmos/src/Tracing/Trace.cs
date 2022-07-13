@@ -25,7 +25,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
             TraceLevel level,
             TraceComponent component,
             Trace parent,
-            ISet<(string, Uri)> regionContactedInternal)
+            ISet<(string, Uri)> regionContactedInternal,
+            TraceSummary summary)
         {
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Id = Guid.NewGuid();
@@ -38,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.data = new Lazy<Dictionary<string, object>>();
 
             this.regionContactedInternal = regionContactedInternal;
+            this.Summary = summary ?? throw new ArgumentNullException(nameof(summary));
         }
 
         public string Name { get; }
@@ -51,6 +53,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public TraceLevel Level { get; }
 
         public TraceComponent Component { get; }
+
+        public TraceSummary Summary { get; }
 
         public ITrace Parent { get; }
 
@@ -119,8 +123,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 level: level,
                 component: component,
                 parent: this,
-                regionContactedInternal: this.regionContactedInternal);           
-            
+                regionContactedInternal: this.regionContactedInternal,
+                summary: this.Summary);
+
             this.AddChild(child);
             return child;
         }
@@ -151,7 +156,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 level: level,
                 component: component,
                 parent: null,
-                regionContactedInternal: new HashSet<(string, Uri)>());
+                regionContactedInternal: new HashSet<(string, Uri)>(),
+                summary: new TraceSummary());
         }
 
         public void AddDatum(string key, TraceDatum traceDatum)

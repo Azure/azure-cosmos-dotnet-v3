@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -47,33 +47,29 @@ namespace Microsoft.Azure.Cosmos
                 HttpConstants.HttpMethods.Get,
                 AuthorizationTokenType.PrimaryMasterKey);
 
-            IClientSideRequestStatistics stats = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
-            try
+            using (ITrace trace = Trace.GetRootTrace("Account Read", TraceComponent.Transport, TraceLevel.Info))
             {
-                using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(
-                    uri: serviceEndpoint,
-                    additionalHeaders: headers,
-                    resourceType: ResourceType.DatabaseAccount,
-                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
-                    clientSideRequestStatistics: stats,
-                    cancellationToken: this.cancellationToken))
+                IClientSideRequestStatistics stats = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary);
+
+                try
                 {
+                    using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(
+                        uri: serviceEndpoint,
+                        additionalHeaders: headers,
+                        resourceType: ResourceType.DatabaseAccount,
+                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
+                        clientSideRequestStatistics: stats,
+                        cancellationToken: default))
                     using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                     {
                         return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
                     }
                 }
-            }
-            catch (ObjectDisposedException) when (this.cancellationToken.IsCancellationRequested)
-            {
-                throw new OperationCanceledException($"Client is being disposed for {serviceEndpoint} at {DateTime.UtcNow}, cancelling further operations.");
-            }
-            catch (OperationCanceledException ex)
-            // this is the DocumentClient token, which only gets cancelled upon disposal
-            when (!this.cancellationToken.IsCancellationRequested) 
-            {
-                // Catch Operation Cancelled Exception and convert to Timeout 408 if the user did not cancel it.
-                using (ITrace trace = Trace.GetRootTrace("Account Read Exception", TraceComponent.Transport, TraceLevel.Info))
+                catch (ObjectDisposedException) when (this.cancellationToken.IsCancellationRequested)
+                {
+                    throw new OperationCanceledException($"Client is being disposed for {serviceEndpoint} at {DateTime.UtcNow}, cancelling further operations.");
+                }
+                catch (OperationCanceledException ex)
                 {
                     trace.AddDatum("Client Side Request Stats", stats);
                     throw CosmosExceptionFactory.CreateRequestTimeoutException(

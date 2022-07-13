@@ -35,6 +35,7 @@
     <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.StreamPointOperationsAsync.xml" />
     <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.TypedPointOperationsAsync.xml" />
     <None Remove="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestDateTimeJsonConverterTimezones.xml" />
+    <None Remove="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestMemberAccessWithNullableTypes.xml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -191,6 +192,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestDateTimeJsonConverterTimezones.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestMemberAccessWithNullableTypes.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestSelectTop.xml">
