@@ -236,28 +236,29 @@ namespace Microsoft.Azure.Cosmos
                 return new Dictionary<string, object>();
             }
         }
+        
+        [JsonIgnore]
+        internal Lazy<string> AccountNameWithCloudInformation => new Lazy<string>(this.AppendAccountAndCloudInfo);
 
         private string accountNameWithCloudInformation;
+        private string prevId;
 
-        [JsonIgnore]
-        internal string AccountNameWithCloudInformation
+        /// <summary>
+        /// if there is cached value AND there is no change in the account id.
+        /// Ideally, it should not change but it has internal setter that's why this check is required.
+        /// </summary>
+        /// <returns>accountNameWithCloudInformation</returns>
+        private string AppendAccountAndCloudInfo()
         {
-            get
+            if (!string.IsNullOrEmpty(this.accountNameWithCloudInformation) && this.prevId == this.Id)
             {
-                if (!string.IsNullOrEmpty(this.accountNameWithCloudInformation))
-                {
-                    return this.accountNameWithCloudInformation;
-                }
-
-                this.accountNameWithCloudInformation = new StringBuilder()
-                                       .Append(this.Id)
-                                       .Append("(")
-                                       .Append(VmMetadataApiHandler.GetCloudInformation())
-                                       .Append(")")
-                                       .ToString();
-
                 return this.accountNameWithCloudInformation;
             }
+
+            this.prevId = this.Id;
+            this.accountNameWithCloudInformation = $"{this.Id}({VmMetadataApiHandler.GetCloudInformation()})";
+
+            return this.accountNameWithCloudInformation;
         }
        
         /// <summary>
