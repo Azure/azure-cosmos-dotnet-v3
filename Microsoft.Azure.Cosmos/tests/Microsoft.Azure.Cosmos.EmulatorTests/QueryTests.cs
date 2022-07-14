@@ -607,7 +607,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 doc.StringField = "222";
                 Document documentDefinition = (Document)doc;
                 documentDefinition.SetPropertyValue("pk", "test");
-                INameValueCollection requestHeaders = new StoreRequestNameValueCollection
+                INameValueCollection requestHeaders = new Documents.Collections.RequestNameValueCollection()
                 {
                     { "x-ms-indexing-directive", "exclude" }
                 };
@@ -645,7 +645,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     StringField = "333",
                 };
                 doc.SetPropertyValue("pk", "test");
-                INameValueCollection requestHeaders = new StoreRequestNameValueCollection
+                INameValueCollection requestHeaders = new Documents.Collections.RequestNameValueCollection()
                 {
                     { "x-ms-indexing-directive", "include" }
                 };
@@ -800,7 +800,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     sourceCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
                     DocumentCollection collection = testClient.Create<DocumentCollection>(database.GetIdOrFullName(), sourceCollection);
 
-                    INameValueCollection requestHeaders = new StoreRequestNameValueCollection
+                    INameValueCollection requestHeaders = new Documents.Collections.RequestNameValueCollection()
                     {
                         { "x-ms-indexing-directive", "include" }
                     };
@@ -1681,7 +1681,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 SqlQuerySpec querySpec = new SqlQuerySpec(string.Format("SELECT * FROM r"));
                 using (HttpClient httpClient = new HttpClient())
                 {
-                    StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+                    RequestNameValueCollection headers = new();
                     httpClient.AddMasterAuthorizationHeader("post", coll.ResourceId, "docs", headers, masterKey);
                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.EnableScanInQuery, bool.TrueString);
@@ -2549,7 +2549,7 @@ function sproc(feed) {
                     StringField = index.ToString(CultureInfo.InvariantCulture),
                 };
                 doc.SetPropertyValue("pk", "test");
-                INameValueCollection headers = new StoreRequestNameValueCollection();
+                INameValueCollection headers = new Documents.Collections.RequestNameValueCollection();
                 if (!collection.IndexingPolicy.Automatic && manualIndex)
                 {
                     headers.Add("x-ms-indexing-directive", "include");
@@ -2620,7 +2620,7 @@ function sproc(feed) {
                     StringField = index.ToString(CultureInfo.InvariantCulture),
                 };
 
-                INameValueCollection headers = new StoreRequestNameValueCollection();
+                INameValueCollection headers = new Documents.Collections.RequestNameValueCollection();
                 if (!collection.IndexingPolicy.Automatic && manualIndex)
                 {
                     headers.Add("x-ms-indexing-directive", "include");

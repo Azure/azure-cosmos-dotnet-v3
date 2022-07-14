@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly bool IsLocalQuorumConsistency = false;
         //Auth
-        private readonly AuthorizationTokenProvider cosmosAuthorization;
+        internal readonly AuthorizationTokenProvider cosmosAuthorization;
 
         // Gateway has backoff/retry logic to hide transient errors.
         private RetryPolicy retryPolicy;
@@ -163,11 +163,13 @@ namespace Microsoft.Azure.Cosmos
         //SessionContainer.
         internal ISessionContainer sessionContainer;
 
+        private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+
         private AsyncLazy<QueryPartitionProvider> queryPartitionProvider;
 
         private DocumentClientEventSource eventSource;
         private Func<bool, Task<bool>> initializeTaskFactory;
-        internal AsyncCacheNonBlocking<string, bool> initTaskCache = new AsyncCacheNonBlocking<string, bool>();
+        internal AsyncCacheNonBlocking<string, bool> initTaskCache;
 
         private JsonSerializerSettings serializerSettings;
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
@@ -218,6 +220,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel);
+            this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
+
         }
 
         /// <summary>
@@ -459,6 +463,7 @@ namespace Microsoft.Azure.Cosmos
             this.cosmosAuthorization = cosmosAuthorization ?? throw new ArgumentNullException(nameof(cosmosAuthorization));
             this.transportClientHandlerFactory = transportClientHandlerFactory;
             this.IsLocalQuorumConsistency = isLocalQuorumConsistency;
+            this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -1200,6 +1205,13 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
+            if (!this.cancellationTokenSource.IsCancellationRequested)
+            {
+                this.cancellationTokenSource.Cancel();
+            }
+
+            this.cancellationTokenSource.Dispose();
+
             if (this.StoreModel != null)
             {
                 this.StoreModel.Dispose();
@@ -1423,19 +1435,9 @@ namespace Microsoft.Azure.Cosmos
                                 this.rntbdPortReuseMode);
         }
 
-        private void ThrowIfDisposed()
-        {
-            if (this.isDisposed)
-            {
-                throw new ObjectDisposedException("DocumentClient");
-            }
-        }
-
         internal virtual async Task EnsureValidClientAsync(ITrace trace)
         {
-            this.ThrowIfDisposed();
-
-            if (this.isSuccessfullyInitialized)
+            if (this.cancellationTokenSource.IsCancellationRequested || this.isSuccessfullyInitialized)
             {
                 return;
             }
@@ -5491,7 +5493,7 @@ namespace Microsoft.Azure.Cosmos
                         AuthorizationTokenType.PrimaryMasterKey,
                         headers))
                     {
-                        request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r");
+                        request.Headers[HttpConstants.HttpHeaders.XDate] = Rfc1123DateTimeCache.UtcNow();
                         if (options?.PartitionKeyRangeId == null)
                         {
                             await this.AddPartitionKeyInformationAsync(
@@ -6596,7 +6598,8 @@ namespace Microsoft.Azure.Cosmos
                     serviceEndpoint: this.ServiceEndpoint,
                     cosmosAuthorization: this.cosmosAuthorization,
                     connectionPolicy: this.ConnectionPolicy,
-                    httpClient: this.httpClient);
+                    httpClient: this.httpClient,
+                    cancellationToken: this.cancellationTokenSource.Token);
 
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 
@@ -6732,7 +6735,7 @@ namespace Microsoft.Azure.Cosmos
                 this.isSuccessfullyInitialized,
                 "GetRequestHeaders should be called after initialization task has been awaited to avoid blocking while accessing ConsistencyLevel property");
 
-            INameValueCollection headers = new StoreRequestNameValueCollection();
+            RequestNameValueCollection headers = new RequestNameValueCollection();
 
             if (this.UseMultipleWriteLocations)
             {
@@ -6755,7 +6758,7 @@ namespace Microsoft.Azure.Cosmos
                             this.accountServiceConfiguration.DefaultConsistencyLevel));
                 }
 
-                headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, this.desiredConsistencyLevel.Value.ToString());
+                headers.ConsistencyLevel = this.desiredConsistencyLevel.Value.ToString();
             }
 
             if (options == null)
@@ -6767,11 +6770,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (options.AccessCondition.Type == Documents.Client.AccessConditionType.IfMatch)
                 {
-                    headers.Set(HttpConstants.HttpHeaders.IfMatch, options.AccessCondition.Condition);
+                    headers.IfMatch = options.AccessCondition.Condition;
                 }
                 else
                 {
-                    headers.Set(HttpConstants.HttpHeaders.IfNoneMatch, options.AccessCondition.Condition);
+                    headers.IfNoneMatch = options.AccessCondition.Condition;
                 }
             }
 

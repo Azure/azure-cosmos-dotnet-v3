@@ -47,9 +47,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// Gets the component that governs this trace.
         /// </summary>
         TraceComponent Component { get; }
-
+        
         /// <summary>
-        /// Gets the component that governs this trace.
+        /// Gets the summary of this trace.
         /// </summary>
         TraceSummary Summary { get; }
 

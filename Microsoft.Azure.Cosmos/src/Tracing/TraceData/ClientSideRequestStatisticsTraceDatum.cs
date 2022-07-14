@@ -274,6 +274,17 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                     }
                 }
 
+                if (responseStatistics.StoreResult != null && !((HttpStatusCode)responseStatistics.StoreResult.StatusCode).IsSuccess()
+                    && !(responseStatistics.StoreResult.StatusCode == StatusCodes.NotFound && responseStatistics.StoreResult.SubStatusCode == SubStatusCodes.Unknown)
+                    && !(responseStatistics.StoreResult.StatusCode == StatusCodes.Conflict && responseStatistics.StoreResult.SubStatusCode == SubStatusCodes.Unknown)
+                    && !(responseStatistics.StoreResult.StatusCode == StatusCodes.PreconditionFailed && responseStatistics.StoreResult.SubStatusCode == SubStatusCodes.Unknown))
+                {
+                    if (this.TraceSummary != null)
+                    {
+                        this.TraceSummary.IncrementFailedCount();
+                    }
+                }
+                
                 // Reset the shallow copy
                 this.shallowCopyOfStoreResponseStatistics = null;
                 this.storeResponseStatistics.Add(responseStatistics);

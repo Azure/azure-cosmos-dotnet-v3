@@ -97,7 +97,7 @@
             HashSet<string> storeResultProperties = typeof(StoreResult).GetProperties(BindingFlags.Public | BindingFlags.Instance).Select(x => x.Name).ToHashSet<string>();
             string datumKey = "ClientStats";
             Trace trace = Trace.GetRootTrace("Test");
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow,new TraceSummary());
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary());
             trace.AddDatum(datumKey, datum);
 
             StoreResult storeResult = new StoreResult(

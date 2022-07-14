@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Reflection;
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
@@ -137,6 +136,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsFalse(diagnostics.IsGoneExceptionHit());
             string diagnosticString = response.Diagnostics.ToString();
             Assert.IsTrue(diagnosticString.Contains("Response Serialization"));
+
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics.ToString()));
             Assert.IsTrue(diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
             Assert.AreEqual(0, response.Diagnostics.GetFailedRequestCount());
@@ -237,7 +237,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNull(response.Content);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.AreNotEqual(0, response.Diagnostics.GetFailedRequestCount());
-
         }
 
         [TestMethod]

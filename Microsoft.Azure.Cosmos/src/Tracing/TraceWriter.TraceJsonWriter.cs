@@ -441,6 +441,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteObjectEnd();
             }
 
+            public void Visit(PartitionKeyRangeCacheTraceDatum partitionKeyRangeCacheTraceDatum)
+            {
+                this.jsonWriter.WriteObjectStart();
+
+                this.jsonWriter.WriteFieldName("Previous Continuation Token");
+                this.WriteStringValueOrNull(partitionKeyRangeCacheTraceDatum.PreviousContinuationToken);
+
+                this.jsonWriter.WriteFieldName("Continuation Token");
+                this.WriteStringValueOrNull(partitionKeyRangeCacheTraceDatum.ContinuationToken);
+
+                this.jsonWriter.WriteObjectEnd();
+            }
+
             private void WriteJsonUriArray(string propertyName, IEnumerable<TransportAddressUri> uris)
             {
                 this.jsonWriter.WriteFieldName(propertyName);
@@ -560,6 +573,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     this.jsonWriter.WriteStringValue(value.ToString("o", CultureInfo.InvariantCulture));
                 }
             }
+
         }
     }
 }

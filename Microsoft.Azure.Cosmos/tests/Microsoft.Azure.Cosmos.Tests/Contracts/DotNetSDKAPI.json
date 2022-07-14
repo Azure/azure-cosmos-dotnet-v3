@@ -996,6 +996,11 @@
           ],
           "MethodInfo": "System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath] IncludedPaths;CanRead:True;CanWrite:True;System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath] get_IncludedPaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Void .ctor(System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath], Int32)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath], Int32), Void .ctor(System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath], Int32)]"
+        },
         "Void .ctor(System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath])": {
           "Type": "Constructor",
           "Attributes": [],
@@ -2549,6 +2554,13 @@
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.AccountProperties] ReadAccountAsync();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.CosmosClient] CreateAndInitializeAsync(System.String, Azure.AzureKeyCredential, System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,System.String]], Microsoft.Azure.Cosmos.CosmosClientOptions, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.CosmosClient+<CreateAndInitializeAsync>))]": {
+          "Type": "Method",
+          "Attributes": [
+            "AsyncStateMachineAttribute"
+          ],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.CosmosClient] CreateAndInitializeAsync(System.String, Azure.AzureKeyCredential, System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,System.String]], Microsoft.Azure.Cosmos.CosmosClientOptions, System.Threading.CancellationToken);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.CosmosClient] CreateAndInitializeAsync(System.String, Azure.Core.TokenCredential, System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,System.String]], Microsoft.Azure.Cosmos.CosmosClientOptions, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.CosmosClient+<CreateAndInitializeAsync>))]": {
           "Type": "Method",
           "Attributes": [
@@ -2606,6 +2618,11 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.Uri get_Endpoint();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(System.String, Azure.AzureKeyCredential, Microsoft.Azure.Cosmos.CosmosClientOptions)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(System.String, Azure.AzureKeyCredential, Microsoft.Azure.Cosmos.CosmosClientOptions), Void .ctor(System.String, Azure.AzureKeyCredential, Microsoft.Azure.Cosmos.CosmosClientOptions)]"
         },
         "Void .ctor(System.String, Azure.Core.TokenCredential, Microsoft.Azure.Cosmos.CosmosClientOptions)": {
           "Type": "Constructor",
@@ -3060,17 +3077,17 @@
         "Int32 GetFailedRequestCount()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Int32 GetFailedRequestCount();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Int32 GetFailedRequestCount();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,System.Uri]] GetContactedRegions()": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,System.Uri]] GetContactedRegions();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.DateTime GetStartTimeUtc()": {
+        "System.Nullable`1[System.DateTime] GetStartTimeUtc()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.DateTime GetStartTimeUtc();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Nullable`1[System.DateTime] GetStartTimeUtc();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String ToString()": {
           "Type": "Method",
@@ -4191,6 +4208,11 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.ClientEncryptionPolicyDefinition WithClientEncryptionPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.Fluent.ClientEncryptionPolicyDefinition WithClientEncryptionPolicy(Int32)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.ClientEncryptionPolicyDefinition WithClientEncryptionPolicy(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.Fluent.ConflictResolutionDefinition WithConflictResolution()": {
           "Type": "Method",
           "Attributes": [],
@@ -4365,6 +4387,16 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithThrottlingRetryOptions(System.TimeSpan, Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.CosmosClient] BuildAndInitializeAsync(System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,System.String]], System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.CosmosClient] BuildAndInitializeAsync(System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,System.String]], System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(System.String, Azure.AzureKeyCredential)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(System.String, Azure.AzureKeyCredential), Void .ctor(System.String, Azure.AzureKeyCredential)]"
         },
         "Void .ctor(System.String, Azure.Core.TokenCredential)": {
           "Type": "Constructor",
@@ -6309,6 +6341,11 @@
           "Attributes": [],
           "MethodInfo": "System.String ChinaEast2;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String ChinaEast3": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String ChinaEast3;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String ChinaNorth": {
           "Type": "Field",
           "Attributes": [],
@@ -6318,6 +6355,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String ChinaNorth2;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String ChinaNorth3": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String ChinaNorth3;IsInitOnly:False;IsStatic:True;"
         },
         "System.String EastAsia": {
           "Type": "Field",

@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ISessionContainer sessionContainer = this.cosmosClient.DocumentClient.sessionContainer;
             string docLink = "dbs/" + this.database.Id + "/colls/" + containerProperties.Id + "/docs/3";
-            Documents.Collections.INameValueCollection headers = new StoreRequestNameValueCollection();
+            Documents.Collections.INameValueCollection headers = new Documents.Collections.RequestNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.PartitionKey, "[\"Status3\"]");
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, docLink, AuthorizationTokenType.PrimaryMasterKey, headers);
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Read back the created Item and check if the session token is identical.
                 string docLink = "dbs/" + this.database.Id + "/colls/" + this.Container.Id + "/docs/1001";
-                Documents.Collections.INameValueCollection headers = new StoreRequestNameValueCollection();
+                Documents.Collections.INameValueCollection headers = new Documents.Collections.RequestNameValueCollection();
                 headers.Set(HttpConstants.HttpHeaders.PartitionKey, "[\"Status1001\"]");
 
                 DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, docLink, AuthorizationTokenType.PrimaryMasterKey, headers);

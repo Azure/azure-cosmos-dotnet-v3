@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// </summary> 
     internal sealed class SubtreeEvaluator : ExpressionVisitor
     {
-        private HashSet<Expression> candidates;
+        private readonly HashSet<Expression> candidates;
 
         public SubtreeEvaluator(HashSet<Expression> candidates)
         {
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private Expression EvaluateMemberAccess(Expression expression)
         {
-            while (expression.CanReduce)
+            while (expression?.CanReduce ?? false)
             {
                 expression = expression.Reduce();
             }
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             // This is done because the compilation of a delegate takes a global lock which causes highly
             // threaded clients to exhibit async-over-sync thread exhaustion behaviour on this call path
             // even when doing relatively straightforward queries.
-            if (!(expression is MemberExpression memberExpression))
+            if (expression is not MemberExpression memberExpression)
             {
                 return expression;
             }
@@ -66,19 +66,42 @@ namespace Microsoft.Azure.Cosmos.Linq
             // nested property access (x.y.z) without needing to fall back on delegate compilation.
             Expression targetExpression = this.EvaluateMemberAccess(memberExpression.Expression);
 
-            if (!(targetExpression is ConstantExpression targetConstant))
+            // NOTE: When evaluating static field or property access, we may have a null targetExpression.
+            //       In this situation, we should pass the null value to the GetValue(...) methods below to
+            //       indicate that we are accessing a static member.
+            ConstantExpression targetConstant = targetExpression as ConstantExpression;
+
+            // If we have a target expression but it cannot be resolved to a constant, then we should skip
+            // using reflection here and instead rely on the fallback delegate compilation approach.
+            if (targetExpression is not null && targetConstant is null)
             {
                 return expression;
             }
 
+            // We need special handling for Nullable<T>.HasValue. This is because most reflection
+            // methods, including property and field accessors, pass instance arguments as object type.
+            // Nullable<T> has special runtime behavior that boxes the value of the nullable instead of the
+            // nullable struct itself. When Nullable<T>.HasValue is false, it is boxed as a null value when
+            // passed to the PropertyInfo/FieldInfo.GetValue. This causes a TargetException to be thrown since
+            // we are trying to evaluate an instance property with a null target.
+            if (targetConstant != null &&
+                targetConstant.Value == null &&
+                Nullable.GetUnderlyingType(targetConstant.Type) != null &&
+                memberExpression.Member.Name == "HasValue")
+            {
+                // So, if we're calling Nullable<T>.HasValue and targetConstant.Value is null, that means HasValue
+                // would return false. Do that here to work around reflection quirks
+                return Expression.Constant(false);
+            }
+
             if (memberExpression.Member is FieldInfo fieldInfo)
             {
-                return Expression.Constant(fieldInfo.GetValue(targetConstant.Value), memberExpression.Type);
+                return Expression.Constant(fieldInfo.GetValue(targetConstant?.Value), memberExpression.Type);
             }
 
             if (memberExpression.Member is PropertyInfo propertyInfo)
             {
-                return Expression.Constant(propertyInfo.GetValue(targetConstant.Value), memberExpression.Type);
+                return Expression.Constant(propertyInfo.GetValue(targetConstant?.Value), memberExpression.Type);
             }
 
             return expression;

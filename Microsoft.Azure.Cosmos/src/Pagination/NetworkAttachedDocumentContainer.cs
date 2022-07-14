@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                     if (readFeedPaginationOptions.JsonSerializationFormat.HasValue)
                     {
-                        request.Headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = readFeedPaginationOptions.JsonSerializationFormat.Value.ToContentSerializationFormatString();
+                        request.Headers.ContentSerializationFormat = readFeedPaginationOptions.JsonSerializationFormat.Value.ToContentSerializationFormatString();
                     }
 
                     foreach (KeyValuePair<string, string> kvp in readFeedPaginationOptions.AdditionalHeaders)
@@ -296,7 +296,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 {
                     if (changeFeedPaginationOptions.PageSizeLimit.HasValue)
                     {
-                        request.Headers[HttpConstants.HttpHeaders.PageSize] = changeFeedPaginationOptions.PageSizeLimit.Value.ToString();
+                        request.Headers.PageSize = changeFeedPaginationOptions.PageSizeLimit.Value.ToString();
                     }
 
                     feedRangeState.State.Accept(ChangeFeedStateRequestMessagePopulator.Singleton, request);
@@ -305,7 +305,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                     if (changeFeedPaginationOptions.JsonSerializationFormat.HasValue)
                     {
-                        request.Headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = changeFeedPaginationOptions.JsonSerializationFormat.Value.ToContentSerializationFormatString();
+                        request.Headers.ContentSerializationFormat = changeFeedPaginationOptions.JsonSerializationFormat.Value.ToContentSerializationFormatString();
                     }
 
                     foreach (KeyValuePair<string, string> kvp in changeFeedPaginationOptions.AdditionalHeaders)

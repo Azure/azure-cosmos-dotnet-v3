@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         public ClientCollectionCache(
             ISessionContainer sessionContainer,
             IStoreModel storeModel,
-            ICosmosAuthorizationTokenProvider tokenProvider, 
+            ICosmosAuthorizationTokenProvider tokenProvider,
             IRetryPolicyFactory retryPolicy)
         {
             this.storeModel = storeModel ?? throw new ArgumentNullException("storeModel");
@@ -35,8 +35,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.sessionContainer = sessionContainer;
         }
 
-        protected override Task<ContainerProperties> GetByRidAsync(string apiVersion, 
-                                                    string collectionRid, 
+        protected override Task<ContainerProperties> GetByRidAsync(string apiVersion,
+                                                    string collectionRid,
                                                     ITrace trace,
                                                     IClientSideRequestStatistics clientSideRequestStatistics,
                                                     CancellationToken cancellationToken)
@@ -46,16 +46,16 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.sessionContainer, this.retryPolicy.GetRequestPolicy());
             return TaskHelper.InlineIfPossible(
                   () => this.ReadCollectionAsync(
-                      PathsHelper.GeneratePath(ResourceType.Collection, collectionRid, false), 
-                      retryPolicyInstance, 
+                      PathsHelper.GeneratePath(ResourceType.Collection, collectionRid, false),
+                      retryPolicyInstance,
                       trace,
-                      clientSideRequestStatistics, 
+                      clientSideRequestStatistics,
                       cancellationToken),
                   retryPolicyInstance,
                   cancellationToken);
         }
 
-        protected override Task<ContainerProperties> GetByNameAsync(string apiVersion, 
+        protected override Task<ContainerProperties> GetByNameAsync(string apiVersion,
                                                 string resourceAddress,
                                                 ITrace trace,
                                                 IClientSideRequestStatistics clientSideRequestStatistics,
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             ContainerProperties properties = await resolveContainerProvider();
 
             if (this.sessionContainer != null &&
-                previouslyResolvedCollectionRid != null && 
+                previouslyResolvedCollectionRid != null &&
                 previouslyResolvedCollectionRid != properties.ResourceId)
             {
                 this.sessionContainer.ClearTokenByResourceId(previouslyResolvedCollectionRid);
@@ -167,17 +167,18 @@ namespace Microsoft.Azure.Cosmos.Routing
             CancellationToken cancellationToken)
         {
             using (ITrace childTrace = trace.StartChild("Read Collection", TraceComponent.Transport, TraceLevel.Info))
-            { 
+            {
                 cancellationToken.ThrowIfCancellationRequested();
 
+                RequestNameValueCollection headers = new RequestNameValueCollection();
                 using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                        OperationType.Read,
                        ResourceType.Collection,
                        collectionLink,
                        AuthorizationTokenType.PrimaryMasterKey,
-                       new StoreRequestNameValueCollection()))
+                       headers))
                 {
-                    request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r");
+                    headers.XDate = Rfc1123DateTimeCache.UtcNow();
 
                     request.RequestContext.ClientRequestStatistics = clientSideRequestStatistics ?? new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary);
                     if (clientSideRequestStatistics == null)
@@ -195,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         AuthorizationTokenType.PrimaryMasterKey,
                         childTrace);
 
-                    request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
+                    headers.Authorization = authorizationToken;
 
                     using (new ActivityScope(Guid.NewGuid()))
                     {

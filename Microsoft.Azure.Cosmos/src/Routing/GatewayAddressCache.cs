@@ -460,12 +460,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             bool forceRefresh,
             bool useMasterCollectionResolver)
         {
-            INameValueCollection addressQuery = new StoreRequestNameValueCollection
+            INameValueCollection addressQuery = new RequestNameValueCollection
             {
                 { HttpConstants.QueryStrings.Url, HttpUtility.UrlEncode(entryUrl) }
             };
 
-            INameValueCollection headers = new StoreRequestNameValueCollection();
+            INameValueCollection headers = new RequestNameValueCollection();
             if (forceRefresh)
             {
                 headers.Set(HttpConstants.HttpHeaders.ForceRefresh, bool.TrueString);
@@ -485,7 +485,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             string resourceTypeToSign = PathsHelper.GetResourcePath(resourceType);
 
-            headers.Set(HttpConstants.HttpHeaders.XDate, DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture));
+            headers.Set(HttpConstants.HttpHeaders.XDate, Rfc1123DateTimeCache.UtcNow());
             using (ITrace trace = Trace.GetRootTrace(nameof(GetMasterAddressesViaGatewayAsync), TraceComponent.Authorization, TraceLevel.Info))
             {
                 string token = await this.tokenProvider.GetUserAuthorizationTokenAsync(
@@ -524,12 +524,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             string entryUrl = PathsHelper.GeneratePath(ResourceType.Document, collectionRid, true);
 
-            INameValueCollection addressQuery = new StoreRequestNameValueCollection
+            INameValueCollection addressQuery = new RequestNameValueCollection
             {
                 { HttpConstants.QueryStrings.Url, HttpUtility.UrlEncode(entryUrl) }
             };
 
-            INameValueCollection headers = new StoreRequestNameValueCollection();
+            INameValueCollection headers = new RequestNameValueCollection();
             if (forceRefresh)
             {
                 headers.Set(HttpConstants.HttpHeaders.ForceRefresh, bool.TrueString);
@@ -545,7 +545,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             string resourceTypeToSign = PathsHelper.GetResourcePath(ResourceType.Document);
 
-            headers.Set(HttpConstants.HttpHeaders.XDate, DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture));
+            headers.Set(HttpConstants.HttpHeaders.XDate, Rfc1123DateTimeCache.UtcNow());
             string token = null;
 
             using (ITrace trace = Trace.GetRootTrace(nameof(GetMasterAddressesViaGatewayAsync), TraceComponent.Authorization, TraceLevel.Info))

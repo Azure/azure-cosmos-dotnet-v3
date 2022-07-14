@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     public
 #else
     internal
-#endif  
+#endif 
     class TraceSummary
     {
         /// <summary>

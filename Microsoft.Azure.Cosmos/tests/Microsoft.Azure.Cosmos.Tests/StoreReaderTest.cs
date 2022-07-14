@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -89,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
             {
 
                 // set lsn and activityid on the store response.
-                Headers = new StoreRequestNameValueCollection
+                Headers = new Documents.Collections.RequestNameValueCollection()
                 {
                     { WFConstants.BackendHeaders.LSN, "50"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" }
@@ -125,14 +126,14 @@ namespace Microsoft.Azure.Cosmos
             StoreResponse mockStoreResponseSlow = new StoreResponse();
 
             // set lsn and activityid on the store response.
-            mockStoreResponseFast.Headers = new StoreRequestNameValueCollection
+            mockStoreResponseFast.Headers = new StoreResponseNameValueCollection()
                 {
                     { WFConstants.BackendHeaders.LSN, "50"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" }
                 };
 
             // set lsn and activityid on the store response.
-            mockStoreResponseSlow.Headers = new StoreRequestNameValueCollection
+            mockStoreResponseSlow.Headers = new StoreResponseNameValueCollection()
                 {
                     { WFConstants.BackendHeaders.LSN, "30"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" }
@@ -205,7 +206,7 @@ namespace Microsoft.Azure.Cosmos
             StoreResponse mockStoreResponse5 = new StoreResponse();
 
             // set lsn and activityid on the store response.
-            mockStoreResponse1.Headers = new StoreRequestNameValueCollection
+            mockStoreResponse1.Headers = new StoreResponseNameValueCollection()
             {
                 { WFConstants.BackendHeaders.LSN, "100"},
                 { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" },
@@ -213,7 +214,7 @@ namespace Microsoft.Azure.Cosmos
                 { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
             };
 
-            mockStoreResponse2.Headers = new StoreRequestNameValueCollection
+            mockStoreResponse2.Headers = new StoreResponseNameValueCollection()
             {
                 { WFConstants.BackendHeaders.LSN, "90"},
                 { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_2" },
@@ -221,7 +222,7 @@ namespace Microsoft.Azure.Cosmos
                 { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
             };
 
-            mockStoreResponse3.Headers = new StoreRequestNameValueCollection
+            mockStoreResponse3.Headers = new StoreResponseNameValueCollection()
             {
                 { WFConstants.BackendHeaders.LSN, "92"},
                 { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
@@ -229,7 +230,7 @@ namespace Microsoft.Azure.Cosmos
                 { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
             };
 
-            mockStoreResponse4.Headers = new StoreRequestNameValueCollection
+            mockStoreResponse4.Headers = new StoreResponseNameValueCollection()
             {
                 { WFConstants.BackendHeaders.LSN, "100"},
                 { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
@@ -237,7 +238,7 @@ namespace Microsoft.Azure.Cosmos
                 { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
             };
 
-            mockStoreResponse5.Headers = new StoreRequestNameValueCollection
+            mockStoreResponse5.Headers = new StoreResponseNameValueCollection()
             {
                 { WFConstants.BackendHeaders.LSN, "100"},
                 { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
@@ -338,7 +339,7 @@ namespace Microsoft.Azure.Cosmos
 
 
             // set lsn and activityid on the store response.
-            mockStoreResponse1.Headers = new StoreRequestNameValueCollection
+            mockStoreResponse1.Headers = new StoreResponseNameValueCollection()
                 {
                     { WFConstants.BackendHeaders.LSN, "100"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" },
@@ -346,7 +347,7 @@ namespace Microsoft.Azure.Cosmos
                     { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
                 };
 
-            mockStoreResponse2.Headers = new StoreRequestNameValueCollection
+            mockStoreResponse2.Headers = new StoreResponseNameValueCollection()
                 {
                     { WFConstants.BackendHeaders.LSN, "100"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_2" },
@@ -354,7 +355,7 @@ namespace Microsoft.Azure.Cosmos
                     { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
                 };
 
-            mockStoreResponse3.Headers = new StoreRequestNameValueCollection
+            mockStoreResponse3.Headers = new StoreResponseNameValueCollection()
                 {
                     { WFConstants.BackendHeaders.LSN, "103"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
@@ -362,7 +363,7 @@ namespace Microsoft.Azure.Cosmos
                     { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
                 };
 
-            mockStoreResponse4.Headers = new StoreRequestNameValueCollection
+            mockStoreResponse4.Headers = new StoreResponseNameValueCollection()
                 {
                     { WFConstants.BackendHeaders.LSN, "103"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
@@ -370,7 +371,7 @@ namespace Microsoft.Azure.Cosmos
                     { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
                 };
 
-            mockStoreResponse5.Headers = new StoreRequestNameValueCollection
+            mockStoreResponse5.Headers = new StoreResponseNameValueCollection()
                 {
                     { WFConstants.BackendHeaders.LSN, "106"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },

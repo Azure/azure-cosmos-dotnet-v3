@@ -17,6 +17,8 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -227,6 +229,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
+            Func<TResult, OpenTelemetryAttributes> openTelemetry,
             TraceComponent traceComponent = TraceComponent.Transport,
             Tracing.TraceLevel traceLevel = Tracing.TraceLevel.Info)
         {
@@ -234,11 +237,13 @@ namespace Microsoft.Azure.Cosmos
                 this.OperationHelperWithRootTraceAsync(operationName, 
                                                        requestOptions, 
                                                        task,
+                                                       openTelemetry,
                                                        traceComponent,
                                                        traceLevel) :
                 this.OperationHelperWithRootTraceWithSynchronizationContextAsync(operationName, 
                                                                   requestOptions, 
                                                                   task,
+                                                                  openTelemetry,
                                                                   traceComponent,
                                                                   traceLevel);
         }
@@ -247,6 +252,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
+            Func<TResult, OpenTelemetryAttributes> openTelemetry,
             TraceComponent traceComponent,
             Tracing.TraceLevel traceLevel)
         {
@@ -258,7 +264,9 @@ namespace Microsoft.Azure.Cosmos
 
                 return await this.RunWithDiagnosticsHelperAsync(
                     trace,
-                    task);
+                    task,
+                    openTelemetry,
+                    operationName);
             }
         }
 
@@ -266,6 +274,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
+            Func<TResult, OpenTelemetryAttributes> openTelemetry,
             TraceComponent traceComponent,
             Tracing.TraceLevel traceLevel)
         {
@@ -284,7 +293,9 @@ namespace Microsoft.Azure.Cosmos
 
                     return await this.RunWithDiagnosticsHelperAsync(
                         trace,
-                        task);
+                        task,
+                        openTelemetry,
+                        operationName);
                 }
             });
         }
@@ -458,30 +469,58 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<TResult> RunWithDiagnosticsHelperAsync<TResult>(
             ITrace trace,
-            Func<ITrace, Task<TResult>> task)
+            Func<ITrace, Task<TResult>> task,
+            Func<TResult, OpenTelemetryAttributes> openTelemetry,
+            string operationName)
         {
+            using (OpenTelemetryCoreRecorder recorder = 
+                                OpenTelemetryRecorderFactory.CreateRecorder(
+                                    operationName: operationName, 
+                                    isFeatureEnabled: this.clientOptions.EnableOpenTelemetry))
             using (new ActivityScope(Guid.NewGuid()))
             {
                 try
                 {
-                    return await task(trace).ConfigureAwait(false);
+                    TResult result = await task(trace).ConfigureAwait(false);
+                    if (openTelemetry != null && recorder.IsEnabled)
+                    {
+                        OpenTelemetryAttributes response = openTelemetry(result);
+                        recorder.Record(response);
+                    }
+
+                    return result;
                 }
                 catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                 {
-                    throw new CosmosOperationCanceledException(oe, trace);
+                    CosmosOperationCanceledException operationCancelledException = new CosmosOperationCanceledException(oe, trace);
+                    recorder.MarkFailed(operationCancelledException);
+                    
+                    throw operationCancelledException;
                 }
                 catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
                 {
-                    throw new CosmosObjectDisposedException(
-                        objectDisposed, 
-                        this.client, 
+                    CosmosObjectDisposedException objectDisposedException = new CosmosObjectDisposedException(
+                        objectDisposed,
+                        this.client,
                         trace);
+                    recorder.MarkFailed(objectDisposedException);
+
+                    throw objectDisposedException;
                 }
                 catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
                 {
-                    throw new CosmosNullReferenceException(
+                    CosmosNullReferenceException nullException = new CosmosNullReferenceException(
                         nullRefException,
                         trace);
+                    recorder.MarkFailed(nullException);
+
+                    throw nullException;
+                }
+                catch (Exception ex)
+                {
+                    recorder.MarkFailed(ex);
+
+                    throw;
                 }
             }
         }

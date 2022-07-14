@@ -8,11 +8,16 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Net;
+    using System.Runtime.InteropServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure;
     using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Authorization;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
@@ -98,11 +103,11 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosClient : IDisposable
     {
         internal readonly string Id = Guid.NewGuid().ToString();
+        private readonly object disposedLock = new object();
 
         private readonly string DatabaseRootUri = Paths.Databases_Root;
         private ConsistencyLevel? accountConsistencyLevel;
         private bool isDisposed = false;
-        private object disposedLock = new object();
 
         internal static int numberOfClientsCreated;
         internal static int NumberOfActiveClients;
@@ -118,11 +123,21 @@ namespace Microsoft.Azure.Cosmos
 #endif
             HttpConstants.Versions.CurrentVersionUTF8 = Encoding.UTF8.GetBytes(HttpConstants.Versions.CurrentVersion);
 
-            // V3 always assumes assemblies exists
-            // Shall revisit on feedback
-            // NOTE: Native ServiceInteropWrapper.AssembliesExist has appsettings dependency which are proofed for CTL (native dll entry) scenarios.
-            // Revert of this depends on handling such in direct assembly
-            ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => true);
+            ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() =>
+            {
+                // Attemp to create an instance of the ServiceInterop assembly
+                TryCatch<IntPtr> tryCreateServiceProvider = QueryPartitionProvider.TryCreateServiceProvider("{}");
+                if (tryCreateServiceProvider.Failed)
+                {
+                    // Failed, either the DLL is not present or one of its dependencies
+                    return false;
+                }
+
+                // Assembly and dependencies are available
+                // Release pointer
+                Marshal.Release(tryCreateServiceProvider.Result);
+                return true;
+            });
 
             Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace.InitEventListener();
 
@@ -225,6 +240,56 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Creates a new CosmosClient with the account endpoint URI string and AzureKeyCredential.
+        /// AzureKeyCredential enables changing/updating master-key/ResourceToken while CosmosClient is still in use. 
+        /// 
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// of the application which enables efficient connection management and performance. Please refer to the
+        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
+        /// </summary>
+        /// <param name="accountEndpoint">The cosmos service endpoint to use</param>
+        /// <param name="authKeyOrResourceTokenCredential">AzureKeyCredential with master-key or resource token..</param>
+        /// <param name="clientOptions">(Optional) client options</param>
+        /// <example>
+        /// The CosmosClient is created with the AccountEndpoint, AccountKey or ResourceToken and configured to use "East US 2" region.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// using Microsoft.Azure.Cosmos;
+        /// 
+        /// AzureKeyCredential keyCredential = new AzureKeyCredential("account-master-key/ResourceToken");
+        /// CosmosClient cosmosClient = new CosmosClient(
+        ///             "account-endpoint-from-portal", 
+        ///             keyCredential, 
+        ///             new CosmosClientOptions()
+        ///             {
+        ///                 ApplicationRegion = Regions.EastUS2,
+        ///             });
+        ///             
+        /// ....
+        /// 
+        /// // To udpate key/credentials 
+        /// keyCredential.Update("updated master-key/ResourceToken");
+        /// 
+        /// // Dispose cosmosClient at application exit
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso cref="CosmosClientOptions"/>
+        /// <seealso cref="Fluent.CosmosClientBuilder"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">Performance Tips</seealso>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk">Diagnose and troubleshoot issues</seealso>
+        /// <remarks>AzureKeyCredential enables changing/updating master-key/ResourceToken whle CosmosClient is still in use.</remarks>
+        public CosmosClient(
+            string accountEndpoint,
+            AzureKeyCredential authKeyOrResourceTokenCredential,
+            CosmosClientOptions clientOptions = null)
+             : this(accountEndpoint,
+                     new AzureKeyCredentialAuthorizationTokenProvider(authKeyOrResourceTokenCredential),
+                     clientOptions)
+        {
+        }
+
+        /// <summary>
         /// Creates a new CosmosClient with the account endpoint URI string and TokenCredential.
         /// 
         /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
@@ -320,6 +385,66 @@ namespace Microsoft.Azure.Cosmos
 
             CosmosClient cosmosClient = new CosmosClient(accountEndpoint,
                                                          authKeyOrResourceToken,
+                                                         cosmosClientOptions);
+
+            await cosmosClient.InitializeContainersAsync(containers, cancellationToken);
+            return cosmosClient;
+        }
+
+        /// <summary>
+        /// Creates a new CosmosClient with the account endpoint URI string and AzureKeyCredential.
+        /// AzureKeyCredential enables changing/updating master-key/ResourceToken while CosmosClient is still in use. 
+        /// 
+        /// In addition to that it initializes the client with containers provided i.e The SDK warms up the caches and 
+        /// connections before the first call to the service is made. Use this to obtain lower latency while startup of your application.
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// of the application which enables efficient connection management and performance. Please refer to the
+        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
+        /// </summary>
+        /// <param name="accountEndpoint">The cosmos service endpoint to use</param>
+        /// <param name="authKeyOrResourceTokenCredential">AzureKeyCredential with master-key or resource token.</param>
+        /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
+        /// <param name="cosmosClientOptions">(Optional) client options</param>
+        /// <param name="cancellationToken">(Optional) Cancellation Token</param>
+        /// <returns>
+        /// A CosmosClient object.
+        /// </returns>
+        /// <example>
+        /// The CosmosClient is created with the AccountEndpoint, AccountKey or ResourceToken and 2 containers in the account are initialized
+        /// <code language="c#">
+        /// <![CDATA[
+        /// using Microsoft.Azure.Cosmos;
+        /// List<(string, string)> containersToInitialize = new List<(string, string)>
+        /// { ("DatabaseName1", "ContainerName1"), ("DatabaseName2", "ContainerName2") };
+        /// 
+        /// AzureKeyCredential keyCredential = new AzureKeyCredential("account-master-key/ResourceToken");
+        /// CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync("account-endpoint-from-portal", 
+        ///                                                                         keyCredential,
+        ///                                                                         containersToInitialize)
+        ///             
+        /// ....
+        /// 
+        /// // To udpate key/credentials 
+        /// keyCredential.Update("updated master-key/ResourceToken");
+        /// 
+        /// // Dispose cosmosClient at application exit
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks>AzureKeyCredential enables changing/updating master-key/ResourceToken whle CosmosClient is still in use.</remarks> 
+        public static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint,
+                                                                        AzureKeyCredential authKeyOrResourceTokenCredential,
+                                                                        IReadOnlyList<(string databaseId, string containerId)> containers,
+                                                                        CosmosClientOptions cosmosClientOptions = null,
+                                                                        CancellationToken cancellationToken = default)
+        {
+            if (containers == null)
+            {
+                throw new ArgumentNullException(nameof(containers));
+            }
+
+            CosmosClient cosmosClient = new CosmosClient(accountEndpoint,
+                                                         authKeyOrResourceTokenCredential,
                                                          cosmosClientOptions);
 
             await cosmosClient.InitializeContainersAsync(containers, cancellationToken);
@@ -602,7 +727,8 @@ namespace Microsoft.Azure.Cosmos
                         requestOptions: requestOptions,
                         trace: trace,
                         cancellationToken: cancellationToken);
-                });
+                },
+                (response) => new OpenTelemetryResponse<DatabaseProperties>(response));
         }
 
         /// <summary>
@@ -646,7 +772,8 @@ namespace Microsoft.Azure.Cosmos
                         requestOptions: requestOptions,
                         trace: trace,
                         cancellationToken: cancellationToken);
-                });
+                },
+                (response) => new OpenTelemetryResponse<DatabaseProperties>(response));
         }
 
         /// <summary>
@@ -738,7 +865,8 @@ namespace Microsoft.Azure.Cosmos
 
                     return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), readResponseAfterConflict);
                 }
-            });
+            },
+                (response) => new OpenTelemetryResponse<DatabaseProperties>(response));
         }
 
         /// <summary>
@@ -1038,7 +1166,8 @@ namespace Microsoft.Azure.Cosmos
                          requestOptions,
                          trace,
                          cancellationToken);
-                 });
+                 },
+                 (response) => new OpenTelemetryResponse(response));
         }
 
         /// <summary>
@@ -1132,7 +1261,8 @@ namespace Microsoft.Azure.Cosmos
                         requestOptions,
                         trace,
                         cancellationToken);
-                });
+                },
+                (response) => new OpenTelemetryResponse(response));
         }
 
         private async Task<DatabaseResponse> CreateDatabaseInternalAsync(

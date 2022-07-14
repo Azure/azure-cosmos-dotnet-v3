@@ -9,9 +9,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json;
     using PartitionKeyDefinition = Documents.PartitionKeyDefinition;
     using PartitionKeyInternal = Documents.Routing.PartitionKeyInternal;
@@ -274,10 +276,35 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                    serializedQueryExecutionInfo,
                    new JsonSerializerSettings
                    {
-                       DateParseHandling = DateParseHandling.None
+                       DateParseHandling = DateParseHandling.None,
+                       MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
                    });
 
             return TryCatch<PartitionedQueryExecutionInfoInternal>.FromResult(queryInfoInternal);
+        }
+
+        internal static TryCatch<IntPtr> TryCreateServiceProvider(string queryEngineConfiguration)
+        {
+            try
+            {
+                IntPtr serviceProvider = IntPtr.Zero;
+                uint errorCode = ServiceInteropWrapper.CreateServiceProvider(
+                                queryEngineConfiguration,
+                                out serviceProvider);
+                Exception exception = Marshal.GetExceptionForHR((int)errorCode);
+                if (exception != null)
+                {
+                    DefaultTrace.TraceWarning("QueryPartitionProvider.TryCreateServiceProvider failed with exception {0}", exception);
+                    return TryCatch<IntPtr>.FromException(exception);
+                }
+                
+                return TryCatch<IntPtr>.FromResult(serviceProvider);
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning("QueryPartitionProvider.TryCreateServiceProvider failed with exception {0}", ex);
+                return TryCatch<IntPtr>.FromException(ex);
+            }
         }
 
         ~QueryPartitionProvider()
@@ -295,12 +322,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     {
                         if (!this.disposed && this.serviceProvider == IntPtr.Zero)
                         {
-                            uint errorCode = ServiceInteropWrapper.CreateServiceProvider(
-                                this.queryengineConfiguration,
-                                out this.serviceProvider);
+                            TryCatch<IntPtr> tryCreateServiceProvider = QueryPartitionProvider.TryCreateServiceProvider(this.queryengineConfiguration);
+                            if (tryCreateServiceProvider.Failed)
+                            {
+                                throw ExceptionWithStackTraceException.UnWrapMonadExcepion(tryCreateServiceProvider.Exception, NoOpTrace.Singleton);
+                            }
 
-                            Exception exception = Marshal.GetExceptionForHR((int)errorCode);
-                            if (exception != null) throw exception;
+                            this.serviceProvider = tryCreateServiceProvider.Result;
                         }
                     }
                 }

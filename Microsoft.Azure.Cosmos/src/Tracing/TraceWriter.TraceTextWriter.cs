@@ -482,6 +482,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     stringBuilder.AppendLine($"Machine Id: {VmMetadataApiHandler.GetMachineId()}");
                     stringBuilder.AppendLine($"Number Of Clients Created: {CosmosClient.numberOfClientsCreated}");
                     stringBuilder.AppendLine($"Number Of Active Clients: {CosmosClient.NumberOfActiveClients}");
+                    stringBuilder.AppendLine($"Connection Mode: {clientConfigurationTraceDatum.ConnectionMode}");
                     stringBuilder.AppendLine($"User Agent: {clientConfigurationTraceDatum.UserAgentContainer.UserAgent}");
                     stringBuilder.AppendLine("Connection Config:");
                     stringBuilder.AppendLine($"{space}'gw': {clientConfigurationTraceDatum.GatewayConnectionConfig}");
@@ -495,6 +496,15 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 public override string ToString()
                 {
                     return this.toStringValue;
+                }
+
+                public void Visit(PartitionKeyRangeCacheTraceDatum partitionKeyRangeCacheTraceDatum)
+                {
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.AppendLine($"Previous Continuation Token: {partitionKeyRangeCacheTraceDatum.PreviousContinuationToken ?? "<null>"}");
+                    stringBuilder.AppendLine($"Continuation Token: {partitionKeyRangeCacheTraceDatum.ContinuationToken ?? "<null>"}");
+
+                    this.toStringValue = stringBuilder.ToString();
                 }
             }
 

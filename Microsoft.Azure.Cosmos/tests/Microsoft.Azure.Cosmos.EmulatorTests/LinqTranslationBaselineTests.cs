@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using Newtonsoft.Json;
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
     using Newtonsoft.Json.Converters;
     using BaselineTest;
@@ -111,6 +112,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public List<int> EnumerableField;
             public Point Point;
             public int? NullableField;
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value false
+            public bool BooleanField;
+#pragma warning restore // Field is never assigned to, and will always have its default value false
 
             [JsonConverter(typeof(StringEnumConverter))]
             public TestEnum EnumField1;
@@ -128,11 +132,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // of the enum definition
             public TestEnum2 EnumNumber;
 
-            [JsonConverter(typeof(UnixDateTimeConverter))]
+            [JsonConverter(typeof(Documents.UnixDateTimeConverter))]
             public DateTime UnixTime;
 
             [JsonConverter(typeof(IsoDateTimeConverter))]
             public DateTime IsoTime;
+
+            [JsonConverter(typeof(DateJsonConverter))]
+            public DateTime IsoDateOnly;
 
             // This field should serialize as ISO Date
             // as this is the default DateTimeConverter
@@ -145,13 +152,37 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public string Pk;
         }
 
+        class DateJsonConverter : IsoDateTimeConverter
+        {
+            public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+            {
+                if (value is DateTime dateTime)
+                {
+                    writer.WriteValue(dateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+                }
+                else
+                {
+                    base.WriteJson(writer, value, serializer);
+                }
+            }
+        }
+
         internal class AmbientContextObject
         {
             public double FieldAccess;
 
             public double PropertyAccess { get; set; }
 
-            public double MethodAccess() => 1.0;
+            public double MethodAccess()
+            {
+                return 1.0;
+            }
+
+            public static double StaticFieldAccess = 4.0;
+
+            public static double StaticPropertyAccess => 5.0;
+
+            public const double ConstAccess = 6.0;
         }
 
         [TestMethod]
@@ -337,6 +368,30 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("Default (ISO) = filter", b => getQuery(b).Where(doc => doc.DefaultTime == new DateTime(2016, 9, 13, 0, 0, 0))),
                 new LinqTestInput("Default (ISO) > filter", b => getQuery(b).Where(doc => doc.DefaultTime > new DateTime(2016, 9, 13, 0, 0, 0))),
                 new LinqTestInput("Default (ISO) < filter", b => getQuery(b).Where(doc => doc.DefaultTime < new DateTime(2016, 9, 13, 0, 0, 0)))
+            };
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestDateTimeJsonConverterTimezones()
+        {
+            const int Records = 10;
+            DateTime midDateTime = new (2016, 9, 13, 0, 0, 0);
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
+                DataObject obj = new() {
+                    IsoDateOnly = LinqTestsCommon.RandomDateTime(random, midDateTime),
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "Test"
+                };
+                return obj;
+            };
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new()
+            {
+                new LinqTestInput("IsoDateTimeConverter LocalTime = filter", b => getQuery(b).Where(doc => doc.IsoDateOnly == new DateTime(2016, 9, 13, 0, 0, 0, DateTimeKind.Local))),
+                new LinqTestInput("IsoDateTimeConverter UniversalTime = filter", b => getQuery(b).Where(doc => doc.IsoDateOnly == new DateTime(2016, 9, 13, 0, 0, 0, DateTimeKind.Utc))),
             };
             this.ExecuteTestSuite(inputs);
         }
@@ -536,7 +591,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             this.ExecuteTestSuite(inputs);
         }
 
-
         [TestMethod]
         public void TestMemberAccess()
         {
@@ -560,6 +614,31 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 // performance boost, especially under highly concurrent workloads).
                 new LinqTestInput("Filter on Field value", b => getQuery(b).Where(doc => doc.NumericField == ambientContext.FieldAccess)),
                 new LinqTestInput("Filter on Property value", b => getQuery(b).Where(doc => doc.NumericField == ambientContext.PropertyAccess)),
+                new LinqTestInput("Filter on Static Field value", b => getQuery(b).Where(doc => doc.NumericField == AmbientContextObject.StaticFieldAccess)),
+                new LinqTestInput("Filter on Static Property value", b => getQuery(b).Where(doc => doc.NumericField == AmbientContextObject.StaticPropertyAccess)),
+                new LinqTestInput("Filter on Const value", b => getQuery(b).Where(doc => doc.NumericField == AmbientContextObject.ConstAccess)),
+            };
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestMemberAccessWithNullableTypes()
+        {
+            List<DataObject> testData = new();
+            IOrderedQueryable<DataObject> constantQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+            Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? constantQuery : testData.AsQueryable();
+
+            double? nullDouble = null;
+            double? zeroDouble = 0;
+            bool? nullBool = null;
+            bool? falseBool = false;
+
+            List<LinqTestInput> inputs = new()
+            {
+                new LinqTestInput("Filter on null double?", b => getQuery(b).Where(doc => nullDouble.HasValue && doc.NumericField > nullDouble)),
+                new LinqTestInput("Filter on false double?", b => getQuery(b).Where(doc => zeroDouble.HasValue && doc.NumericField > zeroDouble)),
+                new LinqTestInput("Filter on null bool?", b => getQuery(b).Where(doc => nullBool.HasValue && doc.BooleanField == nullBool)),
+                new LinqTestInput("Filter on false bool?", b => getQuery(b).Where(doc => zeroDouble.HasValue && doc.BooleanField == falseBool)),
             };
             this.ExecuteTestSuite(inputs);
         }
