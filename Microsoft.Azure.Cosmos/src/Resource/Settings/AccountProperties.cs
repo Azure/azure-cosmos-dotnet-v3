@@ -242,27 +242,27 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly object lockObject = new object();
 
-        private string accountNameWithCloudInformation;
+        private string accountNameWithCloudInfoSnapshot;
         private string prevId;
 
         /// <summary>
         /// if there is cached value AND there is no change in the account id.
         /// Ideally, it should not change but it has internal setter that's why this check is required.
         /// </summary>
-        /// <returns>accountNameWithCloudInformation</returns>
+        /// <returns>accountNameWithCloudInfoSnapshot</returns>
         private string AppendAccountAndCloudInfo()
         {
-            if (!string.IsNullOrEmpty(this.accountNameWithCloudInformation) && this.prevId == this.Id)
+            if (!string.IsNullOrEmpty(this.accountNameWithCloudInfoSnapshot) && this.prevId == this.Id)
             {
-                return this.accountNameWithCloudInformation;
+                return this.accountNameWithCloudInfoSnapshot;
             }
 
             lock (this.lockObject)
             {
                 this.prevId = this.Id;
-                this.accountNameWithCloudInformation = $"{this.Id}({VmMetadataApiHandler.GetCloudInformation()})";
+                this.accountNameWithCloudInfoSnapshot = $"{this.Id}({VmMetadataApiHandler.GetCloudInformation()})";
 
-                return this.accountNameWithCloudInformation;
+                return this.accountNameWithCloudInfoSnapshot;
             }
         }
        
