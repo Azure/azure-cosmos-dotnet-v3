@@ -238,9 +238,7 @@ namespace Microsoft.Azure.Cosmos
         }
         
         [JsonIgnore]
-        internal string AccountNameWithCloudInformation => this.AppendAccountAndCloudInfo();
-
-        private readonly object lockObject = new object();
+        internal Lazy<string> AccountNameWithCloudInformation => new Lazy<string>(this.AppendAccountAndCloudInfo);
 
         private string accountNameWithCloudInformation;
         private string prevId;
@@ -257,13 +255,10 @@ namespace Microsoft.Azure.Cosmos
                 return this.accountNameWithCloudInformation;
             }
 
-            lock (this.lockObject)
-            {
-                this.prevId = this.Id;
-                this.accountNameWithCloudInformation = $"{this.Id}({VmMetadataApiHandler.GetCloudInformation()})";
+            this.prevId = this.Id;
+            this.accountNameWithCloudInformation = $"{this.Id}({VmMetadataApiHandler.GetCloudInformation()})";
 
-                return this.accountNameWithCloudInformation;
-            }
+            return this.accountNameWithCloudInformation;
         }
        
         /// <summary>
