@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Text;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
@@ -22,13 +21,15 @@ namespace Microsoft.Azure.Cosmos
         private Collection<AccountRegion> writeRegions;
 
         internal readonly Lazy<IDictionary<string, object>> QueryEngineConfigurationInternal;
-
+        internal readonly Lazy<string> AccountNameWithCloudInformation;
+            
         /// <summary>
         /// Initializes a new instance of the <see cref="AccountProperties"/> class.
         /// </summary>
         internal AccountProperties()
         {
             this.QueryEngineConfigurationInternal = new Lazy<IDictionary<string, object>>(() => this.QueryStringToDictConverter());
+            this.AccountNameWithCloudInformation = new Lazy<string>(() => this.AppendAccountAndCloudInfo());
         }
 
         /// <summary>
@@ -237,28 +238,13 @@ namespace Microsoft.Azure.Cosmos
             }
         }
         
-        [JsonIgnore]
-        internal Lazy<string> AccountNameWithCloudInformation => new Lazy<string>(this.AppendAccountAndCloudInfo);
-
-        private string accountNameWithCloudInformation;
-        private string prevId;
-
         /// <summary>
-        /// if there is cached value AND there is no change in the account id.
-        /// Ideally, it should not change but it has internal setter that's why this check is required.
+        /// Append AccountId and cloud info
         /// </summary>
         /// <returns>accountNameWithCloudInformation</returns>
         private string AppendAccountAndCloudInfo()
         {
-            if (!string.IsNullOrEmpty(this.accountNameWithCloudInformation) && this.prevId == this.Id)
-            {
-                return this.accountNameWithCloudInformation;
-            }
-
-            this.prevId = this.Id;
-            this.accountNameWithCloudInformation = $"{this.Id}({VmMetadataApiHandler.GetCloudInformation()})";
-
-            return this.accountNameWithCloudInformation;
+            return $"{this.Id}({VmMetadataApiHandler.GetCloudInformation()})";
         }
        
         /// <summary>
