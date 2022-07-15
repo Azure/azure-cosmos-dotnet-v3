@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Net;
     using System.Net.Http;
     using System.Text;
     using Microsoft.Azure.Cosmos.Handler;
@@ -32,8 +33,9 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private IReadOnlyList<StoreResponseStatistics> shallowCopyOfStoreResponseStatistics = null;
         private IReadOnlyList<HttpResponseStatistics> shallowCopyOfHttpResponseStatistics = null;
         private SystemUsageHistory systemUsageHistory = null;
+        public TraceSummary TraceSummary = null;
 
-        public ClientSideRequestStatisticsTraceDatum(DateTime startTime)
+        public ClientSideRequestStatisticsTraceDatum(DateTime startTime, TraceSummary summary)
         {
             this.RequestStartTimeUtc = startTime;
             this.RequestEndTimeUtc = null;
@@ -43,6 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.FailedReplicas = new HashSet<TransportAddressUri>();
             this.RegionsContacted = new HashSet<(string, Uri)>();
             this.httpResponseStatistics = new List<HttpResponseStatistics>();
+            this.TraceSummary = summary;
         }
 
         public DateTime RequestStartTimeUtc { get; }
@@ -263,6 +266,17 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                     this.RegionsContacted.Add((regionName, locationEndpoint));
                 }
 
+                if (responseStatistics.StoreResult != null && !((HttpStatusCode)responseStatistics.StoreResult.StatusCode).IsSuccess()
+                    && !(responseStatistics.StoreResult.StatusCode == StatusCodes.NotFound && responseStatistics.StoreResult.SubStatusCode == SubStatusCodes.Unknown)
+                    && !(responseStatistics.StoreResult.StatusCode == StatusCodes.Conflict && responseStatistics.StoreResult.SubStatusCode == SubStatusCodes.Unknown)
+                    && !(responseStatistics.StoreResult.StatusCode == StatusCodes.PreconditionFailed && responseStatistics.StoreResult.SubStatusCode == SubStatusCodes.Unknown))
+                {
+                    if (this.TraceSummary != null)
+                    {
+                        this.TraceSummary.IncrementFailedCount();
+                    }
+                }
+                
                 // Reset the shallow copy
                 this.shallowCopyOfStoreResponseStatistics = null;
                 this.storeResponseStatistics.Add(responseStatistics);
