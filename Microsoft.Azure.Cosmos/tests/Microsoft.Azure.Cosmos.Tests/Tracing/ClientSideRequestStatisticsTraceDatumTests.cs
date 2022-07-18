@@ -67,7 +67,7 @@
         [TestMethod]
         public void DuplicateContactedReplicasTests()
         {
-            ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+            ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary());
             clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress1.com")));
             clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
             clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
@@ -108,7 +108,7 @@
         [TestMethod]
         public void VerifyIClientSideRequestStatisticsNullTests()
         {
-            IClientSideRequestStatistics clientSideRequestStatistics = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+            IClientSideRequestStatistics clientSideRequestStatistics = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new Cosmos.Tracing.TraceSummary());
             Assert.IsNotNull(clientSideRequestStatistics.ContactedReplicas);
             Assert.IsNotNull(clientSideRequestStatistics.FailedReplicas);
             Assert.IsNotNull(clientSideRequestStatistics.RegionsContacted);
@@ -120,7 +120,7 @@
         {
             using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new Cosmos.Tracing.TraceSummary());
 
             Task backgroundTask = Task.Run(() => backgroundUpdater(datum, cancellationTokenSource.Token));
 
