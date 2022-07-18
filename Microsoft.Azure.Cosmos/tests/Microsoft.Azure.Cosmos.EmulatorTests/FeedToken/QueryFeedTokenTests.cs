@@ -159,6 +159,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         using (ResponseMessage responseMessage =
                             await feedIterator.ReadNextAsync(this.cancellationToken))
                         {
+                            Assert.IsTrue(responseMessage.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
                             if (responseMessage.IsSuccessStatusCode)
                             {
                                 using (StreamReader reader = new StreamReader(responseMessage.Content))
@@ -183,6 +184,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         using (ResponseMessage responseMessage =
                             await feedIterator.ReadNextAsync(this.cancellationToken))
                         {
+                            Assert.IsTrue(responseMessage.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
                             if (responseMessage.IsSuccessStatusCode)
                             {
                                 using (StreamReader reader = new StreamReader(responseMessage.Content))
@@ -252,6 +254,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     while (feedIterator.HasMoreResults)
                     {
                         FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
+                        Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
                         foreach (ToDoActivity toDoActivity in response)
                         {
                             results.Add(toDoActivity.id);
@@ -265,6 +268,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     while (feedIterator.HasMoreResults)
                     {
                         FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
+                        Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
                         foreach (ToDoActivity toDoActivity in response)
                         {
                             results.Add(toDoActivity.id);
