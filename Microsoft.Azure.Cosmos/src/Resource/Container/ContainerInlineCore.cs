@@ -525,7 +525,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             return new FeedIteratorInlineCore(
-                base.GetItemQueryStreamIterator(feedRange, queryDefinition, continuationToken, requestOptions);
+                base.GetItemQueryStreamIterator(feedRange, queryDefinition, continuationToken, requestOptions),
                 this.ClientContext);
         }
 
