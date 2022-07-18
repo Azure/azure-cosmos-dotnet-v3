@@ -535,7 +535,9 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return base.GetItemQueryIterator<T>(feedRange, queryDefinition, continuationToken, requestOptions);
+            return new FeedIteratorInlineCore<T>(
+                base.GetItemQueryIterator<T>(feedRange, queryDefinition, continuationToken, requestOptions),
+                this.ClientContext);
         }
 
         public override FeedIteratorInternal GetReadFeedIterator(QueryDefinition queryDefinition, QueryRequestOptions queryRequestOptions, string resourceLink, Documents.ResourceType resourceType, string continuationToken, int pageSize)
