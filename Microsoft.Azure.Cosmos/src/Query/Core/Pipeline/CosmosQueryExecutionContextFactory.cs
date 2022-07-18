@@ -131,28 +131,48 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     createQueryPipelineTrace,
                     cancellationToken);
                 cosmosQueryContext.ContainerResourceId = containerQueryProperties.ResourceId;
-
-                List<Documents.PartitionKeyRange> targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
-                   cosmosQueryContext.QueryClient,
-                   cosmosQueryContext.ResourceLink,
-                   queryPlanFromContinuationToken,
-                   containerQueryProperties,
-                   inputParameters.Properties,
-                   inputParameters.InitialFeedRange,
-                   trace);
-
-                // If we have enough information to confirm that the query is single logical/physical partition, then short circuit and send straight to Backend
+                
                 inputParameters.SqlQuerySpec.PassThrough = IsPassThroughCandidate(inputParameters, queryPlanFromContinuationToken);
 
                 if (inputParameters.SqlQuerySpec.PassThrough)
                 {
-                    return CosmosQueryExecutionContextFactory.TryExecutePassthroughExecutionContext(
-                       documentContainer,
-                       inputParameters,
-                       targetRanges[0],
-                       cancellationToken);
-                }
+                    List<Documents.PartitionKeyRange> targetRanges = new List<Documents.PartitionKeyRange>();
 
+                    if (queryPlanFromContinuationToken != null)
+                    {
+                        targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
+                           cosmosQueryContext.QueryClient,
+                           cosmosQueryContext.ResourceLink,
+                           queryPlanFromContinuationToken,
+                           containerQueryProperties,
+                           inputParameters.Properties,
+                           inputParameters.InitialFeedRange,
+                           trace);
+                    }
+                    else
+                    {
+                        Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
+                        targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
+                            cosmosQueryContext.ResourceLink,
+                            containerQueryProperties.ResourceId,
+                            inputParameters.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition),
+                            forceRefresh: false,
+                            createQueryPipelineTrace);
+                    }
+
+                    TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
+                    if (responseStats != null)
+                    {
+                        responseStats.PipelineType = TestInjections.PipelineType.TryExecute;
+                    }
+
+                    return CosmosQueryExecutionContextFactory.TryExecutePassthroughExecutionContext(
+                              documentContainer,
+                              inputParameters,
+                              targetRanges[0],
+                              cancellationToken);
+                } 
+                
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
                 if (inputParameters.ForcePassthrough)
                 {
@@ -212,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                                 // Only thing that matters is that we target the correct range.
                                 Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
-                                targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
+                                List<Documents.PartitionKeyRange> targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
                                     cosmosQueryContext.ResourceLink,
                                     containerQueryProperties.ResourceId,
                                     inputParameters.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition),
@@ -305,12 +325,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             bool createPassthroughQuery = streamingSinglePartitionQuery || streamingCrossContinuationQuery;
             
             TryCatch<IQueryPipelineStage> tryCreatePipelineStage;
-
+            
             // After getting the Query Plan if we find out that the query is single logical/physical partition, then short circuit and send straight to Backend
             inputParameters.SqlQuerySpec.PassThrough = IsPassThroughCandidate(inputParameters, partitionedQueryExecutionInfo);
 
             if (inputParameters.SqlQuerySpec.PassThrough)
             {
+                TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
+                if (responseStats != null)
+                {
+                    responseStats.PipelineType = TestInjections.PipelineType.TryExecute;
+                }
+
                 //TODO: Add new pass through pipeline code here 
                 tryCreatePipelineStage = CosmosQueryExecutionContextFactory.TryExecutePassthroughExecutionContext(
                    documentContainer,
@@ -318,7 +344,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                    targetRanges[0],
                    cancellationToken);
             }
-            else if (createPassthroughQuery)
+            else if (createPassthroughQuery) 
             {
                 TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
                 if (responseStats != null)
@@ -376,6 +402,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             return tryCreatePipelineStage;
         }
+        
         private static TryCatch<IQueryPipelineStage> TryExecutePassthroughExecutionContext(
             DocumentContainer documentContainer,
             InputParameters inputParameters,
@@ -393,7 +420,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 cancellationToken: cancellationToken,
                 continuationToken: inputParameters.InitialUserContinuationToken);
         }
-
+        
         private static TryCatch<IQueryPipelineStage> TryCreatePassthroughQueryExecutionContext(
             DocumentContainer documentContainer,
             InputParameters inputParameters,
