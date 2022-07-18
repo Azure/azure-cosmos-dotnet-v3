@@ -126,7 +126,8 @@
                 isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
                 hasLogicalPartitionKey: false,
-                allowDCount: true);
+                allowDCount: true,
+                useSystemPrefix: false);
 
             return tryGetQueryPlan.Result;
         }
@@ -150,6 +151,7 @@
                 resourceLink: resourceLink,
                 isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
+                useSystemPrefix: false,
                 correlatedActivityId: Guid.NewGuid());
 
             //  gets input parameters
@@ -337,7 +339,7 @@
             throw new NotImplementedException();
         }
 
-        public override Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(SqlQuerySpec sqlQuerySpec, ResourceType resourceType, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, CancellationToken cancellationToken)
+        public override Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(SqlQuerySpec sqlQuerySpec, ResourceType resourceType, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, bool useSystemPrefix, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

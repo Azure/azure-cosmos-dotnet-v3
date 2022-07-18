@@ -814,7 +814,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
                 hasLogicalPartitionKey: false,
-                allowDCount: true);
+                allowDCount: true,
+                useSystemPrefix: false);
 
             info.ThrowIfFailed();
             return info.Result.QueryInfo;
