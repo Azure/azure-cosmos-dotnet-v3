@@ -46,6 +46,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             bool allowNonValueAggregateQuery,
             bool hasLogicalPartitionKey,
             bool allowDCount,
+            bool useSystemPrefix,
             CancellationToken cancellationToken);
 
         public abstract Task<TryCatch<QueryPage>> ExecuteItemQueryAsync(
