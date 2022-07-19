@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a instance for fixed throughput
         /// </summary>
-        public ThroughputProperties(OfferContentProperties offerContentProperties)
+        internal ThroughputProperties(OfferContentProperties offerContentProperties)
         {
             this.OfferVersion = Constants.Offers.OfferVersion_V2;
             this.Content = offerContentProperties;

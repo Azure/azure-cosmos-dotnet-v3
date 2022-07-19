@@ -15,11 +15,11 @@ namespace Microsoft.Azure.Cosmos
         /// Default constructor for serialization
         /// </summary>
         [JsonConstructor]
-        private OfferAutoscaleAutoUpgradeProperties()
+        public OfferAutoscaleAutoUpgradeProperties()
         {
         }
 
-        internal OfferAutoscaleAutoUpgradeProperties(int incrementPercent)
+        public OfferAutoscaleAutoUpgradeProperties(int incrementPercent)
         {
             this.ThroughputProperties = new AutoscaleThroughputProperties(incrementPercent);
         }
