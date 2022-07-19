@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         /// Default constructor for serialization
         /// </summary>
         [JsonConstructor]
-        public ThroughputProperties()
+        internal ThroughputProperties()
         {
         }
 

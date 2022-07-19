@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
         /// Default constructor for serialization
         /// </summary>
         [JsonConstructor]
-        public OfferContentProperties()
+        internal OfferContentProperties()
         {
         }
 
