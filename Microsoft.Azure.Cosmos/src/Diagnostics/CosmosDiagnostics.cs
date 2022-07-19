@@ -24,6 +24,26 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// This represents the start time of the request.
+        /// </summary>
+        /// <returns>This returns the start time of the request.</returns>
+        public virtual DateTime? GetStartTimeUtc()
+        {
+            // Default implementation avoids breaking change for users upgrading.
+            throw new NotImplementedException($"{nameof(CosmosDiagnostics)}.{nameof(GetStartTimeUtc)})");
+        }
+
+        /// <summary>
+        ///  This represents the count of failed requests.
+        /// </summary>
+        /// <returns>The count of failed requests with cosmos service.</returns>
+        public virtual int GetFailedRequestCount()
+        {
+            // Default implementation avoids breaking change for users upgrading.
+            throw new NotImplementedException($"{nameof(CosmosDiagnostics)}.{nameof(GetFailedRequestCount)}");
+        }
+
+        /// <summary>
         /// Gets the string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.
         /// </summary>
         /// <returns>The string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.</returns>

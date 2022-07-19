@@ -4,13 +4,16 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
 {
-    using System;
-    using System.Collections.Generic;
     using System.Net;
-    using System.Text;
 
     internal class OpenTelemetryAttributes
     {
+        internal OpenTelemetryAttributes(RequestMessage requestMessage)
+        {
+            this.RequestContentLength = requestMessage?.Headers?.ContentLength ?? "NA";
+            this.ContainerName = requestMessage?.ContainerId;
+        }
+
         /// <summary>
         /// StatusCode
         /// </summary>
