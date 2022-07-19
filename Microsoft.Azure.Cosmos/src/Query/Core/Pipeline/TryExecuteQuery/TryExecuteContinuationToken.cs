@@ -20,85 +20,32 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
     internal sealed class TryExecuteContinuationToken : IPartitionedToken
     {
         public TryExecuteContinuationToken(string token, Range<string> range)
+            : this(new ParallelContinuationToken(token, range))
         {
-            this.Token = token;
-            this.Range = range ?? throw new ArgumentNullException(nameof(range));
         }
 
-        public string Token { get; }
+        public TryExecuteContinuationToken(ParallelContinuationToken token)
+        {
+            this.Token = token;
+        }
+
+        public ParallelContinuationToken Token { get; }
 
         public Range<string> Range { get; }
 
         public static CosmosElement ToCosmosElement(TryExecuteContinuationToken continuationToken)
         {
-            CosmosElement token = continuationToken.Token == null ? (CosmosElement)CosmosNull.Create() : (CosmosElement)CosmosString.Create(continuationToken.Token);
-            return CosmosObject.Create(
-                new Dictionary<string, CosmosElement>()
-                {
-                    { CompositeContinuationToken.PropertyNames.Token, token },
-                    {
-                        CompositeContinuationToken.PropertyNames.Range,
-                        CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { CompositeContinuationToken.PropertyNames.Min, CosmosString.Create(continuationToken.Range.Min) },
-                                { CompositeContinuationToken.PropertyNames.Max, CosmosString.Create(continuationToken.Range.Max) }
-                            })
-                    },
-                });
+            CosmosElement inner = ParallelContinuationToken.ToCosmosElement(continuationToken.Token);
+            return inner;
         }
 
         public static TryCatch<TryExecuteContinuationToken> TryCreateFromCosmosElement(CosmosElement cosmosElement)
         {
-            if (!(cosmosElement is CosmosObject cosmosObject))
-            {
-                return TryCatch<TryExecuteContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(TryExecuteContinuationToken)} is not an object: {cosmosElement}"));
-            }
+            TryCatch<ParallelContinuationToken> inner = ParallelContinuationToken.TryCreateFromCosmosElement(cosmosElement);
 
-            if (!cosmosObject.TryGetValue(CompositeContinuationToken.PropertyNames.Token, out CosmosElement rawToken))
-            {
-                return TryCatch<TryExecuteContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(TryExecuteContinuationToken)} is missing field: '{CompositeContinuationToken.PropertyNames.Token}': {cosmosElement}"));
-            }
-
-            string token;
-            if (rawToken is CosmosString rawTokenString)
-            {
-                token = rawTokenString.Value;
-            }
-            else
-            {
-                token = null;
-            }
-
-            if (!cosmosObject.TryGetValue(CompositeContinuationToken.PropertyNames.Range, out CosmosObject rawRange))
-            {
-                return TryCatch<TryExecuteContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(TryExecuteContinuationToken)} is missing field: '{CompositeContinuationToken.PropertyNames.Range}': {cosmosElement}"));
-            }
-
-            if (!rawRange.TryGetValue(CompositeContinuationToken.PropertyNames.Min, out CosmosString rawMin))
-            {
-                return TryCatch<TryExecuteContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(TryExecuteContinuationToken)} is missing field: '{CompositeContinuationToken.PropertyNames.Min}': {cosmosElement}"));
-            }
-
-            string min = rawMin.Value;
-
-            if (!rawRange.TryGetValue(CompositeContinuationToken.PropertyNames.Max, out CosmosString rawMax))
-            {
-                return TryCatch<TryExecuteContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(TryExecuteContinuationToken)} is missing field: '{CompositeContinuationToken.PropertyNames.Max}': {cosmosElement}"));
-            }
-
-            string max = rawMax.Value;
-
-            Range<string> range = new Documents.Routing.Range<string>(min, max, isMinInclusive: true, isMaxInclusive: false);
-
-            TryExecuteContinuationToken continuationToken = new TryExecuteContinuationToken(token, range);
-
-            return TryCatch<TryExecuteContinuationToken>.FromResult(continuationToken);
+            return inner.Succeeded ? 
+                TryCatch<TryExecuteContinuationToken>.FromResult(new TryExecuteContinuationToken(inner.Result)) :
+                TryCatch<TryExecuteContinuationToken>.FromException(inner.Exception);
         }
     }
 }
