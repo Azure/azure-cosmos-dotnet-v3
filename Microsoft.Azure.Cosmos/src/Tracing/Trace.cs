@@ -62,38 +62,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public IReadOnlyDictionary<string, object> Data => this.data.IsValueCreated ? this.data.Value : Trace.EmptyDictionary;
 
-        public IReadOnlyList<(string, Uri)> RegionsContacted 
-        { 
-            get
-            {
-                lock (this.regionContactedInternal)
-                {
-                    return this.regionContactedInternal.ToList();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Update region contacted information to this node
-        /// </summary>
-        /// <param name="traceDatum"></param>
-        public void UpdateRegionContacted(TraceDatum traceDatum)
-        {
-            if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
-            {
-                if (clientSideRequestStatisticsTraceDatum.RegionsContacted == null || 
-                            clientSideRequestStatisticsTraceDatum.RegionsContacted.Count == 0)
-                {
-                    return;
-                }
-               
-                lock (this.regionContactedInternal)
-                {
-                    this.regionContactedInternal.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
-                }
-            }
-        }
-
         public void Dispose()
         {
             this.stopwatch.Stop();
@@ -163,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public void AddDatum(string key, TraceDatum traceDatum)
         {
             this.data.Value.Add(key, traceDatum);
-            this.UpdateRegionContacted(traceDatum);
+            this.Summary.UpdateRegionContacted(traceDatum);
         }
 
         public void AddDatum(string key, object value)
