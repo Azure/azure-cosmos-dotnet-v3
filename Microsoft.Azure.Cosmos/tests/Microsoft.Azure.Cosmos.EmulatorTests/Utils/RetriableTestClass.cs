@@ -47,10 +47,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.testMethod = testMethod;
         }
 
-        public override VisualStudio.TestTools.UnitTesting.TestResult[] Execute(VisualStudio.TestTools.UnitTesting.ITestMethod testMethod)
-        {
-            return this.ExecuteWithRetry(this.maxRetry, testMethod);
-        }
+        public override VisualStudio.TestTools.UnitTesting.TestResult[] Execute(VisualStudio.TestTools.UnitTesting.ITestMethod testMethod) => this.ExecuteWithRetry(this.maxRetry, testMethod);
 
         private VisualStudio.TestTools.UnitTesting.TestResult[] ExecuteWithRetry(
             int retryCount,

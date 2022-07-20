@@ -90,13 +90,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <param name="locationEndpoint"></param>
         public void AddRegionContacted(string regionName, Uri locationEndpoint)
         {
-            if (this.regionContactedInternal == null)
-            {
-                this.regionContactedInternal = new HashSet<(string, Uri)>();
-            }
             lock (this.regionContactedInternal)
             {
-                this.regionContactedInternal.Add((Convert.ToString(regionName), locationEndpoint));
+                this.regionContactedInternal.Add((regionName, locationEndpoint));
             }
         }
 

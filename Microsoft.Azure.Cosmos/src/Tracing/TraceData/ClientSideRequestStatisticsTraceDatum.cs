@@ -266,14 +266,6 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                     this.TraceSummary.AddRegionContacted(regionName, locationEndpoint);
                 }
 
-                if (responseStatistics.StoreResult != null && !((HttpStatusCode)responseStatistics.StoreResult.StatusCode).IsSuccess())
-                {
-                    if (this.TraceSummary != null)
-                    {
-                        this.TraceSummary.IncrementFailedCount();
-                    }
-                }
-
                 if (responseStatistics.StoreResult != null && !((HttpStatusCode)responseStatistics.StoreResult.StatusCode).IsSuccess()
                     && !(responseStatistics.StoreResult.StatusCode == StatusCodes.NotFound && responseStatistics.StoreResult.SubStatusCode == SubStatusCodes.Unknown)
                     && !(responseStatistics.StoreResult.StatusCode == StatusCodes.Conflict && responseStatistics.StoreResult.SubStatusCode == SubStatusCodes.Unknown)
