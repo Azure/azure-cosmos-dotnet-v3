@@ -112,7 +112,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
             bool hasLogicalPartitionKey,
-            bool allowDCount)
+            bool allowDCount,
+            bool useSystemPrefix)
         {
             TryCatch<PartitionedQueryExecutionInfoInternal> tryGetInternalQueryInfo = this.TryGetPartitionedQueryExecutionInfoInternal(
                 querySpecJsonString: querySpecJsonString,
@@ -121,7 +122,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
-                allowDCount: allowDCount);
+                allowDCount: allowDCount,
+                useSystemPrefix: useSystemPrefix);
             if (!tryGetInternalQueryInfo.Succeeded)
             {
                 return TryCatch<PartitionedQueryExecutionInfo>.FromException(tryGetInternalQueryInfo.Exception);
@@ -161,7 +163,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
             bool hasLogicalPartitionKey,
-            bool allowDCount)
+            bool allowDCount,
+            bool useSystemPrefix)
         {
             if (querySpecJsonString == null || partitionKeyDefinition == null)
             {
@@ -192,6 +195,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             }
 
             PartitionKind partitionKind = partitionKeyDefinition.Kind;
+            GeospatialType defaultGeopatialType = GeospatialType.Geography;
 
             this.Initialize();
 
@@ -201,20 +205,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             unsafe
             {
+                ServiceInteropWrapper.PartitionKeyRangesApiOptions partitionKeyRangesApiOptions =
+                    new ServiceInteropWrapper.PartitionKeyRangesApiOptions()
+                    {
+                        bAllowDCount = Convert.ToInt32(allowDCount),
+                        bAllowNonValueAggregateQuery = Convert.ToInt32(allowNonValueAggregateQuery),
+                        bHasLogicalPartitionKey = Convert.ToInt32(hasLogicalPartitionKey),
+                        bIsContinuationExpected = Convert.ToInt32(isContinuationExpected),
+                        bRequireFormattableOrderByQuery = Convert.ToInt32(requireFormattableOrderByQuery),
+                        bUseSystemPrefix = Convert.ToInt32(useSystemPrefix),
+                        eGeospatialType = Convert.ToInt32(defaultGeopatialType),
+                        ePartitionKind = Convert.ToInt32(partitionKind)
+                    };
+
                 fixed (byte* bytePtr = buffer)
                 {
-                    errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery2(
+                    errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery3(
                         this.serviceProvider,
                         querySpecJsonString,
-                        requireFormattableOrderByQuery,
-                        isContinuationExpected,
-                        allowNonValueAggregateQuery,
-                        hasLogicalPartitionKey,
-                        allowDCount,
+                        partitionKeyRangesApiOptions,
                         allParts,
                         partsLengths,
                         (uint)partitionKeyDefinition.Paths.Count,
-                        partitionKind,
                         new IntPtr(bytePtr),
                         (uint)buffer.Length,
                         out serializedQueryExecutionInfoResultLength);
@@ -228,18 +240,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
                         fixed (byte* bytePtr2 = buffer)
                         {
-                            errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery2(
+                            errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery3(
                                 this.serviceProvider,
                                 querySpecJsonString,
-                                requireFormattableOrderByQuery,
-                                isContinuationExpected,
-                                allowNonValueAggregateQuery,
-                                hasLogicalPartitionKey, // has logical partition key
-                                allowDCount,
+                                partitionKeyRangesApiOptions,
                                 allParts,
                                 partsLengths,
                                 (uint)partitionKeyDefinition.Paths.Count,
-                                partitionKind,
                                 new IntPtr(bytePtr2),
                                 (uint)buffer.Length,
                                 out serializedQueryExecutionInfoResultLength);

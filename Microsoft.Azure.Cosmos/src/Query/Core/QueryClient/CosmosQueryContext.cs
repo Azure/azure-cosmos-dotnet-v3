@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         public virtual string ResourceLink { get; }
         public virtual string ContainerResourceId { get; set; }
         public virtual Guid CorrelatedActivityId { get; }
+        public virtual bool UseSystemPrefix { get; }
 
         internal CosmosQueryContext()
         {
@@ -38,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             Guid correlatedActivityId,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
+            bool useSystemPrefix,
             string containerResourceId = null)
         {
             this.OperationTypeEnum = operationType;
@@ -48,6 +50,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             this.ContainerResourceId = containerResourceId;
             this.IsContinuationExpected = isContinuationExpected;
             this.AllowNonValueAggregateQuery = allowNonValueAggregateQuery;
+            this.UseSystemPrefix = useSystemPrefix;
             this.CorrelatedActivityId = (correlatedActivityId == Guid.Empty) ? throw new ArgumentOutOfRangeException(nameof(correlatedActivityId)) : correlatedActivityId;
         }
 
