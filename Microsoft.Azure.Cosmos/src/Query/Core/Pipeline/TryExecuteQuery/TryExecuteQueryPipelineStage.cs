@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
             {
                 foreach (KeyValuePair<FeedRangeEpk, TryExecuteContinuationToken> kvp in rangeToInitalize)
                 {
-                    feedRangeState = new FeedRangeState<QueryState>(kvp.Key, kvp.Value?.Token != null ? new QueryState(CosmosString.Create(kvp.Value.Token.ToString())) : null);
+                    feedRangeState = new FeedRangeState<QueryState>(kvp.Key, kvp.Value?.Token != null ? new QueryState(CosmosString.Create(kvp.Value.Token.Token)) : null);
                 }
             }
 

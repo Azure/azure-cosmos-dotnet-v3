@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
 
         public ParallelContinuationToken Token { get; }
 
-        public Range<string> Range { get; }
+        public Range<string> Range => this.Token.Range;
 
         public static CosmosElement ToCosmosElement(TryExecuteContinuationToken continuationToken)
         {
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
         {
             TryCatch<ParallelContinuationToken> inner = ParallelContinuationToken.TryCreateFromCosmosElement(cosmosElement);
 
-            return inner.Succeeded ? 
+            return inner.Succeeded ?
                 TryCatch<TryExecuteContinuationToken>.FromResult(new TryExecuteContinuationToken(inner.Result)) :
                 TryCatch<TryExecuteContinuationToken>.FromException(inner.Exception);
         }

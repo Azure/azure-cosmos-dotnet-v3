@@ -124,7 +124,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     }
                 }
 
+                PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
                 CosmosQueryClient cosmosQueryClient = cosmosQueryContext.QueryClient;
+
                 ContainerQueryProperties containerQueryProperties = await cosmosQueryClient.GetCachedContainerQueryPropertiesAsync(
                     cosmosQueryContext.ResourceLink,
                     inputParameters.PartitionKey,
@@ -172,9 +174,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                               targetRanges[0],
                               cancellationToken);
                 } 
-                
-                PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
-                if (inputParameters.ForcePassthrough)
+                else if (inputParameters.ForcePassthrough)
                 {
                     partitionedQueryExecutionInfo = new PartitionedQueryExecutionInfo()
                     {
@@ -202,52 +202,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 }
                 else
                 {
-                    // If the query would go to gateway, but we have a partition key,
-                    // then try seeing if we can execute as a passthrough using client side only logic.
-                    // This is to short circuit the need to go to the gateway to get the query plan.
-                    if (cosmosQueryContext.QueryClient.ByPassQueryParsing()
-                        && inputParameters.PartitionKey.HasValue)
-                    {
-                        bool parsed;
-                        SqlQuery sqlQuery;
-                        using (ITrace queryParseTrace = createQueryPipelineTrace.StartChild("Parse Query", TraceComponent.Query, Tracing.TraceLevel.Info))
-                        {
-                            parsed = SqlQueryParser.TryParse(inputParameters.SqlQuerySpec.QueryText, out sqlQuery);
-                        }
-
-                        if (parsed)
-                        {
-                            bool hasDistinct = sqlQuery.SelectClause.HasDistinct;
-                            bool hasGroupBy = sqlQuery.GroupByClause != default;
-                            bool hasAggregates = AggregateProjectionDetector.HasAggregate(sqlQuery.SelectClause.SelectSpec);
-                            bool createPassthroughQuery = !hasAggregates && !hasDistinct && !hasGroupBy;
-
-                            if (createPassthroughQuery)
-                            {
-                                TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
-                                if (responseStats != null)
-                                {
-                                    responseStats.PipelineType = TestInjections.PipelineType.Passthrough;
-                                }
-
-                                // Only thing that matters is that we target the correct range.
-                                Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
-                                List<Documents.PartitionKeyRange> targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
-                                    cosmosQueryContext.ResourceLink,
-                                    containerQueryProperties.ResourceId,
-                                    inputParameters.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition),
-                                    forceRefresh: false,
-                                    createQueryPipelineTrace);
-
-                                return CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContext(
-                                    documentContainer,
-                                    inputParameters,
-                                    targetRanges,
-                                    cancellationToken);
-                            }
-                        }
-                    }
-
                     if (cosmosQueryContext.QueryClient.ByPassQueryParsing())
                     {
                         // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
