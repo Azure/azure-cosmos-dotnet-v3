@@ -375,6 +375,7 @@
 
                 await processor.StopAsync();
 
+                testListener.ResetAttributes();
                 startLineNumber = GetLineNumber();
                 ChangeFeedEstimator estimator = container.GetChangeFeedEstimator(
                     "test",
