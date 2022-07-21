@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 return new Lazy<string>(() =>
                     {
-                        IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText);
+                        IndexUtilizationInfo.TryCreateFromDelimitedString(responseMessageHeaders.IndexUtilizationText, out IndexUtilizationInfo parsedIndexUtilizationInfo);
                         StringBuilder stringBuilder = new StringBuilder();
                         IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
                         indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);
