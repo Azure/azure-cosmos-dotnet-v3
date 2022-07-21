@@ -10,23 +10,23 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
-    internal sealed class OfferContentProperties
+    internal class OfferContentProperties
     {
         /// <summary>
         /// Default constructor for serialization
         /// </summary>
         [JsonConstructor]
-        private OfferContentProperties()
+        internal OfferContentProperties()
         {
         }
 
-        private OfferContentProperties(int manualThroughput)
+        internal OfferContentProperties(int manualThroughput)
         {
             this.OfferThroughput = manualThroughput;
             this.OfferAutoscaleSettings = null;
         }
 
-        private OfferContentProperties(OfferAutoscaleProperties autoscaleProperties)
+        internal OfferContentProperties(OfferAutoscaleProperties autoscaleProperties)
         {
             this.OfferThroughput = null;
             this.OfferAutoscaleSettings = autoscaleProperties ?? throw new ArgumentNullException(nameof(autoscaleProperties));
