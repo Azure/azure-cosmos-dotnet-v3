@@ -7,10 +7,13 @@
     using System.Globalization;
     using System.Linq;
     using System.Net;
+    using System.Security.Policy;
     using System.Text;
     using System.Threading.Tasks;
+    using Castle.Components.DictionaryAdapter;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Routing;
@@ -28,7 +31,7 @@
         [TestMethod]
         public async Task TestTryExecuteSinglePartitionWithContinuationsAsync()
         {
-            int numberOfDocuments = 10;
+            int numberOfDocuments = 8;
             string partitionKey = "key";
             string numberField = "numberField";
             string nullField = "nullField";
@@ -52,14 +55,15 @@
             };
 
             await this.CreateIngestQueryDeleteAsync<SinglePartitionWithContinuationsArgs>(
-                ConnectionModes.Direct,
-                CollectionTypes.SinglePartition,
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
-                this.TestTryExecuteSinglePartitionWithContinuationsHelper,
+                TestTryExecuteSinglePartitionWithContinuationsHelper,
                 args,
                 "/" + partitionKey);
         }
-        private async Task TestTryExecuteSinglePartitionWithContinuationsHelper(
+
+        private static async Task TestTryExecuteSinglePartitionWithContinuationsHelper(
             Container container,
             IReadOnlyList<CosmosObject> documents,
             SinglePartitionWithContinuationsArgs args)
@@ -67,7 +71,7 @@
             int documentCount = args.NumberOfDocuments;
             string partitionKey = args.PartitionKey;
             string numberField = args.NumberField;
-            string nullField = args.NullField;
+            string nullField = args.NullField;            
 
             QueryRequestOptions feedOptions = new QueryRequestOptions
             {
@@ -79,60 +83,36 @@
                                         responseStats: new TestInjections.ResponseStats())
             };
 
-            // All the queries below will be TryExecute queries because they have a single partition key provided
+            // check if bad continuation queries and syntax error queries are handled by pipeline
+            IDictionary<string, string> invalidQueries = new Dictionary<string, string>
+            {
+                { "SELECT * FROM t", Guid.NewGuid().ToString() },
+                { "SELECT * FROM c", "'top':11" },
+                { "SELECT TOP 10 * FOM r", null },
+                { "this is not a valid query", null },
+            };
 
-            // check if queries fail if bad continuation token is passed
-            #region BadContinuations
-            try
+            foreach (KeyValuePair<string, string> entry in invalidQueries)
             {
-                await container.GetItemQueryIterator<Document>(
-                    "SELECT * FROM t",
-                    continuationToken: Guid.NewGuid().ToString(),
-                    requestOptions: feedOptions).ReadNextAsync();
+                try
+                {
+                    await container.GetItemQueryIterator<Document>(
+                        entry.Key,
+                        continuationToken: entry.Value,
+                        requestOptions: feedOptions).ReadNextAsync();
 
-                Assert.Fail("Expect exception");
+                    Assert.Fail("Expect exception");
+                }
+                catch (CosmosException dce)
+                {
+                    Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
+                }
+                catch (AggregateException aggrEx)
+                {
+                    Assert.Fail(aggrEx.ToString());
+                }
             }
-            catch (CosmosException dce)
-            {
-                Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
-            }
-            catch (AggregateException aggrEx)
-            {
-                Assert.Fail(aggrEx.ToString());
-            }
-
-            try
-            {
-                await container.GetItemQueryIterator<Document>(
-                    "SELECT TOP 10 * FROM r",
-                    continuationToken: "{'top':11}",
-                    requestOptions: feedOptions).ReadNextAsync();
-
-                Assert.Fail("Expect exception");
-            }
-            catch (CosmosException dce)
-            {
-                Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
-            }
-            #endregion
-
-            // check if queries fail if syntax error query is passed
-            #region SyntaxError
-            try
-            {
-                await container.GetItemQueryIterator<Document>(
-                    "SELECT TOP 10 * FOM r",
-                    continuationToken: null,
-                    requestOptions: feedOptions).ReadNextAsync();
-                //MaxItemCount = 10, 
-                Assert.Fail("Expect exception");
-            }
-            catch (CosmosException dce)
-            {
-                Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
-            }
-            #endregion
-
+            
             // check if pipeline returns empty continuation token
             FeedResponse<Document> responseWithEmptyContinuationExpected = await container.GetItemQueryIterator<Document>(
                 $"SELECT TOP 0 * FROM r",
@@ -140,26 +120,39 @@
 
             Assert.AreEqual(null, responseWithEmptyContinuationExpected.ContinuationToken);
 
-            // check if pipeline returns results for these single partition queries
-            string[] queries = new[]
+            IDictionary<string, List<int>> queries = new Dictionary<string, List<int>>
             {
-                $"SELECT * FROM r ORDER BY r.{partitionKey}",
-                $"SELECT * FROM r",
-                $"SELECT TOP 10 * FROM r ORDER BY r.{numberField}",
-                $"SELECT * FROM r WHERE r.{numberField} BETWEEN 0 AND {documentCount} ORDER BY r.{nullField} DESC",
+                { $"SELECT TOP 5 * FROM r ORDER BY r.{partitionKey}", new List<int> { 0, 1, 2, 3, 4 } },
+                { $"SELECT * FROM r", new List<int> { 0, 1, 2, 3, 4, 5, 6, 7} },
+                { $"SELECT TOP 4 * FROM r ORDER BY r.{numberField}", new List<int> { 0, 1, 2, 3} },
+                { $"SELECT TOP 3 * FROM r WHERE r.{numberField} BETWEEN 0 AND {documentCount} ORDER BY r.{numberField} DESC", new List<int> { 7, 6, 5}},
             };
 
-            foreach (string query in queries)
-            { 
-                List<CosmosElement> items = await RunQueryAsync(
-                        container,
-                        query,
-                        feedOptions);
+            int[] pageSizeOptions = new[] { -1, 1, 2, 10, 100 };
 
-                Assert.AreEqual(documentCount, items.Count);
-                Assert.AreEqual(TestInjections.PipelineType.TryExecute, feedOptions.TestSettings.Stats.PipelineType.Value);
+            for (int i = 0; i < 5; i++)
+            {
+                foreach (KeyValuePair<string, List<int>> query in queries)
+                {
+                    feedOptions.MaxItemCount = pageSizeOptions[i];
+
+                    List<CosmosElement> items = await RunQueryAsync(
+                            container,
+                            query.Key,
+                            feedOptions);
+
+                    int[] actual = items
+                    .Select(doc => (doc as CosmosObject)["numberField"].ToString())
+                    .ToArray().Select(int.Parse).ToArray();
+
+                    bool areEqual = actual.SequenceEqual(query.Value);
+
+                    Assert.IsTrue(areEqual);
+                    Assert.AreEqual(TestInjections.PipelineType.TryExecute, feedOptions.TestSettings.Stats.PipelineType.Value);
+                }
             }
         }
+
         private struct SinglePartitionWithContinuationsArgs
         {
             public int NumberOfDocuments;
@@ -410,20 +403,6 @@
                                     {
                                         string query = "SELECT DISTINCT VALUE c.key FROM c";
                                         List<CosmosElement> queryResults = await AssertSpecializedAsync(query);
-                                    }
-                                }
-
-                                // Syntax Error
-                                {
-                                    string query = "this is not a valid query";
-                                    try
-                                    {
-                                        List<CosmosElement> queryResults = await AssertSpecializedAsync(query, partitionKey);
-
-                                        Assert.Fail("Expected an exception.");
-                                    }
-                                    catch (CosmosException e) when (e.StatusCode == HttpStatusCode.BadRequest)
-                                    {
                                     }
                                 }
                             }

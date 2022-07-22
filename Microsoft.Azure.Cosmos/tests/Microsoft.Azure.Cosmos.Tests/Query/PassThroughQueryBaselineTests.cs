@@ -70,7 +70,7 @@
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
                 cancellationToken: default,
-                continuationToken: CosmosArray.Create(TryExecuteContinuationToken.ToCosmosElement(token)));
+                continuationToken: TryExecuteContinuationToken.ToCosmosElement(token));
             Assert.IsTrue(monadicCreate.Succeeded);
         }
 

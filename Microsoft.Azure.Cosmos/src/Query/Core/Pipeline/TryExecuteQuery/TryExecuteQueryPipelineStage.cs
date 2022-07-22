@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
             TryCatch<QueryPage> partitionPage = this.queryPartitionRangePageAsyncEnumerator.Current;
             if (partitionPage.Failed)
             {
-                this.Current = TryCatch<QueryPage>.FromException(partitionPage.Exception);
+                this.Current = partitionPage;
                 return true;
             }
 
@@ -81,9 +81,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
                 }
 
                 CosmosElement cosmosElementContinuationToken = TryExecuteContinuationToken.ToCosmosElement(tryExecuteContinuationToken);
-                CosmosArray cosmosElementParallelContinuationTokens = CosmosArray.Create(cosmosElementContinuationToken);
-
-                queryState = new QueryState(cosmosElementParallelContinuationTokens);
+                queryState = new QueryState(cosmosElementContinuationToken);
             }
 
             QueryPage crossPartitionQueryPage = new QueryPage(
@@ -145,22 +143,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
                 return TryCatch<FeedRangeState<QueryState>>.FromResult(fullFanOutState);
             }
 
-            if (!(continuationToken is CosmosArray tryExecuteContinuationTokenListRaw))
-            {
-                return TryCatch<FeedRangeState<QueryState>>.FromException(
-                    new MalformedContinuationTokenException(
-                        $"Invalid format for continuation token {continuationToken} for {nameof(TryExecuteQueryPipelineStage)}"));
-            }
-
-            if (tryExecuteContinuationTokenListRaw.Count == 0)
-            {
-                return TryCatch<FeedRangeState<QueryState>>.FromException(
-                    new MalformedContinuationTokenException(
-                        $"Invalid format for continuation token {continuationToken} for {nameof(TryExecuteQueryPipelineStage)}"));
-            }
-
             List<TryExecuteContinuationToken> tryExecuteContinuationTokens = new List<TryExecuteContinuationToken>();
-            TryCatch<TryExecuteContinuationToken> tryCreateContinuationToken = TryExecuteContinuationToken.TryCreateFromCosmosElement(tryExecuteContinuationTokenListRaw[0]);
+            TryCatch<TryExecuteContinuationToken> tryCreateContinuationToken = TryExecuteContinuationToken.TryCreateFromCosmosElement(continuationToken);
             if (tryCreateContinuationToken.Failed)
             {
                 return TryCatch<FeedRangeState<QueryState>>.FromException(tryCreateContinuationToken.Exception);
