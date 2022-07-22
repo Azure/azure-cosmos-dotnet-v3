@@ -21,6 +21,10 @@ namespace Microsoft.Azure.Cosmos.Resource
             };
 
             Assert.AreEqual("testId(NonAzureVM)", cosmosAccountSettings.AccountNameWithCloudInformation.Value);
+
+            cosmosAccountSettings.Id = "newTestId";
+
+            Assert.AreEqual("newTestId(NonAzureVM)", cosmosAccountSettings.AccountNameWithCloudInformation.Value);
         }
 
     }
