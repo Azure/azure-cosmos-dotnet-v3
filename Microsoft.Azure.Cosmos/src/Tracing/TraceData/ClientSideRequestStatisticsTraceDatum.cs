@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             {
                 if (locationEndpoint != null)
                 {
-                    this.TraceSummary.AddRegionContacted(regionName, locationEndpoint);
+                    this.TraceSummary?.AddRegionContacted(regionName, locationEndpoint);
                 }
 
                 if (responseStatistics.StoreResult != null && !((HttpStatusCode)responseStatistics.StoreResult.StatusCode).IsSuccess()
