@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <summary>
         /// Consolidated Region contacted Information of this and children nodes
         /// </summary>
-        private HashSet<(string, Uri)> regionContactedInternal = new HashSet<(string, Uri)>();
+        private readonly HashSet<(string, Uri)> regionContactedInternal = new HashSet<(string, Uri)>();
 
         /// <summary>
         /// Consolidated Region contacted Information of this and children nodes
