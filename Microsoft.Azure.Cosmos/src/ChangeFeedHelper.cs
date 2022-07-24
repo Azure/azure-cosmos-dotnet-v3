@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
            OperationType operationType,
            bool hasStreamPayload = false)
         {
-            if (operationType == OperationType.ReadFeed && hasStreamPayload)
+            return operationType == OperationType.ReadFeed && hasStreamPayload;
             {
                 // ChangeFeed with payload is a CF with query support and will
                 // be a query POST request.
