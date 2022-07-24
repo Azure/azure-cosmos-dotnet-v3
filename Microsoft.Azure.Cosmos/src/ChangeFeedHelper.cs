@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal static class ChangeFeedHelper
     {
-        internal static bool isChangeFeedWithQueryRequest(
+        internal static bool IsChangeFeedWithQueryRequest(
            OperationType operationType,
            bool hasStreamPayload = false)
         {
