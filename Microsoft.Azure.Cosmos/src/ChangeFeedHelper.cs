@@ -8,17 +8,13 @@ namespace Microsoft.Azure.Cosmos
 
     internal static class ChangeFeedHelper
     {
-        internal static bool isChangeFeedWithQueryRequest(
+        internal static bool IsChangeFeedWithQueryRequest(
            OperationType operationType,
-           bool hasStreamPayload = false)
+           bool hasStreamPayload)
         {
-            if (operationType == OperationType.ReadFeed && hasStreamPayload)
-            {
-                // ChangeFeed with payload is a CF with query support and will
-                // be a query POST request.
-                return true;
-            }
-            return false;
+            // ChangeFeed with payload is a CF with query support and will
+            // be a query POST request.
+            return operationType == OperationType.ReadFeed && hasStreamPayload;
         }
 
     }

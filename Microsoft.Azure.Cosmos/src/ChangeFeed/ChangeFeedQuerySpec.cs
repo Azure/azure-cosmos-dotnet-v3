@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// </summary>
         /// <value>True if query should be run on previous image. False, otherwise.</value>
         [DataMember(Name = "enableQueryOnPreviousImage")]
-        internal bool EnableQueryOnPreviousImage { get; set; }
+        private bool EnableQueryOnPreviousImage { get; set; }
 
         /// <summary>
         /// Returns a value that indicates whether <see cref="EnableQueryOnPreviousImage"/> property should be serialized.
