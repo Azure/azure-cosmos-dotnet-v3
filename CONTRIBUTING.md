@@ -22,6 +22,7 @@ Azure Cosmos DB SDKs are thick constructs that contain several layers:
 
 Make sure you are familiar with:
 
+- [Azure SDK Guidelines](https://azure.github.io/azure-sdk/dotnet_introduction.html)
 - [Best practices for Azure Cosmos DB .NET SDK](https://docs.microsoft.com/azure/cosmos-db/sql/best-practice-dotnet)
 - [Designing resilient applications with Azure Cosmos DB SDKs](https://docs.microsoft.com/azure/cosmos-db/sql/conceptual-resilient-sdk-applications)
 
@@ -81,9 +82,15 @@ Alternatively, you can build from the command line using the .NET tooling with `
 
 There are two major test projects:
 
-- `Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests` contains Unit tests. Any new feature or work should add unit tests covering unless explicitly allowed due to some exceptional circumstance.
+- `Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests` contains Unit tests. Any new feature or work should add unit tests covering unless explicitly allowed due to some exceptional circumstance. Unit tests should be isolated and do not depend on any endpoint or Emulator.
 - `Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests` contains Emulator tests. This tests will automatically connect to a running Azure Cosmos DB Emulator (see [prerequisites](#prerequisites)). Any new feature or work should have Emulator tests if the feature is interacting with the service.
 
 All test projects can be interacted with through an IDE (some IDEs like Visual Studio have a Test Explorer to easily navigate through tests) but it can also be executed through the [dotnet test](https://docs.microsoft.com/dotnet/core/tools/dotnet-test) command in any of the above folders.
 
 When evaluating adding new tests, please search in the existing test files if there is already a test file for the scenario or feature you are working on.
+
+## Troubleshooting
+
+- [General .NET SDK Troubleshooting](https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-dot-net-sdk)
+- [Timeout troubleshooting](https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-dot-net-sdk-request-timeout?tabs=cpu-new)
+- [Service unavailable troubleshooting](https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-service-unavailable)
