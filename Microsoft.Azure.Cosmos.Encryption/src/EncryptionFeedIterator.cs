@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private enum QueryType
         {
-            QueryWithOutEncryptedPk = 0,
+            QueryWithoutEncryptedPk = 0,
             QueryTextType = 1,
             QueryDefinitionType = 2,
             QueryDefinitionWithFeedRangeType = 3,
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             EncryptionDiagnosticsContext encryptionDiagnosticsContext = new EncryptionDiagnosticsContext();
 
-            // check for Bad Request and Wrong RID intended and update the cached RID and Client Encryption Policy.
+            // check for Bad Request and Wrong intended RID and update the cached RID and Client Encryption Policy.
             await this.encryptionContainer.ThrowIfRequestNeedsARetryPostPolicyRefreshAsync(responseMessage, encryptionSettings, encryptionDiagnosticsContext, cancellationToken);
 
             if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             encryptionSettings.SetRequestHeaders(this.requestOptions);
 
             // should be fine, flag is set at the end of init
-            if (this.isIteratorInitialized || this.queryType == QueryType.QueryWithOutEncryptedPk)
+            if (this.isIteratorInitialized || this.queryType == QueryType.QueryWithoutEncryptedPk)
             {
                 return;
             }
