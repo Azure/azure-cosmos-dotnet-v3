@@ -33,22 +33,22 @@ The following image shows the hierarchy of different entities in an Azure Cosmos
 
 `CosmosClient` is the client:
 
-* Working with Azure Cosmos databases. They include creating and listing through the `CosmosDatabase` type.
-* Obtaining the Azure Cosmos account information.
+- Working with Azure Cosmos databases. They include creating and listing through the `Database` type.
+- Obtaining the Azure Cosmos account information.
 
 ### Database
 
-A database is the unit of management for a set of Azure Cosmos containers. It maps to the `CosmosDatabase` class and supports:
+A database is the unit of management for a set of Azure Cosmos containers. It maps to the `Database` class and supports:
 
-* Working with Azure Cosmos containers. They include creating, modifying, deleting, and listing through the `CosmosContainer` type.
-* Working with Azure Cosmos users. Users define access scope and permissions. They include creating, modifying, deleting, and listing through the `CosmosUser` type.
+- Working with Azure Cosmos containers. They include creating, modifying, deleting, and listing through the `Container` type.
+- Working with Azure Cosmos users. Users define access scope and permissions. They include creating, modifying, deleting, and listing through the `User` type.
 
 ### Containers
 
-An Azure Cosmos container is the unit of scalability both for provisioned throughput and storage. A container is horizontally partitioned and then replicated across multiple regions. It maps to the `CosmosContainer` class and supports:
+An Azure Cosmos container is the unit of scalability both for provisioned throughput and storage. A container is horizontally partitioned and then replicated across multiple regions. It maps to the `Container` class and supports:
 
-* Working with items. Items are the conceptually the user's data. They include creating, modifying, deleting, and listing (including query) items.
-* Working with scripts. Scripts are defined as Stored Procedures, User Defined Functions, and Triggers.
+- Working with items. Items are the conceptually the user's data. They include creating, modifying, deleting, and listing (including query) items.
+- Working with scripts. Scripts are defined as Stored Procedures, User Defined Functions, and Triggers.
 
 For more details visit [here][https://docs.microsoft.com/azure/cosmos-db/databases-containers-items].
 
