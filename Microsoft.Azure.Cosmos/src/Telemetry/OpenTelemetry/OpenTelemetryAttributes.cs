@@ -8,10 +8,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
 
     internal class OpenTelemetryAttributes
     {
+        internal const string NotAvailable = "NA";
+        
         internal OpenTelemetryAttributes(RequestMessage requestMessage)
         {
-            this.RequestContentLength = requestMessage?.Headers?.ContentLength ?? "NA";
-            this.ContainerName = requestMessage?.ContainerId;
+            this.RequestContentLength = requestMessage?.Headers?.ContentLength ?? OpenTelemetryAttributes.NotAvailable;
+            this.ContainerName = requestMessage?.ContainerId ?? OpenTelemetryAttributes.NotAvailable;
+            this.DatabaseName = requestMessage?.DatabaseId ?? OpenTelemetryAttributes.NotAvailable;
         }
 
         /// <summary>
@@ -33,6 +36,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
         /// ResponseLength
         /// </summary>
         internal string ResponseContentLength { get; set; }
+
+        /// <summary>
+        /// DatabaseName
+        /// </summary>
+        internal string DatabaseName { get; set; }
 
         /// <summary>
         /// ContainerName

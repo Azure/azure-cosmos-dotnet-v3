@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.StatusCode = responseMessage.StatusCode;
             this.RequestCharge = responseMessage.Headers?.RequestCharge;
-            this.ResponseContentLength = responseMessage?.Headers?.ContentLength ?? "NA"; 
+            this.ResponseContentLength = responseMessage?.Headers?.ContentLength ?? OpenTelemetryAttributes.NotAvailable; 
             this.Diagnostics = responseMessage.Diagnostics;
             this.ItemCount = responseMessage.Headers?.ItemCount;
         }
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.StatusCode = responseMessage.StatusCode;
             this.RequestCharge = responseMessage.Headers?.RequestCharge;
-            this.ResponseContentLength = responseMessage?.Headers?.ContentLength ?? "NA";
+            this.ResponseContentLength = responseMessage?.Headers?.ContentLength ?? OpenTelemetryAttributes.NotAvailable;
             this.Diagnostics = responseMessage.Diagnostics;
             this.ItemCount = responseMessage.Headers?.ItemCount;
         }
