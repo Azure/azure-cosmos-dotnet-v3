@@ -21,6 +21,8 @@ namespace Microsoft.Azure.Cosmos
         private Collection<AccountRegion> readRegions;
         private Collection<AccountRegion> writeRegions;
 
+        private string accountNameWithCloudInfo;
+
         internal readonly Lazy<IDictionary<string, object>> QueryEngineConfigurationInternal;
 
         /// <summary>
@@ -45,6 +47,9 @@ namespace Microsoft.Azure.Cosmos
         [JsonIgnore]
         public IEnumerable<AccountRegion> ReadableRegions => this.ReadLocationsInternal;
 
+        [JsonIgnore]
+        private string id;
+
         /// <summary>
         /// Gets the Id of the resource in the Azure Cosmos DB service.
         /// </summary>
@@ -67,7 +72,16 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.Id)]
-        public string Id { get; internal set; }
+        public string Id
+        {
+            get => this.id;
+
+            internal set
+            {
+                this.id = value;
+                this.accountNameWithCloudInfo = null;
+            }
+        }
 
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
@@ -240,11 +254,6 @@ namespace Microsoft.Azure.Cosmos
         [JsonIgnore]
         internal string AccountNameWithCloudInformation => this.AppendAccountAndCloudInfo();
 
-        private readonly object lockObject = new object();
-
-        private string accountNameWithCloudInfoSnapshot;
-        private string prevId;
-
         /// <summary>
         /// if there is cached value AND there is no change in the account id.
         /// Ideally, it should not change but it has internal setter that's why this check is required.
@@ -252,20 +261,16 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>accountNameWithCloudInfoSnapshot</returns>
         private string AppendAccountAndCloudInfo()
         {
-            if (!string.IsNullOrEmpty(this.accountNameWithCloudInfoSnapshot) && this.prevId == this.Id)
+            string accountNameWithCloudInfoSnapshot = this.accountNameWithCloudInfo;
+            if (!string.IsNullOrEmpty(accountNameWithCloudInfoSnapshot))
             {
-                return this.accountNameWithCloudInfoSnapshot;
+                return accountNameWithCloudInfoSnapshot;
             }
 
-            lock (this.lockObject)
-            {
-                this.prevId = this.Id;
-                this.accountNameWithCloudInfoSnapshot = $"{this.Id}({VmMetadataApiHandler.GetCloudInformation()})";
+            return this.accountNameWithCloudInfo = $"{this.Id}({VmMetadataApiHandler.GetCloudInformation()})";
 
-                return this.accountNameWithCloudInfoSnapshot;
-            }
         }
-       
+
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
