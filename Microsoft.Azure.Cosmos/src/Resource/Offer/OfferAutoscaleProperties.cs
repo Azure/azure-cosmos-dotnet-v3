@@ -9,13 +9,13 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
-    internal sealed class OfferAutoscaleProperties
+    internal class OfferAutoscaleProperties
     {
         /// <summary>
         /// Default constructor for serialization
         /// </summary>
         [JsonConstructor]
-        private OfferAutoscaleProperties()
+        internal OfferAutoscaleProperties()
         {
         }
 

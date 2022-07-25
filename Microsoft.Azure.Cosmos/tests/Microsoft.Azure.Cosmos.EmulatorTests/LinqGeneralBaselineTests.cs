@@ -1593,56 +1593,61 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void TestDistinctTranslation()
         {
+            static LinqTestInput DistinctTestInput(string description, System.Linq.Expressions.Expression<Func<bool, IQueryable>> expr)
+            {
+                return new LinqTestInput(description, expr, true);
+            }
+
             List<LinqTestInput> inputs = new List<LinqTestInput>();
 
             // Simple distinct
             // Select -> Distinct for all data types
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "Distinct string",
                 b => getQuery(b).Select(f => f.FamilyId).Distinct()));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "Distinct int",
                 b => getQuery(b).Select(f => f.Int).Distinct()));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "Distinct bool",
                 b => getQuery(b).Select(f => f.IsRegistered).Distinct()));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "Distinct nullable int",
                 b => getQuery(b).Where(f => f.NullableInt != null).Select(f => f.NullableInt).Distinct()));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "Distinct null",
                 b => getQuery(b).Where(f => f.NullObject != null).Select(f => f.NullObject).Distinct()));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "Distinct children",
                 b => getQuery(b).SelectMany(f => f.Children).Distinct()));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "Distinct parent",
                 b => getQuery(b).SelectMany(f => f.Parents).Distinct()));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "Distinct family",
                 b => getQuery(b).Distinct()));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "Multiple distincts",
                 b => getQuery(b).Distinct().Distinct()));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "Distinct new obj",
                 b => getQuery(b).Select(f => new { Parents = f.Parents.Count(), Children = f.Children.Count() }).Distinct()));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "Distinct new obj",
                 b => getQuery(b).Select(f => new { Parents = f.Parents.Count(), Children = f.Children.Count() }).Select(f => f.Parents).Distinct()));
 
             // Distinct + Take
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "Distinct -> Take",
                 b => getQuery(b).Select(f => f.Int).Distinct().Take(10)));
 
@@ -1655,7 +1660,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 "Distinct -> OrderBy",
                 b => getQuery(b).Select(f => f.Int).Distinct().OrderBy(x => x)));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "OrderBy -> Distinct",
                 b => getQuery(b).OrderBy(f => f.Int).Distinct()));
 
@@ -1669,20 +1674,20 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 b => getQuery(b).Select(f => f.Int).OrderBy(x => x).Take(10).Distinct()));
 
             // Distinct + Where
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "Where -> Distinct",
                 b => getQuery(b).Select(f => f.Int).Where(x => x > 10).Distinct()));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "Distinct -> Where",
                 b => getQuery(b).Select(f => f.Int).Distinct().Where(x => x > 10)));
 
             // SelectMany w Distinct
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "SelectMany(Select obj) -> Distinct",
                 b => getQuery(b).SelectMany(f => f.Parents).Distinct()));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "SelectMany(SelectMany(Where -> Select)) -> Distinct",
                 b => getQuery(b)
                 .SelectMany(family => family.Children
@@ -1691,7 +1696,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         .Select(pet => pet)))
                     .Distinct()));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "SelectMany(SelectMany(Where -> Select -> Distinct))",
                 b => getQuery(b)
                 .SelectMany(family => family.Children
@@ -1700,7 +1705,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         .Select(pet => pet)
                     .Distinct()))));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "SelectMany(SelectMany(Where -> Select -> Select) -> Distinct)",
                 b => getQuery(b)
                 .SelectMany(family => family.Children
@@ -1710,7 +1715,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         .Select(name => name.Count())))
                     .Distinct()));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "SelectMany(SelectMany(Where -> Select new {} -> Select) -> Distinct)",
                 b => getQuery(b)
                 .SelectMany(family => family.Children
@@ -1724,7 +1729,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         }).Select(p => p.child))
                     .Distinct())));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "SelectMany(SelectMany(Where -> Select new {}) -> Distinct)",
                 b => getQuery(b)
                 .SelectMany(family => family.Children
@@ -1738,7 +1743,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         })))
                     .Distinct()));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "SelectMany(SelectMany(Where -> Select new {} -> Distinct))",
                 b => getQuery(b)
                 .SelectMany(family => family.Children
@@ -1753,15 +1758,15 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         .Distinct()))));
 
             // SelectMany(Distinct)
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "SelectMany(Distinct) -> Distinct",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Distinct()));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "SelectMany(Distinct) -> Where",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Where(f => f.FamilyName.Count() > 10)));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "SelectMany(Distinct) -> Where -> Distinct",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Where(f => f.FamilyName.Count() > 10).Distinct()));
 
@@ -1795,7 +1800,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Where(f => f.FamilyName.Count() > 10).Distinct()
                     .OrderBy(f => f).Take(5).Distinct()));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "SelectMany(Distinct) -> Where -> Distinct -> Take",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Where(f => f.FamilyName.Count() > 10).Distinct().Take(5)));
 
@@ -1834,7 +1839,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Where(f => f.FamilyName.Count() > 10)
                     .OrderBy(f => f).Take(5)));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "SelectMany(Distinct) -> Where -> Where",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Where(f => f.FamilyName.Count() > 10)
                     .Where(f => f.FamilyName.Count() < 20)));
@@ -1847,15 +1852,15 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 "SelectMany(Distinct) -> OrderBy -> Take",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).OrderBy(f => f.FamilyName).Take(5)));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "SelectMany(Distinct) -> Take",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Take(5)));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "SelectMany(Distinct) -> Select",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Select(f => f.FamilyName.Count())));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "SelectMany(Distinct) -> Select -> Take",
                 b => getQuery(b).SelectMany(f => f.Parents.Distinct()).Select(f => f.FamilyName.Count()).Take(5)));
 
@@ -1868,19 +1873,19 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 "SelectMany(Select -> Distinct) -> Where -> OrderBy -> Take",
                 b => getQuery(b).SelectMany(f => f.Parents.Select(p => p.GivenName).Distinct()).Where(n => n.Count() > 10).OrderBy(n => n).Take(5)));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "SelectMany(Select) -> Distinct",
                 b => getQuery(b).SelectMany(f => f.Parents.Select(p => p.FamilyName)).Distinct()));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "SelectMany(Select -> Distinct)",
                 b => getQuery(b).SelectMany(f => f.Parents.Select(p => p.FamilyName).Distinct())));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "SelectMany(Select -> Distinct) -> Distinct",
                 b => getQuery(b).SelectMany(f => f.Parents.Select(p => p.GivenName).Distinct()).Distinct()));
 
-            inputs.Add(new LinqTestInput(
+            inputs.Add(DistinctTestInput(
                 "SelectMany(Select -> Distinct) -> Where",
                 b => getQuery(b).SelectMany(f => f.Parents.Select(p => p.GivenName).Distinct()).Where(n => n.Count() > 10)));
 

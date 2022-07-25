@@ -417,6 +417,7 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.Document,
                 partitionKeyDefinition,
                 requestOptions.PartitionKey.HasValue,
+                useSystemPrefix: QueryIterator.IsSystemPrefixExpected(requestOptions),
                 cancellationToken);
 
             if (tryGetQueryInfoAndIfSupported.Failed)

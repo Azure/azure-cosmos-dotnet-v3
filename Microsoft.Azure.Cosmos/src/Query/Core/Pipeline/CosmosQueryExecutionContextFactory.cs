@@ -235,6 +235,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                             cosmosQueryContext.ResourceTypeEnum,
                             partitionKeyDefinition,
                             inputParameters.PartitionKey != null,
+                            cosmosQueryContext.UseSystemPrefix,
                             createQueryPipelineTrace,
                             cancellationToken);
                     }
