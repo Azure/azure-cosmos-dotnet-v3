@@ -400,7 +400,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     QueryText = "SELECT 1",
                     Parameters = new SqlParameterCollection() { new SqlParameter("@p1", new JRaw("{\"a\":[1,2,3]}")) },
-                    PassThrough = false
+                    TryExecute = false
                 });
             verifyJsonSerialization("{\"query\":\"SELECT 1\",\"parameters\":[" +
                     "{\"name\":\"@p1\",\"value\":{\"a\":[1,2,3]}}" + 
@@ -409,7 +409,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     QueryText = "SELECT 1",
                     Parameters = new SqlParameterCollection() { new SqlParameter("@p1", new JRaw("{\"a\":[1,2,3]}")) },
-                    PassThrough = true
+                    TryExecute = true
                 });
 
             // Verify roundtrips

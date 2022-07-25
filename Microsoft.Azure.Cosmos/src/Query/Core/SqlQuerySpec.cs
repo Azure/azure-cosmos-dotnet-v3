@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     internal sealed class SqlQuerySpec
     {
         private SqlParameterCollection parameters;
-        private bool passThrough;
+        private bool tryExecute;
         
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Microsoft.Azure.Documents.SqlQuerySpec"/> class for the Azure Cosmos DB service.</summary>
@@ -50,12 +50,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// </summary>
         /// <param name="queryText">The text of the database query.</param>
         /// <param name="parameters">The <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of query parameters.</param>
-        /// <param name="passThrough">A Boolean value that indicates whether the query should be executed as pass-through.</param>
-        public SqlQuerySpec(string queryText, SqlParameterCollection parameters, bool passThrough)
+        /// <param name="tryExecute">A Boolean value that indicates whether the query should be executed as pass-through.</param>
+        public SqlQuerySpec(string queryText, SqlParameterCollection parameters, bool tryExecute)
         {
             this.QueryText = queryText;
             this.parameters = parameters ?? throw new ArgumentNullException("parameters");
-            this.passThrough = passThrough;
+            this.tryExecute = tryExecute;
         }
         
         /// <summary>
@@ -83,19 +83,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         }
 
         /// <summary>
-        /// Gets or sets the boolean value that indicates whether the query should be executed as pass-through..
+        /// Gets or sets the boolean value that indicates whether the query should be executed as try-execute..
         /// </summary>
-        /// <value>A boolean value that indicates whether the query should be executed as pass-through.</value>
-        [DataMember(Name = "passThrough")]        
-        public bool PassThrough
+        /// <value>A boolean value that indicates whether the query should be executed as try-execute.</value>
+        [DataMember(Name = "tryExecute")]        
+        public bool TryExecute
         {
             get
             {
-                return this.passThrough;
+                return this.tryExecute;
             }
             set
             {
-                this.passThrough = value;
+                this.tryExecute = value;
             }
         }
         
@@ -108,11 +108,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         }
 
         /// <summary>
-        /// Returns a value that indicates whether the Azure Cosmos DB database <see cref="PassThrough"/> property should be serialized.
+        /// Returns a value that indicates whether the Azure Cosmos DB database <see cref="TryExecute"/> property should be serialized.
         /// </summary>
-        public bool ShouldSerializePassThrough()
+        public bool ShouldSerializeTryExecute()
         {
-            return this.passThrough;
+            return this.tryExecute;
         }
     }
 }

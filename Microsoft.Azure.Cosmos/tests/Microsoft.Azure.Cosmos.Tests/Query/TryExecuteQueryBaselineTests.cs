@@ -34,7 +34,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
 
     [TestClass]
-    public class PassThroughQueryBaselineTests : BaselineTests<PassThroughQueryTestInput, PassThroughQueryTestOutput>
+    public class TryExecuteQueryBaselineTests : BaselineTests<TryExecuteQueryTestInput, TryExecuteQueryTestOutput>
     {
         [TestMethod]
         [Owner("akotalwar")]
@@ -76,7 +76,7 @@
 
         // test checks that the pipeline can take a query to the backend and returns its associated document(s). 
         [TestMethod]
-        public async Task TestPassThroughPipelineForBackendDocumentsAsync()
+        public async Task TestTryExecutePipelineForBackendDocumentsAsync()
         {
             int numItems = 10;
             string query = "SELECT VALUE COUNT(1) FROM c";
@@ -89,7 +89,7 @@
                 TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
                 tryGetPage.ThrowIfFailed();
          
-                documentCountInSinglePartition = Int32.Parse(tryGetPage.Result.Documents[0].ToString());
+                documentCountInSinglePartition += Int32.Parse(tryGetPage.Result.Documents[0].ToString());
             }
             
             Assert.AreEqual(documentCountInSinglePartition, 4);
@@ -97,7 +97,7 @@
 
         // test checks that the pipeline can take a query to the backend and returns its associated document(s) + continuation token.
         [TestMethod]
-        public async Task TestPassThroughPipelineForContinuationTokenAsync()
+        public async Task TestTryExecutePipelineForContinuationTokenAsync()
         {
             int numItems = 100;
             string query = "SELECT * FROM c";
@@ -144,27 +144,6 @@
             partitionKey: null,
             cancellationToken: default,
             continuationToken: continuationToken);
-
-            Assert.IsTrue(monadicQueryPipelineStage.Succeeded);
-            IQueryPipelineStage queryPipelineStage = monadicQueryPipelineStage.Result;
-
-            return queryPipelineStage;
-        }
-
-        private static async Task<IQueryPipelineStage> CreateParallelPipelineStateAsync(IDocumentContainer documentContainer, string query, CosmosElement continuationToken)
-        {
-            TryCatch<IQueryPipelineStage> monadicQueryPipelineStage = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-                 documentContainer: documentContainer,
-                 sqlQuerySpec: new SqlQuerySpec(query),
-                 targetRanges: await documentContainer.GetFeedRangesAsync(
-                     trace: NoOpTrace.Singleton,
-                     cancellationToken: default),
-                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
-                 partitionKey: null,
-                 maxConcurrency: 10,
-                 prefetchPolicy: true ? PrefetchPolicy.PrefetchAll : PrefetchPolicy.PrefetchSinglePage,
-                 cancellationToken: default,
-                 continuationToken: continuationToken);
 
             Assert.IsTrue(monadicQueryPipelineStage.Succeeded);
             IQueryPipelineStage queryPipelineStage = monadicQueryPipelineStage.Result;
@@ -226,9 +205,9 @@
 
         [TestMethod]
         [Owner("akotalwar")]
-        public void PositivePassThroughOutput()
+        public void PositiveTryExecuteOutput()
         { 
-            List<PassThroughQueryTestInput> testVariations = new List<PassThroughQueryTestInput>
+            List<TryExecuteQueryTestInput> testVariations = new List<TryExecuteQueryTestInput>
             {
                 CreateInput(
                 @"Partition Key + Value and Distinct",
@@ -256,9 +235,9 @@
         
         [TestMethod]
         [Owner("akotalwar")]
-        public void NegativePassThroughOutput()
+        public void NegativeTryExecuteOutput()
         {
-            List<PassThroughQueryTestInput> testVariations = new List<PassThroughQueryTestInput>
+            List<TryExecuteQueryTestInput> testVariations = new List<TryExecuteQueryTestInput>
             {
                 CreateInput(
                 @"Null Partition Key Value",
@@ -284,27 +263,27 @@
             this.ExecuteTestSuite(testVariations);
         }
 
-        private static PassThroughQueryTestInput CreateInput(
+        private static TryExecuteQueryTestInput CreateInput(
             string description,
             string query,
-            bool expectedPassThrough,
+            bool expectedTryExecute,
             string partitionKeyPath,
             string partitionKeyValue)
         {
             PartitionKeyBuilder pkBuilder = new PartitionKeyBuilder();
             pkBuilder.Add(partitionKeyValue);
 
-            return CreateInput(description, query, expectedPassThrough, partitionKeyPath, pkBuilder.Build());
+            return CreateInput(description, query, expectedTryExecute, partitionKeyPath, pkBuilder.Build());
         }
 
-        private static PassThroughQueryTestInput CreateInput(
+        private static TryExecuteQueryTestInput CreateInput(
             string description,
             string query,
-            bool expectedPassThrough,
+            bool expectedTryExecute,
             string partitionKeyPath,
             Cosmos.PartitionKey partitionKeyValue)
         {
-            return new PassThroughQueryTestInput(description, query, new SqlQuerySpec(query), expectedPassThrough, partitionKeyPath, partitionKeyValue);
+            return new TryExecuteQueryTestInput(description, query, new SqlQuerySpec(query), expectedTryExecute, partitionKeyPath, partitionKeyValue);
         }
         
         private static PartitionedQueryExecutionInfo GetPartitionedQueryExecutionInfo(string querySpecJsonString, PartitionKeyDefinition pkDefinition)
@@ -321,7 +300,7 @@
             return tryGetQueryPlan.Result;
         }
 
-        public override PassThroughQueryTestOutput ExecuteTest(PassThroughQueryTestInput input)
+        public override TryExecuteQueryTestOutput ExecuteTest(TryExecuteQueryTestInput input)
         {
             // gets DocumentContainer
             IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(input.PartitionKeyDefinition);
@@ -377,45 +356,45 @@
                       NoOpTrace.Singleton);
             bool result = queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton).Result;
             
-            Assert.AreEqual(input.ExpectedPassThrough, inputParameters.SqlQuerySpec.PassThrough);
+            Assert.AreEqual(input.ExpectedTryExecute, inputParameters.SqlQuerySpec.TryExecute);
             Assert.IsNotNull(queryPipelineStage);
             Assert.IsTrue(result);
            
-            return new PassThroughQueryTestOutput(inputParameters.SqlQuerySpec.PassThrough);
+            return new TryExecuteQueryTestOutput(inputParameters.SqlQuerySpec.TryExecute);
         }
     }
 
-    public sealed class PassThroughQueryTestOutput : BaselineTestOutput
+    public sealed class TryExecuteQueryTestOutput : BaselineTestOutput
     {
-        public PassThroughQueryTestOutput(bool executeAsPassThrough)
+        public TryExecuteQueryTestOutput(bool executeAsTryExecute)
         {
-            this.ExecuteAsPassThrough = executeAsPassThrough;
+            this.ExecuteAsTryExecute = executeAsTryExecute;
         }
 
-        public bool ExecuteAsPassThrough { get; }
+        public bool ExecuteAsTryExecute { get; }
 
         public override void SerializeAsXml(XmlWriter xmlWriter)
         {
-            xmlWriter.WriteStartElement(nameof(this.ExecuteAsPassThrough));
-            xmlWriter.WriteValue(this.ExecuteAsPassThrough);
+            xmlWriter.WriteStartElement(nameof(this.ExecuteAsTryExecute));
+            xmlWriter.WriteValue(this.ExecuteAsTryExecute);
             xmlWriter.WriteEndElement();
         }
     }
 
-    public sealed class PassThroughQueryTestInput : BaselineTestInput
+    public sealed class TryExecuteQueryTestInput : BaselineTestInput
     {
         internal PartitionKeyDefinition PartitionKeyDefinition { get; set; }
         internal SqlQuerySpec SqlQuerySpec { get; set; }
         internal Cosmos.PartitionKey PartitionKeyValue { get; set; }
-        internal bool ExpectedPassThrough { get; set; }
+        internal bool ExpectedTryExecute { get; set; }
         internal PartitionKeyRangeIdentity PartitionKeyRangeId { get; set; }
         internal string Query { get; set; }
 
-        internal PassThroughQueryTestInput(
+        internal TryExecuteQueryTestInput(
             string description,
             string query,
             SqlQuerySpec sqlQuerySpec,
-            bool expectedPassThrough,
+            bool expectedTryExecute,
             string partitionKeyPath,
             Cosmos.PartitionKey partitionKeyValue)
             : base(description)
@@ -430,7 +409,7 @@
                 Version = PartitionKeyDefinitionVersion.V2,
             };
             this.SqlQuerySpec = sqlQuerySpec;
-            this.ExpectedPassThrough = expectedPassThrough;
+            this.ExpectedTryExecute = expectedTryExecute;
             this.Query = query;
             this.PartitionKeyValue = partitionKeyValue;
         }
