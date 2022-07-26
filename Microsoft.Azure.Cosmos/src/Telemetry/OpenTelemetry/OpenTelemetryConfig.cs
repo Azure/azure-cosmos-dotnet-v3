@@ -5,8 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
 {
     using System;
-    using System.Collections.Generic;
-    using System.Text;
 
 #if PREVIEW
     public
@@ -15,6 +13,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
 #endif
         class OpenTelemetryConfig
     {
+        /// <summary>
+        /// Latency Threshold to send request diagnostics in Open Telemetry Attributes
+        /// </summary>
         public TimeSpan LatencyThreshold { get; set; } = TimeSpan.FromMilliseconds(250);
     }
 }

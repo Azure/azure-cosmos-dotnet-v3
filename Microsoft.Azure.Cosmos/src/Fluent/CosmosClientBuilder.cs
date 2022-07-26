@@ -410,7 +410,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
             return this;
         }
-
+        
         /// <summary>
         /// This can be used to weaken the database account consistency level for read operations.
         /// If this is not set the database account consistency level will be used for all requests.
@@ -424,8 +424,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Enable OpenTelemetry and start emiting activities for each operations
+        /// Enable OpenTelemetry and start emitting activities for each operations
         /// </summary>
+        /// <param name="config"></param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
 #if PREVIEW
         public
