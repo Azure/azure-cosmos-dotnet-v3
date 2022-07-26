@@ -180,6 +180,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CollectionAssert.AreEqual(preferredLocations.ToArray(), clientOptions.ApplicationPreferredRegions.ToArray());
             Assert.IsTrue(clientOptions.EnableOpenTelemetry);
             Assert.IsNotNull(clientOptions.OpenTelemetryConfig);
+            Assert.AreEqual(TimeSpan.FromMilliseconds(250), clientOptions.OpenTelemetryConfig.LatencyThreshold);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -190,6 +191,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, policy.PortReuseMode);
             Assert.IsTrue(policy.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), policy.PreferredLocations.ToArray());
+            
+            OpenTelemetryConfig oTelConfig = new OpenTelemetryConfig { LatencyThreshold = TimeSpan.FromMilliseconds(100) };
+            cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: key).EnableOpenTelemetry(oTelConfig);
+            cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+            clientOptions = cosmosClient.ClientOptions;
+            //Verify OTel Configs are updated
+            Assert.IsTrue(clientOptions.EnableOpenTelemetry);
+            Assert.IsNotNull(clientOptions.OpenTelemetryConfig);
+            Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.OpenTelemetryConfig.LatencyThreshold);
         }
 
         [TestMethod]
