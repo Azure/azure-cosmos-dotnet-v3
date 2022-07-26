@@ -318,4 +318,7 @@
   <data name="FeedToken_InvalidFeedTokenForContainer" xml:space="preserve">
     <value>The continuation was generated for container {0} but current container is {1}.</value>
   </data>
+  <data name="PropertyDoesNotSupportTypeComparison" xml:space="preserve">
+    <value>Property {0} does not support type comparison.</value>
+  </data>
 </root>

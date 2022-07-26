@@ -647,7 +647,21 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private static SqlScalarExpression VisitTypeIs(TypeBinaryExpression inputExpression, TranslationContext context)
         {
-            throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, inputExpression.NodeType));
+            MemberExpression memberExpression = inputExpression.Expression as MemberExpression;
+            JsonPropertyAttribute memberAttribute = memberExpression?.Member.GetCustomAttribute<JsonPropertyAttribute>();
+            TypeNameHandling typeNameHandling = memberAttribute?.TypeNameHandling ?? TypeNameHandling.None;
+
+            if (typeNameHandling == TypeNameHandling.None)
+            {
+                throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.PropertyDoesNotSupportTypeComparison, memberExpression?.Member.GetMemberName()));
+            }
+
+            SqlScalarExpression scalarExpression = ExpressionToSql.VisitScalarExpression(memberExpression, context);
+
+            string fullyQualifiedTypeName = inputExpression.TypeOperand.AssemblyQualifiedName;
+            return SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Equal,
+                        SqlPropertyRefScalarExpression.Create(scalarExpression, SqlIdentifier.Create("$type")),
+                        SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(fullyQualifiedTypeName)));
         }
 
         public static SqlScalarExpression VisitConstant(ConstantExpression inputExpression, TranslationContext context)
