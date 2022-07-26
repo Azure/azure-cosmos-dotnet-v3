@@ -11,12 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The Dedicated Gateway request options
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-        class DedicatedGatewayRequestOptions
+    public class DedicatedGatewayRequestOptions
     {
         /// <summary> 
         /// Gets or sets the staleness value associated with the request in the Azure CosmosDB service. 
