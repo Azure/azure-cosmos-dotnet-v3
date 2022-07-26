@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
+    using Telemetry.OpenTelemetry;
 
     /// <summary>
     /// This is a Builder class that creates a cosmos client
@@ -431,9 +432,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
 #else
         internal
 #endif
-            CosmosClientBuilder EnableOpenTelemetry()
+            CosmosClientBuilder EnableOpenTelemetry(OpenTelemetryConfig config = default)
         {
             this.clientOptions.EnableOpenTelemetry = true;
+            this.clientOptions.OpenTelemetryConfig = config;
+
             return this;
         }
 

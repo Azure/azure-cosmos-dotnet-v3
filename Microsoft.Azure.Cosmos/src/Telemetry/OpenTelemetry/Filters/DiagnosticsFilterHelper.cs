@@ -6,11 +6,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
     using System;
     using System.Net;
+    using OpenTelemetry;
 
     internal static class DiagnosticsFilterHelper
     {
-        private static readonly TimeSpan latencyThresholdInMs = TimeSpan.FromMilliseconds(250);
-
         /// <summary>
         /// Allow only when either of below is <b>True</b><br></br>
         /// 1) Latency is not more than 100 ms<br></br>
@@ -18,10 +17,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         /// </summary>
         /// <returns>true or false</returns>
         public static bool IsAllowed(
+            OpenTelemetryConfig config,
             TimeSpan latency, 
-            HttpStatusCode statuscode)
+            HttpStatusCode statusCode)
         {
-            return latency > DiagnosticsFilterHelper.latencyThresholdInMs || !statuscode.IsSuccess();
+            return latency > config.LatencyThreshold || !statusCode.IsSuccess();
         }
     }
 }

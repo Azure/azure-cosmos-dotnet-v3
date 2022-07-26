@@ -10,13 +10,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     using global::Azure.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
 
-    internal struct OpenTelemetryCoreRecorder : IDisposable
+    internal readonly struct OpenTelemetryCoreRecorder : IDisposable
     {
         private const string CosmosDb = "cosmosdb";
 
         private readonly DiagnosticScope scope;
+        private readonly OpenTelemetryConfig config;
 
-        internal static IDictionary<Type, Action<Exception, DiagnosticScope>> oTelCompatibleExceptions = new Dictionary<Type, Action<Exception, DiagnosticScope>>()
+        internal static IDictionary<Type, Action<Exception, DiagnosticScope>> OTelCompatibleExceptions = new Dictionary<Type, Action<Exception, DiagnosticScope>>()
         {
             { typeof(CosmosNullReferenceException), (exception, scope) => CosmosNullReferenceException.RecordOtelAttributes((CosmosNullReferenceException)exception, scope)},
             { typeof(CosmosObjectDisposedException), (exception, scope) => CosmosObjectDisposedException.RecordOtelAttributes((CosmosObjectDisposedException)exception, scope)},
@@ -25,9 +26,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             { typeof(ChangeFeedProcessorUserException), (exception, scope) => ChangeFeedProcessorUserException.RecordOtelAttributes((ChangeFeedProcessorUserException)exception, scope)}
         };
 
-        public OpenTelemetryCoreRecorder(DiagnosticScope scope)
+        public OpenTelemetryCoreRecorder(DiagnosticScope scope, OpenTelemetryConfig config)
         {
             this.scope = scope;
+            this.config = config ?? new OpenTelemetryConfig(); //If null load with default values
 
             if (this.scope.IsEnabled)
             {
@@ -80,8 +82,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics));
 
             if (this.IsEnabled && DiagnosticsFilterHelper.IsAllowed(
+                    config: this.config,
                     latency: response.Diagnostics.GetClientElapsedTime(),
-                    statuscode: response.StatusCode))
+                    statusCode: response.StatusCode))
             {
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, response.Diagnostics);
             }
@@ -114,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         /// <returns>tru/false</returns>
         internal static bool IsExceptionRegistered(Exception exception, DiagnosticScope scope)
         {
-            foreach (KeyValuePair<Type, Action<Exception, DiagnosticScope>> registeredExceptionHandlers in OpenTelemetryCoreRecorder.oTelCompatibleExceptions)
+            foreach (KeyValuePair<Type, Action<Exception, DiagnosticScope>> registeredExceptionHandlers in OpenTelemetryCoreRecorder.OTelCompatibleExceptions)
             {
                 Type exceptionType = exception.GetType();
                 if (registeredExceptionHandlers.Key.IsAssignableFrom(exceptionType))

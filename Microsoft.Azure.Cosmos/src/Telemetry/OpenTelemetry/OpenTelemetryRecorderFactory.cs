@@ -5,12 +5,13 @@
 namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
     using global::Azure.Core.Pipeline;
+    using OpenTelemetry;
 
     internal static class OpenTelemetryRecorderFactory
     {
         private static DiagnosticScopeFactory ScopeFactory { get; set; } 
 
-        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName, bool isFeatureEnabled)
+        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName, bool isFeatureEnabled, OpenTelemetryConfig config)
         {
             if (isFeatureEnabled)
             {
@@ -23,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
                 if (scope.IsEnabled)
                 {
-                    return new OpenTelemetryCoreRecorder(scope);
+                    return new OpenTelemetryCoreRecorder(scope, config);
                 }
             }
 

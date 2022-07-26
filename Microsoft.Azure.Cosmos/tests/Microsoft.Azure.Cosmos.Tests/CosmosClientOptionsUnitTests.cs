@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Net.Http;
     using System.Reflection;
+    using Cosmos.Telemetry.OpenTelemetry;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
@@ -57,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
                 authKeyOrResourceToken: key);
-
+            
             CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
 
@@ -82,6 +83,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(clientOptions.HttpClientFactory);
             Assert.AreNotEqual(consistencyLevel, clientOptions.ConsistencyLevel);
             Assert.IsFalse(clientOptions.EnablePartitionLevelFailover);
+            Assert.IsFalse(clientOptions.EnableOpenTelemetry);
+            Assert.AreEqual(null, clientOptions.OpenTelemetryConfig);
 
             //Verify GetConnectionPolicy returns the correct values for default
             ConnectionPolicy policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -109,7 +112,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .WithBulkExecution(true)
                 .WithSerializerOptions(cosmosSerializerOptions)
                 .WithConsistencyLevel(consistencyLevel)
-                .WithPartitionLevelFailoverEnabled();
+                .WithPartitionLevelFailoverEnabled()
+                .EnableOpenTelemetry();
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
@@ -132,6 +136,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(clientOptions.AllowBulkExecution);
             Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
             Assert.IsTrue(clientOptions.EnablePartitionLevelFailover);
+            Assert.IsTrue(clientOptions.EnableOpenTelemetry);
+            Assert.AreEqual(null, clientOptions.OpenTelemetryConfig);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -146,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual((int)maxRetryWaitTime.TotalSeconds, policy.RetryOptions.MaxRetryWaitTimeInSeconds);
             Assert.AreEqual((Documents.ConsistencyLevel)consistencyLevel, clientOptions.GetDocumentsConsistencyLevel());
             Assert.IsTrue(policy.EnablePartitionLevelFailover);
-
+            
             IReadOnlyList<string> preferredLocations = new List<string>() { Regions.AustraliaCentral, Regions.AustraliaCentral2 };
             //Verify Direct Mode settings
             cosmosClientBuilder = new CosmosClientBuilder(
@@ -159,7 +165,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 maxTcpConnectionsPerEndpoint,
                 portReuseMode,
                 enableTcpConnectionEndpointRediscovery)
-                .WithApplicationPreferredRegions(preferredLocations);
+                .WithApplicationPreferredRegions(preferredLocations)
+                .EnableOpenTelemetry(new OpenTelemetryConfig());
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
@@ -171,6 +178,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, clientOptions.PortReuseMode);
             Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), clientOptions.ApplicationPreferredRegions.ToArray());
+            Assert.IsTrue(clientOptions.EnableOpenTelemetry);
+            Assert.IsNotNull(clientOptions.OpenTelemetryConfig);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);

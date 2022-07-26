@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
+    using Telemetry.OpenTelemetry;
 
     /// <summary>
     /// Defines all the configurable options that the CosmosClient requires.
@@ -925,7 +926,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Enable OpenTelemetry and start emiting activities for each operations
+        /// Enable OpenTelemetry and start emitting activities for each operations
         /// </summary>
 #if PREVIEW
         public
@@ -933,5 +934,15 @@ namespace Microsoft.Azure.Cosmos
         internal
 #endif
             bool EnableOpenTelemetry { get; set; }
+
+        /// <summary>
+        /// Open Telemetry Configuration
+        /// </summary>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            OpenTelemetryConfig OpenTelemetryConfig { get; set; }
     }
 }
