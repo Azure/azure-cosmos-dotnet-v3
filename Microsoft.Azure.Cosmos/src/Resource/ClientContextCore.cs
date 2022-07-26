@@ -475,7 +475,7 @@ namespace Microsoft.Azure.Cosmos
         {
             using (OpenTelemetryCoreRecorder recorder = 
                                 OpenTelemetryRecorderFactory.CreateRecorder(
-                                    operationName: operationName, 
+                                    operationName: operationName,
                                     isFeatureEnabled: this.clientOptions.EnableOpenTelemetry))
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -484,6 +484,10 @@ namespace Microsoft.Azure.Cosmos
                     TResult result = await task(trace).ConfigureAwait(false);
                     if (openTelemetry != null && recorder.IsEnabled)
                     {
+                        // Record client and other information
+                        recorder.Record(operationName, this);
+
+                        // Record request response information
                         OpenTelemetryAttributes response = openTelemetry(result);
                         recorder.Record(response);
                     }
