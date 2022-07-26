@@ -8,10 +8,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
-    using Microsoft.Azure.Cosmos.Core.Trace;
+    using Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
-    using Microsoft.Azure.Cosmos.Tests.Contracts;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 

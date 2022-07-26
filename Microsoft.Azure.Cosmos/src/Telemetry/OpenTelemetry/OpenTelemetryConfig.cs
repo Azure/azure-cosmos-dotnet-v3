@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
+namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
 

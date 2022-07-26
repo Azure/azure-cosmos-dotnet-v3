@@ -2,10 +2,9 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
+namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using global::Azure.Core.Pipeline;
-    using OpenTelemetry;
 
     internal static class OpenTelemetryRecorderFactory
     {

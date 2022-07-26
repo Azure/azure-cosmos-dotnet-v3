@@ -41,6 +41,8 @@ namespace Microsoft.Azure.Cosmos.Contracts
 
 #if INTERNAL
             int expected = 7;
+#elif PREVIEW
+            int expected = 6;
 #else
             int expected = 5;
 #endif

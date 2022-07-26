@@ -2,13 +2,12 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
+namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Generic;
-    using System.Text;
+    using Diagnostics;
     using global::Azure.Core.Pipeline;
-    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
 
     internal readonly struct OpenTelemetryCoreRecorder : IDisposable
     {

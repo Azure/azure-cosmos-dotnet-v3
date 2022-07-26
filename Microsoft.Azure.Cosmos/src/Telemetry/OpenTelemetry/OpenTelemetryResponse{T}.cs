@@ -4,7 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
+    using Telemetry;
 
     internal sealed class OpenTelemetryResponse<T> : OpenTelemetryAttributes
     {

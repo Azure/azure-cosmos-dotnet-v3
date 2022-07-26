@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
     using System;
     using System.Net;
-    using OpenTelemetry;
 
     internal static class DiagnosticsFilterHelper
     {

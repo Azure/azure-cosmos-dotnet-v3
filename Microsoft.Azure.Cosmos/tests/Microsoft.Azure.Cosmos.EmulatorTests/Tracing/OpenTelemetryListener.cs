@@ -11,8 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Reflection;
     using System.Text;
     using System.Threading;
-    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Telemetry;
 
     public class OpenTelemetryListener : IObserver<KeyValuePair<string, object>>, IObserver<DiagnosticListener>, IDisposable
     {

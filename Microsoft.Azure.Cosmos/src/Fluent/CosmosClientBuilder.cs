@@ -10,13 +10,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Azure;
     using global::Azure;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
-    using Telemetry.OpenTelemetry;
+    using Telemetry;
 
     /// <summary>
     /// This is a Builder class that creates a cosmos client

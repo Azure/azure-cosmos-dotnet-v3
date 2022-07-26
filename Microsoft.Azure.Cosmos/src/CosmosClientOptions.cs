@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
-    using Telemetry.OpenTelemetry;
+    using Telemetry;
 
     /// <summary>
     /// Defines all the configurable options that the CosmosClient requires.
