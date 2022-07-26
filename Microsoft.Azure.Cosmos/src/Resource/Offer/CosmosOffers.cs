@@ -55,7 +55,8 @@ namespace Microsoft.Azure.Cosmos
                     HttpStatusCode.NotFound,
                     headers: null,
                     throughputProperties: null,
-                    diagnostics: null);
+                    diagnostics: null,
+                    requestMessage: null);
             }
 
             return await this.GetThroughputResponseAsync(
@@ -109,7 +110,8 @@ namespace Microsoft.Azure.Cosmos
                         httpStatusCode: notFound.StatusCode,
                         headers: notFound.Headers,
                         throughputProperties: null,
-                        diagnostics: notFound.Diagnostics);
+                        diagnostics: notFound.Diagnostics,
+                        requestMessage: null);
                 }
 
                 currentProperty.Content = throughputProperties.Content;
@@ -130,7 +132,8 @@ namespace Microsoft.Azure.Cosmos
                     responseMessage.StatusCode,
                     headers: responseMessage.Headers,
                     throughputProperties: null,
-                    diagnostics: responseMessage.Diagnostics);
+                    diagnostics: responseMessage.Diagnostics,
+                    requestMessage: responseMessage.RequestMessage);
             }
             catch (AggregateException ex)
             {
@@ -139,7 +142,8 @@ namespace Microsoft.Azure.Cosmos
                     responseMessage.StatusCode,
                     headers: responseMessage.Headers,
                     throughputProperties: null,
-                    diagnostics: responseMessage.Diagnostics);
+                    diagnostics: responseMessage.Diagnostics,
+                    requestMessage: responseMessage.RequestMessage);
             }
         }
 

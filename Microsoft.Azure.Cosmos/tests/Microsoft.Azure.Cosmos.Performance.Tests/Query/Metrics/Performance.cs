@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Query.Metrics
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using System.Diagnostics;
     using BenchmarkDotNet.Attributes;
+    using Microsoft.Azure.Documents;
 
     public class Performance
     {
@@ -33,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Query.Metrics
         [Benchmark]
         public void TestParse()
         {
-            Stopwatch stopwatch = Stopwatch.StartNew();
+            ValueStopwatch stopwatch = ValueStopwatch.StartNew();
             for (int i = 0; i < 100000; i++)
             {
                 BackendMetricsParser.TryParse(delimitedString, out BackendMetrics backendMetrics);

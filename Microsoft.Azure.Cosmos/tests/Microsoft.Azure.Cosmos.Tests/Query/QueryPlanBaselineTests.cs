@@ -1385,7 +1385,8 @@
                 isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
                 hasLogicalPartitionKey: false,
-                allowDCount: true);
+                allowDCount: true,
+                useSystemPrefix: false);
 
             if (info.Failed)
             {

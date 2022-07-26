@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class AsyncCacheNonBlocking<TKey, TValue> : IDisposable
     {
-        private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        private readonly CancellationTokenSource cancellationTokenSource;
         private readonly ConcurrentDictionary<TKey, AsyncLazyWithRefreshTask<TValue>> values;
         private readonly Func<Exception, bool> removeFromCacheOnBackgroundRefreshException;
 
@@ -30,11 +30,15 @@ namespace Microsoft.Azure.Cosmos
 
         public AsyncCacheNonBlocking(
             Func<Exception, bool> removeFromCacheOnBackgroundRefreshException = null,
-            IEqualityComparer<TKey> keyEqualityComparer = null)
+            IEqualityComparer<TKey> keyEqualityComparer = null,
+            CancellationToken cancellationToken = default)
         {
             this.keyEqualityComparer = keyEqualityComparer ?? EqualityComparer<TKey>.Default;
             this.values = new ConcurrentDictionary<TKey, AsyncLazyWithRefreshTask<TValue>>(this.keyEqualityComparer);
             this.removeFromCacheOnBackgroundRefreshException = removeFromCacheOnBackgroundRefreshException ?? AsyncCacheNonBlocking<TKey, TValue>.RemoveNotFoundFromCacheOnException;
+            this.cancellationTokenSource = cancellationToken == default
+                ? new CancellationTokenSource()
+                : CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         }
 
         public AsyncCacheNonBlocking()

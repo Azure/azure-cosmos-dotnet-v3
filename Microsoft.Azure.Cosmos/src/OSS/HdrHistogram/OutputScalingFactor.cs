@@ -17,6 +17,7 @@
  */
 
 using System.Diagnostics;
+using Microsoft.Azure.Documents;
 
 namespace HdrHistogram
 {
@@ -33,16 +34,16 @@ namespace HdrHistogram
         /// <summary>
         /// For use when values are recorded with <seealso cref="Stopwatch.GetTimestamp()"/> and output should be reported in microseconds.
         /// </summary>
-        public static readonly double TimeStampToMicroseconds = Stopwatch.Frequency / (1000d * 1000d);
+        public static readonly double TimeStampToMicroseconds = ValueStopwatch.Frequency / (1000d * 1000d);
 
         /// <summary>
         /// For use when values are recorded with <seealso cref="Stopwatch.GetTimestamp()"/> and output should be reported in milliseconds.
         /// </summary>
-        public static readonly double TimeStampToMilliseconds = Stopwatch.Frequency / 1000d;
+        public static readonly double TimeStampToMilliseconds = ValueStopwatch.Frequency / 1000d;
 
         /// <summary>
         /// For use when values are recorded with <seealso cref="Stopwatch.GetTimestamp()"/> and output should be reported in seconds.
         /// </summary>
-        public static readonly double TimeStampToSeconds = Stopwatch.Frequency;
+        public static readonly double TimeStampToSeconds = ValueStopwatch.Frequency;
     }
 }

@@ -4,7 +4,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+### <a name="1.0.1"/> [1.0.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.1) - 2022-06-01
+
+#### Added
+- [#3200](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3200) Adds fix to retain the original key vault error/exception and upgrades core SDK package dependency.
+
+### <a name="1.0.1-preview"/> [1.0.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.1-preview) - 2022-06-01
+
+#### Added
+- [#3200](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3200) Adds fix to retain the original key vault error/exception and upgrades core SDK preview package dependency.
+
 ### <a name="1.0.0"/> [1.0.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0) - 2022-03-22
+
 #### Added
 - [#3070](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3070) Adds support for preview and non-preview version of Cosmos SDK in Encryption package.
 
