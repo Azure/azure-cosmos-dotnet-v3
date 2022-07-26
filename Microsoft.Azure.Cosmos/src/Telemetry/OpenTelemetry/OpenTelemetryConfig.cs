@@ -6,6 +6,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
 {
     using System;
 
+    /// <summary>
+    /// Open Telemetry Configuration
+    /// </summary>
 #if PREVIEW
     public
 #else
