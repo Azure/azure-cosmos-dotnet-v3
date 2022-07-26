@@ -96,17 +96,5 @@ namespace Microsoft.Azure.Cosmos.Tracing
             }
         }
 
-        /// <summary>
-        ///  The Consolidated Region contacted Information of this and children nodes for an <see cref="ITrace"/>
-        /// </summary>
-        /// <returns>The value of regions contacted list</returns>
-        public IReadOnlyList<(string, Uri)> GetRegionsContacted()
-        {
-            lock (this.regionContactedInternal)
-            {
-                return this.regionContactedInternal.ToList();
-            }
-        }
-
     }
 }

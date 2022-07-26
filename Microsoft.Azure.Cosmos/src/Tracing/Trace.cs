@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
         private static readonly IReadOnlyDictionary<string, object> EmptyDictionary = new Dictionary<string, object>();
         private readonly List<ITrace> children;
         private readonly Lazy<Dictionary<string, object>> data;
-        //private readonly ISet<(string, Uri)> regionContactedInternal;
         private ValueStopwatch stopwatch;
 
         private Trace(
@@ -36,8 +35,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.Parent = parent;
             this.children = new List<ITrace>();
             this.data = new Lazy<Dictionary<string, object>>();
-
-           // this.regionContactedInternal = summary.RegionsContacted;
             this.Summary = summary ?? throw new ArgumentNullException(nameof(summary));
         }
 
@@ -90,7 +87,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 level: level,
                 component: component,
                 parent: this,
-                //regionContactedInternal: this.regionContactedInternal,
                 summary: this.Summary);
 
             this.AddChild(child);
@@ -123,7 +119,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 level: level,
                 component: component,
                 parent: null,
-                //regionContactedInternal: new HashSet<(string, Uri)>(),
                 summary: new TraceSummary());
         }
 
