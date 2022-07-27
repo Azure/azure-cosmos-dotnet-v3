@@ -289,7 +289,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
 
             MemoryStream memoryStream = null;
-            if (changeFeedPaginationOptions.changeFeedQuerySpec != null && changeFeedPaginationOptions.changeFeedQuerySpec.QueryText != null)
+            if (changeFeedPaginationOptions.changeFeedQuerySpec != null && changeFeedPaginationOptions.changeFeedQuerySpec.ShouldSerializeQueryText())
             {
                 string queryText = Newtonsoft.Json.JsonConvert.SerializeObject(changeFeedPaginationOptions.changeFeedQuerySpec);
                 memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(queryText));

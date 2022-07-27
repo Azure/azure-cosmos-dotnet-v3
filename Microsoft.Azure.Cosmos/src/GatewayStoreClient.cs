@@ -256,7 +256,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 httpMethod = HttpMethod.Post;
             }
-            else if (ChangeFeedHelper.isChangeFeedWithQueryRequest(request.OperationType, request.Body != null))
+            else if (ChangeFeedHelper.IsChangeFeedWithQueryRequest(request.OperationType, request.Body != null))
             {
                 // ChangeFeed with payload is a CF with query support and will
                 // be a query POST request.

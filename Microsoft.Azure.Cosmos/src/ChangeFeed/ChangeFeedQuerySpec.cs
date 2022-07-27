@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// </summary>
         /// <value>The text of the database query.</value>
         [DataMember(Name = "query")]
-        public string QueryText { get; set; }
+        private string QueryText { get; set; }
 
         /// <summary>
         /// Gets or sets if database query should be run on previous image if present.
@@ -58,11 +58,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private bool EnableQueryOnPreviousImage { get; set; }
 
         /// <summary>
-        /// Returns a value that indicates whether <see cref="EnableQueryOnPreviousImage"/> property should be serialized.
+        /// Returns a value that indicates whether <see cref="QueryText"/> property should be serialized.
         /// </summary>
-        internal bool ShouldSerializeEnableQueryOnPreviousImage()
+        internal bool ShouldSerializeQueryText()
         {
-            return this.EnableQueryOnPreviousImage;
+            return this.QueryText != null && this.QueryText.Length > 0;
         }
     }
 }

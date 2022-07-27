@@ -281,7 +281,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         request.Headers.ContentType = RuntimeConstants.MediaTypes.JsonPatch;
                     }
 
-                    if (ChangeFeedHelper.isChangeFeedWithQueryRequest(operationType, streamPayload != null))
+                    if (ChangeFeedHelper.IsChangeFeedWithQueryRequest(operationType, streamPayload != null))
                     {
                         request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                         request.Headers.Add(HttpConstants.HttpHeaders.ContentType, RuntimeConstants.MediaTypes.QueryJson);
@@ -320,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 return HttpMethod.Post;
             }
-            else if (ChangeFeedHelper.isChangeFeedWithQueryRequest(operationType, hasStreamPayload))
+            else if (ChangeFeedHelper.IsChangeFeedWithQueryRequest(operationType, hasStreamPayload))
             {
                 // ChangeFeed with payload is a CF with query support and will
                 // be a POST request.
