@@ -15,34 +15,48 @@ namespace Microsoft.Azure.Cosmos.Linq
         [TestMethod]
         public void TypeIsStatementWithTypeNameHandlingIsTranslated()
         {
-            // Should work documents with property attributes
-            Expression<Func<TestDocumentWithPropertyTypeNameHandling, bool>> expr = a => a.Child is TestDocumentChild;
+            // Should work for document properties with TypeNameHandling configured
+            Expression<Func<TestDocument, bool>> expr = a => a.Child is TestDocumentChild;
             string sql = SqlTranslator.TranslateExpression(expr.Body);
             Assert.AreEqual("(a[\"Child\"].$type = \"Microsoft.Azure.Cosmos.Linq.CosmosLinqTypeIsTests+TestDocumentChild, Microsoft.Azure.Cosmos.Tests, Version=0.0.0.0, Culture=neutral, PublicKeyToken=69c3241e6f0468ca\")", sql);
         }
 
         [TestMethod]
+        public void TypeIsStatementOnNestedPropertiesWithTypeNameHandlingIsTranslated()
+        {
+            // Should work for nested document properties with TypeNameHandling configured
+            Expression<Func<TestDocument, bool>> expr = a => a.Child.InnerChild is TestDocumentChild;
+            string sql = SqlTranslator.TranslateExpression(expr.Body);
+            Assert.AreEqual("(a[\"Child\"][\"InnerChild\"].$type = \"Microsoft.Azure.Cosmos.Linq.CosmosLinqTypeIsTests+TestDocumentChild, Microsoft.Azure.Cosmos.Tests, Version=0.0.0.0, Culture=neutral, PublicKeyToken=69c3241e6f0468ca\")", sql);
+        }
+
+        [TestMethod]
         public void TypeIsStatementWithoutTypeNameHandlingThrowsException()
         {
-            // Should throw for documents with no TypeNameHandling configured
-            Expression<Func<TestDocumentWithoutPropertyTypeNameHandling, bool>> expr = a => a.Child is TestDocumentChild;
+            // Should throw for document properties with no TypeNameHandling configured
+            Expression<Func<TestDocument, bool>> expr = a => a.ChildWithoutTypeNameHandling is TestDocumentChild;
             Assert.ThrowsException<DocumentQueryException>(() => SqlTranslator.TranslateExpression(expr.Body));
         }
 
-        class TestDocumentWithPropertyTypeNameHandling
+        class TestDocument
         {
             [JsonProperty(TypeNameHandling = TypeNameHandling.Objects)]
             public ITestDocumentChild Child { get; set; }
-        }
 
-        class TestDocumentWithoutPropertyTypeNameHandling
-        {
             [JsonProperty(TypeNameHandling = TypeNameHandling.None)]
-            public ITestDocumentChild Child { get; set; }
+            public ITestDocumentChild ChildWithoutTypeNameHandling { get; set; }
         }
 
-        interface ITestDocumentChild {}
+        interface ITestDocumentChild
+        {
+            [JsonProperty(TypeNameHandling = TypeNameHandling.Objects)]
+            ITestDocumentChild InnerChild { get; }
+        }
 
-        class TestDocumentChild : ITestDocumentChild {}
+        class TestDocumentChild : ITestDocumentChild
+        {
+            [JsonProperty(TypeNameHandling = TypeNameHandling.Objects)]
+            public ITestDocumentChild InnerChild { get; set; }
+        }
     }
 }
