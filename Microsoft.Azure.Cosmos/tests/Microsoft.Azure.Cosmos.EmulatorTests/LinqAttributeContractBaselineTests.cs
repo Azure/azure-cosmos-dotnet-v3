@@ -86,6 +86,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.JsonPropertyAndDataMember = random.NextDouble() < 0.3 ? "Hello" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.DataMember = random.NextDouble() < 0.3 ? "Hello" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.Default = random.NextDouble() < 0.3 ? "Hello" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
+                obj.Child = new DatumChild();
                 return obj;
             };
             getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataFunc, Records, testCollection);
@@ -133,6 +134,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             [JsonProperty(PropertyName = "jsonPropertyHasHigherPriority")]
             [DataMember(Name = "thanDataMember")]
             public string JsonPropertyAndDataMember;
+
+            [JsonProperty(TypeNameHandling = TypeNameHandling.Objects)]
+            public IDatumChild Child;
         }
 
         /// <summary>
@@ -161,6 +165,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 this.JsonPropertyAndDataMember = jsonPropertyAndDataMember;
             }
         }
+
+        public interface IDatumChild {}
+
+        public class DatumChild : IDatumChild {}
 
         /// <summary>
         /// In general the attribute priority is as follows:
@@ -249,6 +257,17 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             var inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("New", b => getQuery(b).Select(doc => new Datum2(doc.JsonProperty, doc.DataMember, doc.Default, doc.JsonPropertyAndDataMember))));
+            this.ExecuteTestSuite(inputs);
+        }
+
+        /// <summary>
+        /// Tests to see if we can filter by type metadata
+        /// </summary>
+        [TestMethod]
+        public void TestTypeNameHandlingAttributeContract()
+        {
+            var inputs = new List<LinqTestInput>();
+            inputs.Add(new LinqTestInput("TypeIs", b => getQuery(b).Where(doc => doc.Child is DatumChild)));
             this.ExecuteTestSuite(inputs);
         }
 

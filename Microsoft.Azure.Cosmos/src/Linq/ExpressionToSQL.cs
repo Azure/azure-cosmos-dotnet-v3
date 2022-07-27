@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Serializer;
@@ -656,12 +657,19 @@ namespace Microsoft.Azure.Cosmos.Linq
                 throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.PropertyDoesNotSupportTypeComparison, memberExpression?.Member.GetMemberName()));
             }
 
-            SqlScalarExpression scalarExpression = ExpressionToSql.VisitScalarExpression(memberExpression, context);
+            SqlScalarExpression memberAccessExpression = ExpressionToSql.VisitScalarExpression(memberExpression, context);
 
-            string fullyQualifiedTypeName = inputExpression.TypeOperand.AssemblyQualifiedName;
             return SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Equal,
-                        SqlPropertyRefScalarExpression.Create(scalarExpression, SqlIdentifier.Create("$type")),
-                        SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(fullyQualifiedTypeName)));
+                        SqlMemberIndexerScalarExpression.Create(memberAccessExpression, SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("$type"))),
+                        SqlLiteralScalarExpression.Create(FormatTypeName(inputExpression.TypeOperand)));
+        }
+
+        private static SqlLiteral FormatTypeName(Type type)
+        {
+            string assemblyName = type.Assembly.FullName?.Split(',').FirstOrDefault();
+            string typeName = type.FullName;
+            string fullyQualifiedTypeName = typeName + (assemblyName == null ? string.Empty : ", " + assemblyName);
+            return SqlStringLiteral.Create(fullyQualifiedTypeName);
         }
 
         public static SqlScalarExpression VisitConstant(ConstantExpression inputExpression, TranslationContext context)

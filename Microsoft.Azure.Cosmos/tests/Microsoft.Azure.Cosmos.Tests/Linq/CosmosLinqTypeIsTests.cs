@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             // Should work for document properties with TypeNameHandling configured
             Expression<Func<TestDocument, bool>> expr = a => a.Child is TestDocumentChild;
             string sql = SqlTranslator.TranslateExpression(expr.Body);
-            Assert.AreEqual("(a[\"Child\"].$type = \"Microsoft.Azure.Cosmos.Linq.CosmosLinqTypeIsTests+TestDocumentChild, Microsoft.Azure.Cosmos.Tests, Version=0.0.0.0, Culture=neutral, PublicKeyToken=69c3241e6f0468ca\")", sql);
+            Assert.AreEqual("(a[\"Child\"][\"$type\"] = \"Microsoft.Azure.Cosmos.Linq.CosmosLinqTypeIsTests+TestDocumentChild, Microsoft.Azure.Cosmos.Tests\")", sql);
         }
 
         [TestMethod]
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             // Should work for nested document properties with TypeNameHandling configured
             Expression<Func<TestDocument, bool>> expr = a => a.Child.InnerChild is TestDocumentChild;
             string sql = SqlTranslator.TranslateExpression(expr.Body);
-            Assert.AreEqual("(a[\"Child\"][\"InnerChild\"].$type = \"Microsoft.Azure.Cosmos.Linq.CosmosLinqTypeIsTests+TestDocumentChild, Microsoft.Azure.Cosmos.Tests, Version=0.0.0.0, Culture=neutral, PublicKeyToken=69c3241e6f0468ca\")", sql);
+            Assert.AreEqual("(a[\"Child\"][\"InnerChild\"][\"$type\"] = \"Microsoft.Azure.Cosmos.Linq.CosmosLinqTypeIsTests+TestDocumentChild, Microsoft.Azure.Cosmos.Tests\")", sql);
         }
 
         [TestMethod]
