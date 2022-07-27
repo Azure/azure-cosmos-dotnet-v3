@@ -319,12 +319,31 @@
           ],
           "MethodInfo": "Boolean get_EnableOpenTelemetry();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig get_OpenTelemetryConfig()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig get_OpenTelemetryConfig();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig OpenTelemetryConfig": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig OpenTelemetryConfig;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig get_OpenTelemetryConfig();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_OpenTelemetryConfig(Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Void set_EnableOpenTelemetry(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_EnableOpenTelemetry(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_OpenTelemetryConfig(Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_OpenTelemetryConfig(Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -354,10 +373,10 @@
     "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder EnableOpenTelemetry()": {
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder EnableOpenTelemetry(Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder EnableOpenTelemetry();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder EnableOpenTelemetry(Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -412,6 +431,36 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(), Void .ctor()]"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.TimeSpan get_LatencyThreshold()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.TimeSpan get_LatencyThreshold();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan LatencyThreshold": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.TimeSpan LatencyThreshold;CanRead:True;CanWrite:True;System.TimeSpan get_LatencyThreshold();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_LatencyThreshold(System.TimeSpan);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
+        },
+        "Void set_LatencyThreshold(System.TimeSpan)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_LatencyThreshold(System.TimeSpan);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
