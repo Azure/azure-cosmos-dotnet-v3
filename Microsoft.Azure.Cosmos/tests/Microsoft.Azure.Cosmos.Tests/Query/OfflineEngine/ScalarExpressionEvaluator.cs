@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
     {
         public static readonly ScalarExpressionEvaluator Singleton = new ScalarExpressionEvaluator();
 
-        private static readonly CosmosElement Undefined = null;
+        private static readonly CosmosElement Undefined = CosmosUndefined.Instance;
 
         private ScalarExpressionEvaluator()
         {
@@ -594,7 +594,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
             public override CosmosElement Visit(SqlStringLiteral literal) => CosmosString.Create(literal.Value);
 
-            public override CosmosElement Visit(SqlUndefinedLiteral literal) => null;
+            public override CosmosElement Visit(SqlUndefinedLiteral literal) => CosmosUndefined.Instance;
 
             public override CosmosElement Visit(SqlNullLiteral literal) => CosmosNull.Create();
 
@@ -662,6 +662,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             public CosmosElement Visit(CosmosNumber cosmosNumber, CosmosElement indexer) => Undefined;
 
             public CosmosElement Visit(CosmosString cosmosString, CosmosElement indexer) => Undefined;
+
+            public CosmosElement Visit(CosmosUndefined cosmosUndefined, CosmosElement input) => Undefined;
         }
     }
 }

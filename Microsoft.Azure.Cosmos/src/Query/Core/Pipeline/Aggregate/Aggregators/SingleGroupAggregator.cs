@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                 foreach (string alias in this.orderedAliases)
                 {
                     AggregateValue aggregateValue = this.aliasToValue[alias];
-                    if (aggregateValue.Result != null)
+                    if (!(aggregateValue.Result is CosmosUndefined))
                     {
                         dictionary[alias] = aggregateValue.Result;
                         keys.Add(alias);

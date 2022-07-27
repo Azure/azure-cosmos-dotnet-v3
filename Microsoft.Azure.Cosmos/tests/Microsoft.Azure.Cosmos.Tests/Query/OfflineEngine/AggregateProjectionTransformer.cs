@@ -410,6 +410,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 SqlStringLiteral literal = SqlStringLiteral.Create(cosmosString.Value);
                 return SqlLiteralScalarExpression.Create(literal);
             }
+
+            public SqlScalarExpression Visit(CosmosUndefined cosmosUndefined)
+            {
+                return SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
+            }
         }
     }
 }

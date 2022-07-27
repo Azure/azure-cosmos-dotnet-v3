@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
     /// </summary>
     internal sealed class MinMaxAggregator : IAggregator
     {
-        private static readonly CosmosElement Undefined = null;
+        private static readonly CosmosElement Undefined = CosmosUndefined.Instance;
         /// <summary>
         /// Whether or not the aggregation is a min or a max.
         /// </summary>
@@ -261,6 +261,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
             public bool Visit(CosmosString cosmosString)
             {
                 return true;
+            }
+
+            public bool Visit(CosmosUndefined cosmosUndefined)
+            {
+                return false;
             }
         }
 
