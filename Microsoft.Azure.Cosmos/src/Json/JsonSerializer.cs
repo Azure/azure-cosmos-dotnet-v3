@@ -301,6 +301,16 @@ namespace Microsoft.Azure.Cosmos.Json
                 return TryCatch<object>.FromResult(default);
             }
 
+            public TryCatch<object> Visit(CosmosUndefined cosmosUndefined, Type type)
+            {
+                if (type.IsValueType && !(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>)))
+                {
+                    return TryCatch<object>.FromException(Visitor.Exceptions.ExpectedReferenceOrNullableType);
+                }
+
+                return TryCatch<object>.FromResult(default);
+            }
+
             public TryCatch<object> Visit(CosmosNumber cosmosNumber, Type type)
             {
                 if (type == typeof(Number64))

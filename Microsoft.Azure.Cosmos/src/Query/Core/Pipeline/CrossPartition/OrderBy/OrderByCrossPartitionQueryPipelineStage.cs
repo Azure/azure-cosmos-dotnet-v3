@@ -837,7 +837,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 AppendToBuilders(builders, "( ");
 
                 // We need to add the filter for within the same type.
-                if (orderByItem != default)
+                if (!(orderByItem is CosmosUndefined))
                 {
                     StringBuilder sb = new StringBuilder();
                     CosmosElementToQueryLiteral cosmosElementToQueryLiteral = new CosmosElementToQueryLiteral(sb);
@@ -925,7 +925,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
                         bool wasInequality;
                         // We need to add the filter for within the same type.
-                        if (orderByItem == default)
+                        if (!(orderByItem is CosmosUndefined))
                         {
                             ComparisionWithUndefinedFilters filters = new ComparisionWithUndefinedFilters(expression);
 
@@ -1255,6 +1255,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             public ReadOnlyMemory<string> Visit(CosmosNull cosmosNull, bool isAscending)
             {
                 return GetIsDefinedFunctions(SortOrder.Null, isAscending);
+            }
+
+            public ReadOnlyMemory<string> Visit(CosmosUndefined cosmosUndefined, bool input)
+            {
+                throw new NotImplementedException();
             }
 
             public ReadOnlyMemory<string> Visit(CosmosNumber cosmosNumber, bool isAscending)

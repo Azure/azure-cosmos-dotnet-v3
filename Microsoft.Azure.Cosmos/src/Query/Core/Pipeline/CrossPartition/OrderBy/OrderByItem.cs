@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             {
                 if (!this.cosmosObject.TryGetValue(ItemName, out CosmosElement cosmosElement))
                 {
-                    cosmosElement = null;
+                    cosmosElement = CosmosUndefined.Instance;
                 }
 
                 return cosmosElement;

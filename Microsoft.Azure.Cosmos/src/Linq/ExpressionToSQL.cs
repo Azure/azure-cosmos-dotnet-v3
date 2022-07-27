@@ -2011,6 +2011,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 return SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(cosmosString.Value));
             }
+
+            public SqlScalarExpression Visit(CosmosUndefined cosmosUndefined)
+            {
+                return SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
+            }
         }
         private enum SubqueryKind
         {
