@@ -183,11 +183,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 
         private static bool IsPrimitve(CosmosElement cosmosElement)
         {
-            if (cosmosElement == Undefined)
-            {
-                return false;
-            }
-
             return cosmosElement.Accept(IsPrimitiveCosmosElementVisitor.Singleton);
         }
 
