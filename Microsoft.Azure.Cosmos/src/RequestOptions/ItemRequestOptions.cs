@@ -125,12 +125,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Learn more about dedicated gateway <a href="https://azure.microsoft.com/services/cosmos-db/">here</a>. 
         /// </remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-            DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
+        public DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
