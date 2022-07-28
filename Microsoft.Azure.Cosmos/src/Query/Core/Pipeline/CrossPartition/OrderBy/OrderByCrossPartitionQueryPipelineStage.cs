@@ -864,9 +864,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 }
 
                 // Now we need to include all the types that match the sort order.
-                ReadOnlyMemory<string> isDefinedFunctions = orderByItem == default
-                    ? CosmosElementToIsSystemFunctionsVisitor.VisitUndefined(sortOrder == SortOrder.Ascending)
-                    : orderByItem.Accept(CosmosElementToIsSystemFunctionsVisitor.Singleton, sortOrder == SortOrder.Ascending);
+                ReadOnlyMemory<string> isDefinedFunctions = orderByItem.Accept(CosmosElementToIsSystemFunctionsVisitor.Singleton, sortOrder == SortOrder.Ascending);
                 foreach (string isDefinedFunction in isDefinedFunctions.Span)
                 {
                     AppendToBuilders(builders, " OR ");
@@ -925,7 +923,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
                         bool wasInequality;
                         // We need to add the filter for within the same type.
-                        if (!(orderByItem is CosmosUndefined))
+                        if (orderByItem is CosmosUndefined)
                         {
                             ComparisionWithUndefinedFilters filters = new ComparisionWithUndefinedFilters(expression);
 
@@ -1005,9 +1003,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         if (wasInequality)
                         {
                             // Now we need to include all the types that match the sort order.
-                            ReadOnlyMemory<string> isDefinedFunctions = orderByItem == default
-                                ? CosmosElementToIsSystemFunctionsVisitor.VisitUndefined(sortOrder == SortOrder.Ascending)
-                                : orderByItem.Accept(CosmosElementToIsSystemFunctionsVisitor.Singleton, sortOrder == SortOrder.Ascending);
+                            ReadOnlyMemory<string> isDefinedFunctions = orderByItem.Accept(CosmosElementToIsSystemFunctionsVisitor.Singleton, sortOrder == SortOrder.Ascending);
                             foreach (string isDefinedFunction in isDefinedFunctions.Span)
                             {
                                 AppendToBuilders(builders, " OR ");
@@ -1257,9 +1253,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 return GetIsDefinedFunctions(SortOrder.Null, isAscending);
             }
 
-            public ReadOnlyMemory<string> Visit(CosmosUndefined cosmosUndefined, bool input)
+            public ReadOnlyMemory<string> Visit(CosmosUndefined cosmosUndefined, bool isAscending)
             {
-                throw new NotImplementedException();
+                return isAscending ? SystemFunctionSortOrder.Slice(start: 1) : ReadOnlyMemory<string>.Empty;
             }
 
             public ReadOnlyMemory<string> Visit(CosmosNumber cosmosNumber, bool isAscending)
@@ -1275,11 +1271,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             public ReadOnlyMemory<string> Visit(CosmosString cosmosString, bool isAscending)
             {
                 return GetIsDefinedFunctions(SortOrder.String, isAscending);
-            }
-
-            public static ReadOnlyMemory<string> VisitUndefined(bool isAscending)
-            {
-                return isAscending ? SystemFunctionSortOrder.Slice(start: 1) : ReadOnlyMemory<string>.Empty;
             }
 
             private static ReadOnlyMemory<string> GetIsDefinedFunctions(int index, bool isAscending)

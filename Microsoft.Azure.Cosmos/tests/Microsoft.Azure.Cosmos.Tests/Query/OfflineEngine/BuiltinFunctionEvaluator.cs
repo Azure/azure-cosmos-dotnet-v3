@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
     internal static class BuiltinFunctionEvaluator
     {
-        private static readonly CosmosElement Undefined = null;
+        private static readonly CosmosElement Undefined = CosmosUndefined.Instance;
 
         private static readonly HashSet<BuiltinFunctionName> NullableFunctions = new HashSet<BuiltinFunctionName>()
         {
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             }
 
             // TODO: make the nullable function check based on the function signature and parameters.
-            if (arguments.Any((arugment) => arugment == Undefined) && !NullableFunctions.Contains(builtinFunction))
+            if (arguments.Any((arg) => arg == Undefined) && !NullableFunctions.Contains(builtinFunction))
             {
                 return Undefined;
             }
@@ -558,7 +558,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             CosmosElement needle,
             CosmosElement partialMatchToken = null)
         {
-            if (partialMatchToken == Undefined)
+            if (partialMatchToken == null || partialMatchToken == Undefined)
             {
                 partialMatchToken = CosmosBoolean.Create(false);
             }

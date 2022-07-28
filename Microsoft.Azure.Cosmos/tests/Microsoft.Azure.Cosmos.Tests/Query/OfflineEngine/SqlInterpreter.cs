@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
     internal static class SqlInterpreter
     {
-        private static readonly CosmosElement Undefined = null;
+        private static readonly CosmosElement Undefined = CosmosUndefined.Instance;
 
         private static readonly CosmosElement[] NoFromClauseDataSource = new CosmosElement[]
         {
@@ -120,6 +120,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 dataSource = ExecuteOffsetLimitClause(dataSource, sqlQuery.OffsetLimitClause);
             }
 
+            dataSource = FilterUndefinedProperties(dataSource);
+
             return dataSource;
         }
 
@@ -130,6 +132,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 GroupByStaticAnalyzer groupByStaticAnalyzer = new GroupByStaticAnalyzer(sqlQuery.GroupByClause.Expressions);
                 sqlQuery.SelectClause.SelectSpec.Accept(groupByStaticAnalyzer);
             }
+        }
+
+        private static IEnumerable<CosmosElement> FilterUndefinedProperties(IEnumerable<CosmosElement> dataSource)
+        {
+            return dataSource.Select(x => x.Accept(UndefinedPropertyRemover.Instance));
         }
 
         private static IEnumerable<CosmosElement> ExecuteSelectClause(
@@ -175,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     CosmosElement aggregationResult = transformedSpec.Accept(
                         Projector.Singleton,
                         dataSource.FirstOrDefault());
-                    if (aggregationResult != null)
+                    if (aggregationResult != Undefined)
                     {
                         dataSource = new CosmosElement[] { aggregationResult };
                     }
@@ -883,6 +890,80 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
                     return false;
                 }
+            }
+        }
+
+        private class UndefinedPropertyRemover : ICosmosElementVisitor<CosmosElement>
+        {
+            public static UndefinedPropertyRemover Instance = new UndefinedPropertyRemover();
+
+            private UndefinedPropertyRemover()
+            {
+            }
+
+            public CosmosElement Visit(CosmosArray cosmosArray)
+            {
+                List<CosmosElement> items = new List<CosmosElement>();
+                foreach (CosmosElement arrayItem in cosmosArray)
+                {
+                    CosmosElement item = arrayItem.Accept(this);
+                    if (item is not CosmosUndefined)
+                    {
+                        items.Add(item);
+                    }
+                }
+
+                return CosmosArray.Create(items);
+            }
+
+            public CosmosElement Visit(CosmosBinary cosmosBinary)
+            {
+                return cosmosBinary;
+            }
+
+            public CosmosElement Visit(CosmosBoolean cosmosBoolean)
+            {
+                return cosmosBoolean;
+            }
+
+            public CosmosElement Visit(CosmosGuid cosmosGuid)
+            {
+                return cosmosGuid;
+            }
+
+            public CosmosElement Visit(CosmosNull cosmosNull)
+            {
+                return cosmosNull;
+            }
+
+            public CosmosElement Visit(CosmosNumber cosmosNumber)
+            {
+                return cosmosNumber;
+            }
+
+            public CosmosElement Visit(CosmosObject cosmosObject)
+            {
+                Dictionary<string, CosmosElement> properties = new Dictionary<string, CosmosElement>();
+                foreach (KeyValuePair<string, CosmosElement> property in cosmosObject)
+                {
+                    CosmosElement value = property.Value.Accept(this);
+                    if(value is not CosmosUndefined)
+                    {
+                        properties.Add(property.Key, value);
+                    }
+                }
+
+                return CosmosObject.Create(properties);
+            }
+
+            public CosmosElement Visit(CosmosString cosmosString)
+            {
+                return cosmosString;
+            }
+
+            public CosmosElement Visit(CosmosUndefined cosmosUndefined)
+            {
+                return cosmosUndefined;
             }
         }
     }

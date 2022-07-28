@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
     [TestClass]
     public class ScalarExpressionEvaluatorTests
     {
-        private static readonly CosmosElement Undefined = null;
+        private static readonly CosmosElement Undefined = CosmosUndefined.Instance;
 
         [TestMethod]
         [Owner("brchon")]
