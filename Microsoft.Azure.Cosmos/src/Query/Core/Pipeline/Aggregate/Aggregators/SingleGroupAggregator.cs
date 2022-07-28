@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                 foreach (string alias in this.orderedAliases)
                 {
                     AggregateValue aggregateValue = this.aliasToValue[alias];
-                    if (!(aggregateValue.Result is CosmosUndefined))
+                    if (aggregateValue.Result is not CosmosUndefined)
                     {
                         dictionary[alias] = aggregateValue.Result;
                         keys.Add(alias);
@@ -239,7 +239,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                     AggregateValue aggregateValue = aliasAndValue.Value;
                     if (!payload.TryGetValue(alias, out CosmosElement payloadValue))
                     {
-                        payloadValue = null;
+                        payloadValue = CosmosUndefined.Instance;
                     }
 
                     aggregateValue.AddValue(payloadValue);
@@ -287,8 +287,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 
                     foreach (string key in this.keyOrdering)
                     {
-                        jsonWriter.WriteFieldName(key);
-                        this[key].WriteTo(jsonWriter);
+                        CosmosElement value = this[key];
+                        if (value is not CosmosUndefined)
+                        {
+                            jsonWriter.WriteFieldName(key);
+                            value.WriteTo(jsonWriter);
+                        }
                     }
 
                     jsonWriter.WriteObjectEnd();
@@ -447,7 +451,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 
                         if (!rawContinuationToken.TryGetValue(nameof(ScalarAggregateValue.value), out value))
                         {
-                            value = null;
+                            value = CosmosUndefined.Instance;
                         }
 
                         initialized = rawInitialized.Value;

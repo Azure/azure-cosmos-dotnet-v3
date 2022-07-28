@@ -837,7 +837,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 AppendToBuilders(builders, "( ");
 
                 // We need to add the filter for within the same type.
-                if (!(orderByItem is CosmosUndefined))
+                if (orderByItem is not CosmosUndefined)
                 {
                     StringBuilder sb = new StringBuilder();
                     CosmosElementToQueryLiteral cosmosElementToQueryLiteral = new CosmosElementToQueryLiteral(sb);
