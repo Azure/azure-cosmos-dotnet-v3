@@ -1114,7 +1114,7 @@
                 MixedTypedDocument mixedTypeDocument = OrderByQueryTests.GenerateMixedTypeDocument(random);
                 for (int j = 0; j < numberOfDuplicates; j++)
                 {
-                    if (mixedTypeDocument.MixedTypeField != null)
+                    if (mixedTypeDocument.MixedTypeField is not CosmosUndefined)
                     {
                         documents.Add(JsonConvert.SerializeObject(mixedTypeDocument));
                     }
