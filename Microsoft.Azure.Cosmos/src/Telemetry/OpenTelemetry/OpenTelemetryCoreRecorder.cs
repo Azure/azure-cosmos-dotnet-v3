@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private const string CosmosDb = "cosmosdb";
 
         private readonly DiagnosticScope scope;
-        private readonly OpenTelemetryConfig config;
+        private readonly OpenTelemetryOptions config;
 
         internal static IDictionary<Type, Action<Exception, DiagnosticScope>> OTelCompatibleExceptions = new Dictionary<Type, Action<Exception, DiagnosticScope>>()
         {
@@ -25,10 +25,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             { typeof(ChangeFeedProcessorUserException), (exception, scope) => ChangeFeedProcessorUserException.RecordOtelAttributes((ChangeFeedProcessorUserException)exception, scope)}
         };
 
-        public OpenTelemetryCoreRecorder(DiagnosticScope scope, OpenTelemetryConfig config)
+        public OpenTelemetryCoreRecorder(DiagnosticScope scope, OpenTelemetryOptions config)
         {
             this.scope = scope;
-            this.config = config ?? new OpenTelemetryConfig(); //If null load with default values
+            this.config = config ?? new OpenTelemetryOptions(); //If null load with default values
 
             if (this.scope.IsEnabled)
             {

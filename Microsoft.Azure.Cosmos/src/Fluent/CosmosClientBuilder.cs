@@ -432,10 +432,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
 #else
         internal
 #endif
-            CosmosClientBuilder EnableOpenTelemetry(OpenTelemetryConfig config = default)
+            CosmosClientBuilder EnableOpenTelemetry(OpenTelemetryOptions config = default)
         {
             this.clientOptions.EnableOpenTelemetry = true;
-            this.clientOptions.OpenTelemetryConfig = config;
+            this.clientOptions.OpenTelemetryOptions = config;
 
             return this;
         }

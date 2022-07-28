@@ -943,6 +943,6 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-            OpenTelemetryConfig OpenTelemetryConfig { get; set; }
+            OpenTelemetryOptions OpenTelemetryOptions { get; set; }
     }
 }

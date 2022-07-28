@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         /// </summary>
         /// <returns>true or false</returns>
         public static bool IsAllowed(
-            OpenTelemetryConfig config,
+            OpenTelemetryOptions config,
             TimeSpan latency, 
             HttpStatusCode statusCode)
         {

@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreNotEqual(consistencyLevel, clientOptions.ConsistencyLevel);
             Assert.IsFalse(clientOptions.EnablePartitionLevelFailover);
             Assert.IsFalse(clientOptions.EnableOpenTelemetry);
-            Assert.AreEqual(null, clientOptions.OpenTelemetryConfig);
+            Assert.AreEqual(null, clientOptions.OpenTelemetryOptions);
 
             //Verify GetConnectionPolicy returns the correct values for default
             ConnectionPolicy policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
             Assert.IsTrue(clientOptions.EnablePartitionLevelFailover);
             Assert.IsTrue(clientOptions.EnableOpenTelemetry);
-            Assert.AreEqual(null, clientOptions.OpenTelemetryConfig);
+            Assert.AreEqual(null, clientOptions.OpenTelemetryOptions);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 portReuseMode,
                 enableTcpConnectionEndpointRediscovery)
                 .WithApplicationPreferredRegions(preferredLocations)
-                .EnableOpenTelemetry(new OpenTelemetryConfig());
+                .EnableOpenTelemetry(new OpenTelemetryOptions());
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
@@ -177,8 +177,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), clientOptions.ApplicationPreferredRegions.ToArray());
             Assert.IsTrue(clientOptions.EnableOpenTelemetry);
-            Assert.IsNotNull(clientOptions.OpenTelemetryConfig);
-            Assert.AreEqual(TimeSpan.FromMilliseconds(250), clientOptions.OpenTelemetryConfig.LatencyThreshold);
+            Assert.IsNotNull(clientOptions.OpenTelemetryOptions);
+            Assert.AreEqual(TimeSpan.FromMilliseconds(250), clientOptions.OpenTelemetryOptions.LatencyThreshold);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(policy.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), policy.PreferredLocations.ToArray());
             
-            OpenTelemetryConfig oTelConfig = new OpenTelemetryConfig { LatencyThreshold = TimeSpan.FromMilliseconds(100) };
+            OpenTelemetryOptions oTelConfig = new OpenTelemetryOptions { LatencyThreshold = TimeSpan.FromMilliseconds(100) };
             cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
                 authKeyOrResourceToken: key).EnableOpenTelemetry(oTelConfig);
@@ -198,8 +198,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             clientOptions = cosmosClient.ClientOptions;
             //Verify OTel Configs are updated
             Assert.IsTrue(clientOptions.EnableOpenTelemetry);
-            Assert.IsNotNull(clientOptions.OpenTelemetryConfig);
-            Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.OpenTelemetryConfig.LatencyThreshold);
+            Assert.IsNotNull(clientOptions.OpenTelemetryOptions);
+            Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.OpenTelemetryOptions.LatencyThreshold);
         }
 
         [TestMethod]

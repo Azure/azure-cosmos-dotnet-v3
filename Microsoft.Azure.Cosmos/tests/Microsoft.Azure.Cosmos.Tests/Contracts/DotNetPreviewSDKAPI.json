@@ -319,17 +319,17 @@
           ],
           "MethodInfo": "Boolean get_EnableOpenTelemetry();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig get_OpenTelemetryConfig()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryOptions get_OpenTelemetryOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig get_OpenTelemetryConfig();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryOptions get_OpenTelemetryOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig OpenTelemetryConfig": {
+        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryOptions OpenTelemetryOptions": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig OpenTelemetryConfig;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig get_OpenTelemetryConfig();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_OpenTelemetryConfig(Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryOptions OpenTelemetryOptions;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryOptions get_OpenTelemetryOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_OpenTelemetryOptions(Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_EnableOpenTelemetry(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -338,12 +338,12 @@
           ],
           "MethodInfo": "Void set_EnableOpenTelemetry(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_OpenTelemetryConfig(Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_OpenTelemetryOptions(Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_OpenTelemetryConfig(Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Void set_OpenTelemetryOptions(Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -373,10 +373,10 @@
     "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder EnableOpenTelemetry(Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig)": {
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder EnableOpenTelemetry(Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder EnableOpenTelemetry(Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder EnableOpenTelemetry(Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -435,7 +435,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryConfig;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.TimeSpan get_LatencyThreshold()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {

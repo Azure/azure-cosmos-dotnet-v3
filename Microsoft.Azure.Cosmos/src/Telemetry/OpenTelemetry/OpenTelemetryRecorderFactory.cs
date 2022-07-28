@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         private static DiagnosticScopeFactory ScopeFactory { get; set; } 
 
-        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName, bool isFeatureEnabled, OpenTelemetryConfig config)
+        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName, bool isFeatureEnabled, OpenTelemetryOptions config)
         {
             if (isFeatureEnabled)
             {

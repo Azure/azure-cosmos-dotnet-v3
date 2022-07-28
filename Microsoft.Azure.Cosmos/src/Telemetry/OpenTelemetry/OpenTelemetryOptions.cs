@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 #else
     internal
 #endif
-        class OpenTelemetryConfig
+        class OpenTelemetryOptions
     {
         /// <summary>
         /// Latency Threshold to send request diagnostics in Open Telemetry Attributes
