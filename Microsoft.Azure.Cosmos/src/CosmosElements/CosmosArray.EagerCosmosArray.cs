@@ -39,7 +39,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
                 foreach (CosmosElement arrayItem in this)
                 {
-                    arrayItem.WriteTo(jsonWriter);
+                    if (arrayItem is not CosmosUndefined)
+                    {
+                        arrayItem.WriteTo(jsonWriter);
+                    }
                 }
 
                 jsonWriter.WriteArrayEnd();

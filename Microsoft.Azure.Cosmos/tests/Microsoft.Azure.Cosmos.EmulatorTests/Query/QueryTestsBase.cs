@@ -811,11 +811,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     {
                         List<CosmosElement> first = queryExecutionResults[queryDrainingMode1];
                         List<CosmosElement> second = queryExecutionResults[queryDrainingMode2];
-                        Assert.IsTrue(
-                            first.SequenceEqual(second),
-                            $"{query} returned different results.\n" +
-                            $"{queryDrainingMode1}: {JsonConvert.SerializeObject(first)}\n" +
-                            $"{queryDrainingMode2}: {JsonConvert.SerializeObject(second)}\n");
+                        Assert.IsTrue(first.SequenceEqual(second));
                     }
                 }
             }

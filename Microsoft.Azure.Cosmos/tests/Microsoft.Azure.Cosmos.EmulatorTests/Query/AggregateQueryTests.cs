@@ -11,6 +11,7 @@
     using System.Xml;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -97,7 +98,7 @@
                         predicate: $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})"),
                     new AggregateQueryArguments(
                         aggregateOperator: "AVG",
-                        expectedValue: null,
+                        expectedValue: CosmosUndefined.Instance,
                         predicate: "true"),
                     new AggregateQueryArguments(
                         aggregateOperator: "COUNT",
@@ -117,7 +118,7 @@
                         predicate: $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})"),
                     new AggregateQueryArguments(
                         aggregateOperator: "SUM",
-                        expectedValue: null,
+                        expectedValue: CosmosUndefined.Instance,
                         predicate: $"true"),
                 };
 
@@ -143,7 +144,7 @@
                                 CultureInfo.InvariantCulture,
                                 "query: {0}, data: {1}",
                                 query,
-                                JsonConvert.SerializeObject(argument));
+                                argument.ToString());
 
                             List<CosmosElement> items = await QueryTestsBase.RunQueryAsync(
                                 container,
@@ -216,6 +217,33 @@
             public string AggregateOperator { get; }
             public CosmosElement ExpectedValue { get; }
             public string Predicate { get; }
+
+            public override string ToString()
+            {
+                IJsonWriter writer = Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Text);
+                writer.WriteObjectStart();
+
+                writer.WriteFieldName(nameof(this.AggregateOperator));
+                writer.WriteStringValue(this.AggregateOperator);
+
+                writer.WriteFieldName(nameof(this.ExpectedValue));
+                if (this.ExpectedValue is not CosmosUndefined)
+                {
+                    writer.WriteStringValue(this.ExpectedValue.ToString());
+                }
+                else
+                {
+                    writer.WriteObjectStart();
+                    writer.WriteObjectEnd();
+                }
+
+                writer.WriteFieldName(nameof(this.Predicate));
+                writer.WriteStringValue(this.Predicate);
+
+                writer.WriteObjectEnd();
+
+                return Utf8StringHelpers.ToString(writer.GetResult());
+            }
         }
 
         [TestMethod]
@@ -497,10 +525,18 @@
                     writer.WriteCData(formattedQuery);
                     writer.WriteEndElement();
                     writer.WriteStartElement("Aggregation");
+
                     if (items.Count > 0)
                     {
-                        writer.WriteCData(items.Single().ToString());
+                        Assert.AreEqual(1, items.Count);
+                        CosmosElement aggregateResult = items.First();
+
+                        if(aggregateResult is not CosmosUndefined)
+                        {
+                            writer.WriteCData(items.Single().ToString());
+                        }
                     }
+
                     writer.WriteEndElement();
                     writer.WriteEndElement();
                 }

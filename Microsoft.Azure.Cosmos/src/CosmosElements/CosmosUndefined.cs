@@ -61,7 +61,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public override void WriteTo(IJsonWriter jsonWriter)
         {
-            // TODO: is this kosher ?
+            // We could be more forgiving here, e.g. just return
+            throw new InvalidOperationException("Cannot serialize CosmosUndefined");
         }
     }
 }
