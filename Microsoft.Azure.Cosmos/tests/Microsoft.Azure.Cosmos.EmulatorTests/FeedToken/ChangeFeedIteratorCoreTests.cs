@@ -1038,7 +1038,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
                         ChangeFeedIteratorCoreTests.AssertGatewayMode(feedResponse);
 
-                        Assert.AreEqual(expected: 2, actual: itemChanges.Count);
+                        Assert.AreEqual(expected: 3, actual: itemChanges.Count);
 
                         ChangeFeedItemChanges<Item> createOperation = itemChanges[0];
 
@@ -1061,11 +1061,20 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.AreEqual(expected: "Atlanta", actual: replaceOperation.Current.City);
                         Assert.AreEqual(expected: "GA", actual: replaceOperation.Current.State);
                         Assert.AreEqual(expected: "30363", actual: replaceOperation.Current.ZipCode);
-                        Assert.IsNotNull(createOperation.Metadata);
+                        Assert.IsNotNull(replaceOperation.Metadata);
                         Assert.AreEqual(expected: ChangeFeedOperationType.Replace, actual: replaceOperation.Metadata.OperationType);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.LogSequenceNumber);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.PreviousLogSequenceNumber);
+                        Assert.IsFalse(replaceOperation.Metadata.TimeToLiveExpired);
+
+                        ChangeFeedItemChanges<Item> deleteOperation = itemChanges[2];
+
+                        Assert.IsNotNull(deleteOperation.Metadata);
+                        Assert.AreEqual(expected: ChangeFeedOperationType.Delete, actual: deleteOperation.Metadata.OperationType);
+                        Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.ConflictResolutionTimestamp);
+                        Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.LogSequenceNumber);
+                        Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.PreviousLogSequenceNumber);
                         Assert.IsFalse(replaceOperation.Metadata.TimeToLiveExpired);
 
                         break;
