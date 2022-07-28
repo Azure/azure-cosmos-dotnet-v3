@@ -1,6 +1,6 @@
 {
   "Subclasses": {
-    "Microsoft.Azure.Cosmos.ChangeFeedItemChanges`1;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:True;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.ChangeFeedItemChange`1;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:True;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.ChangeFeedMetadata get_Metadata()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {

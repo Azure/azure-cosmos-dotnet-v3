@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
         class ChangeFeedMetadata
     {
         /// <summary>
-        /// New instance of meta data for <see cref="ChangeFeedItemChanges{T}"/> created.
+        /// New instance of meta data for <see cref="ChangeFeedItemChange{T}"/> created.
         /// </summary>
         /// <param name="conflictResolutionTimestamp"></param>
         /// <param name="logSequenceNumber"></param>

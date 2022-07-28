@@ -47,13 +47,13 @@ namespace Microsoft.Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
-    /// <remarks><see cref="ChangeFeedItemChanges{T}"/> is an optional helper class that uses Newtonsoft serialization libraries. Users are welcome to create their own custom helper class.</remarks>
+    /// <remarks><see cref="ChangeFeedItemChange{T}"/> is an optional helper class that uses Newtonsoft serialization libraries. Users are welcome to create their own custom helper class.</remarks>
 #if PREVIEW
     public
 #else
     internal
 #endif  
-        class ChangeFeedItemChanges<T>
+        class ChangeFeedItemChange<T>
     {
         /// <summary>
         /// The full fidelity change feed current item.
