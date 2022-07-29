@@ -199,6 +199,9 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 public static readonly CosmosElementWrongTypeException ExpectedString = new CosmosElementWrongTypeException(
                     message: $"Expected return type of '{typeof(string)}'.");
+
+                public static readonly CosmosElementWrongTypeException UnexpectedUndefined = new CosmosElementWrongTypeException(
+                    message: $"Did not expect to encounter '{typeof(CosmosUndefined)}'.");
             }
 
             private static class BoxedValues
@@ -240,6 +243,7 @@ namespace Microsoft.Azure.Cosmos.Json
                             CosmosString _ => typeof(string),
                             CosmosGuid _ => typeof(Guid),
                             CosmosBinary _ => typeof(ReadOnlyMemory<byte>),
+                            CosmosUndefined _ => typeof(object),
                             _ => throw new ArgumentOutOfRangeException($"Unknown cosmos element type."),
                         };
 
@@ -303,12 +307,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
             public TryCatch<object> Visit(CosmosUndefined cosmosUndefined, Type type)
             {
-                if (type.IsValueType && !(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>)))
-                {
-                    return TryCatch<object>.FromException(Visitor.Exceptions.ExpectedReferenceOrNullableType);
-                }
-
-                return TryCatch<object>.FromResult(default);
+                return TryCatch<object>.FromException(Visitor.Exceptions.UnexpectedUndefined);
             }
 
             public TryCatch<object> Visit(CosmosNumber cosmosNumber, Type type)
