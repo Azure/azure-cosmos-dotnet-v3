@@ -145,10 +145,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
 
             foreach (CosmosElement element in cosmosElements)
             {
-                if (element is not CosmosUndefined)
-                {
-                    element.WriteTo(jsonWriter);
-                }
+                element.WriteTo(jsonWriter);
             }
 
             jsonWriter.WriteArrayEnd();
