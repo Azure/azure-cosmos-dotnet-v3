@@ -926,23 +926,23 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Enable OpenTelemetry and start emitting activities for each operations
+        /// Enable Start emitting activities for each operations
         /// </summary>
 #if PREVIEW
         public
 #else
         internal
 #endif
-            bool EnableOpenTelemetry { get; set; }
+            bool EnableTracer { get; set; }
 
         /// <summary>
-        /// Open Telemetry Configuration
+        /// Latency Threshold For Diagnostics On Tracer
         /// </summary>
 #if PREVIEW
         public
 #else
         internal
 #endif
-            OpenTelemetryOptions OpenTelemetryOptions { get; set; }
+            TimeSpan? LatencyThresholdForDiagnosticsOnTracer { get; set; }
     }
 }

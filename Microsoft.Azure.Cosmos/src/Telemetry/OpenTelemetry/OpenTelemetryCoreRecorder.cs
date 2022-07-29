@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public OpenTelemetryCoreRecorder(DiagnosticScope scope, OpenTelemetryOptions config)
         {
             this.scope = scope;
-            this.config = config ?? new OpenTelemetryOptions(); //If null load with default values
+            this.config = config;
 
             if (this.scope.IsEnabled)
             {
@@ -82,8 +82,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             if (this.IsEnabled && DiagnosticsFilterHelper.IsAllowed(
                     config: this.config,
-                    latency: response.Diagnostics.GetClientElapsedTime(),
-                    statusCode: response.StatusCode))
+                    response: response))
             {
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, response.Diagnostics);
             }

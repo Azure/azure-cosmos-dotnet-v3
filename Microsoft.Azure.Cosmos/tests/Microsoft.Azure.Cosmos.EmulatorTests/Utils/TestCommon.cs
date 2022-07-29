@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (isOpenTelemetryFeatureEnabled)
             {
-                cosmosClientBuilder.EnableOpenTelemetry();
+                cosmosClientBuilder.EnableTracer();
             }
 
             return cosmosClientBuilder.Build();

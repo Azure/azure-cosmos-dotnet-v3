@@ -6,21 +6,36 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
     using System;
     using System.Net;
+    using Documents;
 
     internal static class DiagnosticsFilterHelper
     {
         /// <summary>
         /// Allow only when either of below is <b>True</b><br></br>
-        /// 1) Latency is not more than 100 ms<br></br>
+        /// 1) Latency is not more than 100/250 (query) ms<br></br>
         /// 3) HTTP status code is not Success<br></br>
         /// </summary>
         /// <returns>true or false</returns>
         public static bool IsAllowed(
             OpenTelemetryOptions config,
-            TimeSpan latency, 
-            HttpStatusCode statusCode)
+            OpenTelemetryAttributes response)
         {
-            return latency > config.LatencyThreshold || !statusCode.IsSuccess();
+            bool isLatencyAcceptable;
+            if (config != null && config.LatencyThreshold.HasValue)
+            {
+                isLatencyAcceptable = response.Diagnostics.GetClientElapsedTime() < config.LatencyThreshold;
+            } 
+            else if (response.OperationType == OperationType.Query)
+            {
+                isLatencyAcceptable = response.Diagnostics.GetClientElapsedTime() > OpenTelemetryOptions.DefaultQueryTimeoutThreshold;
+            }
+            else
+            {
+                isLatencyAcceptable = response.Diagnostics.GetClientElapsedTime() > OpenTelemetryOptions.DefaultCrudLatencyThreshold;
+            }
+
+            return isLatencyAcceptable && response.StatusCode.IsSuccess();
+
         }
     }
 }

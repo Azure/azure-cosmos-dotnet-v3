@@ -5,20 +5,36 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
+    using System.Runtime.CompilerServices;
 
     /// <summary>
     /// Open Telemetry Configuration
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-        class OpenTelemetryOptions
+    internal class OpenTelemetryOptions
     {
         /// <summary>
-        /// Latency Threshold to send request diagnostics in Open Telemetry Attributes
+        /// Default Latency threshold for other than query Operation
         /// </summary>
-        public TimeSpan LatencyThreshold { get; set; } = TimeSpan.FromMilliseconds(250);
+        public static readonly TimeSpan DefaultCrudLatencyThreshold = TimeSpan.FromMilliseconds(100);
+
+        /// <summary>
+        /// Default Latency threshold for QUERY operation
+        /// </summary>
+        public static readonly TimeSpan DefaultQueryTimeoutThreshold = TimeSpan.FromMilliseconds(250);
+
+        /// <summary>
+        /// Load Open Telemetry Configurations
+        /// </summary>
+        /// <param name="clientOptions"></param>
+        public OpenTelemetryOptions(CosmosClientOptions clientOptions)
+        {
+            this.LatencyThreshold = clientOptions.LatencyThresholdForDiagnosticsOnTracer;
+        }
+
+        /// <summary>
+        /// Customer defined Latency Threshold
+        /// </summary>
+        public TimeSpan? LatencyThreshold { get; }
+
     }
 }

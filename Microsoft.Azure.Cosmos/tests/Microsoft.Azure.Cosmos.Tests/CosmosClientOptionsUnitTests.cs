@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using Cosmos.Telemetry;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
@@ -81,8 +80,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(clientOptions.HttpClientFactory);
             Assert.AreNotEqual(consistencyLevel, clientOptions.ConsistencyLevel);
             Assert.IsFalse(clientOptions.EnablePartitionLevelFailover);
-            Assert.IsFalse(clientOptions.EnableOpenTelemetry);
-            Assert.AreEqual(null, clientOptions.OpenTelemetryOptions);
+            Assert.IsFalse(clientOptions.EnableTracer);
+            Assert.AreEqual(null, clientOptions.LatencyThresholdForDiagnosticsOnTracer);
 
             //Verify GetConnectionPolicy returns the correct values for default
             ConnectionPolicy policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -111,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .WithSerializerOptions(cosmosSerializerOptions)
                 .WithConsistencyLevel(consistencyLevel)
                 .WithPartitionLevelFailoverEnabled()
-                .EnableOpenTelemetry();
+                .EnableTracer();
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
@@ -134,8 +133,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(clientOptions.AllowBulkExecution);
             Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
             Assert.IsTrue(clientOptions.EnablePartitionLevelFailover);
-            Assert.IsTrue(clientOptions.EnableOpenTelemetry);
-            Assert.AreEqual(null, clientOptions.OpenTelemetryOptions);
+            Assert.IsTrue(clientOptions.EnableTracer);
+            Assert.AreEqual(null, clientOptions.LatencyThresholdForDiagnosticsOnTracer);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -164,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 portReuseMode,
                 enableTcpConnectionEndpointRediscovery)
                 .WithApplicationPreferredRegions(preferredLocations)
-                .EnableOpenTelemetry(new OpenTelemetryOptions());
+                .EnableTracer().WithLatencyThresholdForDiagnosticsOnTracer(TimeSpan.FromMilliseconds(500));
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
@@ -176,9 +175,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, clientOptions.PortReuseMode);
             Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), clientOptions.ApplicationPreferredRegions.ToArray());
-            Assert.IsTrue(clientOptions.EnableOpenTelemetry);
-            Assert.IsNotNull(clientOptions.OpenTelemetryOptions);
-            Assert.AreEqual(TimeSpan.FromMilliseconds(250), clientOptions.OpenTelemetryOptions.LatencyThreshold);
+            Assert.IsTrue(clientOptions.EnableTracer);
+            Assert.AreEqual(TimeSpan.FromMilliseconds(500), clientOptions.LatencyThresholdForDiagnosticsOnTracer);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -189,17 +187,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, policy.PortReuseMode);
             Assert.IsTrue(policy.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), policy.PreferredLocations.ToArray());
-            
-            OpenTelemetryOptions oTelConfig = new OpenTelemetryOptions { LatencyThreshold = TimeSpan.FromMilliseconds(100) };
-            cosmosClientBuilder = new CosmosClientBuilder(
-                accountEndpoint: endpoint,
-                authKeyOrResourceToken: key).EnableOpenTelemetry(oTelConfig);
-            cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
-            clientOptions = cosmosClient.ClientOptions;
-            //Verify OTel Configs are updated
-            Assert.IsTrue(clientOptions.EnableOpenTelemetry);
-            Assert.IsNotNull(clientOptions.OpenTelemetryOptions);
-            Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.OpenTelemetryOptions.LatencyThreshold);
         }
 
         [TestMethod]

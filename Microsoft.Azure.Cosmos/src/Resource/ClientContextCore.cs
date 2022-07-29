@@ -474,8 +474,8 @@ namespace Microsoft.Azure.Cosmos
             using (OpenTelemetryCoreRecorder recorder = 
                                 OpenTelemetryRecorderFactory.CreateRecorder(
                                     operationName: operationName,
-                                    isFeatureEnabled: this.clientOptions.EnableOpenTelemetry,
-                                    config: this.clientOptions.OpenTelemetryOptions))
+                                    isFeatureEnabled: this.clientOptions.EnableTracer,
+                                    config: new OpenTelemetryOptions(this.clientOptions)))
             using (new ActivityScope(Guid.NewGuid()))
             {
                 try

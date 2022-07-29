@@ -423,19 +423,33 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Enable OpenTelemetry and start emitting activities for each operations
+        /// Enable Tracer and start emitting activities for each operations
         /// </summary>
-        /// <param name="config"></param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
 #if PREVIEW
         public
 #else
         internal
 #endif
-            CosmosClientBuilder EnableOpenTelemetry(OpenTelemetryOptions config = default)
+            CosmosClientBuilder EnableTracer()
         {
-            this.clientOptions.EnableOpenTelemetry = true;
-            this.clientOptions.OpenTelemetryOptions = config;
+            this.clientOptions.EnableTracer = true;
+            
+            return this;
+        }
+
+        /// <summary>
+        /// Set Latency Threshold for Tracer
+        /// </summary>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            CosmosClientBuilder WithLatencyThresholdForDiagnosticsOnTracer(TimeSpan threshold)
+        {
+            this.clientOptions.LatencyThresholdForDiagnosticsOnTracer = threshold;
 
             return this;
         }
