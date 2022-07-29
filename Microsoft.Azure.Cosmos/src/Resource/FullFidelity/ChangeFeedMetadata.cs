@@ -23,19 +23,19 @@ namespace Microsoft.Azure.Cosmos
         /// New instance of meta data for <see cref="ChangeFeedItemChange{T}"/> created.
         /// </summary>
         /// <param name="conflictResolutionTimestamp"></param>
-        /// <param name="logSequenceNumber"></param>
+        /// <param name="lsn"></param>
         /// <param name="operationType"></param>
-        /// <param name="previousLogSequenceNumber"></param>
+        /// <param name="previousLsn"></param>
         public ChangeFeedMetadata(
             DateTime conflictResolutionTimestamp,
-            long logSequenceNumber,
+            long lsn,
             ChangeFeedOperationType operationType,
-            long previousLogSequenceNumber)
+            long previousLsn)
         {
             this.ConflictResolutionTimestamp = conflictResolutionTimestamp;
-            this.LogSequenceNumber = logSequenceNumber;
+            this.Lsn = lsn;
             this.OperationType = operationType;
-            this.PreviousLogSequenceNumber = previousLogSequenceNumber;
+            this.PreviousLsn = previousLsn;
         }
 
         /// <summary>
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
         /// The current logical sequence number.
         /// </summary>
         [JsonProperty(PropertyName = "lsn", NullValueHandling = NullValueHandling.Ignore)]
-        public long LogSequenceNumber { get; }
+        public long Lsn { get; }
 
         /// <summary>
         /// The change feed operation type.
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
         /// The previous logical sequence number.
         /// </summary>
         [JsonProperty(PropertyName = "previousImageLSN", NullValueHandling = NullValueHandling.Ignore)]
-        public long PreviousLogSequenceNumber { get; }
+        public long PreviousLsn { get; }
 
         /// <summary>
         /// Used to distinquish explicit deletes (e.g. via DeleteItem) from deletes caused by TTL expiration (a collection may define time-to-live policy for documents).

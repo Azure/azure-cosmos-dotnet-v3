@@ -91,33 +91,33 @@
           ],
           "MethodInfo": "Boolean TimeToLiveExpired;CanRead:True;CanWrite:False;Boolean get_TimeToLiveExpired();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Int64 get_LogSequenceNumber()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Int64 get_Lsn()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Int64 get_LogSequenceNumber();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Int64 get_Lsn();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Int64 get_PreviousLogSequenceNumber()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Int64 get_PreviousLsn()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Int64 get_PreviousLogSequenceNumber();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Int64 get_PreviousLsn();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Int64 LogSequenceNumber[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"lsn\")]": {
+        "Int64 Lsn[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"lsn\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
-          "MethodInfo": "Int64 LogSequenceNumber;CanRead:True;CanWrite:False;Int64 get_LogSequenceNumber();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Int64 Lsn;CanRead:True;CanWrite:False;Int64 get_Lsn();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Int64 PreviousLogSequenceNumber[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"previousImageLSN\")]": {
+        "Int64 PreviousLsn[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"previousImageLSN\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
-          "MethodInfo": "Int64 PreviousLogSequenceNumber;CanRead:True;CanWrite:False;Int64 get_PreviousLogSequenceNumber();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Int64 PreviousLsn;CanRead:True;CanWrite:False;Int64 get_PreviousLsn();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.ChangeFeedOperationType get_OperationType()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
