@@ -441,6 +441,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Set Latency Threshold for Tracer
         /// </summary>
+        /// <param name="threshold"></param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
 #if PREVIEW
         public
