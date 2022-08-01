@@ -26,7 +26,11 @@ namespace Microsoft.Azure.Cosmos
             this.ResponseContentLength = responseMessage?.Headers?.ContentLength ?? OpenTelemetryAttributes.NotAvailable;
             this.Diagnostics = responseMessage.Diagnostics;
             this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable;
-            this.DatabaseName = responseMessage.Resource?.Id ?? OpenTelemetryAttributes.NotAvailable;
+            if (this.DatabaseName == OpenTelemetryAttributes.NotAvailable)
+            {
+                this.DatabaseName = responseMessage.Resource?.Id ?? OpenTelemetryAttributes.NotAvailable;
+            }
+           
         }
         
         internal OpenTelemetryResponse(Response<ContainerProperties> responseMessage)
@@ -37,7 +41,10 @@ namespace Microsoft.Azure.Cosmos
             this.ResponseContentLength = responseMessage?.Headers?.ContentLength ?? OpenTelemetryAttributes.NotAvailable;
             this.Diagnostics = responseMessage.Diagnostics;
             this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable;
-            this.ContainerName = responseMessage.Resource?.Id ?? OpenTelemetryAttributes.NotAvailable;
+            if (this.ContainerName == OpenTelemetryAttributes.NotAvailable)
+            {
+                this.ContainerName = responseMessage.Resource?.Id ?? OpenTelemetryAttributes.NotAvailable;
+            }
         }
 
         internal OpenTelemetryResponse(Response<ContainerProperties> responseMessage, string databaseName)
@@ -48,8 +55,15 @@ namespace Microsoft.Azure.Cosmos
             this.ResponseContentLength = responseMessage?.Headers?.ContentLength ?? OpenTelemetryAttributes.NotAvailable;
             this.Diagnostics = responseMessage.Diagnostics;
             this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable;
-            this.DatabaseName = databaseName ?? OpenTelemetryAttributes.NotAvailable;
-            this.ContainerName = responseMessage.Resource?.Id ?? OpenTelemetryAttributes.NotAvailable;
+            if (this.DatabaseName == OpenTelemetryAttributes.NotAvailable)
+            {
+                this.DatabaseName = databaseName ?? OpenTelemetryAttributes.NotAvailable;
+            }
+
+            if (this.ContainerName == OpenTelemetryAttributes.NotAvailable)
+            {
+                this.ContainerName = responseMessage.Resource?.Id ?? OpenTelemetryAttributes.NotAvailable;
+            }
         }
 
         internal OpenTelemetryResponse(FeedResponse<T> responseMessage)

@@ -938,8 +938,9 @@
                 Guid exceptionActivityId = Guid.NewGuid();
                 // Set a small retry count to reduce test time
                 CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
-                    builder.WithThrottlingRetryOptions(TimeSpan.FromSeconds(5), 5)
-                    .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
+                    builder
+                        .WithThrottlingRetryOptions(TimeSpan.FromSeconds(5), 5)
+                        .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
                            transportClient,
                            (uri, resourceOperation, request) => TransportClientHelper.ReturnThrottledStoreResponseOnItemOperation(
                                 uri,
@@ -947,6 +948,7 @@
                                 request,
                                 exceptionActivityId,
                                 errorMessage)))
+                        .EnableOpenTelemetry()
                     );
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
@@ -1171,19 +1173,16 @@
             {
                 startLineNumber = GetLineNumber();
                 string pkValue = "DiagnosticBulkTestPk";
-                CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder.WithBulkExecution(true));
+                CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
+                    .WithBulkExecution(true)
+                    .EnableOpenTelemetry());
                 Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
                 List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
-
-                List<List<string>> oTelActivities = new List<List<string>>();
+                
                 for (int i = 0; i < 10; i++)
                 {
                     ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
                     createItemsTasks.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.id)));
-
-                    oTelActivities.Add(testListener.GetRecordedAttributes());
-
-                    testListener.ResetAttributes();
                 }
 
                 await Task.WhenAll(createItemsTasks);
@@ -1200,13 +1199,13 @@
                 }
 
                 endLineNumber = GetLineNumber();
-
-                int count = 0;
+                
                 foreach (ITrace trace in traces)
                 {
-                    inputs.Add(new Input("Bulk Operation", trace, startLineNumber, endLineNumber, oTelActivities[count++]));
+                    inputs.Add(new Input("Bulk Operation", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
                 }
-                
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -1221,6 +1220,7 @@
                 CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
                     builder.WithThrottlingRetryOptions(TimeSpan.FromSeconds(5), 3)
                     .WithBulkExecution(true)
+                    .EnableOpenTelemetry()
                     .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
                            transportClient,
                            (uri, resourceOperation, request) => TransportClientHelper.ReturnThrottledStoreResponseOnItemOperation(
@@ -1276,7 +1276,8 @@
                 TimeSpan delayTime = TimeSpan.FromSeconds(2);
                 RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
                 CosmosClient cosmosClient = TestCommon.CreateCosmosClient(builder =>
-                    builder.AddCustomHandlers(requestHandler));
+                    builder.AddCustomHandlers(requestHandler)
+                           .EnableOpenTelemetry());
 
                 DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
                 EndToEndTraceWriterBaselineTests.AssertCustomHandlerTime(
