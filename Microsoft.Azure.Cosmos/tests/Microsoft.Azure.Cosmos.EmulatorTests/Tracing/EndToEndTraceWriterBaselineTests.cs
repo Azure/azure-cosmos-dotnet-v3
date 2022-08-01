@@ -37,7 +37,7 @@
             testListener = new OpenTelemetryListener("Azure.Cosmos");
 
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
-                useGateway: true, 
+                useGateway: false, 
                 isOpenTelemetryFeatureEnabled: true);
 
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(

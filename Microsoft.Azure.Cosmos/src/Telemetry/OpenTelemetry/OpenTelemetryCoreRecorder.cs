@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
         private readonly DiagnosticScope scope;
 
-        private string accountHostWithCloudInfo;
+        private string accountHostWithCloudInfo = null;
         
         internal static IDictionary<Type, Action<Exception, DiagnosticScope>> oTelCompatibleExceptions = new Dictionary<Type, Action<Exception, DiagnosticScope>>()
         {
