@@ -450,6 +450,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
 #endif
             CosmosClientBuilder WithLatencyThresholdForDiagnosticsOnTracer(TimeSpan threshold)
         {
+            if (!this.clientOptions.EnableTracer)
+            {
+                throw new InvalidOperationException(
+                    "Enable Tracer by Calling EnableTracer() before setting this configuration");
+            }
+
             this.clientOptions.LatencyThresholdForDiagnosticsOnTracer = threshold;
 
             return this;

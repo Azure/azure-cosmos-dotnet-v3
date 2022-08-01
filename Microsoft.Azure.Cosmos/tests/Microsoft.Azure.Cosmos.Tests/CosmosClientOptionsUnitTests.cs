@@ -163,7 +163,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 portReuseMode,
                 enableTcpConnectionEndpointRediscovery)
                 .WithApplicationPreferredRegions(preferredLocations)
-                .EnableTracer().WithLatencyThresholdForDiagnosticsOnTracer(TimeSpan.FromMilliseconds(500));
+                .EnableTracer()
+                .WithLatencyThresholdForDiagnosticsOnTracer(TimeSpan.FromMilliseconds(500));
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
@@ -187,6 +188,23 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, policy.PortReuseMode);
             Assert.IsTrue(policy.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), policy.PreferredLocations.ToArray());
+
+            InvalidOperationException invalidOperationException = new InvalidOperationException(
+                "Enable Tracer by Calling EnableTracer() before setting this configuration");
+            try
+            {
+                new CosmosClientBuilder(
+                        accountEndpoint: endpoint,
+                        authKeyOrResourceToken: key)
+                    .WithLatencyThresholdForDiagnosticsOnTracer(TimeSpan.FromMilliseconds(500));
+
+                Assert.Fail("This configuration should have thrown exception");
+            }
+            catch (Exception ex)
+            {
+                Assert.IsTrue(ex is InvalidOperationException);
+                Assert.AreEqual(invalidOperationException.Message, ex.Message);
+            }
         }
 
         [TestMethod]
