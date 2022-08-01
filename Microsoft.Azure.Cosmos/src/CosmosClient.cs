@@ -327,6 +327,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.Endpoint = new Uri(accountEndpoint);
+
             this.AuthorizationTokenProvider = authorizationTokenProvider ?? throw new ArgumentNullException(nameof(authorizationTokenProvider));
 
             clientOptions ??= new CosmosClientOptions();

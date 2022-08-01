@@ -16,6 +16,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
         private readonly DiagnosticScope scope;
 
+        private string accountHostWithCloudInfo;
+        
         internal static IDictionary<Type, Action<Exception, DiagnosticScope>> oTelCompatibleExceptions = new Dictionary<Type, Action<Exception, DiagnosticScope>>()
         {
             { typeof(CosmosNullReferenceException), (exception, scope) => CosmosNullReferenceException.RecordOtelAttributes((CosmosNullReferenceException)exception, scope)},
@@ -53,14 +55,28 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.MachineId, VmMetadataApiHandler.GetMachineId());
-            
-            string netPeerName = clientContext.DocumentClient?.accountServiceConfiguration?.AccountProperties?.AccountNameWithCloudInformation;
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.NetPeerName, netPeerName);
+
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.NetPeerName, this.GetHostWithCloudInformation(clientContext.Client?.Endpoint?.Host));
 
             // Client Information
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext.Client.Id);
+            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext.Client?.Id);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode, clientContext.ClientOptions.ConnectionMode);
+        }
+
+        /// <summary>
+        /// Host Name with Cloud Information
+        /// </summary>
+        /// <param name="hostName"></param>
+        /// <returns>hostname(cloudInfo)</returns>
+        private string GetHostWithCloudInformation(string hostName)
+        {
+            string accountHostWithCloudInfoSnapshot = this.accountHostWithCloudInfo;
+            if (!string.IsNullOrEmpty(accountHostWithCloudInfoSnapshot))
+            {
+                return accountHostWithCloudInfoSnapshot;
+            }
+            return this.accountHostWithCloudInfo = $"{hostName}({VmMetadataApiHandler.GetCloudInformation()})";
         }
 
         /// <summary>

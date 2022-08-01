@@ -133,9 +133,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                    .Append(tag.Key)
                    .Append("</ATTRIBUTE-KEY>");
                 }
+
+                Console.WriteLine(tag.Key + " :: " + tag.Value);
             }
             builder.Append("</ACTIVITY>");
 
+            Console.WriteLine("tags.Count() : " + tags.Count());
             this.Attributes.Add(builder.ToString());
         }
 
