@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestCharge = responseMessage.Headers?.RequestCharge;
             this.ResponseContentLength = responseMessage?.Headers?.ContentLength ?? OpenTelemetryAttributes.NotAvailable; 
             this.Diagnostics = responseMessage.Diagnostics;
-            this.ItemCount = responseMessage.Headers?.ItemCount;
+            this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable;
         }
 
         internal OpenTelemetryResponse(Response<DatabaseProperties> responseMessage)
@@ -25,8 +25,8 @@ namespace Microsoft.Azure.Cosmos
             this.RequestCharge = responseMessage.Headers?.RequestCharge;
             this.ResponseContentLength = responseMessage?.Headers?.ContentLength ?? OpenTelemetryAttributes.NotAvailable;
             this.Diagnostics = responseMessage.Diagnostics;
-            this.ItemCount = responseMessage.Headers?.ItemCount;
-            this.DatabaseName = responseMessage.Resource.Id;
+            this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable;
+            this.DatabaseName = responseMessage.Resource?.Id ?? OpenTelemetryAttributes.NotAvailable;
         }
         
         internal OpenTelemetryResponse(Response<ContainerProperties> responseMessage)
@@ -36,8 +36,8 @@ namespace Microsoft.Azure.Cosmos
             this.RequestCharge = responseMessage.Headers?.RequestCharge;
             this.ResponseContentLength = responseMessage?.Headers?.ContentLength ?? OpenTelemetryAttributes.NotAvailable;
             this.Diagnostics = responseMessage.Diagnostics;
-            this.ItemCount = responseMessage.Headers?.ItemCount;
-            this.ContainerName = responseMessage.Resource.Id;
+            this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable;
+            this.ContainerName = responseMessage.Resource?.Id ?? OpenTelemetryAttributes.NotAvailable;
         }
 
         internal OpenTelemetryResponse(Response<ContainerProperties> responseMessage, string databaseName)
@@ -47,9 +47,9 @@ namespace Microsoft.Azure.Cosmos
             this.RequestCharge = responseMessage.Headers?.RequestCharge;
             this.ResponseContentLength = responseMessage?.Headers?.ContentLength ?? OpenTelemetryAttributes.NotAvailable;
             this.Diagnostics = responseMessage.Diagnostics;
-            this.ItemCount = responseMessage.Headers?.ItemCount;
-            this.DatabaseName = databaseName;
-            this.ContainerName = responseMessage.Resource.Id;
+            this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable;
+            this.DatabaseName = databaseName ?? OpenTelemetryAttributes.NotAvailable;
+            this.ContainerName = responseMessage.Resource?.Id ?? OpenTelemetryAttributes.NotAvailable;
         }
 
         internal OpenTelemetryResponse(FeedResponse<T> responseMessage)
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestCharge = responseMessage.Headers?.RequestCharge;
             this.ResponseContentLength = responseMessage?.Headers?.ContentLength ?? OpenTelemetryAttributes.NotAvailable;
             this.Diagnostics = responseMessage.Diagnostics;
-            this.ItemCount = responseMessage.Headers?.ItemCount;
+            this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable;
         }
     }
 }

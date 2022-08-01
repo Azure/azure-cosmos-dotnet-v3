@@ -124,16 +124,20 @@ namespace Microsoft.Azure.Cosmos.Tests
                    .Append("<OPERATION>")
                    .Append(name)
                    .Append("</OPERATION>");
+            Console.WriteLine();
             foreach (KeyValuePair<string, string> tag in tags)
             {
-                if(tag.Key != OpenTelemetryAttributeKeys.RequestDiagnostics)
+                if (tag.Key != OpenTelemetryAttributeKeys.RequestDiagnostics)
                 {
                     builder
-                   .Append("<ATTRIBUTE-KEY>")
-                   .Append(tag.Key)
-                   .Append("</ATTRIBUTE-KEY>");
+                        .Append("<ATTRIBUTE-KEY>")
+                        .Append(tag.Key)
+                        .Append("</ATTRIBUTE-KEY>");
                 }
+                Console.WriteLine(tag.Key + " :: " + tag.Value);
             }
+
+            Assert.IsTrue(tags.Count() >= 17, "Some attributes are missing"); // Make sure if all the operations are having all the attributes (request diagnostics as optional)
             builder.Append("</ACTIVITY>");
 
             this.Attributes.Add(builder.ToString());
