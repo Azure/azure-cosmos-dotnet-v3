@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #endif
     sealed class CosmosUndefined : CosmosElement, IEquatable<CosmosUndefined>, IComparable<CosmosUndefined>
     {
-        public static readonly CosmosUndefined Instance = new CosmosUndefined();
+        private static readonly CosmosUndefined Instance = new CosmosUndefined();
 
         private CosmosUndefined()
         {
@@ -61,6 +61,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public override void WriteTo(IJsonWriter jsonWriter)
         {
+        }
+
+        public static CosmosUndefined Create()
+        {
+            return Instance;
         }
     }
 }

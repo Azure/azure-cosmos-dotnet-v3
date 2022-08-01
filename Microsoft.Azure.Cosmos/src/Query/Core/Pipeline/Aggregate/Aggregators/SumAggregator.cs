@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
         {
             if (double.IsNaN(this.globalSum))
             {
-                return CosmosUndefined.Instance;
+                return CosmosUndefined.Create();
             }
 
             return CosmosNumber64.Create(this.globalSum);

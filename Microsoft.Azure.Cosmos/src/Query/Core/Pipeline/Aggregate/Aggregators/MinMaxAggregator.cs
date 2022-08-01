@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
     /// </summary>
     internal sealed class MinMaxAggregator : IAggregator
     {
-        private static readonly CosmosElement Undefined = CosmosUndefined.Instance;
         /// <summary>
         /// Whether or not the aggregation is a min or a max.
         /// </summary>
@@ -37,16 +36,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 
         public void Aggregate(CosmosElement localMinMax)
         {
-            // If the value became undefinded at some point then it should stay that way.
-            if (this.globalMinMax == Undefined)
+            // If the value became undefined at some point then it should stay that way.
+            if (this.globalMinMax is CosmosUndefined)
             {
                 return;
             }
 
-            if (localMinMax == Undefined)
+            if (localMinMax is CosmosUndefined)
             {
                 // If we got an undefined in the pipeline then the whole thing becomes undefined.
-                this.globalMinMax = Undefined;
+                this.globalMinMax = CosmosUndefined.Create();
                 return;
             }
 
@@ -84,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                     }
                     else
                     {
-                        localMinMax = Undefined;
+                        localMinMax = CosmosUndefined.Create();
                     }
                 }
             }
@@ -92,11 +91,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
             if (!ItemComparer.IsMinOrMax(this.globalMinMax) && (!IsPrimitve(localMinMax) || !IsPrimitve(this.globalMinMax)))
             {
                 // This means we are comparing non primitives which is undefined
-                this.globalMinMax = Undefined;
+                this.globalMinMax = CosmosUndefined.Create();
                 return;
             }
 
-            // Finally do the comparision
+            // Finally do the comparison
             if (this.isMinAggregation)
             {
                 if (ItemComparer.Instance.Compare(localMinMax, this.globalMinMax) < 0)
@@ -119,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
             if ((this.globalMinMax == ItemComparer.MinValue) || (this.globalMinMax == ItemComparer.MaxValue))
             {
                 // The filter did not match any documents.
-                result = Undefined;
+                result = CosmosUndefined.Create();
             }
             else
             {
@@ -161,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                         break;
 
                     case MinMaxContinuationToken.MinMaxContinuationTokenType.Undefined:
-                        globalMinMax = MinMaxAggregator.Undefined;
+                        globalMinMax = CosmosUndefined.Create();
                         break;
 
                     case MinMaxContinuationToken.MinMaxContinuationTokenType.Value:
@@ -197,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
             {
                 minMaxContinuationToken = MinMaxContinuationToken.CreateMaxValueContinuationToken();
             }
-            else if (this.globalMinMax == Undefined)
+            else if (this.globalMinMax is CosmosUndefined)
             {
                 minMaxContinuationToken = MinMaxContinuationToken.CreateUndefinedValueContinuationToken();
             }

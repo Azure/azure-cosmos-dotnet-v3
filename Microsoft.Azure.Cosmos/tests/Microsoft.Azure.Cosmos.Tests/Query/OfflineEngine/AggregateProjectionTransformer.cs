@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
     /// </summary>
     internal sealed class AggregateProjectionTransformer
     {
-        private static readonly CosmosElement Undefined = CosmosUndefined.Instance;
+        private static readonly CosmosElement Undefined = CosmosUndefined.Create();
 
         private readonly AggregateProjectionTransformerVisitor visitor;
 

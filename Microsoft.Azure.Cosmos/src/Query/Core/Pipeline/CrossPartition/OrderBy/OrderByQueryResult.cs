@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             {
                 if (!this.cosmosObject.TryGetValue("payload", out CosmosElement cosmosElement))
                 {
-                    return CosmosUndefined.Instance;
+                    return CosmosUndefined.Create();
                 }
 
                 return cosmosElement;

@@ -17,8 +17,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
     internal static class SqlInterpreter
     {
-        private static readonly CosmosElement Undefined = CosmosUndefined.Instance;
-
         private static readonly CosmosElement[] NoFromClauseDataSource = new CosmosElement[]
         {
             // Single object with a dummy rid 
@@ -182,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     CosmosElement aggregationResult = transformedSpec.Accept(
                         Projector.Singleton,
                         dataSource.FirstOrDefault());
-                    if (aggregationResult != Undefined)
+                    if (aggregationResult is not CosmosUndefined)
                     {
                         dataSource = new CosmosElement[] { aggregationResult };
                     }
@@ -197,7 +195,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                         .Select(element => sqlSelectClause.SelectSpec.Accept(
                             Projector.Singleton,
                             element))
-                        .Where(projection => projection != Undefined);
+                        .Where(projection => projection is not CosmosUndefined);
                 }
 
                 if (dataSource.Any())
@@ -308,7 +306,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             {
                 dataSource = dataSource.Where(element => firstItem.Expression.Accept(
                     ScalarExpressionEvaluator.Singleton,
-                    element) != Undefined);
+                    element) is not CosmosUndefined);
             }
 
             IOrderedEnumerable<CosmosElement> orderedDataSource;

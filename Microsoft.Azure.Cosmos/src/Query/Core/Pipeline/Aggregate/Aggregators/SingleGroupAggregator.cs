@@ -239,7 +239,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                     AggregateValue aggregateValue = aliasAndValue.Value;
                     if (!payload.TryGetValue(alias, out CosmosElement payloadValue))
                     {
-                        payloadValue = CosmosUndefined.Instance;
+                        payloadValue = CosmosUndefined.Create();
                     }
 
                     aggregateValue.AddValue(payloadValue);
@@ -451,7 +451,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 
                         if (!rawContinuationToken.TryGetValue(nameof(ScalarAggregateValue.value), out value))
                         {
-                            value = CosmosUndefined.Instance;
+                            value = CosmosUndefined.Create();
                         }
 
                         initialized = rawInitialized.Value;

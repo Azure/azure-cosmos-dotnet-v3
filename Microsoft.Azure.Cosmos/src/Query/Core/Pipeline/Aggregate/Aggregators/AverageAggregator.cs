@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
             {
                 if (!this.Sum.HasValue || this.Count <= 0)
                 {
-                    return CosmosUndefined.Instance;
+                    return CosmosUndefined.Create();
                 }
 
                 return CosmosNumber64.Create(this.Sum.Value / this.Count);

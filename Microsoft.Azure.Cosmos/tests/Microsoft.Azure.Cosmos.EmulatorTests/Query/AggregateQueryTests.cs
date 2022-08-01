@@ -98,7 +98,7 @@
                         predicate: $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})"),
                     new AggregateQueryArguments(
                         aggregateOperator: "AVG",
-                        expectedValue: CosmosUndefined.Instance,
+                        expectedValue: CosmosUndefined.Create(),
                         predicate: "true"),
                     new AggregateQueryArguments(
                         aggregateOperator: "COUNT",
@@ -118,7 +118,7 @@
                         predicate: $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})"),
                     new AggregateQueryArguments(
                         aggregateOperator: "SUM",
-                        expectedValue: CosmosUndefined.Instance,
+                        expectedValue: CosmosUndefined.Create(),
                         predicate: $"true"),
                 };
 

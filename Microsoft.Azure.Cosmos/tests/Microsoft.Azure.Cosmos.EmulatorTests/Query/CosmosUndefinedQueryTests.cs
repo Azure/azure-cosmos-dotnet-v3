@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 switch (index % MixedTypeCount)
                 {
                     case 0:
-                        mixedTypeElement = CosmosUndefined.Instance;
+                        mixedTypeElement = CosmosUndefined.Create();
                         break;
 
                     case 1:

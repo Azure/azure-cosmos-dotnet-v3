@@ -42,9 +42,9 @@ namespace Microsoft.Azure.Cosmos.Query
 
             foreach (OrderByQueryResult orderByQueryResult in orderByQueryResults)
             {
-                Assert.IsTrue(orderByQueryResult.Payload.Equals(CosmosUndefined.Instance));
+                Assert.IsTrue(orderByQueryResult.Payload.Equals(CosmosUndefined.Create()));
                 Assert.AreEqual(1, orderByQueryResult.OrderByItems.Count());
-                Assert.IsTrue(orderByQueryResult.OrderByItems.First().Item.Equals(CosmosUndefined.Instance));
+                Assert.IsTrue(orderByQueryResult.OrderByItems.First().Item.Equals(CosmosUndefined.Create()));
             }
         }
     }

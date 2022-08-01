@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                 {
                     if (!this.cosmosObject.TryGetValue(ItemName1, out cosmosElement))
                     {
-                        cosmosElement = CosmosUndefined.Instance;
+                        cosmosElement = CosmosUndefined.Create();
                     }
                 }
 

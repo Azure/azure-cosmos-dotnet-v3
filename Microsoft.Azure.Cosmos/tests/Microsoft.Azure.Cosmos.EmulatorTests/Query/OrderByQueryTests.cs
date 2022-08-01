@@ -1213,7 +1213,7 @@
                 // Array
                 5 => CosmosArray.Create(new List<CosmosElement>()),
                 // Undefined
-                6 => CosmosUndefined.Instance,
+                6 => CosmosUndefined.Create(),
                 _ => throw new ArgumentException(),
             };
         }
