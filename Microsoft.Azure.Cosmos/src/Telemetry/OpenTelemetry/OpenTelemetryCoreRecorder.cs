@@ -86,7 +86,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         public void Record(OpenTelemetryAttributes response)
         {
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbName, response.DatabaseName);
-
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, response.ContainerName);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, response.RequestContentLength);
             this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, response.ResponseContentLength);
