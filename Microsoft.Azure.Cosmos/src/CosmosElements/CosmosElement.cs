@@ -272,6 +272,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             private CosmosElementToTypeOrder()
             {
             }
+
             public int Visit(CosmosUndefined cosmosUndefined)
             {
                 return 0;
@@ -325,6 +326,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             private CosmosElementWithinTypeComparer()
             {
             }
+
             public int Visit(CosmosUndefined cosmosUndefined, CosmosElement input)
             {
                 return cosmosUndefined.CompareTo((CosmosUndefined)input);

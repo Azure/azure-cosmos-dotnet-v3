@@ -22,17 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 
         private static UInt128 GetHash(CosmosElement cosmosElement, UInt128 seed)
         {
-            if (cosmosElement == null)
-            {
-                return GetUndefinedHash(seed);
-            }
-
             return cosmosElement.Accept(CosmosElementHasher.Singleton, seed);
-        }
-
-        private static UInt128 GetUndefinedHash(UInt128 seed)
-        {
-            return seed;
         }
 
         private sealed class CosmosElementHasher : ICosmosElementVisitor<UInt128, UInt128>
@@ -41,7 +31,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 
             private static class HashSeeds
             {
-                public static readonly UInt128 Undefined = UInt128.Create(0xDEAD, 0xBEEF);
                 public static readonly UInt128 Null = UInt128.Create(0x1380f68bb3b0cfe4, 0x156c918bf564ee48);
                 public static readonly UInt128 False = UInt128.Create(0xc1be517fe893b40c, 0xe9fc8a4c531cd0dd);
                 public static readonly UInt128 True = UInt128.Create(0xf86d4abf9a412e74, 0x788488365c8a985d);
@@ -56,7 +45,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 
             private static class RootCache
             {
-                public static readonly UInt128 Undefined = MurmurHash3.Hash128(HashSeeds.Undefined, RootHashSeed);
                 public static readonly UInt128 Null = MurmurHash3.Hash128(HashSeeds.Null, RootHashSeed);
                 public static readonly UInt128 False = MurmurHash3.Hash128(HashSeeds.False, RootHashSeed);
                 public static readonly UInt128 True = MurmurHash3.Hash128(HashSeeds.True, RootHashSeed);
@@ -82,13 +70,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 {
                     CosmosElement arrayItem = cosmosArray[index];
 
-                    // Order of array items matter in equality check, so we add the index just to be safe.
-                    // For now we know that murmurhash will correctly give a different hash for 
-                    // [true, false, true] and [true, true, false]
-                    // due to the way the seed works.
-                    // But we add the index just incase that property does not hold in the future.
-                    UInt128 arrayItemSeed = HashSeeds.ArrayIndex + index;
-                    hash = MurmurHash3.Hash128(arrayItem.Accept(this, arrayItemSeed), hash);
+                    if (arrayItem is not CosmosUndefined)
+                    {
+                        // Order of array items matter in equality check, so we add the index just to be safe.
+                        // For now we know that murmurhash will correctly give a different hash for 
+                        // [true, false, true] and [true, true, false]
+                        // due to the way the seed works.
+                        // But we add the index just incase that property does not hold in the future.
+                        UInt128 arrayItemSeed = HashSeeds.ArrayIndex + index;
+                        hash = MurmurHash3.Hash128(arrayItem.Accept(this, arrayItemSeed), hash);
+                    }
                 }
 
                 return hash;
@@ -133,12 +124,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 
             public UInt128 Visit(CosmosUndefined cosmosUndefined, UInt128 seed)
             {
-                if (seed == RootHashSeed)
-                {
-                    return RootCache.Undefined;
-                }
-
-                return MurmurHash3.Hash128(HashSeeds.Undefined, seed);
+                // undefined is ignored while hashing
+                return seed;
             }
 
             public UInt128 Visit(CosmosNumber cosmosNumber, UInt128 seed)
@@ -183,16 +170,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 // This is consistent with equality comparison.
                 foreach (KeyValuePair<string, CosmosElement> kvp in cosmosObject)
                 {
-                    UInt128 nameHash = MurmurHash3.Hash128(kvp.Key, MurmurHash3.Hash128(HashSeeds.String, HashSeeds.PropertyName));
-                    UInt128 propertyHash = kvp.Value.Accept(this, nameHash);
+                    if (kvp.Value is not CosmosUndefined)
+                    {
+                        UInt128 nameHash = MurmurHash3.Hash128(kvp.Key, MurmurHash3.Hash128(HashSeeds.String, HashSeeds.PropertyName));
+                        UInt128 propertyHash = kvp.Value.Accept(this, nameHash);
 
-                    //// xor is symmetric meaning that a ^ b = b ^ a
-                    //// Which is great since now we can add the property hashes to the intermediate hash
-                    //// in any order and get the same result, which upholds our definition of equality.
-                    //// Note that we don't have to worry about a ^ a = 0 = b ^ b for duplicate property values,
-                    //// since the hash of property values are seeded with the hash of property names,
-                    //// which are unique within an object.
-                    intermediateHash ^= propertyHash;
+                        //// xor is symmetric meaning that a ^ b = b ^ a
+                        //// Which is great since now we can add the property hashes to the intermediate hash
+                        //// in any order and get the same result, which upholds our definition of equality.
+                        //// Note that we don't have to worry about a ^ a = 0 = b ^ b for duplicate property values,
+                        //// since the hash of property values are seeded with the hash of property names,
+                        //// which are unique within an object.
+                        intermediateHash ^= propertyHash;
+                    }
                 }
 
                 // Only if the object was not empty do we want to bring in the intermediate hash.

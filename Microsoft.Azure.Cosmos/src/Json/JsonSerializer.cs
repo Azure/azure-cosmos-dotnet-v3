@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
 
                 CosmosElement cosmosElement = tryCreateFromBuffer.Result;
-                TryCatch<object> tryAcceptVisitor = cosmosElement.Accept(Visitor.Singleton, typeof(T));
+                TryCatch<object> tryAcceptVisitor = cosmosElement.Accept(DeserializationVisitor.Singleton, typeof(T));
                 if (tryAcceptVisitor.Failed)
                 {
                     return TryCatch<T>.FromException(tryAcceptVisitor.Exception);
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         return TryCatch<T>.FromResult(default);
                     }
 
-                    // string needs to be handle differntly since JsonReader return UtfAnyString instead of string.
+                    // string needs to be handle differently since JsonReader return UtfAnyString instead of string.
                     if (type == typeof(string))
                     {
                         return TryCatch<T>.FromResult((T)(object)tryAcceptVisitor.Result.ToString());
@@ -173,9 +173,9 @@ namespace Microsoft.Azure.Cosmos.Json
             return TryCatch<T>.ConvertToTryGet<T>(tryDeserialize, out result);
         }
 
-        private sealed class Visitor : ICosmosElementVisitor<Type, TryCatch<object>>
+        private sealed class DeserializationVisitor : ICosmosElementVisitor<Type, TryCatch<object>>
         {
-            public static readonly Visitor Singleton = new Visitor();
+            public static readonly DeserializationVisitor Singleton = new DeserializationVisitor();
 
             private static class Exceptions
             {
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 public static readonly object Null = null;
             }
 
-            private Visitor()
+            private DeserializationVisitor()
             {
             }
 
@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 bool isReadOnlyList = type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(IReadOnlyList<>));
                 if (!isReadOnlyList)
                 {
-                    return TryCatch<object>.FromException(Visitor.Exceptions.ExpectedArray);
+                    return TryCatch<object>.FromException(DeserializationVisitor.Exceptions.ExpectedArray);
                 }
 
                 Type genericArgumentType = type.GenericTypeArguments.First();
@@ -269,7 +269,7 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 if (type != typeof(ReadOnlyMemory<byte>))
                 {
-                    return TryCatch<object>.FromException(Visitor.Exceptions.ExpectedBinary);
+                    return TryCatch<object>.FromException(DeserializationVisitor.Exceptions.ExpectedBinary);
                 }
 
                 return TryCatch<object>.FromResult(cosmosBinary.Value);
@@ -279,17 +279,17 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 if (type != typeof(bool))
                 {
-                    return TryCatch<object>.FromException(Visitor.Exceptions.ExpectedBoolean);
+                    return TryCatch<object>.FromException(DeserializationVisitor.Exceptions.ExpectedBoolean);
                 }
 
-                return TryCatch<object>.FromResult(cosmosBoolean.Value ? Visitor.BoxedValues.True : Visitor.BoxedValues.False);
+                return TryCatch<object>.FromResult(cosmosBoolean.Value ? DeserializationVisitor.BoxedValues.True : DeserializationVisitor.BoxedValues.False);
             }
 
             public TryCatch<object> Visit(CosmosGuid cosmosGuid, Type type)
             {
                 if (type != typeof(Guid))
                 {
-                    return TryCatch<object>.FromException(Visitor.Exceptions.ExpectedGuid);
+                    return TryCatch<object>.FromException(DeserializationVisitor.Exceptions.ExpectedGuid);
                 }
 
                 return TryCatch<object>.FromResult(cosmosGuid.Value);
@@ -299,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 if (type.IsValueType && !(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>)))
                 {
-                    return TryCatch<object>.FromException(Visitor.Exceptions.ExpectedReferenceOrNullableType);
+                    return TryCatch<object>.FromException(DeserializationVisitor.Exceptions.ExpectedReferenceOrNullableType);
                 }
 
                 return TryCatch<object>.FromResult(default);
@@ -307,7 +307,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
             public TryCatch<object> Visit(CosmosUndefined cosmosUndefined, Type type)
             {
-                return TryCatch<object>.FromException(Visitor.Exceptions.UnexpectedUndefined);
+                return TryCatch<object>.FromException(DeserializationVisitor.Exceptions.UnexpectedUndefined);
             }
 
             public TryCatch<object> Visit(CosmosNumber cosmosNumber, Type type)
@@ -556,7 +556,7 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 if (type != typeof(string))
                 {
-                    return TryCatch<object>.FromException(Visitor.Exceptions.ExpectedString);
+                    return TryCatch<object>.FromException(DeserializationVisitor.Exceptions.ExpectedString);
                 }
 
                 return TryCatch<object>.FromResult(cosmosString.Value.ToString());

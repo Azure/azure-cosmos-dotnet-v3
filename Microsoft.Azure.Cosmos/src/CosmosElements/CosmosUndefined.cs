@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public override int GetHashCode()
         {
-            return Instance.GetHashCode();
+            return 0;
         }
 
         public override void WriteTo(IJsonWriter jsonWriter)
