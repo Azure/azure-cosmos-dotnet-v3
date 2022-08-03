@@ -90,14 +90,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, response.RequestCharge);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, response.ItemCount);
 
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region,
-                    response.Diagnostics != null ? ClientTelemetryHelper.GetContactedRegions(response.Diagnostics) : OpenTelemetryAttributes.NotAvailable);
-
-                if (this.IsEnabled && DiagnosticsFilterHelper.IsAllowed(
-                        config: this.config,
-                        response: response))
+                if (response.Diagnostics != null)
                 {
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, response.Diagnostics);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics));
+
+                    if (this.IsEnabled && DiagnosticsFilterHelper.IsAllowed(
+                            config: this.config,
+                            response: response))
+                    {
+                        this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, response.Diagnostics);
+                    }
+                }
+                else
+                {
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, OpenTelemetryAttributes.NotAvailable);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, OpenTelemetryAttributes.NotAvailable);
                 }
             }
 
