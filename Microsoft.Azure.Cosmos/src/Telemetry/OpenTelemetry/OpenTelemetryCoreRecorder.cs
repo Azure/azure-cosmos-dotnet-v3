@@ -40,7 +40,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         public void Record(string key, string value)
         {
-            this.scope.AddAttribute(key, value);
+            if (this.scope.IsEnabled)
+            {
+                this.scope.AddAttribute(key, value);
+            }
         }
 
         /// <summary>
@@ -50,18 +53,23 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="clientContext"></param>
         public void Record(string operationName, CosmosClientContext clientContext)
         {
-            // Other information
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb);
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.MachineId, VmMetadataApiHandler.GetMachineId());
-            
-            string netPeerName = clientContext.DocumentClient?.accountServiceConfiguration?.AccountProperties?.AccountNameWithCloudInformation;
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.NetPeerName, netPeerName);
+            if (this.scope.IsEnabled)
+            {
+                // Other information
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.MachineId, VmMetadataApiHandler.GetMachineId());
 
-            // Client Information
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext.Client.Id);
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent);
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode, clientContext.ClientOptions.ConnectionMode);
+                string netPeerName = clientContext.DocumentClient?.accountServiceConfiguration?.AccountProperties
+                    ?.AccountNameWithCloudInformation;
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.NetPeerName, netPeerName);
+
+                // Client Information
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext.Client.Id);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode,
+                    clientContext.ClientOptions.ConnectionMode);
+            }
         }
 
         /// <summary>
@@ -70,21 +78,26 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="response"></param>
         public void Record(OpenTelemetryAttributes response)
         {
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbName, response.DatabaseName);
-
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, response.ContainerName);
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, response.RequestContentLength);
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, response.ResponseContentLength);
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, response.StatusCode);
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, response.RequestCharge);
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, response.ItemCount);
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics));
-
-            if (this.IsEnabled && DiagnosticsFilterHelper.IsAllowed(
-                    config: this.config,
-                    response: response))
+            if (this.scope.IsEnabled)
             {
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, response.Diagnostics);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbName, response.DatabaseName);
+
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, response.ContainerName);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, response.RequestContentLength);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength,
+                    response.ResponseContentLength);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, response.StatusCode);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, response.RequestCharge);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, response.ItemCount);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region,
+                    ClientTelemetryHelper.GetContactedRegions(response.Diagnostics));
+
+                if (this.IsEnabled && DiagnosticsFilterHelper.IsAllowed(
+                        config: this.config,
+                        response: response))
+                {
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, response.Diagnostics);
+                }
             }
 
         }
@@ -95,16 +108,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="exception"></param>
         public void MarkFailed(Exception exception)
         {
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionStacktrace, exception.StackTrace);
-            this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType());
-
-            // If Exception is not registered with open Telemetry
-            if (!OpenTelemetryCoreRecorder.IsExceptionRegistered(exception, this.scope))
+            if (this.scope.IsEnabled)
             {
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
-            }
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionStacktrace, exception.StackTrace);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType());
 
-            this.scope.Failed(exception);
+                // If Exception is not registered with open Telemetry
+                if (!OpenTelemetryCoreRecorder.IsExceptionRegistered(exception, this.scope))
+                {
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
+                }
+
+                this.scope.Failed(exception);
+            }
         }
 
         /// <summary>
