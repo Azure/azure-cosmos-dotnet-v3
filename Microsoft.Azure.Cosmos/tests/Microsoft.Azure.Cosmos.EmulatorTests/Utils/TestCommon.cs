@@ -126,8 +126,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static CosmosClient CreateCosmosClient(
             bool useGateway,
-            Action<CosmosClientBuilder> customizeClientBuilder = null,
-            bool isOpenTelemetryFeatureEnabled = false)
+            Action<CosmosClientBuilder> customizeClientBuilder = null)
         {
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
 
@@ -137,12 +136,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 cosmosClientBuilder.WithConnectionModeGateway();
             }
-
-            if (isOpenTelemetryFeatureEnabled)
-            {
-                cosmosClientBuilder.EnableTracer();
-            }
-
+            
             return cosmosClientBuilder.Build();
         }
 

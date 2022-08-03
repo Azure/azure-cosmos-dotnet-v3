@@ -28,13 +28,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="clientOptions"></param>
         public OpenTelemetryOptions(CosmosClientOptions clientOptions)
         {
-            this.LatencyThreshold = clientOptions.LatencyThresholdForDiagnosticsOnTracer;
+            this.CrudLatencyThreshold = clientOptions.CrudLatencyThresholdForDiagnostics;
+            this.QueryLatencyThreshold = clientOptions.QueryLatencyThresholdForDiagnostics;
         }
 
         /// <summary>
-        /// Customer defined Latency Threshold
+        /// Customer defined Crud Latency Threshold
         /// </summary>
-        public TimeSpan? LatencyThreshold { get; }
+        public TimeSpan? CrudLatencyThreshold { get; }
+
+        /// <summary>
+        /// Customer defined Query Latency Threshold
+        /// </summary>
+        public TimeSpan? QueryLatencyThreshold { get; }
 
     }
 }

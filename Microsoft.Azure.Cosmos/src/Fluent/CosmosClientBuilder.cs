@@ -423,23 +423,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Enable Tracer and start emitting activities for each operations
-        /// </summary>
-        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-            CosmosClientBuilder EnableTracer()
-        {
-            this.clientOptions.EnableTracer = true;
-            
-            return this;
-        }
-
-        /// <summary>
-        /// Set Latency Threshold for Tracer
+        /// Set CRUD operations Latency Threshold for Tracer
         /// </summary>
         /// <param name="threshold"></param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
@@ -448,15 +432,26 @@ namespace Microsoft.Azure.Cosmos.Fluent
 #else
         internal
 #endif
-            CosmosClientBuilder WithLatencyThresholdForDiagnosticsOnTracer(TimeSpan threshold)
+            CosmosClientBuilder WithCrudLatencyThresholdForDiagnosticsOnTracer(TimeSpan threshold)
         {
-            if (!this.clientOptions.EnableTracer)
-            {
-                throw new InvalidOperationException(
-                    "Enable Tracer by Calling EnableTracer() before setting this configuration");
-            }
+            this.clientOptions.CrudLatencyThresholdForDiagnostics = threshold;
 
-            this.clientOptions.LatencyThresholdForDiagnosticsOnTracer = threshold;
+            return this;
+        }
+
+        /// <summary>
+        /// Set Query Operation Latency Threshold for Tracer
+        /// </summary>
+        /// <param name="threshold"></param>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            CosmosClientBuilder WithQueryLatencyThresholdForDiagnosticsOnTracer(TimeSpan threshold)
+        {
+            this.clientOptions.QueryLatencyThresholdForDiagnostics = threshold;
 
             return this;
         }

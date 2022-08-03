@@ -21,21 +21,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             OpenTelemetryAttributes response)
         {
             bool isLatencyAcceptable;
-            if (config != null && config.LatencyThreshold.HasValue)
+            if (response.OperationType == OperationType.Query)
             {
-                isLatencyAcceptable = response.Diagnostics.GetClientElapsedTime() < config.LatencyThreshold;
-            } 
-            else if (response.OperationType == OperationType.Query)
-            {
-                isLatencyAcceptable = response.Diagnostics.GetClientElapsedTime() > OpenTelemetryOptions.DefaultQueryTimeoutThreshold;
+                isLatencyAcceptable = response.Diagnostics.GetClientElapsedTime() > (config != null && config.CrudLatencyThreshold.HasValue ? config.CrudLatencyThreshold.Value : OpenTelemetryOptions.DefaultQueryTimeoutThreshold);
             }
             else
             {
-                isLatencyAcceptable = response.Diagnostics.GetClientElapsedTime() > OpenTelemetryOptions.DefaultCrudLatencyThreshold;
+                isLatencyAcceptable = response.Diagnostics.GetClientElapsedTime() < (config != null && config.QueryLatencyThreshold.HasValue ? config.QueryLatencyThreshold.Value : OpenTelemetryOptions.DefaultCrudLatencyThreshold);
             }
 
             return isLatencyAcceptable && response.StatusCode.IsSuccess();
-
         }
     }
 }

@@ -80,8 +80,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(clientOptions.HttpClientFactory);
             Assert.AreNotEqual(consistencyLevel, clientOptions.ConsistencyLevel);
             Assert.IsFalse(clientOptions.EnablePartitionLevelFailover);
-            Assert.IsFalse(clientOptions.EnableTracer);
-            Assert.AreEqual(null, clientOptions.LatencyThresholdForDiagnosticsOnTracer);
 
             //Verify GetConnectionPolicy returns the correct values for default
             ConnectionPolicy policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -109,8 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .WithBulkExecution(true)
                 .WithSerializerOptions(cosmosSerializerOptions)
                 .WithConsistencyLevel(consistencyLevel)
-                .WithPartitionLevelFailoverEnabled()
-                .EnableTracer();
+                .WithPartitionLevelFailoverEnabled();
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
@@ -133,8 +130,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(clientOptions.AllowBulkExecution);
             Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
             Assert.IsTrue(clientOptions.EnablePartitionLevelFailover);
-            Assert.IsTrue(clientOptions.EnableTracer);
-            Assert.AreEqual(null, clientOptions.LatencyThresholdForDiagnosticsOnTracer);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -163,8 +158,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 portReuseMode,
                 enableTcpConnectionEndpointRediscovery)
                 .WithApplicationPreferredRegions(preferredLocations)
-                .EnableTracer()
-                .WithLatencyThresholdForDiagnosticsOnTracer(TimeSpan.FromMilliseconds(500));
+                .WithQueryLatencyThresholdForDiagnosticsOnTracer(TimeSpan.FromMilliseconds(500))
+                .WithCrudLatencyThresholdForDiagnosticsOnTracer(TimeSpan.FromMilliseconds(100));
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
@@ -176,8 +171,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, clientOptions.PortReuseMode);
             Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), clientOptions.ApplicationPreferredRegions.ToArray());
-            Assert.IsTrue(clientOptions.EnableTracer);
-            Assert.AreEqual(TimeSpan.FromMilliseconds(500), clientOptions.LatencyThresholdForDiagnosticsOnTracer);
+            Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.CrudLatencyThresholdForDiagnostics);
+            Assert.AreEqual(TimeSpan.FromMilliseconds(500), clientOptions.QueryLatencyThresholdForDiagnostics);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -188,23 +183,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, policy.PortReuseMode);
             Assert.IsTrue(policy.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), policy.PreferredLocations.ToArray());
-
-            InvalidOperationException invalidOperationException = new InvalidOperationException(
-                "Enable Tracer by Calling EnableTracer() before setting this configuration");
-            try
-            {
-                new CosmosClientBuilder(
-                        accountEndpoint: endpoint,
-                        authKeyOrResourceToken: key)
-                    .WithLatencyThresholdForDiagnosticsOnTracer(TimeSpan.FromMilliseconds(500));
-
-                Assert.Fail("This configuration should have thrown exception");
-            }
-            catch (Exception ex)
-            {
-                Assert.IsTrue(ex is InvalidOperationException);
-                Assert.AreEqual(invalidOperationException.Message, ex.Message);
-            }
         }
 
         [TestMethod]

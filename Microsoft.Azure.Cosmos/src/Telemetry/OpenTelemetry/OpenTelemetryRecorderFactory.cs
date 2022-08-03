@@ -10,23 +10,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         private static DiagnosticScopeFactory ScopeFactory { get; set; } 
 
-        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName, bool isFeatureEnabled, OpenTelemetryOptions config)
+        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName, OpenTelemetryOptions config)
         {
-            if (isFeatureEnabled)
+            ScopeFactory = new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
+                                                resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
+                                                isActivityEnabled: true);
+            DiagnosticScope scope = OpenTelemetryRecorderFactory
+                .ScopeFactory
+                .CreateScope($"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}");
+
+            if (scope.IsEnabled)
             {
-                ScopeFactory = new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
-                                                    resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
-                                                    isActivityEnabled: true);
-                DiagnosticScope scope = OpenTelemetryRecorderFactory
-                    .ScopeFactory
-                    .CreateScope($"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}");
-
-                if (scope.IsEnabled)
-                {
-                    return new OpenTelemetryCoreRecorder(scope, config);
-                }
+                return new OpenTelemetryCoreRecorder(scope, config);
             }
-
+            
             return default;
         }
     }
