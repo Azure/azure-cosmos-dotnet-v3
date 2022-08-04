@@ -16,11 +16,11 @@ namespace Microsoft.Azure.Cosmos
             this.RequestCharge = responseMessage.Headers?.RequestCharge;
             this.ResponseContentLength = OpenTelemetryResponse.GetPayloadSize(responseMessage);
             this.Diagnostics = responseMessage.Diagnostics;
-            this.ItemCount = responseMessage.Headers?.ItemCount;
+            this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable; ;
         }
 
         /// <summary>
-        /// No request message in TransactionalBatchresponse
+        /// No request message in TransactionalBatchResponse
         /// </summary>
         /// <param name="responseMessage"></param>
         internal OpenTelemetryResponse(TransactionalBatchResponse responseMessage)
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
             this.StatusCode = responseMessage.StatusCode;
             this.RequestCharge = responseMessage.Headers?.RequestCharge;
             this.Diagnostics = responseMessage.Diagnostics;
-            this.ItemCount = responseMessage.Headers?.ItemCount;
+            this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable; ;
         }
 
         private static string GetPayloadSize(ResponseMessage response)

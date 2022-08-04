@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
                 nameof(CreateContainerAsync),
                 requestOptions,
                 (trace) => base.CreateContainerAsync(containerProperties, throughput, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<ContainerProperties>(response));
+                (response) => new OpenTelemetryResponse<ContainerProperties>(response, this.Id));
         }
 
         public override Task<ContainerResponse> CreateContainerAsync(string id,
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
                 nameof(CreateContainerAsync),
                 requestOptions,
                 (trace) => base.CreateContainerAsync(id, partitionKeyPath, throughput, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<ContainerProperties>(response));
+                (response) => new OpenTelemetryResponse<ContainerProperties>(response, this.Id));
         }
 
         public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
                 nameof(CreateContainerIfNotExistsAsync),
                 requestOptions,
                 (trace) => base.CreateContainerIfNotExistsAsync(containerProperties, throughput, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<ContainerProperties>(response));
+                (response) => new OpenTelemetryResponse<ContainerProperties>(response, this.Id));
         }
 
         public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
                 nameof(CreateContainerIfNotExistsAsync),
                 requestOptions,
                 (trace) => base.CreateContainerIfNotExistsAsync(id, partitionKeyPath, throughput, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<ContainerProperties>(response));
+                (response) => new OpenTelemetryResponse<ContainerProperties>(response, this.Id));
         }
 
         public override Task<ResponseMessage> CreateContainerStreamAsync(

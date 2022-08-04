@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Text;
     using System.Threading;
     using Telemetry;
+    using VisualStudio.TestTools.UnitTesting;
 
     public class OpenTelemetryListener : IObserver<KeyValuePair<string, object>>, IObserver<DiagnosticListener>, IDisposable
     {
@@ -134,6 +135,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
             }
             builder.Append("</ACTIVITY>");
+
+            Assert.IsTrue(tags.Count() >= 17, "Some attributes are missing"); // Make sure if all the operations are having all the attributes (request diagnostics as optional)
 
             this.Attributes.Add(builder.ToString());
         }
