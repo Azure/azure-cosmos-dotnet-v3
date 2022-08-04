@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestCharge = responseMessage.Headers?.RequestCharge;
             this.ResponseContentLength = OpenTelemetryResponse.GetPayloadSize(responseMessage);
             this.Diagnostics = responseMessage.Diagnostics;
-            this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable; ;
+            this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable;
         }
 
         /// <summary>
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
             this.StatusCode = responseMessage.StatusCode;
             this.RequestCharge = responseMessage.Headers?.RequestCharge;
             this.Diagnostics = responseMessage.Diagnostics;
-            this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable; ;
+            this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable;
         }
 
         private static string GetPayloadSize(ResponseMessage response)

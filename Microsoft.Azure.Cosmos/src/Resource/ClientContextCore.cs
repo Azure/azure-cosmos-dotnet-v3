@@ -479,12 +479,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 try
                 {
+                    // Record client and other information
+                    recorder.Record(operationName, this);
+
                     TResult result = await task(trace).ConfigureAwait(false);
                     if (openTelemetry != null && recorder.IsEnabled)
                     {
-                        // Record client and other information
-                        recorder.Record(operationName, this);
-
                         // Record request response information
                         OpenTelemetryAttributes response = openTelemetry(result);
                         recorder.Record(response);

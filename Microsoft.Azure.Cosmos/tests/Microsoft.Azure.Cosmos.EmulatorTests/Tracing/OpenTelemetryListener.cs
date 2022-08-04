@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
             builder.Append("</ACTIVITY>");
 
-            Assert.IsTrue(tags.Count() >= 17, "Some attributes are missing"); // Make sure if all the operations are having all the attributes (request diagnostics as optional)
+            Assert.IsTrue(tags.Count() >= 16, $"{tags.Count()} attributes are there"); // Make sure if all the operations are having all the attributes (request diagnostics as optional)
 
             this.Attributes.Add(builder.ToString());
         }
