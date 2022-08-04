@@ -6,7 +6,9 @@
     TimeSpan delayTime = TimeSpan.FromSeconds(2);
     RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
     CosmosClient cosmosClient = TestCommon.CreateCosmosClient(builder =>
-        builder.AddCustomHandlers(requestHandler));
+        builder
+            .AddCustomHandlers(requestHandler)
+            .EnableOpenTelemetrySupport());
 
     DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
     EndToEndTraceWriterBaselineTests.AssertCustomHandlerTime(

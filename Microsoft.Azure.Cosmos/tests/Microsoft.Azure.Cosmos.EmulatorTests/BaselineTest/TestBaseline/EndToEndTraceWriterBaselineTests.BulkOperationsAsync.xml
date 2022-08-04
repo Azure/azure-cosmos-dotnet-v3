@@ -4,7 +4,9 @@
       <Description>Bulk Operation</Description>
       <Setup><![CDATA[
     string pkValue = "DiagnosticBulkTestPk";
-    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder.WithBulkExecution(true));
+    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
+        .WithBulkExecution(true)
+        .EnableOpenTelemetrySupport());
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -172,7 +174,9 @@
       <Description>Bulk Operation</Description>
       <Setup><![CDATA[
     string pkValue = "DiagnosticBulkTestPk";
-    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder.WithBulkExecution(true));
+    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
+        .WithBulkExecution(true)
+        .EnableOpenTelemetrySupport());
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -340,7 +344,9 @@
       <Description>Bulk Operation</Description>
       <Setup><![CDATA[
     string pkValue = "DiagnosticBulkTestPk";
-    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder.WithBulkExecution(true));
+    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
+        .WithBulkExecution(true)
+        .EnableOpenTelemetrySupport());
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -508,7 +514,9 @@
       <Description>Bulk Operation</Description>
       <Setup><![CDATA[
     string pkValue = "DiagnosticBulkTestPk";
-    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder.WithBulkExecution(true));
+    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
+        .WithBulkExecution(true)
+        .EnableOpenTelemetrySupport());
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -676,7 +684,9 @@
       <Description>Bulk Operation</Description>
       <Setup><![CDATA[
     string pkValue = "DiagnosticBulkTestPk";
-    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder.WithBulkExecution(true));
+    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
+        .WithBulkExecution(true)
+        .EnableOpenTelemetrySupport());
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -844,7 +854,9 @@
       <Description>Bulk Operation</Description>
       <Setup><![CDATA[
     string pkValue = "DiagnosticBulkTestPk";
-    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder.WithBulkExecution(true));
+    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
+        .WithBulkExecution(true)
+        .EnableOpenTelemetrySupport());
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -1012,7 +1024,9 @@
       <Description>Bulk Operation</Description>
       <Setup><![CDATA[
     string pkValue = "DiagnosticBulkTestPk";
-    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder.WithBulkExecution(true));
+    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
+        .WithBulkExecution(true)
+        .EnableOpenTelemetrySupport());
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -1180,7 +1194,9 @@
       <Description>Bulk Operation</Description>
       <Setup><![CDATA[
     string pkValue = "DiagnosticBulkTestPk";
-    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder.WithBulkExecution(true));
+    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
+        .WithBulkExecution(true)
+        .EnableOpenTelemetrySupport());
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -1348,7 +1364,9 @@
       <Description>Bulk Operation</Description>
       <Setup><![CDATA[
     string pkValue = "DiagnosticBulkTestPk";
-    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder.WithBulkExecution(true));
+    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
+        .WithBulkExecution(true)
+        .EnableOpenTelemetrySupport());
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -1516,7 +1534,9 @@
       <Description>Bulk Operation</Description>
       <Setup><![CDATA[
     string pkValue = "DiagnosticBulkTestPk";
-    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder.WithBulkExecution(true));
+    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
+        .WithBulkExecution(true)
+        .EnableOpenTelemetrySupport());
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -1697,6 +1717,7 @@
                     request,
                     exceptionActivityId,
                     errorMessage)))
+        .EnableOpenTelemetrySupport()
         );
 
     ItemRequestOptions requestOptions = new ItemRequestOptions();

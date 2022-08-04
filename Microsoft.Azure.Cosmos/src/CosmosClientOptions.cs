@@ -939,7 +939,7 @@ namespace Microsoft.Azure.Cosmos
         /// By default true for Preview package
         /// </summary>
 #if PREVIEW
-        internal bool EnableOpenTelemetrySupport { get; set; } = true;
+        internal bool EnableOpenTelemetrySupport { get; } = true;
 #else
         internal bool EnableOpenTelemetrySupport { get; set; }
 #endif

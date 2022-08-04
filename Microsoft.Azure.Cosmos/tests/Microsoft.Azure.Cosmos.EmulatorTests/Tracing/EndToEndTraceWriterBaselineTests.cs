@@ -36,9 +36,14 @@
         {
             testListener = new OpenTelemetryListener("Azure.Cosmos");
 
+#if !PREVIEW
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
                 useGateway: false,
                 customizeClientBuilder: builder => builder.EnableOpenTelemetrySupport());
+#else
+            client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
+                            useGateway: false);
+#endif
 
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
                     Guid.NewGuid().ToString(),
@@ -939,6 +944,7 @@
                 string errorMessage = "Mock throttle exception" + Guid.NewGuid().ToString();
                 Guid exceptionActivityId = Guid.NewGuid();
                 // Set a small retry count to reduce test time
+#if !PREVIEW
                 CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
                     builder.WithThrottlingRetryOptions(TimeSpan.FromSeconds(5), 5)
                     .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
@@ -951,7 +957,19 @@
                                 errorMessage)))
                     .EnableOpenTelemetrySupport()
                     );
-
+#else
+                CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
+                    builder.WithThrottlingRetryOptions(TimeSpan.FromSeconds(5), 5)
+                    .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
+                           transportClient,
+                           (uri, resourceOperation, request) => TransportClientHelper.ReturnThrottledStoreResponseOnItemOperation(
+                                uri,
+                                resourceOperation,
+                                request,
+                                exceptionActivityId,
+                                errorMessage)))
+                    );
+#endif
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
                 Container containerWithThrottleException = throttleClient.GetContainer(
                     database.Id,
@@ -1174,9 +1192,14 @@
             {
                 startLineNumber = GetLineNumber();
                 string pkValue = "DiagnosticBulkTestPk";
+#if !PREVIEW
                 CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
                     .WithBulkExecution(true)
                     .EnableOpenTelemetrySupport());
+#else
+                CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
+                    .WithBulkExecution(true));
+#endif
                 Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
                 List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -1223,6 +1246,7 @@
                 string errorMessage = "Mock throttle exception" + Guid.NewGuid().ToString();
                 Guid exceptionActivityId = Guid.NewGuid();
                 // Set a small retry count to reduce test time
+#if !PREVIEW
                 CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
                     builder.WithThrottlingRetryOptions(TimeSpan.FromSeconds(5), 3)
                     .WithBulkExecution(true)
@@ -1236,6 +1260,20 @@
                                 errorMessage)))
                     .EnableOpenTelemetrySupport()
                     );
+#else
+                CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
+                    builder.WithThrottlingRetryOptions(TimeSpan.FromSeconds(5), 3)
+                    .WithBulkExecution(true)
+                    .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
+                           transportClient,
+                           (uri, resourceOperation, request) => TransportClientHelper.ReturnThrottledStoreResponseOnItemOperation(
+                                uri,
+                                resourceOperation,
+                                request,
+                                exceptionActivityId,
+                                errorMessage)))
+                    );
+#endif
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
                 Container containerWithThrottleException = throttleClient.GetContainer(
@@ -1281,10 +1319,16 @@
                 startLineNumber = GetLineNumber();
                 TimeSpan delayTime = TimeSpan.FromSeconds(2);
                 RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
+#if  !PREVIEW
                 CosmosClient cosmosClient = TestCommon.CreateCosmosClient(builder =>
                     builder
                         .AddCustomHandlers(requestHandler)
                         .EnableOpenTelemetrySupport());
+#else
+                CosmosClient cosmosClient = TestCommon.CreateCosmosClient(builder =>
+                    builder
+                        .AddCustomHandlers(requestHandler));
+#endif
 
                 DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
                 EndToEndTraceWriterBaselineTests.AssertCustomHandlerTime(

@@ -423,7 +423,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Set Query Operation Latency Threshold for Tracer
+        /// Set Operation Global Latency Threshold for Open Telemetry Tracer.
         /// </summary>
         /// <param name="threshold"></param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
@@ -439,8 +439,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
             return this;
         }
 
+#if !PREVIEW
         /// <summary>
         /// Enable Open Telemetry Support
+        /// It is there only for test. This can be removed once this feature is in GA.
+        /// For Preview package it is always true.
         /// </summary>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         internal CosmosClientBuilder EnableOpenTelemetrySupport()
@@ -449,6 +452,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
             return this;
         }
+#endif
 
         /// <summary>
         /// Sets the connection mode to Gateway. This is used by the client when connecting to the Azure Cosmos DB service.

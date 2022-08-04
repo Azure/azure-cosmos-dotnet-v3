@@ -97,6 +97,19 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreNotEqual(Cosmos.ConsistencyLevel.Session, clientOptions.ConsistencyLevel);
             Assert.IsFalse(policy.EnablePartitionLevelFailover);
 
+#if PREVIEW
+            cosmosClientBuilder.WithApplicationRegion(region)
+                .WithConnectionModeGateway(maxConnections, webProxy)
+                .WithRequestTimeout(requestTimeout)
+                .WithApplicationName(userAgentSuffix)
+                .AddCustomHandlers(preProcessHandler)
+                .WithApiType(apiType)
+                .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
+                .WithBulkExecution(true)
+                .WithSerializerOptions(cosmosSerializerOptions)
+                .WithConsistencyLevel(consistencyLevel)
+                .WithPartitionLevelFailoverEnabled();
+#else
             cosmosClientBuilder.WithApplicationRegion(region)
                 .WithConnectionModeGateway(maxConnections, webProxy)
                 .WithRequestTimeout(requestTimeout)
@@ -110,6 +123,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .WithPartitionLevelFailoverEnabled()
                 .EnableOpenTelemetrySupport();
 
+#endif
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
 

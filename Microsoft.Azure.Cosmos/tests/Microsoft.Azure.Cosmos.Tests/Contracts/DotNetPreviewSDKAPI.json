@@ -307,43 +307,24 @@
     "Microsoft.Azure.Cosmos.CosmosClientOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "System.Nullable`1[System.TimeSpan] CrudLatencyThresholdForDiagnostics": {
+        "System.Nullable`1[System.TimeSpan] get_LatencyThresholdForDiagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] get_LatencyThresholdForDiagnostics();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.TimeSpan] LatencyThresholdForDiagnostics": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": "System.Nullable`1[System.TimeSpan] CrudLatencyThresholdForDiagnostics;CanRead:True;CanWrite:True;System.Nullable`1[System.TimeSpan] get_CrudLatencyThresholdForDiagnostics();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_CrudLatencyThresholdForDiagnostics(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] LatencyThresholdForDiagnostics;CanRead:True;CanWrite:True;System.Nullable`1[System.TimeSpan] get_LatencyThresholdForDiagnostics();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_LatencyThresholdForDiagnostics(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.TimeSpan] get_CrudLatencyThresholdForDiagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_LatencyThresholdForDiagnostics(System.Nullable`1[System.TimeSpan])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "System.Nullable`1[System.TimeSpan] get_CrudLatencyThresholdForDiagnostics();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Nullable`1[System.TimeSpan] get_QueryLatencyThresholdForDiagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Nullable`1[System.TimeSpan] get_QueryLatencyThresholdForDiagnostics();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Nullable`1[System.TimeSpan] QueryLatencyThresholdForDiagnostics": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "System.Nullable`1[System.TimeSpan] QueryLatencyThresholdForDiagnostics;CanRead:True;CanWrite:True;System.Nullable`1[System.TimeSpan] get_QueryLatencyThresholdForDiagnostics();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_QueryLatencyThresholdForDiagnostics(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void set_CrudLatencyThresholdForDiagnostics(System.Nullable`1[System.TimeSpan])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_CrudLatencyThresholdForDiagnostics(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void set_QueryLatencyThresholdForDiagnostics(System.Nullable`1[System.TimeSpan])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_QueryLatencyThresholdForDiagnostics(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Void set_LatencyThresholdForDiagnostics(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -373,15 +354,10 @@
     "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithCrudLatencyThresholdForDiagnosticsOnTracer(System.TimeSpan)": {
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithLatencyThresholdForDiagnosticsOnTracer(System.TimeSpan)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithCrudLatencyThresholdForDiagnosticsOnTracer(System.TimeSpan);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithQueryLatencyThresholdForDiagnosticsOnTracer(System.TimeSpan)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithQueryLatencyThresholdForDiagnosticsOnTracer(System.TimeSpan);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithLatencyThresholdForDiagnosticsOnTracer(System.TimeSpan);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
