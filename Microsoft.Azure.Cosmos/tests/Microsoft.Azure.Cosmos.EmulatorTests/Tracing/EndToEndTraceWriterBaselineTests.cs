@@ -69,6 +69,8 @@
             {
                 await EndToEndTraceWriterBaselineTests.database.DeleteStreamAsync();
             }
+
+            testListener?.Dispose();
         }
 
         [TestMethod]
