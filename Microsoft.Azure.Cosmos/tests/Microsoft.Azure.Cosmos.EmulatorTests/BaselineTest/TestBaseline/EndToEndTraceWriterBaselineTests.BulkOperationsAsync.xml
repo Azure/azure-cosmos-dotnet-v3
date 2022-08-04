@@ -4,9 +4,7 @@
       <Description>Bulk Operation</Description>
       <Setup><![CDATA[
     string pkValue = "DiagnosticBulkTestPk";
-    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
-        .WithBulkExecution(true)
-        .EnableOpenTelemetrySupport());
+
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -174,9 +172,7 @@
       <Description>Bulk Operation</Description>
       <Setup><![CDATA[
     string pkValue = "DiagnosticBulkTestPk";
-    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
-        .WithBulkExecution(true)
-        .EnableOpenTelemetrySupport());
+
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -344,9 +340,7 @@
       <Description>Bulk Operation</Description>
       <Setup><![CDATA[
     string pkValue = "DiagnosticBulkTestPk";
-    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
-        .WithBulkExecution(true)
-        .EnableOpenTelemetrySupport());
+
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -514,9 +508,7 @@
       <Description>Bulk Operation</Description>
       <Setup><![CDATA[
     string pkValue = "DiagnosticBulkTestPk";
-    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
-        .WithBulkExecution(true)
-        .EnableOpenTelemetrySupport());
+
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -684,9 +676,7 @@
       <Description>Bulk Operation</Description>
       <Setup><![CDATA[
     string pkValue = "DiagnosticBulkTestPk";
-    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
-        .WithBulkExecution(true)
-        .EnableOpenTelemetrySupport());
+
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -854,9 +844,7 @@
       <Description>Bulk Operation</Description>
       <Setup><![CDATA[
     string pkValue = "DiagnosticBulkTestPk";
-    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
-        .WithBulkExecution(true)
-        .EnableOpenTelemetrySupport());
+
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -1024,9 +1012,7 @@
       <Description>Bulk Operation</Description>
       <Setup><![CDATA[
     string pkValue = "DiagnosticBulkTestPk";
-    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
-        .WithBulkExecution(true)
-        .EnableOpenTelemetrySupport());
+
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -1194,9 +1180,7 @@
       <Description>Bulk Operation</Description>
       <Setup><![CDATA[
     string pkValue = "DiagnosticBulkTestPk";
-    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
-        .WithBulkExecution(true)
-        .EnableOpenTelemetrySupport());
+
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -1364,9 +1348,7 @@
       <Description>Bulk Operation</Description>
       <Setup><![CDATA[
     string pkValue = "DiagnosticBulkTestPk";
-    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
-        .WithBulkExecution(true)
-        .EnableOpenTelemetrySupport());
+
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -1534,9 +1516,7 @@
       <Description>Bulk Operation</Description>
       <Setup><![CDATA[
     string pkValue = "DiagnosticBulkTestPk";
-    CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
-        .WithBulkExecution(true)
-        .EnableOpenTelemetrySupport());
+
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -1703,22 +1683,6 @@
     <Input>
       <Description>Bulk Operation With Throttle</Description>
       <Setup><![CDATA[
-    string errorMessage = "Mock throttle exception" + Guid.NewGuid().ToString();
-    Guid exceptionActivityId = Guid.NewGuid();
-    // Set a small retry count to reduce test time
-    CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
-        builder.WithThrottlingRetryOptions(TimeSpan.FromSeconds(5), 3)
-        .WithBulkExecution(true)
-        .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
-               transportClient,
-               (uri, resourceOperation, request) => TransportClientHelper.ReturnThrottledStoreResponseOnItemOperation(
-                    uri,
-                    resourceOperation,
-                    request,
-                    exceptionActivityId,
-                    errorMessage)))
-        .EnableOpenTelemetrySupport()
-        );
 
     ItemRequestOptions requestOptions = new ItemRequestOptions();
     Container containerWithThrottleException = throttleClient.GetContainer(
