@@ -12,18 +12,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         public static OpenTelemetryCoreRecorder CreateRecorder(string operationName, OpenTelemetryOptions config)
         {
-            ScopeFactory = new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
-                                                resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
-                                                isActivityEnabled: true);
-            DiagnosticScope scope = OpenTelemetryRecorderFactory
-                .ScopeFactory
-                .CreateScope($"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}");
-
-            if (scope.IsEnabled)
+            if (config.EnableOpenTelemetrySupport)
             {
-                return new OpenTelemetryCoreRecorder(scope, config);
+                ScopeFactory = new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
+                    resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
+                    isActivityEnabled: true);
+                DiagnosticScope scope = OpenTelemetryRecorderFactory
+                    .ScopeFactory
+                    .CreateScope($"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}");
+
+                if (scope.IsEnabled)
+                {
+                    return new OpenTelemetryCoreRecorder(scope, config);
+                }
             }
-            
+
             return default;
         }
     }

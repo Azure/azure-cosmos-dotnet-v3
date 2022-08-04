@@ -37,7 +37,8 @@
             testListener = new OpenTelemetryListener("Azure.Cosmos");
 
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
-                useGateway: false);
+                useGateway: false,
+                customizeClientBuilder: builder => builder.EnableOpenTelemetrySupport());
 
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
                     Guid.NewGuid().ToString(),
@@ -948,6 +949,7 @@
                                 request,
                                 exceptionActivityId,
                                 errorMessage)))
+                    .EnableOpenTelemetrySupport()
                     );
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
@@ -1172,7 +1174,9 @@
             {
                 startLineNumber = GetLineNumber();
                 string pkValue = "DiagnosticBulkTestPk";
-                CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder.WithBulkExecution(true));
+                CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder
+                    .WithBulkExecution(true)
+                    .EnableOpenTelemetrySupport());
                 Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
                 List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
@@ -1230,6 +1234,7 @@
                                 request,
                                 exceptionActivityId,
                                 errorMessage)))
+                    .EnableOpenTelemetrySupport()
                     );
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
@@ -1277,7 +1282,9 @@
                 TimeSpan delayTime = TimeSpan.FromSeconds(2);
                 RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
                 CosmosClient cosmosClient = TestCommon.CreateCosmosClient(builder =>
-                    builder.AddCustomHandlers(requestHandler));
+                    builder
+                        .AddCustomHandlers(requestHandler)
+                        .EnableOpenTelemetrySupport());
 
                 DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
                 EndToEndTraceWriterBaselineTests.AssertCustomHandlerTime(

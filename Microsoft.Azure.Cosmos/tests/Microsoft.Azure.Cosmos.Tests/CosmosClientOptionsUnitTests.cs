@@ -107,7 +107,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .WithBulkExecution(true)
                 .WithSerializerOptions(cosmosSerializerOptions)
                 .WithConsistencyLevel(consistencyLevel)
-                .WithPartitionLevelFailoverEnabled();
+                .WithPartitionLevelFailoverEnabled()
+                .EnableOpenTelemetrySupport();
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
@@ -130,6 +131,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(clientOptions.AllowBulkExecution);
             Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
             Assert.IsTrue(clientOptions.EnablePartitionLevelFailover);
+            Assert.IsTrue(clientOptions.EnableOpenTelemetrySupport);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -158,8 +160,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 portReuseMode,
                 enableTcpConnectionEndpointRediscovery)
                 .WithApplicationPreferredRegions(preferredLocations)
-                .WithQueryLatencyThresholdForDiagnosticsOnTracer(TimeSpan.FromMilliseconds(500))
-                .WithCrudLatencyThresholdForDiagnosticsOnTracer(TimeSpan.FromMilliseconds(100));
+                .WithLatencyThresholdForDiagnosticsOnTracer(TimeSpan.FromMilliseconds(100));
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
@@ -171,8 +172,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, clientOptions.PortReuseMode);
             Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), clientOptions.ApplicationPreferredRegions.ToArray());
-            Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.CrudLatencyThresholdForDiagnostics);
-            Assert.AreEqual(TimeSpan.FromMilliseconds(500), clientOptions.QueryLatencyThresholdForDiagnostics);
+            Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.LatencyThresholdForDiagnostics);
+            Assert.IsFalse(clientOptions.EnableOpenTelemetrySupport);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);

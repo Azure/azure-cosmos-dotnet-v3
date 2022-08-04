@@ -926,23 +926,22 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// CRUD Operations Latency Threshold For Diagnostics On Tracer
+        /// Latency Threshold For Diagnostics On Tracer
         /// </summary>
 #if PREVIEW
         public
 #else
         internal
 #endif
-            TimeSpan? CrudLatencyThresholdForDiagnostics { get; set; }
+            TimeSpan? LatencyThresholdForDiagnostics { get; set; }
 
         /// <summary>
-        /// Query Operations Latency Threshold For Diagnostics On Tracer
+        /// By default true for Preview package
         /// </summary>
 #if PREVIEW
-        public
+        internal bool EnableOpenTelemetrySupport { get; set; } = true;
 #else
-        internal
+        internal bool EnableOpenTelemetrySupport { get; set; }
 #endif
-            TimeSpan? QueryLatencyThresholdForDiagnostics { get; set; }
     }
 }

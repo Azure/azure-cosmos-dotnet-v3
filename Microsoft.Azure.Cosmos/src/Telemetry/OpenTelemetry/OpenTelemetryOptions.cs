@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Default Latency threshold for QUERY operation
         /// </summary>
-        public static readonly TimeSpan DefaultQueryTimeoutThreshold = TimeSpan.FromMilliseconds(250);
+        public static readonly TimeSpan DefaultQueryTimeoutThreshold = TimeSpan.FromMilliseconds(500);
 
         /// <summary>
         /// Load Open Telemetry Configurations
@@ -28,19 +28,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="clientOptions"></param>
         public OpenTelemetryOptions(CosmosClientOptions clientOptions)
         {
-            this.CrudLatencyThreshold = clientOptions.CrudLatencyThresholdForDiagnostics;
-            this.QueryLatencyThreshold = clientOptions.QueryLatencyThresholdForDiagnostics;
+            this.LatencyThreshold = clientOptions.LatencyThresholdForDiagnostics;
+            this.EnableOpenTelemetrySupport = clientOptions.EnableOpenTelemetrySupport;
         }
 
         /// <summary>
-        /// Customer defined Crud Latency Threshold
+        /// Customer defined Latency Threshold
         /// </summary>
-        public TimeSpan? CrudLatencyThreshold { get; }
+        public TimeSpan? LatencyThreshold { get; }
 
         /// <summary>
-        /// Customer defined Query Latency Threshold
+        /// Enable Open Telemetry Support
         /// </summary>
-        public TimeSpan? QueryLatencyThreshold { get; }
-
+        public bool EnableOpenTelemetrySupport { get; }
     }
 }

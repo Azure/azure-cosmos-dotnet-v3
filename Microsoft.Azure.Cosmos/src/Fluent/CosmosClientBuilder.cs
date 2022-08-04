@@ -423,23 +423,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Set CRUD operations Latency Threshold for Tracer
-        /// </summary>
-        /// <param name="threshold"></param>
-        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-            CosmosClientBuilder WithCrudLatencyThresholdForDiagnosticsOnTracer(TimeSpan threshold)
-        {
-            this.clientOptions.CrudLatencyThresholdForDiagnostics = threshold;
-
-            return this;
-        }
-
-        /// <summary>
         /// Set Query Operation Latency Threshold for Tracer
         /// </summary>
         /// <param name="threshold"></param>
@@ -449,9 +432,20 @@ namespace Microsoft.Azure.Cosmos.Fluent
 #else
         internal
 #endif
-            CosmosClientBuilder WithQueryLatencyThresholdForDiagnosticsOnTracer(TimeSpan threshold)
+            CosmosClientBuilder WithLatencyThresholdForDiagnosticsOnTracer(TimeSpan threshold)
         {
-            this.clientOptions.QueryLatencyThresholdForDiagnostics = threshold;
+            this.clientOptions.LatencyThresholdForDiagnostics = threshold;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Enable Open Telemetry Support
+        /// </summary>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        internal CosmosClientBuilder EnableOpenTelemetrySupport()
+        {
+            this.clientOptions.EnableOpenTelemetrySupport = true;
 
             return this;
         }

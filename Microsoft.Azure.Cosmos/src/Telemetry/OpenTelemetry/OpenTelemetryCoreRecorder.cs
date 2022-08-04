@@ -31,17 +31,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.scope = scope;
             this.config = config;
 
-            if (this.scope.IsEnabled)
+            if (this.IsEnabled)
             {
                 this.scope.Start();
             }
         }
 
-        public bool IsEnabled => this.scope.IsEnabled;
+        public bool IsEnabled => this.scope.IsEnabled && this.config.EnableOpenTelemetrySupport;
 
         public void Record(string key, string value)
         {
-            if (this.scope.IsEnabled)
+            if (this.IsEnabled)
             {
                 this.scope.AddAttribute(key, value);
             }
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="clientContext"></param>
         public void Record(string operationName, CosmosClientContext clientContext)
         {
-            if (this.scope.IsEnabled)
+            if (this.IsEnabled)
             {
                 // Other information
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb);
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="response"></param>
         public void Record(OpenTelemetryAttributes response)
         {
-            if (this.scope.IsEnabled)
+            if (this.IsEnabled)
             {
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbName, response.DatabaseName);
 
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="exception"></param>
         public void MarkFailed(Exception exception)
         {
-            if (this.scope.IsEnabled)
+            if (this.IsEnabled)
             {
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionStacktrace, exception.StackTrace);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType());
