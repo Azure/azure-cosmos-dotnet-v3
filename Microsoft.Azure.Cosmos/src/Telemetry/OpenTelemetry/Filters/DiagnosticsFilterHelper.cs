@@ -16,21 +16,22 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         /// 3) HTTP status code is not Success<br></br>
         /// </summary>
         /// <returns>true or false</returns>
-        public static bool IsAllowed(
+        public static bool HasIssueWithOperation(
             OpenTelemetryOptions config,
             OpenTelemetryAttributes response)
         {
-            bool isLatencyAcceptable;
-            if (response.OperationType == OperationType.Query)
+            TimeSpan latencyThreshold;
+
+            if (config != null && config.LatencyThreshold.HasValue)
             {
-                isLatencyAcceptable = response.Diagnostics.GetClientElapsedTime() > (config != null && config.LatencyThreshold.HasValue ? config.LatencyThreshold.Value : OpenTelemetryOptions.DefaultQueryTimeoutThreshold);
+                latencyThreshold = config.LatencyThreshold.Value;
             }
             else
             {
-                isLatencyAcceptable = response.Diagnostics.GetClientElapsedTime() < (config != null && config.LatencyThreshold.HasValue ? config.LatencyThreshold.Value : OpenTelemetryOptions.DefaultCrudLatencyThreshold);
+                latencyThreshold = response.OperationType == OperationType.Query ? OpenTelemetryOptions.DefaultQueryTimeoutThreshold : OpenTelemetryOptions.DefaultCrudLatencyThreshold;
             }
 
-            return isLatencyAcceptable && response.StatusCode.IsSuccess();
+            return !(response.Diagnostics.GetClientElapsedTime() < latencyThreshold && response.StatusCode.IsSuccess());
         }
     }
 }

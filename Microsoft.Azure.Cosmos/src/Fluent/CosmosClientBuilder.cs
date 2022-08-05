@@ -423,7 +423,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Set Operation Global Latency Threshold for Open Telemetry Tracer.
+        /// Set Global Latency Threshold for Open Telemetry Tracer.
         /// </summary>
         /// <param name="threshold"></param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>

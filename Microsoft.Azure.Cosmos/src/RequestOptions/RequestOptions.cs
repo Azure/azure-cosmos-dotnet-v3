@@ -42,6 +42,16 @@ namespace Microsoft.Azure.Cosmos
         public Action<Headers> AddRequestHeaders { get; set; }
 
         /// <summary>
+        /// Set Request level Latency Threshold for Open Telemetry Tracer.
+        /// </summary>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+         TimeSpan? LatencyThresholdForDiagnostics { get; set; }
+        
+        /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
         /// </summary>
         internal bool IsEffectivePartitionKeyRouting { get; set; }

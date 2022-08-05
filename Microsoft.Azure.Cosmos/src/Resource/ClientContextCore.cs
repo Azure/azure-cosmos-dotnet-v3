@@ -264,7 +264,8 @@ namespace Microsoft.Azure.Cosmos
                     trace,
                     task,
                     openTelemetry,
-                    operationName);
+                    operationName,
+                    requestOptions);
             }
         }
 
@@ -293,7 +294,8 @@ namespace Microsoft.Azure.Cosmos
                         trace,
                         task,
                         openTelemetry,
-                        operationName);
+                        operationName,
+                        requestOptions);
                 }
             });
         }
@@ -469,12 +471,13 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             Func<ITrace, Task<TResult>> task,
             Func<TResult, OpenTelemetryAttributes> openTelemetry,
-            string operationName)
+            string operationName,
+            RequestOptions requestOptions)
         {
             using (OpenTelemetryCoreRecorder recorder = 
                                 OpenTelemetryRecorderFactory.CreateRecorder(
                                     operationName: operationName,
-                                    config: new OpenTelemetryOptions(this.clientOptions)))
+                                    config: new OpenTelemetryOptions(this.clientOptions, requestOptions)))
             using (new ActivityScope(Guid.NewGuid()))
             {
                 try

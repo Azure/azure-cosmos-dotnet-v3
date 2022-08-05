@@ -10,7 +10,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     internal class OpenTelemetryAttributes
     {
         internal const string NotAvailable = "information not available";
-        
+
+        internal OpenTelemetryAttributes()
+        {
+        }
+
         internal OpenTelemetryAttributes(RequestMessage requestMessage)
         {
             this.RequestContentLength = requestMessage?.Headers?.ContentLength ?? OpenTelemetryAttributes.NotAvailable;
