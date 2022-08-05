@@ -212,7 +212,13 @@
     │   )
     ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     ├── Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   │   └── Waiting for Initialization of client to complete(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    │   └── Read Collection(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │           (
+    │               [Client Side Request Stats]
+    │               Redacted To Not Change The Baselines From Run To Run
+    │           )
     ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
@@ -400,7 +406,24 @@
           "name": "Get Collection Cache",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
-          "duration in milliseconds": 0
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Waiting for Initialization of client to complete",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            }
+          ]
+        },
+        {
+          "name": "Read Collection",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {
+            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+          }
         }
       ]
     },
