@@ -1,14 +1,9 @@
 namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.IO;
+    using System.Collections.ObjectModel;
     using System.Linq;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.InteropServices;
-    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
@@ -19,20 +14,47 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     [TestCategory("Query")]
     public sealed class CosmosUndefinedQueryTests : QueryTestsBase
     {
-        // Kinds of tests that we need to run:
-        // 1. typed response
-        // 2. typed response with custom serializer
-        // 3. untyped response
         private const int DocumentCount = 400;
 
         private const int MixedTypeCount = 5;
 
-        private static readonly IEnumerable<string> Documents = CreateDocuments(DocumentCount);
+        private const int DocumentsPerTypeCount = DocumentCount / MixedTypeCount;
+
+        private const int IntegerValue = 42;
+
+        private const string StringValue = "string";
+
+        private static readonly int[] PageSizes = new[] { 5, 10, -1 };
+
+        private static readonly IndexingPolicy CompositeIndexPolicy = CreateIndexingPolicy();
+
+        private static readonly List<MixedTypeDocument> MixedTypeDocuments = CreateDocuments(DocumentCount);
+
+        private static readonly List<string> Documents = MixedTypeDocuments
+            .Select(x => x.ToString())
+            .ToList();
 
         [TestMethod]
-        public async Task OrderByUndefinedProjectUndefined()
+        public async Task AllTests()
         {
-            UndefinedProjectionTestCase[] testCases = new[]
+            // Removing the await causes the test framework to not run this test
+            await this.CreateIngestQueryDeleteAsync(
+                connectionModes: ConnectionModes.Direct | ConnectionModes.Gateway,
+                collectionTypes: CollectionTypes.MultiPartition | CollectionTypes.SinglePartition,
+                documents: Documents,
+                query: RunTests,
+                indexingPolicy: CompositeIndexPolicy);
+        }
+
+        private static async Task RunTests(Container container, IReadOnlyList<CosmosObject> _)
+        {
+            await OrderByTests(container);
+            await GroupByTests(container);
+        }
+
+        private static async Task OrderByTests(Container container)
+        {
+            UndefinedProjectionTestCase[] undefinedProjectionTestCases = new[]
             {
                 MakeUndefinedProjectionTest(
                     query: "SELECT c.AlwaysUndefinedField FROM c ORDER BY c.AlwaysUndefinedField",
@@ -42,76 +64,273 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     expectedCount: 0)
             };
 
-            static async Task TypedImplementation(Container container, IReadOnlyList<CosmosObject> _, UndefinedProjectionTestCase[] testCases)
+            foreach (UndefinedProjectionTestCase testCase in undefinedProjectionTestCases)
             {
-                foreach (UndefinedProjectionTestCase testCase in testCases)
+                foreach (int pageSize in PageSizes)
                 {
-                    foreach (int pageSize in new[] { 5, 10, -1 })
-                    {
-                        List<UndefinedProjection> results = await RunQueryAsync<UndefinedProjection>(
-                            container,
-                            testCase.Query,
-                            new QueryRequestOptions { MaxItemCount = pageSize });
-    
-                        Assert.AreEqual(testCase.ExpectedResultCount, results.Count);
-                        Assert.IsTrue(results.All(x => x is UndefinedProjection));
-                    }
+                    List<UndefinedProjection> results = await RunQueryAsync<UndefinedProjection>(
+                        container,
+                        testCase.Query,
+                        new QueryRequestOptions { MaxItemCount = pageSize });
+
+                    Assert.AreEqual(testCase.ExpectedResultCount, results.Count);
+                    Assert.IsTrue(results.All(x => x is UndefinedProjection));
                 }
             }
 
-            await this.CreateIngestQueryDeleteAsync<UndefinedProjectionTestCase[]>(
-                ConnectionModes.Direct | ConnectionModes.Gateway,
-                CollectionTypes.MultiPartition | CollectionTypes.SinglePartition | CollectionTypes.NonPartitioned,
-                Documents,
-                TypedImplementation,
-                testCases);
+            OrderByTestCase[] orderByTestCases = new[]
+            {
+                MakeOrderByTest(
+                    query:  $"SELECT VALUE c.{nameof(MixedTypeDocument.Index)} " +
+                                "FROM c " +
+                                $"ORDER BY c.{nameof(MixedTypeDocument.MixedTypeField)}",
+                    expectation: (actual) => Expectations.ElementsAreInTypeOrder(actual, isReverse: false)),
+                MakeOrderByTest(
+                    query:  $"SELECT VALUE c.{nameof(MixedTypeDocument.Index)} " +
+                                "FROM c " +
+                                $"ORDER BY c.{nameof(MixedTypeDocument.MixedTypeField)} DESC",
+                    expectation: (actual) => Expectations.ElementsAreInTypeOrder(actual, isReverse: true)),
+                MakeOrderByTest(
+                    query:  $"SELECT VALUE c.{nameof(MixedTypeDocument.Index)} " +
+                                "FROM c " +
+                                $"ORDER BY c.{nameof(MixedTypeDocument.MixedTypeField)}, c.{nameof(MixedTypeDocument.Index)}",
+                    expectation: (actual) => Expectations.ElementsAreInTypeThenIndexOrder(actual, isReverse: false)),
+                MakeOrderByTest(
+                    query:  $"SELECT VALUE c.{nameof(MixedTypeDocument.Index)} " +
+                                "FROM c " +
+                                $"ORDER BY c.{nameof(MixedTypeDocument.MixedTypeField)} DESC, c.{nameof(MixedTypeDocument.Index)} DESC",
+                    expectation: (actual) => Expectations.ElementsAreInTypeThenIndexOrder(actual, isReverse: true)),
+                MakeOrderByTest(
+                    query:  $"SELECT VALUE c.{nameof(MixedTypeDocument.Index)} " +
+                                "FROM c " +
+                                $"ORDER BY c.{nameof(MixedTypeDocument.Index)}, c.{nameof(MixedTypeDocument.MixedTypeField)}",
+                    expectation: (actual) => Expectations.ElementsAreInIndexOrder(actual, isReverse: false)),
+                MakeOrderByTest(
+                    query:  $"SELECT VALUE c.{nameof(MixedTypeDocument.Index)} " +
+                                "FROM c " +
+                                $"ORDER BY c.{nameof(MixedTypeDocument.Index)} DESC, c.{nameof(MixedTypeDocument.MixedTypeField)} DESC",
+                    expectation: (actual) => Expectations.ElementsAreInIndexOrder(actual, isReverse: true)),
+            };
+
+            foreach (OrderByTestCase testCase in orderByTestCases)
+            {
+                foreach (int pageSize in PageSizes)
+                {
+                    List<int> result = await RunQueryAsync<int>(
+                        container,
+                        testCase.Query,
+                        new QueryRequestOptions { MaxItemCount = pageSize });
+
+                    testCase.ValidateResult(result);
+                }
+            }
         }
 
-        [TestMethod]
-        public async Task GroupByUndefined()
+        private static async Task GroupByTests(Container container)
         {
-            GroupByUndefinedTestCase[] testCases = new[]
+            GroupByUndefinedTestCase[] mixedTypeTestCases = new[]
             {
                 MakeGroupByTest(
-                    query: "SELECT c.AlwaysUndefinedField as MixedTypeField, COUNT(1) as ExpectedCount FROM c GROUP BY c.AlwaysUndefinedField",
+                    query:  $"SELECT c.AlwaysUndefinedField as {nameof(GroupByProjection.MixedTypeField)}, "+
+                                $"COUNT(1) as {nameof(GroupByProjection.ExpectedCount)} " +
+                            $"FROM c " +
+                            $"GROUP BY c.AlwaysUndefinedField",
                     groups: new List<GroupByProjection>()
                     {
                         MakeGrouping(
                             key: null,
                             value: DocumentCount)
-                    })
+                    }),
+                MakeGroupByTest(
+                    query:  $"SELECT c.{nameof(MixedTypeDocument.MixedTypeField)} as {nameof(GroupByProjection.MixedTypeField)}, " +
+                                $"COUNT(1) as {nameof(GroupByProjection.ExpectedCount)} " +
+                            $"FROM c " +
+                            $"GROUP BY c.{nameof(MixedTypeDocument.MixedTypeField)}",
+                    groups: new List<GroupByProjection>()
+                    {
+                        MakeGrouping(
+                            key: null,
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: CosmosNull.Create(),
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: CosmosBoolean.Create(true),
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: CosmosNumber64.Create(IntegerValue),
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: CosmosString.Create(StringValue),
+                            value: DocumentsPerTypeCount),
+                    }),
+                MakeGroupByTest(
+                    query:  $"SELECT SUM(c.{nameof(MixedTypeDocument.MixedTypeField)}) as {nameof(GroupByProjection.MixedTypeField)}, " +
+                                $"COUNT(1) as {nameof(GroupByProjection.ExpectedCount)} " +
+                            $"FROM c " +
+                            $"GROUP BY c.{nameof(MixedTypeDocument.MixedTypeField)}",
+                    groups: new List<GroupByProjection>()
+                    {
+                        MakeGrouping(
+                            key: CosmosNumber64.Create(0),
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: null,
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: null,
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: CosmosNumber64.Create(IntegerValue * DocumentsPerTypeCount),
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: null,
+                            value: DocumentsPerTypeCount),
+                    }),
+                MakeGroupByTest(
+                    query:  $"SELECT AVG(c.{nameof(MixedTypeDocument.MixedTypeField)}) as {nameof(GroupByProjection.MixedTypeField)}, " +
+                                $"COUNT(1) as {nameof(GroupByProjection.ExpectedCount)} " +
+                            $"FROM c " +
+                            $"GROUP BY c.{nameof(MixedTypeDocument.MixedTypeField)}",
+                    groups: new List<GroupByProjection>()
+                    {
+                        MakeGrouping(
+                            key: null,
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: null,
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: null,
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: CosmosNumber64.Create(IntegerValue),
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: null,
+                            value: DocumentsPerTypeCount),
+                    }),
+                MakeGroupByTest(
+                    query:  $"SELECT MIN(c.{nameof(MixedTypeDocument.MixedTypeField)}) as {nameof(GroupByProjection.MixedTypeField)}, " +
+                                $"COUNT(1) as {nameof(GroupByProjection.ExpectedCount)} " +
+                            $"FROM c " +
+                            $"GROUP BY c.{nameof(MixedTypeDocument.MixedTypeField)}",
+                    groups: new List<GroupByProjection>()
+                    {
+                        MakeGrouping(
+                            key: null,
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: CosmosNull.Create(),
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: CosmosBoolean.Create(true),
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: CosmosNumber64.Create(IntegerValue),
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: CosmosString.Create(StringValue),
+                            value: DocumentsPerTypeCount),
+                    }),
+                MakeGroupByTest(
+                    query:  $"SELECT MAX(c.{nameof(MixedTypeDocument.MixedTypeField)}) as {nameof(GroupByProjection.MixedTypeField)}, " +
+                                $"COUNT(1) as {nameof(GroupByProjection.ExpectedCount)} " +
+                            $"FROM c " +
+                            $"GROUP BY c.{nameof(MixedTypeDocument.MixedTypeField)}",
+                    groups: new List<GroupByProjection>()
+                    {
+                        MakeGrouping(
+                            key: null,
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: CosmosNull.Create(),
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: CosmosBoolean.Create(true),
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: CosmosNumber64.Create(IntegerValue),
+                            value: DocumentsPerTypeCount),
+                        MakeGrouping(
+                            key: CosmosString.Create(StringValue),
+                            value: DocumentsPerTypeCount),
+                    }),
             };
 
-            static async Task TypedImplementation(Container container, IReadOnlyList<CosmosObject> _, GroupByUndefinedTestCase[] testCases)
+            foreach (GroupByUndefinedTestCase testCase in mixedTypeTestCases)
             {
-                foreach (GroupByUndefinedTestCase testCase in testCases)
+                foreach (int pageSize in PageSizes)
                 {
-                    foreach (int pageSize in new[] { 5, 10, -1 })
-                    {
-                        List<GroupByProjection> actual = await QueryWithoutContinuationTokensAsync<GroupByProjection>(
-                            container,
-                            testCase.Query,
-                            new QueryRequestOptions { MaxItemCount = pageSize, MaxConcurrency = 0 });
+                    List<GroupByProjection> actual = await QueryWithoutContinuationTokensAsync<GroupByProjection>(
+                        container,
+                        testCase.Query,
+                        new QueryRequestOptions { MaxItemCount = pageSize });
 
-                        CollectionAssert.AreEquivalent(testCase.ExpectedGroups, actual);
-                    }
+                    CollectionAssert.AreEquivalent(testCase.ExpectedGroups, actual);
                 }
             }
 
-            await this.CreateIngestQueryDeleteAsync<GroupByUndefinedTestCase[]>(
-                ConnectionModes.Direct | ConnectionModes.Gateway,
-                CollectionTypes.MultiPartition | CollectionTypes.SinglePartition | CollectionTypes.NonPartitioned,
-                Documents,
-                TypedImplementation,
-                testCases);
+            UndefinedProjectionTestCase[] undefinedProjectionTestCases = new[]
+            {
+                MakeUndefinedProjectionTest(
+                    query: "SELECT VALUE c.AlwaysUndefinedField FROM c GROUP BY c.AlwaysUndefinedField",
+                    expectedCount: 0),
+                MakeUndefinedProjectionTest(
+                    query: "SELECT c.AlwaysUndefinedField FROM c GROUP BY c.AlwaysUndefinedField",
+                    expectedCount: 1),
+                MakeUndefinedProjectionTest(
+                    query: $"SELECT VALUE SUM(c.{nameof(MixedTypeDocument.MixedTypeField)}) FROM c",
+                    expectedCount: 0),
+                MakeUndefinedProjectionTest(
+                    query: $"SELECT SUM(c.{nameof(MixedTypeDocument.MixedTypeField)}) FROM c",
+                    expectedCount: 1),
+                MakeUndefinedProjectionTest(
+                    query: $"SELECT VALUE AVG(c.{nameof(MixedTypeDocument.MixedTypeField)}) FROM c",
+                    expectedCount: 0),
+                MakeUndefinedProjectionTest(
+                    query: $"SELECT AVG(c.{nameof(MixedTypeDocument.MixedTypeField)}) FROM c",
+                    expectedCount: 1),
+            };
+
+            foreach (UndefinedProjectionTestCase testCase in undefinedProjectionTestCases)
+            {
+                foreach (int pageSize in PageSizes)
+                {
+                    List<UndefinedProjection> results = await QueryWithoutContinuationTokensAsync<UndefinedProjection>(
+                        container,
+                        testCase.Query,
+                        new QueryRequestOptions { MaxItemCount = pageSize });
+
+                    Assert.AreEqual(testCase.ExpectedResultCount, results.Count);
+                    Assert.IsTrue(results.All(x => x is UndefinedProjection));
+                }
+            }
         }
 
-        private static IEnumerable<string> CreateDocuments(int count)
+        private static IndexingPolicy CreateIndexingPolicy()
         {
-            List<string> documents = new List<string>();
+            IndexingPolicy policy = new IndexingPolicy();
 
-            int booleanCount = 0;
-            int integerCount = 0;
+            policy.IncludedPaths.Add(new IncludedPath { Path = IndexingPolicy.DefaultPath });
+            policy.CompositeIndexes.Add(new Collection<CompositePath>
+            {
+                new CompositePath { Path = $"/{nameof(MixedTypeDocument.Index)}" },
+                new CompositePath { Path = $"/{nameof(MixedTypeDocument.MixedTypeField)}" },
+            });
+            policy.CompositeIndexes.Add(new Collection<CompositePath>
+            {
+                new CompositePath { Path = $"/{nameof(MixedTypeDocument.MixedTypeField)}" },
+                new CompositePath { Path = $"/{nameof(MixedTypeDocument.Index)}" },
+            });
+
+            return policy;
+        }
+
+        private static List<MixedTypeDocument> CreateDocuments(int count)
+        {
+            List<MixedTypeDocument> documents = new List<MixedTypeDocument>();
+
             for (int index = 0; index < count; ++index)
             {
                 CosmosElement mixedTypeElement;
@@ -126,15 +345,15 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         break;
 
                     case 2:
-                        mixedTypeElement = CosmosBoolean.Create(++booleanCount % 2 == 0);
+                        mixedTypeElement = CosmosBoolean.Create(true);
                         break;
 
                     case 3:
-                        mixedTypeElement = CosmosNumber64.Create(++integerCount);
+                        mixedTypeElement = CosmosNumber64.Create(IntegerValue);
                         break;
 
                     case 4:
-                        mixedTypeElement = CosmosString.Create((++integerCount).ToString());
+                        mixedTypeElement = CosmosString.Create(StringValue);
                         break;
 
                     default:
@@ -144,7 +363,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 }
 
                 MixedTypeDocument document = new MixedTypeDocument(index, mixedTypeElement);
-                documents.Add(document.ToString());
+                documents.Add(document);
             }
 
             return documents;
@@ -166,6 +385,83 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         private static UndefinedProjectionTestCase MakeUndefinedProjectionTest(string query, int expectedCount)
         {
             return new UndefinedProjectionTestCase(query, expectedCount);
+        }
+
+        private readonly struct OrderByTestCase
+        {
+            public OrderByTestCase(string query, Action<List<int>> validateResult)
+            {
+                this.Query = query;
+                this.ValidateResult = validateResult;
+            }
+
+            public string Query { get; }
+
+            public Action<List<int>> ValidateResult { get; }
+        }
+
+        private static OrderByTestCase MakeOrderByTest(string query, Action<List<int>> expectation)
+        {
+            return new OrderByTestCase(query, expectation);
+        }
+
+        private static class Expectations
+        {
+            private static readonly List<int> DocumentIndices = Enumerable.Range(0, DocumentCount).ToList();
+
+            private static readonly List<int> DocumentIndicesReversed = Enumerable
+                .Range(0, DocumentCount)
+                .Reverse()
+                .ToList();
+
+            private static readonly List<int> TypeIndices = Enumerable
+                .Range(0, MixedTypeCount)
+                .SelectMany(x => Enumerable.Repeat(x, DocumentsPerTypeCount))
+                .ToList();
+
+            private static readonly List<int> TypeIndicesReversed = Enumerable
+                .Range(0, MixedTypeCount)
+                .SelectMany(x => Enumerable.Repeat(x, DocumentsPerTypeCount))
+                .Reverse()
+                .ToList();
+
+            private static readonly List<int> DocumentIndicesInTypeOrder = Enumerable
+                .Range(0, DocumentCount)
+                .Select(x => Tuple.Create(x, x % MixedTypeCount))
+                .OrderBy(tuple => tuple.Item2)
+                .ThenBy(tuple => tuple.Item1)
+                .Select(tuple => tuple.Item1)
+                .ToList();
+
+            private static readonly List<int> DocumentIndicesInTypeOrderReversed = Enumerable
+                .Range(0, DocumentCount)
+                .Select(x => Tuple.Create(x, x % MixedTypeCount))
+                .OrderBy(tuple => tuple.Item2)
+                .ThenBy(tuple => tuple.Item1)
+                .Select(tuple => tuple.Item1)
+                .Reverse()
+                .ToList();
+
+            public static void ElementsAreInIndexOrder(List<int> actual, bool isReverse)
+            {
+                List<int> expected = isReverse ? DocumentIndicesReversed : DocumentIndices;
+                CollectionAssert.AreEqual(expected, actual);
+            }
+
+            public static void ElementsAreInTypeOrder(List<int> actual, bool isReverse)
+            {
+                CollectionAssert.AreEquivalent(DocumentIndices, actual);
+
+                List<int> actualTypes = actual.Select(x => x % MixedTypeCount).ToList();
+                List<int> expectedTypes = isReverse ? TypeIndicesReversed : TypeIndices;
+                CollectionAssert.AreEqual(expectedTypes, actualTypes);
+            }
+
+            public static void ElementsAreInTypeThenIndexOrder(List<int> actual, bool isReverse)
+            {
+                List<int> expected = isReverse ? DocumentIndicesInTypeOrderReversed : DocumentIndicesInTypeOrder;
+                CollectionAssert.AreEqual(expected, actual);
+            }
         }
 
         private readonly struct GroupByUndefinedTestCase
@@ -272,7 +568,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         private class MixedTypeDocument
         {
-            public int IntegerField { get; set; }
+            public int Index { get; set; }
 
             public CosmosElement MixedTypeField { get; set; }
 
@@ -282,9 +578,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             {
             }
 
-            public MixedTypeDocument(int integerField, CosmosElement mixedTypeField)
+            public MixedTypeDocument(int index, CosmosElement mixedTypeField)
             {
-                this.IntegerField = integerField;
+                this.Index = index;
                 this.MixedTypeField = mixedTypeField;
             }
 
@@ -293,8 +589,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 IJsonWriter writer = JsonWriter.Create(JsonSerializationFormat.Text);
                 writer.WriteObjectStart();
 
-                writer.WriteFieldName(nameof(this.IntegerField));
-                writer.WriteNumber64Value(this.IntegerField);
+                writer.WriteFieldName(nameof(this.Index));
+                writer.WriteNumber64Value(this.Index);
 
                 if (this.MixedTypeField is not CosmosUndefined)
                 {
