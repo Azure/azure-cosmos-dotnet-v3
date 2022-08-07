@@ -7,6 +7,7 @@
         Null,
         Number,
         Object,
-        String
+        String,
+        Undefined
     }
 }

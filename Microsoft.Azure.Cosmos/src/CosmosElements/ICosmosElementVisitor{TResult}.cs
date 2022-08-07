@@ -23,5 +23,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         TResult Visit(CosmosNumber cosmosNumber);
         TResult Visit(CosmosObject cosmosObject);
         TResult Visit(CosmosString cosmosString);
+        TResult Visit(CosmosUndefined cosmosUndefined);
     }
 }
