@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -32,7 +33,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     {
         private const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
         private const int PageSizeFactorForTop = 5;
-        private static readonly bool UsePassThrough = false;
 
         public static IQueryPipelineStage Create(
             DocumentContainer documentContainer,
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 
                 inputParameters.SqlQuerySpec.TryExecute = IsTryExecuteCandidate(inputParameters, queryPlanFromContinuationToken);
 
-                if (UsePassThrough)
+                if (inputParameters.TestInjections.EnableTryExecute)
                 {
                     if (inputParameters.SqlQuerySpec.TryExecute)
                     {
@@ -336,7 +336,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             // After getting the Query Plan if we find out that the query is single logical/physical partition, then short circuit and send straight to Backend
             inputParameters.SqlQuerySpec.TryExecute = IsTryExecuteCandidate(inputParameters, partitionedQueryExecutionInfo);
 
-            if (UsePassThrough)
+            if (inputParameters.TestInjections.EnableTryExecute)
             {
                 if (inputParameters.SqlQuerySpec.TryExecute)
                 {

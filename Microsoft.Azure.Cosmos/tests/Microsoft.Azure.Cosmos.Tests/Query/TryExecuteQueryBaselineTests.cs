@@ -32,6 +32,7 @@
     using System.IO;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class TryExecuteQueryBaselineTests : BaselineTests<TryExecuteQueryTestInput, TryExecuteQueryTestOutput>
@@ -60,8 +61,11 @@
             Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
 
             TryExecuteContinuationToken token = new TryExecuteContinuationToken(
-                token: "asdf",
+                token: CosmosString.Create("asdf"),
                 range: new Documents.Routing.Range<string>("A", "B", true, false));
+
+            CosmosElement cosmosElementContinuationToken = TryExecuteContinuationToken.ToCosmosElement(token);
+            CosmosObject cosmosObjectContinuationToken = (CosmosObject)cosmosElementContinuationToken;
 
             TryCatch<IQueryPipelineStage> monadicCreate = TryExecuteQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
@@ -70,7 +74,7 @@
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
                 cancellationToken: default,
-                continuationToken: TryExecuteContinuationToken.ToCosmosElement(token));
+                continuationToken: cosmosObjectContinuationToken["tryExecute"]);
             Assert.IsTrue(monadicCreate.Succeeded);
         }
 
@@ -118,7 +122,7 @@
                     break;
                 }
                 else 
-                { 
+                {
                     queryPipelineStage = await CreateTryExecutePipelineStateAsync(inMemoryCollection, query, continuationToken: tryGetPage.Result.State.Value);
                 }
 
@@ -215,7 +219,7 @@
                 true,
                 @"/pk",
                 @"/value"),
-
+                
                 CreateInput(
                 @"Partition Key + Value and Min Aggregate",
                 "SELECT VALUE MIN(c.key) FROM c",
@@ -322,7 +326,11 @@
                 correlatedActivityId: Guid.NewGuid());
 
             //  gets input parameters
-            QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+            {
+                MaxBufferedItemCount = 7000,
+                TestSettings = new TestInjections(simulate429s: true, simulateEmptyPages: false)
+            };
 
             CosmosSerializerCore serializerCore = new();
             using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, Documents.ResourceType.Document));
@@ -347,7 +355,7 @@
                 executionEnvironment: null,
                 returnResultsInDeterministicOrder: null,
                 forcePassthrough: true,
-                testInjections: null);
+                testInjections: queryRequestOptions.TestSettings);
           
             IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
                       documentContainer,

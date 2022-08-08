@@ -73,15 +73,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
             else
             {
                 TryExecuteContinuationToken tryExecuteContinuationToken;
-                QueryState firstState = backendQueryPage.State;
+                QueryState backendQueryState = backendQueryPage.State;
                 {
                     tryExecuteContinuationToken = new TryExecuteContinuationToken(
-                        token: (firstState?.Value as CosmosString)?.Value,
+                        token: backendQueryState.Value,
                         range: ((FeedRangeEpk)this.queryPartitionRangePageAsyncEnumerator.FeedRangeState.FeedRange).Range);
                 }
 
                 CosmosElement cosmosElementContinuationToken = TryExecuteContinuationToken.ToCosmosElement(tryExecuteContinuationToken);
-                queryState = new QueryState(cosmosElementContinuationToken);
+                CosmosObject cosmosObjectContinuationToken = (CosmosObject)cosmosElementContinuationToken;
+                queryState = new QueryState(cosmosObjectContinuationToken["tryExecute"]);
             }
 
             QueryPage crossPartitionQueryPage = new QueryPage(
@@ -90,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
                 backendQueryPage.ActivityId,
                 backendQueryPage.ResponseLengthInBytes,
                 backendQueryPage.CosmosQueryExecutionInfo,
-                null,
+                disallowContinuationTokenMessage: null,
                 backendQueryPage.AdditionalHeaders,
                 queryState);
 
@@ -163,21 +164,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
             }
 
             PartitionMapping<TryExecuteContinuationToken> partitionMapping = partitionMappingMonad.Result;
-            FeedRangeState<QueryState> feedRangeState = new FeedRangeState<QueryState>();
 
-            List<IReadOnlyDictionary<FeedRangeEpk, TryExecuteContinuationToken>> rangesToInitialize = new List<IReadOnlyDictionary<FeedRangeEpk, TryExecuteContinuationToken>>()
+            List<IReadOnlyDictionary<FeedRangeEpk, TryExecuteContinuationToken>> rangeToInitialize = new List<IReadOnlyDictionary<FeedRangeEpk, TryExecuteContinuationToken>>()
             {
                 partitionMapping.TargetMapping,
             };
 
-            foreach (IReadOnlyDictionary<FeedRangeEpk, TryExecuteContinuationToken> rangeToInitalize in rangesToInitialize)
-            {
-                foreach (KeyValuePair<FeedRangeEpk, TryExecuteContinuationToken> kvp in rangeToInitalize)
-                {
-                    feedRangeState = new FeedRangeState<QueryState>(kvp.Key, kvp.Value?.Token != null ? new QueryState(CosmosString.Create(kvp.Value.Token.Token)) : null);
-                }
-            }
-
+            KeyValuePair<FeedRangeEpk, TryExecuteContinuationToken> kvpRange = rangeToInitialize[0].First();
+            FeedRangeState<QueryState> feedRangeState = new FeedRangeState<QueryState>(kvpRange.Key, kvpRange.Value?.Token != null ? new QueryState(CosmosString.Create(kvpRange.Value.Token.Token)) : null);
+            
             return TryCatch<FeedRangeState<QueryState>>.FromResult(feedRangeState);
         }
     }

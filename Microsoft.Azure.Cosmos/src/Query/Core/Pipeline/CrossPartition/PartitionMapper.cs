@@ -72,11 +72,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
                 (feedRange, tokens[0])
             };
 
-            FeedRangeEpk targetFeedRange = GetTargetFeedRange(tokens);
             return MonadicConstructPartitionMapping(
                 splitRangesAndTokens,
                 tokens,
-                targetFeedRange);
+                feedRange);
         } 
 
         /// <summary>

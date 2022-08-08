@@ -13,14 +13,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents.Routing;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// A continuation token that has both backend continuation token and partition range information. 
     /// </summary>
     internal sealed class TryExecuteContinuationToken : IPartitionedToken
     {
-        public TryExecuteContinuationToken(string token, Range<string> range)
-            : this(new ParallelContinuationToken(token, range))
+        public TryExecuteContinuationToken(CosmosElement token, Range<string> range)
+            : this(new ParallelContinuationToken((token as CosmosString)?.Value, range))
         {
         }
 
@@ -36,7 +37,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
         public static CosmosElement ToCosmosElement(TryExecuteContinuationToken continuationToken)
         {
             CosmosElement inner = ParallelContinuationToken.ToCosmosElement(continuationToken.Token);
-            return inner;
+            return CosmosObject.Create(
+                            new Dictionary<string, CosmosElement>()
+                            {
+                                ["tryExecute"] = inner
+                            });
         }
 
         public static TryCatch<TryExecuteContinuationToken> TryCreateFromCosmosElement(CosmosElement cosmosElement)

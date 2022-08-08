@@ -18,7 +18,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             this.SimulateThrottles = simulate429s;
             this.SimulateEmptyPages = simulateEmptyPages;
             this.Stats = responseStats;
+            this.EnableTryExecute = true;
         }
+
+        public bool EnableTryExecute { get; }
 
         public bool SimulateThrottles { get; }
 

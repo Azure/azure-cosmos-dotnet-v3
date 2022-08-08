@@ -29,7 +29,7 @@
     public sealed class TryExecuteQueryTests : QueryTestsBase
     {
         [TestMethod]
-        public async Task TestTryExecuteSinglePartitionWithContinuationsAsync()
+        public async Task TestTryExecuteQueries()
         {
             int numberOfDocuments = 8;
             string partitionKey = "key";
@@ -55,24 +55,30 @@
             };
 
             await this.CreateIngestQueryDeleteAsync<SinglePartitionWithContinuationsArgs>(
-                ConnectionModes.Direct | ConnectionModes.Gateway,
-                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
-                documents,
-                TestTryExecuteSinglePartitionWithContinuationsHelper,
-                args,
-                "/" + partitionKey);
+            ConnectionModes.Direct | ConnectionModes.Gateway,
+            CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+            documents,
+            RunTests,
+            args,
+            "/" + partitionKey);
         }
 
-        private static async Task TestTryExecuteSinglePartitionWithContinuationsHelper(
+        private static async Task RunTests(Container container, IReadOnlyList<CosmosObject> documents, SinglePartitionWithContinuationsArgs args)
+        {
+            await TestPositiveTryExecuteOutput(container, args);
+            await TestNegativeTryExecuteOutputHelper(container);
+        }
+
+        private static async Task TestPositiveTryExecuteOutput(
             Container container,
-            IReadOnlyList<CosmosObject> documents,
             SinglePartitionWithContinuationsArgs args)
         {
             int documentCount = args.NumberOfDocuments;
             string partitionKey = args.PartitionKey;
             string numberField = args.NumberField;
-            string nullField = args.NullField;            
+            string nullField = args.NullField;
 
+            // feedOptions provide a partitionKey which ensure the TryExecute pipeline is utilized
             QueryRequestOptions feedOptions = new QueryRequestOptions
             {
                 MaxItemCount = -1,
@@ -83,36 +89,6 @@
                                         responseStats: new TestInjections.ResponseStats())
             };
 
-            // check if bad continuation queries and syntax error queries are handled by pipeline
-            IDictionary<string, string> invalidQueries = new Dictionary<string, string>
-            {
-                { "SELECT * FROM t", Guid.NewGuid().ToString() },
-                { "SELECT * FROM c", "'top':11" },
-                { "SELECT TOP 10 * FOM r", null },
-                { "this is not a valid query", null },
-            };
-
-            foreach (KeyValuePair<string, string> entry in invalidQueries)
-            {
-                try
-                {
-                    await container.GetItemQueryIterator<Document>(
-                        entry.Key,
-                        continuationToken: entry.Value,
-                        requestOptions: feedOptions).ReadNextAsync();
-
-                    Assert.Fail("Expect exception");
-                }
-                catch (CosmosException dce)
-                {
-                    Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
-                }
-                catch (AggregateException aggrEx)
-                {
-                    Assert.Fail(aggrEx.ToString());
-                }
-            }
-            
             // check if pipeline returns empty continuation token
             FeedResponse<Document> responseWithEmptyContinuationExpected = await container.GetItemQueryIterator<Document>(
                 $"SELECT TOP 0 * FROM r",
@@ -127,7 +103,7 @@
                 { $"SELECT TOP 4 * FROM r ORDER BY r.{numberField}", new List<int> { 0, 1, 2, 3} },
                 { $"SELECT TOP 3 * FROM r WHERE r.{numberField} BETWEEN 0 AND {documentCount} ORDER BY r.{numberField} DESC", new List<int> { 7, 6, 5}},
             };
-
+            
             int[] pageSizeOptions = new[] { -1, 1, 2, 10, 100 };
 
             for (int i = 0; i < 5; i++)
@@ -153,6 +129,48 @@
             }
         }
 
+        private static async Task TestNegativeTryExecuteOutputHelper(
+            Container container)
+        {
+            QueryRequestOptions feedOptions = new QueryRequestOptions
+            {
+                PartitionKey = new Cosmos.PartitionKey("/value"),
+                TestSettings = new TestInjections(
+                                        simulate429s: false,
+                                        simulateEmptyPages: false,
+                                        responseStats: new TestInjections.ResponseStats())
+            };
+
+            // check if bad continuation queries and syntax error queries are handled by pipeline
+            IDictionary<string, string> invalidQueries = new Dictionary<string, string>
+            {
+                { "SELECT * FROM t", Guid.NewGuid().ToString() },
+                { "SELECT TOP 10 * FOM r", null },
+                { "this is not a valid query", null },
+            };
+
+            foreach (KeyValuePair<string, string> entry in invalidQueries)
+            {
+                try
+                {
+                    await container.GetItemQueryIterator<Document>(
+                        queryDefinition: new QueryDefinition(entry.Key),
+                        continuationToken: entry.Value,
+                        requestOptions: feedOptions).ReadNextAsync();
+
+                    Assert.Fail("Expect exception");
+                }
+                catch (CosmosException dce)
+                {
+                    Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
+                }
+                catch (AggregateException aggrEx)
+                {
+                    Assert.Fail(aggrEx.ToString());
+                }
+            }
+        }
+        
         private struct SinglePartitionWithContinuationsArgs
         {
             public int NumberOfDocuments;
@@ -161,8 +179,9 @@
             public string NullField;
         }
 
+        //Test is to confirm which queries use the TryExecute pipeline and which use the Specialized pipeline
         [TestMethod]
-        public async Task TestTryExecuteQueryAsync()
+        public async Task TestCompareTryExecuteAndSpecializedQueries ()
         {
             string[] inputDocs = new[]
             {
