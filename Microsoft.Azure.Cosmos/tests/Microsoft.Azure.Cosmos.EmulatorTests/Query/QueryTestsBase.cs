@@ -546,7 +546,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         internal static async Task<List<T>> QueryWithCosmosElementContinuationTokenAsync<T>(
             Container container,
             string query,
-            QueryRequestOptions queryRequestOptions = null)
+            QueryRequestOptions queryRequestOptions)
         {
             if (queryRequestOptions == null)
             {
@@ -578,6 +578,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                 computeRequestOptions.ExecutionEnvironment = ExecutionEnvironment.Compute;
                 computeRequestOptions.CosmosElementContinuationToken = continuationToken;
+                computeRequestOptions.TestSettings = queryRequestOptions.TestSettings;
 
                 using (FeedIteratorInternal<T> itemQuery = (FeedIteratorInternal<T>)container.GetItemQueryIterator<T>(
                    queryText: query,

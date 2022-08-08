@@ -181,7 +181,7 @@
 
         //Test is to confirm which queries use the TryExecute pipeline and which use the Specialized pipeline
         [TestMethod]
-        public async Task TestCompareTryExecuteAndSpecializedQueries ()
+        public async Task TestCompareTryExecuteAndSpecializedQueries()
         {
             string[] inputDocs = new[]
             {

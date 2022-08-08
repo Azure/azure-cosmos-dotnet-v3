@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 
                 inputParameters.SqlQuerySpec.TryExecute = IsTryExecuteCandidate(inputParameters, queryPlanFromContinuationToken);
 
-                if (inputParameters.TestInjections.EnableTryExecute)
+                if (inputParameters.TestInjections != null && inputParameters.TestInjections.EnableTryExecute)
                 {
                     if (inputParameters.SqlQuerySpec.TryExecute)
                     {
@@ -336,7 +336,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             // After getting the Query Plan if we find out that the query is single logical/physical partition, then short circuit and send straight to Backend
             inputParameters.SqlQuerySpec.TryExecute = IsTryExecuteCandidate(inputParameters, partitionedQueryExecutionInfo);
 
-            if (inputParameters.TestInjections.EnableTryExecute)
+            if (inputParameters.TestInjections != null && inputParameters.TestInjections.EnableTryExecute)
             {
                 if (inputParameters.SqlQuerySpec.TryExecute)
                 {
