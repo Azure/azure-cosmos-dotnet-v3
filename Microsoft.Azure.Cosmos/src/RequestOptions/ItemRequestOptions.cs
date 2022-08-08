@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// ItemRequestOption requestOptions = new ItemRequestOptions() { EnableContentResponseOnWrite = false };
+        /// ItemRequestOptions requestOptions = new ItemRequestOptions() { EnableContentResponseOnWrite = false };
         /// ItemResponse itemResponse = await this.container.CreateItemAsync<ToDoActivity>(tests, new PartitionKey(test.status), requestOptions);
         /// Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
         /// Assert.IsNull(itemResponse.Resource);
