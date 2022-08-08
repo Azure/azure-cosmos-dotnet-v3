@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using Newtonsoft.Json;
+    using Util;
 
     [Serializable]
     internal sealed class Compute
@@ -24,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.AzEnvironment = azEnvironment;
             this.OSType = oSType;
             this.VMSize = vMSize;
-            this.VMId = "vmId:" + vMId;
+            this.VMId = "vmId:" + CosmosUtils.ComputeHash(vMId);
         }
 
         [JsonProperty(PropertyName = "location")]

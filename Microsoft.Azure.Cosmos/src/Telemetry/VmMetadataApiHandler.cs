@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
+    using Util;
 
     /// <summary>
     /// Task to collect virtual machine metadata information. using instance metedata service API.
@@ -139,35 +140,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return VmMetadataApiHandler.azMetadata?.Compute?.AzEnvironment ?? VmMetadataApiHandler.nonAzureCloud;
         }
 
-        /// <summary>
-        /// Hash a passed Value
-        /// </summary>
-        /// <param name="rawData"></param>
-        /// <returns>hashed Value</returns>
-        internal static string ComputeHash(string rawData)
-        {
-            if (string.IsNullOrEmpty(rawData))
-            {
-                throw new ArgumentNullException(nameof(rawData));
-            }
-
-            // Create a SHA256    
-            using (SHA256 sha256Hash = SHA256.Create())
-            {
-                // ComputeHash - returns byte array  
-                byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(rawData));
-                Array.Resize(ref bytes, 16);
-
-                // Convert byte array to a string   
-                return new Guid(bytes).ToString();
-            }
-        }
-
         private static readonly Lazy<string> uniqueId = new Lazy<string>(() =>
         {
             try
             {
-                return "hashedMachineName:" + VmMetadataApiHandler.ComputeHash(Environment.MachineName);
+                return "hashedMachineName:" + CosmosUtils.ComputeHash(Environment.MachineName);
             }
             catch (Exception ex)
             {

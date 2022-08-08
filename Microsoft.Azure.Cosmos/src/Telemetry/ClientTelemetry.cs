@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Rntbd;
     using Newtonsoft.Json;
+    using Util;
 
     /// <summary>
     /// This class collects and send all the telemetry information.
@@ -99,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             this.clientTelemetryInfo = new ClientTelemetryProperties(
                 clientId: clientId, 
-                processId: System.Diagnostics.Process.GetCurrentProcess().ProcessName, 
+                processId: CosmosUtils.ComputeHash(System.Diagnostics.Process.GetCurrentProcess().ProcessName), 
                 userAgent: userAgent, 
                 connectionMode: connectionMode,
                 preferredRegions: preferredRegions,
