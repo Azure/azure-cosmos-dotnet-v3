@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 portReuseMode,
                 enableTcpConnectionEndpointRediscovery)
                 .WithApplicationPreferredRegions(preferredLocations)
-                .WithLatencyThresholdForDiagnosticsOnTracer(TimeSpan.FromMilliseconds(100));
+                .WithLatencyThresholdForDiagnosticsOnOTelTracer(TimeSpan.FromMilliseconds(100));
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;

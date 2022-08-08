@@ -423,7 +423,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Set Global Latency Threshold for Open Telemetry Tracer.
+        /// Set Global Latency Threshold for Open Telemetry Tracer.<br></br>
+        /// If open telemetry listener is subscribed for Azure.Cosmos namespace,
+        /// It starts listening Events/Attributes from cosmos db SDK having client/request related information. <br></br> This setting is there to include Request Diagnostics in the Activities.
+        /// Resolving request diagnostics is costly operation so, this setting will include the diagnostics only for the operations having more than this setting.<br></br>
+        /// By default, Latency Threshold for Query Operations is 500ms and non query operation is 100ms.
         /// </summary>
         /// <param name="threshold"></param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
@@ -432,7 +436,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 #else
         internal
 #endif
-            CosmosClientBuilder WithLatencyThresholdForDiagnosticsOnTracer(TimeSpan threshold)
+            CosmosClientBuilder WithLatencyThresholdForDiagnosticsOnOTelTracer(TimeSpan threshold)
         {
             this.clientOptions.LatencyThresholdForDiagnostics = threshold;
 
