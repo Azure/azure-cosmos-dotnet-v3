@@ -10,9 +10,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
     internal sealed class NoOpTrace : ITrace
     {
         public static readonly NoOpTrace Singleton = new NoOpTrace();
+        public static readonly TraceSummary NoOpTraceSummary = new TraceSummary();
 
         private static readonly IReadOnlyList<ITrace> NoOpChildren = new List<ITrace>();
-        private static readonly IReadOnlyList<(string, Uri)> NoOpRegionsContacted = new List<(string, Uri)>();
 
         private static readonly IReadOnlyDictionary<string, object> NoOpData = new Dictionary<string, object>();
 
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public TraceLevel Level => default;
 
-        public TraceSummary Summary => default;
+        public TraceSummary Summary => NoOpTraceSummary;
 
         public TraceComponent Component => default;
 
@@ -39,8 +39,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public IReadOnlyList<ITrace> Children => NoOpChildren;
 
         public IReadOnlyDictionary<string, object> Data => NoOpData;
-
-        public IReadOnlyList<(string, Uri)> RegionsContacted => NoOpRegionsContacted;
 
         public void Dispose()
         {

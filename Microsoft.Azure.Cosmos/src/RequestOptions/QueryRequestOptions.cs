@@ -160,12 +160,7 @@ namespace Microsoft.Azure.Cosmos
         /// These options are only exercised when <see cref="ConnectionMode"/> is set to ConnectionMode.Gateway and the dedicated gateway endpoint is used for sending requests. 
         /// These options have no effect otherwise.
         /// </summary>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-            DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
+        public DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
 
         internal CosmosElement CosmosElementContinuationToken { get; set; }
 

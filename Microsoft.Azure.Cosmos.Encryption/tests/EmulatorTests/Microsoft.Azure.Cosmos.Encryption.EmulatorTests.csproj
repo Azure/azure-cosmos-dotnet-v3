@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsTestProject>true</IsTestProject>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -30,9 +30,8 @@
     <PackageReference Include="System.Reflection" Version="4.3.0" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
   </ItemGroup>
-  
-  
-   <ItemGroup>
+	
+  <ItemGroup>
     <Compile Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\Utils\ConfigurationManager.cs" Link="Utils\ConfigurationManager.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -67,7 +66,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(SdkProjectRef)' == 'True' ">
-    <DefineConstants>$(DefineConstants);SDKPROJECTREF</DefineConstants>
+  <PropertyGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' == 'True' ">
+    <DefineConstants>$(DefineConstants);ENCRYPTIONTESTPREVIEW</DefineConstants>
   </PropertyGroup>
 </Project>
