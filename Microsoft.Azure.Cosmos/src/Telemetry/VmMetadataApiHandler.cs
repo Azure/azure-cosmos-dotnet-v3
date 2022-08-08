@@ -21,7 +21,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// </summary>
     internal static class VmMetadataApiHandler
     {
+        internal const string HashedMachineNamePrefix = "hashedMachineName:";
+        internal const string HashedVmIdPrefix = "hashedVmId:";
+        internal const string UuidPrefix = "uuid:";
+
         internal static readonly Uri vmMetadataEndpointUrl = new ("http://169.254.169.254/metadata/instance?api-version=2020-06-01");
+
         private static readonly string nonAzureCloud = "NonAzureVM";
 
         private static readonly object lockObject = new object();
@@ -144,14 +149,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             try
             {
-                return "hashedMachineName:" + CosmosUtils.ComputeHash(Environment.MachineName);
+                return VmMetadataApiHandler.HashedMachineNamePrefix + CosmosUtils.ComputeHash(Environment.MachineName);
             }
             catch (Exception ex)
             {
                 DefaultTrace.TraceWarning("Error while generating hashed machine name " + ex.Message);
             }
 
-            return "uuid:" + Guid.NewGuid().ToString();
+            return VmMetadataApiHandler.UuidPrefix + Guid.NewGuid().ToString();
         });
 
     }
