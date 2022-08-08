@@ -86,6 +86,7 @@
                 TestSettings = new TestInjections(
                                         simulate429s: false,
                                         simulateEmptyPages: false,
+                                        enableTryExecute: true,
                                         responseStats: new TestInjections.ResponseStats())
             };
 
@@ -138,6 +139,7 @@
                 TestSettings = new TestInjections(
                                         simulate429s: false,
                                         simulateEmptyPages: false,
+                                        enableTryExecute: true,
                                         responseStats: new TestInjections.ResponseStats())
             };
 
@@ -253,6 +255,7 @@
                                     feedOptions.TestSettings = new TestInjections(
                                         simulate429s: false,
                                         simulateEmptyPages: false,
+                                        enableTryExecute: true,
                                         responseStats: new TestInjections.ResponseStats());
                                     feedOptions.PartitionKey = pk;
 
@@ -289,6 +292,7 @@
                                     feedOptions.TestSettings = new TestInjections(
                                         simulate429s: false,
                                         simulateEmptyPages: false,
+                                        enableTryExecute: true,
                                         responseStats: new TestInjections.ResponseStats());
                                     feedOptions.PartitionKey = pk;
 

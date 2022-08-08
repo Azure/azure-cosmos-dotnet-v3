@@ -546,7 +546,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         internal static async Task<List<T>> QueryWithCosmosElementContinuationTokenAsync<T>(
             Container container,
             string query,
-            QueryRequestOptions queryRequestOptions)
+            QueryRequestOptions queryRequestOptions = null)
         {
             if (queryRequestOptions == null)
             {

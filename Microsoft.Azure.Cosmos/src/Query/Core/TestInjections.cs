@@ -13,12 +13,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             TryExecute,
         }
 
-        public TestInjections(bool simulate429s, bool simulateEmptyPages, ResponseStats responseStats = null)
+        public TestInjections(bool simulate429s, bool simulateEmptyPages, bool enableTryExecute = false, ResponseStats responseStats = null)
         {
             this.SimulateThrottles = simulate429s;
             this.SimulateEmptyPages = simulateEmptyPages;
             this.Stats = responseStats;
-            this.EnableTryExecute = true;
+            this.EnableTryExecute = enableTryExecute;
         }
 
         public bool EnableTryExecute { get; }
