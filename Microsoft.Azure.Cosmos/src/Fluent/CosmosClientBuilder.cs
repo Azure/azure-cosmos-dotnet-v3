@@ -426,37 +426,23 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Set Global Latency Threshold for Open Telemetry Tracer.<br></br>
         /// If open telemetry listener is subscribed for Azure.Cosmos namespace,
         /// It starts listening Events/Attributes from cosmos db SDK having client/request related information. <br></br> This setting is there to include Request Diagnostics in the Activities.
-        /// Resolving request diagnostics is costly operation so, this setting will include the diagnostics only for the operations having more than this setting.<br></br>
+        /// Resolving request diagnostics is costly operation so, this setting will include the diagnostics only for the operations having more than the threshold latency.<br></br>
+        /// <br></br>
         /// By default, Latency Threshold for Query Operations is 500ms and non query operation is 100ms.
         /// </summary>
-        /// <param name="threshold"></param>
+        /// <param name="latencyThreshold"></param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
 #if PREVIEW
         public
 #else
         internal
 #endif
-            CosmosClientBuilder WithLatencyThresholdForDiagnosticsOnOTelTracer(TimeSpan threshold)
+            CosmosClientBuilder WithDiagnosticsOnDistributingTracing(TimeSpan latencyThreshold)
         {
-            this.clientOptions.LatencyThresholdForDiagnostics = threshold;
+            this.clientOptions.LatencyThresholdForDiagnosticsOnDistributingTracing = latencyThreshold;
 
             return this;
         }
-
-#if !PREVIEW
-        /// <summary>
-        /// Enable Open Telemetry Support
-        /// It is there only for test. This can be removed once this feature is in GA.
-        /// For Preview package it is always true.
-        /// </summary>
-        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        internal CosmosClientBuilder EnableOpenTelemetrySupport()
-        {
-            this.clientOptions.EnableOpenTelemetrySupport = true;
-
-            return this;
-        }
-#endif
 
         /// <summary>
         /// Sets the connection mode to Gateway. This is used by the client when connecting to the Azure Cosmos DB service.

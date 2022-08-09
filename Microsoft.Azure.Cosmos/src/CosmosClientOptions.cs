@@ -933,15 +933,16 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-            TimeSpan? LatencyThresholdForDiagnostics { get; set; }
+            TimeSpan? LatencyThresholdForDiagnosticsOnDistributingTracing { get; set; }
 
         /// <summary>
+        /// Gets or sets value indicating whether distributed tracing activities (<see cref="System.Diagnostics.Activity"/>) are going to be created for the SDK methods calls and HTTP calls.
         /// By default true for Preview package
         /// </summary>
 #if PREVIEW
-        internal bool EnableOpenTelemetrySupport { get; } = true;
+        internal bool EnableDistributedTracing { get; set; } = true;
 #else
-        internal bool EnableOpenTelemetrySupport { get; set; }
+        internal bool EnableDistributedTracing { get; set; }
 #endif
     }
 }

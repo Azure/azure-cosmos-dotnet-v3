@@ -97,7 +97,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreNotEqual(Cosmos.ConsistencyLevel.Session, clientOptions.ConsistencyLevel);
             Assert.IsFalse(policy.EnablePartitionLevelFailover);
 
-#if PREVIEW
             cosmosClientBuilder.WithApplicationRegion(region)
                 .WithConnectionModeGateway(maxConnections, webProxy)
                 .WithRequestTimeout(requestTimeout)
@@ -109,21 +108,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .WithSerializerOptions(cosmosSerializerOptions)
                 .WithConsistencyLevel(consistencyLevel)
                 .WithPartitionLevelFailoverEnabled();
-#else
-            cosmosClientBuilder.WithApplicationRegion(region)
-                .WithConnectionModeGateway(maxConnections, webProxy)
-                .WithRequestTimeout(requestTimeout)
-                .WithApplicationName(userAgentSuffix)
-                .AddCustomHandlers(preProcessHandler)
-                .WithApiType(apiType)
-                .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
-                .WithBulkExecution(true)
-                .WithSerializerOptions(cosmosSerializerOptions)
-                .WithConsistencyLevel(consistencyLevel)
-                .WithPartitionLevelFailoverEnabled()
-                .EnableOpenTelemetrySupport();
 
-#endif
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
 
@@ -145,7 +130,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(clientOptions.AllowBulkExecution);
             Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
             Assert.IsTrue(clientOptions.EnablePartitionLevelFailover);
-            Assert.IsTrue(clientOptions.EnableOpenTelemetrySupport);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -174,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 portReuseMode,
                 enableTcpConnectionEndpointRediscovery)
                 .WithApplicationPreferredRegions(preferredLocations)
-                .WithLatencyThresholdForDiagnosticsOnOTelTracer(TimeSpan.FromMilliseconds(100));
+                .WithDiagnosticsOnDistributingTracing(TimeSpan.FromMilliseconds(100));
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
@@ -186,11 +170,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, clientOptions.PortReuseMode);
             Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), clientOptions.ApplicationPreferredRegions.ToArray());
-            Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.LatencyThresholdForDiagnostics);
+            Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.LatencyThresholdForDiagnosticsOnDistributingTracing);
 #if PREVIEW
-            Assert.IsTrue(clientOptions.EnableOpenTelemetrySupport);
+            Assert.IsTrue(clientOptions.EnableDistributedTracing);
 #else
-            Assert.IsFalse(clientOptions.EnableOpenTelemetrySupport);
+            Assert.IsFalse(clientOptions.EnableDistributedTracing);
 #endif
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);

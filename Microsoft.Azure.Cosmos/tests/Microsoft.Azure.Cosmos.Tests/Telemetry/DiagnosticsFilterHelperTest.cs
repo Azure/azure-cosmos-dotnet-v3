@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         {
             Assert.IsTrue(this.rootTrace.Duration > TimeSpan.Zero);
 
-            CosmosClientOptions clientOptions = new CosmosClientOptions { LatencyThresholdForDiagnostics = TimeSpan.FromMilliseconds(20) };
+            CosmosClientOptions clientOptions = new CosmosClientOptions { LatencyThresholdForDiagnosticsOnDistributingTracing = TimeSpan.FromMilliseconds(20) };
             RequestOptions requestOptions = new RequestOptions();
             OpenTelemetryAttributes response = new OpenTelemetryAttributes
             {
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 DiagnosticsFilterHelper
                                 .HasIssueWithOperation(new OpenTelemetryOptions(clientOptions, requestOptions), response), 
                 $" Response time is {response.Diagnostics.GetClientElapsedTime().Milliseconds}ms " +
-                $"and Configured threshold value is {clientOptions.LatencyThresholdForDiagnostics.Value.Milliseconds}ms " +
+                $"and Configured threshold value is {clientOptions.LatencyThresholdForDiagnosticsOnDistributingTracing.Value.Milliseconds}ms " +
                 $"and Is response Success : {response.StatusCode.IsSuccess()}" );
         }
 
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         [TestMethod]
         public void CheckClientOptionAndRequestOptionValuesAreOverriding()
         {
-            CosmosClientOptions clientOptions = new CosmosClientOptions { LatencyThresholdForDiagnostics = TimeSpan.FromMilliseconds(10) };
+            CosmosClientOptions clientOptions = new CosmosClientOptions { LatencyThresholdForDiagnosticsOnDistributingTracing = TimeSpan.FromMilliseconds(10) };
             RequestOptions requestOptions = new RequestOptions { LatencyThresholdForDiagnosticsOnOTelTracer = TimeSpan.FromMilliseconds(20) };
 
             OpenTelemetryOptions openTelemetryOptions = new OpenTelemetryOptions(clientOptions, requestOptions);

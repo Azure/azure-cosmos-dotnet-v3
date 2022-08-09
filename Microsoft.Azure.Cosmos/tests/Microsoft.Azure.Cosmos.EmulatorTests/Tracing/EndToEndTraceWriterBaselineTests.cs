@@ -44,16 +44,11 @@
 
             string errorMessage = "Mock throttle exception" + Guid.NewGuid().ToString();
             Guid exceptionActivityId = Guid.NewGuid();
-
-#if !PREVIEW
-            client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
-                useGateway: false,
-                customizeClientBuilder: builder => builder.EnableOpenTelemetrySupport());
-
-            bulkClient = TestCommon.CreateCosmosClient(builder => builder
-                .WithBulkExecution(true)
-                .EnableOpenTelemetrySupport());
             
+            client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
+                useGateway: false);
+            bulkClient = TestCommon.CreateCosmosClient(builder => builder
+                .WithBulkExecution(true));
             // Set a small retry count to reduce test time
             throttleClient = TestCommon.CreateCosmosClient(builder =>
                 builder.WithThrottlingRetryOptions(TimeSpan.FromSeconds(5), 3)
@@ -65,38 +60,25 @@
                             resourceOperation,
                             request,
                             exceptionActivityId,
-                            errorMessage)))
-                    .EnableOpenTelemetrySupport());
-
+                            errorMessage))));
             miscCosmosClient = TestCommon.CreateCosmosClient(builder =>
                 builder
-                    .AddCustomHandlers(requestHandler)
-                    .EnableOpenTelemetrySupport());
-#else
-            client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
-                            useGateway: false);
+                    .AddCustomHandlers(requestHandler));
 
-            bulkClient = TestCommon.CreateCosmosClient(builder => builder
-                    .WithBulkExecution(true));
+#if !PREVIEW
+            client.ClientOptions.EnableDistributedTracing = true;
+            client.ClientOptions.LatencyThresholdForDiagnosticsOnDistributingTracing = TimeSpan.FromMilliseconds(1);
 
-            // Set a small retry count to reduce test time
-            throttleClient = TestCommon.CreateCosmosClient(builder => builder
-                .WithThrottlingRetryOptions(TimeSpan.FromSeconds(5), 3)
-                .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
-                    transportClient,
-                    (uri, resourceOperation, request) => TransportClientHelper.ReturnThrottledStoreResponseOnItemOperation(
-                        uri,
-                        resourceOperation,
-                        request,
-                        exceptionActivityId,
-                        errorMessage)))
-                .WithBulkExecution(true));
+            bulkClient.ClientOptions.EnableDistributedTracing = true;
+            bulkClient.ClientOptions.LatencyThresholdForDiagnosticsOnDistributingTracing = TimeSpan.FromMilliseconds(1);
 
-            miscCosmosClient = TestCommon.CreateCosmosClient(builder =>
-                    builder
-                        .AddCustomHandlers(requestHandler));
+            throttleClient.ClientOptions.EnableDistributedTracing = true;
+            throttleClient.ClientOptions.LatencyThresholdForDiagnosticsOnDistributingTracing = TimeSpan.FromMilliseconds(1);
+
+            miscCosmosClient.ClientOptions.EnableDistributedTracing = true;
+            miscCosmosClient.ClientOptions.LatencyThresholdForDiagnosticsOnDistributingTracing = TimeSpan.FromMilliseconds(1);
+
 #endif
-
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
                     Guid.NewGuid().ToString(),
                     cancellationToken: default);
