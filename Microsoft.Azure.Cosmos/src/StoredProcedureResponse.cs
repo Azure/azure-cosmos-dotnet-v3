@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 // For empty response body use dummy stream and let the serialization take care of the rest,
                 // so that e.g. for TValue = string that would be fine - null string, and for TValue = int -- an error.
-                using (MemoryStream responseStream = new MemoryStream())
+                using (Stream responseStream = StreamManager.GetStream(nameof(StoredProcedureResponse)))
                 using (StreamReader responseReader = new StreamReader(response.ResponseBody ?? responseStream))
                 {
                     string responseString = responseReader.ReadToEnd();

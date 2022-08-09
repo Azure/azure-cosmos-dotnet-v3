@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos
             // cosmosConflict.Content is string and converted to stream on demand for de-serialization
             if (!string.IsNullOrEmpty(cosmosConflict.Content))
             {
-                using (MemoryStream stream = new MemoryStream())
+                using (Stream stream = StreamManager.GetStream(nameof(ReadConflictContent)))
                 {
                     using (StreamWriter writer = new StreamWriter(stream))
                     {

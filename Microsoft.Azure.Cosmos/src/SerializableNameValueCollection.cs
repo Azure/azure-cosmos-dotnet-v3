@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!string.IsNullOrEmpty(value))
             {
-                using (MemoryStream ms = new MemoryStream())
+                using (Stream ms = StreamManager.GetStream(nameof(LoadFromString)))
                 {
                     using (StreamWriter writer = new StreamWriter(ms))
                     {

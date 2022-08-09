@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Specialized;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
@@ -232,7 +233,7 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-            MemoryStream bufferedStream = new MemoryStream();
+            Stream bufferedStream = StreamManager.GetStream(nameof(BufferContentIfAvailableAsync));
             await responseMessage.Content.CopyToAsync(bufferedStream);
             bufferedStream.Position = 0;
             return bufferedStream;
@@ -283,11 +284,11 @@ namespace Microsoft.Azure.Cosmos
 
             // The StreamContent created below will own and dispose its underlying stream, but we may need to reuse the stream on the 
             // DocumentServiceRequest for future requests. Hence we need to clone without incurring copy cost, so that when
-            // HttpRequestMessage -> StreamContent -> MemoryStream all get disposed, the original stream will be left open.
+            // HttpRequestMessage -> StreamContent -> Stream all get disposed, the original stream will be left open.
             if (request.Body != null)
             {
                 await request.EnsureBufferedBodyAsync();
-                MemoryStream clonedStream = new MemoryStream();
+                Stream clonedStream = StreamManager.GetStream(nameof(PrepareRequestMessageAsync));
                 // WriteTo doesn't use and update Position of source stream. No point in setting/restoring it.
                 request.CloneableBody.WriteTo(clonedStream);
                 clonedStream.Position = 0;

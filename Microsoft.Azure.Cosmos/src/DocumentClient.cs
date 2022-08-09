@@ -5476,7 +5476,7 @@ namespace Microsoft.Azure.Cosmos
             string storedProcedureInput = serializerSettings == null ?
                 JsonConvert.SerializeObject(procedureParams) :
                 JsonConvert.SerializeObject(procedureParams, serializerSettings);
-            using (MemoryStream storedProcedureInputStream = new MemoryStream())
+            using (Stream storedProcedureInputStream = StreamManager.GetStream(nameof(ExecuteStoredProcedurePrivateAsync)))
             {
                 using (StreamWriter writer = new StreamWriter(storedProcedureInputStream))
                 {

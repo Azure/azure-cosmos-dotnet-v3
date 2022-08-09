@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos
                         // Shouldn't be the case practically, but handle it for safety.
                         if (!responseMessage.Content.CanSeek)
                         {
-                            content = new MemoryStream();
+                            content = StreamManager.GetStream(nameof(FromResponseMessageAsync));
                             await responseMessage.Content.CopyToAsync(content);
                         }
 

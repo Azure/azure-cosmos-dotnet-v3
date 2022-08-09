@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An open readable stream containing the JSON of the serialized object</returns>
         public override Stream ToStream<T>(T input)
         {
-            MemoryStream streamPayload = new MemoryStream();
+            Stream streamPayload = StreamManager.GetStream(nameof(ToStream));
             using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: CosmosJsonDotNetSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
             {
                 using (JsonWriter writer = new JsonTextWriter(streamWriter))

@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
+    using Microsoft.IO;
     using Newtonsoft.Json;
 
     internal abstract class DocumentQueryExecutionContextBase : IDocumentQueryExecutionContext
@@ -673,7 +674,7 @@ namespace Microsoft.Azure.Cosmos.Query
             //    "_count": 1
             // }
             // And you should execute the callback on each document in "Documents".
-            MemoryStream memoryStream = new MemoryStream();
+            RecyclableMemoryStream memoryStream = StreamManager.GetStream(nameof(GetFeedResponse)) as RecyclableMemoryStream;
             documentServiceResponse.ResponseBody.CopyTo(memoryStream);
             long responseLengthBytes = memoryStream.Length;
 
@@ -684,7 +685,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             else
             {
-                content = memoryStream.ToArray();
+                content = memoryStream.GetBuffer();
             }
 
             IJsonNavigator jsonNavigator = null;
