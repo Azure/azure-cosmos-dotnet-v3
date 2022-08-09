@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="requestOptions"></param>
         public OpenTelemetryOptions(CosmosClientOptions clientOptions, RequestOptions requestOptions)
         {
-            this.LatencyThreshold = requestOptions?.LatencyThresholdForDiagnosticsOnOTelTracer ?? clientOptions?.LatencyThresholdForDiagnosticsOnDistributingTracing;
+            this.LatencyThreshold = requestOptions?.LatencyThresholdForDiagnosticsOnDistributingTracing ?? clientOptions?.LatencyThresholdForDiagnosticsOnDistributingTracing;
             this.EnableOpenTelemetrySupport = clientOptions?.EnableDistributedTracing ?? false;
         }
 

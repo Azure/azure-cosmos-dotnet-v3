@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-         TimeSpan? LatencyThresholdForDiagnosticsOnOTelTracer { get; set; }
+         TimeSpan? LatencyThresholdForDiagnosticsOnDistributingTracing { get; set; }
         
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
