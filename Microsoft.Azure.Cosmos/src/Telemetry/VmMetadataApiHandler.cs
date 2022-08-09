@@ -149,14 +149,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             try
             {
-                return VmMetadataApiHandler.HashedMachineNamePrefix + CosmosUtils.ComputeHash(Environment.MachineName);
+                return $"{VmMetadataApiHandler.HashedMachineNamePrefix}{CosmosUtils.ComputeHash(Environment.MachineName)}";
             }
             catch (Exception ex)
             {
                 DefaultTrace.TraceWarning("Error while generating hashed machine name " + ex.Message);
             }
 
-            return VmMetadataApiHandler.UuidPrefix + Guid.NewGuid().ToString();
+            return $"{VmMetadataApiHandler.UuidPrefix}{Guid.NewGuid()}";
         });
 
     }
