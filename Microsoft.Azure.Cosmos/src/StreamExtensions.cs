@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
             using (MemoryStream memoryStream = StreamManager.GetStream(nameof(ReadAsString)) as MemoryStream)
             {
                 stream.CopyTo(memoryStream);
-                byte[] bytes = memoryStream.GetBuffer();
+                byte[] bytes = memoryStream.ToArray();
                 return Encoding.UTF8.GetString(bytes);
             }
         }

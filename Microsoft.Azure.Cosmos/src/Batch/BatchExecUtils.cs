@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos
 #pragma warning restore VSTHRD103 // Call async methods when in an async method
                     }
 
-                    return new Memory<byte>(memoryStream.ToArray(), 0, (int)memoryStream.Length);
+                    return new Memory<byte>(memoryStream.GetBuffer(), 0, (int)memoryStream.Length);
                 }
             }
         }
