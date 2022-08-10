@@ -7,8 +7,13 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using Microsoft.IO;
 
+    /// <summary>
+    /// <see cref="StreamManager"/> encapsulates operations on top of pooling and managing memory streams which use potentially large buffers.
+    /// </summary>
     internal static class StreamManager
     {
+        // RecyclableMemoryStreamManager should be declared once and it will live for the entire process lifetime.
+        // Reference: https://github.com/Microsoft/Microsoft.IO.RecyclableMemoryStream.
         private static readonly RecyclableMemoryStreamManager memoryStreamManager = new RecyclableMemoryStreamManager();
 
         public static Stream GetStream(string tag)
