@@ -29,6 +29,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private const int DocumentCount = 500;
 
+        private const int PageSize = 10;
+
         private static readonly TimeSpan PollingInterval = TimeSpan.FromMilliseconds(25);
 
         private static readonly IReadOnlyList<CosmosObject> Documents = Enumerable
@@ -59,6 +61,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     expectedDocument: CosmosNumber64.Create(1)),
                 MakeTest(
                     query: "SELECT VALUE SUM(1) FROM c",
+                    continuationCount: 3,
+                    partitionCount: 3,
+                    expectedDocument: CosmosNumber64.Create(DocumentCount)),
+                MakeTest(
+                    query: "SELECT VALUE COUNT(1) FROM (SELECT DISTINCT c._rid FROM c)",
                     continuationCount: 3,
                     partitionCount: 3,
                     expectedDocument: CosmosNumber64.Create(DocumentCount))
@@ -125,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Task<List<CosmosElement>> resultTask = FullPipelineTests.DrainWithoutStateAsync(
                 testCase.Query,
                 documentContainer,
-                pageSize: 10);
+                pageSize: PageSize);
 
             for (int i = 0; i < testCase.ContinuationCount; i++)
             {
@@ -181,24 +188,41 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 int count = ParseQueryState(feedRangeState.State);
 
                 QueryState continuationToken = count < this.continuationCount ? CreateQueryState(++count) : default;
-                QueryPage page = new QueryPage(
-                        documents: new List<CosmosElement> { },
-                        requestCharge: 3.0,
-                        activityId: "E7980B1F-436E-44DF-B7A5-655C56D38648",
-                        responseLengthInBytes: 48,
-                        cosmosQueryExecutionInfo: new Lazy<CosmosQueryExecutionInfo>(() => new CosmosQueryExecutionInfo(false, false)),
-                        disallowContinuationTokenMessage: null,
-                        additionalHeaders: null,
-                        state: continuationToken);
 
-                return continuationToken != default ?
-                    TryCatch<QueryPage>.FromResult(page) :
-                    await base.MonadicQueryAsync(
-                        sqlQuerySpec,
-                        new FeedRangeState<QueryState>(feedRangeState.FeedRange, default),
-                        queryPaginationOptions,
-                        trace,
-                        cancellationToken);
+                List<CosmosElement> documents = new List<CosmosElement>();
+
+                if (continuationToken == null)
+                {
+                    FeedRangeInternal feedRange = feedRangeState.FeedRange;
+                    QueryState innerState = null;
+                    do
+                    {
+                        TryCatch<QueryPage> tryCatchPage = await base.MonadicQueryAsync(
+                            sqlQuerySpec,
+                            new FeedRangeState<QueryState>(feedRange, innerState),
+                            queryPaginationOptions,
+                            trace,
+                            cancellationToken);
+
+                        Assert.IsTrue(tryCatchPage.Succeeded);
+
+                        QueryPage queryPage = tryCatchPage.Result;
+                        documents.AddRange(queryPage.Documents);
+                        innerState = queryPage.State;
+                    } while (innerState != null);
+                }
+
+                QueryPage page = new QueryPage(
+                    documents: documents,
+                    requestCharge: 3.0,
+                    activityId: "E7980B1F-436E-44DF-B7A5-655C56D38648",
+                    responseLengthInBytes: 48,
+                    cosmosQueryExecutionInfo: new Lazy<CosmosQueryExecutionInfo>(() => new CosmosQueryExecutionInfo(false, false)),
+                    disallowContinuationTokenMessage: null,
+                    additionalHeaders: null,
+                    state: continuationToken);
+
+                return TryCatch<QueryPage>.FromResult(page);
             }
 
             public void Release(int count)
