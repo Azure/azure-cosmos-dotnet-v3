@@ -178,8 +178,7 @@ namespace Microsoft.Azure.Cosmos
                             return r;
                         }
 
-                        batchOperationResult.ResourceStream = new MemoryStream(
-                            buffer: resourceBody, index: 0, count: resourceBody.Length, writable: false, publiclyVisible: true);
+                        batchOperationResult.ResourceStream = StreamManager.GetReadonlyStream(buffer: resourceBody, offset: 0, count: resourceBody.Length);
                         break;
 
                     case "requestCharge":

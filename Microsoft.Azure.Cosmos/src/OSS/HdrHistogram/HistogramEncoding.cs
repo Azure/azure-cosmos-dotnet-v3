@@ -14,6 +14,7 @@ using System.IO;
 using System.IO.Compression;
 using HdrHistogram.Encoding;
 using HdrHistogram.Utilities;
+using Microsoft.Azure.Cosmos;
 
 namespace HdrHistogram
 {
@@ -53,9 +54,9 @@ namespace HdrHistogram
             var headerSize = GetHeaderSize(cookie);
             var lengthOfCompressedContents = buffer.GetInt();
             HistogramBase histogram;
-            //Skip the first two bytes (from the RFC 1950 specification) and move to the deflate specification (RFC 1951)
-            //  http://george.chiramattel.com/blog/2007/09/deflatestream-block-length-does-not-match.html
-            using (var inputStream = new MemoryStream(buffer.ToArray(), buffer.Position + Rfc1950HeaderLength, lengthOfCompressedContents - Rfc1950HeaderLength))
+            // Skip the first two bytes (from the RFC 1950 specification) and move to the deflate specification (RFC 1951).
+            // http://george.chiramattel.com/blog/2007/09/deflatestream-block-length-does-not-match.html
+            using (var inputStream = StreamManager.GetStream(nameof(DecodeFromCompressedByteBuffer), buffer.ToArray(), offset: buffer.Position + Rfc1950HeaderLength, count: lengthOfCompressedContents - Rfc1950HeaderLength))
             using (var decompressor = new DeflateStream(inputStream, CompressionMode.Decompress, leaveOpen: true))
             {
                 var headerBuffer = ByteBuffer.Allocate(headerSize);

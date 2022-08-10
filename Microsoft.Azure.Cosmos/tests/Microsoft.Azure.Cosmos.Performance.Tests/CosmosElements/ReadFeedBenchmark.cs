@@ -111,10 +111,10 @@
         [Benchmark]
         public void ByteParsingToFindJsonArray()
         {
-            using (MemoryStream ms = new MemoryStream(this.payloadBytes))
+            using (Stream ms = StreamManager.GetStream(nameof(ByteParsingToFindJsonArray), this.payloadBytes))
             {
                 long length = ms.Length;
-                using (MemoryStream memoryStream = CosmosFeedResponseSerializer.GetStreamWithoutServiceEnvelope(ms))
+                using (Stream memoryStream = CosmosFeedResponseSerializer.GetStreamWithoutServiceEnvelope(ms))
                 {
                     if (length == memoryStream.Length)
                     {

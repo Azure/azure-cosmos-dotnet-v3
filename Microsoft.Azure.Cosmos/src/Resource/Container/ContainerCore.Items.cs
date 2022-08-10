@@ -1058,7 +1058,7 @@ namespace Microsoft.Azure.Cosmos
 
                     if (!(stream is MemoryStream memoryStream))
                     {
-                        memoryStream = new MemoryStream();
+                        memoryStream = (MemoryStream)StreamManager.GetStream(nameof(GetPartitionKeyValueFromStreamAsync));
                         stream.CopyTo(memoryStream);
                     }
 

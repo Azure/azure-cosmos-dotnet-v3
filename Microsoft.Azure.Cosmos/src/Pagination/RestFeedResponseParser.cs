@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Documents;
+    using Microsoft.IO;
 
     internal static class RestFeedResponseParser
     {
@@ -50,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         {
             if (!(stream is MemoryStream memoryStream))
             {
-                memoryStream = new MemoryStream();
+                memoryStream = (MemoryStream)StreamManager.GetStream(nameof(StreamToBytes));
                 stream.CopyTo(memoryStream);
             }
 

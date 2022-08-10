@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
+    using Microsoft.IO;
 
     /// <summary>
     /// Util methods for batch requests.
@@ -55,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
                 int bufferSize = BatchExecUtils.BufferSize;
                 byte[] buffer = new byte[bufferSize];
 
-                using (MemoryStream memoryStream = new MemoryStream(bufferSize)) // using bufferSize as initial capacity as well
+                using (RecyclableMemoryStream memoryStream = (RecyclableMemoryStream)StreamManager.GetStream(nameof(StreamToMemoryAsync), bufferSize)) // using bufferSize as initial capacity as well
                 {
                     int sum = 0;
                     int count;

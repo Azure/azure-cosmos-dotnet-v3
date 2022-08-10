@@ -27,7 +27,7 @@ namespace HdrHistogram.Utilities
         public static int CompressedCopy(this ByteBuffer target, ByteBuffer source, int targetOffset)
         {
             byte[] compressed;
-            using (var ms = new MemoryStream(source.ToArray()))
+            using (var ms = StreamManager.GetStream(nameof(CompressedCopy), source.ToArray()))
             {
                 compressed = Compress(ms);
             }

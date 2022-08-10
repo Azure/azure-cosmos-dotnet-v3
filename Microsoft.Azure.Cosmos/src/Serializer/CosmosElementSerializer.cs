@@ -161,12 +161,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
                 resultAsArray = new ArraySegment<byte>(result.ToArray());
             }
 
-            return new MemoryStream(
-                buffer: resultAsArray.Array,
-                index: resultAsArray.Offset,
-                count: resultAsArray.Count,
-                writable: false,
-                publiclyVisible: true);
+            return (MemoryStream)StreamManager.GetReadonlyStream(resultAsArray.Array, offset: resultAsArray.Offset, count: resultAsArray.Count);
         }
 
         private static string GetRootNodeName(ResourceType resourceType)

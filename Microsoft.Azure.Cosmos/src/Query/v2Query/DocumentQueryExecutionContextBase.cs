@@ -603,7 +603,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     break;
             }
 
-            executeQueryRequest.Body = new MemoryStream(Encoding.UTF8.GetBytes(queryText));
+            executeQueryRequest.Body = StreamManager.GetStream(nameof(CreateQueryDocumentServiceRequest), Encoding.UTF8.GetBytes(queryText));
             return executeQueryRequest;
         }
 

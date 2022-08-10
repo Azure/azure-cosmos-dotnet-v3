@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(2, batchRequest.Operations.Count);
 
-            using (MemoryStream payload = batchRequest.TransferBodyStream())
+            using (Stream payload = batchRequest.TransferBodyStream())
             {
                 Assert.IsNotNull(payload);
 

@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
                 return string.Empty;
             }
 
-            using (MemoryStream ms = new MemoryStream())
+            using (Stream ms = StreamManager.GetStream(nameof(SaveToString)))
             {
                 nameValueCollection.SaveTo(ms);
                 ms.Position = 0;

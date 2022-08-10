@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    memoryStream = new MemoryStream();
+                    memoryStream = (MemoryStream)StreamManager.GetStream(nameof(RewriteStreamAsTextAsync));
                     await responseMessage.Content.CopyToAsync(memoryStream);
                 }
 
@@ -178,15 +178,15 @@ namespace Microsoft.Azure.Cosmos
                 jsonNavigator.WriteNode(jsonNavigator.GetRootNode(), jsonWriter);
 
                 ReadOnlyMemory<byte> result = jsonWriter.GetResult();
-                MemoryStream rewrittenMemoryStream;
+                Stream rewrittenMemoryStream;
                 if (MemoryMarshal.TryGetArray(result, out ArraySegment<byte> rewrittenSegment))
                 {
-                    rewrittenMemoryStream = new MemoryStream(rewrittenSegment.Array, index: rewrittenSegment.Offset, count: rewrittenSegment.Count, writable: false, publiclyVisible: true);
+                    rewrittenMemoryStream = StreamManager.GetReadonlyStream(rewrittenSegment.Array, offset: rewrittenSegment.Offset, count: rewrittenSegment.Count);
                 }
                 else
                 {
                     byte[] toArray = result.ToArray();
-                    rewrittenMemoryStream = new MemoryStream(toArray, index: 0, count: toArray.Length, writable: false, publiclyVisible: true);
+                    rewrittenMemoryStream = StreamManager.GetReadonlyStream(toArray, offset: 0, count: toArray.Length);
                 }
 
                 responseMessage.Content = rewrittenMemoryStream;

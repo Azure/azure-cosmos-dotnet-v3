@@ -144,14 +144,14 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
 
         public static NewtonsoftToCosmosDBReader CreateFromBuffer(ReadOnlyMemory<byte> buffer)
         {
-            MemoryStream stream;
+            Stream stream;
             if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> segment))
             {
-                stream = new MemoryStream(segment.Array, segment.Offset, segment.Count);
+                stream = StreamManager.GetStream(nameof(CreateFromBuffer), segment.Array, offset: segment.Offset, count: segment.Count);
             }
             else
             {
-                stream = new MemoryStream(buffer.ToArray());
+                stream = StreamManager.GetStream(nameof(CreateFromBuffer), buffer.ToArray());
             }
 
             StreamReader streamReader = new StreamReader(stream, Encoding.UTF8);

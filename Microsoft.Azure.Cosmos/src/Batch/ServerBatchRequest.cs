@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
 
         private MemorySpanResizer<byte> operationResizableWriteBuffer;
 
-        private MemoryStream bodyStream;
+        private Stream bodyStream;
 
         private long bodyStreamPositionBeforeWritingCurrentRecord;
 
@@ -55,9 +55,9 @@ namespace Microsoft.Azure.Cosmos
         /// Caller is responsible for disposing it after use.
         /// </summary>
         /// <returns>Body stream.</returns>
-        public MemoryStream TransferBodyStream()
+        public Stream TransferBodyStream()
         {
-            MemoryStream bodyStream = this.bodyStream;
+            Stream bodyStream = this.bodyStream;
             this.bodyStream = null;
             return bodyStream;
         }
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
             this.operations = new ArraySegment<ItemBatchOperation>(operations.Array, operations.Offset, materializedCount);
 
             const int operationSerializationOverheadOverEstimateInBytes = 200;
-            this.bodyStream = new MemoryStream(approximateTotalLength + (operationSerializationOverheadOverEstimateInBytes * materializedCount));
+            this.bodyStream = StreamManager.GetStream(nameof(CreateBodyStreamAsync), approximateTotalLength + (operationSerializationOverheadOverEstimateInBytes * materializedCount));
             this.operationResizableWriteBuffer = new MemorySpanResizer<byte>(estimatedMaxOperationLength + operationSerializationOverheadOverEstimateInBytes);
 
             Result r = await this.bodyStream.WriteRecordIOAsync(default(Segment), this.WriteOperation);

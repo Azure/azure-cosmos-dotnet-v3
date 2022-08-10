@@ -33,8 +33,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             using (streamWithServiceEnvelope)
-            using (MemoryStream stream = GetStreamWithoutServiceEnvelope(
-                            streamWithServiceEnvelope))
+            using (Stream stream = GetStreamWithoutServiceEnvelope(streamWithServiceEnvelope))
             {
                 return serializerCore.FromFeedStream<T>(stream);
             }
@@ -46,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="streamWithServiceEnvelope">A stream with the service envelope like: { "ContainerRid":"Test", "Documents":[{ "id":"MyItem"}], "count":1}</param>
         /// <returns>A stream containing only the array of items</returns>
-        internal static MemoryStream GetStreamWithoutServiceEnvelope(
+        internal static Stream GetStreamWithoutServiceEnvelope(
             Stream streamWithServiceEnvelope)
         {
             using (streamWithServiceEnvelope)
@@ -80,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
                     resultAsArray = new ArraySegment<byte>(spanwithOnlyArray.ToArray());
                 }
 
-                MemoryStream arrayOnlyStream = new MemoryStream(resultAsArray.Array, resultAsArray.Offset, resultAsArray.Count, writable: false, publiclyVisible: true);
+                Stream arrayOnlyStream = StreamManager.GetReadonlyStream(resultAsArray.Array, resultAsArray.Offset, resultAsArray.Count);
                 return arrayOnlyStream;
             }
         }

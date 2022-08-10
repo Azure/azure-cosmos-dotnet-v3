@@ -326,7 +326,7 @@ namespace Microsoft.Azure.Cosmos
 
                     if (!(cosmosResponseMessage.Content is MemoryStream memoryStream))
                     {
-                        memoryStream = new MemoryStream();
+                        memoryStream = (MemoryStream)StreamManager.GetStream(nameof(getCosmosElementResponse));
                         cosmosResponseMessage.Content.CopyTo(memoryStream);
                     }
 
@@ -450,7 +450,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!(stream is MemoryStream memoryStream))
             {
-                memoryStream = new MemoryStream();
+                memoryStream = (MemoryStream)StreamManager.GetStream(nameof(ParseElementsFromRestStream));
                 stream.CopyTo(memoryStream);
             }
 
