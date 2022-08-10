@@ -11,7 +11,6 @@
 using System.IO;
 using System.IO.Compression;
 using Microsoft.Azure.Cosmos;
-using Microsoft.IO;
 
 namespace HdrHistogram.Utilities
 {
@@ -37,7 +36,7 @@ namespace HdrHistogram.Utilities
 
         private static byte[] Compress(Stream input)
         {
-            using (var compressStream = StreamManager.GetStream(nameof(Compress)) as RecyclableMemoryStream)
+            using (var compressStream = StreamManager.GetStream(nameof(Compress)) as MemoryStream)
             {
                 //Add the RFC 1950 headers.
                 compressStream.WriteByte(0x58);
@@ -46,7 +45,7 @@ namespace HdrHistogram.Utilities
                 {
                     input.CopyTo(compressor);
                 }
-                return compressStream.GetBuffer();
+                return compressStream.ToArray();
             }
         }
     }

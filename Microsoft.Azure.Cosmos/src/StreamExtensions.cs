@@ -6,13 +6,12 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.IO;
     using System.Text;
-    using Microsoft.IO;
 
     internal static class StreamExtensions
     {
         public static string ReadAsString(this Stream stream)
         {
-            using (RecyclableMemoryStream memoryStream = StreamManager.GetStream(nameof(ReadAsString)) as RecyclableMemoryStream)
+            using (MemoryStream memoryStream = StreamManager.GetStream(nameof(ReadAsString)) as MemoryStream)
             {
                 stream.CopyTo(memoryStream);
                 byte[] bytes = memoryStream.GetBuffer();

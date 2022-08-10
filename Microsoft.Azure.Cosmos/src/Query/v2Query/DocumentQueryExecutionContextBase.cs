@@ -674,7 +674,7 @@ namespace Microsoft.Azure.Cosmos.Query
             //    "_count": 1
             // }
             // And you should execute the callback on each document in "Documents".
-            RecyclableMemoryStream memoryStream = StreamManager.GetStream(nameof(GetFeedResponse)) as RecyclableMemoryStream;
+            MemoryStream memoryStream = StreamManager.GetStream(nameof(GetFeedResponse)) as MemoryStream;
             documentServiceResponse.ResponseBody.CopyTo(memoryStream);
             long responseLengthBytes = memoryStream.Length;
 
@@ -685,7 +685,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             else
             {
-                content = memoryStream.GetBuffer();
+                content = memoryStream.ToArray();
             }
 
             IJsonNavigator jsonNavigator = null;
