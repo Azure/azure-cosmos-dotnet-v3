@@ -59,6 +59,7 @@ The SDK currently depends on:
 
 - `Microsoft.Azure.Cosmos.Direct` - This package contains the Direct transport protocol and ServiceInterop DLLs.
 - `Microsoft.HybridRow` - This package contains the HybridRow protocol used to transmit data for Batch requests.
+- `Microsoft.IO.RecyclableMemoryStream` - This package contains the RecyclableMemoryStream, a MemoryStream replacement that offers superior behavior for performance-critical systems.
 
 ## Folder structure
 
