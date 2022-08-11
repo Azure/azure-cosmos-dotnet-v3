@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Threading;
@@ -26,7 +27,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.DekProvider.Container.GetItemQueryIterator<T>(queryText, continuationToken, requestOptions);
+            return new DataEncryptionKeyFeedIterator<T>(
+                new DataEncryptionKeyFeedIterator(
+                    this.DekProvider.Container.GetItemQueryStreamIterator(
+                        queryText,
+                        continuationToken,
+                        requestOptions)),
+                this.DekProvider.Container.Database.Client.ResponseFactory);
         }
 
         public override FeedIterator<T> GetDataEncryptionKeyQueryIterator<T>(
@@ -34,7 +41,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.DekProvider.Container.GetItemQueryIterator<T>(queryDefinition, continuationToken, requestOptions);
+            return new DataEncryptionKeyFeedIterator<T>(
+                new DataEncryptionKeyFeedIterator(
+                    this.DekProvider.Container.GetItemQueryStreamIterator(
+                        queryDefinition,
+                        continuationToken,
+                        requestOptions)),
+                this.DekProvider.Container.Database.Client.ResponseFactory);
         }
 
         public override async Task<ItemResponse<DataEncryptionKeyProperties>> CreateDataEncryptionKeyAsync(
@@ -86,19 +99,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     updatedMetadata,
                     DateTime.UtcNow);
 
-            ItemResponse<DataEncryptionKeyProperties> dekResponse = await this.DekProvider.Container.CreateItemAsync(
-                dekProperties,
+            // Since T is not exposed, a user passing System.Text based custom serializers would result in a failure, since DataEncryptionKeyProperties is based
+            // on Newtonsoft JSON serialization and is not compatible. So we just convert it to stream using cosmos's base serializer.
+            Stream dekpropertiesStream = EncryptionProcessor.BaseSerializer.ToStream(dekProperties);
+
+            ResponseMessage dekResponse = await this.DekProvider.Container.CreateItemStreamAsync(
+                dekpropertiesStream,
                 new PartitionKey(dekProperties.Id),
                 cancellationToken: cancellationToken);
 
-            this.DekProvider.DekCache.SetDekProperties(id, dekResponse.Resource);
+            if (!dekResponse.IsSuccessStatusCode)
+            {
+                throw new CosmosException(dekResponse.ErrorMessage, dekResponse.StatusCode, 0, null, 0);
+            }
+
+            dekProperties = EncryptionProcessor.BaseSerializer.FromStream<DataEncryptionKeyProperties>(dekResponse.Content);
+
+            this.DekProvider.DekCache.SetDekProperties(id, dekProperties);
 
             if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized))
             {
                 this.DekProvider.DekCache.SetRawDek(id, inMemoryRawDek);
             }
 
-            return dekResponse;
+            ItemResponse<DataEncryptionKeyProperties> response = new EncryptionItemResponse<DataEncryptionKeyProperties>(dekResponse, dekProperties);
+            return response;
         }
 
         /// <inheritdoc/>
@@ -192,18 +217,29 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 EncryptionKeyWrapMetadata = updatedMetadata,
             };
 
-            ItemResponse<DataEncryptionKeyProperties> response;
+            ResponseMessage dekResponse;
 
             try
             {
-                response = await this.DekProvider.Container.ReplaceItemAsync(
-                    newDekProperties,
-                    newDekProperties.Id,
-                    new PartitionKey(newDekProperties.Id),
-                    requestOptions,
-                    cancellationToken);
+                Stream newDekpropertiesStream = EncryptionProcessor.BaseSerializer.ToStream(newDekProperties);
 
-                Debug.Assert(response.Resource != null);
+                dekResponse = await this.DekProvider.Container.ReplaceItemStreamAsync(
+                   newDekpropertiesStream,
+                   newDekProperties.Id,
+                   new PartitionKey(newDekProperties.Id),
+                   requestOptions,
+                   cancellationToken);
+
+                if (!dekResponse.IsSuccessStatusCode)
+                {
+                    if (dekResponse.StatusCode == HttpStatusCode.PreconditionFailed)
+                    {
+                        throw new CosmosException(dekResponse.ErrorMessage, dekResponse.StatusCode, 0, null, 0);
+                    }
+                }
+
+                dekProperties = EncryptionProcessor.BaseSerializer.FromStream<DataEncryptionKeyProperties>(dekResponse.Content);
+                Debug.Assert(dekProperties != null);
             }
             catch (CosmosException ex)
             {
@@ -228,14 +264,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     cancellationToken);
             }
 
-            this.DekProvider.DekCache.SetDekProperties(id, response.Resource);
+            this.DekProvider.DekCache.SetDekProperties(id, dekProperties);
 
             if (string.Equals(newDekProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized))
             {
                 this.DekProvider.DekCache.SetRawDek(id, updatedRawDek);
             }
 
-            return response;
+            return new EncryptionItemResponse<DataEncryptionKeyProperties>(dekResponse, dekProperties);
         }
 
         internal async Task<DataEncryptionKeyProperties> FetchDataEncryptionKeyPropertiesAsync(
@@ -568,11 +604,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             using (diagnosticsContext.CreateScope("ReadInternalAsync"))
             {
-                return await this.DekProvider.Container.ReadItemAsync<DataEncryptionKeyProperties>(
+                ResponseMessage response = await this.DekProvider.Container.ReadItemStreamAsync(
                     id,
                     new PartitionKey(id),
                     requestOptions,
-                    cancellationToken);
+                    cancellationToken: cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new CosmosException(response.ErrorMessage, response.StatusCode, 0, null, 0);
+                }
+
+                DataEncryptionKeyProperties dekProperties = EncryptionProcessor.BaseSerializer.FromStream<DataEncryptionKeyProperties>(response.Content);
+
+                return new EncryptionItemResponse<DataEncryptionKeyProperties>(response, dekProperties);
             }
         }
     }

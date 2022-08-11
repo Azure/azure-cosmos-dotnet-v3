@@ -994,6 +994,109 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
+        [Obsolete]
+        public async Task VerifyDekOperationWithSystemTextSerializer()
+        {
+            System.Text.Json.JsonSerializerOptions jsonSerializerOptions = new System.Text.Json.JsonSerializerOptions()
+            {
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            };
+
+            CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer = new CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+
+            CosmosClient clientWithCosmosSystemTextJsonSerializer = TestCommon.CreateCosmosClient(builder => builder
+                .WithCustomSerializer(cosmosSystemTextJsonSerializer)
+                .Build());
+
+            // get database and container
+            Database databaseWithCosmosSystemTextJsonSerializer = clientWithCosmosSystemTextJsonSerializer.GetDatabase(MdeCustomEncryptionTests.database.Id);
+            Container containerWithCosmosSystemTextJsonSerializer = databaseWithCosmosSystemTextJsonSerializer.GetContainer(MdeCustomEncryptionTests.itemContainer.Id);
+            
+            
+            // create the Dek container
+            Container dekContainerWithCosmosSystemTextJsonSerializer = await databaseWithCosmosSystemTextJsonSerializer.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", 400);
+            
+            CosmosDataEncryptionKeyProvider dekProviderWithCosmosSystemTextJsonSerializer = new CosmosDataEncryptionKeyProvider(new TestEncryptionKeyStoreProvider());
+            await dekProviderWithCosmosSystemTextJsonSerializer.InitializeAsync(databaseWithCosmosSystemTextJsonSerializer, dekContainerWithCosmosSystemTextJsonSerializer.Id);
+            
+            TestEncryptor encryptorWithCosmosSystemTextJsonSerializer =  new TestEncryptor(dekProviderWithCosmosSystemTextJsonSerializer);
+            
+            // enable encryption on container
+            Container encryptionContainerWithCosmosSystemTextJsonSerializer = containerWithCosmosSystemTextJsonSerializer.WithEncryptor(encryptorWithCosmosSystemTextJsonSerializer);
+
+            string dekId = "dekWithSystemTextJson";
+            DataEncryptionKeyProperties dekProperties = await MdeCustomEncryptionTests.CreateDekAsync(dekProviderWithCosmosSystemTextJsonSerializer, dekId);
+            Assert.AreEqual(
+                new EncryptionKeyWrapMetadata(name: "metadata1", value: MdeCustomEncryptionTests.metadata1.Value),
+                dekProperties.EncryptionKeyWrapMetadata);
+
+            // Use different DEK provider to avoid (unintentional) cache impact
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestEncryptionKeyStoreProvider());
+            await dekProvider.InitializeAsync(databaseWithCosmosSystemTextJsonSerializer, dekContainerWithCosmosSystemTextJsonSerializer.Id);
+            DataEncryptionKeyProperties readProperties = await dekProviderWithCosmosSystemTextJsonSerializer.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
+            Assert.AreEqual(dekProperties, readProperties);
+
+            TestDocSystemText testDocSystemText = new TestDocSystemText()
+            {
+                Id = Guid.NewGuid().ToString(),
+                ActivityId = Guid.NewGuid().ToString(),
+                PartitionKey = "myPartitionKey",
+                Status = "Active"
+            };
+
+            // Create items that use System.Text.Json serialization attributes
+            ItemResponse<TestDocSystemText> createTestDoc = await encryptionContainerWithCosmosSystemTextJsonSerializer.CreateItemAsync(
+                testDocSystemText,
+                new PartitionKey(testDocSystemText.PartitionKey),
+                MdeCustomEncryptionTests.GetRequestOptions(dekId, new List<string>() { "/status"}, legacyAlgo: false));
+
+            Assert.AreEqual(HttpStatusCode.Created, createTestDoc.StatusCode);
+
+            string contosoV1 = "Contoso_v001";
+            string contosoV2 = "Contoso_v002";
+            string fabrikamV1 = "Fabrikam_v001";
+            string fabrikamV2 = "Fabrikam_v002";
+
+            await MdeCustomEncryptionTests.CreateDekAsync(dekProviderWithCosmosSystemTextJsonSerializer, contosoV1);
+            await MdeCustomEncryptionTests.CreateDekAsync(dekProviderWithCosmosSystemTextJsonSerializer, contosoV2);
+            await MdeCustomEncryptionTests.CreateDekAsync(dekProviderWithCosmosSystemTextJsonSerializer, fabrikamV1);
+            await MdeCustomEncryptionTests.CreateDekAsync(dekProviderWithCosmosSystemTextJsonSerializer, fabrikamV2);
+
+            // Test getting all keys
+            await MdeCustomEncryptionTests.IterateDekFeedAsync(
+                dekProviderWithCosmosSystemTextJsonSerializer,
+                new List<string> { dekId, contosoV1, contosoV2, fabrikamV1, fabrikamV2 },
+                isExpectedDeksCompleteSetForRequest: true,
+                isResultOrderExpected: false,
+                "SELECT * from c");
+
+            // Test getting specific subset of keys
+            await MdeCustomEncryptionTests.IterateDekFeedAsync(
+                dekProviderWithCosmosSystemTextJsonSerializer,
+                new List<string> { contosoV2 },
+                isExpectedDeksCompleteSetForRequest: false,
+                isResultOrderExpected: true,
+                "SELECT TOP 1 * from c where c.id >= 'Contoso_v000' and c.id <= 'Contoso_v999' ORDER BY c.id DESC");
+
+            // Ensure only required results are returned
+            await MdeCustomEncryptionTests.IterateDekFeedAsync(
+                dekProviderWithCosmosSystemTextJsonSerializer,
+                new List<string> { contosoV1, contosoV2 },
+                isExpectedDeksCompleteSetForRequest: true,
+                isResultOrderExpected: true,
+                "SELECT * from c where c.id >= 'Contoso_v000' and c.id <= 'Contoso_v999' ORDER BY c.id ASC");
+
+            // Test pagination
+            await MdeCustomEncryptionTests.IterateDekFeedAsync(
+                dekProviderWithCosmosSystemTextJsonSerializer,
+                new List<string> { dekId, contosoV1, contosoV2, fabrikamV1, fabrikamV2 },
+                isExpectedDeksCompleteSetForRequest: true,
+                isResultOrderExpected: false,
+                "SELECT * from c",
+                itemCountInPage: 3);
+        }
+
+        [TestMethod]
         public async Task EncryptionTransactionalBatchConflictResponse()
         {
             string partitionKey = "thePK";
@@ -1984,6 +2087,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 return TestCommon.ToStream(this);
             }
+        }
+
+        public class TestDocSystemText
+        {
+            [System.Text.Json.Serialization.JsonPropertyName("id")]
+            public string Id { get; set; }
+
+            [System.Text.Json.Serialization.JsonPropertyName("PK")]
+            public string PartitionKey { get; set; }
+
+            [System.Text.Json.Serialization.JsonPropertyName("activityId")]
+            public string ActivityId { get; set; }
+
+            [System.Text.Json.Serialization.JsonPropertyName("status")]
+            public string Status { get; set; }
         }
 
         private class TestEncryptionKeyStoreProvider : EncryptionKeyStoreProvider
