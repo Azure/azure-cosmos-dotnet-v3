@@ -38,17 +38,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             using (diagnosticsContext.CreateScope("FeedIterator.ReadNextWithoutDecryption"))
             {
                 ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
-                List<T> decryptableContent = null;
+                List<T> dataEncryptionKeyContent = null;
 
                 if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
                 {
-                    decryptableContent = this.ConvertResponseToDataEncryptionItems<T>(
+                    dataEncryptionKeyContent = this.ConvertResponseToDataEncryptionItems<T>(
                         responseMessage.Content);
 
-                    return (responseMessage, decryptableContent);
+                    return (responseMessage, dataEncryptionKeyContent);
                 }
 
-                return (responseMessage, decryptableContent);
+                return (responseMessage, dataEncryptionKeyContent);
             }
         }
 
