@@ -1036,6 +1036,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             DataEncryptionKeyProperties readProperties = await dekProviderWithCosmosSystemTextJsonSerializer.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
             Assert.AreEqual(dekProperties, readProperties);
 
+            // rewrap
+            ItemResponse<DataEncryptionKeyProperties> dekResponse = await dekProviderWithCosmosSystemTextJsonSerializer.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
+               dekId,
+               MdeCustomEncryptionTests.metadata2);
+
+            Assert.AreEqual(HttpStatusCode.OK, dekResponse.StatusCode);
+            dekProperties = MdeCustomEncryptionTests.VerifyDekResponse(
+                dekResponse,
+                dekId);
+            Assert.AreEqual(
+                MdeCustomEncryptionTests.metadata2,
+                dekProperties.EncryptionKeyWrapMetadata);
+
+            readProperties = await dekProviderWithCosmosSystemTextJsonSerializer.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
+            Assert.AreEqual(dekProperties, readProperties);
+
             TestDocSystemText testDocSystemText = new TestDocSystemText()
             {
                 Id = Guid.NewGuid().ToString(),
@@ -1051,6 +1067,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 MdeCustomEncryptionTests.GetRequestOptions(dekId, new List<string>() { "/status"}, legacyAlgo: false));
 
             Assert.AreEqual(HttpStatusCode.Created, createTestDoc.StatusCode);
+
 
             string contosoV1 = "Contoso_v001";
             string contosoV2 = "Contoso_v002";
