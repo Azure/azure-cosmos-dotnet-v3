@@ -1011,8 +1011,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             // get database and container
             Database databaseWithCosmosSystemTextJsonSerializer = clientWithCosmosSystemTextJsonSerializer.GetDatabase(MdeCustomEncryptionTests.database.Id);
             Container containerWithCosmosSystemTextJsonSerializer = databaseWithCosmosSystemTextJsonSerializer.GetContainer(MdeCustomEncryptionTests.itemContainer.Id);
-            
-            
+                        
             // create the Dek container
             Container dekContainerWithCosmosSystemTextJsonSerializer = await databaseWithCosmosSystemTextJsonSerializer.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", 400);
             
@@ -1067,7 +1066,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 MdeCustomEncryptionTests.GetRequestOptions(dekId, new List<string>() { "/status"}, legacyAlgo: false));
 
             Assert.AreEqual(HttpStatusCode.Created, createTestDoc.StatusCode);
-
 
             string contosoV1 = "Contoso_v001";
             string contosoV2 = "Contoso_v002";
