@@ -42,29 +42,29 @@ namespace Microsoft.Azure.Cosmos.Tests.Patch
         public void ConstructPatchOperationTest()
         {
             PatchOperation operation = PatchOperation.Add(path, "string");
-            ValidateOperations(operation, PatchOperationType.Add, "string");
+            PatchOperationTests.ValidateOperations(operation, PatchOperationType.Add, "string");
 
             DateTime current = DateTime.UtcNow;
             operation = PatchOperation.Add(path, current);
-            ValidateOperations(operation, PatchOperationType.Add, current);
+            PatchOperationTests.ValidateOperations(operation, PatchOperationType.Add, current);
 
             dynamic complexObject = new { a = "complex", b = 12.34, c = true };
             operation = PatchOperation.Add(path, complexObject);
             PatchOperationTests.ValidateOperations(operation, PatchOperationType.Add, complexObject);
 
             operation = PatchOperation.Remove(path);
-            ValidateOperations(operation, PatchOperationType.Remove, "value not required");
+            PatchOperationTests.ValidateOperations(operation, PatchOperationType.Remove, "value not required");
 
             int[] arrayObject = { 1, 2, 3 };
             operation = PatchOperation.Replace(path, arrayObject);
-            ValidateOperations(operation, PatchOperationType.Replace, arrayObject);
+            PatchOperationTests.ValidateOperations(operation, PatchOperationType.Replace, arrayObject);
 
             Guid guid = new Guid();
             operation = PatchOperation.Set(path, guid);
-            ValidateOperations(operation, PatchOperationType.Set, guid);
+            PatchOperationTests.ValidateOperations(operation, PatchOperationType.Set, guid);
 
             operation = PatchOperation.Set<object>(path, null);
-            ValidateOperations<object>(operation, PatchOperationType.Set, null);
+            PatchOperationTests.ValidateOperations<object>(operation, PatchOperationType.Set, null);
         }
 
         private static void ValidateOperations<T>(PatchOperation patchOperation, PatchOperationType operationType, T value)
