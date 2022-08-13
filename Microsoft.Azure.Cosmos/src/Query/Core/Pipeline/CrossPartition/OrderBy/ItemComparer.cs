@@ -32,11 +32,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         public static readonly MaxValueItem MaxValue = MaxValueItem.Singleton;
 
         /// <summary>
-        /// Undefined is represented by null in the CosmosElement library.
-        /// </summary>
-        private static readonly CosmosElement Undefined = null;
-
-        /// <summary>
         /// Compares to objects and returns their partial sort relationship.
         /// </summary>
         /// <param name="element1">The first element to compare.</param>
@@ -71,16 +66,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             if (object.ReferenceEquals(element2, MaxValueItem.Singleton))
             {
                 return -1;
-            }
-
-            if (element1 == Undefined)
-            {
-                return -1;
-            }
-
-            if (element2 == Undefined)
-            {
-                return 1;
             }
 
             return element1.CompareTo(element2);
