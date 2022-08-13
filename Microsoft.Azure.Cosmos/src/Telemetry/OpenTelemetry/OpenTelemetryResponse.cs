@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 return response.Content.Length.ToString();
             }
-            return response?.Headers?.ContentLength ?? "NA";
+            return response?.Headers?.ContentLength ?? OpenTelemetryAttributes.NotAvailable;
         }
     }
 }

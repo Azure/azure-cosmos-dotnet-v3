@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             {
                 if (locationEndpoint != null)
                 {
-                    this.RegionsContacted.Add((regionName, locationEndpoint));
+                    this.TraceSummary?.AddRegionContacted(regionName, locationEndpoint);
                 }
 
                 if (responseStatistics.StoreResult != null && !((HttpStatusCode)responseStatistics.StoreResult.StatusCode).IsSuccess()
@@ -352,7 +352,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 if (request.Properties != null && 
                         request.Properties.TryGetValue(HttpRequestRegionNameProperty, out object regionName))
                 {
-                    this.RegionsContacted.Add((Convert.ToString(regionName), locationEndpoint));
+                    this.TraceSummary.AddRegionContacted(Convert.ToString(regionName), locationEndpoint);
                 }
 
                 this.shallowCopyOfHttpResponseStatistics = null;
@@ -380,7 +380,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 if (request.Properties != null &&
                         request.Properties.TryGetValue(HttpRequestRegionNameProperty, out object regionName))
                 {
-                    this.RegionsContacted.Add((Convert.ToString(regionName), locationEndpoint));
+                    this.TraceSummary.AddRegionContacted(Convert.ToString(regionName), locationEndpoint);
                 }
 
                 this.shallowCopyOfHttpResponseStatistics = null;

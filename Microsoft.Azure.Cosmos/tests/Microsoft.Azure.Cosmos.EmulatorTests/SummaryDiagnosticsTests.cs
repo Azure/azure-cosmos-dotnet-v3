@@ -52,7 +52,7 @@
 
             Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value[(200, 0)], 1);
             Assert.IsFalse(summaryDiagnostics.GatewayRequestsSummary.IsValueCreated);
-            Assert.AreEqual(summaryDiagnostics.AllRegionsContacted.Value.Count, 1);
+            Assert.AreEqual(trace.Summary.RegionsContacted.Count, 1);
         }
 
         [TestMethod]
@@ -91,11 +91,16 @@
                 FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
                 traces.Add(((CosmosTraceDiagnostics)response.Diagnostics).Value);
             }
+            HashSet<(string, Uri)> headers = new HashSet<(string, Uri)>();
+            foreach (Trace item in traces)
+            {
+                headers.UnionWith(item.Summary.RegionsContacted);
+            }
 
             SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(TraceJoiner.JoinTraces(traces));
             Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value.Keys.Count, 1);
             Assert.IsTrue(summaryDiagnostics.DirectRequestsSummary.Value[(200, 0)] > 1);
-            Assert.AreEqual(summaryDiagnostics.AllRegionsContacted.Value.Count, 1);
+            Assert.AreEqual(headers.Count, 1);
         }
 
         [TestMethod]
