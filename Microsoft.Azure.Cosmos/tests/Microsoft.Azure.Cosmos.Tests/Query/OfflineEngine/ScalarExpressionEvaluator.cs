@@ -20,8 +20,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
     {
         public static readonly ScalarExpressionEvaluator Singleton = new ScalarExpressionEvaluator();
 
-        private static readonly CosmosElement Undefined = null;
-
         private ScalarExpressionEvaluator()
         {
         }
@@ -34,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             foreach (SqlScalarExpression item in scalarExpression.Items)
             {
                 CosmosElement value = item.Accept(this, document);
-                if (value != Undefined)
+                if (value is not CosmosUndefined)
                 {
                     arrayItems.Add(value);
                 }
@@ -119,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     break;
 
                 case SqlBinaryScalarOperatorKind.Coalesce:
-                    if (left != Undefined)
+                    if (left is not CosmosUndefined)
                     {
                         result = left;
                     }
@@ -190,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             CosmosElement left = scalarExpression.Left.Accept(this, document);
             CosmosElement right = scalarExpression.Right.Accept(this, document);
 
-            return left != Undefined ? left : right;
+            return left is not CosmosUndefined ? left : right;
         }
 
         public override CosmosElement Visit(SqlConditionalScalarExpression scalarExpression, CosmosElement document)
@@ -238,9 +236,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         public override CosmosElement Visit(SqlInScalarExpression scalarExpression, CosmosElement document)
         {
             CosmosElement expression = scalarExpression.Needle.Accept(this, document);
-            if (expression == Undefined)
+            if (expression is CosmosUndefined)
             {
-                return Undefined;
+                return expression;
             }
 
             HashSet<CosmosElement> items = new HashSet<CosmosElement>();
@@ -284,7 +282,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             {
                 string key = sqlObjectProperty.Name.Value;
                 CosmosElement value = sqlObjectProperty.Value.Accept(this, document);
-                if (value != Undefined)
+                if (value is not CosmosUndefined)
                 {
                     properties[key] = value;
                 }
@@ -337,7 +335,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             else
             {
                 // cardinality = 0
-                result = Undefined;
+                result = CosmosUndefined.Create();
             }
 
             return result;
@@ -380,12 +378,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         {
             if (!(left is CosmosNumber leftAsNumber))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (!(right is CosmosNumber rightAsNumber))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             double result = operation(Number64.ToDouble(leftAsNumber.Value), Number64.ToDouble(rightAsNumber.Value));
@@ -410,12 +408,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
             if (!leftIsBoolean)
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (!rightIsBoolean)
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             bool result = (left as CosmosBoolean).Value && (right as CosmosBoolean).Value;
@@ -440,12 +438,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
             if (!leftIsBoolean)
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (!rightIsBoolean)
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             bool result = (left as CosmosBoolean).Value || (right as CosmosBoolean).Value;
@@ -459,12 +457,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         {
             if (!(left is CosmosString leftAsString))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (!(right is CosmosString rightAsString))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             string result = operation(leftAsString.Value, rightAsString.Value);
@@ -478,7 +476,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         {
             if (!Utils.TryCompare(left, right, out int comparison))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             bool result = inequalityFunction(comparison);
@@ -490,9 +488,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             CosmosElement left,
             CosmosElement right)
         {
-            if ((left == Undefined) || (right == Undefined))
+            if ((left is CosmosUndefined) || (right is CosmosUndefined))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             return CosmosBoolean.Create(equalityFunction(left == right));
@@ -504,7 +502,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         {
             if (!(operand is CosmosNumber operandAsNumber))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             double result = unaryOperation(Number64.ToDouble(operandAsNumber.Value));
@@ -517,7 +515,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         {
             if (!(operand is CosmosBoolean operandAsBoolean))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             bool result = unaryOperation(operandAsBoolean.Value);
@@ -578,9 +576,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
         private static CosmosElement IndexIntoMember(CosmosElement member, CosmosElement indexer)
         {
-            if ((member == Undefined) || (indexer == Undefined))
+            if ((member is CosmosUndefined) || (indexer is CosmosUndefined))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             return member.Accept(MemberIndexerVisitor.Singleton, indexer);
@@ -594,7 +592,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
             public override CosmosElement Visit(SqlStringLiteral literal) => CosmosString.Create(literal.Value);
 
-            public override CosmosElement Visit(SqlUndefinedLiteral literal) => null;
+            public override CosmosElement Visit(SqlUndefinedLiteral literal) => CosmosUndefined.Create();
 
             public override CosmosElement Visit(SqlNullLiteral literal) => CosmosNull.Create();
 
@@ -613,7 +611,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             {
                 if (!(indexer is CosmosNumber indexerAsNumber))
                 {
-                    return Undefined;
+                    return CosmosUndefined.Create();
                 }
 
                 if (!indexerAsNumber.Value.IsInteger)
@@ -629,7 +627,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
                 if (numberIndexValue >= cosmosArray.Count)
                 {
-                    return Undefined;
+                    return CosmosUndefined.Create();
                 }
 
                 return cosmosArray[(int)numberIndexValue];
@@ -639,29 +637,31 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             {
                 if (!(indexer is CosmosString indexerAsString))
                 {
-                    return Undefined;
+                    return CosmosUndefined.Create();
                 }
 
                 string stringIndexValue = indexerAsString.Value;
                 if (!cosmosObject.TryGetValue(stringIndexValue, out CosmosElement propertyValue))
                 {
-                    return Undefined;
+                    return CosmosUndefined.Create();
                 }
 
                 return propertyValue;
             }
 
-            public CosmosElement Visit(CosmosBinary cosmosBinary, CosmosElement indexer) => Undefined;
+            public CosmosElement Visit(CosmosBinary cosmosBinary, CosmosElement indexer) => CosmosUndefined.Create();
 
-            public CosmosElement Visit(CosmosBoolean cosmosBoolean, CosmosElement indexer) => Undefined;
+            public CosmosElement Visit(CosmosBoolean cosmosBoolean, CosmosElement indexer) => CosmosUndefined.Create();
 
-            public CosmosElement Visit(CosmosGuid cosmosGuid, CosmosElement indexer) => Undefined;
+            public CosmosElement Visit(CosmosGuid cosmosGuid, CosmosElement indexer) => CosmosUndefined.Create();
 
-            public CosmosElement Visit(CosmosNull cosmosNull, CosmosElement indexer) => Undefined;
+            public CosmosElement Visit(CosmosNull cosmosNull, CosmosElement indexer) => CosmosUndefined.Create();
 
-            public CosmosElement Visit(CosmosNumber cosmosNumber, CosmosElement indexer) => Undefined;
+            public CosmosElement Visit(CosmosNumber cosmosNumber, CosmosElement indexer) => CosmosUndefined.Create();
 
-            public CosmosElement Visit(CosmosString cosmosString, CosmosElement indexer) => Undefined;
+            public CosmosElement Visit(CosmosString cosmosString, CosmosElement indexer) => CosmosUndefined.Create();
+
+            public CosmosElement Visit(CosmosUndefined cosmosUndefined, CosmosElement input) => CosmosUndefined.Create();
         }
     }
 }

@@ -26,5 +26,7 @@
         public JsonType Visit(CosmosObject cosmosObject) => JsonType.Object;
 
         public JsonType Visit(CosmosString cosmosString) => JsonType.String;
+
+        public JsonType Visit(CosmosUndefined cosmosUndefined) => JsonType.Undefined;
     }
 }
