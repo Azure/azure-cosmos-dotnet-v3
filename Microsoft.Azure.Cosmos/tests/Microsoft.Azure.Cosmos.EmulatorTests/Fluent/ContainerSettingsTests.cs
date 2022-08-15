@@ -622,9 +622,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
                 .WithClientEncryptionPolicy(policyFormatVersion:2)
-                    .WithIncludedPath(path1)
-                    .WithIncludedPath(path2)
-                    .Attach()
+                .WithIncludedPath(path1)
+                .WithIncludedPath(path2)
+                .Attach()
                 .CreateAsync();
 
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
@@ -663,9 +663,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             
             containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
                 .WithClientEncryptionPolicy()
-                    .WithIncludedPath(path1)
-                    .WithIncludedPath(path2)
-                    .Attach()
+                .WithIncludedPath(path1)
+                .WithIncludedPath(path2)
+                .Attach()
                 .CreateAsync();
 
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
@@ -715,8 +715,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
                     .WithClientEncryptionPolicy()
-                        .WithIncludedPath(path1)
-                        .Attach()
+                    .WithIncludedPath(path1)
+                    .Attach()
                     .CreateAsync();
 
                 Assert.Fail("CreateCollection with invalid ClientEncryptionPolicy should have failed.");
@@ -733,8 +733,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
                     .WithClientEncryptionPolicy()
-                        .WithIncludedPath(path1)
-                        .Attach()
+                    .WithIncludedPath(path1)
+                    .Attach()
                     .CreateAsync();
 
                 Assert.Fail("CreateCollection with invalid ClientEncryptionPolicy should have failed.");
@@ -751,8 +751,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
                     .WithClientEncryptionPolicy()
-                        .WithIncludedPath(path1)
-                        .Attach()
+                    .WithIncludedPath(path1)
+                    .Attach()
                     .CreateAsync();
 
                 Assert.Fail("CreateCollection with invalid ClientEncryptionPolicy should have failed.");
@@ -769,8 +769,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
                     .WithClientEncryptionPolicy()
-                        .WithIncludedPath(path1)
-                        .Attach()
+                    .WithIncludedPath(path1)
+                    .Attach()
                     .CreateAsync();
 
                 Assert.Fail("CreateCollection with invalid ClientEncryptionPolicy should have failed.");
@@ -787,8 +787,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
                     .WithClientEncryptionPolicy()
-                        .WithIncludedPath(path1)
-                        .Attach()
+                    .WithIncludedPath(path1)
+                    .Attach()
                     .CreateAsync();
 
                 Assert.Fail("CreateCollection with invalid ClientEncryptionPolicy should have failed.");
@@ -804,8 +804,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
                     .WithClientEncryptionPolicy()
-                        .WithIncludedPath(path1)
-                        .Attach()
+                    .WithIncludedPath(path1)
+                    .Attach()
                     .CreateAsync();
 
                 Assert.Fail("CreateCollection with invalid ClientEncryptionPolicy should have failed.");
@@ -821,9 +821,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
-                    .WithClientEncryptionPolicy(2)
-                        .WithIncludedPath(path1)
-                        .Attach()
+                    .WithClientEncryptionPolicy(policyFormatVersion:2)
+                    .WithIncludedPath(path1)
+                    .Attach()
                     .CreateAsync();
 
                 Assert.Fail("CreateCollection with invalid ClientEncryptionPolicy should have failed.");
@@ -838,9 +838,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
-                    .WithClientEncryptionPolicy(2)
-                        .WithIncludedPath(path1)
-                        .Attach()
+                    .WithClientEncryptionPolicy(policyFormatVersion:2)
+                    .WithIncludedPath(path1)
+                    .Attach()
                     .CreateAsync();
 
                 Assert.Fail("CreateCollection with invalid ClientEncryptionPolicy should have failed.");
