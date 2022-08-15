@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
                 finally
                 {
-                    processMessageAsyncTrace.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum);
+                    processMessageAsyncTrace.Summary.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum);
                 }
                
                 ResponseMessage responseMessage = response.ToCosmosResponseMessage(
