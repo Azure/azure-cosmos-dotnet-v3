@@ -39,7 +39,7 @@ FROM root]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE root["StringField"] 
+SELECT VALUE ToString(root["StringField"]) 
 FROM root]]></SqlQuery>
     </Output>
   </Result>

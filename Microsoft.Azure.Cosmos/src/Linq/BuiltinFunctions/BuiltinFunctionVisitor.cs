@@ -65,8 +65,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return MathBuiltinFunctions.Visit(methodCallExpression, context);
             }
 
-            // String functions
-            if (declaringType == typeof(string))
+            // String functions or ToString with Objects (String and Guid only)
+            if ((declaringType == typeof(string)) ||
+                (methodCallExpression.Method.Name == "ToString" &&
+                 methodCallExpression.Arguments.Count == 0 &&
+                 methodCallExpression.Object != null))
             {
                 return StringBuiltinFunctions.Visit(methodCallExpression, context);
             }
@@ -81,14 +84,6 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (typeof(Geometry).IsAssignableFrom(declaringType))
             {
                 return SpatialBuiltinFunctions.Visit(methodCallExpression, context);
-            }
-
-            // ToString with Objects (String and Guid only)
-            if (methodCallExpression.Method.Name == "ToString" &&
-                methodCallExpression.Arguments.Count == 0 &&
-                methodCallExpression.Object != null)
-            {
-                return ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Object, context);
             }
 
             throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, methodCallExpression.Method.Name));

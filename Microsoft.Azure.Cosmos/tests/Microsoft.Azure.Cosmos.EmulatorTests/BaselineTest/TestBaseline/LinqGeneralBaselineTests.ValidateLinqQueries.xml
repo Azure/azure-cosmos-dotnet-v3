@@ -284,7 +284,7 @@ WHERE (root["id"] = "098aa945-7ed8-4c50-b7b8-bd99eddb54bc")]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["id"] = "098aa945-7ed8-4c50-b7b8-bd99eddb54bc")]]></SqlQuery>
+WHERE (ToString(root["id"]) = "098aa945-7ed8-4c50-b7b8-bd99eddb54bc")]]></SqlQuery>
     </Output>
   </Result>
   <Result>

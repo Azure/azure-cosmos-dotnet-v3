@@ -757,6 +757,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("String constant StartsWith (case-insensitive)", b => getQuery(b).Select(doc => "sTr".StartsWith(doc.StringField, StringComparison.OrdinalIgnoreCase))),
                 // Substring
                 new LinqTestInput("Substring", b => getQuery(b).Select(doc => doc.StringField.Substring(0, 1))),
+                // ToString
+                new LinqTestInput("Substring", b => getQuery(b).Select(doc => doc.StringField.ToString())),
                 // ToUpper
                 new LinqTestInput("ToUpper", b => getQuery(b).Select(doc => doc.StringField.ToUpper()))
             };
