@@ -180,11 +180,12 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
 
             inputs.Add(new SqlObjectVisitorInput(
                 nameof(SqlObjectCreateScalarExpression) + " Empty",
-                SqlObjectCreateScalarExpression.Create()));
+                SqlObjectCreateScalarExpression.Create(null)));
 
             inputs.Add(new SqlObjectVisitorInput(
                 nameof(SqlObjectCreateScalarExpression) + " OneProperty",
                 SqlObjectCreateScalarExpression.Create(
+                    null,
                     SqlObjectProperty.Create(
                         SqlPropertyName.Create("Hello"),
                         SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("World"))))));
@@ -192,6 +193,7 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
             inputs.Add(new SqlObjectVisitorInput(
                 nameof(SqlObjectCreateScalarExpression) + " MultiProperty",
                 SqlObjectCreateScalarExpression.Create(
+                    null,
                     SqlObjectProperty.Create(
                         SqlPropertyName.Create("Hello"),
                         SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("World"))),

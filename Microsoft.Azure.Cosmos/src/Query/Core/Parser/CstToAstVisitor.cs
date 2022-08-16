@@ -690,7 +690,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 }
             }
 
-            return SqlObjectCreateScalarExpression.Create(properties.ToImmutableArray());
+            return SqlObjectCreateScalarExpression.Create(null, properties.ToImmutableArray());
         }
 
         public override SqlObject VisitObject_property([NotNull] sqlParser.Object_propertyContext context)

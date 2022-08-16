@@ -20,6 +20,9 @@ namespace Microsoft.Azure.Cosmos
         public CosmosLinqSerializerOptions()
         {
             this.PropertyNamingPolicy = CosmosPropertyNamingPolicy.Default;
+            this.CustomerCosmosSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
+                    cosmosSerializer: null,
+                    propertiesSerializer: new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer()));
         }
 
         /// <summary>
@@ -30,5 +33,15 @@ namespace Microsoft.Azure.Cosmos
         /// The default value is CosmosPropertyNamingPolicy.Default
         /// </remarks>
         public CosmosPropertyNamingPolicy PropertyNamingPolicy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the user defined customer serializer. If no customer serializer was defined, 
+        /// then the value is set to the default value
+        /// </summary>
+        /// <remarks>
+        /// The default value of CustomerCosmosSerializer.cosmosSerializer is null
+        /// The default value of CustomerCosmosSerializer.propertiesSerializer is CosmosJsonDotNetSerializer
+        /// </remarks>
+        public CosmosSerializer CustomerCosmosSerializer { get; set; }
     }
 }

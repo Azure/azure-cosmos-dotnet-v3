@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
 
             SqlArrayCreateScalarExpression arrayCreateScalarExpresion1 = SqlArrayCreateScalarExpression.Create();
             SqlArrayCreateScalarExpression arrayCreateScalarExpresion2 = SqlArrayCreateScalarExpression.Create(five);
-            SqlObjectCreateScalarExpression objectCreateScalarExpression = SqlObjectCreateScalarExpression.Create();
+            SqlObjectCreateScalarExpression objectCreateScalarExpression = SqlObjectCreateScalarExpression.Create(null);
 
             SqlBinaryScalarExpression fivePlusThree = SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Add, five, three);
             AssertEvaluation(CosmosNumber64.Create(3 + 5), fivePlusThree);
@@ -471,6 +471,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
             });
 
             SqlObjectCreateScalarExpression john = SqlObjectCreateScalarExpression.Create(
+                null,
                 SqlObjectProperty.Create(SqlPropertyName.Create("name"),
                 SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("John"))));
             AssertEvaluation(expected, john);

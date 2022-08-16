@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 properties.Add(property.Accept(this) as SqlObjectProperty);
             }
 
-            return SqlObjectCreateScalarExpression.Create(properties.ToImmutableArray());
+            return SqlObjectCreateScalarExpression.Create(null, properties.ToImmutableArray());
         }
 
         public override SqlObject Visit(SqlObjectProperty sqlObjectProperty)

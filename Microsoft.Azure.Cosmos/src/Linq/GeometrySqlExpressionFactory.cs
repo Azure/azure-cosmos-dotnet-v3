@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                                     FromJToken(p.Value)))
                             .ToArray();
 
-                    return SqlObjectCreateScalarExpression.Create(properties);
+                    return SqlObjectCreateScalarExpression.Create(null, properties);
 
                 case JTokenType.Float:
                 case JTokenType.Integer:

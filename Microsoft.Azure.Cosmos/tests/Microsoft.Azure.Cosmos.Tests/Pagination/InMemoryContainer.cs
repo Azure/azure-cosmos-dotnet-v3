@@ -1501,7 +1501,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     properties.Add(property);
                 }
 
-                return SqlObjectCreateScalarExpression.Create(properties.ToImmutableArray());
+                return SqlObjectCreateScalarExpression.Create(null, properties.ToImmutableArray());
             }
 
             public SqlScalarExpression Visit(CosmosString cosmosString)

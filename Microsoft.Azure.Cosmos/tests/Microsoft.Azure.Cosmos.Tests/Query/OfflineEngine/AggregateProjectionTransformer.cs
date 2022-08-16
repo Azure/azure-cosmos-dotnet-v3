@@ -312,7 +312,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                         properties.Add(SqlObjectProperty.Create(property.Name, property.Value.Accept(this)));
                     }
 
-                    return SqlObjectCreateScalarExpression.Create(properties.ToImmutableArray());
+                    return SqlObjectCreateScalarExpression.Create(null, properties.ToImmutableArray());
                 }
 
                 public override SqlScalarExpression Visit(SqlParameterRefScalarExpression scalarExpression)
@@ -402,7 +402,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     properties.Add(property);
                 }
 
-                return SqlObjectCreateScalarExpression.Create(properties.ToImmutableArray());
+                return SqlObjectCreateScalarExpression.Create(null, properties.ToImmutableArray());
             }
 
             public SqlScalarExpression Visit(CosmosString cosmosString)
