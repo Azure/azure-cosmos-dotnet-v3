@@ -26,6 +26,5 @@ namespace Microsoft.Azure.Cosmos
         public override PatchOperationType OperationType { get; }
 
         public override string Path { get; }
-        public override string From { get; }
     }
 }

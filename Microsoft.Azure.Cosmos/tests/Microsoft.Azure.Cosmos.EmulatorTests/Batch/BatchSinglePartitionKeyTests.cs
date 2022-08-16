@@ -694,7 +694,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<PatchOperation> patchOperations = new List<PatchOperation>()
             {
                 PatchOperation.Add("/date", patchDate),
-                PatchOperation.Move("/TodayDate", "/date")
+                PatchOperation.Move("/date", "/TodayDate")
             };
 
             BatchCore batch = (BatchCore)new BatchCore((ContainerInlineCore)customSerializationContainer, BatchTestBase.GetPartitionKey(this.PartitionKey1))

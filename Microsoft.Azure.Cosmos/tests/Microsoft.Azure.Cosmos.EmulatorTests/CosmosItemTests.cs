@@ -2004,8 +2004,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             
             patchOperations.Clear();
             patchOperations.Add(PatchOperation.Add("/children/1/description","Child#1"));
-            patchOperations.Add(PatchOperation.Move("/description", "/children/0/description"));
-            patchOperations.Add(PatchOperation.Move("/children/0/description", "/children/1/description"));
+            patchOperations.Add(PatchOperation.Move("/children/0/description", "/description"));
+            patchOperations.Add(PatchOperation.Move("/children/1/description", "/children/0/description"));
             // with content response
             response = await containerInternal.PatchItemAsync<ToDoActivity>(
                 id: testItem.id,
