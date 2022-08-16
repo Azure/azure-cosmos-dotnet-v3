@@ -122,8 +122,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.DekProvider.DekCache.SetRawDek(id, inMemoryRawDek);
             }
 
-            ItemResponse<DataEncryptionKeyProperties> response = new EncryptionItemResponse<DataEncryptionKeyProperties>(dekResponse, dekProperties);
-            return response;
+            return new EncryptionItemResponse<DataEncryptionKeyProperties>(dekResponse, dekProperties);
         }
 
         /// <inheritdoc/>
