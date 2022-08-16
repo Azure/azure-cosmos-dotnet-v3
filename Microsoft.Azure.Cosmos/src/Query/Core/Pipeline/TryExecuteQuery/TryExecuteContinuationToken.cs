@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
@@ -20,10 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
     /// </summary>
     internal sealed class TryExecuteContinuationToken : IPartitionedToken
     {
-        public TryExecuteContinuationToken(CosmosElement token, Range<string> range)
-            : this(new ParallelContinuationToken((token as CosmosString)?.Value, range))
-        {
-        }
+        private static readonly string tryExecute = "tryExecute";
 
         public TryExecuteContinuationToken(ParallelContinuationToken token)
         {
@@ -40,13 +38,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
             return CosmosObject.Create(
                             new Dictionary<string, CosmosElement>()
                             {
-                                ["tryExecute"] = inner
+                                [tryExecute] = inner
                             });
         }
 
         public static TryCatch<TryExecuteContinuationToken> TryCreateFromCosmosElement(CosmosElement cosmosElement)
         {
-            TryCatch<ParallelContinuationToken> inner = ParallelContinuationToken.TryCreateFromCosmosElement(cosmosElement);
+            CosmosObject cosmosObjectContinuationToken = (CosmosObject)cosmosElement;
+            TryCatch<ParallelContinuationToken> inner = ParallelContinuationToken.TryCreateFromCosmosElement(cosmosObjectContinuationToken[tryExecute]);
 
             return inner.Succeeded ?
                 TryCatch<TryExecuteContinuationToken>.FromResult(new TryExecuteContinuationToken(inner.Result)) :

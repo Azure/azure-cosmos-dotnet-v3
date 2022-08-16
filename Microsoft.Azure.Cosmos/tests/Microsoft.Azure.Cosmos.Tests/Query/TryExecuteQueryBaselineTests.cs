@@ -60,12 +60,12 @@
         {
             Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
 
-            TryExecuteContinuationToken token = new TryExecuteContinuationToken(
-                token: CosmosString.Create("asdf"),
+            ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
+                token: "asdf",
                 range: new Documents.Routing.Range<string>("A", "B", true, false));
-
+ 
+            TryExecuteContinuationToken token = new TryExecuteContinuationToken(parallelContinuationToken);
             CosmosElement cosmosElementContinuationToken = TryExecuteContinuationToken.ToCosmosElement(token);
-            CosmosObject cosmosObjectContinuationToken = (CosmosObject)cosmosElementContinuationToken;
 
             TryCatch<IQueryPipelineStage> monadicCreate = TryExecuteQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
@@ -74,7 +74,7 @@
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
                 cancellationToken: default,
-                continuationToken: cosmosObjectContinuationToken["tryExecute"]);
+                continuationToken: cosmosElementContinuationToken);
             Assert.IsTrue(monadicCreate.Succeeded);
         }
 
@@ -329,7 +329,7 @@
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
                 MaxBufferedItemCount = 7000,
-                TestSettings = new TestInjections(simulate429s: true, simulateEmptyPages: false)
+                TestSettings = new TestInjections(simulate429s: true, simulateEmptyPages: false, enableTryExecute: true)
             };
 
             CosmosSerializerCore serializerCore = new();

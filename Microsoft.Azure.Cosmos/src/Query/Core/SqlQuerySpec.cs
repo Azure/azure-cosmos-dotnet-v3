@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// Gets or sets the boolean value that indicates whether the query should be executed as try-execute..
         /// </summary>
         /// <value>A boolean value that indicates whether the query should be executed as try-execute.</value>
-        [DataMember(Name = "tryExecute")]        
+        [DataMember(Name = "tryExecute")]
         public bool TryExecute
         {
             get

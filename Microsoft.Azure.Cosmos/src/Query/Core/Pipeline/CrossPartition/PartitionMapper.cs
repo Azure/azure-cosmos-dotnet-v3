@@ -47,9 +47,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
                 targetFeedRange);
         }
 
-        public static TryCatch<PartitionMapping<PartitionedToken>> MonadicGetPartitionMappingSingleRange<PartitionedToken>(
+        public static TryCatch<PartitionMapping<PartitionedToken>> MonadicGetPartitionMapping<PartitionedToken>(
             FeedRangeEpk feedRange,
-            List<PartitionedToken> tokens)
+            PartitionedToken token)
             where PartitionedToken : IPartitionedToken
         {
             if (feedRange == null)
@@ -57,25 +57,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
                 throw new ArgumentNullException(nameof(feedRange));
             }
 
-            if (tokens == null)
+            if (token == null)
             {
-                throw new ArgumentNullException(nameof(tokens));
+                throw new ArgumentNullException(nameof(token));
             }
 
-            if (tokens.Count < 1)
+            List<FeedRangeEpk> feedRanges = new List<FeedRangeEpk>
             {
-                throw new ArgumentException(nameof(feedRange));
-            }
-
-            List<(FeedRangeEpk, PartitionedToken)> splitRangesAndTokens = new List<(FeedRangeEpk, PartitionedToken)>
-            {
-                (feedRange, tokens[0])
+                feedRange
             };
 
-            return MonadicConstructPartitionMapping(
-                splitRangesAndTokens,
-                tokens,
-                feedRange);
+            IReadOnlyList<FeedRangeEpk> readOnlyFeedRanges = feedRanges;
+
+            List<PartitionedToken> tokens = new List<PartitionedToken>
+            {
+                token
+            };
+
+            IReadOnlyList<PartitionedToken> readOnlyTokens = tokens;
+
+            return MonadicGetPartitionMapping(readOnlyFeedRanges, readOnlyTokens);
         } 
 
         /// <summary>

@@ -574,11 +574,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     Properties = queryRequestOptions.Properties,
                     IsEffectivePartitionKeyRouting = queryRequestOptions.IsEffectivePartitionKeyRouting,
                     CosmosElementContinuationToken = queryRequestOptions.CosmosElementContinuationToken,
+                    TestSettings = queryRequestOptions.TestSettings,
                 };
 
                 computeRequestOptions.ExecutionEnvironment = ExecutionEnvironment.Compute;
                 computeRequestOptions.CosmosElementContinuationToken = continuationToken;
-                computeRequestOptions.TestSettings = queryRequestOptions.TestSettings;
 
                 using (FeedIteratorInternal<T> itemQuery = (FeedIteratorInternal<T>)container.GetItemQueryIterator<T>(
                    queryText: query,
