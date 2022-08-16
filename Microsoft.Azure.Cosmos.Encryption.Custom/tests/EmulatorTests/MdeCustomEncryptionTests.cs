@@ -994,7 +994,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
-        [Obsolete]
         public async Task VerifyDekOperationWithSystemTextSerializer()
         {
             System.Text.Json.JsonSerializerOptions jsonSerializerOptions = new System.Text.Json.JsonSerializerOptions()
@@ -2102,21 +2101,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 return TestCommon.ToStream(this);
             }
-        }
-
-        public class TestDocSystemText
-        {
-            [System.Text.Json.Serialization.JsonPropertyName("id")]
-            public string Id { get; set; }
-
-            [System.Text.Json.Serialization.JsonPropertyName("PK")]
-            public string PartitionKey { get; set; }
-
-            [System.Text.Json.Serialization.JsonPropertyName("activityId")]
-            public string ActivityId { get; set; }
-
-            [System.Text.Json.Serialization.JsonPropertyName("status")]
-            public string Status { get; set; }
         }
 
         private class TestEncryptionKeyStoreProvider : EncryptionKeyStoreProvider
