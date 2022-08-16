@@ -936,7 +936,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNull(telemetryInfo.AcceleratedNetworking);
                 Assert.IsNotNull(telemetryInfo.ClientId);
                 Assert.IsNotNull(telemetryInfo.ProcessId);
-                Assert.AreEqual(CosmosUtils.ComputeHash(System.Diagnostics.Process.GetCurrentProcess().ProcessName), telemetryInfo.ProcessId);
+                Assert.AreEqual(HashingExtension.ComputeHash(System.Diagnostics.Process.GetCurrentProcess().ProcessName), telemetryInfo.ProcessId);
                 Assert.IsNotNull(telemetryInfo.UserAgent);
                 Assert.IsNotNull(telemetryInfo.ConnectionMode);
 
@@ -950,11 +950,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (isAzureInstance.Value)
                 {
-                    Assert.AreEqual($"{VmMetadataApiHandler.HashedVmIdPrefix}{CosmosUtils.ComputeHash("d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd")}", machineId.First(), $"Generated Machine id is : {machineId.First()}");
+                    Assert.AreEqual($"{VmMetadataApiHandler.HashedVmIdPrefix}{HashingExtension.ComputeHash("d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd")}", machineId.First(), $"Generated Machine id is : {machineId.First()}");
                 }
                 else
                 {
-                    Assert.AreNotEqual($"{VmMetadataApiHandler.HashedVmIdPrefix}{CosmosUtils.ComputeHash("d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd")}", machineId.First(), $"Generated Machine id is : {machineId.First()}");
+                    Assert.AreNotEqual($"{VmMetadataApiHandler.HashedVmIdPrefix}{HashingExtension.ComputeHash("d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd")}", machineId.First(), $"Generated Machine id is : {machineId.First()}");
                     Assert.AreEqual(1, machineId.Count, $"Multiple Machine Id has been generated i.e {JsonConvert.SerializeObject(machineId)}");
                 }
             }
