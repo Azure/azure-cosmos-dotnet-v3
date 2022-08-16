@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Util
     using System.Security.Cryptography;
     using System.Text;
 
-    internal class CosmosUtils
+    internal class HashingExtension
     {
         /// <summary>
         /// Hash a passed Value

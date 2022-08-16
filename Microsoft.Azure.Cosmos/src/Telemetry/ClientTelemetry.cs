@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             this.clientTelemetryInfo = new ClientTelemetryProperties(
                 clientId: clientId, 
-                processId: CosmosUtils.ComputeHash(System.Diagnostics.Process.GetCurrentProcess().ProcessName), 
+                processId: HashingExtension.ComputeHash(System.Diagnostics.Process.GetCurrentProcess().ProcessName), 
                 userAgent: userAgent, 
                 connectionMode: connectionMode,
                 preferredRegions: preferredRegions,
