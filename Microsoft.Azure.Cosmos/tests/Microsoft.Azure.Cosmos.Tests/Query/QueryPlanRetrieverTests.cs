@@ -41,7 +41,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 It.IsAny<Cosmos.GeospatialType>(),
                 It.IsAny<CancellationToken>())).ReturnsAsync(TryCatch<PartitionedQueryExecutionInfo>.FromException(innerException));
 
-            Mock<ITrace> trace = new Mock<ITrace>();
             CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
                 queryClient.Object,
                 new SqlQuerySpec("selectttttt * from c"),
@@ -50,8 +49,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 hasLogicalPartitionKey: false,
                 geospatialType: Cosmos.GeospatialType.Geography,
                 useSystemPrefix: false,
-                trace.Object,
-                default));
+                NoOpTrace.Singleton));
 
             Assert.AreEqual(HttpStatusCode.BadRequest, cosmosException.StatusCode);
             Assert.AreEqual(innerException, cosmosException.InnerException);
@@ -91,6 +89,39 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 default));
 
             Assert.AreEqual(expectedException, cosmosException);
+        }
+
+        [TestMethod]
+        public async Task ServiceInterop_E_UNEXPECTED()
+        {
+            UnexpectedQueryPartitionProviderException innerException = new UnexpectedQueryPartitionProviderException("E_UNEXPECTED");
+            Mock<CosmosQueryClient> queryClient = new Mock<CosmosQueryClient>();
+
+            queryClient.Setup(c => c.TryGetPartitionedQueryExecutionInfoAsync(
+                It.IsAny<SqlQuerySpec>(),
+                It.IsAny<ResourceType>(),
+                It.IsAny<Documents.PartitionKeyDefinition>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>())).ReturnsAsync(TryCatch<PartitionedQueryExecutionInfo>.FromException(innerException));
+
+            CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
+                queryClient.Object,
+                new SqlQuerySpec("Super secret query that triggers bug"),
+                ResourceType.Document,
+                new Documents.PartitionKeyDefinition() { Paths = new Collection<string>() { "/id" } },
+                hasLogicalPartitionKey: false,
+                useSystemPrefix: false,
+                NoOpTrace.Singleton));
+
+            Assert.AreEqual(HttpStatusCode.InternalServerError, cosmosException.StatusCode);
+            Assert.AreEqual(innerException, cosmosException.InnerException);
+            Assert.IsNotNull(cosmosException.Trace);
+            Assert.IsNotNull(cosmosException.Diagnostics);
         }
     }
 }
