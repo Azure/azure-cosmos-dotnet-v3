@@ -288,11 +288,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 throw new ArgumentNullException(nameof(changeFeedPaginationOptions));
             }
 
-            MemoryStream memoryStream = null;
-            if (changeFeedPaginationOptions.changeFeedQuerySpec != null && changeFeedPaginationOptions.changeFeedQuerySpec.ShouldSerializeQueryText())
+            Stream streamPayload = null;
+            if (changeFeedPaginationOptions.ChangeFeedQuerySpec != null && changeFeedPaginationOptions.ChangeFeedQuerySpec.ShouldSerializeQueryText())
             {
-                string queryText = Newtonsoft.Json.JsonConvert.SerializeObject(changeFeedPaginationOptions.changeFeedQuerySpec);
-                memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(queryText));
+                streamPayload = this.container.ClientContext.SerializerCore.ToStream<ChangeFeed.ChangeFeedQuerySpec>(changeFeedPaginationOptions.ChangeFeedQuerySpec);
             }
 
             ResponseMessage responseMessage = await this.container.ClientContext.ProcessResourceOperationStreamAsync(
@@ -323,7 +322,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     }
                 },
                 feedRange: feedRangeState.FeedRange,
-                streamPayload: memoryStream ?? default,
+                streamPayload: streamPayload ?? default,
                 trace: trace,
                 cancellationToken: cancellationToken);
 

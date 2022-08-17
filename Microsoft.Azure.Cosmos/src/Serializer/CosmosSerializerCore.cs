@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.IO;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Scripts;
@@ -144,7 +145,8 @@ namespace Microsoft.Azure.Cosmos
                 inputType == typeof(ThroughputProperties) ||
                 inputType == typeof(OfferV2) ||
                 inputType == typeof(ClientEncryptionKeyProperties) ||
-                inputType == typeof(PartitionedQueryExecutionInfo))
+                inputType == typeof(PartitionedQueryExecutionInfo) ||
+                inputType == typeof(ChangeFeedQuerySpec))
             {
                 return CosmosSerializerCore.propertiesSerializer;
             }

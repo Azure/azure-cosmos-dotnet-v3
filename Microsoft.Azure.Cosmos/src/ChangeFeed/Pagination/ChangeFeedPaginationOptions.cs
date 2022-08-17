@@ -36,12 +36,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             : base(pageSizeHint, jsonSerializationFormat, additionalHeaders)
         {
             this.Mode = mode ?? throw new ArgumentNullException(nameof(mode));
-            this.changeFeedQuerySpec = changeFeedQuerySpec ?? new ChangeFeedQuerySpec();
+            this.ChangeFeedQuerySpec = changeFeedQuerySpec ?? new ChangeFeedQuerySpec();
         }
 
         public ChangeFeedMode Mode { get; }
 
-        public ChangeFeedQuerySpec changeFeedQuerySpec { get; }
+        public ChangeFeedQuerySpec ChangeFeedQuerySpec { get; }
 
         protected override ImmutableHashSet<string> BannedAdditionalHeaders => BannedHeaders;
     }
