@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Util;
 
     internal static class ClientTelemetryOptions
     {
