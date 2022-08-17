@@ -72,14 +72,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
             }
             else
             {
-                TryExecuteContinuationToken tryExecuteContinuationToken;
                 QueryState backendQueryState = backendQueryPage.State;
-
                 ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
                     token: (backendQueryState?.Value as CosmosString)?.Value,
                     range: ((FeedRangeEpk)this.queryPartitionRangePageAsyncEnumerator.FeedRangeState.FeedRange).Range);
 
-                tryExecuteContinuationToken = new TryExecuteContinuationToken(parallelContinuationToken);
+                TryExecuteContinuationToken tryExecuteContinuationToken = new TryExecuteContinuationToken(parallelContinuationToken);
                 CosmosElement cosmosElementContinuationToken = TryExecuteContinuationToken.ToCosmosElement(tryExecuteContinuationToken);
                 queryState = new QueryState(cosmosElementContinuationToken);
             }
@@ -157,11 +155,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
                 return TryCatch<FeedRangeState<QueryState>>.FromException(tryCreateContinuationToken.Exception);
             }
 
-            TryExecuteContinuationToken tryExecuteContinuationToken = tryCreateContinuationToken.Result;
-
             TryCatch<PartitionMapping<TryExecuteContinuationToken>> partitionMappingMonad = PartitionMapper.MonadicGetPartitionMapping(
                 range,
-                tryExecuteContinuationToken);
+                tryCreateContinuationToken.Result);
 
             if (partitionMappingMonad.Failed)
             {

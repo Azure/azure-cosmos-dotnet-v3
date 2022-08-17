@@ -80,7 +80,7 @@
 
             TryExecuteQueryTests tryExecuteQueryTests = new TryExecuteQueryTests();
 
-            // feedOptions provide a partitionKey which ensure the TryExecute pipeline is utilized
+            // feedOptions provide a partitionKey which ensures the TryExecute pipeline is utilized
             QueryRequestOptions feedOptions = new QueryRequestOptions
             {
                 MaxItemCount = -1,
@@ -126,7 +126,7 @@
                     Assert.AreEqual(TestInjections.PipelineType.TryExecute, feedOptions.TestSettings.Stats.PipelineType.Value);
                 }
             }
-
+            // test if pipeline is called if TestInjection.EnableTryExecute is false
             feedOptions = new QueryRequestOptions
             {
                 MaxItemCount = -1,
@@ -220,174 +220,166 @@
 
             async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
-                foreach (Cosmos.PartitionKey? partitionKey in new Cosmos.PartitionKey?[] { new Cosmos.PartitionKey(5), default })
+                Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(5);
+                TryExecuteQueryTests tryExecuteQueryTests = new TryExecuteQueryTests();
+
+                QueryRequestOptions feedOptions = new QueryRequestOptions
                 {
-                    QueryRequestOptions feedOptions = new QueryRequestOptions
+                    MaxBufferedItemCount = 7000,
+                };
+
+                async Task<List<CosmosElement>> AssertTryExecuteAsync(string query, Cosmos.PartitionKey? pk = null)
+                {
+                    feedOptions.TestSettings = tryExecuteQueryTests.GetTestInjections(false, false, true);
+                    feedOptions.PartitionKey = pk;
+
+                    List<CosmosElement> queryResults = await QueryTestsBase.RunQueryCombinationsAsync(
+                        container,
+                        query,
+                        feedOptions,
+                        QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
+
+                    Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
+                    Assert.AreEqual(TestInjections.PipelineType.TryExecute, feedOptions.TestSettings.Stats.PipelineType.Value);
+
+                    return queryResults;
+                }
+
+                async Task<List<CosmosElement>> AssertSpecializedAsync(string query, Cosmos.PartitionKey? pk = null)
+                {
+                    feedOptions.TestSettings = tryExecuteQueryTests.GetTestInjections(false, false, true);
+                    feedOptions.PartitionKey = pk;
+
+                    List<CosmosElement> queryResults = await QueryTestsBase.RunQueryCombinationsAsync(
+                        container,
+                        query,
+                        feedOptions,
+                        QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
+
+                    Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
+                    Assert.AreEqual(TestInjections.PipelineType.Specialized, feedOptions.TestSettings.Stats.PipelineType.Value);
+
+                    return queryResults;
+                }
+
+                await AssertSpecializedAsync("SELECT * FROM c ORDER BY c._ts");
+
+                // Parallel and ORDER BY with partition key
+                foreach (string query in new string[]
+                {
+                    "SELECT * FROM c WHERE c.key = 5",
+                    "SELECT * FROM c WHERE c.key = 5 ORDER BY c._ts",
+                })
+                {
+                    List<CosmosElement> queryResults = await AssertTryExecuteAsync(query, partitionKey);
+                    Assert.AreEqual(
+                        3,
+                        queryResults.Count,
+                        $"query: {query} failed with ");
+                }
+
+                // TOP 
+                {
+                    // Top + Partition key => tryexecute
                     {
-                        MaxBufferedItemCount = 7000,
-                    };
-
-                    async Task<List<CosmosElement>> AssertTryExecuteAsync(string query, Cosmos.PartitionKey? pk = null)
-                    {
-                        feedOptions.TestSettings = new TestInjections(
-                            simulate429s: false,
-                            simulateEmptyPages: false,
-                            enableTryExecute: true,
-                            responseStats: new TestInjections.ResponseStats());
-                        feedOptions.PartitionKey = pk;
-
-                        List<CosmosElement> queryResults = await QueryTestsBase.RunQueryCombinationsAsync(
-                            container,
-                            query,
-                            feedOptions,
-                            QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
-
-                        Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
-                        Assert.AreEqual(TestInjections.PipelineType.TryExecute, feedOptions.TestSettings.Stats.PipelineType.Value);
-
-                        return queryResults;
-                    }
-
-                    async Task<List<CosmosElement>> AssertSpecializedAsync(string query, Cosmos.PartitionKey? pk = null)
-                    {
-                        feedOptions.TestSettings = new TestInjections(
-                            simulate429s: false,
-                            simulateEmptyPages: false,
-                            enableTryExecute: true,
-                            responseStats: new TestInjections.ResponseStats());
-                        feedOptions.PartitionKey = pk;
-
-                        List<CosmosElement> queryResults = await QueryTestsBase.RunQueryCombinationsAsync(
-                            container,
-                            query,
-                            feedOptions,
-                            QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
-
-                        Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
-                        Assert.AreEqual(TestInjections.PipelineType.Specialized, feedOptions.TestSettings.Stats.PipelineType.Value);
-
-                        return queryResults;
-                    }
-
-                    await AssertSpecializedAsync("SELECT * FROM c ORDER BY c._ts");
-
-                    // Parallel and ORDER BY with partition key
-                    foreach (string query in new string[]
-                    {
-                        "SELECT * FROM c WHERE c.key = 5",
-                        "SELECT * FROM c WHERE c.key = 5 ORDER BY c._ts",
-                    })
-                    {
+                        string query = "SELECT TOP 2 c.id FROM c WHERE c.key = 5";
                         List<CosmosElement> queryResults = await AssertTryExecuteAsync(query, partitionKey);
+
+                        Assert.AreEqual(
+                            2,
+                            queryResults.Count,
+                            $"query: {query} failed with");
+                    }
+
+                    // Top without partition => specialized
+                    {
+                        string query = "SELECT TOP 2 c.id FROM c";
+                        List<CosmosElement> queryResults = await AssertSpecializedAsync(query);
+                    }
+                }
+
+                // OFFSET / LIMIT 
+                {
+                    // With Partition Key => tryexecute
+                    {
+                        string query = "SELECT c.id FROM c WHERE c.key = 5 OFFSET 1 LIMIT 1";
+                        List<CosmosElement> queryResults = await AssertTryExecuteAsync(query, partitionKey);
+
+                        Assert.AreEqual(
+                            1,
+                            queryResults.Count,
+                            $"query: {query} failed with");
+                    }
+
+                    // Without Partition Key => specialized
+                    {
+                        string query = "SELECT c.id FROM c OFFSET 1 LIMIT 1";
+                        List<CosmosElement> queryResults = await AssertSpecializedAsync(query);
+                    }
+                }
+
+                // AGGREGATES
+                {
+                    // With partition key => tryexecute
+                    {
+                        string query = "SELECT VALUE COUNT(1) FROM c WHERE c.key = 5";
+                        List<CosmosElement> queryResults = await AssertTryExecuteAsync(query, partitionKey);
+
+                        Assert.AreEqual(
+                            1,
+                            queryResults.Count,
+                            $"query: {query} failed with");
+
                         Assert.AreEqual(
                             3,
+                            Number64.ToLong((queryResults.First() as CosmosNumber64).GetValue()),
+                            $"query: {query} failed wit");
+                    }
+
+                    // Without partitoin key => specialized
+                    {
+                        string query = "SELECT VALUE COUNT(1) FROM c";
+                        List<CosmosElement> queryResults = await AssertSpecializedAsync(query);
+                    }
+                }
+
+                // GROUP BY 
+                {
+                    // With Partition Key => tryexecute
+                    {
+                        string query = "SELECT VALUE c.key FROM c WHERE c.key = 5 GROUP BY c.key";
+                        List<CosmosElement> queryResults = await AssertTryExecuteAsync(query, partitionKey);
+
+                        Assert.AreEqual(
+                            1,
                             queryResults.Count,
-                            $"query: {query} failed with ");
+                            $"query: {query} failed with");
                     }
 
-                    // TOP 
+                    // Without Partition Key => Specialized
                     {
-                        // Top + Partition key => tryexecute
-                        {
-                            string query = "SELECT TOP 2 c.id FROM c WHERE c.key = 5";
-                            List<CosmosElement> queryResults = await AssertTryExecuteAsync(query, partitionKey);
+                        string query = "SELECT VALUE c.key FROM c GROUP BY c.key";
+                        List<CosmosElement> queryResults = await AssertSpecializedAsync(query);
+                    }
+                }
 
-                            Assert.AreEqual(
-                                2,
-                                queryResults.Count,
-                                $"query: {query} failed with");
-                        }
+                // DISTINCT 
+                {
+                    // With Partition Key => tryexecute
+                    {
+                        string query = "SELECT DISTINCT VALUE c.key FROM c WHERE c.key = 5";
+                        List<CosmosElement> queryResults = await AssertTryExecuteAsync(query, partitionKey);
 
-                        // Top without partition => specialized
-                        {
-                            string query = "SELECT TOP 2 c.id FROM c";
-                            List<CosmosElement> queryResults = await AssertSpecializedAsync(query);
-                        }
+                        Assert.AreEqual(
+                            1,
+                            queryResults.Count,
+                            $"query: {query} failed with");
                     }
 
-                    // OFFSET / LIMIT 
+                    // Without Partition Key => specialized
                     {
-                        // With Partition Key => tryexecute
-                        {
-                            string query = "SELECT c.id FROM c WHERE c.key = 5 OFFSET 1 LIMIT 1";
-                            List<CosmosElement> queryResults = await AssertTryExecuteAsync(query, partitionKey);
-
-                            Assert.AreEqual(
-                                1,
-                                queryResults.Count,
-                                $"query: {query} failed with");
-                        }
-
-                        // Without Partition Key => specialized
-                        {
-                            string query = "SELECT c.id FROM c OFFSET 1 LIMIT 1";
-                            List<CosmosElement> queryResults = await AssertSpecializedAsync(query);
-                        }
-                    }
-
-                    // AGGREGATES
-                    {
-                        // With partition key => tryexecute
-                        {
-                            string query = "SELECT VALUE COUNT(1) FROM c WHERE c.key = 5";
-                            List<CosmosElement> queryResults = await AssertTryExecuteAsync(query, partitionKey);
-
-                            Assert.AreEqual(
-                                1,
-                                queryResults.Count,
-                                $"query: {query} failed with");
-
-                            Assert.AreEqual(
-                                3,
-                                Number64.ToLong((queryResults.First() as CosmosNumber64).GetValue()),
-                                $"query: {query} failed wit");
-                        }
-
-                        // Without partitoin key => specialized
-                        {
-                            string query = "SELECT VALUE COUNT(1) FROM c";
-                            List<CosmosElement> queryResults = await AssertSpecializedAsync(query);
-                        }
-                    }
-
-                    // GROUP BY 
-                    {
-                        // With Partition Key => tryexecute
-                        {
-                            string query = "SELECT VALUE c.key FROM c WHERE c.key = 5 GROUP BY c.key";
-                            List<CosmosElement> queryResults = await AssertTryExecuteAsync(query, partitionKey);
-
-                            Assert.AreEqual(
-                                1,
-                                queryResults.Count,
-                                $"query: {query} failed with");
-                        }
-
-                        // Without Partition Key => Specialized
-                        {
-                            string query = "SELECT VALUE c.key FROM c GROUP BY c.key";
-                            List<CosmosElement> queryResults = await AssertSpecializedAsync(query);
-                        }
-                    }
-
-                    // DISTINCT 
-                    {
-                        // With Partition Key => tryexecute
-                        {
-                            string query = "SELECT DISTINCT VALUE c.key FROM c WHERE c.key = 5";
-                            List<CosmosElement> queryResults = await AssertTryExecuteAsync(query, partitionKey);
-
-                            Assert.AreEqual(
-                                1,
-                                queryResults.Count,
-                                $"query: {query} failed with");
-                        }
-
-                        // Without Partition Key => specialized
-                        {
-                            string query = "SELECT DISTINCT VALUE c.key FROM c";
-                            List<CosmosElement> queryResults = await AssertSpecializedAsync(query);
-                        }
+                        string query = "SELECT DISTINCT VALUE c.key FROM c";
+                        List<CosmosElement> queryResults = await AssertSpecializedAsync(query);
                     }
                 }
             }
