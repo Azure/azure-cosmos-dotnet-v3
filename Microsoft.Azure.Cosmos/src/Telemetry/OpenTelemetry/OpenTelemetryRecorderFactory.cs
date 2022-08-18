@@ -10,9 +10,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         private static DiagnosticScopeFactory ScopeFactory { get; set; } 
 
-        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName, OpenTelemetryOptions config)
+        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName, RequestOptions requestOptions, CosmosClientContext clientContext)
         {
-            if (config.EnableOpenTelemetrySupport)
+            if (clientContext.ClientOptions.EnableDistributedTracing)
             {
                 ScopeFactory = new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
                     resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
@@ -23,7 +23,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 if (scope.IsEnabled)
                 {
-                    return new OpenTelemetryCoreRecorder(scope, config);
+                    return new OpenTelemetryCoreRecorder(
+                        scope: scope,
+                        clientContext: clientContext,
+                        config: requestOptions?.DistributedTracingOptions ?? clientContext.ClientOptions?.DistributedTracingOptions);
                 }
             }
 

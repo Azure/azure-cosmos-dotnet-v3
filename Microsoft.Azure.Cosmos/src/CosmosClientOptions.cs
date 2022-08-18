@@ -926,23 +926,28 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Latency Threshold For Diagnostics On Tracer
+        /// Distributed Tracing Options. <see cref="Microsoft.Azure.Cosmos.Telemetry.DistributedTracingOptions"/>
         /// </summary>
 #if PREVIEW
         public
 #else
         internal
 #endif
-            TimeSpan? LatencyThresholdForDiagnosticsOnDistributingTracing { get; set; }
+            DistributedTracingOptions DistributedTracingOptions { get; set; }
 
         /// <summary>
         /// Gets or sets value indicating whether distributed tracing activities (<see cref="System.Diagnostics.Activity"/>) are going to be created for the SDK methods calls and HTTP calls.
         /// By default true for Preview package
         /// </summary>
 #if PREVIEW
-        internal bool EnableDistributedTracing { get; set; } = true;
+        public
 #else
-        internal bool EnableDistributedTracing { get; set; }
+        internal
 #endif
+            bool EnableDistributedTracing { get; set; }
+#if PREVIEW
+         = true;
+#endif
+
     }
 }

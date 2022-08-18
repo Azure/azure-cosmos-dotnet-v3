@@ -477,13 +477,14 @@ namespace Microsoft.Azure.Cosmos
             using (OpenTelemetryCoreRecorder recorder = 
                                 OpenTelemetryRecorderFactory.CreateRecorder(
                                     operationName: operationName,
-                                    config: new OpenTelemetryOptions(this.clientOptions, requestOptions)))
+                                    requestOptions: requestOptions,
+                                    clientContext: this))
             using (new ActivityScope(Guid.NewGuid()))
             {
                 try
                 {
-                    // Record client and other information
-                    recorder.Record(operationName, this);
+                    // Record Operation Name
+                    recorder.Record(OpenTelemetryAttributeKeys.DbOperation, operationName);
 
                     TResult result = await task(trace).ConfigureAwait(false);
                     if (openTelemetry != null && recorder.IsEnabled)

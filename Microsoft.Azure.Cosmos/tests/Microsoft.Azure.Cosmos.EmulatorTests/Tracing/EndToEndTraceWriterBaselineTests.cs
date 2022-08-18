@@ -19,6 +19,7 @@
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
+    using Telemetry;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
 
     [VisualStudio.TestTools.UnitTesting.TestClass]
@@ -67,18 +68,31 @@
 
 #if !PREVIEW
             client.ClientOptions.EnableDistributedTracing = true;
-            client.ClientOptions.LatencyThresholdForDiagnosticsOnDistributingTracing = TimeSpan.FromMilliseconds(1);
-
             bulkClient.ClientOptions.EnableDistributedTracing = true;
-            bulkClient.ClientOptions.LatencyThresholdForDiagnosticsOnDistributingTracing = TimeSpan.FromMilliseconds(1);
-
             throttleClient.ClientOptions.EnableDistributedTracing = true;
-            throttleClient.ClientOptions.LatencyThresholdForDiagnosticsOnDistributingTracing = TimeSpan.FromMilliseconds(1);
-
             miscCosmosClient.ClientOptions.EnableDistributedTracing = true;
-            miscCosmosClient.ClientOptions.LatencyThresholdForDiagnosticsOnDistributingTracing = TimeSpan.FromMilliseconds(1);
 
 #endif
+            client.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
+            {
+                LatencyThresholdToIncludeDiagnostics = TimeSpan.FromMilliseconds(1)
+            };
+
+            bulkClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
+            {
+                LatencyThresholdToIncludeDiagnostics = TimeSpan.FromMilliseconds(1)
+            };
+            
+            throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
+            {
+                LatencyThresholdToIncludeDiagnostics = TimeSpan.FromMilliseconds(1)
+            };
+            
+            miscCosmosClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
+            {
+                LatencyThresholdToIncludeDiagnostics = TimeSpan.FromMilliseconds(1)
+            };
+
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
                     Guid.NewGuid().ToString(),
                     cancellationToken: default);

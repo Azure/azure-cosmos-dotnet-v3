@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
     using System;
-    using System.Net;
     using Documents;
 
     internal static class DiagnosticsFilterHelper
@@ -17,18 +16,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         /// </summary>
         /// <returns>true or false</returns>
         public static bool HasIssueWithOperation(
-            OpenTelemetryOptions config,
+            DistributedTracingOptions config,
             OpenTelemetryAttributes response)
         {
             TimeSpan latencyThreshold;
 
-            if (config != null && config.LatencyThreshold.HasValue)
+            if (config != null && config.LatencyThresholdToIncludeDiagnostics.HasValue)
             {
-                latencyThreshold = config.LatencyThreshold.Value;
+                latencyThreshold = config.LatencyThresholdToIncludeDiagnostics.Value;
             }
             else
             {
-                latencyThreshold = response.OperationType == OperationType.Query ? OpenTelemetryOptions.DefaultQueryTimeoutThreshold : OpenTelemetryOptions.DefaultCrudLatencyThreshold;
+                latencyThreshold = response.OperationType == OperationType.Query ? DistributedTracingOptions.DefaultQueryTimeoutThreshold : DistributedTracingOptions.DefaultCrudLatencyThreshold;
             }
 
             return !(response.Diagnostics.GetClientElapsedTime() < latencyThreshold && response.StatusCode.IsSuccess());

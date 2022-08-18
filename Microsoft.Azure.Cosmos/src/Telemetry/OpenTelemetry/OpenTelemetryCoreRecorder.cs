@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private const string CosmosDb = "cosmosdb";
 
         private readonly DiagnosticScope scope;
-        private readonly OpenTelemetryOptions config;
+        private readonly DistributedTracingOptions config;
         private string accountHostWithCloudInfo = null;
 
         internal static IDictionary<Type, Action<Exception, DiagnosticScope>> OTelCompatibleExceptions = new Dictionary<Type, Action<Exception, DiagnosticScope>>()
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             { typeof(ChangeFeedProcessorUserException), (exception, scope) => ChangeFeedProcessorUserException.RecordOtelAttributes((ChangeFeedProcessorUserException)exception, scope)}
         };
 
-        public OpenTelemetryCoreRecorder(DiagnosticScope scope, OpenTelemetryOptions config)
+        public OpenTelemetryCoreRecorder(DiagnosticScope scope, CosmosClientContext clientContext, DistributedTracingOptions config)
         {
             this.scope = scope;
             this.config = config;
@@ -34,10 +34,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             if (this.IsEnabled)
             {
                 this.scope.Start();
+
+                this.Record(clientContext);
             }
         }
 
-        public bool IsEnabled => this.scope.IsEnabled && this.config.EnableOpenTelemetrySupport;
+        public bool IsEnabled => this.scope.IsEnabled;
 
         public void Record(string key, string value)
         {
@@ -50,15 +52,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// System Level and Client level attributes
         /// </summary>
-        /// <param name="operationName"></param>
         /// <param name="clientContext"></param>
-        public void Record(string operationName, CosmosClientContext clientContext)
+        public void Record(CosmosClientContext clientContext)
         {
             if (this.IsEnabled)
             {
                 // Other information
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.MachineId, VmMetadataApiHandler.GetMachineId());
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.NetPeerName, this.GetHostWithCloudInformation(clientContext.Client?.Endpoint?.Host));
 
