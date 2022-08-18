@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure;
     using Microsoft.Data.Encryption.Cryptography;
 
     internal class DataEncryptionKeyContainerCore : DataEncryptionKeyContainer
@@ -110,7 +111,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (!dekResponse.IsSuccessStatusCode)
             {
-                throw new EncryptionCosmosException(dekResponse.ErrorMessage, dekResponse.StatusCode, 0, dekResponse.Headers.ActivityId, dekResponse.Headers.RequestCharge, dekResponse.Diagnostics);
+                string subStatusCode = dekResponse.Headers.GetValueOrDefault("x-ms-substatus") ?? "0";
+                throw new EncryptionCosmosException(dekResponse.ErrorMessage, dekResponse.StatusCode, int.Parse(subStatusCode), dekResponse.Headers.ActivityId, dekResponse.Headers.RequestCharge, dekResponse.Diagnostics);
             }
 
             dekProperties = EncryptionProcessor.BaseSerializer.FromStream<DataEncryptionKeyProperties>(dekResponse.Content);
@@ -231,7 +233,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                 if (!dekResponse.IsSuccessStatusCode)
                 {
-                    throw new EncryptionCosmosException(dekResponse.ErrorMessage, dekResponse.StatusCode, 0, dekResponse.Headers.ActivityId, dekResponse.Headers.RequestCharge, dekResponse.Diagnostics);
+                    string subStatusCode = dekResponse.Headers.GetValueOrDefault("x-ms-substatus") ?? "0";
+                    throw new EncryptionCosmosException(dekResponse.ErrorMessage, dekResponse.StatusCode, int.Parse(subStatusCode), dekResponse.Headers.ActivityId, dekResponse.Headers.RequestCharge, dekResponse.Diagnostics);
                 }
 
                 dekProperties = EncryptionProcessor.BaseSerializer.FromStream<DataEncryptionKeyProperties>(dekResponse.Content);
@@ -608,7 +611,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw new EncryptionCosmosException(response.ErrorMessage, response.StatusCode, 0, response.Headers.ActivityId, response.Headers.RequestCharge, response.Diagnostics);
+                    string subStatusCode = response.Headers.GetValueOrDefault("x-ms-substatus") ?? "0";
+                    throw new EncryptionCosmosException(response.ErrorMessage, response.StatusCode, int.Parse(subStatusCode), response.Headers.ActivityId, response.Headers.RequestCharge, response.Diagnostics);
                 }
 
                 DataEncryptionKeyProperties dekProperties = EncryptionProcessor.BaseSerializer.FromStream<DataEncryptionKeyProperties>(response.Content);
