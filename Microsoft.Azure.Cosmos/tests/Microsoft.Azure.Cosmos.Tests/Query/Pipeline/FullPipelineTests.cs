@@ -420,7 +420,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
                 allowDCount: true,
-                hasLogicalPartitionKey: false);
+                hasLogicalPartitionKey: false,
+                useSystemPrefix: false);
 
             info.ThrowIfFailed();
             return info.Result.QueryInfo;

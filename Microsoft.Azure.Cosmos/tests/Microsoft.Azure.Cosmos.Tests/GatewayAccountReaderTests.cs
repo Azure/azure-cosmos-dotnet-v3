@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
                 additionalHeaders: new RequestNameValueCollection(),
                 resourceType: ResourceType.Document,
                 timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
-                clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
+                clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
                 cancellationToken: default);
 
             Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);

@@ -47,6 +47,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// Gets the component that governs this trace.
         /// </summary>
         TraceComponent Component { get; }
+        
+        /// <summary>
+        /// Gets the summary of this trace.
+        /// </summary>
+        TraceSummary Summary { get; }
 
         /// <summary>
         /// Gets the parent node of this trace.
@@ -62,11 +67,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// Gets additional datum associated with this trace.
         /// </summary>
         IReadOnlyDictionary<string, object> Data { get; }
-
-        /// <summary>
-        /// Consolidated Region contacted Information of this and children nodes
-        /// </summary>
-        IReadOnlyList<(string, Uri)> RegionsContacted { get; }
 
         /// <summary>
         /// Starts a Trace and adds it as a child to this instance.
@@ -115,10 +115,5 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <param name="trace">Existing trace.</param>
         void AddChild(ITrace trace);
 
-        /// <summary>
-        /// Update region contacted information to the parent Itrace
-        /// </summary>
-        /// <param name="traceDatum"></param>
-        void UpdateRegionContacted(TraceDatum traceDatum);
     }
 }

@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
     [TestClass]
     public class BuiltinFunctionEvaluatorTests
     {
-        private static readonly CosmosElement Undefined = null;
+        private static readonly CosmosElement Undefined = CosmosUndefined.Create();
 
         private static readonly SqlLiteralScalarExpression five = SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(5));
         private static readonly SqlLiteralScalarExpression six = SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(6));

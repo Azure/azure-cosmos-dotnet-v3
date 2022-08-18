@@ -375,6 +375,7 @@
 
                 await processor.StopAsync();
 
+                testListener.ResetAttributes();
                 startLineNumber = GetLineNumber();
                 ChangeFeedEstimator estimator = container.GetChangeFeedEstimator(
                     "test",
@@ -536,6 +537,62 @@
                 endLineNumber = GetLineNumber();
 
                 inputs.Add(new Input("Query - Without ServiceInterop", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
+            }
+            //----------------------------------------------------------------
+
+            //----------------------------------------------------------------
+            //  Query Public API with FeedRanges
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                FeedIterator feedIterator = container.GetItemQueryStreamIterator(
+                    feedRange: FeedRangeEpk.FullRange,
+                    queryDefinition: new QueryDefinition("SELECT * FROM c"),
+                    continuationToken: null);
+
+                List<ITrace> traces = new List<ITrace>();
+
+                while (feedIterator.HasMoreResults)
+                {
+                    ResponseMessage responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                    traces.Add(trace);
+                }
+
+                ITrace traceForest = TraceJoiner.JoinTraces(traces);
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("Query Public API with FeedRanges", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
+                testListener.ResetAttributes();
+            }
+            //----------------------------------------------------------------
+
+            //----------------------------------------------------------------
+            //  Query Public API Typed with FeedRanges
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                FeedIterator<JToken> feedIterator = container.GetItemQueryIterator<JToken>(
+                    feedRange: FeedRangeEpk.FullRange,
+                    queryDefinition: new QueryDefinition("SELECT * FROM c"),
+                    continuationToken: null);
+
+                List<ITrace> traces = new List<ITrace>();
+
+                while (feedIterator.HasMoreResults)
+                {
+                    FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                    traces.Add(trace);
+                }
+
+                ITrace traceForest = TraceJoiner.JoinTraces(traces);
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("Query Public API Typed with FeedRanges", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
                 testListener.ResetAttributes();
             }
@@ -1562,6 +1619,8 @@
             public TimeSpan Duration => TimeSpan.Zero;
 
             public TraceLevel Level { get; }
+
+            public TraceSummary Summary { get; }
 
             public TraceComponent Component { get; }
 

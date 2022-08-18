@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             {
                 if (!this.cosmosObject.TryGetValue("payload", out CosmosElement cosmosElement))
                 {
-                    throw new InvalidOperationException($"Underlying object does not have an 'payload' field.");
+                    return CosmosUndefined.Create();
                 }
 
                 return cosmosElement;

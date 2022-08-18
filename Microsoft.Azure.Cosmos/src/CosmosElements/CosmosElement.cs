@@ -273,44 +273,49 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
             }
 
-            public int Visit(CosmosNull cosmosNull)
+            public int Visit(CosmosUndefined cosmosUndefined)
             {
                 return 0;
             }
 
-            public int Visit(CosmosBoolean cosmosBoolean)
+            public int Visit(CosmosNull cosmosNull)
             {
                 return 1;
             }
 
-            public int Visit(CosmosNumber cosmosNumber)
+            public int Visit(CosmosBoolean cosmosBoolean)
             {
                 return 2;
             }
 
-            public int Visit(CosmosString cosmosString)
+            public int Visit(CosmosNumber cosmosNumber)
             {
                 return 3;
             }
 
-            public int Visit(CosmosArray cosmosArray)
+            public int Visit(CosmosString cosmosString)
             {
                 return 4;
             }
 
-            public int Visit(CosmosObject cosmosObject)
+            public int Visit(CosmosArray cosmosArray)
             {
                 return 5;
             }
 
-            public int Visit(CosmosGuid cosmosGuid)
+            public int Visit(CosmosObject cosmosObject)
             {
                 return 6;
             }
 
-            public int Visit(CosmosBinary cosmosBinary)
+            public int Visit(CosmosGuid cosmosGuid)
             {
                 return 7;
+            }
+
+            public int Visit(CosmosBinary cosmosBinary)
+            {
+                return 8;
             }
         }
 
@@ -320,6 +325,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             private CosmosElementWithinTypeComparer()
             {
+            }
+
+            public int Visit(CosmosUndefined cosmosUndefined, CosmosElement input)
+            {
+                return cosmosUndefined.CompareTo((CosmosUndefined)input);
             }
 
             public int Visit(CosmosArray cosmosArray, CosmosElement input)

@@ -962,7 +962,7 @@
                         {
                             if (!((CosmosObject)x).TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
                             {
-                                cosmosElement = null;
+                                cosmosElement = CosmosUndefined.Create();
                             }
 
                             return cosmosElement;
@@ -973,7 +973,7 @@
                         {
                             if (!x.TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
                             {
-                                cosmosElement = null;
+                                cosmosElement = CosmosUndefined.Create();
                             }
 
                             return cosmosElement;
@@ -1029,7 +1029,7 @@
                                     {
                                         if (!((CosmosObject)x).TryGetValue(switchColumns ? possiblyUndefinedFieldName : alwaysDefinedFieldName, out CosmosElement cosmosElement))
                                         {
-                                            cosmosElement = null;
+                                            cosmosElement = CosmosUndefined.Create();
                                         }
 
                                         return cosmosElement;
@@ -1039,7 +1039,7 @@
                                     {
                                         if (!((CosmosObject)x).TryGetValue(switchColumns ? possiblyUndefinedFieldName : alwaysDefinedFieldName, out CosmosElement cosmosElement))
                                         {
-                                            cosmosElement = null;
+                                            cosmosElement = CosmosUndefined.Create();
                                         }
 
                                         return cosmosElement;
@@ -1051,7 +1051,7 @@
                                     {
                                         if (!((CosmosObject)x).TryGetValue(switchColumns ? alwaysDefinedFieldName : possiblyUndefinedFieldName, out CosmosElement cosmosElement))
                                         {
-                                            cosmosElement = null;
+                                            cosmosElement = CosmosUndefined.Create();
                                         }
 
                                         return cosmosElement;
@@ -1061,7 +1061,7 @@
                                     {
                                         if (!((CosmosObject)x).TryGetValue(switchColumns ? alwaysDefinedFieldName : possiblyUndefinedFieldName, out CosmosElement cosmosElement))
                                         {
-                                            cosmosElement = null;
+                                            cosmosElement = CosmosUndefined.Create();
                                         }
 
                                         return cosmosElement;
@@ -1114,7 +1114,7 @@
                 MixedTypedDocument mixedTypeDocument = OrderByQueryTests.GenerateMixedTypeDocument(random);
                 for (int j = 0; j < numberOfDuplicates; j++)
                 {
-                    if (mixedTypeDocument.MixedTypeField != null)
+                    if (mixedTypeDocument.MixedTypeField is not CosmosUndefined)
                     {
                         documents.Add(JsonConvert.SerializeObject(mixedTypeDocument));
                     }
@@ -1213,7 +1213,7 @@
                 // Array
                 5 => CosmosArray.Create(new List<CosmosElement>()),
                 // Undefined
-                6 => null,
+                6 => CosmosUndefined.Create(),
                 _ => throw new ArgumentException(),
             };
         }
@@ -1384,7 +1384,7 @@
                         {
                             if (!x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement cosmosElement))
                             {
-                                cosmosElement = null;
+                                cosmosElement = CosmosUndefined.Create();
                             }
 
                             return cosmosElement;
@@ -1396,7 +1396,7 @@
                         {
                             if (!x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement cosmosElement))
                             {
-                                cosmosElement = null;
+                                cosmosElement = CosmosUndefined.Create();
                             }
 
                             return cosmosElement;

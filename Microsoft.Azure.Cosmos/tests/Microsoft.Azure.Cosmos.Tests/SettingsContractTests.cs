@@ -939,6 +939,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(cosmosAccountSettings.Consistency.DefaultConsistencyLevel, accountDeserSettings.Consistency.DefaultConsistencyLevel);
             Assert.AreEqual(cosmosAccountSettings.ReplicationPolicy.AsyncReplication, accountDeserSettings.ReplicationPolicy.AsyncReplication);
             Assert.AreEqual(cosmosAccountSettings.ReadPolicy.PrimaryReadCoefficient, accountDeserSettings.ReadPolicy.PrimaryReadCoefficient);
+            Assert.AreEqual(cosmosAccountSettings.AccountNameWithCloudInformation, accountDeserSettings.AccountNameWithCloudInformation);
         }
 
         [TestMethod]

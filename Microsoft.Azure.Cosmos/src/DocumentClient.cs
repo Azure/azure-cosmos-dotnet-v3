@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
         //Consistency
         private Documents.ConsistencyLevel? desiredConsistencyLevel;
 
-        private CosmosAccountServiceConfiguration accountServiceConfiguration;
+        internal CosmosAccountServiceConfiguration accountServiceConfiguration { get; private set; }
 
         private ClientCollectionCache collectionCache;
 
@@ -6360,7 +6360,6 @@ namespace Microsoft.Azure.Cosmos
 
                 AccountProperties databaseAccount = await gatewayModel.GetDatabaseAccountAsync(CreateRequestMessage,
                                                                                                clientSideRequestStatistics: null);
-
                 this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && databaseAccount.EnableMultipleWriteLocations;
                 return databaseAccount;
             }

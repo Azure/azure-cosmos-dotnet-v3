@@ -1508,6 +1508,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 return SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(cosmosString.Value));
             }
+
+            public SqlScalarExpression Visit(CosmosUndefined cosmosUndefined)
+            {
+                return SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
+            }
         }
     }
 }
