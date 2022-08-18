@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     [JsonConverter(typeof(StringEnumConverter))]
 
+    //Further enum additions are expected in the future, application needs should be authored to cover them.
     public enum PatchOperationType
     {
         /// <summary>
