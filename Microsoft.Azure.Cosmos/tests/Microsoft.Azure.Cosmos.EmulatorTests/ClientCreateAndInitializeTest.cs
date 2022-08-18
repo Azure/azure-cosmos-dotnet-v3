@@ -68,7 +68,8 @@
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
             {
-                HttpClientFactory = () => new HttpClient(httpClientHandlerHelper)
+                HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
+                ConnectionMode = ConnectionMode.Direct
             };
 
             CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync(endpoint, authKey, containers, cosmosClientOptions);
@@ -77,6 +78,8 @@
 
             ContainerInternal container = (ContainerInternal)cosmosClient.GetContainer("ClientCreateAndInitializeDatabase", "ClientCreateAndInitializeContainer");
             ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>("1", new Cosmos.PartitionKey("Status1"));
+            string diagnostics = readResponse.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("\"ConnectionMode\":\"Direct\""));
             Assert.AreEqual(httpCallsMade, httpCallsMadeAfterCreation);
             cosmosClient.Dispose();
         }
