@@ -69,7 +69,6 @@
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
             {
                 HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
-                ConnectionMode = ConnectionMode.Direct
             };
 
             CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync(endpoint, authKey, containers, cosmosClientOptions);
