@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (!dekResponse.IsSuccessStatusCode)
             {
-                throw new CosmosException(dekResponse.ErrorMessage, dekResponse.StatusCode, 0, null, 0);
+                throw new EncryptionCosmosException(dekResponse.ErrorMessage, dekResponse.StatusCode, 0, dekResponse.Headers.ActivityId, dekResponse.Headers.RequestCharge, dekResponse.Diagnostics);
             }
 
             dekProperties = EncryptionProcessor.BaseSerializer.FromStream<DataEncryptionKeyProperties>(dekResponse.Content);
@@ -231,10 +231,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                 if (!dekResponse.IsSuccessStatusCode)
                 {
-                    if (dekResponse.StatusCode == HttpStatusCode.PreconditionFailed)
-                    {
-                        throw new CosmosException(dekResponse.ErrorMessage, dekResponse.StatusCode, 0, null, 0);
-                    }
+                    throw new EncryptionCosmosException(dekResponse.ErrorMessage, dekResponse.StatusCode, 0, dekResponse.Headers.ActivityId, dekResponse.Headers.RequestCharge, dekResponse.Diagnostics);
                 }
 
                 dekProperties = EncryptionProcessor.BaseSerializer.FromStream<DataEncryptionKeyProperties>(dekResponse.Content);
@@ -611,7 +608,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw new CosmosException(response.ErrorMessage, response.StatusCode, 0, null, 0);
+                    throw new EncryptionCosmosException(response.ErrorMessage, response.StatusCode, 0, response.Headers.ActivityId, response.Headers.RequestCharge, response.Diagnostics);
                 }
 
                 DataEncryptionKeyProperties dekProperties = EncryptionProcessor.BaseSerializer.FromStream<DataEncryptionKeyProperties>(response.Content);

@@ -25,51 +25,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
-            using (diagnosticsContext.CreateScope("FeedIterator.ReadNext"))
-            {
-                return await this.feedIterator.ReadNextAsync(cancellationToken);
-            }
-        }
-
-        public async Task<(ResponseMessage, List<T>)> ReadNextUsingCosmosBaseSerializerAsync<T>(CancellationToken cancellationToken = default)
-        {
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
-            using (diagnosticsContext.CreateScope("FeedIterator.ReadNextWithoutDecryption"))
-            {
-                ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
-                List<T> dataEncryptionKeyContent = null;
-
-                if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
-                {
-                    dataEncryptionKeyContent = this.ConvertResponseToDataEncryptionItems<T>(
-                        responseMessage.Content);
-
-                    return (responseMessage, dataEncryptionKeyContent);
-                }
-
-                return (responseMessage, dataEncryptionKeyContent);
-            }
-        }
-
-        private List<T> ConvertResponseToDataEncryptionItems<T>(
-            Stream content)
-        {
-            JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
-
-            if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
-            {
-                throw new InvalidOperationException("Feed Response body contract was violated. Feed Response did not have an array of Documents.");
-            }
-
-            List<T> dataEncryptionKeyItems = new List<T>(documents.Count);
-
-            foreach (JToken value in documents)
-            {
-                dataEncryptionKeyItems.Add(value.ToObject<T>());
-            }
-
-            return dataEncryptionKeyItems;
+            return await this.feedIterator.ReadNextAsync(cancellationToken);
         }
     }
 }
