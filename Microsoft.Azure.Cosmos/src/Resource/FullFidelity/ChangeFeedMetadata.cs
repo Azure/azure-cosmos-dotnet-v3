@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Used to distinquish explicit deletes (e.g. via DeleteItem) from deletes caused by TTL expiration (a collection may define time-to-live policy for documents).
         /// </summary>
-        [JsonProperty(PropertyName = "isTimeToLiveExpired", NullValueHandling= NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = "timeToLiveExpired", NullValueHandling= NullValueHandling.Ignore)]
         public bool IsTimeToLiveExpired { get; }
     }
 }

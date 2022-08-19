@@ -84,7 +84,7 @@
           ],
           "MethodInfo": "Boolean get_IsTimeToLiveExpired();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Boolean IsTimeToLiveExpired[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"isTimeToLiveExpired\")]": {
+        "Boolean IsTimeToLiveExpired[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"timeToLiveExpired\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
