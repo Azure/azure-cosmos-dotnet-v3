@@ -195,13 +195,13 @@ namespace Microsoft.Azure.Cosmos
         public abstract FeedIterator GetChangeFeedStreamIteratorWithQuery(
             ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedMode changeFeedMode,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null,
-            ChangeFeedQuerySpec changeFeedQuerySpec = null);
+            ChangeFeedQuerySpec changeFeedQuerySpec,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         public abstract FeedIterator<T> GetChangeFeedIteratorWithQuery<T>(
            ChangeFeedStartFrom changeFeedStartFrom,
            ChangeFeedMode changeFeedMode,
-           ChangeFeedRequestOptions changeFeedRequestOptions = null,
-           ChangeFeedQuerySpec changeFeedQuerySpec = null);
+           ChangeFeedQuerySpec changeFeedQuerySpec,
+           ChangeFeedRequestOptions changeFeedRequestOptions = null);
     }
 }

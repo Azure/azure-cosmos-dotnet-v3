@@ -702,76 +702,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             }
         }
 
-        /// <summary>
-        /// This test validates Full Fidelity Change Feed by inserting and deleting documents and verifying all operations are present
-        /// </summary>
-        [TestMethod]
-        [Timeout(30000)]
-        public async Task ChangeFeedIteratorCore_WithFullFidelity()
-        {
-            ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: ChangeFeedIteratorCoreTests.PartitionKey);
-            properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                properties,
-                cancellationToken: this.cancellationToken);
-
-            ContainerInternal container = (ContainerInternal)response;
-
-            // FF does not work with StartFromBeginning currently, so we capture an initial continuation.
-            FeedIterator<ToDoActivityWithMetadata> fullFidelityIterator = container.GetChangeFeedIterator<ToDoActivityWithMetadata>(
-                ChangeFeedStartFrom.Now(),
-                ChangeFeedMode.FullFidelity);
-            string initialContinuation = null;
-            while (fullFidelityIterator.HasMoreResults)
-            {
-                FeedResponse<ToDoActivityWithMetadata> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
-                initialContinuation = feedResponse.ContinuationToken;
-
-                if (feedResponse.StatusCode == HttpStatusCode.NotModified)
-                {
-                    break;
-                }
-            }
-
-            // Insert documents and then delete them
-            int totalDocuments = 50;
-            IList<ToDoActivity> createdItems = await this.CreateRandomItems(container, totalDocuments, randomPartitionKey: true);
-            foreach (ToDoActivity item in createdItems)
-            {
-                await container.DeleteItemAsync<ToDoActivity>(item.id, new PartitionKey(item.pk));
-            }
-
-            // Resume Change Feed and verify we pickup all the events
-            fullFidelityIterator = container.GetChangeFeedIterator<ToDoActivityWithMetadata>(
-                ChangeFeedStartFrom.ContinuationToken(initialContinuation),
-                ChangeFeedMode.FullFidelity);
-            int detectedEvents = 0;
-            bool hasInserts = false;
-            bool hasDeletes = false;
-            while (fullFidelityIterator.HasMoreResults)
-            {
-                FeedResponse<ToDoActivityWithMetadata> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
-                foreach (ToDoActivityWithMetadata item in feedResponse)
-                {
-                    Assert.IsNotNull(item.metadata, "Metadata not present");
-                    Assert.IsNotNull(item.metadata.operationType, "Metadata has no operationType");
-                    hasInserts |= item.metadata.operationType == "create";
-                    hasDeletes |= item.metadata.operationType == "delete";
-                }
-
-                detectedEvents += feedResponse.Count;
-
-                if (feedResponse.StatusCode == HttpStatusCode.NotModified)
-                {
-                    break;
-                }
-            }
-
-            Assert.AreEqual(2 * totalDocuments, detectedEvents, "Full Fidelity should include inserts and delete events.");
-            Assert.IsTrue(hasInserts, "No metadata for create operationType found");
-            Assert.IsTrue(hasDeletes, "No metadata for delete operationType found");
-        }
-
         [TestMethod]
         public async Task TestCancellationTokenAsync()
         {
@@ -901,16 +831,16 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 enableQueryOnPreviousImage: true);
             ContainerCore container = (ContainerCore)response;
             // FF does not work with StartFromBeginning currently, so we capture an initial continuation.
-            FeedIterator<Document> fullFidelityIterator = container.GetChangeFeedIteratorWithQuery<Document>(
+            FeedIterator<ChangeFeedItemChange<Document>> fullFidelityIterator = container.GetChangeFeedIteratorWithQuery<ChangeFeedItemChange<Document>>(
                 ChangeFeedStartFrom.Now(),
                 ChangeFeedMode.FullFidelity,
-                null,
-                querySpec);
+                querySpec,
+                null);
 
             string initialContinuation = null;
             while (fullFidelityIterator.HasMoreResults)
             {
-                FeedResponse<Document> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
+                FeedResponse<ChangeFeedItemChange<Document>> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
                 initialContinuation = feedResponse.ContinuationToken;
 
                 if (feedResponse.StatusCode == HttpStatusCode.NotModified)
@@ -934,20 +864,20 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             }
 
             // Resume Change Feed and verify we pickup the events where documents matches the query
-            fullFidelityIterator = container.GetChangeFeedIteratorWithQuery<Document>(
+            fullFidelityIterator = container.GetChangeFeedIteratorWithQuery<ChangeFeedItemChange<Document>>(
                 ChangeFeedStartFrom.ContinuationToken(initialContinuation),
                 ChangeFeedMode.FullFidelity,
-                null,
-                querySpec);
+                querySpec,
+                null);
             int detectedEvents = 0;
 
             while (fullFidelityIterator.HasMoreResults)
             {
-                FeedResponse<Document> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
+                FeedResponse<ChangeFeedItemChange<Document>> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
 
-                foreach (Document item in feedResponse)
+                foreach (ChangeFeedItemChange<Document> item in feedResponse)
                 {
-                    Assert.AreEqual("id3", item.Id);
+                    Assert.AreEqual("id3", item.Current.Id);
                 }
 
                 detectedEvents += feedResponse.Count;
@@ -963,20 +893,20 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             await container.DeleteItemAsync<Document>("id2", new Cosmos.PartitionKey("pkey1"));
             await container.DeleteItemAsync<Document>("id3", new Cosmos.PartitionKey("pkey1"));
 
-            fullFidelityIterator = container.GetChangeFeedIteratorWithQuery<Document>(
+            fullFidelityIterator = container.GetChangeFeedIteratorWithQuery<ChangeFeedItemChange<Document>>(
                 ChangeFeedStartFrom.ContinuationToken(initialContinuation),
                 ChangeFeedMode.FullFidelity,
-                null,
-                querySpec);
+                querySpec,
+                null);
             detectedEvents = 0;
             while (fullFidelityIterator.HasMoreResults)
             {
-                FeedResponse<Document> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
+                FeedResponse<ChangeFeedItemChange<Document>> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
 
-                foreach (Document item in feedResponse)
+                foreach (ChangeFeedItemChange<Document> item in feedResponse)
                 {
-                    Assert.AreEqual("id3", item.metadata.previousImage.Id);
-                    Assert.AreEqual("delete", item.metadata.operationType);
+                    Assert.AreEqual("id3", item.Previous.Id);
+                    Assert.AreEqual(ChangeFeedOperationType.Delete, item.Metadata.OperationType);
                 }
 
                 detectedEvents += feedResponse.Count;
@@ -1329,20 +1259,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             [JsonProperty(PropertyName = "pkey")]
             public string Pkey { get; set; }
-
-            [JsonProperty("_metadata")]
-            public DocumentMetadata metadata { get; set; }
         }
-
-        public class DocumentMetadata
-        {
-            [JsonProperty("operationType")]
-            public string operationType { get; set; }
-
-            [JsonProperty("previousImage")]
-            public Document previousImage { get; set; }
-        }
-
 
         private class CancellationTokenRequestHandler : RequestHandler
         {

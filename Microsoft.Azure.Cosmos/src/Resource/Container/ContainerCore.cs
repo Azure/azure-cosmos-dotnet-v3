@@ -631,8 +631,8 @@ namespace Microsoft.Azure.Cosmos
         public override FeedIterator GetChangeFeedStreamIteratorWithQuery(
            ChangeFeedStartFrom changeFeedStartFrom,
            ChangeFeedMode changeFeedMode,
-           ChangeFeedRequestOptions changeFeedRequestOptions = null,
-           ChangeFeedQuerySpec changeFeedQuerySpec = null)
+           ChangeFeedQuerySpec changeFeedQuerySpec,
+           ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             if (changeFeedStartFrom == null)
             {
@@ -663,8 +663,8 @@ namespace Microsoft.Azure.Cosmos
         public override FeedIterator<T> GetChangeFeedIteratorWithQuery<T>(
            ChangeFeedStartFrom changeFeedStartFrom,
            ChangeFeedMode changeFeedMode,
-           ChangeFeedRequestOptions changeFeedRequestOptions = null,
-           ChangeFeedQuerySpec changeFeedQuerySpec = null)
+           ChangeFeedQuerySpec changeFeedQuerySpec,
+           ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             if (changeFeedStartFrom == null)
             {
