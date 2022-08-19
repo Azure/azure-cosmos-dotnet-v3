@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure;
     using Microsoft.Data.Encryption.Cryptography;
 
     internal class DataEncryptionKeyContainerCore : DataEncryptionKeyContainer
