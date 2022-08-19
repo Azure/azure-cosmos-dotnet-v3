@@ -13,24 +13,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Microsoft.Azure.Documents.ChangeFeedQuerySpec"/> class for the Azure Cosmos DB service.</summary>
-        /// <remarks> 
-        /// The default constructor initializes any fields to their default values.
-        /// </remarks>
-        public ChangeFeedQuerySpec()
-            : this(null)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="T:Microsoft.Azure.Documents.ChangeFeedQuerySpec"/> class for the Azure Cosmos DB service.</summary>
         /// <param name="queryText">The text of the database query.</param>
         /// <param name="enableQueryOnPreviousImage">The boolean when enabaled runs database query on previous image.</param>
         /// <remarks> 
         /// The default constructor initializes any fields to their default values.
         /// </remarks>
         public ChangeFeedQuerySpec(string queryText, bool enableQueryOnPreviousImage)
+            : this(queryText)
         {
-            this.QueryText = queryText;
             this.EnableQueryOnPreviousImage = enableQueryOnPreviousImage;
         }
 
@@ -40,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// <param name="queryText">The text of the database query.</param>
         public ChangeFeedQuerySpec(string queryText)
         {
-            this.QueryText = queryText;
+            this.QueryText = queryText ?? throw new ArgumentNullException(nameof(queryText));
         }
 
         /// <summary>
@@ -62,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// </summary>
         internal bool ShouldSerializeQueryText()
         {
-            return this.QueryText != null && this.QueryText.Length > 0;
+            return this.QueryText.Length > 0;
         }
     }
 }

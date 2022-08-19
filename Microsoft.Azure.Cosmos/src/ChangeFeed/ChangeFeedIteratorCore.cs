@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.clientContext = clientContext;
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
             this.changeFeedRequestOptions = changeFeedRequestOptions ?? new ChangeFeedRequestOptions();
-            this.changeFeedQuerySpec = changeFeedQuerySpec ?? new ChangeFeedQuerySpec();
+            this.changeFeedQuerySpec = changeFeedQuerySpec;
 
             this.lazyMonadicEnumerator = new AsyncLazy<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>>(
                 valueFactory: async (trace, cancellationToken) =>

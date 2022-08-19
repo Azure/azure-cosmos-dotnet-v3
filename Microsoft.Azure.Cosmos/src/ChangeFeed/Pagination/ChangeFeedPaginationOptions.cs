@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             : base(pageSizeHint, jsonSerializationFormat, additionalHeaders)
         {
             this.Mode = mode ?? throw new ArgumentNullException(nameof(mode));
-            this.ChangeFeedQuerySpec = changeFeedQuerySpec ?? new ChangeFeedQuerySpec();
+            this.ChangeFeedQuerySpec = changeFeedQuerySpec;
         }
 
         public ChangeFeedMode Mode { get; }

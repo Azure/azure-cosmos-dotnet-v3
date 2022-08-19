@@ -18,6 +18,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests;
+    using Microsoft.Azure.Cosmos.Telemetry;
 
     [SDK.EmulatorTests.TestClass]
     [TestCategory("ChangeFeed")]

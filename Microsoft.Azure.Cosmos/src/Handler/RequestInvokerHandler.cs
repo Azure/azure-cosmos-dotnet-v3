@@ -306,7 +306,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         internal static HttpMethod GetHttpMethod(
             ResourceType resourceType,
             OperationType operationType,
-            bool hasStreamPayload = false)
+            bool hasPayload = false)
         {
             if (operationType == OperationType.Create ||
                 operationType == OperationType.Upsert ||
@@ -320,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 return HttpMethod.Post;
             }
-            else if (ChangeFeedHelper.IsChangeFeedWithQueryRequest(operationType, hasStreamPayload))
+            else if (ChangeFeedHelper.IsChangeFeedWithQueryRequest(operationType, hasPayload))
             {
                 // ChangeFeed with payload is a CF with query support and will
                 // be a POST request.
