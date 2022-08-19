@@ -10,9 +10,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         private static DiagnosticScopeFactory ScopeFactory { get; set; } 
 
-        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName, RequestOptions requestOptions, CosmosClientContext clientContext)
+        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName, 
+            RequestOptions requestOptions, 
+            CosmosClientContext clientContext)
         {
-            if (clientContext.ClientOptions.EnableDistributedTracing)
+            if (clientContext is { ClientOptions.EnableDistributedTracing: true })
             {
                 ScopeFactory = new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
                     resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,

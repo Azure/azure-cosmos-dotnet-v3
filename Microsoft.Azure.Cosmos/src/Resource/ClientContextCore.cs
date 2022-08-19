@@ -478,7 +478,7 @@ namespace Microsoft.Azure.Cosmos
                                 OpenTelemetryRecorderFactory.CreateRecorder(
                                     operationName: operationName,
                                     requestOptions: requestOptions,
-                                    clientContext: this))
+                                    clientContext: this.isDisposed ? null : this))
             using (new ActivityScope(Guid.NewGuid()))
             {
                 try
