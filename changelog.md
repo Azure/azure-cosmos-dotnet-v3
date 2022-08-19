@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <a name="3.30.0-preview"/> [3.30.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.30.0-preview) - 2022-08-19
 
 #### Added
+- [#3394](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3394) Change Feed: Refactors Change Feed Contract to rename TimeToLiveExpired
 - [#3331](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3331) Open Telemetry: Adds Client and other information in attributes
 - [#3197](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3197) Change Feed: Adds SDK changes required for Full-Fidelity Change Feed
 

@@ -50,10 +50,10 @@ namespace Microsoft.Azure.Cosmos
     {
         public ChangeFeedMetadata(DateTime conflictResolutionTimestamp, long lsn, ChangeFeedOperationType operationType, long previousLsn);
         public DateTime ConflictResolutionTimestamp { get; }
+        public bool IsTimeToLiveExpired { get; }
         public long Lsn { get; }
         public ChangeFeedOperationType OperationType { get; }
         public long PreviousLsn { get; }
-        public bool TimeToLiveExpired { get; }
     }
     public abstract class ChangeFeedMode
     {
