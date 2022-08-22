@@ -32,10 +32,10 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.cachedNumberOfActiveClient = CosmosClient.NumberOfActiveClients;
             this.cachedUserAgentString = this.UserAgentContainer.UserAgent;
             this.cachedMachineId = VmMetadataApiHandler.GetMachineId();
-            this.cachedSerializedJson = this.GetSerializedDatum();
             this.ProcessorCount = Environment.ProcessorCount;
             this.ConnectionMode = cosmosClientContext.ClientOptions.ConnectionMode;
             this.cachedVMRegion = VmMetadataApiHandler.GetMachineRegion();
+            this.cachedSerializedJson = this.GetSerializedDatum();
         }
 
         public DateTime ClientCreatedDateTimeUtc { get; }
