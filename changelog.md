@@ -1,4 +1,4 @@
-## <a name="recommended-version"></a> Recommended version
+## <a name="recommended-version"></a> Recommended version test
 
 The **minimum recommended version is [3.25.0](#3.25.0)**.
 
