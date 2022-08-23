@@ -433,7 +433,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 #else
         internal
 #endif
-            CosmosClientBuilder WithDistributingTracingOption(DistributedTracingOptions options)
+            CosmosClientBuilder WithDistributingTracing(DistributedTracingOptions options)
         {
             this.clientOptions.DistributedTracingOptions = options;
 
