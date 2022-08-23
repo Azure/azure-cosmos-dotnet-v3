@@ -70,18 +70,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             catch (Exception ex)
             {
                 await this.RemoveLeaseAsync(lease: lease, wasAcquired: false).ConfigureAwait(false);
-                if (ex is LeaseLostException leaseLostException)
+                switch (ex)
                 {
-                    // LeaseLostException by itself is not loggable, unless it contains a related inner exception
-                    // For cases when the lease or container has been deleted or the lease has been stolen
-                    if (leaseLostException.InnerException != null)
-                    {
-                        await this.monitor.NotifyErrorAsync(lease.CurrentLeaseToken, leaseLostException.InnerException);
-                    }
-                }
-                else
-                {
-                    await this.monitor.NotifyErrorAsync(lease.CurrentLeaseToken, ex);
+                    case LeaseLostException leaseLostException:
+                        // LeaseLostException by itself is not loggable, unless it contains a related inner exception
+                        // For cases when the lease or container has been deleted or the lease has been stolen
+                        if (leaseLostException.InnerException != null)
+                        {
+                            await this.monitor.NotifyErrorAsync(lease.CurrentLeaseToken, leaseLostException.InnerException);
+                        }
+                        break;
+
+                    default:
+                        await this.monitor.NotifyErrorAsync(lease.CurrentLeaseToken, ex);
+                        break;
                 }
 
                 throw;
