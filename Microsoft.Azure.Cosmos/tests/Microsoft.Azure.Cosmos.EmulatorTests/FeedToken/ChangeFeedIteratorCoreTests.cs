@@ -500,15 +500,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             int count = 0;
             while (true)
             {
-                ChangeFeedStartFrom startFrom;
-                if (continuation == null)
-                {
-                    startFrom = ChangeFeedStartFrom.Beginning();
-                }
-                else
-                {
-                    startFrom = ChangeFeedStartFrom.ContinuationToken(continuation);
-                }
+                ChangeFeedStartFrom startFrom = continuation == null ?
+                    ChangeFeedStartFrom.Beginning() :
+                    ChangeFeedStartFrom.ContinuationToken(continuation);
 
                 ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(startFrom, ChangeFeedMode.Incremental) as ChangeFeedIteratorCore;
                 using (ResponseMessage responseMessage = await feedIterator.ReadNextAsync(this.cancellationToken))
@@ -864,7 +858,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.Lsn);
                         Assert.AreEqual(expected: default, actual: createOperation.Metadata.PreviousLsn);
-                        Assert.IsFalse(createOperation.Metadata.TimeToLiveExpired);
+                        Assert.IsFalse(createOperation.Metadata.IsTimeToLiveExpired);
 
                         ChangeFeedItemChange<Item> replaceOperation = itemChanges.ElementAtOrDefault(1);
 
@@ -878,7 +872,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.Lsn);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.PreviousLsn);
-                        Assert.IsFalse(replaceOperation.Metadata.TimeToLiveExpired);
+                        Assert.IsFalse(replaceOperation.Metadata.IsTimeToLiveExpired);
 
                         break;
                     }
@@ -943,7 +937,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.AreNotEqual(notExpected: default, actual: firstCreateOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: firstCreateOperation.Metadata.Lsn);
                         Assert.AreEqual(expected: default, actual: firstCreateOperation.Metadata.PreviousLsn);
-                        Assert.IsFalse(firstCreateOperation.Metadata.TimeToLiveExpired);
+                        Assert.IsFalse(firstCreateOperation.Metadata.IsTimeToLiveExpired);
 
                         ChangeFeedItemChange<Item> createOperation = resources[1];
 
@@ -956,7 +950,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.Lsn);
                         Assert.AreEqual(expected: default, actual: createOperation.Metadata.PreviousLsn);
-                        Assert.IsFalse(createOperation.Metadata.TimeToLiveExpired);
+                        Assert.IsFalse(createOperation.Metadata.IsTimeToLiveExpired);
 
                         ChangeFeedItemChange<Item> replaceOperation = resources[2];
 
@@ -969,7 +963,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.Lsn);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.PreviousLsn);
-                        Assert.IsFalse(replaceOperation.Metadata.TimeToLiveExpired);
+                        Assert.IsFalse(replaceOperation.Metadata.IsTimeToLiveExpired);
 
                         ChangeFeedItemChange<Item> deleteOperation = resources[3];
 
@@ -1052,7 +1046,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: createOperation.Metadata.Lsn);
                         Assert.AreEqual(expected: default, actual: createOperation.Metadata.PreviousLsn);
-                        Assert.IsFalse(createOperation.Metadata.TimeToLiveExpired);
+                        Assert.IsFalse(createOperation.Metadata.IsTimeToLiveExpired);
 
                         ChangeFeedItemChange<Item> replaceOperation = itemChanges[1];
 
@@ -1066,7 +1060,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.Lsn);
                         Assert.AreNotEqual(notExpected: default, actual: replaceOperation.Metadata.PreviousLsn);
-                        Assert.IsFalse(replaceOperation.Metadata.TimeToLiveExpired);
+                        Assert.IsFalse(replaceOperation.Metadata.IsTimeToLiveExpired);
 
                         ChangeFeedItemChange<Item> deleteOperation = itemChanges[2];
 
@@ -1075,7 +1069,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.Lsn);
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.PreviousLsn);
-                        Assert.IsFalse(replaceOperation.Metadata.TimeToLiveExpired);
+                        Assert.IsFalse(replaceOperation.Metadata.IsTimeToLiveExpired);
 
                         break;
                     }
@@ -1121,13 +1115,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         public class ToDoActivityWithMetadata : ToDoActivity
         {
             [JsonProperty("_metadata")]
-            public ToDoActivityMetadata metadata { get; set; }
+            public ToDoActivityMetadata Metadata { get; set; }
         }
 
         public class ToDoActivityMetadata
         {
             [JsonProperty("operationType")]
-            public string operationType { get; set; }
+            public string OperationType { get; set; }
         }
 
         private class CancellationTokenRequestHandler : RequestHandler
