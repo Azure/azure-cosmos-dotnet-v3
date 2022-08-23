@@ -373,10 +373,10 @@
     "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithDistributingTracingOption(Microsoft.Azure.Cosmos.Telemetry.DistributedTracingOptions)": {
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithDistributingTracing(Microsoft.Azure.Cosmos.Telemetry.DistributedTracingOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithDistributingTracingOption(Microsoft.Azure.Cosmos.Telemetry.DistributedTracingOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithDistributingTracing(Microsoft.Azure.Cosmos.Telemetry.DistributedTracingOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -474,16 +474,6 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": "System.Nullable`1[System.TimeSpan] LatencyThresholdToIncludeDiagnostics;CanRead:True;CanWrite:True;System.Nullable`1[System.TimeSpan] get_LatencyThresholdToIncludeDiagnostics();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_LatencyThresholdToIncludeDiagnostics(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.TimeSpan DefaultCrudLatencyThreshold": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.TimeSpan DefaultCrudLatencyThreshold;IsInitOnly:True;IsStatic:True;"
-        },
-        "System.TimeSpan DefaultQueryTimeoutThreshold": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.TimeSpan DefaultQueryTimeoutThreshold;IsInitOnly:True;IsStatic:True;"
         },
         "Void .ctor()": {
           "Type": "Constructor",
