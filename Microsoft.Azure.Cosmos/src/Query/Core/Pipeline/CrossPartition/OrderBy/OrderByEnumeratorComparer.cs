@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             if (sortOrders.Count == 0)
             {
-                throw new ArgumentException("Sort Orders array can not be empty for an order by comparerer.");
+                throw new ArgumentException("Sort Orders array can not be empty for an order by comparer.");
             }
 
             this.sortOrders = new List<SortOrder>(sortOrders);

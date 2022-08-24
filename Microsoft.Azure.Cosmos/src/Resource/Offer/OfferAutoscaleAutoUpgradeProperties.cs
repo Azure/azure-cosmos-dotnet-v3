@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
         /// Default constructor for serialization
         /// </summary>
         [JsonConstructor]
-        private OfferAutoscaleAutoUpgradeProperties()
+        internal OfferAutoscaleAutoUpgradeProperties()
         {
         }
 

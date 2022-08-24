@@ -34,6 +34,8 @@
     <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.ReadManyAsync.xml" />
     <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.StreamPointOperationsAsync.xml" />
     <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.TypedPointOperationsAsync.xml" />
+    <None Remove="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestDateTimeJsonConverterTimezones.xml" />
+    <None Remove="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestMemberAccessWithNullableTypes.xml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -48,7 +50,7 @@
     <PackageReference Include="Moq" Version="4.8.2" />
     <PackageReference Include="MSTest.TestAdapter" Version="1.3.2" />
     <PackageReference Include="MSTest.TestFramework" Version="1.3.2" />
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.0.8.11" />
     <PackageReference Include="System.Reflection" Version="4.3.0" />
     <PackageReference Include="Azure.Core" Version="1.19.0" />
@@ -187,6 +189,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestClausesOrderVariations.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestDateTimeJsonConverterTimezones.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestMemberAccessWithNullableTypes.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestSelectTop.xml">

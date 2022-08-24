@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override IReadOnlyList<(string regionName, Uri uri)> GetContactedRegions()
         {
-            return this.Value?.RegionsContacted;
+            return this.Value?.Summary?.RegionsContacted;
         }
 
         internal bool IsGoneExceptionHit()
@@ -98,5 +98,25 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             TraceWriter.WriteTrace(jsonTextWriter, this.Value);
             return jsonTextWriter.GetResult();
         }
+
+        public override DateTime? GetStartTimeUtc()
+        {
+            if (this.Value == null || this.Value.StartTime == null)
+            {
+                return null;
+            }
+
+            return this.Value.StartTime;
+        }
+
+        public override int GetFailedRequestCount()
+        {
+            if (this.Value == null || this.Value.Summary == null)
+            {
+                return 0;
+            }
+
+            return this.Value.Summary.GetFailedCount();
+       }
     }
 }

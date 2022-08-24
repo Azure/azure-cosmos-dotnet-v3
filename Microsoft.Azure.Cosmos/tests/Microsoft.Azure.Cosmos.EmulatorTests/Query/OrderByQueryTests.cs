@@ -53,10 +53,9 @@
             Container container,
             IReadOnlyList<CosmosObject> documents)
         {
-            await QueryTestsBase.NoOp();
-
-            string[] expected = new[] { "documentId2", "documentId5", "documentId8" };
-            List<CosmosElement> query = await QueryTestsBase.RunQueryAsync(
+            string[] expectedOrdered = new[] { "documentId2", "documentId5", "documentId8" };
+            string[] expectedAll = new[] { "documentId1", "documentId2", "documentId3", "documentId4", "documentId5", "documentId6", "documentId7", "documentId8", "documentId9" };
+            List<CosmosElement> results = await QueryTestsBase.RunQueryAsync(
                 container,
                 "SELECT r.id FROM r ORDER BY r.prop DESC",
                 new QueryRequestOptions()
@@ -65,9 +64,12 @@
                     MaxConcurrency = 1,
                 });
 
-            Assert.AreEqual(
-                string.Join(", ", expected),
-                string.Join(", ", query.Select(doc => ((CosmosString)(doc as CosmosObject)["id"]).Value)));
+            string[] actual = results
+                .Select(doc => ((CosmosString)(doc as CosmosObject)["id"]).Value.ToString())
+                .ToArray();
+
+            CollectionAssert.AreEqual(expectedOrdered, actual.Take(expectedOrdered.Length).ToArray());
+            CollectionAssert.AreEquivalent(expectedAll, actual);
         }
 
         [TestMethod]
@@ -960,7 +962,7 @@
                         {
                             if (!((CosmosObject)x).TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
                             {
-                                cosmosElement = null;
+                                cosmosElement = CosmosUndefined.Create();
                             }
 
                             return cosmosElement;
@@ -971,7 +973,7 @@
                         {
                             if (!x.TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
                             {
-                                cosmosElement = null;
+                                cosmosElement = CosmosUndefined.Create();
                             }
 
                             return cosmosElement;
@@ -1027,7 +1029,7 @@
                                     {
                                         if (!((CosmosObject)x).TryGetValue(switchColumns ? possiblyUndefinedFieldName : alwaysDefinedFieldName, out CosmosElement cosmosElement))
                                         {
-                                            cosmosElement = null;
+                                            cosmosElement = CosmosUndefined.Create();
                                         }
 
                                         return cosmosElement;
@@ -1037,7 +1039,7 @@
                                     {
                                         if (!((CosmosObject)x).TryGetValue(switchColumns ? possiblyUndefinedFieldName : alwaysDefinedFieldName, out CosmosElement cosmosElement))
                                         {
-                                            cosmosElement = null;
+                                            cosmosElement = CosmosUndefined.Create();
                                         }
 
                                         return cosmosElement;
@@ -1049,7 +1051,7 @@
                                     {
                                         if (!((CosmosObject)x).TryGetValue(switchColumns ? alwaysDefinedFieldName : possiblyUndefinedFieldName, out CosmosElement cosmosElement))
                                         {
-                                            cosmosElement = null;
+                                            cosmosElement = CosmosUndefined.Create();
                                         }
 
                                         return cosmosElement;
@@ -1059,7 +1061,7 @@
                                     {
                                         if (!((CosmosObject)x).TryGetValue(switchColumns ? alwaysDefinedFieldName : possiblyUndefinedFieldName, out CosmosElement cosmosElement))
                                         {
-                                            cosmosElement = null;
+                                            cosmosElement = CosmosUndefined.Create();
                                         }
 
                                         return cosmosElement;
@@ -1112,7 +1114,7 @@
                 MixedTypedDocument mixedTypeDocument = OrderByQueryTests.GenerateMixedTypeDocument(random);
                 for (int j = 0; j < numberOfDuplicates; j++)
                 {
-                    if (mixedTypeDocument.MixedTypeField != null)
+                    if (mixedTypeDocument.MixedTypeField is not CosmosUndefined)
                     {
                         documents.Add(JsonConvert.SerializeObject(mixedTypeDocument));
                     }
@@ -1211,7 +1213,7 @@
                 // Array
                 5 => CosmosArray.Create(new List<CosmosElement>()),
                 // Undefined
-                6 => null,
+                6 => CosmosUndefined.Create(),
                 _ => throw new ArgumentException(),
             };
         }
@@ -1382,7 +1384,7 @@
                         {
                             if (!x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement cosmosElement))
                             {
-                                cosmosElement = null;
+                                cosmosElement = CosmosUndefined.Create();
                             }
 
                             return cosmosElement;
@@ -1394,7 +1396,7 @@
                         {
                             if (!x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement cosmosElement))
                             {
-                                cosmosElement = null;
+                                cosmosElement = CosmosUndefined.Create();
                             }
 
                             return cosmosElement;

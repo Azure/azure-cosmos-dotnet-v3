@@ -30,4 +30,28 @@ Copyright (C) Microsoft Corporation. All rights reserved.
     </ContentWithTargetPath>
   </ItemGroup>
 
+  <ItemGroup>
+      <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\msvcp140.dll">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <TargetPath>msvcp140.dll</TargetPath>
+          <Visible>False</Visible>
+      </ContentWithTargetPath>
+  </ItemGroup>
+
+  <ItemGroup>
+      <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\vcruntime140.dll">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <TargetPath>vcruntime140.dll</TargetPath>
+          <Visible>False</Visible>
+      </ContentWithTargetPath>
+  </ItemGroup>
+
+  <ItemGroup>
+      <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\vcruntime140_1.dll">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <TargetPath>vcruntime140_1.dll</TargetPath>
+          <Visible>False</Visible>
+      </ContentWithTargetPath>
+  </ItemGroup>
+    
 </Project>

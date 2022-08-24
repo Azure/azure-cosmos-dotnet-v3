@@ -8,26 +8,25 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
     internal static class OpenTelemetryRecorderFactory
     {
-#if PREVIEW
-        public static DiagnosticScopeFactory ScopeFactory { get; } = new DiagnosticScopeFactory(
-                                                                                clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace, 
-                                                                                resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
-                                                                                isActivityEnabled: true);
-#endif
-        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName)
+        private static DiagnosticScopeFactory ScopeFactory { get; set; } 
+
+        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName, bool isFeatureEnabled)
         {
-#if PREVIEW
-            DiagnosticScope scope = OpenTelemetryRecorderFactory
-                .ScopeFactory
-                .CreateScope($"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}");
-
-            if (scope.IsEnabled)
+            if (isFeatureEnabled)
             {
-                scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, "cosmosdb");
+                ScopeFactory = new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
+                                                    resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
+                                                    isActivityEnabled: true);
+                DiagnosticScope scope = OpenTelemetryRecorderFactory
+                    .ScopeFactory
+                    .CreateScope($"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}");
 
-                return new OpenTelemetryCoreRecorder(scope);
+                if (scope.IsEnabled)
+                {
+                    return new OpenTelemetryCoreRecorder(scope);
+                }
             }
-#endif
+
             return default;
         }
     }

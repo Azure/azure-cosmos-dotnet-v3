@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Util;
 
     internal static class ClientTelemetryOptions
     {
@@ -86,7 +87,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         internal static readonly ResourceType AllowedResourceTypes = ResourceType.Document;
 
-        internal static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
+        internal static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings 
+        { 
+            NullValueHandling = NullValueHandling.Ignore,
+            MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+        };
 
         private static Uri clientTelemetryEndpoint;
         private static string environmentName;

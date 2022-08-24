@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
+    using Util;
 
     [TestClass]
     public class VmMetadataApiHandlerTest
@@ -56,7 +57,8 @@ namespace Microsoft.Azure.Cosmos
             VmMetadataApiHandler.TryInitialize(cosmoshttpClient);
 
             await Task.Delay(2000);
-            Assert.AreEqual("vmId:d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd", VmMetadataApiHandler.GetMachineId());
+            Assert.AreEqual($"{VmMetadataApiHandler.HashedVmIdPrefix}{HashingExtension.ComputeHash("d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd")}", VmMetadataApiHandler.GetMachineId());
+            Assert.AreEqual(VmMetadataApiHandler.GetMachineRegion(), "eastus");
         }
 
         [TestMethod]
@@ -81,12 +83,13 @@ namespace Microsoft.Azure.Cosmos
             await Task.Delay(2000);
             Assert.IsNull(VmMetadataApiHandler.GetMachineInfo());
             Assert.IsNotNull(VmMetadataApiHandler.GetMachineId());
+            Assert.IsNull(VmMetadataApiHandler.GetMachineRegion());
         }
 
         [TestMethod]
         public async Task GetHashedMachineNameAsMachineIdTest()
         {
-            string expectedMachineId = "hashedMachineName:" + VmMetadataApiHandler.ComputeHash(Environment.MachineName);
+            string expectedMachineId = VmMetadataApiHandler.HashedMachineNamePrefix + HashingExtension.ComputeHash(Environment.MachineName);
 
             static Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken) { throw new Exception("error while making API call"); };
 
@@ -103,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public void ComputeHashTest()
         {
-            string hashedValue = VmMetadataApiHandler.ComputeHash("abc");
+            string hashedValue = HashingExtension.ComputeHash("abc");
             Assert.AreEqual("bf1678ba-018f-eacf-4141-40de5dae2223", hashedValue);
         }
 
@@ -126,7 +129,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual("AzurePublicCloud", metadata.Compute.AzEnvironment);
             Assert.AreEqual("Linux", metadata.Compute.OSType);
             Assert.AreEqual("Standard_D2s_v3", metadata.Compute.VMSize);
-            Assert.AreEqual("vmId:d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd", metadata.Compute.VMId);
+            Assert.AreEqual($"{VmMetadataApiHandler.HashedVmIdPrefix}{HashingExtension.ComputeHash("d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd")}", metadata.Compute.VMId);
         }
 
         [TestMethod]
