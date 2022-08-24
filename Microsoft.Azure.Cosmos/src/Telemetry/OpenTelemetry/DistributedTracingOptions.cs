@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Latency Threshold to generate (<see cref="System.Diagnostics.Tracing.EventSource"/>) with Request diagnostics in distributing Tracing.<br></br>
         /// If it is not set then by default it will generate (<see cref="System.Diagnostics.Tracing.EventSource"/>) for query operation which are taking more than 500 ms and non-query operations taking more than 100 ms.
         /// </summary>
-        public TimeSpan? LatencyThresholdToIncludeDiagnostics { get; set; }
+        public TimeSpan? DiagnosticsLatencyThreshold { get; set; }
 
     }
 }

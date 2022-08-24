@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .WithApplicationPreferredRegions(preferredLocations)
                 .WithDistributingTracing(new DistributedTracingOptions
                 {
-                    LatencyThresholdToIncludeDiagnostics = TimeSpan.FromMilliseconds(100)
+                    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(100)
                 });
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, clientOptions.PortReuseMode);
             Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), clientOptions.ApplicationPreferredRegions.ToArray());
-            Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.DistributedTracingOptions.LatencyThresholdToIncludeDiagnostics);
+            Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.DistributedTracingOptions.DiagnosticsLatencyThreshold);
 #if PREVIEW
             Assert.IsTrue(clientOptions.EnableDistributedTracing);
 #else

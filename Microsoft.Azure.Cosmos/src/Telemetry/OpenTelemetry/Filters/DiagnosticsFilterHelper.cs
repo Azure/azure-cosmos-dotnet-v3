@@ -15,15 +15,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         /// 3) HTTP status code is not Success<br></br>
         /// </summary>
         /// <returns>true or false</returns>
-        public static bool HasIssueWithOperation(
+        public static bool IsTracingNeeded(
             DistributedTracingOptions config,
             OpenTelemetryAttributes response)
         {
             TimeSpan latencyThreshold;
 
-            if (config != null && config.LatencyThresholdToIncludeDiagnostics.HasValue)
+            if (config != null && config.DiagnosticsLatencyThreshold.HasValue)
             {
-                latencyThreshold = config.LatencyThresholdToIncludeDiagnostics.Value;
+                latencyThreshold = config.DiagnosticsLatencyThreshold.Value;
             }
             else
             {

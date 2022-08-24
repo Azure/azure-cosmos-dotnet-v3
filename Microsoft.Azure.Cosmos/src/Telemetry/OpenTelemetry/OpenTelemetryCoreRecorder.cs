@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics));
 
-                    if (this.IsEnabled && DiagnosticsFilterHelper.HasIssueWithOperation(
+                    if (this.IsEnabled && DiagnosticsFilterHelper.IsTracingNeeded(
                             config: this.config,
                             response: response))
                     {

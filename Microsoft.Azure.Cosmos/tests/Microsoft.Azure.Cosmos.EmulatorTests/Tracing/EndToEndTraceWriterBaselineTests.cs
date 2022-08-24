@@ -75,22 +75,22 @@
 #endif
             client.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                LatencyThresholdToIncludeDiagnostics = TimeSpan.FromMilliseconds(1)
+                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(1)
             };
 
             bulkClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                LatencyThresholdToIncludeDiagnostics = TimeSpan.FromMilliseconds(1)
+                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(1)
             };
             
             throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                LatencyThresholdToIncludeDiagnostics = TimeSpan.FromMilliseconds(1)
+                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(1)
             };
             
             miscCosmosClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                LatencyThresholdToIncludeDiagnostics = TimeSpan.FromMilliseconds(1)
+                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(1)
             };
 
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
