@@ -2,56 +2,18 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-    using System.Globalization;
     using System.Linq;
     using System.Net;
-    using System.Security.Policy;
-    using System.Text;
     using System.Threading.Tasks;
-    using Castle.Components.DictionaryAdapter;
-    using HdrHistogram.Utilities;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
-    using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
-    using System.Xml;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
-    using Microsoft.Azure.Cosmos.Pagination;
-    using Microsoft.Azure.Cosmos.Tests.Pagination;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
-    using Moq;
-    using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
-    using System.Threading;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
-    using System.IO;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SingleRoundtripOptimisticExecutionQuery;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     [TestCategory("Query")]
     public sealed class SingleRoundtripOptimisticExecutionQueryTests : QueryTestsBase
     {
-        private static readonly string singleRoundtripOptimisticExecution = "SingleRoundtripOptimisticExecution";
-        private static readonly string specialized = "Specialized";
-        private static readonly string passThrough = "PassThrough";
-
         [TestMethod]
         public async Task TestSingleRoundtripOptimistExecQueries()
         {
@@ -108,8 +70,7 @@
             QueryRequestOptions feedOptions = new QueryRequestOptions
             {
                 MaxItemCount = -1,
-               // PartitionKey = new Cosmos.PartitionKey("/value"),
-                TestSettings = singleRoundtripOptimisticQueryTests.GetTestInjections(false, false, true)
+                TestSettings = GetTestInjections(false, false, true)
             };
 
             // check if pipeline returns empty continuation token
@@ -154,21 +115,21 @@
                     null,
                 },
 
-                ExpectedPipelineType = new List<string>
+                ExpectedPipelineType = new List<TestInjections.PipelineType>
                 {
-                    singleRoundtripOptimisticExecution,
-                    passThrough,
-                    singleRoundtripOptimisticExecution,
-                    singleRoundtripOptimisticExecution,
-                    singleRoundtripOptimisticExecution,
-                    specialized,
-                    specialized,
+                    TestInjections.PipelineType.SingleRoundtripOptimisticExecution,
+                    TestInjections.PipelineType.Passthrough,
+                    TestInjections.PipelineType.SingleRoundtripOptimisticExecution,
+                    TestInjections.PipelineType.SingleRoundtripOptimisticExecution,
+                    TestInjections.PipelineType.SingleRoundtripOptimisticExecution,
+                    TestInjections.PipelineType.Specialized,
+                    TestInjections.PipelineType.Specialized,
                 },
             };
 
             int[] pageSizeOptions = new[] { -1, 1, 2, 10, 100 };
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < pageSizeOptions.Length; i++)
             {
                 for(int j = 0; j < queryAndResults.Query.Count(); j++)
                 {
@@ -187,18 +148,7 @@
                     bool areEqual = actual.SequenceEqual(queryAndResults.Results[j]);
 
                     Assert.IsTrue(areEqual);
-
-                    if (queryAndResults.ExpectedPipelineType[j] == singleRoundtripOptimisticExecution)
-                    {
-                        Assert.AreEqual(TestInjections.PipelineType.SingleRoundtripOptimisticExecution, feedOptions.TestSettings.Stats.PipelineType.Value);
-                    }
-                    else if (queryAndResults.ExpectedPipelineType[j] == specialized)
-                    {
-                        Assert.AreEqual(TestInjections.PipelineType.Specialized, feedOptions.TestSettings.Stats.PipelineType.Value);
-                    }
-                    else {
-                        Assert.AreEqual(TestInjections.PipelineType.Passthrough, feedOptions.TestSettings.Stats.PipelineType.Value);
-                    }
+                    Assert.AreEqual(queryAndResults.ExpectedPipelineType[j], feedOptions.TestSettings.Stats.PipelineType.Value);
                 }
             }
 
@@ -206,7 +156,7 @@
             feedOptions = new QueryRequestOptions
             {
                 MaxItemCount = -1,
-                TestSettings = singleRoundtripOptimisticQueryTests.GetTestInjections(false, false, false)
+                TestSettings = GetTestInjections(false, false, false)
             };
 
             for (int j = 0; j < queryAndResults.Query.Count(); j++)
@@ -232,12 +182,10 @@
         private static async Task TestNegativeSingleRoundtripOptimistExecOutput(
             Container container)
         {
-            SingleRoundtripOptimisticExecutionQueryTests queryTests = new SingleRoundtripOptimisticExecutionQueryTests();
-
             QueryRequestOptions feedOptions = new QueryRequestOptions
             {
                 PartitionKey = new Cosmos.PartitionKey("/value"),
-                TestSettings = queryTests.GetTestInjections(false, false, true)
+                TestSettings = GetTestInjections(false, false, true)
             };
 
             // check if bad continuation queries and syntax error queries are handled by pipeline
@@ -270,7 +218,7 @@
             }
         }
         
-        private TestInjections GetTestInjections(bool simulate429s, bool simulateEmptyPages, bool enableSingleRoundtripOptimisticQueryTests)
+        private static TestInjections GetTestInjections(bool simulate429s, bool simulateEmptyPages, bool enableSingleRoundtripOptimisticQueryTests)
         {
             return new TestInjections(
                             simulate429s,
@@ -292,7 +240,7 @@
             public List<string> Query;
             public List<List<int>> Results;
             public List<string> PartitionKeys;
-            public List<string> ExpectedPipelineType;
+            public List<TestInjections.PipelineType> ExpectedPipelineType;
         }
 
     }

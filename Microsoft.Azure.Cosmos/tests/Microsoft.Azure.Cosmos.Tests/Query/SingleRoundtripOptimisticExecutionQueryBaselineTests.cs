@@ -12,9 +12,6 @@
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -32,7 +29,6 @@
     using System.IO;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SingleRoundtripOptimisticExecutionQuery;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class SingleRoundtripOptimisticExecutionQueryBaselineTests : BaselineTests<SingleRoundtripOptimisticExecutionTestInput, SingleRoundtripOptimisticExecutionTestOutput>

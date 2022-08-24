@@ -67,16 +67,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
                 feedRange
             };
 
-            IReadOnlyList<FeedRangeEpk> readOnlyFeedRanges = feedRanges;
-
             List<PartitionedToken> tokens = new List<PartitionedToken>
             {
                 token
             };
 
-            IReadOnlyList<PartitionedToken> readOnlyTokens = tokens;
-
-            return MonadicGetPartitionMapping(readOnlyFeedRanges, readOnlyTokens);
+            return MonadicGetPartitionMapping(feedRanges, tokens);
         } 
 
         /// <summary>

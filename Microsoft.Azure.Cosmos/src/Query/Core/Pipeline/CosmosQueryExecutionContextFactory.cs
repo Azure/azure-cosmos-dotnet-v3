@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -603,20 +602,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         {
             if (inputParameters.TestInjections?.EnableSingleRoundtripOptimisticExecution == false) return null;
 
-            bool hasQueryRanges = false;
-
             // case 1: Is query going to a single partition
             bool hasPartitionKey = inputParameters.PartitionKey.HasValue
                 && inputParameters.PartitionKey != PartitionKey.Null
                 && inputParameters.PartitionKey != PartitionKey.None;
 
             // case 2: does query execution plan have a single query range
-            if (partitionedQueryExecutionInfo != null)
-            {
-                hasQueryRanges = (partitionedQueryExecutionInfo.QueryRanges.Count == 1)
+            bool hasQueryRanges = partitionedQueryExecutionInfo != null 
+                && partitionedQueryExecutionInfo.QueryRanges.Count == 1 
                 && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue;
-            }
-
+           
             if (!hasPartitionKey && !hasQueryRanges) return null;
 
             List<Documents.PartitionKeyRange> targetRanges = new List<Documents.PartitionKeyRange>();

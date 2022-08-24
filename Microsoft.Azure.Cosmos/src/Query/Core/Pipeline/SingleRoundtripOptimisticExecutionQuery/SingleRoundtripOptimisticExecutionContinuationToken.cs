@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SingleRoundtripOptimisticEx
     /// </summary>
     internal sealed class SingleRoundtripOptimisticExecutionContinuationToken : IPartitionedToken
     {
-        private static readonly string singleRoundtripOptimisticExec = "singleRoundtripOptimisticExec";
+        internal const string SingleRoundtripOptimisticExecutionToken = "SingleRoundtripOptimisticExecutionToken";
 
         public SingleRoundtripOptimisticExecutionContinuationToken(ParallelContinuationToken token)
         {
@@ -38,14 +38,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SingleRoundtripOptimisticEx
             return CosmosObject.Create(
                             new Dictionary<string, CosmosElement>()
                             {
-                                [singleRoundtripOptimisticExec] = inner
+                                [SingleRoundtripOptimisticExecutionToken] = inner
                             });
         }
 
         public static TryCatch<SingleRoundtripOptimisticExecutionContinuationToken> TryCreateFromCosmosElement(CosmosElement cosmosElement)
         {
             CosmosObject cosmosObjectContinuationToken = (CosmosObject)cosmosElement;
-            TryCatch<ParallelContinuationToken> inner = ParallelContinuationToken.TryCreateFromCosmosElement(cosmosObjectContinuationToken[singleRoundtripOptimisticExec]);
+            TryCatch<ParallelContinuationToken> inner = ParallelContinuationToken.TryCreateFromCosmosElement(cosmosObjectContinuationToken[SingleRoundtripOptimisticExecutionToken]);
 
             return inner.Succeeded ?
                 TryCatch<SingleRoundtripOptimisticExecutionContinuationToken>.FromResult(new SingleRoundtripOptimisticExecutionContinuationToken(inner.Result)) :
