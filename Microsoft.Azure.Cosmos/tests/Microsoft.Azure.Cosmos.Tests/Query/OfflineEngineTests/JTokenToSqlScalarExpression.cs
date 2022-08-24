@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
                             properties.Add(property);
                         }
 
-                        return SqlObjectCreateScalarExpression.Create(null, properties.ToArray());
+                        return SqlObjectCreateScalarExpression.Create(properties.ToArray());
                     }
 
                 case JTokenType.String:

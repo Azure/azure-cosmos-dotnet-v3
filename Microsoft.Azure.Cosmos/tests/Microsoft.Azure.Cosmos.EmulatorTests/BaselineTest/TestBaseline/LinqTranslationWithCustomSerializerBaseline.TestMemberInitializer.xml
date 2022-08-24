@@ -1,0 +1,25 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ DataObject initializer with constant value]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObject() {NumericField = 12, StringField = "12"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root = {"number": 12, "String_value": "12", "id": null, "Pk": null})]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select w/ DataObject initializer]]></Description>
+      <Expression><![CDATA[query.Select(doc => new DataObject() {NumericField = 12, StringField = "12"})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"number": 12, "String_value": "12", "id": null, "Pk": null} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

@@ -39,8 +39,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 
         public ImmutableArray<SqlObjectProperty> Properties { get; }
 
-        public CosmosSerializer UserSerializer { get; }
-
         public static SqlObjectCreateScalarExpression Create(params SqlObjectProperty[] properties) => new SqlObjectCreateScalarExpression(properties.ToImmutableArray());
 
         public static SqlObjectCreateScalarExpression Create(ImmutableArray<SqlObjectProperty> properties) => new SqlObjectCreateScalarExpression(properties);
@@ -56,10 +54,5 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
         public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor) => visitor.Visit(this);
 
         public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
-
-        public override string ToString()
-        {
-            return base.ToString();
-        }
     }
 }

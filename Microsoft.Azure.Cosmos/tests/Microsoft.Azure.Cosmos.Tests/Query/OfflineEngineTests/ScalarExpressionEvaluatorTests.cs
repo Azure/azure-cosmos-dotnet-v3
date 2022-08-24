@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
 
             SqlArrayCreateScalarExpression arrayCreateScalarExpresion1 = SqlArrayCreateScalarExpression.Create();
             SqlArrayCreateScalarExpression arrayCreateScalarExpresion2 = SqlArrayCreateScalarExpression.Create(five);
-            SqlObjectCreateScalarExpression objectCreateScalarExpression = SqlObjectCreateScalarExpression.Create(null);
+            SqlObjectCreateScalarExpression objectCreateScalarExpression = SqlObjectCreateScalarExpression.Create();
 
             SqlBinaryScalarExpression fivePlusThree = SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Add, five, three);
             AssertEvaluation(CosmosNumber64.Create(3 + 5), fivePlusThree);

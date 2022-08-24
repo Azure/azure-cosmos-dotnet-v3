@@ -145,9 +145,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
-                new LinqTestInput("Select w/ DataObject initializer", b => getQuery(b).Select(doc => new DataObject() { NumericField = doc.NumericField, StringField = doc.StringField })),
                 new LinqTestInput("Filter w/ DataObject initializer with constant value", b => getQuery(b).Where(doc => doc == new DataObject() { NumericField = 12, StringField = "12" })),
-                new LinqTestInput("Filter w/ DataObject initializer with member initialization", b => getQuery(b).Where(doc => doc == new DataObject() { NumericField = doc.NumericField, StringField = doc.StringField }))
+                new LinqTestInput("Select w/ DataObject initializer", b => getQuery(b).Select(doc => new DataObject() { NumericField = 12, StringField = "12" }))
+
+                // Negative test case: serializing only field name using custom serializer not currently supported
+                //new LinqTestInput("Select w/ DataObject initializer", b => getQuery(b).Select(doc => new DataObject() { NumericField = doc.NumericField, StringField = doc.StringField })),
+                //new LinqTestInput("Filter w/ DataObject initializer with member initialization", b => getQuery(b).Where(doc => doc == new DataObject() { NumericField = doc.NumericField, StringField = doc.StringField }))
             };
             this.ExecuteTestSuite(inputs);
         }
