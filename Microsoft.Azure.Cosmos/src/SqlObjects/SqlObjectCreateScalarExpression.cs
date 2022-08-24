@@ -6,9 +6,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
-    using System.Globalization;
-    using System.IO;
-    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -17,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 #else
     internal
 #endif
-    sealed class SqlObjectCreateScalarExpression : SqlScalarExpression
+    sealed class f : SqlScalarExpression
     {
         private SqlObjectCreateScalarExpression(ImmutableArray<SqlObjectProperty> properties)
         {

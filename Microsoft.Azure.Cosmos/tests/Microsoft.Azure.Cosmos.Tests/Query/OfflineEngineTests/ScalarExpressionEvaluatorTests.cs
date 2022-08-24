@@ -471,7 +471,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
             });
 
             SqlObjectCreateScalarExpression john = SqlObjectCreateScalarExpression.Create(
-                null,
                 SqlObjectProperty.Create(SqlPropertyName.Create("name"),
                 SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("John"))));
             AssertEvaluation(expected, john);
