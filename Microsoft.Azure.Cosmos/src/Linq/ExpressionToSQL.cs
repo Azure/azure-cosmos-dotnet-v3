@@ -718,9 +718,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                 StringWriter writer = new StringWriter(CultureInfo.InvariantCulture);
 
                 // Use the user serializer for the parameter values so custom conversions are correctly handled
-                using (Stream str = context.linqSerializerOptions.CustomerCosmosSerializer.ToStream(inputExpression.Value))
+                using (Stream stream = context.linqSerializerOptions.CustomerCosmosSerializer.ToStream(inputExpression.Value))
                 {
-                    using (StreamReader streamReader = new StreamReader(str))
+                    using (StreamReader streamReader = new StreamReader(stream))
                     {
                         string propertyValue = streamReader.ReadToEnd();
                         writer.Write(propertyValue);
@@ -872,7 +872,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
 
                 SqlObjectProperty[] propertyBindings = ExpressionToSql.CreateInitializers(inputExpression.Arguments, inputExpression.Members, context);
-                SqlObjectCreateScalarExpression create = SqlObjectCreateScalarExpression.Create(context.linqSerializerOptions?.CustomerCosmosSerializer, propertyBindings);
+                SqlObjectCreateScalarExpression create = SqlObjectCreateScalarExpression.Create(propertyBindings);
                 return create;
             }
             else
@@ -886,7 +886,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             ExpressionToSql.VisitNew(inputExpression.NewExpression, context); // Return value is ignored
             SqlObjectProperty[] propertyBindings = ExpressionToSql.VisitBindingList(inputExpression.Bindings, context);
-            SqlObjectCreateScalarExpression create = SqlObjectCreateScalarExpression.Create(context.linqSerializerOptions?.CustomerCosmosSerializer, propertyBindings);
+            SqlObjectCreateScalarExpression create = SqlObjectCreateScalarExpression.Create(propertyBindings);
             return create;
         }
 
@@ -2021,7 +2021,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     properties.Add(property);
                 }
 
-                return SqlObjectCreateScalarExpression.Create(null, properties.ToImmutableArray());
+                return SqlObjectCreateScalarExpression.Create(properties.ToImmutableArray());
             }
 
             public SqlScalarExpression Visit(CosmosString cosmosString)

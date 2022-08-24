@@ -67,7 +67,6 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case SqlObjectCreateScalarExpression objExp:
                     {
                         return SqlObjectCreateScalarExpression.Create(
-                            null,
                             objExp
                                 .Properties
                                 .Select(prop => SqlObjectProperty.Create(prop.Name, Substitute(replacement, toReplace, prop.Value)))

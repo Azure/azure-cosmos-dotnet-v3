@@ -298,7 +298,8 @@
     <Input>
       <Description>SqlObjectCreateScalarExpression Empty</Description>
       <SqlObject><![CDATA[{
-  "Properties": []
+  "Properties": [],
+  "UserSerializer": null
 }]]></SqlObject>
     </Input>
     <Output>
@@ -325,7 +326,8 @@
         }
       }
     }
-  ]
+  ],
+  "UserSerializer": null
 }]]></SqlObject>
     </Input>
     <Output>
@@ -372,7 +374,8 @@
         }
       }
     }
-  ]
+  ],
+  "UserSerializer": null
 }]]></SqlObject>
     </Input>
     <Output>

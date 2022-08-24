@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 #endif
     sealed class SqlObjectCreateScalarExpression : SqlScalarExpression
     {
-        private SqlObjectCreateScalarExpression(ImmutableArray<SqlObjectProperty> properties, CosmosSerializer userSerializer = null)
+        private SqlObjectCreateScalarExpression(ImmutableArray<SqlObjectProperty> properties)
         {
             if (properties == null)
             {
@@ -35,16 +35,15 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             }
 
             this.Properties = properties;
-            this.UserSerializer = userSerializer; //nullable
         }
 
         public ImmutableArray<SqlObjectProperty> Properties { get; }
 
         public CosmosSerializer UserSerializer { get; }
 
-        public static SqlObjectCreateScalarExpression Create(CosmosSerializer userSerializer, params SqlObjectProperty[] properties) => new SqlObjectCreateScalarExpression(properties.ToImmutableArray(), userSerializer);
+        public static SqlObjectCreateScalarExpression Create(params SqlObjectProperty[] properties) => new SqlObjectCreateScalarExpression(properties.ToImmutableArray());
 
-        public static SqlObjectCreateScalarExpression Create(CosmosSerializer userSerializer, ImmutableArray<SqlObjectProperty> properties) => new SqlObjectCreateScalarExpression(properties, userSerializer);
+        public static SqlObjectCreateScalarExpression Create(ImmutableArray<SqlObjectProperty> properties) => new SqlObjectCreateScalarExpression(properties);
 
         public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
@@ -60,22 +59,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 
         public override string ToString()
         {
-            if (this.UserSerializer != null)
-            {
-                StringWriter writer = new StringWriter(CultureInfo.InvariantCulture);
-
-                // Use the user serializer for the parameter values so custom conversions are correctly handled
-                using (Stream str = this.UserSerializer.ToStream(this.Properties))
-                {
-                    using (StreamReader streamReader = new StreamReader(str))
-                    {
-                        string propertyValue = streamReader.ReadToEnd();
-                        writer.Write(propertyValue);
-                        return writer.ToString();
-                    }
-                }
-            }
-
             return base.ToString();
         }
     }
