@@ -25,7 +25,7 @@ The default pipeline structure is:
 
 ```mermaid
 flowchart
-    RequestInvokerHandler <--> UserHandlers[[Any User defined handlers]]
+    RequestInvokerHandler <--> UserHandlers([Any User defined handlers])
     UserHandlers <--> DiagnosticHandler
     DiagnosticHandler <--> TelemetryHandler
     TelemetryHandler <--> RetryHandler
@@ -35,7 +35,7 @@ flowchart
     IsPartitionedFeedOperation <-- Yes --> InvalidPartitionExceptionRetryHandler
     InvalidPartitionExceptionRetryHandler <--> PartitionKeyRangeHandler
     PartitionKeyRangeHandler <--> TransportHandler
-    TransportHandler <--> TransportClient[Selected Transport]
+    TransportHandler <--> TransportClient[[Selected Transport]]
 ```
 
 ## Transport
