@@ -10,18 +10,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         {
             Passthrough,
             Specialized,
-            TryExecute,
+            SingleRoundtripOptimisticExecution,
         }
 
-        public TestInjections(bool simulate429s, bool simulateEmptyPages, bool enableTryExecute = false, ResponseStats responseStats = null)
+        public TestInjections(bool simulate429s, bool simulateEmptyPages, bool enableSingleRoundtripOptimisticExecution = false, ResponseStats responseStats = null)
         {
             this.SimulateThrottles = simulate429s;
             this.SimulateEmptyPages = simulateEmptyPages;
             this.Stats = responseStats;
-            this.EnableTryExecute = enableTryExecute;
+            this.EnableSingleRoundtripOptimisticExecution = enableSingleRoundtripOptimisticExecution;
         }
 
-        public bool EnableTryExecute { get; }
+        public bool EnableSingleRoundtripOptimisticExecution { get; }
 
         public bool SimulateThrottles { get; }
 

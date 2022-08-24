@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SingleRoundtripOptimisticExecutionQuery
 {
     using System;
     using System.Collections.Generic;
@@ -19,11 +19,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
     /// <summary>
     /// A continuation token that has both backend continuation token and partition range information. 
     /// </summary>
-    internal sealed class TryExecuteContinuationToken : IPartitionedToken
+    internal sealed class SingleRoundtripOptimisticExecutionContinuationToken : IPartitionedToken
     {
-        private static readonly string tryExecute = "tryExecute";
+        private static readonly string singleRoundtripOptimisticExec = "singleRoundtripOptimisticExec";
 
-        public TryExecuteContinuationToken(ParallelContinuationToken token)
+        public SingleRoundtripOptimisticExecutionContinuationToken(ParallelContinuationToken token)
         {
             this.Token = token;
         }
@@ -32,24 +32,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
 
         public Range<string> Range => this.Token.Range;
 
-        public static CosmosElement ToCosmosElement(TryExecuteContinuationToken continuationToken)
+        public static CosmosElement ToCosmosElement(SingleRoundtripOptimisticExecutionContinuationToken continuationToken)
         {
             CosmosElement inner = ParallelContinuationToken.ToCosmosElement(continuationToken.Token);
             return CosmosObject.Create(
                             new Dictionary<string, CosmosElement>()
                             {
-                                [tryExecute] = inner
+                                [singleRoundtripOptimisticExec] = inner
                             });
         }
 
-        public static TryCatch<TryExecuteContinuationToken> TryCreateFromCosmosElement(CosmosElement cosmosElement)
+        public static TryCatch<SingleRoundtripOptimisticExecutionContinuationToken> TryCreateFromCosmosElement(CosmosElement cosmosElement)
         {
             CosmosObject cosmosObjectContinuationToken = (CosmosObject)cosmosElement;
-            TryCatch<ParallelContinuationToken> inner = ParallelContinuationToken.TryCreateFromCosmosElement(cosmosObjectContinuationToken[tryExecute]);
+            TryCatch<ParallelContinuationToken> inner = ParallelContinuationToken.TryCreateFromCosmosElement(cosmosObjectContinuationToken[singleRoundtripOptimisticExec]);
 
             return inner.Succeeded ?
-                TryCatch<TryExecuteContinuationToken>.FromResult(new TryExecuteContinuationToken(inner.Result)) :
-                TryCatch<TryExecuteContinuationToken>.FromException(inner.Exception);
+                TryCatch<SingleRoundtripOptimisticExecutionContinuationToken>.FromResult(new SingleRoundtripOptimisticExecutionContinuationToken(inner.Result)) :
+                TryCatch<SingleRoundtripOptimisticExecutionContinuationToken>.FromException(inner.Exception);
         }
     }
 }

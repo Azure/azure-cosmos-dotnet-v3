@@ -30,12 +30,12 @@
     using System.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using System.IO;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SingleRoundtripOptimisticExecutionQuery;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
-    public class TryExecuteQueryBaselineTests : BaselineTests<TryExecuteQueryTestInput, TryExecuteQueryTestOutput>
+    public class SingleRoundtripOptimisticExecutionQueryBaselineTests : BaselineTests<SingleRoundtripOptimisticExecutionTestInput, SingleRoundtripOptimisticExecutionTestOutput>
     {
         [TestMethod]
         [Owner("akotalwar")]
@@ -43,7 +43,7 @@
         {
             Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
 
-            TryCatch<IQueryPipelineStage> monadicCreate = TryExecuteQueryPipelineStage.MonadicCreate(
+            TryCatch<IQueryPipelineStage> monadicCreate = SingleRoundtripOptimisticExecutionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT VALUE COUNT(1) FROM c"),
                 targetRange:  FeedRangeEpk.FullRange,
@@ -63,11 +63,11 @@
             ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
                 token: "asdf",
                 range: new Documents.Routing.Range<string>("A", "B", true, false));
- 
-            TryExecuteContinuationToken token = new TryExecuteContinuationToken(parallelContinuationToken);
-            CosmosElement cosmosElementContinuationToken = TryExecuteContinuationToken.ToCosmosElement(token);
 
-            TryCatch<IQueryPipelineStage> monadicCreate = TryExecuteQueryPipelineStage.MonadicCreate(
+            SingleRoundtripOptimisticExecutionContinuationToken token = new SingleRoundtripOptimisticExecutionContinuationToken(parallelContinuationToken);
+            CosmosElement cosmosElementContinuationToken = SingleRoundtripOptimisticExecutionContinuationToken.ToCosmosElement(token);
+
+            TryCatch<IQueryPipelineStage> monadicCreate = SingleRoundtripOptimisticExecutionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT VALUE COUNT(1) FROM c"),
                 targetRange: new FeedRangeEpk(new Documents.Routing.Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)),
@@ -80,12 +80,12 @@
 
         // test checks that the pipeline can take a query to the backend and returns its associated document(s). 
         [TestMethod]
-        public async Task TestTryExecutePipelineForBackendDocumentsAsync()
+        public async Task TestPipelineForBackendDocumentsAsync()
         {
             int numItems = 10;
             string query = "SELECT VALUE COUNT(1) FROM c";
             IDocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems);
-            IQueryPipelineStage queryPipelineStage = await CreateTryExecutePipelineStateAsync(inMemoryCollection, query, continuationToken: null);
+            IQueryPipelineStage queryPipelineStage = await CreateSingleRoundtripOptExecPipelineStateAsync(inMemoryCollection, query, continuationToken: null);
             int documentCountInSinglePartition = 0;
 
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
@@ -101,12 +101,12 @@
 
         // test checks that the pipeline can take a query to the backend and returns its associated document(s) + continuation token.
         [TestMethod]
-        public async Task TestTryExecutePipelineForContinuationTokenAsync()
+        public async Task TestPipelineForContinuationTokenAsync()
         {
             int numItems = 100;
             string query = "SELECT * FROM c";
             IDocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems);
-            IQueryPipelineStage queryPipelineStage = await CreateTryExecutePipelineStateAsync(inMemoryCollection, query, continuationToken: null);
+            IQueryPipelineStage queryPipelineStage = await CreateSingleRoundtripOptExecPipelineStateAsync(inMemoryCollection, query, continuationToken: null);
             List<CosmosElement> documents = new List<CosmosElement>();
             int continuationTokenCount = 0;
 
@@ -123,7 +123,7 @@
                 }
                 else 
                 {
-                    queryPipelineStage = await CreateTryExecutePipelineStateAsync(inMemoryCollection, query, continuationToken: tryGetPage.Result.State.Value);
+                    queryPipelineStage = await CreateSingleRoundtripOptExecPipelineStateAsync(inMemoryCollection, query, continuationToken: tryGetPage.Result.State.Value);
                 }
 
                 continuationTokenCount++;
@@ -133,14 +133,14 @@
             Assert.AreEqual(documents.Count, 17);
         }
 
-        private static async Task<IQueryPipelineStage> CreateTryExecutePipelineStateAsync(IDocumentContainer documentContainer, string query, CosmosElement continuationToken)
+        private static async Task<IQueryPipelineStage> CreateSingleRoundtripOptExecPipelineStateAsync(IDocumentContainer documentContainer, string query, CosmosElement continuationToken)
         {
             List<FeedRangeEpk> targetRanges = await documentContainer.GetFeedRangesAsync(
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
             FeedRangeEpk firstRange = targetRanges[0];
 
-            TryCatch<IQueryPipelineStage> monadicQueryPipelineStage = TryExecuteQueryPipelineStage.MonadicCreate(
+            TryCatch<IQueryPipelineStage> monadicQueryPipelineStage = SingleRoundtripOptimisticExecutionQueryPipelineStage.MonadicCreate(
             documentContainer: documentContainer,
             sqlQuerySpec: new SqlQuerySpec(query),
             targetRange: firstRange,
@@ -209,9 +209,9 @@
 
         [TestMethod]
         [Owner("akotalwar")]
-        public void PositiveTryExecuteOutput()
+        public void PositiveSingleRoundtripOptimistExecOutput()
         { 
-            List<TryExecuteQueryTestInput> testVariations = new List<TryExecuteQueryTestInput>
+            List<SingleRoundtripOptimisticExecutionTestInput> testVariations = new List<SingleRoundtripOptimisticExecutionTestInput>
             {
                 CreateInput(
                 @"Partition Key + Value and Distinct",
@@ -239,9 +239,9 @@
         
         [TestMethod]
         [Owner("akotalwar")]
-        public void NegativeTryExecuteOutput()
+        public void NegativeSingleRoundtripOptimistExecOutput()
         {
-            List<TryExecuteQueryTestInput> testVariations = new List<TryExecuteQueryTestInput>
+            List<SingleRoundtripOptimisticExecutionTestInput> testVariations = new List<SingleRoundtripOptimisticExecutionTestInput>
             {
                 CreateInput(
                 @"Null Partition Key Value",
@@ -267,27 +267,27 @@
             this.ExecuteTestSuite(testVariations);
         }
 
-        private static TryExecuteQueryTestInput CreateInput(
+        private static SingleRoundtripOptimisticExecutionTestInput CreateInput(
             string description,
             string query,
-            bool expectedTryExecute,
+            bool expectedSingleRoundTripOptExec,
             string partitionKeyPath,
             string partitionKeyValue)
         {
             PartitionKeyBuilder pkBuilder = new PartitionKeyBuilder();
             pkBuilder.Add(partitionKeyValue);
 
-            return CreateInput(description, query, expectedTryExecute, partitionKeyPath, pkBuilder.Build());
+            return CreateInput(description, query, expectedSingleRoundTripOptExec, partitionKeyPath, pkBuilder.Build());
         }
 
-        private static TryExecuteQueryTestInput CreateInput(
+        private static SingleRoundtripOptimisticExecutionTestInput CreateInput(
             string description,
             string query,
-            bool expectedTryExecute,
+            bool expectedSingleRoundTripOptExec,
             string partitionKeyPath,
             Cosmos.PartitionKey partitionKeyValue)
         {
-            return new TryExecuteQueryTestInput(description, query, new SqlQuerySpec(query), expectedTryExecute, partitionKeyPath, partitionKeyValue);
+            return new SingleRoundtripOptimisticExecutionTestInput(description, query, new SqlQuerySpec(query), expectedSingleRoundTripOptExec, partitionKeyPath, partitionKeyValue);
         }
         
         private static PartitionedQueryExecutionInfo GetPartitionedQueryExecutionInfo(string querySpecJsonString, PartitionKeyDefinition pkDefinition)
@@ -304,7 +304,7 @@
             return tryGetQueryPlan.Result;
         }
 
-        public override TryExecuteQueryTestOutput ExecuteTest(TryExecuteQueryTestInput input)
+        public override SingleRoundtripOptimisticExecutionTestOutput ExecuteTest(SingleRoundtripOptimisticExecutionTestInput input)
         {
             // gets DocumentContainer
             IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(input.PartitionKeyDefinition);
@@ -329,7 +329,7 @@
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
                 MaxBufferedItemCount = 7000,
-                TestSettings = new TestInjections(simulate429s: true, simulateEmptyPages: false, enableTryExecute: true)
+                TestSettings = new TestInjections(simulate429s: true, simulateEmptyPages: false, enableSingleRoundtripOptimisticExecution: true, new TestInjections.ResponseStats())
             };
 
             CosmosSerializerCore serializerCore = new();
@@ -363,46 +363,53 @@
                       inputParameters,
                       NoOpTrace.Singleton);
             bool result = queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton).Result;
+
+            if (input.ExpectedSingleRoundtripOptimistic)
+            {
+                Assert.AreEqual(TestInjections.PipelineType.SingleRoundtripOptimisticExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
+            }
+            else {
+                Assert.AreNotEqual(TestInjections.PipelineType.SingleRoundtripOptimisticExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
+            }
             
-            Assert.AreEqual(input.ExpectedTryExecute, inputParameters.SqlQuerySpec.TryExecute);
             Assert.IsNotNull(queryPipelineStage);
             Assert.IsTrue(result);
            
-            return new TryExecuteQueryTestOutput(inputParameters.SqlQuerySpec.TryExecute);
+            return new SingleRoundtripOptimisticExecutionTestOutput(input.ExpectedSingleRoundtripOptimistic);
         }
     }
 
-    public sealed class TryExecuteQueryTestOutput : BaselineTestOutput
+    public sealed class SingleRoundtripOptimisticExecutionTestOutput : BaselineTestOutput
     {
-        public TryExecuteQueryTestOutput(bool executeAsTryExecute)
+        public SingleRoundtripOptimisticExecutionTestOutput(bool executeAsSingleRoundtripOptimistic)
         {
-            this.ExecuteAsTryExecute = executeAsTryExecute;
+            this.ExecuteAsSingleRoundtripOptimistic = executeAsSingleRoundtripOptimistic;
         }
 
-        public bool ExecuteAsTryExecute { get; }
+        public bool ExecuteAsSingleRoundtripOptimistic { get; }
 
         public override void SerializeAsXml(XmlWriter xmlWriter)
         {
-            xmlWriter.WriteStartElement(nameof(this.ExecuteAsTryExecute));
-            xmlWriter.WriteValue(this.ExecuteAsTryExecute);
+            xmlWriter.WriteStartElement(nameof(this.ExecuteAsSingleRoundtripOptimistic));
+            xmlWriter.WriteValue(this.ExecuteAsSingleRoundtripOptimistic);
             xmlWriter.WriteEndElement();
         }
     }
 
-    public sealed class TryExecuteQueryTestInput : BaselineTestInput
+    public sealed class SingleRoundtripOptimisticExecutionTestInput : BaselineTestInput
     {
         internal PartitionKeyDefinition PartitionKeyDefinition { get; set; }
         internal SqlQuerySpec SqlQuerySpec { get; set; }
         internal Cosmos.PartitionKey PartitionKeyValue { get; set; }
-        internal bool ExpectedTryExecute { get; set; }
+        internal bool ExpectedSingleRoundtripOptimistic { get; set; }
         internal PartitionKeyRangeIdentity PartitionKeyRangeId { get; set; }
         internal string Query { get; set; }
 
-        internal TryExecuteQueryTestInput(
+        internal SingleRoundtripOptimisticExecutionTestInput(
             string description,
             string query,
             SqlQuerySpec sqlQuerySpec,
-            bool expectedTryExecute,
+            bool expectedSingleRoundtripOptimistic,
             string partitionKeyPath,
             Cosmos.PartitionKey partitionKeyValue)
             : base(description)
@@ -417,7 +424,7 @@
                 Version = PartitionKeyDefinitionVersion.V2,
             };
             this.SqlQuerySpec = sqlQuerySpec;
-            this.ExpectedTryExecute = expectedTryExecute;
+            this.ExpectedSingleRoundtripOptimistic = expectedSingleRoundtripOptimistic;
             this.Query = query;
             this.PartitionKeyValue = partitionKeyValue;
         }

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -20,8 +21,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SingleRoundtripOptimisticExecutionQuery;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Tokens;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.SqlObjects;
@@ -132,49 +133,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     createQueryPipelineTrace,
                     cancellationToken);
                 cosmosQueryContext.ContainerResourceId = containerQueryProperties.ResourceId;
-                
-                inputParameters.SqlQuerySpec.TryExecute = IsTryExecuteCandidate(inputParameters, queryPlanFromContinuationToken);
 
-                if (inputParameters.SqlQuerySpec.TryExecute)
+                Documents.PartitionKeyRange targetRange = await GetTargetRangeForSingleRoundtripOptimisticExecutionAsync(inputParameters, queryPlanFromContinuationToken, cosmosQueryContext, containerQueryProperties, trace, createQueryPipelineTrace);
+     
+                if (targetRange != null)
                 {
-                    List<Documents.PartitionKeyRange> targetRanges = new List<Documents.PartitionKeyRange>();
-
-                    if (queryPlanFromContinuationToken != null)
-                    {
-                        targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
-                            cosmosQueryContext.QueryClient,
-                            cosmosQueryContext.ResourceLink,
-                            queryPlanFromContinuationToken,
-                            containerQueryProperties,
-                            inputParameters.Properties,
-                            inputParameters.InitialFeedRange,
-                            trace);
-                    }
-                    else
-                    {
-                        Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
-                        targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
-                            cosmosQueryContext.ResourceLink,
-                            containerQueryProperties.ResourceId,
-                            inputParameters.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition),
-                            forceRefresh: false,
-                            createQueryPipelineTrace);
-                    }
-
-                    Debug.Assert(targetRanges.Count == 1, $"nameof(TryExecuteQueryPipelineStage) Assert!", "Exactly one range item is expected!");
-
                     // Test code added to confirm the correct pipeline is being utilized
                     //TODO: Remove this test code and find another way to test the pipeline type that is being used.
                     TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
                     if (responseStats != null)
                     {
-                        responseStats.PipelineType = TestInjections.PipelineType.TryExecute;
+                        responseStats.PipelineType = TestInjections.PipelineType.SingleRoundtripOptimisticExecution;
                     }
 
-                    return CreateTryExecuteQueryExecutionContext(
+                    return SingleRoundtripOptimisticExecutionContext(
                                 documentContainer,
                                 inputParameters,
-                                targetRanges.Single(),
+                                targetRange,
                                 cancellationToken);
                 }
 
@@ -330,22 +305,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             bool createPassthroughQuery = streamingSinglePartitionQuery || streamingCrossContinuationQuery;
             
             TryCatch<IQueryPipelineStage> tryCreatePipelineStage;
-            
-            // After getting the Query Plan if we find out that the query is single logical/physical partition, then short circuit and send straight to Backend
-            inputParameters.SqlQuerySpec.TryExecute = IsTryExecuteCandidate(inputParameters, partitionedQueryExecutionInfo);
 
-            if (inputParameters.SqlQuerySpec.TryExecute)
+            Documents.PartitionKeyRange targetRange = await GetTargetRangeForSingleRoundtripOptimisticExecutionAsync(inputParameters, partitionedQueryExecutionInfo, cosmosQueryContext, containerQueryProperties, trace);
+
+            if (targetRange != null)
             {
                 TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
                 if (responseStats != null)
                 {
-                    responseStats.PipelineType = TestInjections.PipelineType.TryExecute;
+                    responseStats.PipelineType = TestInjections.PipelineType.SingleRoundtripOptimisticExecution;
                 }
 
-                tryCreatePipelineStage = CosmosQueryExecutionContextFactory.CreateTryExecuteQueryExecutionContext(
+                tryCreatePipelineStage = CosmosQueryExecutionContextFactory.SingleRoundtripOptimisticExecutionContext(
                     documentContainer,
                     inputParameters,
-                    targetRanges.Single(),
+                    targetRange,
                     cancellationToken);
 
                 return tryCreatePipelineStage;
@@ -410,14 +384,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return tryCreatePipelineStage;
         }
         
-        private static TryCatch<IQueryPipelineStage> CreateTryExecuteQueryExecutionContext(
+        private static TryCatch<IQueryPipelineStage> SingleRoundtripOptimisticExecutionContext(
             DocumentContainer documentContainer,
             InputParameters inputParameters,
             Documents.PartitionKeyRange targetRange,
             CancellationToken cancellationToken)
         {
-            // Return a tryExecute context
-            return TryExecuteQueryPipelineStage.MonadicCreate(
+            // Return a SingleRoundtripOptimisticExecution context
+            return SingleRoundtripOptimisticExecutionQueryPipelineStage.MonadicCreate(
                 documentContainer: documentContainer,
                 sqlQuerySpec: inputParameters.SqlQuerySpec,
                 targetRange: new FeedRangeEpk(targetRange.ToRange()),
@@ -619,29 +593,66 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return partitionKeyDefinition;
         }
 
-        private static bool IsTryExecuteCandidate(InputParameters inputParameters, PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
+        private static async Task<Documents.PartitionKeyRange> GetTargetRangeForSingleRoundtripOptimisticExecutionAsync(
+            InputParameters inputParameters,
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
+            CosmosQueryContext cosmosQueryContext,
+            ContainerQueryProperties containerQueryProperties,
+            ITrace trace,
+            ITrace createQueryPipelineTrace = null)
         {
-            if (inputParameters.TestInjections?.EnableTryExecute == false) return false;
+            if (inputParameters.TestInjections?.EnableSingleRoundtripOptimisticExecution == false) return null;
+
+            bool hasQueryRanges = false;
 
             // case 1: Is query going to a single partition
             bool hasPartitionKey = inputParameters.PartitionKey.HasValue
                 && inputParameters.PartitionKey != PartitionKey.Null
                 && inputParameters.PartitionKey != PartitionKey.None;
 
-            if (hasPartitionKey) return true;
-            
             // case 2: does query execution plan have a single query range
             if (partitionedQueryExecutionInfo != null)
             {
-                bool hasQueryRanges = (partitionedQueryExecutionInfo.QueryRanges.Count == 1)
+                hasQueryRanges = (partitionedQueryExecutionInfo.QueryRanges.Count == 1)
                 && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue;
-
-                if (hasQueryRanges) return hasQueryRanges;
             }
-        
-            // TODO: case 3: does collection have only one physical partition
 
-            return false;
+            if (!hasPartitionKey && !hasQueryRanges) return null;
+
+            List<Documents.PartitionKeyRange> targetRanges = new List<Documents.PartitionKeyRange>();
+
+            if (partitionedQueryExecutionInfo != null)
+            {
+                targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
+                    cosmosQueryContext.QueryClient,
+                    cosmosQueryContext.ResourceLink,
+                    partitionedQueryExecutionInfo,
+                    containerQueryProperties,
+                    inputParameters.Properties,
+                    inputParameters.InitialFeedRange,
+                    trace);
+            }
+            else
+            {
+                Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
+                if (partitionKeyDefinition != null && containerQueryProperties.ResourceId != null && inputParameters.PartitionKey != null)
+                {
+                    targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
+                        cosmosQueryContext.ResourceLink,
+                        containerQueryProperties.ResourceId,
+                        inputParameters.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition),
+                        forceRefresh: false,
+                        createQueryPipelineTrace);
+                }
+            }
+
+            if (targetRanges.Count == 1)
+            {
+                return targetRanges.Single();
+            }
+
+            return null;
+
         }
 
         public sealed class InputParameters

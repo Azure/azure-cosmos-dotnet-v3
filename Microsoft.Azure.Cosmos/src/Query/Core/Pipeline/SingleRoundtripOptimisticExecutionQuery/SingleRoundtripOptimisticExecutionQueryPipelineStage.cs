@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SingleRoundtripOptimisticExecutionQuery
 {
     using System;
     using System.Collections.Generic;
@@ -21,11 +21,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
     using Microsoft.Azure.Cosmos.Tracing;
     using static Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.PartitionMapper;
 
-    internal sealed class TryExecuteQueryPipelineStage : IQueryPipelineStage
+    internal sealed class SingleRoundtripOptimisticExecutionQueryPipelineStage : IQueryPipelineStage
     {
         private readonly QueryPartitionRangePageAsyncEnumerator queryPartitionRangePageAsyncEnumerator;
 
-        private TryExecuteQueryPipelineStage(
+        private SingleRoundtripOptimisticExecutionQueryPipelineStage(
             QueryPartitionRangePageAsyncEnumerator queryPartitionRangePageAsyncEnumerator)
         {
             this.queryPartitionRangePageAsyncEnumerator = queryPartitionRangePageAsyncEnumerator ?? throw new ArgumentNullException(nameof(queryPartitionRangePageAsyncEnumerator));
@@ -77,8 +77,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
                     token: (backendQueryState?.Value as CosmosString)?.Value,
                     range: ((FeedRangeEpk)this.queryPartitionRangePageAsyncEnumerator.FeedRangeState.FeedRange).Range);
 
-                TryExecuteContinuationToken tryExecuteContinuationToken = new TryExecuteContinuationToken(parallelContinuationToken);
-                CosmosElement cosmosElementContinuationToken = TryExecuteContinuationToken.ToCosmosElement(tryExecuteContinuationToken);
+                SingleRoundtripOptimisticExecutionContinuationToken singleRoundtripOptimisticExecutionContinuationToken = new SingleRoundtripOptimisticExecutionContinuationToken(parallelContinuationToken);
+                CosmosElement cosmosElementContinuationToken = SingleRoundtripOptimisticExecutionContinuationToken.ToCosmosElement(singleRoundtripOptimisticExecutionContinuationToken);
                 queryState = new QueryState(cosmosElementContinuationToken);
             }
 
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
                 queryPaginationOptions,
                 cancellationToken);
 
-            TryExecuteQueryPipelineStage stage = new TryExecuteQueryPipelineStage(partitionPageEnumerator);
+            SingleRoundtripOptimisticExecutionQueryPipelineStage stage = new SingleRoundtripOptimisticExecutionQueryPipelineStage(partitionPageEnumerator);
             return TryCatch<IQueryPipelineStage>.FromResult(stage);
         }
 
@@ -149,13 +149,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
                 throw new ArgumentNullException(nameof(continuationToken));
             }
 
-            TryCatch<TryExecuteContinuationToken> tryCreateContinuationToken = TryExecuteContinuationToken.TryCreateFromCosmosElement(continuationToken);
+            TryCatch<SingleRoundtripOptimisticExecutionContinuationToken> tryCreateContinuationToken = SingleRoundtripOptimisticExecutionContinuationToken.TryCreateFromCosmosElement(continuationToken);
             if (tryCreateContinuationToken.Failed)
             {
                 return TryCatch<FeedRangeState<QueryState>>.FromException(tryCreateContinuationToken.Exception);
             }
 
-            TryCatch<PartitionMapping<TryExecuteContinuationToken>> partitionMappingMonad = PartitionMapper.MonadicGetPartitionMapping(
+            TryCatch<PartitionMapping<SingleRoundtripOptimisticExecutionContinuationToken>> partitionMappingMonad = PartitionMapper.MonadicGetPartitionMapping(
                 range,
                 tryCreateContinuationToken.Result);
 
@@ -165,9 +165,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.TryExecuteQuery
                     partitionMappingMonad.Exception);
             }
             
-            PartitionMapping<TryExecuteContinuationToken> partitionMapping = partitionMappingMonad.Result;
+            PartitionMapping<SingleRoundtripOptimisticExecutionContinuationToken> partitionMapping = partitionMappingMonad.Result;
             
-            KeyValuePair<FeedRangeEpk, TryExecuteContinuationToken> kvpRange = new KeyValuePair<FeedRangeEpk, TryExecuteContinuationToken>(
+            KeyValuePair<FeedRangeEpk, SingleRoundtripOptimisticExecutionContinuationToken> kvpRange = new KeyValuePair<FeedRangeEpk, SingleRoundtripOptimisticExecutionContinuationToken>(
                 partitionMapping.TargetMapping.Keys.First(), 
                 partitionMapping.TargetMapping.Values.First());
 
