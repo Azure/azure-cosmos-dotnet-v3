@@ -55,14 +55,12 @@ flowchart
         Start <-- Direct --> ServerStoreModel
         
         TCPClient <-- TCP --> R1
-        TCPClient <-- TCP --> R5
         TCPClient <-- TCP --> R17
-        TCPClient <-- TCP --> R22
+        TCPClient <-- TCP --> R20
 
         GatewayService <-- TCP --> R6
-        GatewayService <-- TCP --> R22
         GatewayService <-- TCP --> R3
-        GatewayService <-- TCP --> R14
+        GatewayService <-- TCP --> R2
 
         ServerStoreModel <--> StoreClient
         StoreClient <--> ReplicatedResourceClient
@@ -87,13 +85,7 @@ flowchart
             R17[(Replica 17)]
             
         end
-        subgraph Partition3
-            R5[(Replica 5)]
-            R14[(Replica 14)]
-            R22[(Replica 22)]
-            R15[(Replica 15)]
-            
-        end
+
         GatewayService[Gateway Service]
     end
 
