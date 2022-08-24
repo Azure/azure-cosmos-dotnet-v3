@@ -8,8 +8,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Globalization;
+    using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
@@ -286,6 +288,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 throw new ArgumentNullException(nameof(changeFeedPaginationOptions));
             }
 
+            Stream streamPayload = null;
+            if (changeFeedPaginationOptions.ChangeFeedQuerySpec != null && changeFeedPaginationOptions.ChangeFeedQuerySpec.ShouldSerializeQueryText())
+            {
+                streamPayload = this.container.ClientContext.SerializerCore.ToStream<ChangeFeed.ChangeFeedQuerySpec>(changeFeedPaginationOptions.ChangeFeedQuerySpec);
+            }
+
             ResponseMessage responseMessage = await this.container.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.Document,
@@ -314,7 +322,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     }
                 },
                 feedRange: feedRangeState.FeedRange,
-                streamPayload: default,
+                streamPayload: streamPayload ?? default,
                 trace: trace,
                 cancellationToken: cancellationToken);
 
