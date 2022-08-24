@@ -169,7 +169,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(LeaseLostException))]
         public async Task ThrowsOnConflict()
         {
             string itemId = "1";
@@ -209,15 +208,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 });
 
             DocumentServiceLeaseUpdaterCosmos updater = new DocumentServiceLeaseUpdaterCosmos(DocumentServiceLeaseUpdaterCosmosTests.GetMockedContainer(mockedItems));
-            DocumentServiceLease updatedLease = await updater.UpdateLeaseAsync(leaseToUpdate, itemId, partitionKey, serverLease =>
+            LeaseLostException leaseLost = await Assert.ThrowsExceptionAsync<LeaseLostException>(() => updater.UpdateLeaseAsync(leaseToUpdate, itemId, partitionKey, serverLease =>
             {
                 serverLease.Owner = "newHost";
                 return serverLease;
-            });
+            }));
+
+            Assert.IsTrue(leaseLost.InnerException is CosmosException innerCosmosException
+                && innerCosmosException.StatusCode == HttpStatusCode.Conflict);
         }
 
         [TestMethod]
-        [ExpectedException(typeof(LeaseLostException))]
         public async Task ThrowsOnNotFoundReplace()
         {
             string itemId = "1";
@@ -257,15 +258,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 });
 
             DocumentServiceLeaseUpdaterCosmos updater = new DocumentServiceLeaseUpdaterCosmos(DocumentServiceLeaseUpdaterCosmosTests.GetMockedContainer(mockedItems));
-            DocumentServiceLease updatedLease = await updater.UpdateLeaseAsync(leaseToUpdate, itemId, partitionKey, serverLease =>
+            LeaseLostException leaseLost = await Assert.ThrowsExceptionAsync<LeaseLostException>(() => updater.UpdateLeaseAsync(leaseToUpdate, itemId, partitionKey, serverLease =>
             {
                 serverLease.Owner = "newHost";
                 return serverLease;
-            });
+            }));
+
+            Assert.IsTrue(leaseLost.InnerException is CosmosException innerCosmosException
+                && innerCosmosException.StatusCode == HttpStatusCode.NotFound);
         }
 
         [TestMethod]
-        [ExpectedException(typeof(LeaseLostException))]
         public async Task ThrowsOnNotFoundRead()
         {
             string itemId = "1";
@@ -302,11 +305,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 });
 
             DocumentServiceLeaseUpdaterCosmos updater = new DocumentServiceLeaseUpdaterCosmos(DocumentServiceLeaseUpdaterCosmosTests.GetMockedContainer(mockedItems));
-            DocumentServiceLease updatedLease = await updater.UpdateLeaseAsync(leaseToUpdate, itemId, partitionKey, serverLease =>
+            LeaseLostException leaseLost = await Assert.ThrowsExceptionAsync<LeaseLostException>(() => updater.UpdateLeaseAsync(leaseToUpdate, itemId, partitionKey, serverLease =>
             {
                 serverLease.Owner = "newHost";
                 return serverLease;
-            });
+            }));
+
+            Assert.IsTrue(leaseLost.InnerException is CosmosException innerCosmosException
+                && innerCosmosException.StatusCode == HttpStatusCode.NotFound);
         }
 
         private static ContainerInternal GetMockedContainer(Mock<ContainerInternal> mockedContainer)
