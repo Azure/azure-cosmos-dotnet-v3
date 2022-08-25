@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 new IndexMetricsParserTestInput
                 (
                   description: "Unicode character",
-                  query: "SELECT * FROM root WHERE root[\"namÉunicode㐀㐁㨀㨁䶴䶵\"] = \"namÉunicode㐀㐁㨀㨁䶴䶵\""
+                  query: "SELECT * FROM root WHERE root[\"asnamÉunicode㐀㐁㨀㨁䶴䶵\"] = \"namÉunicode㐀㐁㨀㨁䶴䶵\""
                 )
             };
 

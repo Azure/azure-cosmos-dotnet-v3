@@ -257,8 +257,16 @@ namespace Microsoft.Azure.Cosmos
             {
                 return new Lazy<string>(() =>
                     {
-                        // TODO: Call both TryCreateFrom64 and TryCreateString
-                        IndexUtilizationInfo.TryCreateFromDelimitedBase64String(responseMessageHeaders.IndexUtilizationText, out IndexUtilizationInfo parsedIndexUtilizationInfo);
+                        IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.Empty;
+
+                        // Try to deserialize with non-base64
+                        bool tryDeserializeNonBase64 = IndexUtilizationInfo.TryCreateFromDelimitedString(responseMessageHeaders.IndexUtilizationText, out parsedIndexUtilizationInfo);
+                        if (tryDeserializeNonBase64 == false)
+                        {
+                            // Retry to deserialize with base64
+                            IndexUtilizationInfo.TryCreateFromDelimitedBase64String(responseMessageHeaders.IndexUtilizationText, out parsedIndexUtilizationInfo);
+                        }
+
                         StringBuilder stringBuilder = new StringBuilder();
                         IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
                         indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);

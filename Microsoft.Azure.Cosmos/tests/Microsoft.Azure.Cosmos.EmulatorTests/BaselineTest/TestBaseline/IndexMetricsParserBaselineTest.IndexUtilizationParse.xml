@@ -20,13 +20,13 @@ Index Utilization Information
   <Result>
     <Input>
       <Description><![CDATA[Unicode character]]></Description>
-      <Query><![CDATA[SELECT * FROM root WHERE root["namÉunicode㐀㐁㨀㨁䶴䶵"] = "namÉunicode㐀㐁㨀㨁䶴䶵"]]></Query>
+      <Query><![CDATA[SELECT * FROM root WHERE root["asnamÉunicode㐀㐁㨀㨁䶴䶵"] = "namÉunicode㐀㐁㨀㨁䶴䶵"]]></Query>
     </Input>
     <Output>
       <IndexMetric><![CDATA[
 Index Utilization Information
   Utilized Single Indexes
-    Index Spec: /namÉunicode㐀㐁㨀㨁䶴䶵/?
+    Index Spec: /asnamÉunicode㐀㐁㨀㨁䶴䶵/?
     Index Impact Score: High
     ---
   Potential Single Indexes
