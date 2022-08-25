@@ -46,7 +46,7 @@ Even on clients configured on Direct mode, there can be [HTTP requests that get 
 
 The ServerStoreModel contains the Direct connectivity stack, which takes care of discovering, for each operation, which is the [physical partition](https://docs.microsoft.com/azure/cosmos-db/partitioning-overview#physical-partitions) to route to and which replica/s should be contacted. The Direct connectivity stack includes a [retry layer](#direct-mode-retry-layer), a [consistency component](#consistency-direct-mode) and the TCP protocol implementation.
 
-The GatewayStoreModel connects to the Cosmos DB Gateway and sends HTTP requests through our [CosmosHttpClient](../Microsoft.Azure.Cosmos/src/HttpClient/CosmosHttpClientCore.cs), which just wraps the `HttpClient` through a retry layer to handle transient timeouts.
+The [GatewayStoreModel](../Microsoft.Azure.Cosmos/src/GatewayStoreModel.cs) connects to the Cosmos DB Gateway and sends HTTP requests through our [CosmosHttpClient](../Microsoft.Azure.Cosmos/src/HttpClient/CosmosHttpClientCore.cs), which just wraps the `HttpClient` through a [retry layer](#http-retry-layer) to handle transient timeouts.
 
 ```mermaid
 flowchart
@@ -64,12 +64,13 @@ flowchart
 
         ServerStoreModel <--> StoreClient
         StoreClient <--> ReplicatedResourceClient
-        ReplicatedResourceClient <-- Retries using --> DirectRetry[[Direct mode retry layer*]]
+        ReplicatedResourceClient <-- Retries using --> DirectRetry[[Direct mode retry layer]]
         DirectRetry <--> Consistency[[Consistency stack]]
         Consistency <--> TCPClient[TCP implementation]
 
-        GatewayStoreModel <--> CosmosHttpClient
-        CosmosHttpClient <-- Retries using --> HttpTimeoutPolicy
+        GatewayStoreModel <--> GatewayStoreClient
+        GatewayStoreClient <--> CosmosHttpClient
+        CosmosHttpClient <-- Retries using --> HttpTimeoutPolicy[[HTTP retry layer]]
         HttpTimeoutPolicy <-- HTTPS --> GatewayService
     subgraph Service
         subgraph Partition1
@@ -91,9 +92,32 @@ flowchart
 
 ```
 
+## HTTP retry layer
+
+The `HttpClient` is wrapped around a [CosmosHttpClient](../Microsoft.Azure.Cosmos/src/HttpClient/CosmosHttpClientCore.cs) which employs an [HttpTimeoutPolicy](../Microsoft.Azure.Cosmos/src/HttpClient/HttpTimeoutPolicy.cs) to retry if the requests has a transient failure (timeout) or if it takes longer than expected. The reason requests are canceled if latency is higher than expected is to account for transient network delays (retrying would be faster than waiting for the request to fail) and for scenarios where the Cosmos DB Gateway is performing rollout upgrades on their endpoints.
+
+The different HTTP retry policies are:
+
+* [HttpTimeoutPolicyControlPlaneRetriableHotPath](../Microsoft.Azure.Cosmos/src/HttpClient/HttpTimeoutPolicyControlPlaneRetriableHotPath.cs) for control plane (metadata) operations involved in a data plane hot path (like obtaining the Query Plan for a query operation).
+* [HttpTimeoutPolicyControlPlaneRead](../Microsoft.Azure.Cosmos/src/HttpClient/HttpTimeoutPolicyControlPlaneRead.cs) for control plane (metadata) reads outside the hot path (like initialization or reading the account information).
+* [HttpTimeoutPolicyNoRetry](../Microsoft.Azure.Cosmos/src/HttpClient/HttpTimeoutPolicyNoRetry.cs) currently only used for Client Telemetry.
+* [HttpTimeoutPolicyDefault](../Microsoft.Azure.Cosmos/src/HttpClient/HttpTimeoutPolicyDefault.cs) used for data-plane item interactions (like CRUD) when the SDK is configured on Gateway mode.
+
+```mermaid
+flowchart
+    GatewayStoreModel --> GatewayStoreClient
+    GatewayStoreClient -- selects --> HttpTimeoutPolicy
+    HttpTimeoutPolicy -- sends request through --> CosmosHttpClient
+    CosmosHttpClient <-- HTTPS --> GatewayService[(Gateway Service)]
+    GatewayService --> IsSuccess{{Request succeeded?}}
+    IsSuccess -- No --> IsRetriable{{Transient retryable error / reached max latency?}}
+    IsRetriable -- Yes --> HttpTimeoutPolicy
+
+```
+
 ## Direct mode retry layer
 
-TBD
+
 
 ## Consistency (direct mode)
 
