@@ -175,11 +175,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), clientOptions.ApplicationPreferredRegions.ToArray());
             Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.DistributedTracingOptions.DiagnosticsLatencyThreshold);
-#if PREVIEW
-            Assert.IsTrue(clientOptions.EnableDistributedTracing);
-#else
             Assert.IsFalse(clientOptions.EnableDistributedTracing);
-#endif
+
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);
             Assert.AreEqual(idleTcpConnectionTimeout, policy.IdleTcpConnectionTimeout);
