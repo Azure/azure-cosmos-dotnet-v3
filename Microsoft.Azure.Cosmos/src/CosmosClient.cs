@@ -1342,7 +1342,7 @@ namespace Microsoft.Azure.Cosmos
                options: requestOptions);
         }
 
-        private async Task InitializeContainersAsync(IReadOnlyList<(string databaseId, string containerId)> containers,
+        internal async Task InitializeContainersAsync(IReadOnlyList<(string databaseId, string containerId)> containers,
                                           CancellationToken cancellationToken)
         {
             try
@@ -1419,7 +1419,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Dispose of cosmos client
         /// </summary>
-        public void Dispose()
+        public virtual void Dispose()
         {
             this.Dispose(true);
         }
