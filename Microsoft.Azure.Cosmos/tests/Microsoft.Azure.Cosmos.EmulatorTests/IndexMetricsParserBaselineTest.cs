@@ -71,15 +71,69 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             {
                 new IndexMetricsParserTestInput
                 (
-                    description: "Basic query",
-                    query: "SELECT * FROM root WHERE root.name = \"Andy\""
+                    description: "Input full string",
+                    query: "SELECT 'Input full string' AS test, c.id, c.statement\r\nFROM c\r\nWHERE STARTSWITH(c.statement, 'The quick brown fox jumps over the lazy dog', false)"
                 ),
 
                 new IndexMetricsParserTestInput
                 (
-                  description: "Unicode character",
-                  query: "SELECT * FROM root WHERE root[\"asnamÉunicode㐀㐁㨀㨁䶴䶵\"] = \"namÉunicode㐀㐁㨀㨁䶴䶵\""
-                )
+                  description: "Unicode 1",
+                  query: "SELECT * \r\nFROM c\r\nWHERE STARTSWITH(c['Î— Î³Ï\u0081Î®Î³Î¿Ï\u0081Î· ÎºÎ±Ï†Î­ Î±Î»ÎµÏ€Î¿Ï\u008d Ï€Î·Î´Î¬ÎµÎ¹ Ï€Î¬Î½Ï‰ Î±Ï€ÏŒ Ï„Î¿ Ï„ÎµÎ¼Ï€Î­Î»Î¹ÎºÎ¿ ÏƑÎºÏ…Î»Î¯'], 's', false)"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                  description: "Unicode 2",
+                  query: "SELECT VALUE STARTSWITH(r['\u0131'], 's', false) FROM root r"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                  description: "Unicode 3",
+                  query: "SELECT VALUE STARTSWITH(r['\u005A\u005A\u005A\u007A\u007A\u007A'], 's', true) FROM root r"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                  description: "Unicode 4",
+                  query: "SELECT VALUE STARTSWITH(r['\u0020\u0021\u0022!@#$%^&*()<>?:\"{}|\u00dfÃ\u0081ŒÆ12ếàưỏốởặ'], 's', true) FROM root r"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                  description: "Unicode German",
+                  query: "SELECT VALUE STARTSWITH(r['Der schnelle Braunfuchs springt über den faulen Hund'], 's', true) FROM root r"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                  description: "Unicode Greek",
+                  query: "SELECT VALUE STARTSWITH(r['Η γρήγορη καφέ αλεπού πηδάει πάνω από το τεμπέλικο σκυλί'], 's', true) FROM root r"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                  description: "Unicode Arabic",
+                  query: "SELECT VALUE STARTSWITH(r['الثعلب البني السريع يقفز فوق الكلب الكسول'], 's', true) FROM root r"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                  description: "Unicode Russian",
+                  query: "SELECT VALUE STARTSWITH(r['Быстрая коричневая лиса прыгает через ленивую собаку'], 's', true) FROM root r"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                  description: "Unicode Japanese",
+                  query: "SELECT VALUE STARTSWITH(r['素早く茶色のキツネが怠惰な犬を飛び越えます'], 's', true) FROM root r"
+                ),
+
+                new IndexMetricsParserTestInput
+                (
+                  description: "Unicode Hindi",
+                  query: "SELECT VALUE STARTSWITH(r['तेज, भूरी लोमडी आलसी कुत्ते के उपर कूद गई'], 's', true) FROM root r"
+                ),
             };
 
             this.ExecuteTestSuite(inputs);
