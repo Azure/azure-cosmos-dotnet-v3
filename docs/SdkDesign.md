@@ -19,7 +19,7 @@ flowchart LR
 
 ## Handler pipeline
 
-The handler pipeline processes the RequestMessage and each handler can choose to augment it in different ways, as shown in our [handler samples](../Microsoft.Azure.Cosmos.Samples/Usage/Handlers/) and also handle certain error conditions and retry, like our own [RetryHandler](../Microsoft.Azure.Cosmos/src/Handler/RetryHandler.cs).
+The handler pipeline processes the RequestMessage and each handler can choose to augment it in different ways, as shown in our [handler samples](../Microsoft.Azure.Cosmos.Samples/Usage/Handlers/) and also handle certain error conditions and retry, like our own [RetryHandler](../Microsoft.Azure.Cosmos/src/Handler/RetryHandler.cs). The RetryHandler will handle any failures from the [Transport layer](#transport) that should be [handled as regional failovers](#cross-region-retries).
 
 The default pipeline structure is:
 
@@ -28,7 +28,7 @@ flowchart
     RequestInvokerHandler <--> UserHandlers([Any User defined handlers])
     UserHandlers <--> DiagnosticHandler
     DiagnosticHandler <--> TelemetryHandler
-    TelemetryHandler <--> RetryHandler
+    TelemetryHandler <--> RetryHandler[Cross region retries]
     RetryHandler <--> RouteHandler
     RouteHandler <--> IsPartitionedFeedOperation{{Partitioned Feed operation?}}
     IsPartitionedFeedOperation <-- No --> TransportHandler
@@ -37,6 +37,16 @@ flowchart
     PartitionKeyRangeHandler <--> TransportHandler
     TransportHandler <--> TransportClient[[Selected Transport]]
 ```
+
+## Cross region retries
+
+Any failure response from the Transport that matches the [conditions for cross-regional communication](https://docs.microsoft.com/azure/cosmos-db/troubleshoot-sdk-availability) are handled by the [RetryHandler](../Microsoft.Azure.Cosmos/src/Handler/RetryHandler.cs) through the [ClientRetryPolicy](../Microsoft.Azure.Cosmos/src/ClientRetryPolicy.cs).
+
+* HTTP connection failures or DNS resolution problems (HttpRequestException) - The account information is refreshed, the current region is marked unavailable to be used, and the request is retried on the next available region after account refresh (if the account has multiple regions).
+* HTTP 403 with Substatus 3 - The current region is no longer a Write region (write region failover), the account information is refreshed, and the request is retried on the new Write region.
+* HTTP 403 with Substatus 1008 - The current region is not available (adding or removing a region). The region is marked as unavailable and the request retried on the next available region.
+* HTTP 404 with Substatus 1002 - Session consistency request where the region did not yet receive the requested Session Token, the request is retried on the primary (write) region for accounts with a single write region or on the next preferred region for accounts with multiple write regions.
+* HTTP 503 - The request could not succeed on the region due to repeated TCP connectivity issues, the request is retried on the next preferred region.
 
 ## Transport
 
@@ -117,8 +127,47 @@ flowchart
 
 ## Direct mode retry layer
 
+Direct connectivity is obtained from the `Microsoft.Azure.Cosmos.Direct` package reference.
 
+> There is an example code branch in the repository for reference purposes that will be linked in this document.
+
+The [ServerStoreModel](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/ServerStoreModel.cs) uses the [StoreClient](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/StoreClient.cs) to execute Direct operations. The `StoreClient` is used to capture session token updates (in case of Session consistency) and calls the [ReplicatedResourceClient](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/ReplicatedResourceClient.cs) which wraps the request into the [GoneAndRetryWithRequestRetryPolicy](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/GoneAndRetryWithRequestRetryPolicy.cs) which retries for up to 30 seconds (or up to the user CancellationToken). 
+
+If the retry period (30 seconds) is exhausted, it returns an HTTP 503 ServiceUnavailable error to the caller. Takes care of handling:
+
+* HTTP 410 Substatus 0 (replica moved) responses from the service or TCP timeouts (connect or send timeouts) -> Refreshes partition addresses and retries.
+* HTTP 410 Substatus 1008 (partition is migrating) responses from the service  -> Refreshes partition map (rediscovers partitions) and retries.
+* HTTP 410 Substatus 1007 (partition is splitting) responses from the service  -> Refreshes partition map (rediscovers partitions) and retries.
+* HTTP 410 Substatus 1000 responses from the service, up to 3 times  -> Refreshes container map (for cases when the container was recreated with the same name) and retries.
+* HTTP 449 responses from the service -> Retries using a random salted period.
+
+```mermaid
+flowchart
+    ServerStoreModel --> StoreClient
+    StoreClient --> ReplicatedResourceClient
+    ReplicatedResourceClient -- uses --> GoneAndRetryWithRequestRetryPolicy
+    GoneAndRetryWithRequestRetryPolicy --> Consistency[[Consistency stack]]
+    Consistency --> TCPClient[TCP implementation]
+    TCPClient --> Replica[(Replica X)]
+    Replica --> IsSuccess{{Request succeeded?}}
+    IsSuccess -- No --> IsRetryable{{Is retryable condition?}}
+    IsRetryable -- Yes --> GoneAndRetryWithRequestRetryPolicy
+
+```
 
 ## Consistency (direct mode)
 
-TBD
+When performing operations through Direct mode, the SDK is involved in checking consistency for Bounded Staleness and Strong accounts. Read requests are handled by the [ConsistencyReader](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/ConsistencyReader.cs) and write requests are handled by the [ConsistencyWriter](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/ConsistencyWriter.cs). The `ConsistencyReader` uses the [QuorumReader](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/QuorumReader.cs) for cases when the consistency is Bounded Staleness or Strong, in which cases, the SDK verifies quorum after performing two requests and comparing the LSNs, if quorum cannot be achieved, the SDK starts what is defined as "barrier requests" to the container waiting for it to achieve quorum. The `ConsistencyWriter` also performs a similar LSN check, after receiving the response from the write, the `GlobalCommittedLSN` and the item `LSN`, if they don't match, barrier requests are also performed.
+
+```mermaid
+flowchart LR
+    ReplicatedResourceClient --> RequestType{{Is it a read request?}}
+    RequestType -- Yes --> ConsistencyReader
+    RequestType -- No --> ConsistencyWriter
+    ConsistencyReader --> QuorumReader
+    QuorumReader --> TCPClient[TCP implementation]
+    ConsistencyWriter --> TCPClient
+
+```
+
+
