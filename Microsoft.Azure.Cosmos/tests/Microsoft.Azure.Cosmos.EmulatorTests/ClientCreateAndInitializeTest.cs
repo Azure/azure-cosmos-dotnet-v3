@@ -184,6 +184,7 @@
             CosmosException ex = await Assert.ThrowsExceptionAsync<CosmosException>(() => cosmosClient.Object.InitializeContainersAsync(containers, this.cancellationToken));
 
             // Assert.
+            Assert.IsNotNull(ex);
             Assert.IsTrue(ex.StatusCode == HttpStatusCode.NotFound);
             cosmosClient.Verify(x => x.Dispose(true), Times.Once);
         }
