@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             bool hasLogicalPartitionKey,
             bool allowDCount,
             bool allowNonValueAggregates,
+            bool useSystemPrefix,
             PartitionKeyDefinition partitionKeyDefinition,
             QueryPartitionProvider queryPartitionProvider,
             string clientApiVersion,
@@ -60,7 +61,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregates,
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
-                allowDCount: allowDCount);
+                allowDCount: allowDCount,
+                useSystemPrefix: useSystemPrefix);
             if (!tryGetPartitionQueryExecutionInfo.Succeeded)
             {
                 throw new BadRequestException(tryGetPartitionQueryExecutionInfo.Exception);

@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Task backgroundItemOperatios = Task.Factory.StartNew(() => this.CreateAndReadItemBackgroundLoop(container, exceptions));
 
             // Wait for the background job to start
-            Stopwatch stopwatch = Stopwatch.StartNew();
+            Documents.ValueStopwatch stopwatch = Documents.ValueStopwatch.StartNew();
             while (!this.loopBackgroundOperaitons && stopwatch.Elapsed.TotalSeconds < 30)
             {
                 await Task.Delay(TimeSpan.FromSeconds(.5));
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Cause direct call to hit a split exception and wait for the background job to hit it
             causeSplitExceptionInRntbdCall = true;
-            stopwatch = Stopwatch.StartNew();
+            stopwatch = Documents.ValueStopwatch.StartNew();
             while (causeSplitExceptionInRntbdCall && stopwatch.Elapsed.TotalSeconds < 10)
             {
                 await Task.Delay(TimeSpan.FromSeconds(.5));
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Cause another direct call split exception
             causeSplitExceptionInRntbdCall = true;
-            stopwatch = Stopwatch.StartNew();
+            stopwatch = Documents.ValueStopwatch.StartNew();
             while (causeSplitExceptionInRntbdCall && stopwatch.Elapsed.TotalSeconds < 10)
             {
                 await Task.Delay(TimeSpan.FromSeconds(.5));

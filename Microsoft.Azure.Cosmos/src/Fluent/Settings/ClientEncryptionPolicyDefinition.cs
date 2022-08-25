@@ -77,7 +77,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>An instance of the parent.</returns>
         public ContainerBuilder Attach()
         {
-            this.attachCallback(new ClientEncryptionPolicy(this.clientEncryptionIncludedPaths, this.policyFormatVersion));
+            this.attachCallback(new ClientEncryptionPolicy(
+                includedPaths: this.clientEncryptionIncludedPaths,
+                policyFormatVersion: this.policyFormatVersion));
+
             return this.parent;
         }
     }

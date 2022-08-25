@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System.Diagnostics;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// This class keeps track of scheduling metrics for a single process using a stopwatch interface.
@@ -16,17 +17,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <summary>
         /// Stopwatch used to measure turnaround time.
         /// </summary>
-        private readonly Stopwatch turnaroundTimeStopwatch;
+        private ValueStopwatch turnaroundTimeStopwatch;
 
         /// <summary>
         /// Stopwatch used to measure response time.
         /// </summary>
-        private readonly Stopwatch responseTimeStopwatch;
+        private ValueStopwatch responseTimeStopwatch;
 
         /// <summary>
         /// Stopwatch used to measure runtime.
         /// </summary>
-        private readonly Stopwatch runTimeStopwatch;
+        private ValueStopwatch runTimeStopwatch;
 
         /// <summary>
         /// Number of times the process was preempted.
@@ -43,9 +44,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// </summary>
         public SchedulingStopwatch()
         {
-            this.turnaroundTimeStopwatch = new Stopwatch();
-            this.responseTimeStopwatch = new Stopwatch();
-            this.runTimeStopwatch = new Stopwatch();
+            this.turnaroundTimeStopwatch = new ValueStopwatch();
+            this.responseTimeStopwatch = new ValueStopwatch();
+            this.runTimeStopwatch = new ValueStopwatch();
         }
 
         /// <summary>

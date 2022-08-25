@@ -91,7 +91,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     item,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    cosmosResponseMessage.RequestMessage);
             });
         }
 
@@ -107,7 +108,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.Headers,
                     containerProperties,
                     container,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    responseMessage.RequestMessage);
             });
         }
 
@@ -123,7 +125,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.Headers,
                     userProperties,
                     user,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    cosmosResponseMessage.RequestMessage);
             });
         }
 
@@ -139,7 +142,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.Headers,
                     permissionProperties,
                     permission,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    responseMessage.RequestMessage);
             });
         }
 
@@ -155,7 +159,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.Headers,
                     cekProperties,
                     clientEncryptionKey,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    cosmosResponseMessage.RequestMessage);
             });
         }
 
@@ -172,7 +177,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.Headers,
                     databaseProperties,
                     database,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    responseMessage.RequestMessage);
             });
         }
 
@@ -186,7 +192,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     throughputProperties,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    cosmosResponseMessage.RequestMessage);
             });
         }
 
@@ -199,7 +206,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     item,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    cosmosResponseMessage.RequestMessage);
             });
         }
 
@@ -212,7 +220,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     cosmosStoredProcedure,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    cosmosResponseMessage.RequestMessage);
             });
         }
 
@@ -225,7 +234,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     triggerProperties,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    cosmosResponseMessage.RequestMessage);
             });
         }
 
@@ -239,7 +249,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     settings,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    cosmosResponseMessage.RequestMessage);
             });
         }
 

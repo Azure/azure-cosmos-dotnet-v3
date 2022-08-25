@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
-            ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+            ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, request.Trace.Summary);
             serviceRequest.RequestContext.ClientRequestStatistics = clientSideRequestStatisticsTraceDatum;
 
             //TODO: extrace auth into a separate handler
@@ -121,14 +121,34 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 {
                     response = await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
                 }
+                catch (DocumentClientException dce)
+                {
+                    // Enrich diagnostics context in-case of auth failures 
+                    if (dce.StatusCode == System.Net.HttpStatusCode.Unauthorized || dce.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                    {
+                        TimeSpan authProvideLifeSpan = this.client.DocumentClient.cosmosAuthorization.GetAge();
+                        processMessageAsyncTrace.AddDatum("AuthProvider LifeSpan InSec", authProvideLifeSpan.TotalSeconds);
+                    }
+
+                    throw;
+                }
                 finally
                 {
-                    processMessageAsyncTrace.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum);
+                    processMessageAsyncTrace.Summary.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum);
                 }
                
-                return response.ToCosmosResponseMessage(
+                ResponseMessage responseMessage = response.ToCosmosResponseMessage(
                     request,
                     serviceRequest.RequestContext.RequestChargeTracker);
+
+                // Enrich diagnostics context in-case of auth failures 
+                if (responseMessage?.StatusCode == System.Net.HttpStatusCode.Unauthorized || responseMessage?.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                {
+                    TimeSpan authProvideLifeSpan = this.client.DocumentClient.cosmosAuthorization.GetAge();
+                    processMessageAsyncTrace.AddDatum("AuthProvider LifeSpan InSec", authProvideLifeSpan.TotalSeconds);
+                }
+
+                return responseMessage;
             }
         }
 

@@ -6,6 +6,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Runtime.Serialization;
+    using global::Azure.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
 
     /// <summary>
     /// Exception occurred when an operation in an IChangeFeedObserver is running and throws by user code
@@ -52,6 +55,16 @@ namespace Microsoft.Azure.Cosmos
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
+        }
+
+        /// <summary>
+        /// RecordOtelAttributes
+        /// </summary>
+        /// <param name="exception"></param>
+        /// <param name="scope"></param>
+        internal static void RecordOtelAttributes(ChangeFeedProcessorUserException exception, DiagnosticScope scope)
+        {
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
         }
     }
 }

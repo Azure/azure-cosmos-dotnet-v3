@@ -33,14 +33,14 @@ namespace Microsoft.Azure.Cosmos
         /// Default constructor for serialization
         /// </summary>
         [JsonConstructor]
-        private ThroughputProperties()
+        internal ThroughputProperties()
         {
         }
 
         /// <summary>
         /// Create a instance for fixed throughput
         /// </summary>
-        private ThroughputProperties(OfferContentProperties offerContentProperties)
+        internal ThroughputProperties(OfferContentProperties offerContentProperties)
         {
             this.OfferVersion = Constants.Offers.OfferVersion_V2;
             this.Content = offerContentProperties;
