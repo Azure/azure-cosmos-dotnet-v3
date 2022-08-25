@@ -11,6 +11,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         internal const string NotAvailable = "information not available";
 
+        /// <summary>
+        /// For testing purpose only, to make initialization of this class easy 
+        /// </summary>
         internal OpenTelemetryAttributes()
         {
         }

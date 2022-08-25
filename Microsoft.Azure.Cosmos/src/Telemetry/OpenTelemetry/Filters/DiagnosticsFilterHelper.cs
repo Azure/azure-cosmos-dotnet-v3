@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         {
             TimeSpan latencyThreshold;
 
-            if (config != null && config.DiagnosticsLatencyThreshold.HasValue)
+            if (config?.DiagnosticsLatencyThreshold != null)
             {
                 latencyThreshold = config.DiagnosticsLatencyThreshold.Value;
             }
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                 latencyThreshold = response.OperationType == OperationType.Query ? DistributedTracingOptions.DefaultQueryTimeoutThreshold : DistributedTracingOptions.DefaultCrudLatencyThreshold;
             }
 
-            return !(response.Diagnostics.GetClientElapsedTime() < latencyThreshold && response.StatusCode.IsSuccess());
+            return response.Diagnostics.GetClientElapsedTime() > latencyThreshold || !response.StatusCode.IsSuccess();
         }
     }
 }
