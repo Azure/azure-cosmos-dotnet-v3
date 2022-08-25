@@ -424,16 +424,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// If Open Telemetry listener is subscribed for Azure.Cosmos namespace, There are <see cref="Microsoft.Azure.Cosmos.Telemetry.DistributedTracingOptions"/> you can leverage to control it.<br></br>
+        /// If Open Telemetry listener is subscribed for Azure.Cosmos namespace, There are <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> you can leverage to control it.<br></br>
         /// </summary>
-        /// <param name="options">Tracing Options <see cref="Microsoft.Azure.Cosmos.Telemetry.DistributedTracingOptions"/></param>
+        /// <param name="options">Tracing Options <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/></param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-            CosmosClientBuilder WithDistributingTracing(DistributedTracingOptions options)
+        internal CosmosClientBuilder WithDistributingTracing(DistributedTracingOptions options)
         {
             this.clientOptions.DistributedTracingOptions = options;
 

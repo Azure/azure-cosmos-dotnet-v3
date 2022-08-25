@@ -2,20 +2,16 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Telemetry
+namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Runtime.CompilerServices;
 
     /// <summary>
     /// Open Telemetry Configuration
+    /// It needs to be public once AppInsight is ready
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-        sealed class DistributedTracingOptions
+    internal sealed class DistributedTracingOptions
     {
         /// <summary>
         /// Default Latency threshold for other than query Operation
