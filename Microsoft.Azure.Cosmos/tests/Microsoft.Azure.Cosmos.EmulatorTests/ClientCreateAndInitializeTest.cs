@@ -11,6 +11,7 @@
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Moq.Protected;
 
     [TestClass]
     public class ClientCreateAndInitializeTest : BaseCosmosClientHelper
@@ -180,13 +181,18 @@
                 .Setup(x => x.GetContainer(It.IsAny<string>(), It.IsAny<string>()))
                 .Throws(cosmosException);
 
+            cosmosClient
+                .Protected()
+                .Setup("Dispose", ItExpr.Is<bool>(x => x))
+                .Verifiable();
+
             // Act.
             CosmosException ex = await Assert.ThrowsExceptionAsync<CosmosException>(() => cosmosClient.Object.InitializeContainersAsync(containers, this.cancellationToken));
 
             // Assert.
             Assert.IsNotNull(ex);
             Assert.IsTrue(ex.StatusCode == HttpStatusCode.NotFound);
-            cosmosClient.Verify(x => x.Dispose(true), Times.Once);
+            cosmosClient.Verify();
         }
     }
 }

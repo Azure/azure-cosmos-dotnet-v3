@@ -1428,7 +1428,7 @@ namespace Microsoft.Azure.Cosmos
         /// Dispose of cosmos client
         /// </summary>
         /// <param name="disposing">True if disposing</param>
-        internal virtual void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             lock (this.disposedLock)
             {
