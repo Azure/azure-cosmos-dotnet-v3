@@ -1419,7 +1419,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Dispose of cosmos client
         /// </summary>
-        public virtual void Dispose()
+        public void Dispose()
         {
             this.Dispose(true);
         }
@@ -1428,7 +1428,7 @@ namespace Microsoft.Azure.Cosmos
         /// Dispose of cosmos client
         /// </summary>
         /// <param name="disposing">True if disposing</param>
-        protected virtual void Dispose(bool disposing)
+        internal virtual void Dispose(bool disposing)
         {
             lock (this.disposedLock)
             {

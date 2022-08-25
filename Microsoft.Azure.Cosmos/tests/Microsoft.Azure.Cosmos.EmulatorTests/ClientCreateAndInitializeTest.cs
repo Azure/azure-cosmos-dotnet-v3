@@ -160,7 +160,6 @@
         }
 
         [TestMethod]
-        [ExpectedException(typeof(CosmosException))]
         public async Task InitializeContainersAsync_WhenThrowsException_ShouldDisposeCosmosClient()
         {
             // Arrange.
@@ -181,18 +180,12 @@
                 .Setup(x => x.GetContainer(It.IsAny<string>(), It.IsAny<string>()))
                 .Throws(cosmosException);
 
-            try
-            {
-                // Act.
-                await cosmosClient.Object.InitializeContainersAsync(containers, this.cancellationToken);
-            }
-            catch (CosmosException ex)
-            {
-                // Assert.
-                Assert.IsTrue(ex.StatusCode == HttpStatusCode.NotFound);
-                cosmosClient.Verify(x => x.Dispose(), Times.Exactly(1));
-                throw ex;
-            }
+            // Act.
+            CosmosException ex = await Assert.ThrowsExceptionAsync<CosmosException>(() => cosmosClient.Object.InitializeContainersAsync(containers, this.cancellationToken));
+
+            // Assert.
+            Assert.IsTrue(ex.StatusCode == HttpStatusCode.NotFound);
+            cosmosClient.Verify(x => x.Dispose(true), Times.Once);
         }
     }
 }
