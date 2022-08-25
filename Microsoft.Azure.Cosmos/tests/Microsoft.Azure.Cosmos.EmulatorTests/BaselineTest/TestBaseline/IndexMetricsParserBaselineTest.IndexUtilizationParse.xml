@@ -1,0 +1,38 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Basic query]]></Description>
+      <Query><![CDATA[SELECT * FROM root WHERE root.name = "Andy"]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[
+Index Utilization Information
+  Utilized Single Indexes
+    Index Spec: /name/?
+    Index Impact Score: High
+    ---
+  Potential Single Indexes
+  Utilized Composite Indexes
+  Potential Composite Indexes
+]]></IndexMetric>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Unicode character]]></Description>
+      <Query><![CDATA[SELECT * FROM root WHERE root["namÉunicode㐀㐁㨀㨁䶴䶵"] = "namÉunicode㐀㐁㨀㨁䶴䶵"]]></Query>
+    </Input>
+    <Output>
+      <IndexMetric><![CDATA[
+Index Utilization Information
+  Utilized Single Indexes
+    Index Spec: /namÉunicode㐀㐁㨀㨁䶴䶵/?
+    Index Impact Score: High
+    ---
+  Potential Single Indexes
+  Utilized Composite Indexes
+  Potential Composite Indexes
+]]></IndexMetric>
+    </Output>
+  </Result>
+</Results>

@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             {
                 new IndexMetricsParserTestInput
                 (
-                    description: "Basic Query",
+                    description: "Basic query",
                     query: "SELECT * FROM root WHERE root.name = \"Andy\""
                 ),
 
