@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text;
+    using Microsoft.Azure.Cosmos.Core;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -40,73 +42,43 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
              IReadOnlyList<CompositeIndexUtilizationEntity> utilizedCompositeIndexes,
              IReadOnlyList<CompositeIndexUtilizationEntity> potentialCompositeIndexes)
         {
-            if (utilizedSingleIndexes == null)
-            {
-                throw new ArgumentNullException(nameof(utilizedSingleIndexes));
-            }
-
-            if (potentialSingleIndexes == null)
-            {
-                throw new ArgumentNullException(nameof(potentialSingleIndexes));
-            }
-
-            if (utilizedCompositeIndexes == null)
-            {
-                throw new ArgumentNullException(nameof(utilizedCompositeIndexes));
-            }
-
-            if (potentialCompositeIndexes == null)
-            {
-                throw new ArgumentNullException(nameof(potentialCompositeIndexes));
-            }
-
             List<SingleIndexUtilizationEntity> utilizedSingleIndexesCopy = new List<SingleIndexUtilizationEntity>();
-
-            foreach (SingleIndexUtilizationEntity indexUtilizationEntity in utilizedSingleIndexes)
+            if (utilizedSingleIndexes != null)
             {
-                if (indexUtilizationEntity == null)
+                foreach (SingleIndexUtilizationEntity indexUtilizationEntity in utilizedSingleIndexes)
                 {
-                    throw new ArgumentNullException(nameof(indexUtilizationEntity));
+                    if (indexUtilizationEntity != null) utilizedSingleIndexesCopy.Add(indexUtilizationEntity);
                 }
-
-                utilizedSingleIndexesCopy.Add(indexUtilizationEntity);
             }
-
+            
             List<SingleIndexUtilizationEntity> potentialSingleIndexesCopy = new List<SingleIndexUtilizationEntity>();
-
-            foreach (SingleIndexUtilizationEntity indexUtilizationEntity in potentialSingleIndexes)
+            if (potentialSingleIndexes != null)
             {
-                if (indexUtilizationEntity == null)
+                foreach (SingleIndexUtilizationEntity indexUtilizationEntity in potentialSingleIndexes)
                 {
-                    throw new ArgumentNullException(nameof(indexUtilizationEntity));
+                    if (indexUtilizationEntity != null) potentialSingleIndexesCopy.Add(indexUtilizationEntity);
                 }
-
-                potentialSingleIndexesCopy.Add(indexUtilizationEntity);
             }
-
+            
             List<CompositeIndexUtilizationEntity> utilizedCompositeIndexesCopy = new List<CompositeIndexUtilizationEntity>();
 
-            foreach (CompositeIndexUtilizationEntity indexUtilizationEntity in utilizedCompositeIndexes)
+            if (utilizedCompositeIndexes != null)
             {
-                if (indexUtilizationEntity == null)
+                foreach (CompositeIndexUtilizationEntity indexUtilizationEntity in utilizedCompositeIndexes)
                 {
-                    throw new ArgumentNullException(nameof(indexUtilizationEntity));
+                    if (indexUtilizationEntity != null) utilizedCompositeIndexesCopy.Add(indexUtilizationEntity);
                 }
-
-                utilizedCompositeIndexesCopy.Add(indexUtilizationEntity);
             }
 
             List<CompositeIndexUtilizationEntity> potentialCompositeIndexesCopy = new List<CompositeIndexUtilizationEntity>();
 
-            foreach (CompositeIndexUtilizationEntity indexUtilizationEntity in potentialCompositeIndexes)
+            if (potentialCompositeIndexes != null)
             {
-                if (indexUtilizationEntity == null)
+                foreach (CompositeIndexUtilizationEntity indexUtilizationEntity in potentialCompositeIndexes)
                 {
-                    throw new ArgumentNullException(nameof(indexUtilizationEntity));
+                    if (indexUtilizationEntity != null) potentialCompositeIndexesCopy.Add(indexUtilizationEntity);
                 }
-
-                potentialCompositeIndexesCopy.Add(indexUtilizationEntity);
-            }
+            }            
 
             this.UtilizedSingleIndexes = utilizedSingleIndexesCopy;
             this.PotentialSingleIndexes = potentialSingleIndexesCopy;
@@ -118,6 +90,32 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         public IReadOnlyList<SingleIndexUtilizationEntity> PotentialSingleIndexes { get; }
         public IReadOnlyList<CompositeIndexUtilizationEntity> UtilizedCompositeIndexes { get; }
         public IReadOnlyList<CompositeIndexUtilizationEntity> PotentialCompositeIndexes { get; }
+
+        /// <summary>
+        /// Creates a new IndexUtilizationInfo from the backend delimited base64 encoded string.
+        /// </summary>
+        /// <param name="delimitedString">The backend delimited string to deserialize from.</param>
+        /// <param name="result">The parsed index utilization info</param>
+        /// <returns>A new IndexUtilizationInfo from the backend delimited string.</returns>
+        internal static bool TryCreateFromDelimitedBase64String(string delimitedString, out IndexUtilizationInfo result)
+        {
+            if (delimitedString == null)
+            {
+                result = IndexUtilizationInfo.Empty;
+                return true;
+            }
+            try
+            {
+                string indexString = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(delimitedString));
+
+                return TryCreateFromDelimitedString(indexString, out result);
+            }
+            catch
+            {
+                result = IndexUtilizationInfo.Empty;
+                return false;
+            }
+        }
 
         /// <summary>
         /// Creates a new IndexUtilizationInfo from the backend delimited string.
@@ -134,13 +132,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             }
             try
             {
-                string indexString = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(delimitedString));
-
-                result = JsonConvert.DeserializeObject<IndexUtilizationInfo>(indexString);
-                if (result == null)
+                result = JsonConvert.DeserializeObject<IndexUtilizationInfo>(delimitedString, new JsonSerializerSettings()
                 {
-                    result = IndexUtilizationInfo.Empty;
-                }
+                    // Allowing null values to be resilient to Json structure change
+                    MissingMemberHandling = MissingMemberHandling.Ignore,
+                    NullValueHandling = NullValueHandling.Ignore
+                });
+
+                result ??= IndexUtilizationInfo.Empty;
+
                 return true;
             }
             catch
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         public static IndexUtilizationInfo CreateFromString(string delimitedString)
         {
-            if (!TryCreateFromDelimitedString(delimitedString, out IndexUtilizationInfo indexUtilizationInfo))
+            if (!TryCreateFromDelimitedBase64String(delimitedString, out IndexUtilizationInfo indexUtilizationInfo))
             {
                 throw new FormatException($"Failed to parse {nameof(IndexUtilizationInfo)} : '{delimitedString}'");
             }
@@ -168,10 +168,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 IEnumerable<CompositeIndexUtilizationEntity> utilizedCompositeIndexes,
                 IEnumerable<CompositeIndexUtilizationEntity> potentialCompositeIndexes)
             {
-                this.UtilizedSingleIndexes = utilizedSingleIndexes; // ?? throw new ArgumentNullException(nameof(utilizedSingleIndexes));
-                this.PotentialSingleIndexes = potentialSingleIndexes; // ?? throw new ArgumentNullException(nameof(potentialSingleIndexes));
-                this.UtilizedCompositeIndexes = utilizedCompositeIndexes; // ?? throw new ArgumentNullException(nameof(utilizedCompositeIndexes));
-                this.PotentialCompositeIndexes = potentialCompositeIndexes; // ?? throw new ArgumentNullException(nameof(potentialCompositeIndexes));
+                this.UtilizedSingleIndexes = utilizedSingleIndexes;  
+                this.PotentialSingleIndexes = potentialSingleIndexes;  
+                this.UtilizedCompositeIndexes = utilizedCompositeIndexes;  
+                this.PotentialCompositeIndexes = potentialCompositeIndexes; 
             }
 
             public IEnumerable<SingleIndexUtilizationEntity> UtilizedSingleIndexes { get; }
