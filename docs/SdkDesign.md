@@ -4,7 +4,7 @@
 
 Whenever an operation is executed through the .NET SQL SDK, a **public API** is invoked. The API will leverage the [ClientContext](../Microsoft.Azure.Cosmos/src/Resource/ClientContextCore.cs) to create the [Diagnostics](../Microsoft.Azure.Cosmos/src/Diagnostics/CosmosDiagnostics.cs) scope for the operation (and any retries involved) and create the [RequestMessage](../Microsoft.Azure.Cosmos/src/Handler/RequestMessage.cs).
 
-The **handler pipeline** is used to process and handle the RequestMessage and perform actions like handling [retries](../Microsoft.Azure.Cosmos/src/Handler/RetryHandler.cs) including any customer user handler added through `CosmosClientOptions.CustomHandlers`. See [the pipeline section](#handler-pipeline) for more details.
+The **handler pipeline** is used to process and handle the RequestMessage and perform actions like handling [retries](../Microsoft.Azure.Cosmos/src/Handler/RetryHandler.cs) including any custom user handler added through `CosmosClientOptions.CustomHandlers`. See [the pipeline section](#handler-pipeline) for more details.
 
 At the end of the pipeline, the request is sent to the **transport layer**, which will process the request depending on the `CosmosClientOptions.ConnectionMode` and use [gateway or direct connectivity mode](https://docs.microsoft.com/azure/cosmos-db/sql/sql-sdk-connection-modes) to reach to the Azure Cosmos DB service.
 
@@ -52,7 +52,7 @@ Any failure response from the Transport that matches the [conditions for cross-r
 
 Once a RequestMessage reaches the [TransportHandler](../Microsoft.Azure.Cosmos/src/Handler/TransportHandler.cs) it will be sent through either the [GatewayStoreModel](../Microsoft.Azure.Cosmos/src/GatewayStoreModel.cs) for HTTP requests and Gateway mode clients or through the ServerStoreModel for clients configured with Direct mode.
 
-Even on clients configured on Direct mode, there can be [HTTP requests that get routed to Gateway](https://docs.microsoft.com/azure/cosmos-db/sql/sql-sdk-connection-modes#direct-mode). The `ConnectionMode` defined in the `CosmosClientOptions` affect data-plane operations (operations related to Items, like CRUD or query over existing Items in a Container) but metadata/control-plane operations (that appear as [MetadataRequests](https://docs.microsoft.com/azure/cosmos-db/monitor-cosmos-db-reference#request-metrics) on Azure Monitor) are sent through HTTP to Gateway.
+Even on clients configured on Direct mode, there can be [HTTP requests that get routed to the Gateway](https://docs.microsoft.com/azure/cosmos-db/sql/sql-sdk-connection-modes#direct-mode). The `ConnectionMode` defined in the `CosmosClientOptions` affects data-plane operations (operations related to Items, like CRUD or query over existing Items in a Container) but metadata/control-plane operations (that appear as [MetadataRequests](https://docs.microsoft.com/azure/cosmos-db/monitor-cosmos-db-reference#request-metrics) on Azure Monitor) are sent through HTTP to the Gateway.
 
 The ServerStoreModel contains the Direct connectivity stack, which takes care of discovering, for each operation, which is the [physical partition](https://docs.microsoft.com/azure/cosmos-db/partitioning-overview#physical-partitions) to route to and which replica/s should be contacted. The Direct connectivity stack includes a [retry layer](#direct-mode-retry-layer), a [consistency component](#consistency-direct-mode) and the TCP protocol implementation.
 
@@ -104,7 +104,7 @@ flowchart
 
 ## HTTP retry layer
 
-The `HttpClient` is wrapped around a [CosmosHttpClient](../Microsoft.Azure.Cosmos/src/HttpClient/CosmosHttpClientCore.cs) which employs an [HttpTimeoutPolicy](../Microsoft.Azure.Cosmos/src/HttpClient/HttpTimeoutPolicy.cs) to retry if the requests has a transient failure (timeout) or if it takes longer than expected. The reason requests are canceled if latency is higher than expected is to account for transient network delays (retrying would be faster than waiting for the request to fail) and for scenarios where the Cosmos DB Gateway is performing rollout upgrades on their endpoints.
+The `HttpClient` is wrapped around a [CosmosHttpClient](../Microsoft.Azure.Cosmos/src/HttpClient/CosmosHttpClientCore.cs) which employs an [HttpTimeoutPolicy](../Microsoft.Azure.Cosmos/src/HttpClient/HttpTimeoutPolicy.cs) to retry if the request has a transient failure (timeout) or if it takes longer than expected. Requests are canceled if latency is higher than expected to account for transient network delays (retrying would be faster than waiting for the request to fail) and for scenarios where the Cosmos DB Gateway is performing rollout upgrades on their endpoints.
 
 The different HTTP retry policies are:
 
@@ -157,7 +157,7 @@ flowchart
 
 ## Consistency (direct mode)
 
-When performing operations through Direct mode, the SDK is involved in checking consistency for Bounded Staleness and Strong accounts. Read requests are handled by the [ConsistencyReader](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/ConsistencyReader.cs) and write requests are handled by the [ConsistencyWriter](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/ConsistencyWriter.cs). The `ConsistencyReader` uses the [QuorumReader](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/QuorumReader.cs) for cases when the consistency is Bounded Staleness or Strong, in which cases, the SDK verifies quorum after performing two requests and comparing the LSNs, if quorum cannot be achieved, the SDK starts what is defined as "barrier requests" to the container waiting for it to achieve quorum. The `ConsistencyWriter` also performs a similar LSN check, after receiving the response from the write, the `GlobalCommittedLSN` and the item `LSN`, if they don't match, barrier requests are also performed.
+When performing operations through Direct mode, the SDK is involved in checking consistency for Bounded Staleness and Strong accounts. Read requests are handled by the [ConsistencyReader](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/ConsistencyReader.cs) and write requests are handled by the [ConsistencyWriter](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/ConsistencyWriter.cs). The `ConsistencyReader` uses the [QuorumReader](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/QuorumReader.cs) when the consistency is Bounded Staleness or Strong to verify quorum after performing two requests and comparing the LSNs. If quorum cannot be achieved, the SDK starts what is defined as "barrier requests" to the container and waits for it to achieve quorum. The `ConsistencyWriter` also performs a similar LSN check after receiving the response from the write, the `GlobalCommittedLSN` and the item `LSN`. If they don't match, barrier requests are also performed.
 
 ```mermaid
 flowchart LR
