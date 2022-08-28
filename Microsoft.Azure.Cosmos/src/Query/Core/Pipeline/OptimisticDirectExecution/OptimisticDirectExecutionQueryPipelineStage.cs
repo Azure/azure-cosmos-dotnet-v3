@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SingleRoundtripOptimisticExecutionQuery
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQuery
 {
     using System;
     using System.Collections.Generic;
@@ -21,11 +21,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SingleRoundtripOptimisticEx
     using Microsoft.Azure.Cosmos.Tracing;
     using static Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.PartitionMapper;
 
-    internal sealed class SingleRoundtripOptimisticExecutionQueryPipelineStage : IQueryPipelineStage
+    internal sealed class OptimisticDirectExecutionQueryPipelineStage : IQueryPipelineStage
     {
         private readonly QueryPartitionRangePageAsyncEnumerator queryPartitionRangePageAsyncEnumerator;
 
-        private SingleRoundtripOptimisticExecutionQueryPipelineStage(
+        private OptimisticDirectExecutionQueryPipelineStage(
             QueryPartitionRangePageAsyncEnumerator queryPartitionRangePageAsyncEnumerator)
         {
             this.queryPartitionRangePageAsyncEnumerator = queryPartitionRangePageAsyncEnumerator ?? throw new ArgumentNullException(nameof(queryPartitionRangePageAsyncEnumerator));
@@ -77,8 +77,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SingleRoundtripOptimisticEx
                     token: (backendQueryState?.Value as CosmosString)?.Value,
                     range: ((FeedRangeEpk)this.queryPartitionRangePageAsyncEnumerator.FeedRangeState.FeedRange).Range);
 
-                SingleRoundtripOptimisticExecutionContinuationToken singleRoundtripOptimisticExecutionContinuationToken = new SingleRoundtripOptimisticExecutionContinuationToken(parallelContinuationToken);
-                CosmosElement cosmosElementContinuationToken = SingleRoundtripOptimisticExecutionContinuationToken.ToCosmosElement(singleRoundtripOptimisticExecutionContinuationToken);
+                OptimisticDirectExecutionContinuationToken optimisticDirectExecutionContinuationToken = new OptimisticDirectExecutionContinuationToken(parallelContinuationToken);
+                CosmosElement cosmosElementContinuationToken = OptimisticDirectExecutionContinuationToken.ToCosmosElement(optimisticDirectExecutionContinuationToken);
                 queryState = new QueryState(cosmosElementContinuationToken);
             }
 
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SingleRoundtripOptimisticEx
                 queryPaginationOptions,
                 cancellationToken);
 
-            SingleRoundtripOptimisticExecutionQueryPipelineStage stage = new SingleRoundtripOptimisticExecutionQueryPipelineStage(partitionPageEnumerator);
+            OptimisticDirectExecutionQueryPipelineStage stage = new OptimisticDirectExecutionQueryPipelineStage(partitionPageEnumerator);
             return TryCatch<IQueryPipelineStage>.FromResult(stage);
         }
 
@@ -149,13 +149,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SingleRoundtripOptimisticEx
                 throw new ArgumentNullException(nameof(continuationToken));
             }
 
-            TryCatch<SingleRoundtripOptimisticExecutionContinuationToken> tryCreateContinuationToken = SingleRoundtripOptimisticExecutionContinuationToken.TryCreateFromCosmosElement(continuationToken);
+            TryCatch<OptimisticDirectExecutionContinuationToken> tryCreateContinuationToken = OptimisticDirectExecutionContinuationToken.TryCreateFromCosmosElement(continuationToken);
             if (tryCreateContinuationToken.Failed)
             {
                 return TryCatch<FeedRangeState<QueryState>>.FromException(tryCreateContinuationToken.Exception);
             }
 
-            TryCatch<PartitionMapping<SingleRoundtripOptimisticExecutionContinuationToken>> partitionMappingMonad = PartitionMapper.MonadicGetPartitionMapping(
+            TryCatch<PartitionMapping<OptimisticDirectExecutionContinuationToken>> partitionMappingMonad = PartitionMapper.MonadicGetPartitionMapping(
                 range,
                 tryCreateContinuationToken.Result);
 
@@ -165,9 +165,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SingleRoundtripOptimisticEx
                     partitionMappingMonad.Exception);
             }
             
-            PartitionMapping<SingleRoundtripOptimisticExecutionContinuationToken> partitionMapping = partitionMappingMonad.Result;
+            PartitionMapping<OptimisticDirectExecutionContinuationToken> partitionMapping = partitionMappingMonad.Result;
             
-            KeyValuePair<FeedRangeEpk, SingleRoundtripOptimisticExecutionContinuationToken> kvpRange = new KeyValuePair<FeedRangeEpk, SingleRoundtripOptimisticExecutionContinuationToken>(
+            KeyValuePair<FeedRangeEpk, OptimisticDirectExecutionContinuationToken> kvpRange = new KeyValuePair<FeedRangeEpk, OptimisticDirectExecutionContinuationToken>(
                 partitionMapping.TargetMapping.Keys.First(), 
                 partitionMapping.TargetMapping.Values.First());
 
