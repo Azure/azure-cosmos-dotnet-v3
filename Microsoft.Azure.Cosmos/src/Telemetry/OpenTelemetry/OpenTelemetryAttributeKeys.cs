@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
+namespace Microsoft.Azure.Cosmos.Telemetry
 {
     internal sealed class OpenTelemetryAttributeKeys
     {

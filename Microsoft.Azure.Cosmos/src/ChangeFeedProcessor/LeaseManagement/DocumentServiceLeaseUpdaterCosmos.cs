@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
                 {
                     DefaultTrace.TraceInformation("Lease with token {0} no longer exists", lease.CurrentLeaseToken);
-                    throw new LeaseLostException(lease, true);
+                    throw new LeaseLostException(lease: lease, innerException: ex, isGone: true);
                 }
             }
 
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 DefaultTrace.TraceWarning("Lease operation exception, status code: {0}", ex.StatusCode);
                 if (ex.StatusCode == HttpStatusCode.NotFound)
                 {
-                    throw new LeaseLostException(lease, true);
+                    throw new LeaseLostException(lease: lease, innerException: ex, isGone: true);
                 }
 
                 if (ex.StatusCode == HttpStatusCode.PreconditionFailed)
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
                 if (ex.StatusCode == HttpStatusCode.Conflict)
                 {
-                    throw new LeaseLostException(lease, ex, false);
+                    throw new LeaseLostException(lease: lease, innerException: ex, isGone: false);
                 }
 
                 throw;
