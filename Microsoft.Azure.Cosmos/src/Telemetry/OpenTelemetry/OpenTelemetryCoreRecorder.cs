@@ -96,7 +96,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             config: this.config,
                             response: response))
                     {
-                        this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, response.Diagnostics);
+                        if (CosmosDbEventSource.IsWarnEnabled)
+                        {
+                            CosmosDbEventSource.Singleton.RecordRequestDiagnostics(response.Diagnostics.ToString());
+                        }
                     }
                 }
                 else
