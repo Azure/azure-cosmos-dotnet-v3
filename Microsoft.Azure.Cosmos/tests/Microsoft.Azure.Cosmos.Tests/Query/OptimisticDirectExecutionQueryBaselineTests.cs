@@ -42,7 +42,7 @@
             TryCatch<IQueryPipelineStage> monadicCreate = OptimisticDirectExecutionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT VALUE COUNT(1) FROM c"),
-                targetRange:  FeedRangeEpk.FullRange,
+                targetRange: FeedRangeEpk.FullRange,
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
                 cancellationToken: default,
@@ -88,10 +88,10 @@
             {
                 TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
                 tryGetPage.ThrowIfFailed();
-         
+
                 documentCountInSinglePartition += Int32.Parse(tryGetPage.Result.Documents[0].ToString());
             }
-            
+
             Assert.AreEqual(documentCountInSinglePartition, 4);
         }
 
@@ -117,7 +117,7 @@
                 {
                     break;
                 }
-                else 
+                else
                 {
                     queryPipelineStage = await CreateOptimisticDirectExecutionPipelineStateAsync(inMemoryCollection, query, continuationToken: tryGetPage.Result.State.Value);
                 }
@@ -127,6 +127,16 @@
 
             Assert.AreEqual(continuationTokenCount, 2);
             Assert.AreEqual(documents.Count, 17);
+        }
+
+        // This test confirms that TestInjection.EnableOptimisticDirectExection is set to false from default. 
+        // Check test "TestPipelineForDistributedQueryAsync" to understand why this is done
+        [TestMethod]
+        public async Task TestDefaultTestInjectionSettings()
+        {
+            TestInjections testInjection = new TestInjections(simulate429s: false, simulateEmptyPages: false);
+
+            Assert.AreEqual(testInjection.EnableOptimisticDirectExecution, false);
         }
 
         // The reason we have the below test is to show the missing capabilities of the OptimisticDirectExecution pipeline.
@@ -182,6 +192,9 @@
             int countDifference = documentCountParallelPipeline - documentCountOptimisticPipeline;
 
             Assert.AreNotEqual(documentCountOptimisticPipeline, documentCountParallelPipeline, countDifference.ToString());
+            Assert.AreEqual(documentCountOptimisticPipeline, 17);
+            Assert.AreEqual(documentCountParallelPipeline, 100);
+            Assert.AreEqual(countDifference, 83);
             Assert.AreEqual(documentCountParallelPipeline, numItems);
         }
 

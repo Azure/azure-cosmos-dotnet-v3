@@ -31,6 +31,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     internal static class CosmosQueryExecutionContextFactory
     {
         private const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
+        private const string OptimisticDirectExecution = "OptimisticDirectExecution";
+        private const string Passthrough = "Passthrough";
+        private const string Specialized = "Specialized";
         private const int PageSizeFactorForTop = 5;
 
         public static IQueryPipelineStage Create(
@@ -143,12 +146,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 if (targetRange != null)
                 {
                     // Test code added to confirm the correct pipeline is being utilized
-                    //TODO: Remove this test code and find another way to test the pipeline type that is being used.
-                    TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
-                    if (responseStats != null)
-                    {
-                        responseStats.PipelineType = TestInjections.PipelineType.OptimisticDirectExecution;
-                    }
+                    SetTestInjectionPipelineType(inputParameters, OptimisticDirectExecution);
 
                     return OptimisticDirectExecutionContext(
                                 documentContainer,
@@ -208,11 +206,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                             if (createPassthroughQuery)
                             {
-                                TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
-                                if (responseStats != null)
-                                {
-                                    responseStats.PipelineType = TestInjections.PipelineType.Passthrough;
-                                }
+                                SetTestInjectionPipelineType(inputParameters, Passthrough);
 
                                 // Only thing that matters is that we target the correct range.
                                 Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
@@ -320,11 +314,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             if (targetRange != null)
             {
-                TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
-                if (responseStats != null)
-                {
-                    responseStats.PipelineType = TestInjections.PipelineType.OptimisticDirectExecution;
-                }
+                SetTestInjectionPipelineType(inputParameters, OptimisticDirectExecution);
 
                 tryCreatePipelineStage = CosmosQueryExecutionContextFactory.OptimisticDirectExecutionContext(
                     documentContainer,
@@ -337,11 +327,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             
             if (createPassthroughQuery)
             {
-                TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
-                if (responseStats != null)
-                {
-                    responseStats.PipelineType = TestInjections.PipelineType.Passthrough;
-                }
+                SetTestInjectionPipelineType(inputParameters, Passthrough);
 
                 tryCreatePipelineStage = CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContext(
                     documentContainer,
@@ -351,11 +337,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
             else
             {
-                TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
-                if (responseStats != null)
-                {
-                    responseStats.PipelineType = TestInjections.PipelineType.Specialized;
-                }
+                SetTestInjectionPipelineType(inputParameters, Specialized);
 
                 if (!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery))
                 {
@@ -552,6 +534,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
 
             return targetRanges;
+        }
+
+        public static void SetTestInjectionPipelineType(InputParameters inputParameters, string pipelineType)
+        {
+            TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
+            if (responseStats != null)
+            {
+                if (pipelineType == OptimisticDirectExecution)
+                {
+                    responseStats.PipelineType = TestInjections.PipelineType.OptimisticDirectExecution;
+                }
+                else if (pipelineType == Specialized)
+                {
+                    responseStats.PipelineType = TestInjections.PipelineType.Specialized;
+                }
+                else 
+                {
+                    responseStats.PipelineType = TestInjections.PipelineType.Passthrough;
+                }
+            }
         }
 
         private static bool TryGetEpkProperty(
