@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29411.108
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32630.192
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManagement", "DatabaseManagement\DatabaseManagement.csproj", "{F972386A-B03D-4453-88C7-948CB107C029}"
 EndProject
@@ -46,6 +46,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SystemTextJson", "SystemTextJson\SystemTextJson.csproj", "{C0C25501-9C49-4B6F-BB7D-40E4FB47CE7B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReEncryption", "ReEncryption\ReEncryption.csproj", "{AD6DEC94-EF8E-4C42-8A99-B98E101F933D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenTelemetry", "OpenTelemetry\OpenTelemetry.csproj", "{5FFFD6E0-8E86-4069-8746-7064C2814104}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -141,6 +143,10 @@ Global
 		{AD6DEC94-EF8E-4C42-8A99-B98E101F933D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AD6DEC94-EF8E-4C42-8A99-B98E101F933D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AD6DEC94-EF8E-4C42-8A99-B98E101F933D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5FFFD6E0-8E86-4069-8746-7064C2814104}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5FFFD6E0-8E86-4069-8746-7064C2814104}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5FFFD6E0-8E86-4069-8746-7064C2814104}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5FFFD6E0-8E86-4069-8746-7064C2814104}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
