@@ -42,7 +42,9 @@ flowchart
 
 Any failure response from the Transport that matches the [conditions for cross-regional communication](https://docs.microsoft.com/azure/cosmos-db/troubleshoot-sdk-availability) are handled by the [RetryHandler](../Microsoft.Azure.Cosmos/src/Handler/RetryHandler.cs) through the [ClientRetryPolicy](../Microsoft.Azure.Cosmos/src/ClientRetryPolicy.cs).
 
-* HTTP connection failures or DNS resolution problems (HttpRequestException) - The account information is refreshed, the current region is marked unavailable to be used, and the request is retried on the next available region after account refresh (if the account has multiple regions).
+`CancellationToken` passed down as input to the Public API can stop these retries.
+
+* HTTP connection failures or DNS resolution problems (HttpRequestException) - The account information is refreshed, the current region is marked unavailable to be used, and the request is retried on the next available region after account refresh if the account has multiple regions. In case no other regions are available, the SDK keeps retrying by refreshing the account information up to a [maximum of times](../Microsoft.Azure.Cosmos/src/ClientRetryPolicy.cs#L24).
 * HTTP 403 with Substatus 3 - The current region is no longer a Write region (write region failover), the account information is refreshed, and the request is retried on the new Write region.
 * HTTP 403 with Substatus 1008 - The current region is not available (adding or removing a region). The region is marked as unavailable and the request retried on the next available region.
 * HTTP 404 with Substatus 1002 - Session consistency request where the region did not yet receive the requested Session Token, the request is retried on the primary (write) region for accounts with a single write region or on the next preferred region for accounts with multiple write regions.
@@ -129,9 +131,11 @@ flowchart
 
 Direct connectivity is obtained from the `Microsoft.Azure.Cosmos.Direct` package reference.
 
-> There is an example code branch in the repository for reference purposes that will be linked in this document.
+> The below code links are to an example branch in this repository that contains the `Microsoft.Azure.Cosmos.Direct` source code, but that branch might not be updated with the latest source code.
 
 The [ServerStoreModel](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/ServerStoreModel.cs) uses the [StoreClient](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/StoreClient.cs) to execute Direct operations. The `StoreClient` is used to capture session token updates (in case of Session consistency) and calls the [ReplicatedResourceClient](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/ReplicatedResourceClient.cs) which wraps the request into the [GoneAndRetryWithRequestRetryPolicy](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/GoneAndRetryWithRequestRetryPolicy.cs) which retries for up to 30 seconds (or up to the user CancellationToken). 
+
+`CancellationToken` passed down as input to the Public API can stop these retries.
 
 If the retry period (30 seconds) is exhausted, it returns an HTTP 503 ServiceUnavailable error to the caller. Takes care of handling:
 
