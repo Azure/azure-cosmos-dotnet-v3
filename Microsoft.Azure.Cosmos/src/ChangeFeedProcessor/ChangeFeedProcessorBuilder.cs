@@ -30,7 +30,8 @@ namespace Microsoft.Azure.Cosmos
 
         private ContainerInternal leaseContainer;
         private string InstanceName;
-        private DocumentServiceLeaseStoreManager LeaseStoreManager;
+        private string azureContaierUri;
+        private DocumentServiceLeaseStoreManager leaseStoreManager;
         private bool isBuilt;
 
         internal ChangeFeedProcessorBuilder(
@@ -179,12 +180,23 @@ namespace Microsoft.Azure.Cosmos
                 throw new InvalidOperationException("The builder already defined a lease container.");
             }
 
-            if (this.LeaseStoreManager != null)
+            if (this.leaseStoreManager != null)
             {
                 throw new InvalidOperationException("The builder already defined an in-memory lease container instance.");
             }
 
             this.leaseContainer = (ContainerInternal)leaseContainer;
+            return this;
+        }
+        
+        /// <summary>
+        /// Sets the azure storage lease container to hold the leases state
+        /// </summary>
+        /// <param name="azureContaierUri">Uri of azure container (with secrets).</param>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
+        public ChangeFeedProcessorBuilder WithAzureStorageLeaseContainer(string azureContaierUri)
+        {
+            this.azureContaierUri = azureContaierUri;
             return this;
         }
 
@@ -202,7 +214,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new InvalidOperationException("The builder already defined a lease container.");
             }
 
-            if (this.LeaseStoreManager != null)
+            if (this.leaseStoreManager != null)
             {
                 throw new InvalidOperationException("The builder already defined an in-memory lease container instance.");
             }
@@ -212,7 +224,7 @@ namespace Microsoft.Azure.Cosmos
                 this.InstanceName = ChangeFeedProcessorBuilder.InMemoryDefaultHostName;
             }
 
-            this.LeaseStoreManager = new DocumentServiceLeaseStoreManagerInMemory();
+            this.leaseStoreManager = new DocumentServiceLeaseStoreManagerInMemory();
             return this;
         }
 
@@ -280,7 +292,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new InvalidOperationException(nameof(this.monitoredContainer) + " was not specified");
             }
 
-            if (this.leaseContainer == null && this.LeaseStoreManager == null)
+            if (this.leaseContainer == null && this.leaseStoreManager == null && this.azureContaierUri == null)
             {
                 throw new InvalidOperationException($"Defining the lease store by WithLeaseContainer or WithInMemoryLeaseContainer is required.");
             }
@@ -290,7 +302,12 @@ namespace Microsoft.Azure.Cosmos
                 throw new InvalidOperationException("Processor name not specified during creation.");
             }
 
-            this.applyBuilderConfiguration(this.LeaseStoreManager, this.leaseContainer, this.InstanceName, this.changeFeedLeaseOptions, this.changeFeedProcessorOptions, this.monitoredContainer);
+            if (this.azureContaierUri != null)
+            {
+                this.leaseStoreManager = new DocumentServiceLeaseStoreManagerAzureStorage(this.monitoredContainer, this.azureContaierUri, this.InstanceName);
+            }
+
+            this.applyBuilderConfiguration(this.leaseStoreManager, this.leaseContainer, this.InstanceName, this.changeFeedLeaseOptions, this.changeFeedProcessorOptions, this.monitoredContainer);
 
             this.isBuilt = true;
             return this.changeFeedProcessor;
