@@ -6,10 +6,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
     using System;
     using global::Azure.Storage.Blobs;
-    using Microsoft.Azure.Cosmos;
 
     /// <summary>
-    /// Lease manager that is using Azure Document Service as lease storage.
+    /// Lease manager that is using Azure Blob Storage Service as lease storage.
     /// Documents in lease collection are organized as this:
     /// ChangeFeed.federation|database_rid|collection_rid.info            -- container
     /// ChangeFeed.federation|database_rid|collection_rid..partitionId1   -- each partition
@@ -24,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         private readonly DocumentServiceLeaseContainer leaseContainer;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DocumentServiceLeaseStoreManagerCosmos"/> class.
+        /// Initializes a new instance of the <see cref="DocumentServiceLeaseStoreManagerAzureStorage"/> class.
         /// </summary>
         public DocumentServiceLeaseStoreManagerAzureStorage(
             ContainerInternal monitoredContainer,
@@ -35,8 +34,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             if (monitoredContainer == null) throw new ArgumentNullException(nameof(monitoredContainer));
             if (string.IsNullOrEmpty(containerUri)) throw new ArgumentNullException(nameof(containerUri));
             
-            var leaseContainer = new BlobContainerClient(new Uri(containerUri));
-            var leaseUpdater = new DocumentServiceLeaseUpdaterAzureStorage(leaseContainer); 
+            BlobContainerClient leaseContainer = new BlobContainerClient(new Uri(containerUri));
+            DocumentServiceLeaseUpdaterAzureStorage leaseUpdater = new DocumentServiceLeaseUpdaterAzureStorage(leaseContainer); 
             
             this.leaseStore = new DocumentServiceLeaseStoreAzureStorage(
                 leaseContainer);

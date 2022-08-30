@@ -9,15 +9,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Core.Trace;
+    using Documents;
+    using Exceptions;
     using global::Azure.Storage.Blobs;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
-    using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Documents;
+    using Query.Core;
+    using Query.Core.Monads;
+    using Routing;
+    using Tracing;
+    using Utils;
+    using PartitionKey = Cosmos.PartitionKey;
 
     /// <summary>
     /// <see cref="DocumentServiceLeaseManager"/> implementation that uses Azure Cosmos DB service
@@ -82,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return await this.leaseUpdater.UpdateLeaseAsync(
                 lease,
                 lease.Id,
-                Cosmos.PartitionKey.Null,
+                PartitionKey.Null,
                 serverLease =>
                 {
                     if (serverLease.Owner != oldOwner)
@@ -166,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             await this.leaseUpdater.UpdateLeaseAsync(
                 refreshedLease,
                 refreshedLease.Id,
-                new Cosmos.PartitionKey(),
+                new PartitionKey(),
                 serverLease =>
                 {
                     if (serverLease.Owner != lease.Owner)
@@ -206,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return await this.leaseUpdater.UpdateLeaseAsync(
                 refreshedLease,
                 refreshedLease.Id,
-                Cosmos.PartitionKey.Null,
+                PartitionKey.Null,
                 serverLease =>
                 {
                     if (serverLease.Owner != lease.Owner)
@@ -231,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return await this.leaseUpdater.UpdateLeaseAsync(
                 lease,
                 lease.Id,
-                Cosmos.PartitionKey.Null,
+                PartitionKey.Null,
                 serverLease =>
                 {
                     if (serverLease.Owner != lease.Owner)
@@ -246,7 +247,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         private async Task<DocumentServiceLease> TryCreateDocumentServiceLeaseAsync(DocumentServiceLease documentServiceLease)
         {
-            var blob = this.leaseContainer.GetBlobClient(documentServiceLease.Id);
+            BlobClient blob = this.leaseContainer.GetBlobClient(documentServiceLease.Id);
             try
             {
                 using (Stream stream = CosmosContainerExtensions.DefaultJsonSerializer.ToStream(documentServiceLease))
@@ -265,8 +266,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         private async Task<DocumentServiceLease> TryGetLeaseAsync(DocumentServiceLease lease)
         {
-            var blob = this.leaseContainer.GetBlobClient(lease.Id);
-            var stream = (await blob.DownloadAsync()).Value.Content;
+            BlobClient blob = this.leaseContainer.GetBlobClient(lease.Id);
+            Stream stream = (await blob.DownloadAsync()).Value.Content;
             stream.Position = 0;
             return CosmosContainerExtensions.DefaultJsonSerializer.FromStream<DocumentServiceLease>(stream);
         }

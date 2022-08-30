@@ -9,14 +9,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System.IO;
     using System.Net;
     using System.Threading.Tasks;
+    using Core.Trace;
+    using Exceptions;
     using global::Azure;
     using global::Azure.Storage.Blobs;
     using global::Azure.Storage.Blobs.Models;
-    using global::Azure.Storage.Blobs.Specialized;
-    using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
-    using Microsoft.Azure.Cosmos.Core.Trace;
+    using Utils;
 
     /// <summary>
     /// <see cref="DocumentServiceLeaseUpdater"/> that uses Azure Cosmos DB
@@ -25,16 +23,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     {
         private const int RetryCountOnConflict = 5;
         private readonly BlobContainerClient container;
+        private readonly Dictionary<string, ETag> blobIdToEtag;
 
         public DocumentServiceLeaseUpdaterAzureStorage(BlobContainerClient container)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
+            this.blobIdToEtag = new Dictionary<string, ETag>();
         }
 
         public override async Task<DocumentServiceLease> UpdateLeaseAsync(
             DocumentServiceLease cachedLease,
             string itemId,
-            Cosmos.PartitionKey partitionKey,
+            PartitionKey partitionKey,
             Func<DocumentServiceLease, DocumentServiceLease> 
                 updateLease)
         {
@@ -90,9 +90,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             try
             {
                 BlobClient blob = this.container.GetBlobClient(itemId);
+                ETag eTag;
+                this.blobIdToEtag.TryGetValue(itemId, out eTag);
                 using (Stream stream = CosmosContainerExtensions.DefaultJsonSerializer.ToStream<DocumentServiceLease>(lease))
                 {
-                    await blob.UploadAsync(stream, conditions: new BlobRequestConditions {IfMatch = new ETag(lease.ConcurrencyToken)});
+                    BlobContentInfo result = await blob.UploadAsync(stream, conditions: new BlobRequestConditions {IfMatch = eTag});
+                    this.blobIdToEtag[itemId] = result.ETag;
                 }
 
                 return lease;

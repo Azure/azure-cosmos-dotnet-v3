@@ -7,11 +7,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Text;
-    using System.Text.Json;
     using System.Threading.Tasks;
     using global::Azure.Storage.Blobs;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
+    using global::Azure.Storage.Blobs.Models;
+    using Utils;
 
     internal sealed class DocumentServiceLeaseContainerAzureStorage : DocumentServiceLeaseContainer
     {
@@ -48,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         private async Task<IReadOnlyList<DocumentServiceLease>> ListDocumentsAsync()
         {
             List<DocumentServiceLease> leases = new ();
-            await foreach (var blobItem in this.container.GetBlobsAsync())
+            await foreach (BlobItem blobItem in this.container.GetBlobsAsync())
             {
                 if (blobItem.Name == DocumentServiceLeaseStoreAzureStorage.InitializationBlobName)
                 {

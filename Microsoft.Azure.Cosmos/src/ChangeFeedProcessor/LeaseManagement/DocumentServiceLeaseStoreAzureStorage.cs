@@ -8,12 +8,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System.Collections.Generic;
     using System.IO;
     using System.Threading.Tasks;
-    using global::Azure;
     using global::Azure.Storage.Blobs;
     using global::Azure.Storage.Blobs.Models;
     using global::Azure.Storage.Blobs.Specialized;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Implementation of <see cref="DocumentServiceLeaseStore"/> for state in Azure Cosmos DB
@@ -35,15 +32,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         public override async Task<bool> IsInitializedAsync()
         {
-            var blob = this.container.GetBlobClient(InitializationBlobName);
+            BlobClient blob = this.container.GetBlobClient(InitializationBlobName);
             try
             {
                 if (!await blob.ExistsAsync())
                 {
                     await blob.UploadAsync(new MemoryStream());
                 }
-                var properties = await blob.GetPropertiesAsync();
-                if (properties.Value.Metadata.TryGetValue(InitializationStateName, out var value) && value == InitializationStateCompleted)
+                BlobProperties properties = await blob.GetPropertiesAsync();
+                if (properties.Metadata.TryGetValue(InitializationStateName, out string value) && value == InitializationStateCompleted)
                 {
                     return true;
                 }
@@ -58,8 +55,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         public override async Task MarkInitializedAsync()
         {
-            var blob = this.container.GetBlobClient(InitializationBlobName);
-            var result = await blob.SetMetadataAsync(new Dictionary<string, string> {{InitializationStateName, InitializationStateCompleted}}, 
+            BlobClient blob = this.container.GetBlobClient(InitializationBlobName);
+            await blob.SetMetadataAsync(new Dictionary<string, string> {{InitializationStateName, InitializationStateCompleted}}, 
                 new BlobRequestConditions{LeaseId = this.leaseId}).ConfigureAwait(false);
         }
 
@@ -67,10 +64,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
             try
             {
-                var blob = this.container.GetBlobClient(InitializationBlobName);
+                BlobClient blob = this.container.GetBlobClient(InitializationBlobName);
                 BlobLeaseClient blobLeaseClient = blob.GetBlobLeaseClient();
-                var response = await blobLeaseClient.AcquireAsync(lockTime);
-                this.leaseId = response.Value.LeaseId;
+                BlobLease response = await blobLeaseClient.AcquireAsync(lockTime);
+                this.leaseId = response.LeaseId;
                 return true;
             }
             catch (Exception)
@@ -83,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
             try
             {
-                var blob = this.container.GetBlobClient(InitializationBlobName);
+                BlobClient blob = this.container.GetBlobClient(InitializationBlobName);
                 BlobLeaseClient blobLeaseClient = blob.GetBlobLeaseClient(this.leaseId);
                 await blobLeaseClient.ReleaseAsync();
                 return true;
