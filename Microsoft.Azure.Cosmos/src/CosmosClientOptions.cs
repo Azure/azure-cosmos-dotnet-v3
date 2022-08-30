@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
+    using Telemetry;
 
     /// <summary>
     /// Defines all the configurable options that the CosmosClient requires.
@@ -925,13 +926,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Enable OpenTelemetry and start emiting activities for each operations
+        /// Distributed Tracing Options. <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/>
         /// </summary>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-            bool EnableOpenTelemetry { get; set; }
+        internal DistributedTracingOptions DistributedTracingOptions { get; set; }
+
+        /// <summary>
+        /// Gets or sets value indicating whether distributed tracing activities (<see cref="System.Diagnostics.Activity"/>) are going to be created for the SDK methods calls and HTTP calls.
+        /// By default true for Preview package
+        /// </summary>
+        internal bool EnableDistributedTracing { get; set; }
+
     }
 }
