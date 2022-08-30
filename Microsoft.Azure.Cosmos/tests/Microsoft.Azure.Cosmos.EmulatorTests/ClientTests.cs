@@ -538,7 +538,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 });
             verifyJsonSerialization("{\"query\":\"SELECT 1\",\"parameters\":[" +
                     "{\"name\":\"@p1\",\"value\":{\"a\":[1,2,3]}}" + 
-                "]," + "\"passThrough\":true}",
+                "]}",
                 new SqlQuerySpec()
                 {
                     QueryText = "SELECT 1",
@@ -602,7 +602,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "\"query\":\"SELECT 1\"," +
                     "\"parameters\":[" +
                         "{\"name\":\"@p1\",\"value\":{\"a\":[1,2,\"abc\"]}}" +
-                    "]," + "\"passThrough\":true" + 
+                    "]" +
                 "}");
         }
 
