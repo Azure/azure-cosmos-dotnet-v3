@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using global::Azure.Storage.Blobs;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using static Microsoft.Azure.Cosmos.Container;
@@ -30,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
 
         private ContainerInternal leaseContainer;
         private string InstanceName;
-        private string azureContaierUri;
+        private BlobContainerClient azureContainer;
         private DocumentServiceLeaseStoreManager leaseStoreManager;
         private bool isBuilt;
 
@@ -192,11 +193,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Sets the azure storage lease container to hold the leases state
         /// </summary>
-        /// <param name="azureContaierUri">Uri of azure container (with secrets).</param>
+        /// <param name="azureContainer">BlobContainerClient of the lease blob container.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        public ChangeFeedProcessorBuilder WithAzureStorageLeaseContainer(string azureContaierUri)
+        public ChangeFeedProcessorBuilder WithAzureStorageLeaseContainer(BlobContainerClient azureContainer)
         {
-            this.azureContaierUri = azureContaierUri;
+            this.azureContainer = azureContainer;
             return this;
         }
 
@@ -292,7 +293,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new InvalidOperationException(nameof(this.monitoredContainer) + " was not specified");
             }
 
-            if (this.leaseContainer == null && this.leaseStoreManager == null && this.azureContaierUri == null)
+            if (this.leaseContainer == null && this.leaseStoreManager == null && this.azureContainer == null)
             {
                 throw new InvalidOperationException($"Defining the lease store by WithLeaseContainer or WithInMemoryLeaseContainer is required.");
             }
@@ -302,9 +303,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new InvalidOperationException("Processor name not specified during creation.");
             }
 
-            if (this.azureContaierUri != null)
+            if (this.azureContainer != null)
             {
-                this.leaseStoreManager = new DocumentServiceLeaseStoreManagerAzureStorage(this.monitoredContainer, this.azureContaierUri, this.InstanceName);
+                this.leaseStoreManager = new DocumentServiceLeaseStoreManagerAzureStorage(this.monitoredContainer, this.azureContainer, this.InstanceName);
             }
 
             this.applyBuilderConfiguration(this.leaseStoreManager, this.leaseContainer, this.InstanceName, this.changeFeedLeaseOptions, this.changeFeedProcessorOptions, this.monitoredContainer);

@@ -27,14 +27,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// </summary>
         public DocumentServiceLeaseStoreManagerAzureStorage(
             ContainerInternal monitoredContainer,
-            string containerUri,
+            BlobContainerClient leaseContainer,
             string hostName) // For testing purposes only.
         {
-            if (string.IsNullOrEmpty(hostName)) throw new ArgumentNullException(nameof(hostName));
             if (monitoredContainer == null) throw new ArgumentNullException(nameof(monitoredContainer));
-            if (string.IsNullOrEmpty(containerUri)) throw new ArgumentNullException(nameof(containerUri));
+            if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
+            if (string.IsNullOrEmpty(hostName)) throw new ArgumentNullException(nameof(hostName));
             
-            BlobContainerClient leaseContainer = new BlobContainerClient(new Uri(containerUri));
             DocumentServiceLeaseUpdaterAzureStorage leaseUpdater = new DocumentServiceLeaseUpdaterAzureStorage(leaseContainer); 
             
             this.leaseStore = new DocumentServiceLeaseStoreAzureStorage(
