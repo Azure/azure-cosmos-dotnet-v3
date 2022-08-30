@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.Tracing;
     using System.Linq;
     using System.Reflection;
     using System.Text;
@@ -14,8 +15,14 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Telemetry;
     using VisualStudio.TestTools.UnitTesting;
 
-    public class OpenTelemetryListener : IObserver<KeyValuePair<string, object>>, IObserver<DiagnosticListener>, IDisposable
+    public class OpenTelemetryListener :
+        EventListener,
+        IObserver<KeyValuePair<string, object>>, 
+        IObserver<DiagnosticListener>,
+        IDisposable
     {
+        private readonly string EventSourceName;
+
         private readonly Func<string, bool> sourceNameFilter;
         private readonly AsyncLocal<bool> collectThisStack;
 
@@ -29,6 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public OpenTelemetryListener(string name, bool asyncLocal = false, Action<ProducedDiagnosticScope> scopeStartCallback = default)
             : this(n => n == name, asyncLocal, scopeStartCallback)
         {
+            this.EventSourceName = name;
         }
 
         public OpenTelemetryListener(Func<string, bool> filter, bool asyncLocal = false, Action<ProducedDiagnosticScope> scopeStartCallback = default)
@@ -163,8 +171,23 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        public void Dispose()
+        protected override void OnEventSourceCreated(EventSource eventSource)
         {
+            if (eventSource.Name == this.EventSourceName)
+            {
+                this.EnableEvents(eventSource, EventLevel.Informational);
+            }
+        }
+
+        protected override void OnEventWritten(EventWrittenEventArgs eventData)
+        {
+            Console.WriteLine(eventData.TimeStamp + " " + eventData.EventName + " " + eventData.Payload[0]);
+        }
+
+        public override void Dispose()
+        {
+            base.Dispose();
+
             if (this.subscriptions == null)
             {
                 return;

@@ -35,13 +35,15 @@
         public static Container container;
 
         private static OpenTelemetryListener testListener;
+
         private static readonly TimeSpan delayTime = TimeSpan.FromSeconds(2);
         private static readonly RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
 
         [ClassInitialize()]
         public static async Task ClassInitAsync(TestContext context)
         {
-            testListener = new OpenTelemetryListener("Azure.Cosmos");
+            string sourceName = OpenTelemetryAttributeKeys.DiagnosticNamespace;
+            testListener = new OpenTelemetryListener(sourceName);
 
             string errorMessage = "Mock throttle exception" + Guid.NewGuid().ToString();
             Guid exceptionActivityId = Guid.NewGuid();

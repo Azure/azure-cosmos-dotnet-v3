@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     [EventSource(Name = EventSourceName)]
     internal sealed class CosmosDbEventSource : AzureEventSource
     {
-        private const string EventSourceName = "Azure.Cosmos";
+        public const string EventSourceName = OpenTelemetryAttributeKeys.DiagnosticNamespace;
 
         public static CosmosDbEventSource Singleton { get; } = new CosmosDbEventSource();
 
@@ -29,10 +29,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             get => Singleton.IsEnabled(EventLevel.Warning, (EventKeywords)(-1));
         }
 
-        [Event(1, Level = EventLevel.Warning, Message = "{0}")]
-        public void RecordRequestDiagnostics(string diagnostics)
+        [Event(1, Level = EventLevel.Warning)]
+        public void RecordRequestDiagnostics(string message)
         {
-            this.WriteEvent(1, diagnostics);
+            this.WriteEvent(1, message);
         }
     }
 }
