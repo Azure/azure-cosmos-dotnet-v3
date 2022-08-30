@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <para>
         /// During the SDK initialization the account information, including the available regions, is obtained from the <see cref="CosmosClient.Endpoint"/>.
-        /// The SDK will use value of <see cref="ApplicationRegion"/> to populate the preferred list with the account available regions ordered by geographical proximity to the indicated region.
+        /// The SDK will use the value of <see cref="ApplicationRegion"/> to populate the preferred list with the account available regions ordered by geographical proximity to the indicated region.
         /// If the value of <see cref="ApplicationRegion"/> is not an available region in the account, the preferred list is still populated following the same mechanism but would not include the indicated region.
         /// </para>
         /// <para>
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <para>
         /// During the SDK initialization the account information, including the available regions, is obtained from the <see cref="CosmosClient.Endpoint"/>.
-        /// The SDK will use value of <see cref="ApplicationPreferredRegions"/> to populate the preferred list with the account available regions that intersect with the value of <see cref="ApplicationPreferredRegions"/>.
+        /// The SDK will use the value of <see cref="ApplicationPreferredRegions"/> to populate the preferred list with the account available regions that intersect with its value.
         /// If the value of <see cref="ApplicationPreferredRegions"/> contains regions that are not an available region in the account, the values will be ignored. If the these invalid regions are added later to the account, the SDK will use them if they are higher in the preference order.
         /// </para>
         /// <para>
