@@ -9,16 +9,13 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json.Converters;
 
     /// <summary>
-    /// Type of Patch operation.
-    /// </summary>
-    [JsonConverter(typeof(StringEnumConverter))]
-
-    /// <summary>
     /// Describes the list of Patch supported operation types.
     /// </summary>
     /// <remarks>
     /// Further enum additions are expected in the future, application should be authored to cover this scenario
-     /// </remarks>
+    /// </remarks>
+    [JsonConverter(typeof(StringEnumConverter))]
+
     public enum PatchOperationType
     {
         /// <summary>
