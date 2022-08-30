@@ -101,14 +101,35 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the location where the application is running. This will influence the SDK's choice for the Azure Cosmos DB service interaction.
         /// </summary>
         /// <remarks>
-        /// When the specified region is available, the SDK will prefer it to perform operations. When the region specified is not available,
-        /// the SDK auto-selects fallback regions based on proximity from the given region. When
-        /// this property is not specified at all, the SDK uses the write region
-        /// as the preferred region for all operations. See also 
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-sdk-availability">Diagnose
+        /// <para>
+        /// During the SDK initialization the account information, including the available regions, is obtained from the <see cref="CosmosClient.Endpoint"/>.
+        /// The SDK will use value of <see cref="CosmosClientOptions.ApplicationRegion"/> to populate the preferred list with the account available regions ordered by geographical proximity to the indicated region.
+        /// If the value of <see cref="CosmosClientOptions.ApplicationRegion"/> is not an available region in the account, the preferred list is still populated following the same mechanism but would not include the indicated region.
+        /// </para>
+        /// <para>
+        /// If during SDK initialization, the <see cref="CosmosClient.Endpoint"/> is not reachable, the SDK will attempt to recover and obtain the account information issueing requests to all <see cref="Regions"/>.
+        /// </para>
+        /// <para>
+        /// See also <seealso href="https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-sdk-availability">Diagnose
         /// and troubleshoot the availability of Cosmos SDKs</seealso> for more details.
+        /// </para>
+        /// <para>
         /// This configuration is an alternative to <see cref="ApplicationPreferredRegions"/>, either one can be set but not both.
+        /// </para>
         /// </remarks>
+        /// <example>
+        /// If an account is available in West US, East US, and West Europe, configuring a client like the below example would result in the SDK generating a preference order of East US, West US, West Europe.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientOptions clientOptions = new CosmosClientOptions()
+        /// {
+        ///     ApplicationRegion = Regions.EastUS
+        /// };
+        /// 
+        /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
+        /// ]]>
+        /// </code>
+        /// </example>
         /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability#high-availability-with-cosmos-db-in-the-event-of-regional-outages">High availability on regional outages</seealso>
         public string ApplicationRegion { get; set; }
