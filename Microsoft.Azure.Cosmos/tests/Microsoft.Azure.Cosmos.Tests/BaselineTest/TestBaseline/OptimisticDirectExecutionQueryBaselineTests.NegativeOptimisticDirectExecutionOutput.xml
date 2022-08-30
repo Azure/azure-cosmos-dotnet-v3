@@ -9,7 +9,7 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <ExecuteAsPassThrough>false</ExecuteAsPassThrough>
+      <ExecuteAsOptimisticDirectExecution>false</ExecuteAsOptimisticDirectExecution>
     </Output>
   </Result>
   <Result>
@@ -22,7 +22,7 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <ExecuteAsPassThrough>false</ExecuteAsPassThrough>
+      <ExecuteAsOptimisticDirectExecution>false</ExecuteAsOptimisticDirectExecution>
     </Output>
   </Result>
   <Result>
@@ -35,7 +35,7 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <ExecuteAsPassThrough>false</ExecuteAsPassThrough>
+      <ExecuteAsOptimisticDirectExecution>false</ExecuteAsOptimisticDirectExecution>
     </Output>
   </Result>
 </Results>
