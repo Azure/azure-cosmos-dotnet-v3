@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static readonly IReadOnlyList<CosmosObject> Documents = Enumerable
             .Range(1, DocumentCount)
-            .Select(x => CosmosObject.Parse($"{{\"pk\" : {x} }}"))
+            .Select(x => CosmosObject.Parse($"{{\"pk\" : {x}, \"x\": {x % 10} }}"))
             .ToList();
 
         [TestMethod]
@@ -68,7 +68,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     query: "SELECT VALUE COUNT(1) FROM (SELECT DISTINCT c._rid FROM c)",
                     continuationCount: 3,
                     partitionCount: 3,
-                    expectedDocument: CosmosNumber64.Create(DocumentCount))
+                    expectedDocument: CosmosNumber64.Create(DocumentCount)),
+                MakeTest(
+                    query: "SELECT COUNT(1) as DocCount, c.x FROM c GROUP BY c.x",
+                    continuationCount: 3,
+                    partitionCount: 3,
+                    expectedDocuments: Enumerable
+                        .Range(0, 10)
+                        .Select(x => CosmosObject.Create(new Dictionary<string, CosmosElement>
+                        {
+                            ["x"] = CosmosNumber64.Create(x),
+                            ["DocCount"] = CosmosNumber64.Create(DocumentCount / 10)
+                        }))
+                        .ToList())
             };
 
             foreach(AggressivePrefetchTestCase testCase in testCases)
@@ -79,11 +91,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static AggressivePrefetchTestCase MakeTest(string query, int continuationCount, int partitionCount, CosmosElement expectedDocument)
         {
+            if (expectedDocument == null)
+            {
+                throw new ArgumentNullException(nameof(expectedDocument));
+            }
+
             return new AggressivePrefetchTestCase(
                 query: query, 
                 continuationCount: continuationCount,
                 partitionCount: partitionCount,
-                expectedDocument: expectedDocument);
+                expectedDocuments: new List<CosmosElement> { expectedDocument });
+        }
+
+        private static AggressivePrefetchTestCase MakeTest(string query, int continuationCount, int partitionCount, IReadOnlyList<CosmosElement> expectedDocuments)
+        {
+            return new AggressivePrefetchTestCase(
+                query: query,
+                continuationCount: continuationCount,
+                partitionCount: partitionCount,
+                expectedDocuments: expectedDocuments);
         }
 
         private struct AggressivePrefetchTestCase
@@ -94,18 +120,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             public int PartitionCount { get; }
 
-            public CosmosElement ExpectedDocument { get; }
+            public IReadOnlyList<CosmosElement> ExpectedDocuments { get; }
 
             public AggressivePrefetchTestCase(
                 string query,
                 int continuationCount,
                 int partitionCount,
-                CosmosElement expectedDocument)
+                IReadOnlyList<CosmosElement> expectedDocuments)
             {
                 this.Query = query ?? throw new ArgumentNullException(nameof(query));
                 this.ContinuationCount = continuationCount;
                 this.PartitionCount = partitionCount;
-                this.ExpectedDocument = expectedDocument ?? throw new ArgumentNullException(nameof(expectedDocument));
+                this.ExpectedDocuments = expectedDocuments ?? throw new ArgumentNullException(nameof(expectedDocuments));
             }
         }
 
@@ -145,8 +171,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             }
 
             IReadOnlyList<CosmosElement> actualDocuments = await resultTask;
-            actualDocuments.Should().HaveCount(1);
-            actualDocuments.First().Should().Be(testCase.ExpectedDocument);
+            actualDocuments.Should().HaveCount(testCase.ExpectedDocuments.Count);
+            actualDocuments.Should().BeEquivalentTo(testCase.ExpectedDocuments);
         }
 
         private sealed class MockDocumentContainer : InMemoryContainer, IDisposable
