@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <a name="3.30.1-preview"/> [3.30.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.30.1-preview) - 2022-09-01
 
 #### Fixed
-- [#3430](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3430) PartitionKeyRangeCache: Fixes duplicate trace key generation
+- [#3430](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3430) PartitionKeyRangeCache: Fixes duplicate trace key generation which is the root cause of `System.ThrowHelper.ThrowArgumentException` during `GetFeedRangesAsync` API invocation.
 
 ### <a name="3.30.0-preview"/> [3.30.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.30.0-preview) - 2022-08-19
 
