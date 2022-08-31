@@ -34,14 +34,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         public TestContext TestContext { get; set; }
 
         /// <summary>
-        /// Initializes the test class with the current test context.
-        /// </summary>
-        [TestInitialize]
-        public void Initialize()
-        {
-        }
-
-        /// <summary>
         /// Test to validate that when a fresh container is created, TryGetOverlappingRangesAsync() should not
         /// add same key to the trace dictionary. The same key could be regenerated, if the CPU computation is
         /// fast enough to invoke TryLookupAsync within .5 to 15 ms timeframe, which may lead to get the exact
