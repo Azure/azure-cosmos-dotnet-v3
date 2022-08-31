@@ -6,18 +6,24 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections;
+    using System.Diagnostics;
+    using System.Drawing.Printing;
+    using System.Runtime.Serialization;
     using System.Threading;
     using global::Azure.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// The exception that is thrown in a thread upon cancellation of an operation that
     ///  the thread was executing. This extends the OperationCanceledException to include the
     ///  diagnostics of the operation that was canceled.
-    /// </summary>
+    /// </summary> 
+    [Serializable]
     public class CosmosOperationCanceledException : OperationCanceledException
     {
         private readonly OperationCanceledException originalException;
@@ -61,6 +67,22 @@ namespace Microsoft.Azure.Cosmos
             this.tokenCancellationRequested = originalException.CancellationToken.IsCancellationRequested;
             this.toStringMessage = this.CreateToStringMessage();
             this.lazyMessage = this.CreateLazyMessage();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CosmosOperationCanceledException"/> class.
+        /// </summary>
+        /// <param name="info">The SerializationInfo object that holds serialized object data for the exception being thrown.</param>
+        /// <param name="context">The StreamingContext that contains contextual information about the source or destination.</param>
+        protected CosmosOperationCanceledException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            this.originalException = (OperationCanceledException)info.GetValue("originalException", typeof(OperationCanceledException));
+            this.tokenCancellationRequested = (bool)info.GetValue("tokenCancellationRequested", typeof(bool));
+            
+            this.toStringMessage = this.CreateToStringMessagDeserialized();
+            this.lazyMessage = this.CreateLazyMessageDeserialized();
+            this.Diagnostics = new CosmosTraceDiagnostics(NoOpTrace.Singleton);
         }
 
         /// <inheritdoc/>
@@ -112,6 +134,15 @@ namespace Microsoft.Azure.Cosmos
             return new Lazy<string>(() => $"{this.originalException}{Environment.NewLine}Cancellation Token has expired: {this.tokenCancellationRequested}. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
         }
 
+        private Lazy<string> CreateLazyMessageDeserialized()
+        {
+            return new Lazy<string>(() => $"{this.originalException.Message}{Environment.NewLine}Cancellation Token has expired: {this.tokenCancellationRequested}. Note that CosmosDiagnostics cannot be serialized. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
+        }
+        private Lazy<string> CreateToStringMessagDeserialized()
+        {
+            return new Lazy<string>(() => $"{this.originalException}{Environment.NewLine}Cancellation Token has expired: {this.tokenCancellationRequested}. Note that CosmosDiagnostics cannot be serialized. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
+        }
+
         /// <summary>
         /// RecordOtelAttributes
         /// </summary>
@@ -122,6 +153,18 @@ namespace Microsoft.Azure.Cosmos
             scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics));
             scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, exception.Diagnostics);
             scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.GetBaseException().Message);
+        }
+
+        /// <summary>
+        /// Sets the System.Runtime.Serialization.SerializationInfo with information about the exception.
+        /// </summary>
+        /// <param name="info">The SerializationInfo object that holds serialized object data for the exception being thrown.</param>
+        /// <param name="context">The StreamingContext that contains contextual information about the source or destination.</param>
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("originalException", this.originalException);
+            info.AddValue("tokenCancellationRequested", this.tokenCancellationRequested);
         }
     }
 }
