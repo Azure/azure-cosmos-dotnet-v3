@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
         /// If the value of <see cref="ApplicationRegion"/> is not an available region in the account, the preferred list is still populated following the same mechanism but would not include the indicated region.
         /// </para>
         /// <para>
-        /// If during SDK initialization, the <see cref="CosmosClient.Endpoint"/> is not reachable, the SDK will attempt to recover and obtain the account information issueing requests to all <see cref="Regions"/>.
+        /// If during SDK initialization, the <see cref="CosmosClient.Endpoint"/> is not reachable, the SDK will attempt to recover and obtain the account information issuing requests to all <see cref="Regions"/>.
         /// </para>
         /// <para>
         /// See also <seealso href="https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-sdk-availability">Diagnose
@@ -118,7 +118,8 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         /// <example>
-        /// If an account is available in West US, East US, and West Europe, configuring a client like the below example would result in the SDK generating a preference order of East US, West US, West Europe.
+        /// If an account is configured with multiple regions including West US, East US, and West Europe, configuring a client like the below example would result in the SDK generating a sorted preferred regions based on proximity to East US.
+        /// The SDK will send requests to East US, if that region becomes unavailable, it will fallback to West US (second in proximity), and finally to West Europe if West US becomes unavailable.
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosClientOptions clientOptions = new CosmosClientOptions()
@@ -144,7 +145,7 @@ namespace Microsoft.Azure.Cosmos
         /// If the value of <see cref="ApplicationPreferredRegions"/> contains regions that are not an available region in the account, the values will be ignored. If the these invalid regions are added later to the account, the SDK will use them if they are higher in the preference order.
         /// </para>
         /// <para>
-        /// If during SDK initialization, the <see cref="CosmosClient.Endpoint"/> is not reachable, the SDK will attempt to recover and obtain the account information issueing requests to the regions in <see cref="ApplicationPreferredRegions"/>.
+        /// If during SDK initialization, the <see cref="CosmosClient.Endpoint"/> is not reachable, the SDK will attempt to recover and obtain the account information issuing requests to the regions in <see cref="ApplicationPreferredRegions"/>.
         /// </para>
         /// <para>
         /// See also <seealso href="https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-sdk-availability">Diagnose
