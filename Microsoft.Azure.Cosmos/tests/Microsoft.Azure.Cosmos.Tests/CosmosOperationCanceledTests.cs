@@ -36,6 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             //Asserts
             Assert.AreEqual(originalException.ToString(), deserializedExceptoin.ToString());
+            Assert.AreEqual(originalException.Message, deserializedExceptoin.Message);
             Assert.AreEqual(originalException.GetBaseException().Message, deserializedExceptoin.GetBaseException().Message);
             Assert.AreEqual(originalException.GetBaseException().ToString(), deserializedExceptoin.GetBaseException().ToString());
             Assert.AreEqual(originalException.GetBaseException().HResult, deserializedExceptoin.GetBaseException().HResult);
