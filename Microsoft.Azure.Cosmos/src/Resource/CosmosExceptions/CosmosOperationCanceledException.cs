@@ -6,18 +6,11 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections;
-    using System.Diagnostics;
-    using System.Drawing.Printing;
-    using System.Runtime.ConstrainedExecution;
     using System.Runtime.Serialization;
-    using System.Threading;
     using global::Azure.Core.Pipeline;
-    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Telemetry;
-    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// The exception that is thrown in a thread upon cancellation of an operation that

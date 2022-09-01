@@ -5,14 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Runtime.Serialization.Formatters.Binary;
-    using System.Text;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Tracing; //what is this? for the no op trace
-    using Microsoft.IdentityModel.Tokens;
+    using Microsoft.Azure.Cosmos.Tracing; 
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
