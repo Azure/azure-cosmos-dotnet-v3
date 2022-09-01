@@ -113,7 +113,7 @@ Which takes you to the pipeline run. Clicking on the run number will take you to
 
 ![See pipeline overview](docs/images/contributing-pipeline.png)
 
-And you can see which Tests failed during that check:
+And you can see which Tests failed during that check and click on the individual test to see the error message:
 
 ![See tests](docs/images/contributing-pipelinetests.png)
 
