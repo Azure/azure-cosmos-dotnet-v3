@@ -481,7 +481,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Paths = new Collection<string>(new List<string>() { "/city" })
                 },
                 inputFeedRange: new FeedRangePartitionKey(partitionKey),
-                expectedFeedRange: new FeedRangePartitionKey(new Cosmos.PartitionKey("Redmond")),
+                expectedFeedRange: new FeedRangePartitionKey(partitionKey),
                 getPartitionKeyDefinitionAsyncExecutions: Moq.Times.Once());
         }
 
@@ -500,7 +500,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Paths = new Collection<string>(new List<string>() { "/city" })
                 },
                 inputFeedRange: new FeedRangePartitionKey(partitionKey),
-                expectedFeedRange: new FeedRangePartitionKey(new Cosmos.PartitionKey("Redmond")),
+                expectedFeedRange: new FeedRangePartitionKey(partitionKey),
                 getPartitionKeyDefinitionAsyncExecutions: Moq.Times.Once());
         }
 
@@ -563,7 +563,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CancellationToken cancellationToken = CancellationToken.None;
 
-            Console.WriteLine(partitionKeyDefinition);
             mockContainer
                 .Setup(container => container.GetPartitionKeyDefinitionAsync(cancellationToken))
                 .Returns(Task.FromResult(partitionKeyDefinition));
