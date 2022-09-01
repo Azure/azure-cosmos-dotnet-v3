@@ -551,7 +551,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     else if (memberType == typeof(DateTime))
                     {
                         SqlStringLiteral serializedDateTime = (SqlStringLiteral)right.Literal;
-                        value = DateTime.Parse(serializedDateTime.Value);
+                        value = DateTime.Parse(serializedDateTime.Value, provider: null, DateTimeStyles.RoundtripKind);
                     }
 
                     if (value != default(object))
@@ -2010,6 +2010,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             public SqlScalarExpression Visit(CosmosString cosmosString)
             {
                 return SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(cosmosString.Value));
+            }
+
+            public SqlScalarExpression Visit(CosmosUndefined cosmosUndefined)
+            {
+                return SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
             }
         }
         private enum SubqueryKind

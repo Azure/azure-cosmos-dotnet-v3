@@ -372,7 +372,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 // Token refreshes fails except for the first time, but the cached token will be served as long as it is valid.
                 // Wait for the background refresh to occur. It should fail but the cached token should still be valid
-                Stopwatch stopwatch = Stopwatch.StartNew();
+                ValueStopwatch stopwatch = ValueStopwatch.StartNew();
                 while (testTokenCredential.NumTimesInvoked != 3)
                 {
                     Assert.IsTrue(stopwatch.Elapsed.TotalSeconds < 10, "The background task did not start in 10 seconds");

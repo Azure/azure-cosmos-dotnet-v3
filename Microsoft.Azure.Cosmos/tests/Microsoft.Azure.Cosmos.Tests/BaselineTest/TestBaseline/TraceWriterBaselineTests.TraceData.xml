@@ -190,7 +190,7 @@
         TraceForBaselineTesting rootTrace;
         using (rootTrace = TraceForBaselineTesting.GetRootTrace())
         {
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue, new TraceSummary());
 
             TransportAddressUri uri1 = new TransportAddressUri(new Uri("http://someUri1.com"));
             TransportAddressUri uri2 = new TransportAddressUri(new Uri("http://someUri2.com"));
@@ -239,6 +239,7 @@
                     transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                 ResourceType.Document,
                 OperationType.Query,
+                "42",
                 uri1.Uri);
 
             TraceWriterBaselineTests.GetPrivateField<List<StoreResponseStatistics>>(datum, "storeResponseStatistics").Add(storeResponseStatistics);
@@ -309,6 +310,10 @@
       "ContactedReplicas": [
         {
           "Count": 1,
+          "Uri": "http://someuri1.com/"
+        },
+        {
+          "Count": 1,
           "Uri": "http://someuri2.com/"
         }
       ],
@@ -337,6 +342,7 @@
           "ResponseTimeUTC": "9999-12-31T23:59:59.9999999",
           "ResourceType": "Document",
           "OperationType": "Query",
+          "RequestSessionToken": "42",
           "LocationEndpoint": "http://someuri1.com/",
           "StoreResult": {
             "ActivityId": "00000000-0000-0000-0000-000000000000",
@@ -422,7 +428,7 @@
         TraceForBaselineTesting rootTrace;
         using (rootTrace = TraceForBaselineTesting.GetRootTrace())
         {
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue, new TraceSummary());
             datum.ContactedReplicas.Add(default);
 
             TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf", default);
@@ -459,6 +465,7 @@
                      transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                 resourceType: default,
                 operationType: default,
+                requestSessionToken: default,
                 locationEndpoint: default);
 
             TraceWriterBaselineTests.GetPrivateField<List<StoreResponseStatistics>>(datum, "storeResponseStatistics").Add(storeResponseStatistics);
@@ -630,7 +637,7 @@
         TraceForBaselineTesting rootTrace;
         using (rootTrace = TraceForBaselineTesting.GetRootTrace())
         {
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue, new TraceSummary());
             TraceWriterBaselineTests.SetEndRequestTime(datum,DateTime.MaxValue);
 
             HttpResponseStatistics httpResponseStatistics = new HttpResponseStatistics(
@@ -770,7 +777,7 @@
 └── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
         (
             [System Info]
-            {"systemHistory":[{"dateUtc":"0001-01-01T00:00:00.0000000","cpu":42.000,"memory":1000.000,"threadInfo":{"isThreadStarving":"no info"}},{"dateUtc":"0001-01-01T00:00:00.0000000","cpu":23.000,"memory":9000.000,"threadInfo":{"isThreadStarving":"no info"}}]}
+            {"systemHistory":[{"dateUtc":"0001-01-01T00:00:00.0000000","cpu":42.000,"memory":1000.000,"threadInfo":{"isThreadStarving":"no info"},"numberOfOpenTcpConnection":0},{"dateUtc":"0001-01-01T00:00:00.0000000","cpu":23.000,"memory":9000.000,"threadInfo":{"isThreadStarving":"no info"},"numberOfOpenTcpConnection":0}]}
         )
 ]]></Text>
       <Json><![CDATA[{
@@ -788,7 +795,8 @@
           "memory": 1000.0,
           "threadInfo": {
             "isThreadStarving": "no info"
-          }
+          },
+          "numberOfOpenTcpConnection": 0
         },
         {
           "dateUtc": "0001-01-01T00:00:00",
@@ -796,7 +804,8 @@
           "memory": 9000.0,
           "threadInfo": {
             "isThreadStarving": "no info"
-          }
+          },
+          "numberOfOpenTcpConnection": 0
         }
       ]
     }

@@ -1201,6 +1201,12 @@
     }
   ]
 }]]></Json>
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+</OTelActivities>
     </Output>
   </Result>
   <Result>
@@ -1273,7 +1279,7 @@
     │   │                                           )
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+    │   └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
@@ -1301,7 +1307,7 @@
     │   │                                       )
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+    │   └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
@@ -1329,7 +1335,7 @@
     │   │                                       )
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+    │   └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
@@ -1357,7 +1363,7 @@
         │                                       )
         ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-        └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+        └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -1588,7 +1594,7 @@
           "duration in milliseconds": 0
         },
         {
-          "name": "POCO Materialization",
+          "name": "ChangeFeed Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -1711,7 +1717,7 @@
           "duration in milliseconds": 0
         },
         {
-          "name": "POCO Materialization",
+          "name": "ChangeFeed Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -1834,7 +1840,7 @@
           "duration in milliseconds": 0
         },
         {
-          "name": "POCO Materialization",
+          "name": "ChangeFeed Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -1957,7 +1963,7 @@
           "duration in milliseconds": 0
         },
         {
-          "name": "POCO Materialization",
+          "name": "ChangeFeed Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -1966,6 +1972,12 @@
     }
   ]
 }]]></Json>
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+</OTelActivities>
     </Output>
   </Result>
   <Result>
@@ -2704,6 +2716,12 @@
     }
   ]
 }]]></Json>
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+</OTelActivities>
     </Output>
   </Result>
   <Result>
@@ -2777,7 +2795,7 @@
     │   │                                           )
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+    │   └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
@@ -2805,7 +2823,7 @@
     │   │                                       )
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+    │   └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
@@ -2833,7 +2851,7 @@
     │   │                                       )
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+    │   └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
@@ -2861,7 +2879,7 @@
         │                                       )
         ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
         ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-        └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
+        └── ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -3092,7 +3110,7 @@
           "duration in milliseconds": 0
         },
         {
-          "name": "POCO Materialization",
+          "name": "ChangeFeed Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -3215,7 +3233,7 @@
           "duration in milliseconds": 0
         },
         {
-          "name": "POCO Materialization",
+          "name": "ChangeFeed Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -3338,7 +3356,7 @@
           "duration in milliseconds": 0
         },
         {
-          "name": "POCO Materialization",
+          "name": "ChangeFeed Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -3461,7 +3479,7 @@
           "duration in milliseconds": 0
         },
         {
-          "name": "POCO Materialization",
+          "name": "ChangeFeed Response Serialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
@@ -3470,6 +3488,12 @@
     }
   ]
 }]]></Json>
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+</OTelActivities>
     </Output>
   </Result>
   <Result>
@@ -3793,6 +3817,10 @@
     }
   ]
 }]]></Json>
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.ReadAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.FeedIterator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.Change Feed Estimator Read Next Async</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+</OTelActivities>
     </Output>
   </Result>
 </Results>

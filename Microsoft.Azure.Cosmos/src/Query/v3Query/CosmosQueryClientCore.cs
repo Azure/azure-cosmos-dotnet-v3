@@ -79,22 +79,37 @@ namespace Microsoft.Azure.Cosmos
 
         public override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(
             SqlQuerySpec sqlQuerySpec,
+            ResourceType resourceType,
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
             bool hasLogicalPartitionKey,
             bool allowDCount,
+            bool useSystemPrefix,
             CancellationToken cancellationToken)
         {
+            string queryString = null;
+            if (sqlQuerySpec != null)
+            {
+                using (Stream stream = this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType))
+                {
+                    using (StreamReader reader = new StreamReader(stream))
+                    {
+                        queryString = reader.ReadToEnd();
+                    }
+                }
+            }
+            
             return (await this.documentClient.QueryPartitionProvider).TryGetPartitionedQueryExecutionInfo(
-                querySpec: sqlQuerySpec,
+                querySpecJsonString: queryString,
                 partitionKeyDefinition: partitionKeyDefinition,
                 requireFormattableOrderByQuery: requireFormattableOrderByQuery,
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
-                allowDCount: allowDCount);
+                allowDCount: allowDCount,
+                useSystemPrefix: useSystemPrefix);
         }
 
         public override async Task<TryCatch<QueryPage>> ExecuteItemQueryAsync(

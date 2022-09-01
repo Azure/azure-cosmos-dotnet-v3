@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.IO;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 PatchOperation.Add(null, "1");
                 Assert.Fail();
             }
-            catch(ArgumentNullException ex)
+            catch (ArgumentNullException ex)
             {
                 Assert.AreEqual(ex.ParamName, "path");
             }
@@ -48,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             PatchOperationTests.ValidateOperations(operation, PatchOperationType.Add, current);
 
             dynamic complexObject = new { a = "complex", b = 12.34, c = true };
-            operation = PatchOperation.Add(path,  complexObject);
+            operation = PatchOperation.Add(path, complexObject);
             PatchOperationTests.ValidateOperations(operation, PatchOperationType.Add, complexObject);
 
             operation = PatchOperation.Remove(path);
@@ -61,6 +62,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Guid guid = new Guid();
             operation = PatchOperation.Set(path, guid);
             PatchOperationTests.ValidateOperations(operation, PatchOperationType.Set, guid);
+
+            operation = PatchOperation.Set<object>(path, null);
+            PatchOperationTests.ValidateOperations<object>(operation, PatchOperationType.Set, null);
         }
 
         private static void ValidateOperations<T>(PatchOperation patchOperation, PatchOperationType operationType, T value)
@@ -97,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private class CustomSerializer : CosmosSerializer
         {
-            private CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
+            private readonly CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
 
             public override T FromStream<T>(Stream stream)
             {
@@ -106,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             public override Stream ToStream<T>(T input)
             {
-                return this.cosmosSerializer.ToStream<T>(input);
+                return this.cosmosSerializer.ToStream(input);
             }
         }
     }

@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
+    using Telemetry;
 
     /// <summary>
     /// Defines all the configurable options that the CosmosClient requires.
@@ -100,14 +101,37 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the location where the application is running. This will influence the SDK's choice for the Azure Cosmos DB service interaction.
         /// </summary>
         /// <remarks>
-        /// When the specified region is available, the SDK will prefer it to perform operations. When the region specified is not available,
-        /// the SDK auto-selects fallback regions based on proximity from the given region. When
-        /// this property is not specified at all, the SDK uses the write region
-        /// as the preferred region for all operations. See also 
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-sdk-availability">Diagnose
+        /// <para>
+        /// During the CosmosClient initialization the account information, including the available regions, is obtained from the <see cref="CosmosClient.Endpoint"/>.
+        /// The CosmosClient will use the value of <see cref="ApplicationRegion"/> to populate the preferred list with the account available regions ordered by geographical proximity to the indicated region.
+        /// If the value of <see cref="ApplicationRegion"/> is not an available region in the account, the preferred list is still populated following the same mechanism but would not include the indicated region.
+        /// </para>
+        /// <para>
+        /// If during CosmosClient initialization, the <see cref="CosmosClient.Endpoint"/> is not reachable, the CosmosClient will attempt to recover and obtain the account information issuing requests to all <see cref="Regions"/> ordered by proximity to the <see cref="ApplicationRegion"/>.
+        /// For more granular control over the selected regions or to define a list based on a custom criteria, use <see cref="ApplicationPreferredRegions"/> instead of <see cref="ApplicationRegion"/>.
+        /// </para>
+        /// <para>
+        /// See also <seealso href="https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-sdk-availability">Diagnose
         /// and troubleshoot the availability of Cosmos SDKs</seealso> for more details.
+        /// </para>
+        /// <para>
         /// This configuration is an alternative to <see cref="ApplicationPreferredRegions"/>, either one can be set but not both.
+        /// </para>
         /// </remarks>
+        /// <example>
+        /// If an account is configured with multiple regions including West US, East US, and West Europe, configuring a client like the below example would result in the CosmosClient generating a sorted preferred regions based on proximity to East US.
+        /// The CosmosClient will send requests to East US, if that region becomes unavailable, it will fallback to West US (second in proximity), and finally to West Europe if West US becomes unavailable.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientOptions clientOptions = new CosmosClientOptions()
+        /// {
+        ///     ApplicationRegion = Regions.EastUS
+        /// };
+        /// 
+        /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
+        /// ]]>
+        /// </code>
+        /// </example>
         /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability#high-availability-with-cosmos-db-in-the-event-of-regional-outages">High availability on regional outages</seealso>
         public string ApplicationRegion { get; set; }
@@ -116,11 +140,34 @@ namespace Microsoft.Azure.Cosmos
         /// Gets and sets the preferred regions for geo-replicated database accounts in the Azure Cosmos DB service. 
         /// </summary>
         /// <remarks>
-        /// When this property is specified, the SDK will use the region list in the provided order to define the endpoint failover order.
-        /// This configuration is an alternative to <see cref="ApplicationRegion"/>, either one can be set but not both.
+        /// <para>
+        /// During the CosmosClient initialization the account information, including the available regions, is obtained from the <see cref="CosmosClient.Endpoint"/>.
+        /// The CosmosClient will use the value of <see cref="ApplicationPreferredRegions"/> to populate the preferred list with the account available regions that intersect with its value.
+        /// If the value of <see cref="ApplicationPreferredRegions"/> contains regions that are not an available region in the account, the values will be ignored. If the these invalid regions are added later to the account, the CosmosClient will use them if they are higher in the preference order.
+        /// </para>
+        /// <para>
+        /// If during CosmosClient initialization, the <see cref="CosmosClient.Endpoint"/> is not reachable, the CosmosClient will attempt to recover and obtain the account information issuing requests to the regions in <see cref="ApplicationPreferredRegions"/> in the order that they are listed.
+        /// </para>
+        /// <para>
         /// See also <seealso href="https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-sdk-availability">Diagnose
         /// and troubleshoot the availability of Cosmos SDKs</seealso> for more details.
+        /// </para>
+        /// <para>
+        /// This configuration is an alternative to <see cref="ApplicationRegion"/>, either one can be set but not both.
+        /// </para>
         /// </remarks>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientOptions clientOptions = new CosmosClientOptions()
+        /// {
+        ///     ApplicationPreferredRegions = new List<string>(){ Regions.EastUS, Regions.WestUS }
+        /// };
+        /// 
+        /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
+        /// ]]>
+        /// </code>
+        /// </example>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability#high-availability-with-cosmos-db-in-the-event-of-regional-outages">High availability on regional outages</seealso>
         public IReadOnlyList<string> ApplicationPreferredRegions { get; set; }
 
@@ -923,5 +970,17 @@ namespace Microsoft.Azure.Cosmos
                 return objectType == typeof(DateTime);
             }
         }
+
+        /// <summary>
+        /// Distributed Tracing Options. <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/>
+        /// </summary>
+        internal DistributedTracingOptions DistributedTracingOptions { get; set; }
+
+        /// <summary>
+        /// Gets or sets value indicating whether distributed tracing activities (<see cref="System.Diagnostics.Activity"/>) are going to be created for the SDK methods calls and HTTP calls.
+        /// By default true for Preview package
+        /// </summary>
+        internal bool EnableDistributedTracing { get; set; }
+
     }
 }

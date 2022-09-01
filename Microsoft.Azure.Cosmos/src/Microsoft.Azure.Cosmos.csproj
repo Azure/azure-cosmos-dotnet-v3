@@ -92,18 +92,6 @@
 			<AutoGen>True</AutoGen>
 			<DependentUpon>SystemStrings.tt</DependentUpon>
 		</Compile>
-		<Compile Update="Headers\StoreRequestNameValueCollection.cs">
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-			<DependentUpon>StoreRequestNameValueCollection.tt</DependentUpon>
-		</Compile>
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Update="Headers\StoreRequestNameValueCollection.tt">
-			<Generator>TextTemplatingFileGenerator</Generator>
-			<LastGenOutput>StoreRequestNameValueCollection.cs</LastGenOutput>
-		</None>
 	</ItemGroup>
 	<ItemGroup>
 		<EmbeddedResource Update="ClientResources.resx">
@@ -128,7 +116,7 @@
 		<PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
 
 		<!--Direct Dependencies-->
-		<PackageReference Include="System.Configuration.ConfigurationManager" Version="4.7.0" />
+		<PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
 
 		<!--HybridRow Dependencies-->
 		<PackageReference Include="System.Memory" Version="4.5.4" />
@@ -142,6 +130,9 @@
 	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
 		<None Include="$(OutputPath)\Cosmos.CRTCompat.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
 		<None Include="$(OutputPath)\Microsoft.Azure.Cosmos.ServiceInterop.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
+		<None Include="$(OutputPath)\vcruntime140_1.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
+		<None Include="$(OutputPath)\vcruntime140.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
+		<None Include="$(OutputPath)\msvcp140.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
 		<None Include="$(NugetPackageRoot)\Microsoft.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
 		<None Include="$(NugetPackageRoot)\Microsoft.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Serialization.HybridRow.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
 		<None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Direct\$(DirectVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Direct.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />

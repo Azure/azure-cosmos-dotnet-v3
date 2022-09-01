@@ -69,8 +69,23 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
             catch (Exception ex)
             {
-                await this.RemoveLeaseAsync(lease).ConfigureAwait(false);
-                await this.monitor.NotifyErrorAsync(lease.CurrentLeaseToken, ex);
+                await this.RemoveLeaseAsync(lease: lease, wasAcquired: false).ConfigureAwait(false);
+                switch (ex)
+                {
+                    case LeaseLostException leaseLostException:
+                        // LeaseLostException by itself is not loggable, unless it contains a related inner exception
+                        // For cases when the lease or container has been deleted or the lease has been stolen
+                        if (leaseLostException.InnerException != null)
+                        {
+                            await this.monitor.NotifyErrorAsync(lease.CurrentLeaseToken, leaseLostException.InnerException);
+                        }
+                        break;
+
+                    default:
+                        await this.monitor.NotifyErrorAsync(lease.CurrentLeaseToken, ex);
+                        break;
+                }
+
                 throw;
             }
 
@@ -98,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             await Task.WhenAll(addLeaseTasks.ToArray()).ConfigureAwait(false);
         }
 
-        private async Task RemoveLeaseAsync(DocumentServiceLease lease)
+        private async Task RemoveLeaseAsync(DocumentServiceLease lease, bool wasAcquired)
         {
             if (!this.currentlyOwnedPartitions.TryRemove(lease.CurrentLeaseToken, out TaskCompletionSource<bool> worker))
             {
@@ -110,6 +125,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 await this.leaseManager.ReleaseAsync(lease).ConfigureAwait(false);
 
                 await this.monitor.NotifyLeaseReleaseAsync(lease.CurrentLeaseToken);
+            }
+            catch (LeaseLostException)
+            {
+                if (wasAcquired)
+                {
+                    await this.monitor.NotifyLeaseReleaseAsync(lease.CurrentLeaseToken);
+                }
+
+                DefaultTrace.TraceVerbose("Lease with token {0}: taken by another host during release", lease.CurrentLeaseToken);
             }
             catch (Exception ex)
             {
@@ -142,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 DefaultTrace.TraceWarning("Lease with token {0}: processing failed", lease.CurrentLeaseToken);
             }
 
-            await this.RemoveLeaseAsync(lease).ConfigureAwait(false);
+            await this.RemoveLeaseAsync(lease: lease, wasAcquired: true).ConfigureAwait(false);
         }
 
         private async Task HandlePartitionGoneAsync(DocumentServiceLease lease, string lastContinuationToken)

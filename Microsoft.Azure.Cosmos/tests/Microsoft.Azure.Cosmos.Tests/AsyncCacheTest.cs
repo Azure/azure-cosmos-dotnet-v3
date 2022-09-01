@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.Azure.Documents;
 
     [TestClass]
     public class AsyncCacheTest
@@ -298,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TestAsyncDeadlock()
         {
             AsyncCache<int, int> cache = new AsyncCache<int, int>();
-            Stopwatch stopwatch = new Stopwatch();
+            ValueStopwatch stopwatch = new ValueStopwatch();
 
             stopwatch.Start();
             await Task.Factory.StartNew(() =>

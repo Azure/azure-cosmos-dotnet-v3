@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -473,10 +474,11 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
+                It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, TraceComponent, TraceLevel>(
-                (operationName, requestOptions, func, comp, level) => func(NoOpTrace.Singleton));
+               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
+                (operationName, requestOptions, func, oTelFunc, comp, level) => func(NoOpTrace.Singleton));
 
             return mockContext.Object;
         }

@@ -44,11 +44,7 @@ namespace Microsoft.Azure.Cosmos
             // if the SqlParameter has stream value we dont pass it through the custom serializer.
             if (sqlParameter.Value is SerializedParameterValue serializedEncryptedData)
             {
-                using (StreamReader streamReader = new StreamReader(serializedEncryptedData.valueStream))
-                {
-                    string parameterValue = streamReader.ReadToEnd();
-                    writer.WriteRawValue(parameterValue);
-                }
+                writer.WriteRawValue(serializedEncryptedData.rawSerializedJsonValue);
             }
             else
             {
@@ -81,7 +77,8 @@ namespace Microsoft.Azure.Cosmos
 
             JsonSerializerSettings settings = new JsonSerializerSettings()
             {
-                Converters = new List<JsonConverter>() { new CosmosSqlQuerySpecJsonConverter(cosmosSerializer ?? propertiesSerializer) }
+                Converters = new List<JsonConverter>() { new CosmosSqlQuerySpecJsonConverter(cosmosSerializer ?? propertiesSerializer) },
+                MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
             };
 
             return new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer(settings));

@@ -97,7 +97,7 @@
             HashSet<string> storeResultProperties = typeof(StoreResult).GetProperties(BindingFlags.Public | BindingFlags.Instance).Select(x => x.Name).ToHashSet<string>();
             string datumKey = "ClientStats";
             Trace trace = Trace.GetRootTrace("Test");
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary());
             trace.AddDatum(datumKey, datum);
 
             StoreResult storeResult = new StoreResult(
@@ -127,6 +127,7 @@
                             storeResult,
                             ResourceType.Document,
                             OperationType.Query,
+                            "42",
                             new Uri("http://someUri1.com"));
 
             ((List<StoreResponseStatistics>)datum.GetType().GetField("storeResponseStatistics", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(datum)).Add(storeResponseStatistics);

@@ -115,6 +115,8 @@
             Console.WriteLine($"Created Completed activity with id {createCompletedActivity.Resource.Id} that cost {createCompletedActivity.RequestCharge}");
 
             // Execute queries materializing responses using System.Text.Json
+            // NOTE: GetItemLinqQueryable does not support System.Text.Json attributes. LINQ will not translate the name based on the attributes
+            // which can result in no or invalid results coming back. https://github.com/Azure/azure-cosmos-dotnet-v3/issues/3250
             using FeedIterator<ToDoActivity> iterator = container.GetItemQueryIterator<ToDoActivity>("select * from c where c.status = 'Completed'");
             while (iterator.HasMoreResults)
             {

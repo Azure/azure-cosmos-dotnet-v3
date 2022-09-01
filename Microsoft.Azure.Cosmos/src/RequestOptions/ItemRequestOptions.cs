@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// ItemRequestOption requestOptions = new ItemRequestOptions() { EnableContentResponseOnWrite = false };
+        /// ItemRequestOptions requestOptions = new ItemRequestOptions() { EnableContentResponseOnWrite = false };
         /// ItemResponse itemResponse = await this.container.CreateItemAsync<ToDoActivity>(tests, new PartitionKey(test.status), requestOptions);
         /// Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
         /// Assert.IsNull(itemResponse.Resource);
@@ -125,12 +125,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Learn more about dedicated gateway <a href="https://azure.microsoft.com/services/cosmos-db/">here</a>. 
         /// </remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-            DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
+        public DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties

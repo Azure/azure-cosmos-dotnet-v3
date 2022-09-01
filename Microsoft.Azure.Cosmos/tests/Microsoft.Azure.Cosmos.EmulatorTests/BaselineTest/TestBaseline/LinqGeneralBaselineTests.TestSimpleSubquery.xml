@@ -36,7 +36,7 @@ FROM (
     ORDER BY root ASC) AS r1 
     ORDER BY LENGTH(r1) ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":75,"end":92},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":35,"end":41},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -53,7 +53,7 @@ FROM (
     ORDER BY ARRAY_LENGTH(root["Children"]) ASC) AS r1 
     ORDER BY ARRAY_LENGTH(r1["Parents"]) ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":62,"end":105},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":35,"end":40},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -70,7 +70,7 @@ FROM (
     ORDER BY ARRAY_LENGTH(root["Children"]) ASC) AS r0 
     ORDER BY ARRAY_LENGTH(r0["Parents"]) ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":62,"end":105},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":35,"end":40},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -86,7 +86,7 @@ FROM (
     FROM root) AS r0 
     ORDER BY r0["FamilyId"] ASC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":35,"end":41},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -108,7 +108,7 @@ FROM (
             WHERE (ARRAY_LENGTH(r1["Parents"]) > 0)) AS r2 
             WHERE (LENGTH(r2["FamilyId"]) > 10)
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":85,"end":91},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":57,"end":62},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":29,"end":34},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -129,7 +129,7 @@ FROM (
             WHERE (ARRAY_LENGTH(r0["Children"]) > 0)) AS r1) AS r2 
             WHERE (LENGTH(r2["f"]["FamilyId"]) > 10)
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":95,"end":101},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":29,"end":34},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -150,7 +150,7 @@ FROM (
             WHERE (ARRAY_LENGTH(r1["f"]["Children"]) > 0)) AS r2 
             WHERE (ARRAY_LENGTH(r2["f"]["Parents"]) > 0)
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":57,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":29,"end":34},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

@@ -152,7 +152,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 
             public bool TryGetPayload(out CosmosElement payload)
             {
-                return this.cosmosObject.TryGetValue(PayloadPropertyName, out payload);
+                if (!this.cosmosObject.TryGetValue(PayloadPropertyName, out payload))
+                {
+                    payload = CosmosUndefined.Create();
+                }
+
+                return true;
             }
         }
 

@@ -16,10 +16,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
     internal static class ClientTelemetryHelper
     {
-        internal static AzureVMMetadata azMetadata = null;
-
-        private static readonly Uri vmMetadataEndpointUrl = ClientTelemetryOptions.GetVmMetadataUrl();
-
         /// <summary>
         /// Task to get Account Properties from cache if available otherwise make a network call.
         /// </summary>
@@ -43,50 +39,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         /// <summary>
-        /// Task to collect virtual machine metadata information. using instance metedata service API.
-        /// ref: https://docs.microsoft.com/en-us/azure/virtual-machines/windows/instance-metadata-service?tabs=windows
-        /// Collects only application region and environment information
-        /// </summary>
-        /// <returns>Async Task</returns>
-        internal static async Task<AzureVMMetadata> LoadAzureVmMetaDataAsync(CosmosHttpClient httpClient)
-        {
-            if (azMetadata == null)
-            {
-                DefaultTrace.TraceVerbose("Getting VM Metadata Information for Telemetry.");
-                try
-                {
-                    static ValueTask<HttpRequestMessage> CreateRequestMessage()
-                    {
-                        HttpRequestMessage request = new HttpRequestMessage()
-                        {
-                            RequestUri = vmMetadataEndpointUrl,
-                            Method = HttpMethod.Get,
-                        };
-                        request.Headers.Add("Metadata", "true");
-
-                        return new ValueTask<HttpRequestMessage>(request);
-                    }
-
-                    using HttpResponseMessage httpResponseMessage = await httpClient
-                        .SendHttpAsync(createRequestMessageAsync: CreateRequestMessage,
-                        resourceType: ResourceType.Telemetry,
-                        timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
-                        clientSideRequestStatistics: null,
-                        cancellationToken: new CancellationToken()); // Do not want to cancel the whole process if this call fails
-
-                    azMetadata = await ClientTelemetryOptions.ProcessResponseAsync(httpResponseMessage);
-
-                }
-                catch (Exception ex)
-                {
-                    DefaultTrace.TraceError("Exception in LoadAzureVmMetaDataAsync() {0}", ex.Message);
-                }
-            }
-
-            return azMetadata;
-        }
-
-        /// <summary>
         /// Record System Usage and update passed system Info collection. Right now, it collects following metrics
         /// 1) CPU Usage
         /// 2) Memory Remaining
@@ -95,9 +47,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         /// <param name="systemUsageHistory"></param>
         /// <param name="systemInfoCollection"></param>
+        /// <param name="isDirectConnectionMode"></param>
         internal static void RecordSystemUsage(
                 SystemUsageHistory systemUsageHistory, 
-                List<SystemInfo> systemInfoCollection)
+                List<SystemInfo> systemInfoCollection,
+                bool isDirectConnectionMode)
         {
             if (systemUsageHistory.Values == null)
             {
@@ -111,6 +65,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             systemInfoCollection.Add(TelemetrySystemUsage.GetAvailableThreadsInfo(systemUsageHistory.Values));
             systemInfoCollection.Add(TelemetrySystemUsage.GetThreadWaitIntervalInMs(systemUsageHistory.Values));
             systemInfoCollection.Add(TelemetrySystemUsage.GetThreadStarvationSignalCount(systemUsageHistory.Values));
+
+            if (isDirectConnectionMode)
+            {
+                systemInfoCollection.Add(TelemetrySystemUsage.GetTcpConnectionCount(systemUsageHistory.Values));
+            }
+
         }
 
         /// <summary>

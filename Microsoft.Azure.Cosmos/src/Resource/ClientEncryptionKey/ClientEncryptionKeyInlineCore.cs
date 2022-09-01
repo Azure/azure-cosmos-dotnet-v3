@@ -31,7 +31,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadAsync),
                 requestOptions,
-                (trace) => base.ReadAsync(requestOptions, cancellationToken));
+                (trace) => base.ReadAsync(requestOptions, cancellationToken),
+                (response) => new OpenTelemetryResponse<ClientEncryptionKeyProperties>(response));
         }
 
         public override Task<ClientEncryptionKeyResponse> ReplaceAsync(
@@ -42,7 +43,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReplaceAsync),
                 requestOptions,
-                (trace) => base.ReplaceAsync(clientEncryptionKeyProperties, requestOptions, cancellationToken));
+                (trace) => base.ReplaceAsync(clientEncryptionKeyProperties, requestOptions, cancellationToken),
+                (response) => new OpenTelemetryResponse<ClientEncryptionKeyProperties>(response));
         }
     }
 }

@@ -114,6 +114,7 @@ namespace Microsoft.Azure.Cosmos
                 try
                 {
                     telemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
+                        clientId: cosmosClient.Id,
                         documentClient: documentClient,
                         userAgent: connectionPolicy.UserAgentContainer.UserAgent,
                         connectionMode: connectionPolicy.ConnectionMode,
@@ -226,6 +227,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
+            Func<TResult, OpenTelemetryAttributes> openTelemetry,
             TraceComponent traceComponent = TraceComponent.Transport,
             Tracing.TraceLevel traceLevel = Tracing.TraceLevel.Info)
         {
@@ -233,11 +235,13 @@ namespace Microsoft.Azure.Cosmos
                 this.OperationHelperWithRootTraceAsync(operationName, 
                                                        requestOptions, 
                                                        task,
+                                                       openTelemetry,
                                                        traceComponent,
                                                        traceLevel) :
                 this.OperationHelperWithRootTraceWithSynchronizationContextAsync(operationName, 
                                                                   requestOptions, 
                                                                   task,
+                                                                  openTelemetry,
                                                                   traceComponent,
                                                                   traceLevel);
         }
@@ -246,6 +250,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
+            Func<TResult, OpenTelemetryAttributes> openTelemetry,
             TraceComponent traceComponent,
             Tracing.TraceLevel traceLevel)
         {
@@ -257,7 +262,10 @@ namespace Microsoft.Azure.Cosmos
 
                 return await this.RunWithDiagnosticsHelperAsync(
                     trace,
-                    task);
+                    task,
+                    openTelemetry,
+                    operationName,
+                    requestOptions);
             }
         }
 
@@ -265,6 +273,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
+            Func<TResult, OpenTelemetryAttributes> openTelemetry,
             TraceComponent traceComponent,
             Tracing.TraceLevel traceLevel)
         {
@@ -283,7 +292,10 @@ namespace Microsoft.Azure.Cosmos
 
                     return await this.RunWithDiagnosticsHelperAsync(
                         trace,
-                        task);
+                        task,
+                        openTelemetry,
+                        operationName,
+                        requestOptions);
                 }
             });
         }
@@ -457,30 +469,64 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<TResult> RunWithDiagnosticsHelperAsync<TResult>(
             ITrace trace,
-            Func<ITrace, Task<TResult>> task)
+            Func<ITrace, Task<TResult>> task,
+            Func<TResult, OpenTelemetryAttributes> openTelemetry,
+            string operationName,
+            RequestOptions requestOptions)
         {
+            using (OpenTelemetryCoreRecorder recorder = 
+                                OpenTelemetryRecorderFactory.CreateRecorder(
+                                    operationName: operationName,
+                                    requestOptions: requestOptions,
+                                    clientContext: this.isDisposed ? null : this))
             using (new ActivityScope(Guid.NewGuid()))
             {
                 try
                 {
-                    return await task(trace).ConfigureAwait(false);
+                    // Record Operation Name
+                    recorder.Record(OpenTelemetryAttributeKeys.DbOperation, operationName);
+
+                    TResult result = await task(trace).ConfigureAwait(false);
+                    if (openTelemetry != null && recorder.IsEnabled)
+                    {
+                        // Record request response information
+                        OpenTelemetryAttributes response = openTelemetry(result);
+                        recorder.Record(response);
+                    }
+
+                    return result;
                 }
                 catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                 {
-                    throw new CosmosOperationCanceledException(oe, trace);
+                    CosmosOperationCanceledException operationCancelledException = new CosmosOperationCanceledException(oe, trace);
+                    recorder.MarkFailed(operationCancelledException);
+                    
+                    throw operationCancelledException;
                 }
                 catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
                 {
-                    throw new CosmosObjectDisposedException(
-                        objectDisposed, 
-                        this.client, 
+                    CosmosObjectDisposedException objectDisposedException = new CosmosObjectDisposedException(
+                        objectDisposed,
+                        this.client,
                         trace);
+                    recorder.MarkFailed(objectDisposedException);
+
+                    throw objectDisposedException;
                 }
                 catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
                 {
-                    throw new CosmosNullReferenceException(
+                    CosmosNullReferenceException nullException = new CosmosNullReferenceException(
                         nullRefException,
                         trace);
+                    recorder.MarkFailed(nullException);
+
+                    throw nullException;
+                }
+                catch (Exception ex)
+                {
+                    recorder.MarkFailed(ex);
+
+                    throw;
                 }
             }
         }

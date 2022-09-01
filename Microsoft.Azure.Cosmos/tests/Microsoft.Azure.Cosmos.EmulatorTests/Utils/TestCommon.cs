@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 cosmosClientBuilder.WithConnectionModeGateway();
             }
-
+            
             return cosmosClientBuilder.Build();
         }
 
@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (string.IsNullOrEmpty(key)) throw new ArgumentException("key");
             if (headers == null) throw new ArgumentNullException("headers");
 
-            string xDate = DateTime.UtcNow.ToString("r");
+            string xDate = Rfc1123DateTimeCache.UtcNow();
 
             client.DefaultRequestHeaders.Remove(HttpConstants.HttpHeaders.XDate);
             client.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.XDate, xDate);
@@ -282,7 +282,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             List<T> result = new List<T>();
 
-            INameValueCollection localHeaders = new StoreRequestNameValueCollection();
+            INameValueCollection localHeaders = new RequestNameValueCollection();
             if (headers != null)
             {
                 localHeaders.Add(headers);

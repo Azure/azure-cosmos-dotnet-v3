@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
             }
 
             // If someone tried to add an undefined just set the globalSum to NaN and it will stay that way for the duration of the aggregation.
-            if (localSum == null)
+            if (localSum is CosmosUndefined)
             {
                 this.globalSum = double.NaN;
                 return;
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
         {
             if (double.IsNaN(this.globalSum))
             {
-                return null;
+                return CosmosUndefined.Create();
             }
 
             return CosmosNumber64.Create(this.globalSum);

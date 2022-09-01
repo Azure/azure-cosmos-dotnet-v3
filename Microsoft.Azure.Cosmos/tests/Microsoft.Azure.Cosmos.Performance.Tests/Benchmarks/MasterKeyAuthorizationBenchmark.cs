@@ -20,9 +20,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         {
             this.authKeyHashFunction = new StringHMACSHA256Hash(MockDocumentClient.GenerateRandomKey());
             Headers headers = new Headers();
-            headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
+            headers[HttpConstants.HttpHeaders.XDate] = Rfc1123DateTimeCache.UtcNow();
 
-            this.testHeaders = headers.CosmosMessageHeaders;
+            this.testHeaders = headers.CosmosMessageHeaders.INameValueCollection;
         }
 
         [Benchmark]
