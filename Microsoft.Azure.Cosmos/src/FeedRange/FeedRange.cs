@@ -45,32 +45,5 @@ namespace Microsoft.Azure.Cosmos
         {
             return new FeedRangePartitionKey(partitionKey);
         }
-
-#if PREVIEW
-        /// <summary>
-        /// Creates a partition key or effective partition key feed range.
-        /// </summary>
-        /// <param name="container">The container.</param>
-        /// <param name="partitionKey">The partition key.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-        public
-#else
-        internal
-#endif
-            async static Task<FeedRange> CreateFromPartitionKeyAsync(
-            Container container,
-            PartitionKey partitionKey,
-            CancellationToken cancellationToken = default)
-        {
-            ContainerProperties containerProperties = await container.ReadContainerAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
-            Documents.PartitionKeyDefinition partitionKeyDefinition = containerProperties.PartitionKey;
-
-            return FeedRangeEpk.IsPrefixPartitionKey(partitionKey: partitionKey, partitionKeyDefinition: partitionKeyDefinition) switch
-            {
-                true => FeedRangeEpk.CreateFromPartitionKey(partitionKey: partitionKey, partitionKeyDefinition: partitionKeyDefinition),
-                false => FeedRangePartitionKey.CreateFromPartitionKey(partitionKey),
-            };
-        }
     }
 }

@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow.Schemas;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -161,6 +162,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                     if (feedRange != null)
                     {
+                        feedRange = await RequestInvokerHandler.ResolveFeedRangeBasedOnPrefixContainerAsync(
+                            feedRange: feedRange,
+                            cosmosContainerCore: cosmosContainerCore,
+                            cancellationToken: cancellationToken);
+
                         if (feedRange is FeedRangePartitionKey feedRangePartitionKey)
                         {
                             if (cosmosContainerCore == null && object.ReferenceEquals(feedRangePartitionKey.PartitionKey, Cosmos.PartitionKey.None))
@@ -479,6 +485,27 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return clientOptions != null
                 && clientOptions.EnableContentResponseOnWrite.HasValue
                 && RequestInvokerHandler.IsItemNoRepsonseSet(clientOptions.EnableContentResponseOnWrite.Value, operationType);
+        }
+
+        private static async Task<FeedRange> ResolveFeedRangeBasedOnPrefixContainerAsync(
+            FeedRange feedRange,
+            ContainerInternal cosmosContainerCore,
+            CancellationToken cancellationToken)
+        {
+            if (feedRange is FeedRangePartitionKey feedRangePartitionKey)
+            {
+                PartitionKeyDefinition partitionKeyDefinition = await cosmosContainerCore
+                    .GetPartitionKeyDefinitionAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+                return !(feedRangePartitionKey.PartitionKey.InternalKey?.Components?.Count >= partitionKeyDefinition.Paths?.Count)
+                    ? FeedRangeEpk.CreateFromPartitionKey(
+                        partitionKey: feedRangePartitionKey.PartitionKey,
+                        partitionKeyDefinition: partitionKeyDefinition)
+                    : FeedRangePartitionKey.CreateFromPartitionKey(feedRangePartitionKey.PartitionKey);
+            }
+
+            return feedRange;
         }
     }
 }

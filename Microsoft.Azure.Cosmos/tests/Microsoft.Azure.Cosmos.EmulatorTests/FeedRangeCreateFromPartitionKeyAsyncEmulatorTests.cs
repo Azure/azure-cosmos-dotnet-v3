@@ -80,7 +80,7 @@
                     .Add(item.state)
                     .Build();
 
-                FeedRange feedRange = await FeedRange.CreateFromPartitionKeyAsync(container: container, partitionKey: partitionKey);
+                FeedRange feedRange = FeedRangePartitionKey.CreateFromPartitionKey(partitionKey);
                 FeedIterator<dynamic> iterator = container.GetChangeFeedIterator<dynamic>(ChangeFeedStartFrom.Beginning(feedRange), ChangeFeedMode.Incremental);
                 FeedResponse<dynamic> response = await iterator.ReadNextAsync();
 
@@ -133,7 +133,7 @@
                     .Add(item.state)
                     .Build();
 
-                FeedRange feedRange = await FeedRange.CreateFromPartitionKeyAsync(container: container, partitionKey: partitionKey);
+                FeedRange feedRange = FeedRangePartitionKey.CreateFromPartitionKey(partitionKey);
                 using (FeedIterator iterator = container.GetChangeFeedStreamIterator(ChangeFeedStartFrom.Beginning(feedRange), ChangeFeedMode.Incremental))
                 {
                     ResponseMessage responseMessage = await iterator.ReadNextAsync();
@@ -199,8 +199,7 @@
                     .Add(item.state)
                     .Build();
 
-                FeedRange feedRange = await FeedRange.CreateFromPartitionKeyAsync(container: container, partitionKey: partitionKey);
-
+                FeedRange feedRange = FeedRangePartitionKey.CreateFromPartitionKey(partitionKey);
                 Console.WriteLine(feedRange.ToJsonString());
                 using (FeedIterator<dynamic> iterator = container.GetItemQueryIterator<dynamic>(feedRange: feedRange, queryDefinition: queryDefinition, requestOptions: new() { PartitionKey = partitionKey }))
                 {

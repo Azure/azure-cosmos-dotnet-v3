@@ -116,12 +116,5 @@ namespace Microsoft.Azure.Cosmos
         {
             return new FeedRangeEpk(partitionKey.InternalKey.GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition));
         }
-
-        internal static bool IsPrefixPartitionKey(
-            PartitionKey partitionKey,
-            Documents.PartitionKeyDefinition partitionKeyDefinition)
-        {
-            return !(partitionKey.InternalKey?.Components?.Count >= partitionKeyDefinition.Paths?.Count);
-        }
     }
 }
