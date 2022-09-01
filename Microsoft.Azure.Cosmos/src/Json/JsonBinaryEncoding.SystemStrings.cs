@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// This is auto-generated code. Modify: JsonBinaryEncoding.SystemStrings.tt: 54
+// This is auto-generated code. Modify: JsonBinaryEncoding.SystemStrings.tt: 86
 
 namespace Microsoft.Azure.Cosmos.Json
 {
@@ -51,6 +51,38 @@ namespace Microsoft.Azure.Cosmos.Json
                 UtfAllString.Create("Feature"),
                 UtfAllString.Create("FeatureCollection"),
                 UtfAllString.Create("_id"),
+                UtfAllString.Create("$id"),
+                UtfAllString.Create("$pk"),
+                UtfAllString.Create("_isEdge"),
+                UtfAllString.Create("_partitionKey"),
+                UtfAllString.Create("_type"),
+                UtfAllString.Create("_value"),
+                UtfAllString.Create("data"),
+                UtfAllString.Create("Data"),
+                UtfAllString.Create("entity"),
+                UtfAllString.Create("isDeleted"),
+                UtfAllString.Create("IsDeleted"),
+                UtfAllString.Create("key"),
+                UtfAllString.Create("Key"),
+                UtfAllString.Create("Location"),
+                UtfAllString.Create("partition"),
+                UtfAllString.Create("partition_id"),
+                UtfAllString.Create("partitionKey"),
+                UtfAllString.Create("PartitionKey"),
+                UtfAllString.Create("pk"),
+                UtfAllString.Create("state"),
+                UtfAllString.Create("State"),
+                UtfAllString.Create("status"),
+                UtfAllString.Create("Status"),
+                UtfAllString.Create("subscriptionId"),
+                UtfAllString.Create("SubscriptionId"),
+                UtfAllString.Create("tenantId"),
+                UtfAllString.Create("TenantId"),
+                UtfAllString.Create("timestamp"),
+                UtfAllString.Create("Timestamp"),
+                UtfAllString.Create("ttl"),
+                UtfAllString.Create("userId"),
+                UtfAllString.Create("UserId"),
             }.ToImmutableArray();
 
             public static int? GetSystemStringId(Utf8Span buffer)
@@ -61,11 +93,15 @@ namespace Microsoft.Azure.Cosmos.Json
                     3 => GetSystemStringIdLength3(buffer.Span),
                     4 => GetSystemStringIdLength4(buffer.Span),
                     5 => GetSystemStringIdLength5(buffer.Span),
+                    6 => GetSystemStringIdLength6(buffer.Span),
                     7 => GetSystemStringIdLength7(buffer.Span),
                     8 => GetSystemStringIdLength8(buffer.Span),
+                    9 => GetSystemStringIdLength9(buffer.Span),
                     10 => GetSystemStringIdLength10(buffer.Span),
                     11 => GetSystemStringIdLength11(buffer.Span),
                     12 => GetSystemStringIdLength12(buffer.Span),
+                    13 => GetSystemStringIdLength13(buffer.Span),
+                    14 => GetSystemStringIdLength14(buffer.Span),
                     15 => GetSystemStringIdLength15(buffer.Span),
                     17 => GetSystemStringIdLength17(buffer.Span),
                     18 => GetSystemStringIdLength18(buffer.Span),
@@ -95,6 +131,11 @@ namespace Microsoft.Azure.Cosmos.Json
                     return 12;
                 }
 
+                if (buffer.SequenceEqual(Strings[50].Utf8String.Span.Span))
+                {
+                    return 50;
+                }
+
                 return null;
             }
             private static int? GetSystemStringIdLength3(ReadOnlySpan<byte> buffer)
@@ -112,6 +153,31 @@ namespace Microsoft.Azure.Cosmos.Json
                 if (buffer.SequenceEqual(Strings[31].Utf8String.Span.Span))
                 {
                     return 31;
+                }
+
+                if (buffer.SequenceEqual(Strings[32].Utf8String.Span.Span))
+                {
+                    return 32;
+                }
+
+                if (buffer.SequenceEqual(Strings[33].Utf8String.Span.Span))
+                {
+                    return 33;
+                }
+
+                if (buffer.SequenceEqual(Strings[43].Utf8String.Span.Span))
+                {
+                    return 43;
+                }
+
+                if (buffer.SequenceEqual(Strings[44].Utf8String.Span.Span))
+                {
+                    return 44;
+                }
+
+                if (buffer.SequenceEqual(Strings[61].Utf8String.Span.Span))
+                {
+                    return 61;
                 }
 
                 return null;
@@ -148,6 +214,16 @@ namespace Microsoft.Azure.Cosmos.Json
                     return 27;
                 }
 
+                if (buffer.SequenceEqual(Strings[38].Utf8String.Span.Span))
+                {
+                    return 38;
+                }
+
+                if (buffer.SequenceEqual(Strings[39].Utf8String.Span.Span))
+                {
+                    return 39;
+                }
+
                 return null;
             }
             private static int? GetSystemStringIdLength5(ReadOnlySpan<byte> buffer)
@@ -182,6 +258,55 @@ namespace Microsoft.Azure.Cosmos.Json
                     return 28;
                 }
 
+                if (buffer.SequenceEqual(Strings[36].Utf8String.Span.Span))
+                {
+                    return 36;
+                }
+
+                if (buffer.SequenceEqual(Strings[51].Utf8String.Span.Span))
+                {
+                    return 51;
+                }
+
+                if (buffer.SequenceEqual(Strings[52].Utf8String.Span.Span))
+                {
+                    return 52;
+                }
+
+                return null;
+            }
+            private static int? GetSystemStringIdLength6(ReadOnlySpan<byte> buffer)
+            {
+                if (buffer.SequenceEqual(Strings[37].Utf8String.Span.Span))
+                {
+                    return 37;
+                }
+
+                if (buffer.SequenceEqual(Strings[40].Utf8String.Span.Span))
+                {
+                    return 40;
+                }
+
+                if (buffer.SequenceEqual(Strings[53].Utf8String.Span.Span))
+                {
+                    return 53;
+                }
+
+                if (buffer.SequenceEqual(Strings[54].Utf8String.Span.Span))
+                {
+                    return 54;
+                }
+
+                if (buffer.SequenceEqual(Strings[62].Utf8String.Span.Span))
+                {
+                    return 62;
+                }
+
+                if (buffer.SequenceEqual(Strings[63].Utf8String.Span.Span))
+                {
+                    return 63;
+                }
+
                 return null;
             }
             private static int? GetSystemStringIdLength7(ReadOnlySpan<byte> buffer)
@@ -196,6 +321,11 @@ namespace Microsoft.Azure.Cosmos.Json
                     return 29;
                 }
 
+                if (buffer.SequenceEqual(Strings[34].Utf8String.Span.Span))
+                {
+                    return 34;
+                }
+
                 return null;
             }
             private static int? GetSystemStringIdLength8(ReadOnlySpan<byte> buffer)
@@ -203,6 +333,50 @@ namespace Microsoft.Azure.Cosmos.Json
                 if (buffer.SequenceEqual(Strings[10].Utf8String.Span.Span))
                 {
                     return 10;
+                }
+
+                if (buffer.SequenceEqual(Strings[45].Utf8String.Span.Span))
+                {
+                    return 45;
+                }
+
+                if (buffer.SequenceEqual(Strings[57].Utf8String.Span.Span))
+                {
+                    return 57;
+                }
+
+                if (buffer.SequenceEqual(Strings[58].Utf8String.Span.Span))
+                {
+                    return 58;
+                }
+
+                return null;
+            }
+            private static int? GetSystemStringIdLength9(ReadOnlySpan<byte> buffer)
+            {
+                if (buffer.SequenceEqual(Strings[41].Utf8String.Span.Span))
+                {
+                    return 41;
+                }
+
+                if (buffer.SequenceEqual(Strings[42].Utf8String.Span.Span))
+                {
+                    return 42;
+                }
+
+                if (buffer.SequenceEqual(Strings[46].Utf8String.Span.Span))
+                {
+                    return 46;
+                }
+
+                if (buffer.SequenceEqual(Strings[59].Utf8String.Span.Span))
+                {
+                    return 59;
+                }
+
+                if (buffer.SequenceEqual(Strings[60].Utf8String.Span.Span))
+                {
+                    return 60;
                 }
 
                 return null;
@@ -250,6 +424,44 @@ namespace Microsoft.Azure.Cosmos.Json
                 if (buffer.SequenceEqual(Strings[20].Utf8String.Span.Span))
                 {
                     return 20;
+                }
+
+                if (buffer.SequenceEqual(Strings[47].Utf8String.Span.Span))
+                {
+                    return 47;
+                }
+
+                if (buffer.SequenceEqual(Strings[48].Utf8String.Span.Span))
+                {
+                    return 48;
+                }
+
+                if (buffer.SequenceEqual(Strings[49].Utf8String.Span.Span))
+                {
+                    return 49;
+                }
+
+                return null;
+            }
+            private static int? GetSystemStringIdLength13(ReadOnlySpan<byte> buffer)
+            {
+                if (buffer.SequenceEqual(Strings[35].Utf8String.Span.Span))
+                {
+                    return 35;
+                }
+
+                return null;
+            }
+            private static int? GetSystemStringIdLength14(ReadOnlySpan<byte> buffer)
+            {
+                if (buffer.SequenceEqual(Strings[55].Utf8String.Span.Span))
+                {
+                    return 55;
+                }
+
+                if (buffer.SequenceEqual(Strings[56].Utf8String.Span.Span))
+                {
+                    return 56;
                 }
 
                 return null;
