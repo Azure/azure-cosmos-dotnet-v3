@@ -3259,7 +3259,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.CosmosOperationCanceledException;System.OperationCanceledException;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.CosmosOperationCanceledException;System.OperationCanceledException;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
@@ -3338,6 +3338,11 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(System.OperationCanceledException, Microsoft.Azure.Cosmos.CosmosDiagnostics), Void .ctor(System.OperationCanceledException, Microsoft.Azure.Cosmos.CosmosDiagnostics)]"
+        },
+        "Void GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_HelpLink(System.String)": {
           "Type": "Method",
