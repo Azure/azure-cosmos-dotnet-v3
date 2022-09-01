@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
         private static PrefetchPolicy DeterminePrefetchPolicy(QueryInfo queryInfo)
         {
-            if (!queryInfo.HasDCount && queryInfo.HasAggregates && !queryInfo.HasGroupBy)
+            if (queryInfo.HasDCount || queryInfo.HasAggregates || queryInfo.HasGroupBy)
             {
                 return PrefetchPolicy.PrefetchAll;
             }
