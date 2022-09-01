@@ -572,7 +572,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 client: client,
                 requestedClientConsistencyLevel: default);
 
-            Cosmos.FeedRange feedRange = await invoker.ResolveFeedRangeBasedOnPrefixContainerAsync(
+            Cosmos.FeedRange feedRange = await RequestInvokerHandler.ResolveFeedRangeBasedOnPrefixContainerAsync(
                 feedRange: inputFeedRange,
                 cosmosContainerCore: mockContainer.Object,
                 cancellationToken: cancellationToken);
