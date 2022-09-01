@@ -458,7 +458,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Paths = new Collection<string>(new List<string>() { "/city", "/state", "/zipCode" })
                 },
                 inputFeedRange: new FeedRangePartitionKey(partitionKey),
-                expectedFeedRangeToJsonString: @"{""Range"":{""min"":""01620B162169497AFD85FA66E99F73760845FB119899DE50766A2C4CEFC2FA73"",""max"":""01620B162169497AFD85FA66E99F73760845FB119899DE50766A2C4CEFC2FA73FF""}}");
+                expectedFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(
+                    min: "01620B162169497AFD85FA66E99F73760845FB119899DE50766A2C4CEFC2FA73",
+                    max: "01620B162169497AFD85FA66E99F73760845FB119899DE50766A2C4CEFC2FA73FF",
+                    isMinInclusive: true,
+                    isMaxInclusive: default)),
+                getPartitionKeyDefinitionAsyncExecutions: Moq.Times.Once());
         }
 
         [TestMethod]
@@ -476,7 +481,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Paths = new Collection<string>(new List<string>() { "/city" })
                 },
                 inputFeedRange: new FeedRangePartitionKey(partitionKey),
-                expectedFeedRangeToJsonString: @"{""PK"":""[\""Redmond\""]""}");
+                expectedFeedRange: new FeedRangePartitionKey(new Cosmos.PartitionKey("Redmond")),
+                getPartitionKeyDefinitionAsyncExecutions: Moq.Times.Once());
         }
 
         [TestMethod]
@@ -494,7 +500,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Paths = new Collection<string>(new List<string>() { "/city" })
                 },
                 inputFeedRange: new FeedRangePartitionKey(partitionKey),
-                expectedFeedRangeToJsonString: @"{""PK"":""[\""Redmond\""]""}");
+                expectedFeedRange: new FeedRangePartitionKey(new Cosmos.PartitionKey("Redmond")),
+                getPartitionKeyDefinitionAsyncExecutions: Moq.Times.Once());
         }
 
         [TestMethod]
@@ -506,12 +513,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Kind = PartitionKind.MultiHash,
                     Paths = new Collection<string>(new List<string>() { "/city", "/state", "/zipCode" })
                 },
-                inputFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(
-                    min: Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                    max: Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                    isMinInclusive: true,
-                    isMaxInclusive: false)),
-                expectedFeedRangeToJsonString: @"{""Range"":{""min"":"""",""max"":""FF""}}");
+                inputFeedRange: FeedRangeEpk.FullRange,
+                expectedFeedRange: FeedRangeEpk.FullRange,
+                getPartitionKeyDefinitionAsyncExecutions: Moq.Times.Never());
         }
 
         [TestMethod]
@@ -523,12 +527,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Kind = PartitionKind.Hash,
                     Paths = new Collection<string>(new List<string>() { "/city" })
                 },
-                inputFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(
-                    min: Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                    max: Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                    isMinInclusive: true,
-                    isMaxInclusive: false)),
-                expectedFeedRangeToJsonString: @"{""Range"":{""min"":"""",""max"":""FF""}}");
+                inputFeedRange: FeedRangeEpk.FullRange,
+                expectedFeedRange: FeedRangeEpk.FullRange,
+                getPartitionKeyDefinitionAsyncExecutions: Moq.Times.Never());
         }
 
         [TestMethod]
@@ -540,18 +541,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Kind = PartitionKind.Range,
                     Paths = new Collection<string>(new List<string>() { "/city" })
                 },
-                inputFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(
-                    min: Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                    max: Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                    isMinInclusive: true,
-                    isMaxInclusive: false)),
-                expectedFeedRangeToJsonString: @"{""Range"":{""min"":"""",""max"":""FF""}}");
+                inputFeedRange: FeedRangeEpk.FullRange,
+                expectedFeedRange: FeedRangeEpk.FullRange,
+                getPartitionKeyDefinitionAsyncExecutions: Moq.Times.Never());
         }
 
         private static async Task TestResolveFeedRangeBasedOnPrefixAsync<TFeedRange>(
             PartitionKeyDefinition partitionKeyDefinition,
             FeedRangeInternal inputFeedRange,
-            string expectedFeedRangeToJsonString)
+            FeedRangeInternal expectedFeedRange,
+            Moq.Times getPartitionKeyDefinitionAsyncExecutions)
             where TFeedRange : FeedRangeInternal
         {
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
@@ -564,6 +563,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CancellationToken cancellationToken = CancellationToken.None;
 
+            Console.WriteLine(partitionKeyDefinition);
             mockContainer
                 .Setup(container => container.GetPartitionKeyDefinitionAsync(cancellationToken))
                 .Returns(Task.FromResult(partitionKeyDefinition));
@@ -577,6 +577,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 cosmosContainerCore: mockContainer.Object,
                 cancellationToken: cancellationToken);
 
+            mockContainer.Verify(x => x.GetPartitionKeyDefinitionAsync(Moq.It.IsAny<CancellationToken>()), getPartitionKeyDefinitionAsyncExecutions);
+
             Assert.IsNotNull(feedRange, "FeedRange did not initialize");
             
             Assert.IsInstanceOfType(
@@ -584,7 +586,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 expectedType: typeof(TFeedRange));
 
             Assert.AreEqual(
-                expected: expectedFeedRangeToJsonString,
+                expected: expectedFeedRange.ToJsonString(),
                 actual: feedRange.ToJsonString());
         }
 
