@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections;
     using System.Diagnostics;
     using System.Drawing.Printing;
+    using System.Runtime.ConstrainedExecution;
     using System.Runtime.Serialization;
     using System.Threading;
     using global::Azure.Core.Pipeline;
@@ -79,9 +80,9 @@ namespace Microsoft.Azure.Cosmos
         {
             this.originalException = (OperationCanceledException)info.GetValue("originalException", typeof(OperationCanceledException));
             this.tokenCancellationRequested = (bool)info.GetValue("tokenCancellationRequested", typeof(bool));
-            
-            this.toStringMessage = this.CreateToStringMessagDeserialized();
-            this.lazyMessage = this.CreateLazyMessageDeserialized();
+            this.lazyMessage = new Lazy<string>(() => (string)info.GetValue("lazyMessage", typeof(string)));
+            this.toStringMessage = new Lazy<string>(() => (string)info.GetValue("toStringMessage", typeof(string)));
+            //Diagnostics cannot be serialized
             this.Diagnostics = new CosmosTraceDiagnostics(NoOpTrace.Singleton);
         }
 
@@ -133,16 +134,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return new Lazy<string>(() => $"{this.originalException}{Environment.NewLine}Cancellation Token has expired: {this.tokenCancellationRequested}. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
         }
-
-        private Lazy<string> CreateLazyMessageDeserialized()
-        {
-            return new Lazy<string>(() => $"{this.originalException.Message}{Environment.NewLine}Cancellation Token has expired: {this.tokenCancellationRequested}. Note that CosmosDiagnostics cannot be serialized. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
-        }
-        private Lazy<string> CreateToStringMessagDeserialized()
-        {
-            return new Lazy<string>(() => $"{this.originalException}{Environment.NewLine}Cancellation Token has expired: {this.tokenCancellationRequested}. Note that CosmosDiagnostics cannot be serialized. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
-        }
-
+         
         /// <summary>
         /// RecordOtelAttributes
         /// </summary>
@@ -165,6 +157,8 @@ namespace Microsoft.Azure.Cosmos
             base.GetObjectData(info, context);
             info.AddValue("originalException", this.originalException);
             info.AddValue("tokenCancellationRequested", this.tokenCancellationRequested);
+            info.AddValue("lazyMessage", this.lazyMessage.Value);
+            info.AddValue("toStringMessage", this.toStringMessage.Value);
         }
     }
 }
