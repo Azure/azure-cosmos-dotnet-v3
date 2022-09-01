@@ -81,15 +81,5 @@ namespace Microsoft.Azure.Cosmos
         {
             return transformer.Visit(this);
         }
-
-        /// <summary>
-        /// Creates a feed range that span only a single <see cref="PartitionKey"/> value.
-        /// </summary>
-        /// <param name="partitionKey">The partition key value to create a feed range from.</param>
-        /// <returns>The feed range that spans the partition.</returns>
-        internal static FeedRange CreateFromPartitionKey(PartitionKey partitionKey)
-        {
-            return new FeedRangePartitionKey(partitionKey);
-        }
     }
 }

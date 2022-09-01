@@ -109,12 +109,5 @@ namespace Microsoft.Azure.Cosmos
                 ^ this.Range.IsMinInclusive.GetHashCode()
                 ^ this.Range.IsMaxInclusive.GetHashCode();
         }
-
-        internal static FeedRangeEpk CreateFromPartitionKey(
-            Documents.PartitionKeyDefinition partitionKeyDefinition,
-            PartitionKey partitionKey)
-        {
-            return new FeedRangeEpk(partitionKey.InternalKey.GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition));
-        }
     }
 }

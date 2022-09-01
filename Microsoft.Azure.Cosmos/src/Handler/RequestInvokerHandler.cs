@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
@@ -13,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow.Schemas;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -500,10 +502,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 if (partitionKeyDefinition.Kind == PartitionKind.MultiHash)
                 {
                     return !(feedRangePartitionKey.PartitionKey.InternalKey?.Components?.Count >= partitionKeyDefinition.Paths?.Count)
-                        ? FeedRangeEpk.CreateFromPartitionKey(
-                            partitionKey: feedRangePartitionKey.PartitionKey,
-                            partitionKeyDefinition: partitionKeyDefinition)
-                        : FeedRangePartitionKey.CreateFromPartitionKey(feedRangePartitionKey.PartitionKey);
+                        ? new FeedRangeEpk(feedRangePartitionKey.PartitionKey.InternalKey.GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition))
+                        : new FeedRangePartitionKey(feedRangePartitionKey.PartitionKey);
                 }
             }
 
