@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                     if (feedRange != null)
                     {
-                        feedRange = await RequestInvokerHandler.ResolveFeedRangeBasedOnPrefixContainerAsync(
+                        feedRange = await this.ResolveFeedRangeBasedOnPrefixContainerAsync(
                             feedRange: feedRange,
                             cosmosContainerCore: cosmosContainerCore,
                             cancellationToken: cancellationToken);
@@ -486,7 +486,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 && RequestInvokerHandler.IsItemNoRepsonseSet(clientOptions.EnableContentResponseOnWrite.Value, operationType);
         }
 
-        private static async Task<FeedRange> ResolveFeedRangeBasedOnPrefixContainerAsync(
+        internal async Task<FeedRange> ResolveFeedRangeBasedOnPrefixContainerAsync(
             FeedRange feedRange,
             ContainerInternal cosmosContainerCore,
             CancellationToken cancellationToken)

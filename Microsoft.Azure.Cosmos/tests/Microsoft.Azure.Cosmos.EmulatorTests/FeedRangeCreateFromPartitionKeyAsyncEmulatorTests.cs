@@ -64,38 +64,31 @@
             Assert.IsTrue(containerProperties.PartitionKey.Paths.Contains("/zipCode"));
             Assert.AreEqual(expected: Documents.PartitionKind.MultiHash, actual: containerProperties.PartitionKey.Kind);
 
-            try
-            {
-                dynamic item = new { id = Guid.NewGuid().ToString(), city = "Redmond", state = "WA", zipCode = "98502" };
-                PartitionKey partitionKey = new PartitionKeyBuilder()
-                    .Add(item.city)
-                    .Add(item.state)
-                    .Add(item.zipCode)
-                    .Build();
+            dynamic item = new { id = Guid.NewGuid().ToString(), city = "Redmond", state = "WA", zipCode = "98502" };
+            PartitionKey partitionKey = new PartitionKeyBuilder()
+                .Add(item.city)
+                .Add(item.state)
+                .Add(item.zipCode)
+                .Build();
 
-                _ = await container.CreateItemAsync<dynamic>(item: item, partitionKey: partitionKey);
+            _ = await container.CreateItemAsync<dynamic>(item: item, partitionKey: partitionKey);
 
-                partitionKey = new PartitionKeyBuilder()
-                    .Add(item.city)
-                    .Add(item.state)
-                    .Build();
+            partitionKey = new PartitionKeyBuilder()
+                .Add(item.city)
+                .Add(item.state)
+                .Build();
 
-                FeedRange feedRange = new FeedRangePartitionKey(partitionKey);
-                FeedIterator<dynamic> iterator = container.GetChangeFeedIterator<dynamic>(ChangeFeedStartFrom.Beginning(feedRange), ChangeFeedMode.Incremental);
-                FeedResponse<dynamic> response = await iterator.ReadNextAsync();
+            FeedRange feedRange = new FeedRangePartitionKey(partitionKey);
+            FeedIterator<dynamic> iterator = container.GetChangeFeedIterator<dynamic>(ChangeFeedStartFrom.Beginning(feedRange), ChangeFeedMode.Incremental);
+            FeedResponse<dynamic> response = await iterator.ReadNextAsync();
 
-                string json = JsonConvert.SerializeObject(response.First());
-                JObject @object = JObject.Parse(json);
+            string json = JsonConvert.SerializeObject(response.First());
+            JObject @object = JObject.Parse(json);
 
-                Assert.AreEqual(expected: item.id, actual: @object["id"]);
-                Assert.AreEqual(expected: item.city, actual: @object["city"]);
-                Assert.AreEqual(expected: item.state, actual: @object["state"]);
-                Assert.AreEqual(expected: item.zipCode, actual: @object["zipCode"]);
-            }
-            finally
-            {
-                _ = await container.DeleteContainerAsync();
-            }
+            Assert.AreEqual(expected: item.id, actual: @object["id"]);
+            Assert.AreEqual(expected: item.city, actual: @object["city"]);
+            Assert.AreEqual(expected: item.state, actual: @object["state"]);
+            Assert.AreEqual(expected: item.zipCode, actual: @object["zipCode"]);
         }
 
         /// <summary>
@@ -117,8 +110,6 @@
             Assert.IsTrue(containerProperties.PartitionKey.Paths.Contains("/zipCode"));
             Assert.AreEqual(expected: Documents.PartitionKind.MultiHash, actual: containerProperties.PartitionKey.Kind);
 
-            try
-            {
                 dynamic item = new { id = Guid.NewGuid().ToString(), city = "Redmond", state = "WA", zipCode = "98502" };
                 PartitionKey partitionKey = new PartitionKeyBuilder()
                     .Add(item.city)
@@ -134,27 +125,22 @@
                     .Build();
 
                 FeedRange feedRange = new FeedRangePartitionKey(partitionKey);
-                using (FeedIterator iterator = container.GetChangeFeedStreamIterator(ChangeFeedStartFrom.Beginning(feedRange), ChangeFeedMode.Incremental))
-                {
-                    ResponseMessage responseMessage = await iterator.ReadNextAsync();
-
-                    using (StreamReader streamReader = new(responseMessage.Content))
-                    {
-                        string content = await streamReader.ReadToEndAsync();
-
-                        JObject @object = JObject.Parse(content);
-                        JToken token = @object["Documents"].First();
-
-                        Assert.AreEqual(expected: item.id, actual: token["id"]);
-                        Assert.AreEqual(expected: item.city, actual: token["city"]);
-                        Assert.AreEqual(expected: item.state, actual: token["state"]);
-                        Assert.AreEqual(expected: item.zipCode, actual: token["zipCode"]);
-                    }
-                }
-            }
-            finally
+            using (FeedIterator iterator = container.GetChangeFeedStreamIterator(ChangeFeedStartFrom.Beginning(feedRange), ChangeFeedMode.Incremental))
             {
-                _ = await container.DeleteContainerAsync();
+                ResponseMessage responseMessage = await iterator.ReadNextAsync();
+
+                using (StreamReader streamReader = new(responseMessage.Content))
+                {
+                    string content = await streamReader.ReadToEndAsync();
+
+                    JObject @object = JObject.Parse(content);
+                    JToken token = @object["Documents"].First();
+
+                    Assert.AreEqual(expected: item.id, actual: token["id"]);
+                    Assert.AreEqual(expected: item.city, actual: token["city"]);
+                    Assert.AreEqual(expected: item.state, actual: token["state"]);
+                    Assert.AreEqual(expected: item.zipCode, actual: token["zipCode"]);
+                }
             }
         }
 
@@ -179,8 +165,6 @@
             Assert.IsTrue(containerProperties.PartitionKey.Paths.Contains("/zipCode"));
             Assert.AreEqual(expected: Documents.PartitionKind.MultiHash, actual: containerProperties.PartitionKey.Kind);
 
-            try
-            {
                 dynamic item = new { id = Guid.NewGuid().ToString(), city = "Redmond", state = "WA", zipCode = "98052" };
                 PartitionKey partitionKey = new PartitionKeyBuilder()
                     .Add(item.city)
@@ -201,22 +185,17 @@
 
                 FeedRange feedRange = new FeedRangePartitionKey(partitionKey);
                 Console.WriteLine(feedRange.ToJsonString());
-                using (FeedIterator<dynamic> iterator = container.GetItemQueryIterator<dynamic>(feedRange: feedRange, queryDefinition: queryDefinition, requestOptions: new() { PartitionKey = partitionKey }))
-                {
-                    FeedResponse<dynamic> feedResponse = await iterator.ReadNextAsync();
-
-                    string content = JsonConvert.SerializeObject(feedResponse.First());
-                    JObject @object = JObject.Parse(content);
-
-                    Assert.AreEqual(expected: item.id, actual: @object["id"]);
-                    Assert.AreEqual(expected: item.city, actual: @object["city"]);
-                    Assert.AreEqual(expected: item.state, actual: @object["state"]);
-                    Assert.AreEqual(expected: item.zipCode, actual: @object["zipCode"]);
-                }
-            }
-            finally
+            using (FeedIterator<dynamic> iterator = container.GetItemQueryIterator<dynamic>(feedRange: feedRange, queryDefinition: queryDefinition, requestOptions: new() { PartitionKey = partitionKey }))
             {
-                _ = await container.DeleteContainerAsync();
+                FeedResponse<dynamic> feedResponse = await iterator.ReadNextAsync();
+
+                string content = JsonConvert.SerializeObject(feedResponse.First());
+                JObject @object = JObject.Parse(content);
+
+                Assert.AreEqual(expected: item.id, actual: @object["id"]);
+                Assert.AreEqual(expected: item.city, actual: @object["city"]);
+                Assert.AreEqual(expected: item.state, actual: @object["state"]);
+                Assert.AreEqual(expected: item.zipCode, actual: @object["zipCode"]);
             }
         }
 
@@ -239,8 +218,6 @@
             Assert.IsTrue(containerProperties.PartitionKey.Paths.Contains("/zipCode"));
             Assert.AreEqual(expected: Documents.PartitionKind.MultiHash, actual: containerProperties.PartitionKey.Kind);
 
-            try
-            {
                 dynamic item = new { id = Guid.NewGuid().ToString(), city = "Redmond", state = "WA", zipCode = "98052" };
                 PartitionKey partitionKey = new PartitionKeyBuilder()
                     .Add(item.city)
@@ -254,27 +231,22 @@
                     .WithParameter("@cityInput", "Redmond")
                     .WithParameter("@stateInput", "WA");
 
-                using (FeedIterator iterator = container.GetItemQueryStreamIterator(queryDefinition: queryDefinition, requestOptions: new() { PartitionKey = partitionKey }))
-                {
-                    ResponseMessage responseMessage = await iterator.ReadNextAsync();
-
-                    using (StreamReader streamReader = new(responseMessage.Content))
-                    {
-                        string content = await streamReader.ReadToEndAsync();
-
-                        JObject @object = JObject.Parse(content);
-                        JToken token = @object["Documents"].First();
-
-                        Assert.AreEqual(expected: item.id, actual: token["id"]);
-                        Assert.AreEqual(expected: item.city, actual: token["city"]);
-                        Assert.AreEqual(expected: item.state, actual: token["state"]);
-                        Assert.AreEqual(expected: item.zipCode, actual: token["zipCode"]);
-                    }
-                }
-            }
-            finally
+            using (FeedIterator iterator = container.GetItemQueryStreamIterator(queryDefinition: queryDefinition, requestOptions: new() { PartitionKey = partitionKey }))
             {
-                _ = await container.DeleteContainerAsync();
+                ResponseMessage responseMessage = await iterator.ReadNextAsync();
+
+                using (StreamReader streamReader = new(responseMessage.Content))
+                {
+                    string content = await streamReader.ReadToEndAsync();
+
+                    JObject @object = JObject.Parse(content);
+                    JToken token = @object["Documents"].First();
+
+                    Assert.AreEqual(expected: item.id, actual: token["id"]);
+                    Assert.AreEqual(expected: item.city, actual: token["city"]);
+                    Assert.AreEqual(expected: item.state, actual: token["state"]);
+                    Assert.AreEqual(expected: item.zipCode, actual: token["zipCode"]);
+                }
             }
         }
 
@@ -297,32 +269,25 @@
             Assert.IsTrue(containerProperties.PartitionKey.Paths.Contains("/zipCode"));
             Assert.AreEqual(expected: Documents.PartitionKind.MultiHash, actual: containerProperties.PartitionKey.Kind);
 
-            try
-            {
-                dynamic item = new { id = Guid.NewGuid().ToString(), city = "Redmond", state = "WA", zipCode = "98052" };
-                PartitionKey partitionKey = new PartitionKeyBuilder()
-                    .Add(item.city)
-                    .Add(item.state)
-                    .Add(item.zipCode)
-                    .Build();
+            dynamic item = new { id = Guid.NewGuid().ToString(), city = "Redmond", state = "WA", zipCode = "98052" };
+            PartitionKey partitionKey = new PartitionKeyBuilder()
+                .Add(item.city)
+                .Add(item.state)
+                .Add(item.zipCode)
+                .Build();
 
-                _ = await container.CreateItemAsync<dynamic>(item: item, partitionKey: partitionKey);
+            _ = await container.CreateItemAsync<dynamic>(item: item, partitionKey: partitionKey);
 
-                ItemResponse<dynamic> itemResponse = await container.ReadItemAsync<dynamic>(id: item.id, partitionKey: partitionKey);
+            ItemResponse<dynamic> itemResponse = await container.ReadItemAsync<dynamic>(id: item.id, partitionKey: partitionKey);
 
-                string content = JsonConvert.SerializeObject(itemResponse.Resource);
-                JObject @object = JObject.Parse(content);
+            string content = JsonConvert.SerializeObject(itemResponse.Resource);
+            JObject @object = JObject.Parse(content);
 
-                Assert.AreEqual(expected: 1, itemResponse.RequestCharge);
-                Assert.AreEqual(expected: item.id, actual: @object["id"]);
-                Assert.AreEqual(expected: item.city, actual: @object["city"]);
-                Assert.AreEqual(expected: item.state, actual: @object["state"]);
-                Assert.AreEqual(expected: item.zipCode, actual: @object["zipCode"]);
-            }
-            finally
-            {
-                _ = await container.DeleteContainerAsync();
-            }
+            Assert.AreEqual(expected: 1, itemResponse.RequestCharge);
+            Assert.AreEqual(expected: item.id, actual: @object["id"]);
+            Assert.AreEqual(expected: item.city, actual: @object["city"]);
+            Assert.AreEqual(expected: item.state, actual: @object["state"]);
+            Assert.AreEqual(expected: item.zipCode, actual: @object["zipCode"]);
         }
 
         /// <summary>
@@ -345,8 +310,6 @@
             Assert.IsTrue(containerProperties.PartitionKey.Paths.Contains("/zipCode"));
             Assert.AreEqual(expected: Documents.PartitionKind.MultiHash, actual: containerProperties.PartitionKey.Kind);
 
-            try
-            {
                 dynamic item = new { id = Guid.NewGuid().ToString(), city = "Redmond", state = "WA", zipCode = "98052" };
                 PartitionKey partitionKey = new PartitionKeyBuilder()
                     .Add(item.city)
@@ -356,23 +319,18 @@
 
                 _ = await container.CreateItemAsync<dynamic>(item: item, partitionKey: partitionKey);
 
-                using (ResponseMessage responseMessage = await container.ReadItemStreamAsync(id: item.id, partitionKey: partitionKey))
-                {
-                    using (StreamReader streamReader = new(responseMessage.Content))
-                    {
-                        string content = await streamReader.ReadToEndAsync();
-                        JObject @object = JObject.Parse(content);
-
-                        Assert.AreEqual(expected: item.id, actual: @object["id"]);
-                        Assert.AreEqual(expected: item.city, actual: @object["city"]);
-                        Assert.AreEqual(expected: item.state, actual: @object["state"]);
-                        Assert.AreEqual(expected: item.zipCode, actual: @object["zipCode"]);
-                    }
-                }
-            }
-            finally
+            using (ResponseMessage responseMessage = await container.ReadItemStreamAsync(id: item.id, partitionKey: partitionKey))
             {
-                _ = await container.DeleteContainerAsync();
+                using (StreamReader streamReader = new(responseMessage.Content))
+                {
+                    string content = await streamReader.ReadToEndAsync();
+                    JObject @object = JObject.Parse(content);
+
+                    Assert.AreEqual(expected: item.id, actual: @object["id"]);
+                    Assert.AreEqual(expected: item.city, actual: @object["city"]);
+                    Assert.AreEqual(expected: item.state, actual: @object["state"]);
+                    Assert.AreEqual(expected: item.zipCode, actual: @object["zipCode"]);
+                }
             }
         }
     }

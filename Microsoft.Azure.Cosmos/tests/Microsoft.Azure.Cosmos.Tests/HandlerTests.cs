@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -439,6 +440,152 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNotNull(response);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.IsTrue(response.ErrorMessage.Contains(errorMessage));
+        }
+
+        [TestMethod]
+        public async Task TestResolveFeedRangeBasedOnPrefixWithFeedRangePartitionKeyAndMultiHashContainerAsync()
+        {
+            dynamic item = new { id = Guid.NewGuid().ToString(), city = "Redmond", state = "WA", zipCode = "98502" };
+            Cosmos.PartitionKey partitionKey = new PartitionKeyBuilder()
+                .Add(item.city)
+                .Add(item.state)
+                .Build();
+
+            await HandlerTests.TestResolveFeedRangeBasedOnPrefixAsync<FeedRangeEpk>(
+                partitionKeyDefinition: new PartitionKeyDefinition()
+                {
+                    Kind = PartitionKind.MultiHash,
+                    Paths = new Collection<string>(new List<string>() { "/city", "/state", "/zipCode" })
+                },
+                inputFeedRange: new FeedRangePartitionKey(partitionKey),
+                expectedFeedRangeToJsonString: @"{""Range"":{""min"":""01620B162169497AFD85FA66E99F73760845FB119899DE50766A2C4CEFC2FA73"",""max"":""01620B162169497AFD85FA66E99F73760845FB119899DE50766A2C4CEFC2FA73FF""}}");
+        }
+
+        [TestMethod]
+        public async Task TestResolveFeedRangeBasedOnPrefixWithFeedRangePartitionKeyOnHashContainerAsync()
+        {
+            dynamic item = new { id = Guid.NewGuid().ToString(), city = "Redmond" };
+            Cosmos.PartitionKey partitionKey = new PartitionKeyBuilder()
+                .Add(item.city)
+                .Build();
+            
+            await HandlerTests.TestResolveFeedRangeBasedOnPrefixAsync<FeedRangePartitionKey>(
+                partitionKeyDefinition: new PartitionKeyDefinition()
+                {
+                    Kind = PartitionKind.Hash,
+                    Paths = new Collection<string>(new List<string>() { "/city" })
+                },
+                inputFeedRange: new FeedRangePartitionKey(partitionKey),
+                expectedFeedRangeToJsonString: @"{""PK"":""[\""Redmond\""]""}");
+        }
+
+        [TestMethod]
+        public async Task TestResolveFeedRangeBasedOnPrefixWithFeedRangePartitionKeyOnRangeContainerAsync()
+        {
+            dynamic item = new { id = Guid.NewGuid().ToString(), city = "Redmond" };
+            Cosmos.PartitionKey partitionKey = new PartitionKeyBuilder()
+                .Add(item.city)
+                .Build();
+
+            await HandlerTests.TestResolveFeedRangeBasedOnPrefixAsync<FeedRangePartitionKey>(
+                partitionKeyDefinition: new PartitionKeyDefinition()
+                {
+                    Kind = PartitionKind.Range,
+                    Paths = new Collection<string>(new List<string>() { "/city" })
+                },
+                inputFeedRange: new FeedRangePartitionKey(partitionKey),
+                expectedFeedRangeToJsonString: @"{""PK"":""[\""Redmond\""]""}");
+        }
+
+        [TestMethod]
+        public async Task TestResolveFeedRangeBasedOnPrefixWithFeedRangeEpkOnMultiHashContainerAsync()
+        {
+            await HandlerTests.TestResolveFeedRangeBasedOnPrefixAsync<FeedRangeEpk>(
+                partitionKeyDefinition: new PartitionKeyDefinition()
+                {
+                    Kind = PartitionKind.MultiHash,
+                    Paths = new Collection<string>(new List<string>() { "/city", "/state", "/zipCode" })
+                },
+                inputFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(
+                    min: Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                    max: Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                    isMinInclusive: true,
+                    isMaxInclusive: false)),
+                expectedFeedRangeToJsonString: @"{""Range"":{""min"":"""",""max"":""FF""}}");
+        }
+
+        [TestMethod]
+        public async Task TestResolveFeedRangeBasedOnPrefixWithFeedRangeEpkOnHashContainerAsync()
+        {
+            await HandlerTests.TestResolveFeedRangeBasedOnPrefixAsync<FeedRangeEpk>(
+                partitionKeyDefinition: new PartitionKeyDefinition()
+                {
+                    Kind = PartitionKind.Hash,
+                    Paths = new Collection<string>(new List<string>() { "/city" })
+                },
+                inputFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(
+                    min: Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                    max: Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                    isMinInclusive: true,
+                    isMaxInclusive: false)),
+                expectedFeedRangeToJsonString: @"{""Range"":{""min"":"""",""max"":""FF""}}");
+        }
+
+        [TestMethod]
+        public async Task TestResolveFeedRangeBasedOnPrefixWithFeedRangeEpkOnRangeContainerAsync()
+        {
+            await HandlerTests.TestResolveFeedRangeBasedOnPrefixAsync<FeedRangeEpk>(
+                partitionKeyDefinition: new PartitionKeyDefinition()
+                {
+                    Kind = PartitionKind.Range,
+                    Paths = new Collection<string>(new List<string>() { "/city" })
+                },
+                inputFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(
+                    min: Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                    max: Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                    isMinInclusive: true,
+                    isMaxInclusive: false)),
+                expectedFeedRangeToJsonString: @"{""Range"":{""min"":"""",""max"":""FF""}}");
+        }
+
+        private static async Task TestResolveFeedRangeBasedOnPrefixAsync<TFeedRange>(
+            PartitionKeyDefinition partitionKeyDefinition,
+            FeedRangeInternal inputFeedRange,
+            string expectedFeedRangeToJsonString)
+            where TFeedRange : FeedRangeInternal
+        {
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
+                accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong,
+                customizeClientBuilder: builder => builder.WithConsistencyLevel(Cosmos.ConsistencyLevel.Eventual));
+
+            Moq.Mock<ContainerInternal> mockContainer = MockCosmosUtil.CreateMockContainer(
+                dbName: Guid.NewGuid().ToString(),
+                containerName: Guid.NewGuid().ToString());
+
+            CancellationToken cancellationToken = CancellationToken.None;
+
+            mockContainer
+                .Setup(container => container.GetPartitionKeyDefinitionAsync(cancellationToken))
+                .Returns(Task.FromResult(partitionKeyDefinition));
+
+            RequestInvokerHandler invoker = new(
+                client: client,
+                requestedClientConsistencyLevel: default);
+
+            Cosmos.FeedRange feedRange = await invoker.ResolveFeedRangeBasedOnPrefixContainerAsync(
+                feedRange: inputFeedRange,
+                cosmosContainerCore: mockContainer.Object,
+                cancellationToken: cancellationToken);
+
+            Assert.IsNotNull(feedRange, "FeedRange did not initialize");
+            
+            Assert.IsInstanceOfType(
+                value: feedRange,
+                expectedType: typeof(TFeedRange));
+
+            Assert.AreEqual(
+                expected: expectedFeedRangeToJsonString,
+                actual: feedRange.ToJsonString());
         }
 
         private class SomePayload
