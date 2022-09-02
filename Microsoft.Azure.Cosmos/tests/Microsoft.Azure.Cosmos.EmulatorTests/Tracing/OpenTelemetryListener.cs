@@ -181,7 +181,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            Console.WriteLine(eventData.TimeStamp + " " + eventData.EventName + " " + eventData.Payload[0]);
+            StringBuilder builder = new StringBuilder();
+            builder.Append("<EVENT>")
+                   .Append(eventData.Payload[0])
+                   .Append("</EVENT>");
+            this.Attributes.Add(builder.ToString());
         }
 
         public override void Dispose()
