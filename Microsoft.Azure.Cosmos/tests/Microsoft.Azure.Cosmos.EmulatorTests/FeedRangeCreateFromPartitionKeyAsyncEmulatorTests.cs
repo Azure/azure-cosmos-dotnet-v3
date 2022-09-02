@@ -259,8 +259,14 @@
         [TestMethod]
         public async Task ReadItemWithFullPartitionKeyReturnsFeedIterator()
         {
-            Container container = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(new(id: @"TestMultiHashedContainer", partitionKeyPaths: new List<string>() { "/city", "/state", "/zipCode" }));
-            ContainerProperties containerProperties = await container.ReadContainerAsync();
+            ContainerProperties containerProperties = new(id: @"TestMultiHashedContainer", partitionKeyDefinition: new Documents.PartitionKeyDefinition
+            {
+                Kind = Documents.PartitionKind.MultiHash,
+                Version = Documents.PartitionKeyDefinitionVersion.V2,
+                Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/city", "/state", "/zipCode" })
+            });
+
+            Container container = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerProperties: containerProperties);
 
             Assert.AreEqual(expected: PartitionKeyDefinitionVersion.V2, actual: containerProperties.PartitionKeyDefinitionVersion);
             Assert.AreEqual(expected: 3, actual: containerProperties.PartitionKey.Paths.Count);
