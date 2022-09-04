@@ -118,12 +118,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public string DataMember;
 
             /// <summary>
-            /// Member of the Datum class that has a JsonPropertyName attribute.
-            /// </summary>
-            [JsonPropertyName("jsonPropertyName")]
-            public string JsonPropertyName;
-
-            /// <summary>
             /// Member of the Datum class that has no attributes.
             /// </summary>
             [JsonProperty]
@@ -171,6 +165,16 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         /// <summary>
+        /// Class with property attribute JsonPropertyName, from System.Text.Json.Serialization
+        /// </summary>
+        public class DatumWithCustomizedProperty
+        {
+            [JsonPropertyName("testProperty")]
+            [JsonProperty(PropertyName = "notThisAttribute")]
+            public string CustomizedProperty;
+        }
+
+        /// <summary>
         /// In general the attribute priority is as follows:
         /// 1) JsonProperty
         /// 2) DataMember
@@ -201,11 +205,31 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         return attr.Name;
                     }
 
-                    // Use the Property name
-                    return memberInfo.Name;
+                    return memberInfo.Name;  // Use the Property name
                 }
             };
-            Assert.AreEqual("jsonPropertyName", TypeSystem.GetMemberName(typeof(Datum).GetMember("JsonPropertyName").First(), option));
+
+            // Check the custom option is working for TypeSystem.GetMemberName
+            string propertyName = nameof(DatumWithCustomizedProperty.CustomizedProperty);
+            Assert.AreEqual("testProperty", TypeSystem.GetMemberName(typeof(DatumWithCustomizedProperty).GetMember(propertyName).First(), option));
+
+            // Without linqSerializerOptions, linq query generation is not using "testProperty"
+            var plainQuery = testCollection.GetItemLinqQueryable<DatumWithCustomizedProperty>()
+                .Where(x => x.CustomizedProperty == "A")
+                .OrderBy(x => x.CustomizedProperty)
+                .Select(x => x.CustomizedProperty);
+
+            string expected = @"{""query"":""SELECT VALUE root[\""notThisAttribute\""] FROM root WHERE (root[\""notThisAttribute\""] = \""A\"") ORDER BY root[\""notThisAttribute\""] ASC""}";
+            Assert.AreEqual(expected, plainQuery.ToString());
+
+            // Check linq query generation is using "testProperty"
+            var query = testCollection.GetItemLinqQueryable<DatumWithCustomizedProperty>(linqSerializerOptions: option)
+                .Where(x => x.CustomizedProperty == "A")
+                .OrderBy(x => x.CustomizedProperty)
+                .Select(x => x.CustomizedProperty);
+
+            string expectedCustomized = @"{""query"":""SELECT VALUE root[\""testProperty\""] FROM root WHERE (root[\""testProperty\""] = \""A\"") ORDER BY root[\""testProperty\""] ASC""}";
+            Assert.AreEqual(expectedCustomized, query.ToString());
         }
 
         /// <summary>
