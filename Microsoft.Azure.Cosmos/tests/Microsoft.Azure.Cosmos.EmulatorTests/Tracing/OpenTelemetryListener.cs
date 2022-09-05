@@ -183,7 +183,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             StringBuilder builder = new StringBuilder();
             builder.Append("<EVENT>")
-                   .Append(eventData.Payload[0])
+                   .Append("Ideally, this should contain request diagnostics but request diagnostics is " +
+                   "sibject to change with each request as it contains few unique id. " +
+                   "So just putting this tag with this static text to make sure event is getting generated" +
+                   " for each test.")
                    .Append("</EVENT>");
             this.Attributes.Add(builder.ToString());
         }
