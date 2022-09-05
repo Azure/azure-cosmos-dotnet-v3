@@ -293,8 +293,12 @@ namespace Microsoft.Azure.Cosmos
             scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, exception.StatusCode);
             scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, exception.RequestCharge);
             scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics));
-            scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, exception.Diagnostics);
             scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
+
+            if (CosmosDbEventSource.IsWarnEnabled)
+            {
+                CosmosDbEventSource.Singleton.RecordRequestDiagnostics(exception.Diagnostics.ToString());
+            }
         }
     }
 }
