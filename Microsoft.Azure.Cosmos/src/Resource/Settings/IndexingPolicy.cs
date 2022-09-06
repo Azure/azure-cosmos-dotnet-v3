@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents the indexing policy configuration for a collection in the Azure Cosmos DB service.
@@ -56,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the indexing mode (consistent or lazy) in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
-        /// One of the values of the <see cref="T:Microsoft.Azure.Documents.IndexingMode"/> enumeration.
+        /// One of the values of the <see cref="T:Microsoft.Azure.Cosmos.IndexingMode"/> enumeration.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.IndexingMode)]
         [JsonConverter(typeof(StringEnumConverter))]
@@ -116,6 +117,13 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.SpatialIndexes)]
         public Collection<SpatialPath> SpatialIndexes { get; internal set; } = new Collection<SpatialPath>();
 
+        /// <summary>
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+        /// </summary>
+        [JsonExtensionData]
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+
 #if INTERNAL
         /// <summary>
         /// Indexing policy annotation.
@@ -141,7 +149,9 @@ namespace Microsoft.Azure.Cosmos
                     return false;
                 }
 
-                if (compositePath1.Path == compositePath2.Path && compositePath2.Order == compositePath2.Order)
+                if (compositePath1.Path == compositePath2.Path && 
+                    compositePath1.Order == compositePath2.Order && 
+                    compositePath1.AdditionalProperties.EqualsTo(compositePath2.AdditionalProperties))
                 {
                     return true;
                 }
@@ -237,7 +247,7 @@ namespace Microsoft.Azure.Cosmos
                 foreach (Collection<CompositePath> compositePaths in compositeIndexes)
                 {
                     HashSet<CompositePath> hashedCompositePaths = new HashSet<CompositePath>(compositePaths, compositePathEqualityComparer);
-                    hashCode = hashCode ^ compositePathsEqualityComparer.GetHashCode(hashedCompositePaths);
+                    hashCode ^= compositePathsEqualityComparer.GetHashCode(hashedCompositePaths);
                 }
 
                 return hashCode;
@@ -268,7 +278,8 @@ namespace Microsoft.Azure.Cosmos
                 HashSet<SpatialType> hashedSpatialTypes1 = new HashSet<SpatialType>(spatialSpec1.SpatialTypes);
                 HashSet<SpatialType> hashedSpatialTypes2 = new HashSet<SpatialType>(spatialSpec2.SpatialTypes);
 
-                if (!hashedSpatialTypes1.SetEquals(hashedSpatialTypes2))
+                if (!hashedSpatialTypes1.SetEquals(hashedSpatialTypes2) || 
+                    !spatialSpec1.AdditionalProperties.EqualsTo(spatialSpec2.AdditionalProperties))
                 {
                     return false;
                 }
@@ -308,7 +319,7 @@ namespace Microsoft.Azure.Cosmos
                 HashSet<SpatialPath> hashedAdditionalSpatialIndexes1 = new HashSet<SpatialPath>(additionalSpatialIndexes1, spatialSpecEqualityComparer);
                 HashSet<SpatialPath> hashedAdditionalSpatialIndexes2 = new HashSet<SpatialPath>(additionalSpatialIndexes2, spatialSpecEqualityComparer);
 
-                return hashedAdditionalSpatialIndexes1.SetEquals(additionalSpatialIndexes2);
+                return hashedAdditionalSpatialIndexes1.SetEquals(hashedAdditionalSpatialIndexes2);
             }
 
             public int GetHashCode(Collection<SpatialPath> additionalSpatialIndexes)
@@ -316,14 +327,14 @@ namespace Microsoft.Azure.Cosmos
                 int hashCode = 0;
                 foreach (SpatialPath spatialSpec in additionalSpatialIndexes)
                 {
-                    hashCode = hashCode ^ spatialSpecEqualityComparer.GetHashCode(spatialSpec);
+                    hashCode ^= spatialSpecEqualityComparer.GetHashCode(spatialSpec);
                 }
 
                 return hashCode;
             }
         }
 
-        internal sealed class IndexEqualityComparer : IEqualityComparer<Index>
+        internal sealed class IndexEqualityComparer : IEqualityComparer<Cosmos.Index>
         {
             public static readonly IndexEqualityComparer Comparer = new IndexEqualityComparer();
 
@@ -339,7 +350,7 @@ namespace Microsoft.Azure.Cosmos
                     return false;
                 }
 
-                if (index1.Kind != index2.Kind)
+                if (index1.Kind != index2.Kind || !index1.AdditionalProperties.EqualsTo(index2.AdditionalProperties))
                 {
                     return false;
                 }
@@ -387,22 +398,22 @@ namespace Microsoft.Azure.Cosmos
             public int GetHashCode(Index index)
             {
                 int hashCode = 0;
-                hashCode = hashCode ^ (int)index.Kind;
+                hashCode ^= (int)index.Kind;
 
                 switch (index.Kind)
                 {
                     case IndexKind.Hash:
                         hashCode = hashCode ^ ((HashIndex)index).Precision ?? 0;
-                        hashCode = hashCode ^ ((HashIndex)index).DataType.GetHashCode();
+                        hashCode ^= ((HashIndex)index).DataType.GetHashCode();
                         break;
 
                     case IndexKind.Range:
                         hashCode = hashCode ^ ((RangeIndex)index).Precision ?? 0;
-                        hashCode = hashCode ^ ((RangeIndex)index).DataType.GetHashCode();
+                        hashCode ^= ((RangeIndex)index).DataType.GetHashCode();
                         break;
 
                     case IndexKind.Spatial:
-                        hashCode = hashCode ^ ((SpatialIndex)index).DataType.GetHashCode();
+                        hashCode ^= ((SpatialIndex)index).DataType.GetHashCode();
                         break;
 
                     default:
@@ -429,13 +440,14 @@ namespace Microsoft.Azure.Cosmos
                     return false;
                 }
 
-                if (includedPath1.Path != includedPath2.Path)
+                if (includedPath1.Path != includedPath2.Path || 
+                    !includedPath1.AdditionalProperties.EqualsTo(includedPath2.AdditionalProperties))
                 {
                     return false;
                 }
 
-                HashSet<Index> indexes1 = new HashSet<Index>(includedPath1.Indexes, indexEqualityComparer);
-                HashSet<Index> indexes2 = new HashSet<Index>(includedPath2.Indexes, indexEqualityComparer);
+                HashSet<Cosmos.Index> indexes1 = new HashSet<Cosmos.Index>(includedPath1.Indexes, indexEqualityComparer);
+                HashSet<Cosmos.Index> indexes2 = new HashSet<Cosmos.Index>(includedPath2.Indexes, indexEqualityComparer);
 
                 return indexes1.SetEquals(indexes2);
             }
@@ -443,10 +455,10 @@ namespace Microsoft.Azure.Cosmos
             public int GetHashCode(IncludedPath includedPath)
             {
                 int hashCode = 0;
-                hashCode = hashCode ^ includedPath.Path.GetHashCode();
+                hashCode ^= includedPath.Path.GetHashCode();
                 foreach (Index index in includedPath.Indexes)
                 {
-                    hashCode = hashCode ^ indexEqualityComparer.GetHashCode(index);
+                    hashCode ^= indexEqualityComparer.GetHashCode(index);
                 }
 
                 return hashCode;
@@ -469,7 +481,8 @@ namespace Microsoft.Azure.Cosmos
                     return false;
                 }
 
-                return (excludedPath1.Path == excludedPath2.Path);
+                return excludedPath1.Path == excludedPath2.Path && 
+                    excludedPath1.AdditionalProperties.EqualsTo(excludedPath2.AdditionalProperties);
             }
 
             public int GetHashCode(ExcludedPath excludedPath1)
@@ -494,11 +507,12 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 bool isEqual = true;
-                isEqual &= (indexingPolicy1 != null && indexingPolicy2 != null);
-                isEqual &= (indexingPolicy1.Automatic == indexingPolicy2.Automatic);
-                isEqual &= (indexingPolicy1.IndexingMode == indexingPolicy2.IndexingMode);
+                isEqual &= indexingPolicy1 != null && indexingPolicy2 != null;
+                isEqual &= indexingPolicy1.Automatic == indexingPolicy2.Automatic;
+                isEqual &= indexingPolicy1.IndexingMode == indexingPolicy2.IndexingMode;
                 isEqual &= compositeIndexesEqualityComparer.Equals(indexingPolicy1.CompositeIndexes, indexingPolicy2.CompositeIndexes);
                 isEqual &= additionalSpatialIndexesEqualityComparer.Equals(indexingPolicy1.SpatialIndexes, indexingPolicy2.SpatialIndexes);
+                isEqual &= indexingPolicy1.AdditionalProperties.EqualsTo(indexingPolicy2.AdditionalProperties);
 
                 HashSet<IncludedPath> includedPaths1 = new HashSet<IncludedPath>(indexingPolicy1.IncludedPaths, includedPathEqualityComparer);
                 HashSet<IncludedPath> includedPaths2 = new HashSet<IncludedPath>(indexingPolicy2.IncludedPaths, includedPathEqualityComparer);
@@ -514,19 +528,19 @@ namespace Microsoft.Azure.Cosmos
             public int GetHashCode(IndexingPolicy indexingPolicy)
             {
                 int hashCode = 0;
-                hashCode = hashCode ^ indexingPolicy.Automatic.GetHashCode();
-                hashCode = hashCode ^ indexingPolicy.IndexingMode.GetHashCode();
-                hashCode = hashCode ^ compositeIndexesEqualityComparer.GetHashCode(indexingPolicy.CompositeIndexes);
-                hashCode = hashCode ^ additionalSpatialIndexesEqualityComparer.GetHashCode(indexingPolicy.SpatialIndexes);
+                hashCode ^= indexingPolicy.Automatic.GetHashCode();
+                hashCode ^= indexingPolicy.IndexingMode.GetHashCode();
+                hashCode ^= compositeIndexesEqualityComparer.GetHashCode(indexingPolicy.CompositeIndexes);
+                hashCode ^= additionalSpatialIndexesEqualityComparer.GetHashCode(indexingPolicy.SpatialIndexes);
 
                 foreach (IncludedPath includedPath in indexingPolicy.IncludedPaths)
                 {
-                    hashCode = hashCode ^ includedPathEqualityComparer.GetHashCode(includedPath);
+                    hashCode ^= includedPathEqualityComparer.GetHashCode(includedPath);
                 }
 
                 foreach (ExcludedPath excludedPath in indexingPolicy.ExcludedPaths)
                 {
-                    hashCode = hashCode ^ excludedPathEqualityComparer.GetHashCode(excludedPath);
+                    hashCode ^= excludedPathEqualityComparer.GetHashCode(excludedPath);
                 }
 
                 return hashCode;

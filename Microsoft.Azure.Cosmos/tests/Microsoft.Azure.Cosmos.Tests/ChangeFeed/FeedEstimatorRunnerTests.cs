@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<ChangeFeedEstimator> mockedEstimator = new Mock<ChangeFeedEstimator>();
             mockedEstimator.Setup(e => e.GetCurrentStateIterator(It.IsAny<ChangeFeedEstimatorRequestOptions>())).Returns(mockedIterator.Object);
 
-            FeedEstimatorRunner estimatorCore = new FeedEstimatorRunner(estimatorDispatcher, mockedEstimator.Object, TimeSpan.FromMilliseconds(10));
+            FeedEstimatorRunner estimatorCore = new FeedEstimatorRunner(estimatorDispatcher, mockedEstimator.Object, Mock.Of<ChangeFeedProcessorHealthMonitor>(), TimeSpan.FromMilliseconds(10));
 
             try
             {
@@ -71,15 +71,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockedResponse.Setup(r => r.Count).Returns(1);
             mockedResponse.Setup(r => r.GetEnumerator()).Returns(new List<ChangeFeedProcessorState>() { new ChangeFeedProcessorState(string.Empty, estimation, string.Empty) }.GetEnumerator());
 
+            CosmosException exception = CosmosExceptionFactory.CreateThrottledException("throttled", new Headers());
             Mock<FeedIterator<ChangeFeedProcessorState>> mockedIterator = new Mock<FeedIterator<ChangeFeedProcessorState>>();
             mockedIterator.SetupSequence(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(CosmosExceptionFactory.CreateThrottledException("throttled", new Headers()))
+                .ThrowsAsync(exception)
                 .ReturnsAsync(mockedResponse.Object);
 
             Mock<ChangeFeedEstimator> mockedEstimator = new Mock<ChangeFeedEstimator>();
             mockedEstimator.Setup(e => e.GetCurrentStateIterator(It.IsAny<ChangeFeedEstimatorRequestOptions>())).Returns(mockedIterator.Object);
 
-            FeedEstimatorRunner estimatorCore = new FeedEstimatorRunner(estimatorDispatcher, mockedEstimator.Object, TimeSpan.FromMilliseconds(10));
+            Mock<ChangeFeedProcessorHealthMonitor> healthMonitor = new Mock<ChangeFeedProcessorHealthMonitor>();
+
+            FeedEstimatorRunner estimatorCore = new FeedEstimatorRunner(estimatorDispatcher, mockedEstimator.Object, healthMonitor.Object, TimeSpan.FromMilliseconds(10));
 
             try
             {
@@ -92,6 +95,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Assert.IsTrue(detectedEstimationCorrectly);
             mockedIterator.Verify(i => i.ReadNextAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
+
+            healthMonitor
+                .Verify(m => m.NotifyErrorAsync(It.IsAny<string>(), exception), Times.Once);
         }
 
         [TestMethod]
@@ -116,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<ChangeFeedEstimator> mockedEstimator = new Mock<ChangeFeedEstimator>();
             mockedEstimator.Setup(e => e.GetCurrentStateIterator(It.IsAny<ChangeFeedEstimatorRequestOptions>())).Returns(mockedIterator.Object);
 
-            FeedEstimatorRunner estimatorCore = new FeedEstimatorRunner(estimatorDispatcher, mockedEstimator.Object, TimeSpan.FromMilliseconds(10));
+            FeedEstimatorRunner estimatorCore = new FeedEstimatorRunner(estimatorDispatcher, mockedEstimator.Object, Mock.Of<ChangeFeedProcessorHealthMonitor>(), TimeSpan.FromMilliseconds(10));
 
             try
             {

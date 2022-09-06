@@ -91,12 +91,13 @@
         }
 
         [TestMethod]
+        [Timeout(5000)]
         public void ValidateStoreResultSerialization()
         {
             HashSet<string> storeResultProperties = typeof(StoreResult).GetProperties(BindingFlags.Public | BindingFlags.Instance).Select(x => x.Name).ToHashSet<string>();
             string datumKey = "ClientStats";
             Trace trace = Trace.GetRootTrace("Test");
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary());
             trace.AddDatum(datumKey, datum);
 
             StoreResult storeResult = new StoreResult(
@@ -116,7 +117,9 @@
                 sessionToken: new SimpleSessionToken(42),
                 usingLocalLSN: true,
                 activityId: Guid.Empty.ToString(),
-                backendRequestDurationInMs: "4.2");
+                backendRequestDurationInMs: "4.2",
+                retryAfterInMs: "42",
+                transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats());
 
             StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
                             DateTime.MinValue,
@@ -124,9 +127,10 @@
                             storeResult,
                             ResourceType.Document,
                             OperationType.Query,
+                            "42",
                             new Uri("http://someUri1.com"));
 
-            datum.StoreResponseStatisticsList.Add(storeResponseStatistics);
+            ((List<StoreResponseStatistics>)datum.GetType().GetField("storeResponseStatistics", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(datum)).Add(storeResponseStatistics);
 
             CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
             string json = diagnostics.ToString();
@@ -138,6 +142,8 @@
             storeResultProperties.Remove(nameof(storeResult.BackendRequestDurationInMs));
             storeResultProperties.Add("TransportException");
             storeResultProperties.Remove(nameof(storeResult.Exception));
+            storeResultProperties.Add("transportRequestTimeline");
+            storeResultProperties.Remove(nameof(storeResult.TransportRequestStats));
 
             foreach (string key in jsonPropertyNames)
             {

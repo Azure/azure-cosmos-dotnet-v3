@@ -52,11 +52,11 @@ namespace Microsoft.Azure.Cosmos
                 Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
                 mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
 
-                GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+                using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
                 ISessionContainer sessionContainer = new SessionContainer(string.Empty);
                 DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
                 HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
-                GatewayStoreModel storeModel = new GatewayStoreModel(
+                using GatewayStoreModel storeModel = new GatewayStoreModel(
                     endpointManager,
                     sessionContainer,
                     ConsistencyLevel.Eventual,
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
                         Assert.Fail("There should only be 1 TCP request that triggers an address resolution.");
                     }
 
-                    throw new GoneException(new TransportException(TransportErrorCode.ConnectFailed, null, Guid.NewGuid(), new Uri("http://one.com"), "description", true, true));
+                    throw new GoneException(new TransportException(TransportErrorCode.ConnectFailed, null, Guid.NewGuid(), new Uri("http://one.com"), "description", true, true), SubStatusCodes.Unknown);
                 }
 
                 using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
@@ -169,9 +169,20 @@ namespace Microsoft.Azure.Cosmos
 
                 CosmosOperationCanceledException ex = await Assert.ThrowsExceptionAsync<CosmosOperationCanceledException>(() => client.GetContainer("test", "test").ReadItemAsync<dynamic>("id", partitionKey: new Cosmos.PartitionKey("id"), cancellationToken: cancellationToken),
                     "Should have surfaced OperationCanceledException because the token was canceled.");
+                Assert.IsTrue(ex.CancellationToken.IsCancellationRequested);
+                Assert.AreEqual(cancellationToken.IsCancellationRequested, ex.CancellationToken.IsCancellationRequested);
+                Assert.AreEqual(cancellationToken.CanBeCanceled, ex.CancellationToken.CanBeCanceled);
+                Assert.AreEqual(cancellationToken.WaitHandle, ex.CancellationToken.WaitHandle);
 
                 ((MockDocumentClient)client.DocumentClient).MockGlobalEndpointManager.Verify(gep => gep.MarkEndpointUnavailableForRead(It.IsAny<Uri>()), Times.Once, "Should had marked the endpoint unavailable");
                 ((MockDocumentClient)client.DocumentClient).MockGlobalEndpointManager.Verify(gep => gep.RefreshLocationAsync(false), Times.Once, "Should had refreshed the account information");
+
+                string expectedHelpLink = "https://aka.ms/cosmosdb-tsg-request-timeout";
+                string expectedCancellationTokenStatus = $"Cancellation Token has expired: {cancellationToken.IsCancellationRequested}";
+                Assert.IsTrue(ex.Message.Contains(expectedHelpLink));
+                Assert.IsTrue(ex.Message.Contains(expectedCancellationTokenStatus));
+                Assert.IsTrue(ex.ToString().Contains(expectedHelpLink));
+                Assert.IsTrue(ex.ToString().Contains(expectedCancellationTokenStatus));
             }
         }
 
@@ -294,15 +305,12 @@ namespace Microsoft.Azure.Cosmos
             // rntbd://yt1prdddc01-docdb-1.documents.azure.com:14003/apps/ce8ab332-f59e-4ce7-a68e-db7e7cfaa128/services/68cc0b50-04c6-4716-bc31-2dfefd29e3ee/partitions/5604283d-0907-4bf4-9357-4fa9e62de7b5/replicas/131170760736528207s/
             for (int i = 0; i <= 2; i++)
             {
-                addressInformation[i] = new AddressInformation
-                {
-                    PhysicalUri =
-                    "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/"
-                    + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/",
-                    IsPrimary = i == 0,
-                    Protocol = Documents.Client.Protocol.Tcp,
-                    IsPublic = true
-                };
+                addressInformation[i] = new AddressInformation(
+                    physicalUri: "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/"
+                        + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/",
+                    isPrimary: i == 0,
+                    protocol: Documents.Client.Protocol.Tcp,
+                    isPublic: true);
             }
             return addressInformation;
         }

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
@@ -26,4 +26,11 @@
     <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" />
     <PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" />
   </ItemGroup>
+	
+  <PropertyGroup>
+	<SignAssembly>true</SignAssembly>
+	<DelaySign>true</DelaySign>
+	<AssemblyOriginatorKeyFile>..\..\..\testkey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+	
 </Project>

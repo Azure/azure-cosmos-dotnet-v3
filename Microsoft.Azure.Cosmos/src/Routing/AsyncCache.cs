@@ -141,10 +141,19 @@ namespace Microsoft.Azure.Cosmos.Common
             // Task starts running here.
             Task<TValue> generator = actualValue.Value;
 
-            // Even if the current thread goes away, all exceptions will be observed.
+            // Even if the current thread goes away, all exceptions will be observed
             Task unused = generator.ContinueWith(c => c.Exception, TaskContinuationOptions.OnlyOnFaulted);
 
-            return await generator;
+            try
+            {
+                return await generator;
+            }
+            catch (Exception) when (object.ReferenceEquals(actualValue, newLazyValue))
+            {
+                // If the lambda this thread added to values triggered an exception remove it from the cache.
+                this.TryRemoveValue(key, actualValue);
+                throw;
+            }
         }
 
         public void Remove(TKey key)
@@ -167,14 +176,19 @@ namespace Microsoft.Azure.Cosmos.Common
                 // Accessing Exception marks as observed.
                 Exception e = initialLazyValue.Value.Exception;
 
-                // This is a nice trick to do "atomic remove if value not changed".
-                // ConcurrentDictionary inherits from ICollection<KVP<..>>, which allows removal of specific key value pair, instead of removal just by key.
-                ICollection<KeyValuePair<TKey, AsyncLazy<TValue>>> valuesAsCollection = this.values as ICollection<KeyValuePair<TKey, AsyncLazy<TValue>>>;
-                Debug.Assert(valuesAsCollection != null, "Values collection expected to implement ICollection<KVP<TKey, AsyncLazy<TValue>>.");
-                return valuesAsCollection?.Remove(new KeyValuePair<TKey, AsyncLazy<TValue>>(key, initialLazyValue)) ?? false;
+                return this.TryRemoveValue(key, initialLazyValue);
             }
 
             return false;
+        }
+
+        private bool TryRemoveValue(TKey key, AsyncLazy<TValue> initialLazyValue)
+        {
+            // This is a nice trick to do "atomic remove if value not changed".
+            // ConcurrentDictionary inherits from ICollection<KVP<..>>, which allows removal of specific key value pair, instead of removal just by key.
+            ICollection<KeyValuePair<TKey, AsyncLazy<TValue>>> valuesAsCollection = this.values as ICollection<KeyValuePair<TKey, AsyncLazy<TValue>>>;
+            Debug.Assert(valuesAsCollection != null, "Values collection expected to implement ICollection<KVP<TKey, AsyncLazy<TValue>>.");
+            return valuesAsCollection?.Remove(new KeyValuePair<TKey, AsyncLazy<TValue>>(key, initialLazyValue)) ?? false;
         }
 
         /// <summary>

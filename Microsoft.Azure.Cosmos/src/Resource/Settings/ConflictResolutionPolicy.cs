@@ -4,9 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Scripts;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents the conflict resolution policy configuration for specifying how to resolve conflicts 
@@ -72,5 +74,13 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         [JsonProperty(PropertyName = Documents.Constants.Properties.ConflictResolutionProcedure, NullValueHandling = NullValueHandling.Ignore)]
         public string ResolutionProcedure { get; set; }
+
+        /// <summary>
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+        /// </summary>
+        [JsonExtensionData]
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+
     }
 }

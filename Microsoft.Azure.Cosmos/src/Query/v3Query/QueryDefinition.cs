@@ -55,7 +55,8 @@ namespace Microsoft.Azure.Cosmos
         {
             if (sqlQuery == null)
             {
-                throw new ArgumentNullException(nameof(sqlQuery));
+                // It is to support scenarios where all the data needs to be read 
+                return null;
             }
 
             QueryDefinition queryDefinition = new QueryDefinition(sqlQuery.QueryText);
@@ -131,10 +132,16 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An instance of <see cref="QueryDefinition"/>.</returns>
         public QueryDefinition WithParameterStream(string name, Stream valueStream)
         {
+            string rawSerializedJsonValue = null;
+            using (StreamReader streamReader = new StreamReader(valueStream))
+            {
+                rawSerializedJsonValue = streamReader.ReadToEnd();
+            }
+
             // pack it into an internal type for identification.
             SerializedParameterValue serializedParameterValue = new SerializedParameterValue
             {
-                valueStream = valueStream
+                rawSerializedJsonValue = rawSerializedJsonValue
             };
 
             return this.WithParameter(name, serializedParameterValue);
@@ -199,6 +206,6 @@ namespace Microsoft.Azure.Cosmos
 
     internal struct SerializedParameterValue
     {
-        internal Stream valueStream;
+        internal string rawSerializedJsonValue;
     }
 }

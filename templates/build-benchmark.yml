@@ -1,0 +1,34 @@
+# File: templates/build-benchmark.yml
+
+parameters:
+  BuildConfiguration: ''
+  Arguments: ''
+  VmImage: ''
+
+jobs:
+
+- job:
+  displayName: CosmosBenchmark ${{ parameters.BuildConfiguration }} 
+  pool:
+    vmImage: ${{ parameters.VmImage }}
+
+  steps:
+  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
+  # Add this Command to Include the .NET 6 SDK
+  - task: UseDotNet@2
+    displayName: Use .NET 6.0
+    inputs:
+      packageType: 'sdk'
+      version: '6.x'
+
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.CosmosBenchmark 
+    inputs: 
+      command: build  
+      configuration: $(parameters.BuildConfiguration)
+      nugetConfigPath: NuGet.config
+      projects:  'Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/CosmosBenchmark.sln' 
+      arguments: -p:Optimize=true
+      versioningScheme: OFF

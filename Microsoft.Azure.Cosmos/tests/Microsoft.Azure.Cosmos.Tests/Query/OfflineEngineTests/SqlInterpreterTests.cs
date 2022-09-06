@@ -644,6 +644,38 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
                 SqlOrderByItem.Create(cDotId, isDescending: false)));
             AssertEvaluation(new CosmosElement[] { array, obj }, orderByUndefinedArrayObject, undefinedArrayObject);
 
+            // Order by Object
+            CosmosElement objA = CosmosElement.Parse(@"{""id"": {""a"": ""a""}, ""_rid"": ""iDdHAJ74DSoEAAAAAAAAAA=="" }");
+            CosmosElement objB = CosmosElement.Parse(@"{""id"": {""a"": ""b""}, ""_rid"": ""iDdHAJ74DSoFAAAAAAAAAA==""}");
+            CosmosElement objC = CosmosElement.Parse(@"{""id"": {""a"": ""c""}, ""_rid"": ""iDdHAJ74DSoGAAAAAAAAAA==""}");
+            CosmosElement[] objectData = new CosmosElement[]
+            {
+                obj,
+                objA,
+                objB,
+                objC,
+            };
+
+            SqlQuery orderByObject = CreateQueryWithOrderBy(SqlOrderByClause.Create(
+                SqlOrderByItem.Create(cDotId, isDescending: false)));
+            AssertEvaluation(new CosmosElement[] { objA, obj, objB, objC }, orderByObject, objectData);
+
+            // Order by Array
+            CosmosElement arrayA = CosmosElement.Parse(@"{""id"": [""a""], ""_rid"": ""iDdHAJ74DSoEAAAAAAAAAA=="" }");
+            CosmosElement arrayAB = CosmosElement.Parse(@"{""id"": [""a"", ""b""], ""_rid"": ""iDdHAJ74DSoFAAAAAAAAAA==""}");
+            CosmosElement arrayABC = CosmosElement.Parse(@"{""id"": [""a"", ""b"", ""c""], ""_rid"": ""iDdHAJ74DSoGAAAAAAAAAA==""}");
+            CosmosElement[] arrayData = new CosmosElement[]
+            {
+                array,
+                arrayA,
+                arrayAB,
+                arrayABC,
+            };
+
+            SqlQuery orderByArray = CreateQueryWithOrderBy(SqlOrderByClause.Create(
+                SqlOrderByItem.Create(cDotId, isDescending: false)));
+            AssertEvaluation(new CosmosElement[] { arrayA, array, arrayABC, arrayAB }, orderByArray, arrayData);
+
             // Rid Tie Break Within a Partition
             CosmosObject rid1 = CosmosObject.Parse(@"{""id"": ""A"", ""_rid"": ""iDdHAJ74DSoBAAAAAAAAAA=="" }");
             CosmosObject rid2 = CosmosObject.Parse(@"{""id"": ""A"", ""_rid"": ""iDdHAJ74DSoCAAAAAAAAAA==""}");
@@ -1058,25 +1090,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
         }
 
         private static void AssertEvaluation(
-            IEnumerable<CosmosElement> expected,
+            IEnumerable<CosmosElement> expectedElements,
             SqlQuery sqlQuery,
             IEnumerable<CosmosElement> dataSource,
             IReadOnlyDictionary<string, PartitionKeyRange> ridToPartitionKeyRange = null)
         {
-            IEnumerable<CosmosElement> actual = SqlInterpreter.ExecuteQuery(
+            List<CosmosElement> actual = SqlInterpreter.ExecuteQuery(
                 dataSource,
                 sqlQuery,
-                ridToPartitionKeyRange);
-            if (expected.Count() != actual.Count())
-            {
-                Assert.Fail($"Expected had {expected.Count()} results while Actual has {actual.Count()} results.");
-            }
+                ridToPartitionKeyRange).ToList();
 
-            IEnumerable<Tuple<CosmosElement, CosmosElement>> expectedActuals = expected.Zip(actual, (first, second) => new Tuple<CosmosElement, CosmosElement>(first, second));
-            foreach (Tuple<CosmosElement, CosmosElement> expectedActual in expectedActuals)
-            {
-                Assert.AreEqual(expectedActual.Item1, expectedActual.Item2);
-            }
+            List<CosmosElement> expected = expectedElements.ToList();
+
+            CollectionAssert.AreEqual(expected, actual);
         }
 
         private static void AssertEvaluationNoOrder(

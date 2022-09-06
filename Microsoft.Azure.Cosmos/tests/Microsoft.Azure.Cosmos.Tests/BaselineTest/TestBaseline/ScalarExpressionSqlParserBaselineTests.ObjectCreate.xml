@@ -23,7 +23,7 @@
       <Query><![CDATA[SELECT VALUE { 'prop1' : 42, 'prop2' : 1337 }]]></Query>
     </Input>
     <Output>
-      <ParsedQuery><![CDATA[SELECT VALUE {"prop1' : 42, 'prop2": 1337}]]></ParsedQuery>
+      <ParsedQuery><![CDATA[SELECT VALUE {"prop1": 42, "prop2": 1337}]]></ParsedQuery>
     </Output>
   </Result>
   <Result>
@@ -33,6 +33,60 @@
     </Input>
     <Output>
       <ParsedQuery><![CDATA[SELECT VALUE {"prop": "Some String"}]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Single Quotes]]></Description>
+      <Query><![CDATA[SELECT VALUE { 'prop' : 'Some String' }]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE {"prop": "Some String"}]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Mixed Quotes]]></Description>
+      <Query><![CDATA[SELECT VALUE { 'prop' : "Some String" }]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE {"prop": "Some String"}]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Mixed Quotes 2]]></Description>
+      <Query><![CDATA[SELECT VALUE { "prop" : 'Some String' }]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE {"prop": "Some String"}]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Double Quotes Within Single Quotes]]></Description>
+      <Query><![CDATA[SELECT VALUE { 'prop' : 'Some "String" Value' }]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE {"prop": "Some \"String\" Value"}]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Single Quotes Within Double Quotes]]></Description>
+      <Query><![CDATA[SELECT VALUE { 'prop' : "Some 'String' Value" }]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE {"prop": "Some 'String' Value"}]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Escaped Double Quotes Within Double Quotes]]></Description>
+      <Query><![CDATA[SELECT VALUE { 'prop' : "Some \"String\" Value" }]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE {"prop": "Some \"String\" Value"}]]></ParsedQuery>
     </Output>
   </Result>
   <Result>

@@ -185,6 +185,32 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         }
 
         [TestMethod]
+        public void FeedRangePK_None_ToJsonFromJson()
+        {
+            FeedRangePartitionKey feedRange = new FeedRangePartitionKey(PartitionKey.None);
+            string range = feedRange.ToJsonString();
+            FeedRangePartitionKey other = Cosmos.FeedRange.FromJsonString(range) as FeedRangePartitionKey;
+            Assert.AreEqual(feedRange.PartitionKey, other.PartitionKey);
+
+            PartitionKey partitionKeyStringNone = new PartitionKey("None");
+            FeedRangePartitionKey withNoneAsValue = new FeedRangePartitionKey(partitionKeyStringNone);
+            string withNoneAsValueAsString = withNoneAsValue.ToJsonString();
+            Assert.AreNotEqual(range, withNoneAsValueAsString);
+            FeedRangePartitionKey withNoneAsValueAsStringDeserialized = Cosmos.FeedRange.FromJsonString(withNoneAsValueAsString) as FeedRangePartitionKey;
+            Assert.AreNotEqual(feedRange.PartitionKey, withNoneAsValueAsStringDeserialized.PartitionKey);
+            Assert.AreEqual(partitionKeyStringNone, withNoneAsValueAsStringDeserialized.PartitionKey);
+        }
+
+        [TestMethod]
+        public void FeedRangePK_Null_ToJsonFromJson()
+        {
+            FeedRangePartitionKey feedRange = new FeedRangePartitionKey(PartitionKey.Null);
+            string range = feedRange.ToJsonString();
+            FeedRangePartitionKey other = Cosmos.FeedRange.FromJsonString(range) as FeedRangePartitionKey;
+            Assert.AreEqual(feedRange.PartitionKey, other.PartitionKey);
+        }
+
+        [TestMethod]
         public void FeedRangePKRangeId_ToJsonFromJson()
         {
             string pkRangeId = Guid.NewGuid().ToString();

@@ -93,6 +93,19 @@ namespace Microsoft.Azure.Cosmos
         public PartitionKey? PartitionKey { get; set; }
 
         /// <summary>
+        /// Gets or sets the <see cref="PopulateIndexMetrics"/> request option for document query requests in the Azure Cosmos DB service.
+        /// </summary>
+        /// <remarks>
+        /// <para> 
+        /// PopulateIndexMetrics is used to obtain the index metrics to understand how the query engine used existing indexes 
+        /// and how it could use potential new indexes.
+        /// The results will be displayed in FeedResponse.IndexMetrics. Please note that this options will incur overhead, so it should be 
+        /// enabled only when debugging slow queries.
+        /// </para>
+        /// </remarks>
+        public bool? PopulateIndexMetrics { get; set; }
+
+        /// <summary>
         /// Gets or sets the consistency level required for the request in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -147,12 +160,7 @@ namespace Microsoft.Azure.Cosmos
         /// These options are only exercised when <see cref="ConnectionMode"/> is set to ConnectionMode.Gateway and the dedicated gateway endpoint is used for sending requests. 
         /// These options have no effect otherwise.
         /// </summary>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-            DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
+        public DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
 
         internal CosmosElement CosmosElementContinuationToken { get; set; }
 
@@ -194,7 +202,7 @@ namespace Microsoft.Azure.Cosmos
             // Flow the pageSize only when we are not doing client eval
             if (this.MaxItemCount.HasValue)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.PageSize, this.MaxItemCount.ToString());
+                request.Headers.CosmosMessageHeaders.PageSize = this.MaxItemCount.ToString();
             }
 
             if (this.MaxConcurrency.HasValue && this.MaxConcurrency > 0)
@@ -219,7 +227,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.CosmosSerializationFormatOptions != null)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, this.CosmosSerializationFormatOptions.ContentSerializationFormat);
+                request.Headers.CosmosMessageHeaders.ContentSerializationFormat = this.CosmosSerializationFormatOptions.ContentSerializationFormat;
             }
 
             if (this.StartId != null)
@@ -240,6 +248,11 @@ namespace Microsoft.Azure.Cosmos
             if (this.EnumerationDirection.HasValue)
             {
                 request.Headers.Set(HttpConstants.HttpHeaders.EnumerationDirection, this.EnumerationDirection.Value.ToString());
+            }
+
+            if (this.PopulateIndexMetrics.HasValue)
+            {
+                request.Headers.CosmosMessageHeaders.Add(HttpConstants.HttpHeaders.PopulateIndexMetrics, this.PopulateIndexMetrics.ToString());
             }
 
             DedicatedGatewayRequestOptions.PopulateMaxIntegratedCacheStalenessOption(this.DedicatedGatewayRequestOptions, request);

@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Collection<T> responseCollection = new Collection<T>();
             string responseContinuation = null;
 
-            if (headers == null) headers = new StoreRequestNameValueCollection();
+            if (headers == null) headers = new Documents.Collections.RequestNameValueCollection();
 
             do
             {

@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocation.Value.GetOrAdd(
                 partitionKeyRange,
-                new PartitionKeyRangeFailoverInfo(failedLocation));
+                (_) => new PartitionKeyRangeFailoverInfo(failedLocation));
 
             // Will return true if it was able to update to a new region
             if (partionFailover.TryMoveNextLocation(

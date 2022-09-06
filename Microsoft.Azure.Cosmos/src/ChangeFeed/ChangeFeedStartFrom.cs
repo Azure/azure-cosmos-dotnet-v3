@@ -13,12 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// Base class for where to start a ChangeFeed operation in <see cref="ChangeFeedRequestOptions"/>.
     /// </summary>
     /// <remarks>Use one of the static constructors to generate a StartFrom option.</remarks>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-        abstract class ChangeFeedStartFrom
+    public abstract class ChangeFeedStartFrom
     {
         /// <summary>
         /// Initializes an instance of the <see cref="ChangeFeedStartFrom"/> class.

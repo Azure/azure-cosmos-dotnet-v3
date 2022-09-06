@@ -9,6 +9,7 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
+    [TestCategory("Query")]
     public sealed class NegativeQueryTests : QueryTestsBase
     {
         [TestMethod]

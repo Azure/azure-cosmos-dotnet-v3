@@ -11,18 +11,22 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Data.Encryption.Cryptography;
 
     internal sealed class EncryptionSettings
     {
-        // TODO: Good to have constants available in the Cosmos SDK. Tracked via https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2431
-        private const string IntendedCollectionHeader = "x-ms-cosmos-intended-collection-rid";
-
-        private const string IsClientEncryptedHeader = "x-ms-cosmos-is-client-encrypted";
-
         private readonly Dictionary<string, EncryptionSettingForProperty> encryptionSettingsDictByPropertyName;
 
+        private EncryptionSettings(string containerRidValue, IReadOnlyList<string> partitionKeyPath)
+        {
+            this.ContainerRidValue = containerRidValue;
+            this.PartitionKeyPaths = partitionKeyPath;
+            this.encryptionSettingsDictByPropertyName = new Dictionary<string, EncryptionSettingForProperty>();
+            this.PropertiesToEncrypt = this.encryptionSettingsDictByPropertyName.Keys;
+        }
+
         public string ContainerRidValue { get; }
+
+        public IReadOnlyList<string> PartitionKeyPaths { get; }
 
         public IEnumerable<string> PropertiesToEncrypt { get; }
 
@@ -42,24 +46,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             requestOptions.AddRequestHeaders = (headers) =>
             {
-                headers.Add(IsClientEncryptedHeader, bool.TrueString);
-                headers.Add(IntendedCollectionHeader, this.ContainerRidValue);
+                headers.Add(Constants.IsClientEncryptedHeader, bool.TrueString);
+                headers.Add(Constants.IntendedCollectionHeader, this.ContainerRidValue);
             };
         }
 
-        private EncryptionSettings(string containerRidValue)
-        {
-            this.ContainerRidValue = containerRidValue;
-            this.encryptionSettingsDictByPropertyName = new Dictionary<string, EncryptionSettingForProperty>();
-            this.PropertiesToEncrypt = this.encryptionSettingsDictByPropertyName.Keys;
-        }
-
-        private static EncryptionType GetEncryptionTypeForProperty(ClientEncryptionIncludedPath clientEncryptionIncludedPath)
+        private static Data.Encryption.Cryptography.EncryptionType GetEncryptionTypeForProperty(ClientEncryptionIncludedPath clientEncryptionIncludedPath)
         {
             return clientEncryptionIncludedPath.EncryptionType switch
             {
-                CosmosEncryptionType.Deterministic => EncryptionType.Deterministic,
-                CosmosEncryptionType.Randomized => EncryptionType.Randomized,
+                EncryptionType.Deterministic => Data.Encryption.Cryptography.EncryptionType.Deterministic,
+                EncryptionType.Randomized => Data.Encryption.Cryptography.EncryptionType.Randomized,
                 _ => throw new ArgumentException($"Invalid encryption type {clientEncryptionIncludedPath.EncryptionType}. Please refer to https://aka.ms/CosmosClientEncryption for more details. "),
             };
         }
@@ -79,13 +76,32 @@ namespace Microsoft.Azure.Cosmos.Encryption
             // set the Container Rid.
             string containerRidValue = containerResponse.Resource.SelfLink.Split('/').ElementAt(3);
 
+            IReadOnlyList<string> partitionKeyPaths = null;
+
+#if ENCRYPTIONPREVIEW
+            if (containerResponse.Resource.PartitionKeyPaths.Any())
+            {
+                partitionKeyPaths = containerResponse.Resource.PartitionKeyPaths;
+            }
+            else
+#endif
+            {
+                partitionKeyPaths = new List<string> { containerResponse.Resource.PartitionKeyPath };
+            }
+
             // set the ClientEncryptionPolicy for the Settings.
             ClientEncryptionPolicy clientEncryptionPolicy = containerResponse.Resource.ClientEncryptionPolicy;
 
-            EncryptionSettings encryptionSettings = new EncryptionSettings(containerRidValue);
+            EncryptionSettings encryptionSettings = new EncryptionSettings(containerRidValue, partitionKeyPaths);
 
             if (clientEncryptionPolicy != null)
             {
+                if (clientEncryptionPolicy.PolicyFormatVersion > Constants.SupportedClientEncryptionPolicyFormatVersion)
+                {
+                    throw new InvalidOperationException("This version of Microsoft.Azure.Cosmos.Encryption cannot be used with this container." +
+                        " Please upgrade to the latest version of the same. Please refer to https://aka.ms/CosmosClientEncryption for more details.");
+                }
+
                 // for each of the unique keys in the policy Add it in /Update the cache.
                 foreach (string clientEncryptionKeyId in clientEncryptionPolicy.IncludedPaths.Select(x => x.ClientEncryptionKeyId).Distinct())
                 {
@@ -93,13 +109,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
                          clientEncryptionKeyId: clientEncryptionKeyId,
                          encryptionContainer: encryptionContainer,
                          databaseRid: databaseRidValue,
+                         ifNoneMatchEtag: null,
+                         shouldForceRefresh: false,
                          cancellationToken: cancellationToken);
                 }
 
                 // update the property level setting.
                 foreach (ClientEncryptionIncludedPath propertyToEncrypt in clientEncryptionPolicy.IncludedPaths)
                 {
-                    EncryptionType encryptionType = GetEncryptionTypeForProperty(propertyToEncrypt);
+                    Data.Encryption.Cryptography.EncryptionType encryptionType = GetEncryptionTypeForProperty(propertyToEncrypt);
 
                     EncryptionSettingForProperty encryptionSettingsForProperty = new EncryptionSettingForProperty(
                         propertyToEncrypt.ClientEncryptionKeyId,

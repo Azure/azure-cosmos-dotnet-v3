@@ -25,6 +25,11 @@ namespace CosmosBenchmark
 
         public static void Log(CosmosDiagnostics cosmosDiagnostics)
         {
+            if (cosmosDiagnostics == null)
+            {
+                return;
+            }
+
             TimeSpan elapsedTime = cosmosDiagnostics.GetClientElapsedTime();
             // Require the diagnostics to be at least 10 seconds apart to avoid getting the
             // diagnostics from the exact same time frame to avoid the same issue multiple times

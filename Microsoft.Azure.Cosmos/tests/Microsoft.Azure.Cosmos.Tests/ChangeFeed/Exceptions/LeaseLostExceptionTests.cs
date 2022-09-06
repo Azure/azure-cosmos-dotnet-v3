@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
 
     [TestClass]
     [TestCategory("ChangeFeed")]
@@ -63,13 +64,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore() { LeaseId = "id" };
             LeaseLostException originalException = new LeaseLostException(lease, new Exception("foo"), true);
-            byte[] buffer = new byte[4096];
-            BinaryFormatter formatter = new BinaryFormatter();
-            MemoryStream stream1 = new MemoryStream(buffer);
-            MemoryStream stream2 = new MemoryStream(buffer);
 
-            formatter.Serialize(stream1, originalException);
-            LeaseLostException deserializedException = (LeaseLostException)formatter.Deserialize(stream2);
+            string serialized = JsonConvert.SerializeObject(originalException);
+            LeaseLostException deserializedException = JsonConvert.DeserializeObject<LeaseLostException>(serialized);
 
             Assert.AreEqual(originalException.Message, deserializedException.Message);
             Assert.AreEqual(originalException.InnerException.Message, deserializedException.InnerException.Message);
@@ -82,13 +79,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void ValidateSerialization_NullFields()
         {
             LeaseLostException originalException = new LeaseLostException("message");
-            byte[] buffer = new byte[4096];
-            BinaryFormatter formatter = new BinaryFormatter();
-            MemoryStream stream1 = new MemoryStream(buffer);
-            MemoryStream stream2 = new MemoryStream(buffer);
 
-            formatter.Serialize(stream1, originalException);
-            LeaseLostException deserializedException = (LeaseLostException)formatter.Deserialize(stream2);
+            string serialized = JsonConvert.SerializeObject(originalException);
+            LeaseLostException deserializedException = JsonConvert.DeserializeObject<LeaseLostException>(serialized);
 
             Assert.AreEqual(originalException.Message, deserializedException.Message);
             Assert.IsNull(deserializedException.InnerException);

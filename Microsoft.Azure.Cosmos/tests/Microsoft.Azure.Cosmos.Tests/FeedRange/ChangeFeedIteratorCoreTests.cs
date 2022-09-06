@@ -12,9 +12,10 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -208,6 +209,199 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             Assert.AreEqual(numItems, count, seed);
         }
 
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_OnCosmosException_HasMoreResults()
+        {
+            CosmosException exception = CosmosExceptionFactory.CreateInternalServerErrorException("something's broken", new Headers());
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
+                numItems:0,
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                    inject429s: false, 
+                    injectEmptyPages: false,
+                    returnFailure: exception));
+
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Now(),
+                this.MockClientContext());
+
+            ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+            Assert.AreEqual(HttpStatusCode.InternalServerError, responseMessage.StatusCode);
+            Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
+        }
+
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_OnRetriableCosmosException_HasMoreResults()
+        {
+            CosmosException exception = CosmosExceptionFactory.CreateThrottledException("retry", new Headers());
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
+                numItems: 0,
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                    inject429s: false,
+                    injectEmptyPages: false,
+                    returnFailure: exception));
+
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning(),
+                this.MockClientContext());
+
+            ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+            Assert.AreEqual(HttpStatusCode.TooManyRequests, responseMessage.StatusCode);
+            Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
+        }
+
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_OnNonCosmosExceptions_HasMoreResults()
+        {
+            Exception exception = new NotImplementedException();
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
+                numItems: 0,
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                    inject429s: false,
+                    injectEmptyPages: false,
+                    returnFailure: exception));
+
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning(),
+                this.MockClientContext());
+
+            try
+            {
+                ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+                Assert.Fail("Should have thrown");
+            }
+            catch (Exception ex)
+            {
+                Assert.AreEqual(exception, ex);
+                Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
+            }
+        }
+
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_OnTaskCanceledException_HasMoreResultsAndDiagnostics()
+        {
+            Exception exception = new TaskCanceledException();
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
+                numItems: 0,
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                    inject429s: false,
+                    injectEmptyPages: false,
+                    throwException: exception));
+
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning(),
+                this.MockClientContext());
+
+            try
+            {
+                ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+                Assert.Fail("Should have thrown");
+            }
+            catch (OperationCanceledException ex)
+            {
+                Assert.IsTrue(ex is CosmosOperationCanceledException);
+                Assert.IsNotNull(((CosmosOperationCanceledException)ex).Diagnostics);
+                Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
+            }
+        }
+
+        /// <summary>
+        /// If an unhandled exception occurs within the NetworkAttachedDocumentContainer, the exception is transmitted but it does not break the enumerators
+        /// </summary>
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_OnUnhandledException_HasMoreResults()
+        {
+            Exception exception = new Exception("oh no");
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
+                numItems: 0,
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                    inject429s: false,
+                    injectEmptyPages: false,
+                    throwException: exception));
+
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning(),
+                this.MockClientContext());
+
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+            try
+            {
+                ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+                Assert.Fail("Should have thrown");
+            }
+            catch (Exception ex)
+            {
+                Assert.AreEqual(exception, ex);
+                Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
+            }
+
+            // If read a second time, it should not throw any missing page errors related to enumerators
+            try
+            {
+                ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+                Assert.Fail("Should have thrown");
+            }
+            catch (Exception ex)
+            {
+                // TryCatch wraps any exception
+                Assert.AreEqual(exception, ex);
+                Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
+            }
+        }
+
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_CancellationToken_FlowsThrough()
+        {
+            // Generate constant 429
+            CosmosException exception = CosmosExceptionFactory.CreateThrottledException("retry", new Headers());
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
+                numItems: 0,
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                    inject429s: false,
+                    injectEmptyPages: false,
+                    returnFailure: exception));
+
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning(),
+                this.MockClientContext());
+
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+            try
+            {
+                // First request triggers initialization, we don't cancel it
+                ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+                Assert.AreEqual(HttpStatusCode.TooManyRequests, responseMessage.StatusCode);
+
+                // Should be initialized, let's see if cancellation flows through
+                await changeFeedIteratorCore.ReadNextAsync(cancellationTokenSource.Token);
+                Assert.Fail("Should have thrown");
+            }
+            catch (OperationCanceledException)
+            {
+            }
+
+            Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
+        }
+
         private static CosmosArray GetChanges(Stream stream)
         {
             using (MemoryStream memoryStream = new MemoryStream())
@@ -280,10 +474,11 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
+                It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, TraceComponent, TraceLevel>(
-                (operationName, requestOptions, func, comp, level) => func(NoOpTrace.Singleton));
+               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
+                (operationName, requestOptions, func, oTelFunc, comp, level) => func(NoOpTrace.Singleton));
 
             return mockContext.Object;
         }

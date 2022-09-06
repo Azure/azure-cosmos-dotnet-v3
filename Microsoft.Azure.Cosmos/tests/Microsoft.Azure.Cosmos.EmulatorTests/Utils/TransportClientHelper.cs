@@ -37,12 +37,30 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     transportExceptionSourceDescription));
         }
 
+        internal static Container GetContainerWithItemServiceUnavailableException(
+            string databaseId,
+            string containerId,
+            Guid activityId,
+            string serviceUnavailableExceptionSourceDescription)
+        {
+            return GetContainerWithIntercepter(
+                databaseId,
+                containerId,
+                (uri, resourceOperation, request) => TransportClientHelper.ThrowServiceUnavailableExceptionOnItemOperation(
+                    uri,
+                    resourceOperation,
+                    request,
+                    activityId,
+                    serviceUnavailableExceptionSourceDescription));
+        }
+
         internal static Container GetContainerWithIntercepter(
             string databaseId,
             string containerId,
             Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor,
             bool useGatewayMode = false,
-            Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> interceptorWithStoreResult = null)
+            Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> interceptorWithStoreResult = null,
+            ISessionContainer sessionContainer = null)
         {
             CosmosClient clientWithIntercepter = TestCommon.CreateCosmosClient(
                builder =>
@@ -50,6 +68,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                    if (useGatewayMode)
                    {
                        builder.WithConnectionModeGateway();
+                   }
+
+                   if (sessionContainer != null)
+                   {
+                       builder.WithSessionContainer(sessionContainer);
                    }
 
                    builder.WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
@@ -70,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             if (request.ResourceType == ResourceType.Document)
             {
-                StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+                RequestNameValueCollection headers = new();
                 headers.Add(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
                 headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.WriteForbidden).ToString(CultureInfo.InvariantCulture));
                 headers.Add(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, TimeSpan.FromMilliseconds(100).TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
@@ -112,6 +135,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        public static void ThrowServiceUnavailableExceptionOnItemOperation(
+                Uri physicalAddress,
+                ResourceOperation resourceOperation,
+                DocumentServiceRequest request,
+                Guid activityId,
+                string transportExceptionSourceDescription)
+        {
+            if (request.ResourceType == ResourceType.Document)
+            {
+                TransportException transportException = new TransportException(
+                    errorCode: TransportErrorCode.RequestTimeout,
+                    innerException: null,
+                    activityId: activityId,
+                    requestUri: physicalAddress,
+                    sourceDescription: transportExceptionSourceDescription,
+                    userPayload: true,
+                    payloadSent: false);
+
+                throw Documents.Rntbd.TransportExceptions.GetServiceUnavailableException(physicalAddress, Guid.NewGuid(),
+                    transportException);
+            }
+        }
+
         public static void ThrowForbiddendExceptionOnItemOperation(
                 Uri physicalAddress,
                 DocumentServiceRequest request,
@@ -120,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             if (request.ResourceType == ResourceType.Document)
             {
-                StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+                RequestNameValueCollection headers = new();
                 headers.Add(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
                 headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.WriteForbidden).ToString(CultureInfo.InvariantCulture));
                 headers.Add(HttpConstants.HttpHeaders.RequestCharge, ((double)9001).ToString(CultureInfo.InvariantCulture));
@@ -139,18 +185,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             private readonly TransportClient baseClient;
             private readonly Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor;
             private readonly Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> interceptorWithStoreResult;
+            private readonly Func<DocumentServiceRequest, StoreResponse, StoreResponse> interceptorAfterResult;
 
             internal TransportClientWrapper(
                 TransportClient client,
-                Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor,
-                Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> interceptorWithStoreResult = null)
+                Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor = null,
+                Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> interceptorWithStoreResult = null,
+                Func<DocumentServiceRequest, StoreResponse, StoreResponse> interceptorAfterResult = null)
             {
                 Debug.Assert(client != null);
-                Debug.Assert(interceptor != null);
-
                 this.baseClient = client;
                 this.interceptor = interceptor;
                 this.interceptorWithStoreResult = interceptorWithStoreResult;
+                this.interceptorAfterResult = interceptorAfterResult;
             }
 
             internal TransportClientWrapper(
@@ -181,7 +228,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
 
-                return await this.baseClient.InvokeStoreAsync(physicalAddress, resourceOperation, request);
+                StoreResponse result = await this.baseClient.InvokeStoreAsync(physicalAddress, resourceOperation, request);
+                if (this.interceptorAfterResult != null)
+                {
+                    return this.interceptorAfterResult(request, result);
+                }
+
+                return result;
             }
         }
     }

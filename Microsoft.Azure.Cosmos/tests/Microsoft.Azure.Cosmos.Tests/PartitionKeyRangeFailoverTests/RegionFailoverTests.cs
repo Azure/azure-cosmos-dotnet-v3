@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // testhost.dll.config sets it to 2 seconds which causes it to always expire before retrying. Remove the override.
             System.Configuration.ConfigurationManager.AppSettings["UnavailableLocationsExpirationTimeInSeconds"] = "500";
 
-            string accountName = "testAccount";
+            string accountName = nameof(TestHttpRequestExceptionScenarioAsync);
             string primaryRegionNameForUri = "eastus";
             string secondaryRegionNameForUri = "westus";
             string globalEndpoint = $"https://{accountName}.documents.azure.com:443/";
@@ -95,13 +95,13 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             int count = 0;
             mockHttpHandler.Setup(x => x.SendAsync(
-               It.Is<HttpRequestMessage>(x => x.RequestUri ==  new Uri(secondaryRegionEndpiont)),
+               It.Is<HttpRequestMessage>(x => x.RequestUri == new Uri(secondaryRegionEndpiont)),
                It.IsAny<CancellationToken>()))
                .Returns<HttpRequestMessage, CancellationToken>((request, cancellationToken) =>
                {
                    // Simulate the legacy gateway being down. After 40 requests simulate the write region pointing to new location.
                    count++;
-                   if(count < 2)
+                   if (count < 2)
                    {
                        return Task.FromResult(MockSetupsHelper.CreateStrongAccount(accountName, writeRegion, readRegions));
                    }
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                    {
                        return Task.FromResult(MockSetupsHelper.CreateStrongAccount(accountName, writeRegionFailedOver, readRegionsFailedOver));
                    }
-                });
+               });
 
 
             MockSetupsHelper.SetupContainerProperties(
@@ -167,43 +167,47 @@ namespace Microsoft.Azure.Cosmos.Tests
                 TransportClientHandlerFactory = (original) => mockTransport.Object,
             };
 
-            CosmosClient customClient = new CosmosClient(
+            using (CosmosClient customClient = new CosmosClient(
                 globalEndpoint,
                 Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
-                cosmosClientOptions);
-
-            Container container = customClient.GetContainer(databaseName, containerName);
-
-            ToDoActivity toDoActivity = new ToDoActivity()
+                cosmosClientOptions))
             {
-                Id = "TestItem",
-                Pk = "TestPk"
-            };
+                Container container = customClient.GetContainer(databaseName, containerName);
 
-            ItemResponse<ToDoActivity> response = await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
-            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-            mockTransport.VerifyAll();
-            mockHttpHandler.VerifyAll();
+                ToDoActivity toDoActivity = new ToDoActivity()
+                {
+                    Id = "TestItem",
+                    Pk = "TestPk"
+                };
 
-            // Clears all the setups. No network calls should be done on the next operation.
-            mockHttpHandler.Reset();
-            mockTransport.Reset();
+                ItemResponse<ToDoActivity> response = await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                mockTransport.VerifyAll();
+                mockHttpHandler.VerifyAll();
 
-            MockSetupsHelper.SetupCreateItemResponse(
-                mockTransport,
-                secondaryRegionPrimaryReplicaUri);
+                // Clears all the setups. No network calls should be done on the next operation.
+                mockHttpHandler.Reset();
+                mockTransport.Reset();
 
-            ToDoActivity toDoActivity2 = new ToDoActivity()
-            {
-                Id = "TestItem2",
-                Pk = "TestPk"
-            };
+                MockSetupsHelper.SetupCreateItemResponse(
+                    mockTransport,
+                    secondaryRegionPrimaryReplicaUri);
 
-            response = await container.CreateItemAsync(toDoActivity2, new Cosmos.PartitionKey(toDoActivity2.Pk));
-            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                ToDoActivity toDoActivity2 = new ToDoActivity()
+                {
+                    Id = "TestItem2",
+                    Pk = "TestPk"
+                };
 
-            // Reset it back to the override to avoid impacting other tests.
-            System.Configuration.ConfigurationManager.AppSettings["UnavailableLocationsExpirationTimeInSeconds"] = "2";
+                response = await container.CreateItemAsync(toDoActivity2, new Cosmos.PartitionKey(toDoActivity2.Pk));
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                mockTransport.Setup(x => x.Dispose());
+
+                // Reset it back to the override to avoid impacting other tests.
+                System.Configuration.ConfigurationManager.AppSettings["UnavailableLocationsExpirationTimeInSeconds"] = "2";
+            }
+
+            await Task.Delay(TimeSpan.FromMinutes(2));
         }
     }
 }

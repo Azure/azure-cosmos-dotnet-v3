@@ -7,6 +7,9 @@ namespace CosmosCTL
     public enum WorkloadType
     {
         ReadWriteQuery,
-        ChangeFeedProcessor
+        ChangeFeedProcessor,
+        ChangeFeedPull,
+        Query,
+        ReadMany
     }
 }

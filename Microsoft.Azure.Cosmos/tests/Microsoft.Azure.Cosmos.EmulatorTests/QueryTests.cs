@@ -607,7 +607,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 doc.StringField = "222";
                 Document documentDefinition = (Document)doc;
                 documentDefinition.SetPropertyValue("pk", "test");
-                INameValueCollection requestHeaders = new StoreRequestNameValueCollection
+                INameValueCollection requestHeaders = new Documents.Collections.RequestNameValueCollection()
                 {
                     { "x-ms-indexing-directive", "exclude" }
                 };
@@ -645,7 +645,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     StringField = "333",
                 };
                 doc.SetPropertyValue("pk", "test");
-                INameValueCollection requestHeaders = new StoreRequestNameValueCollection
+                INameValueCollection requestHeaders = new Documents.Collections.RequestNameValueCollection()
                 {
                     { "x-ms-indexing-directive", "include" }
                 };
@@ -800,7 +800,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     sourceCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
                     DocumentCollection collection = testClient.Create<DocumentCollection>(database.GetIdOrFullName(), sourceCollection);
 
-                    INameValueCollection requestHeaders = new StoreRequestNameValueCollection
+                    INameValueCollection requestHeaders = new Documents.Collections.RequestNameValueCollection()
                     {
                         { "x-ms-indexing-directive", "include" }
                     };
@@ -1681,7 +1681,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 SqlQuerySpec querySpec = new SqlQuerySpec(string.Format("SELECT * FROM r"));
                 using (HttpClient httpClient = new HttpClient())
                 {
-                    StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+                    RequestNameValueCollection headers = new();
                     httpClient.AddMasterAuthorizationHeader("post", coll.ResourceId, "docs", headers, masterKey);
                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.EnableScanInQuery, bool.TrueString);
@@ -1822,54 +1822,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 return this.client.DeleteDatabaseAsync(database).Result;
             });
-        }
-
-        [Ignore] // Ignore until backend index utilization is on by default and other query metrics test are completed
-        [TestMethod]
-        public async Task TestIndexUtilizationParsing()
-        {
-
-            Database database = await this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() });
-
-            DocumentCollection collection;
-            RequestOptions options = new RequestOptions();
-            
-            collection = new DocumentCollection()
-            {
-                Id = Guid.NewGuid().ToString()
-            };
-
-            options.OfferThroughput = 10000;
-
-            collection = await TestCommon.CreateCollectionAsync(this.client, database, collection, options);
-
-            int maxDocumentCount = 2000;
-            for (int i = 0; i < maxDocumentCount; i++)
-            {
-                QueryDocument doc = new QueryDocument()
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    NumericField = i,
-                    StringField = i.ToString(CultureInfo.InvariantCulture),
-                };
-
-                await this.client.CreateDocumentAsync(collection, doc);
-            }
-
-            DocumentFeedResponse<dynamic> result = await this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r WHERE r.name = 'Julien' and r.age > 12", new FeedOptions() { PopulateQueryMetrics = true, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync();
-            Assert.IsNotNull(result.ResponseHeaders[WFConstants.BackendHeaders.QueryMetrics], "Expected metrics headers for query");
-            Assert.IsNotNull(result.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization], "Expected index utilization headers for query"); 
-
-            QueryMetrics queryMetrics = new QueryMetrics(
-                BackendMetrics.ParseFromDelimitedString(result.ResponseHeaders[WFConstants.BackendHeaders.QueryMetrics]),
-                IndexUtilizationInfo.CreateFromString(result.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization]),
-                ClientSideMetrics.Empty);
-            
-            // If these fields populate then the parsing is successful and correct.
-            Assert.AreEqual("/name/?", queryMetrics.IndexUtilizationInfo.UtilizedSingleIndexes[0].IndexDocumentExpression);
-            Assert.AreEqual(String.Join(", ", new object[] { "/name ASC", "/age ASC" }), String.Join(", ", queryMetrics.IndexUtilizationInfo.PotentialCompositeIndexes[0].IndexDocumentExpressions));
-            
-            await this.client.DeleteDatabaseAsync(database);
         }
 
         [TestMethod]
@@ -2335,7 +2287,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             string indexUtilization = response.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization];
 
                             QueryMetrics queryMetrics = new QueryMetrics(
-                                BackendMetrics.ParseFromDelimitedString(responseQueryMetrics),
+                                responseQueryMetrics,
                                 IndexUtilizationInfo.CreateFromString(indexUtilization),
                                 ClientSideMetrics.Empty);
                             this.ValidateQueryMetrics(queryMetrics);
@@ -2597,7 +2549,7 @@ function sproc(feed) {
                     StringField = index.ToString(CultureInfo.InvariantCulture),
                 };
                 doc.SetPropertyValue("pk", "test");
-                INameValueCollection headers = new StoreRequestNameValueCollection();
+                INameValueCollection headers = new Documents.Collections.RequestNameValueCollection();
                 if (!collection.IndexingPolicy.Automatic && manualIndex)
                 {
                     headers.Add("x-ms-indexing-directive", "include");
@@ -2668,7 +2620,7 @@ function sproc(feed) {
                     StringField = index.ToString(CultureInfo.InvariantCulture),
                 };
 
-                INameValueCollection headers = new StoreRequestNameValueCollection();
+                INameValueCollection headers = new Documents.Collections.RequestNameValueCollection();
                 if (!collection.IndexingPolicy.Automatic && manualIndex)
                 {
                     headers.Add("x-ms-indexing-directive", "include");
@@ -2738,7 +2690,7 @@ function sproc(feed) {
             {
                 if (path.Path.Equals(expectedPathName))
                 {
-                    foreach (Index index in path.Indexes)
+                    foreach (Documents.Index index in path.Indexes)
                     {
                         if (index.Kind.Equals(expextedIndexKind))
                         {

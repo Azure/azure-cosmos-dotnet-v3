@@ -41,5 +41,10 @@ namespace Microsoft.Azure.Cosmos
         {
             return httpMethod == HttpMethod.Get;
         }
+
+        public override bool ShouldRetryBasedOnResponse(HttpMethod requestHttpMethod, HttpResponseMessage responseMessage)
+        {
+            return false;
+        }
     }
 }

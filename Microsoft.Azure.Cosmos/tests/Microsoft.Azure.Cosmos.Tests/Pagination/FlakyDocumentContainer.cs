@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 cancellationToken);
         }
 
-        public Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(
+        public async Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(
             FeedRangeState<ReadFeedState> feedRangeState,
             ReadFeedPaginationOptions readFeedPaginationOptions,
             ITrace trace,
@@ -115,31 +115,36 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             if (this.ShouldReturn429())
             {
-                return Throttle.ForReadFeed;
+                return await Throttle.ForReadFeed;
             }
 
             if (this.ShouldReturnEmptyPage())
             {
                 // We can't return a null continuation, since that signals the query has ended.
                 ReadFeedState nonNullState = readFeedState ?? ReadFeedNotStartedState;
-                return Task.FromResult(
-                    TryCatch<ReadFeedPage>.FromResult(
+                return TryCatch<ReadFeedPage>.FromResult(
                         new ReadFeedPage(
                             new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\": [], \"_count\": 0, \"_rid\": \"asdf\"}")),
                             requestCharge: 42,
                             activityId: Guid.NewGuid().ToString(),
                             additionalHeaders: null,
-                            state: nonNullState)));
+                            state: nonNullState));
             }
 
-            return this.documentContainer.MonadicReadFeedAsync(
+            Exception failure = await this.ShouldReturnFailure();
+            if (failure != null)
+            {
+                return TryCatch<ReadFeedPage>.FromException(failure);
+            }
+
+            return await this.documentContainer.MonadicReadFeedAsync(
                 feedRangeState,
                 readFeedPaginationOptions,
                 trace,
                 cancellationToken);
         }
 
-        public Task<TryCatch<QueryPage>> MonadicQueryAsync(
+        public async Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
             QueryPaginationOptions queryPaginationOptions,
@@ -153,13 +158,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             if (this.ShouldReturn429())
             {
-                return Throttle.ForQuery;
+                return await Throttle.ForQuery;
             }
 
             if (this.ShouldReturnEmptyPage())
             {
-                return Task.FromResult(
-                    TryCatch<QueryPage>.FromResult(
+                return TryCatch<QueryPage>.FromResult(
                         new QueryPage(
                             documents: new List<CosmosElement>(),
                             requestCharge: 42,
@@ -168,10 +172,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             cosmosQueryExecutionInfo: default,
                             disallowContinuationTokenMessage: default,
                             additionalHeaders: default,
-                            state: feedRangeState.State ?? StateForStartedButNoDocumentsReturned)));
+                            state: feedRangeState.State ?? StateForStartedButNoDocumentsReturned));
             }
 
-            return this.documentContainer.MonadicQueryAsync(
+            Exception failure = await this.ShouldReturnFailure();
+            if (failure != null)
+            {
+                return TryCatch<QueryPage>.FromException(failure);
+            }
+
+            return await this.documentContainer.MonadicQueryAsync(
                 sqlQuerySpec,
                 feedRangeState,
                 queryPaginationOptions,
@@ -179,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 cancellationToken);
         }
 
-        public Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
+        public async Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
             FeedRangeState<ChangeFeedState> feedRangeState, 
             ChangeFeedPaginationOptions changeFeedPaginationOptions, 
             ITrace trace,
@@ -187,22 +197,32 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         {
             if (this.ShouldReturn429())
             {
-                return Throttle.ForChangeFeed;
+                return await Throttle.ForChangeFeed;
             }
 
             if (this.ShouldReturnEmptyPage())
             {
-                return Task.FromResult(
-                    TryCatch<ChangeFeedPage>.FromResult(
+                return TryCatch<ChangeFeedPage>.FromResult(
                         new ChangeFeedSuccessPage(
                             content: new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\": [], \"_count\": 0, \"_rid\": \"asdf\"}")),
                             requestCharge: 42,
                             activityId: Guid.NewGuid().ToString(),
                             additionalHeaders: default,
-                            state: feedRangeState.State)));
+                            state: feedRangeState.State));
             }
 
-            return this.documentContainer.MonadicChangeFeedAsync(
+            if (this.ShouldThrowException(out Exception exception))
+            {
+                throw exception;
+            }
+
+            Exception failure = await this.ShouldReturnFailure();
+            if (failure != null)
+            {
+                return TryCatch<ChangeFeedPage>.FromException(failure);
+            }
+
+            return await this.documentContainer.MonadicChangeFeedAsync(
                 feedRangeState,
                 changeFeedPaginationOptions,
                 trace,
@@ -253,17 +273,50 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             && this.failureConfigs.InjectEmptyPages
             && ((this.random.Next() % 2) == 0);
 
+        private bool ShouldThrowException(out Exception exception)
+        {
+            exception = this.failureConfigs.ThrowException;
+            return this.failureConfigs != null && this.failureConfigs.ThrowException != null;
+        }
+
+        private Task<Exception> ShouldReturnFailure()
+        {
+            return this.failureConfigs == null ? Task.FromResult<Exception>(null) : this.failureConfigs.ReturnFailure();
+        }
+
         public sealed class FailureConfigs
         {
-            public FailureConfigs(bool inject429s, bool injectEmptyPages)
+            public delegate Task<Exception> ShouldReturnFailure();
+
+            public FailureConfigs(
+                bool inject429s, 
+                bool injectEmptyPages,
+                Exception throwException = null,
+                Exception returnFailure = null)
             {
                 this.Inject429s = inject429s;
                 this.InjectEmptyPages = injectEmptyPages;
+                this.ThrowException = throwException;
+                this.ReturnFailure = () => Task.FromResult(returnFailure);
+            }
+
+            public FailureConfigs(
+                bool inject429s,
+                bool injectEmptyPages,
+                ShouldReturnFailure shouldReturnFailure)
+            {
+                this.Inject429s = inject429s;
+                this.InjectEmptyPages = injectEmptyPages;
+                this.ReturnFailure = shouldReturnFailure;
             }
 
             public bool Inject429s { get; }
 
             public bool InjectEmptyPages { get; }
+
+            public Exception ThrowException { get; }
+
+            public ShouldReturnFailure ReturnFailure { get; }
         }
     }
 }

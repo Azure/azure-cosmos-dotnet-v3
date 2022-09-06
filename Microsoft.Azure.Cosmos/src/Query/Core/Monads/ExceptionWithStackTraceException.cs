@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 {
     using System;
     using System.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class ExceptionWithStackTraceException : Exception
     {
@@ -74,6 +75,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
         private string GetClassName()
         {
             return this.GetType().ToString();
+        }
+
+        public static Exception UnWrapMonadExcepion(
+            Exception exception,
+            ITrace trace)
+        {
+            if (exception is ExceptionWithStackTraceException exceptionWithStackTrace)
+            {
+                return ExceptionWithStackTraceException.UnWrapMonadExcepion(exceptionWithStackTrace.InnerException, trace);
+            }
+
+            if (!(exception is CosmosOperationCanceledException)
+                && exception is OperationCanceledException operationCanceledException)
+            {
+                return new CosmosOperationCanceledException(operationCanceledException, trace);
+            }
+
+            return exception;
         }
     }
 }

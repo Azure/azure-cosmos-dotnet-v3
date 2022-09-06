@@ -59,6 +59,49 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
+        public async Task ReadAsyncExpectedTimeoutTest()
+        {
+            ChangesHandler<MyDocument> handler = (changes, cancelationToken) =>
+            {
+                IReadOnlyList<MyDocument> list = changes as IReadOnlyList<MyDocument>;
+                Assert.IsNotNull(list);
+                Assert.AreEqual("test", list[0].id);
+                return Task.CompletedTask;
+            };
+            Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
+            Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
+                .Returns(async () =>
+                {
+                    await Task.Delay(200);
+                    return GetResponse(HttpStatusCode.OK, true);
+                });
+            mockIterator.SetupSequence(i => i.HasMoreResults).Returns(true).Returns(false);
+
+            CustomSerializer serializer = new CustomSerializer();
+            ChangeFeedObserverFactoryCore<MyDocument> factory = new ChangeFeedObserverFactoryCore<MyDocument>(handler, new CosmosSerializerCore(serializer));
+            ProcessorOptions options = new ProcessorOptions()
+            {
+                RequestTimeout = TimeSpan.FromMilliseconds(100)
+            };
+            FeedProcessorCore processor = new FeedProcessorCore(factory.CreateObserver(), mockIterator.Object, options, mockCheckpointer.Object);
+            
+            try
+            {
+                Task runTask = processor.RunAsync(default);
+                if (!ReferenceEquals(await Task.WhenAny(runTask, Task.Delay(1000)), runTask))
+                {
+                    Assert.Fail("Test timed out without throwing expected CosmosException.");
+                }
+            }
+            catch (CosmosException timeoutException)
+            {
+                Assert.AreEqual(timeoutException.StatusCode, HttpStatusCode.RequestTimeout);
+            }
+
+        }
+
+        [TestMethod]
         public async Task ThrowsOnFailedCustomSerializer()
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(1000);
@@ -73,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             ChangeFeedObserverFactoryCore<dynamic> factory = new ChangeFeedObserverFactoryCore<dynamic>(handler, new CosmosSerializerCore(serializer));
             FeedProcessorCore processor = new FeedProcessorCore(factory.CreateObserver(), mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object);
 
-            ObserverException caughtException = await Assert.ThrowsExceptionAsync<ObserverException>(() => processor.RunAsync(cancellationTokenSource.Token));
+            ChangeFeedProcessorUserException caughtException = await Assert.ThrowsExceptionAsync<ChangeFeedProcessorUserException>(() => processor.RunAsync(cancellationTokenSource.Token));
             Assert.IsInstanceOfType(caughtException.InnerException, typeof(CustomException));
         }
 
@@ -111,7 +154,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             FeedProcessorCore processor = new FeedProcessorCore(mockObserver.Object, mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object);
 
-            await Assert.ThrowsExceptionAsync<FeedNotFoundException>(() => processor.RunAsync(cancellationTokenSource.Token));
+            CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => processor.RunAsync(cancellationTokenSource.Token));
+            Assert.AreEqual(statusCode, cosmosException.StatusCode);
+            Assert.AreEqual(subStatusCode, (int)cosmosException.Headers.SubStatusCode);
         }
 
         [DataRow(HttpStatusCode.NotFound, (int)Documents.SubStatusCodes.ReadSessionNotAvailable)]
@@ -133,7 +178,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 FeedProcessorCoreTests.DefaultSettings,
                 mockCheckpointer.Object);
 
-            await Assert.ThrowsExceptionAsync<FeedReadSessionNotAvailableException>(() => processor.RunAsync(cancellationTokenSource.Token));
+            CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => processor.RunAsync(cancellationTokenSource.Token));
+            Assert.AreEqual(statusCode, cosmosException.StatusCode);
+            Assert.AreEqual(subStatusCode, (int)cosmosException.Headers.SubStatusCode);
         }
 
         private static ResponseMessage GetResponse(HttpStatusCode statusCode, bool includeItem, int subStatusCode = 0)

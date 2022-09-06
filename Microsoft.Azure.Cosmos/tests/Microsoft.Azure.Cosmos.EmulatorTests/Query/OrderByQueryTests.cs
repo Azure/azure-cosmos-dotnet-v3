@@ -22,6 +22,7 @@
     using Newtonsoft.Json;
 
     [TestClass]
+    [TestCategory("Query")]
     public sealed class OrderByQueryTests : QueryTestsBase
     {
         [TestMethod]
@@ -52,10 +53,9 @@
             Container container,
             IReadOnlyList<CosmosObject> documents)
         {
-            await QueryTestsBase.NoOp();
-
-            string[] expected = new[] { "documentId2", "documentId5", "documentId8" };
-            List<CosmosElement> query = await QueryTestsBase.RunQueryAsync(
+            string[] expectedOrdered = new[] { "documentId2", "documentId5", "documentId8" };
+            string[] expectedAll = new[] { "documentId1", "documentId2", "documentId3", "documentId4", "documentId5", "documentId6", "documentId7", "documentId8", "documentId9" };
+            List<CosmosElement> results = await QueryTestsBase.RunQueryAsync(
                 container,
                 "SELECT r.id FROM r ORDER BY r.prop DESC",
                 new QueryRequestOptions()
@@ -64,9 +64,12 @@
                     MaxConcurrency = 1,
                 });
 
-            Assert.AreEqual(
-                string.Join(", ", expected),
-                string.Join(", ", query.Select(doc => ((CosmosString)(doc as CosmosObject)["id"]).Value)));
+            string[] actual = results
+                .Select(doc => ((CosmosString)(doc as CosmosObject)["id"]).Value.ToString())
+                .ToArray();
+
+            CollectionAssert.AreEqual(expectedOrdered, actual.Take(expectedOrdered.Length).ToArray());
+            CollectionAssert.AreEquivalent(expectedAll, actual);
         }
 
         [TestMethod]
@@ -648,7 +651,7 @@
             };
 
             await this.CreateIngestQueryDeleteAsync(
-                ConnectionModes.Direct,
+                ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestMultiOrderByQueriesHelper,
@@ -959,7 +962,7 @@
                         {
                             if (!((CosmosObject)x).TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
                             {
-                                cosmosElement = null;
+                                cosmosElement = CosmosUndefined.Create();
                             }
 
                             return cosmosElement;
@@ -970,7 +973,7 @@
                         {
                             if (!x.TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
                             {
-                                cosmosElement = null;
+                                cosmosElement = CosmosUndefined.Create();
                             }
 
                             return cosmosElement;
@@ -1026,7 +1029,7 @@
                                     {
                                         if (!((CosmosObject)x).TryGetValue(switchColumns ? possiblyUndefinedFieldName : alwaysDefinedFieldName, out CosmosElement cosmosElement))
                                         {
-                                            cosmosElement = null;
+                                            cosmosElement = CosmosUndefined.Create();
                                         }
 
                                         return cosmosElement;
@@ -1036,7 +1039,7 @@
                                     {
                                         if (!((CosmosObject)x).TryGetValue(switchColumns ? possiblyUndefinedFieldName : alwaysDefinedFieldName, out CosmosElement cosmosElement))
                                         {
-                                            cosmosElement = null;
+                                            cosmosElement = CosmosUndefined.Create();
                                         }
 
                                         return cosmosElement;
@@ -1048,7 +1051,7 @@
                                     {
                                         if (!((CosmosObject)x).TryGetValue(switchColumns ? alwaysDefinedFieldName : possiblyUndefinedFieldName, out CosmosElement cosmosElement))
                                         {
-                                            cosmosElement = null;
+                                            cosmosElement = CosmosUndefined.Create();
                                         }
 
                                         return cosmosElement;
@@ -1058,7 +1061,7 @@
                                     {
                                         if (!((CosmosObject)x).TryGetValue(switchColumns ? alwaysDefinedFieldName : possiblyUndefinedFieldName, out CosmosElement cosmosElement))
                                         {
-                                            cosmosElement = null;
+                                            cosmosElement = CosmosUndefined.Create();
                                         }
 
                                         return cosmosElement;
@@ -1091,7 +1094,7 @@
             }
 
             await this.CreateIngestQueryDeleteAsync(
-                ConnectionModes.Direct,
+                ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.MultiPartition,
                 inputDocuments,
                 ImplementationAsync,
@@ -1111,7 +1114,7 @@
                 MixedTypedDocument mixedTypeDocument = OrderByQueryTests.GenerateMixedTypeDocument(random);
                 for (int j = 0; j < numberOfDuplicates; j++)
                 {
-                    if (mixedTypeDocument.MixedTypeField != null)
+                    if (mixedTypeDocument.MixedTypeField is not CosmosUndefined)
                     {
                         documents.Add(JsonConvert.SerializeObject(mixedTypeDocument));
                     }
@@ -1159,7 +1162,7 @@
             OrderByTypes all = primitives | nonPrimitives | OrderByTypes.Undefined;
 
             await this.CreateIngestQueryDeleteAsync(
-                ConnectionModes.Direct,
+                ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestMixedTypeOrderByHelper,
@@ -1210,7 +1213,7 @@
                 // Array
                 5 => CosmosArray.Create(new List<CosmosElement>()),
                 // Undefined
-                6 => null,
+                6 => CosmosUndefined.Create(),
                 _ => throw new ArgumentException(),
             };
         }
@@ -1381,7 +1384,7 @@
                         {
                             if (!x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement cosmosElement))
                             {
-                                cosmosElement = null;
+                                cosmosElement = CosmosUndefined.Create();
                             }
 
                             return cosmosElement;
@@ -1393,7 +1396,7 @@
                         {
                             if (!x.TryGetValue(nameof(MixedTypedDocument.MixedTypeField), out CosmosElement cosmosElement))
                             {
-                                cosmosElement = null;
+                                cosmosElement = CosmosUndefined.Create();
                             }
 
                             return cosmosElement;
@@ -1488,6 +1491,101 @@
             }
 
             double expectedRequestCharge = base.DirectRequestChargeHandler.StopTracking();
+            Assert.AreEqual(expectedRequestCharge, totalRUs, 0.01);
+        }
+
+
+        [TestMethod]
+        public async Task TestQueryCrossPartitionItemCountAsync()
+        {
+            string[] documents = new[]
+            {
+                @"{""id"":""documentId1"",""key"":""A""}",
+                @"{""id"":""documentId2"",""key"":""A"",""prop"":3}",
+                @"{""id"":""documentId3"",""key"":""A""}",
+                @"{""id"":""documentId4"",""key"":5}",
+                @"{""id"":""documentId5"",""key"":5,""prop"":2}",
+                @"{""id"":""documentId6"",""key"":5}",
+                @"{""id"":""documentId7"",""key"":2}",
+                @"{""id"":""documentId8"",""key"":2,""prop"":1}",
+                @"{""id"":""documentId9"",""key"":2}",
+            };
+
+            // Matches no documents
+            await this.CreateIngestQueryDeleteAsync<OrderByRequestChargeArgs>(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                documents,
+                this.TestQueryCrossPartitionOrderByMaxItemCountHelper,
+                new OrderByRequestChargeArgs
+                {
+                    Query = "SELECT r.id FROM r WHERE r.prop = 'A' ORDER BY r.prop DESC",
+                },
+                "/key");
+
+            // Matches some documents
+            await this.CreateIngestQueryDeleteAsync<OrderByRequestChargeArgs>(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                documents,
+                this.TestQueryCrossPartitionOrderByMaxItemCountHelper,
+                new OrderByRequestChargeArgs
+                {
+                    Query = "SELECT r.id FROM r ORDER BY r.prop DESC",
+                },
+                "/key");
+
+            // Matches some documents, skipped with OFFSET LIMIT
+            await this.CreateIngestQueryDeleteAsync<OrderByRequestChargeArgs>(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                documents,
+                this.TestQueryCrossPartitionOrderByMaxItemCountHelper,
+                new OrderByRequestChargeArgs
+                {
+                    Query = "SELECT r.id FROM r ORDER BY r.prop DESC OFFSET 10 LIMIT 1",
+                },
+                "/key");
+
+            //order by id
+            await this.CreateIngestQueryDeleteAsync<OrderByRequestChargeArgs>(
+               ConnectionModes.Direct,
+               CollectionTypes.MultiPartition,
+               documents,
+               this.TestQueryCrossPartitionOrderByMaxItemCountHelper,
+               new OrderByRequestChargeArgs
+               {
+                   Query = "SELECT * FROM r ORDER BY r.id",
+               },
+               "/key");
+        }
+
+        private async Task TestQueryCrossPartitionOrderByMaxItemCountHelper(
+          Container container,
+          IReadOnlyList<CosmosObject> documents,
+          OrderByRequestChargeArgs args)
+        {
+            base.DirectRequestChargeHandler.StartTracking();
+
+            double totalRUs = 0;
+            await foreach (FeedResponse<CosmosElement> query in QueryTestsBase.RunSimpleQueryWithNewIteratorAsync<CosmosElement>(
+            container,
+            args.Query,
+            new QueryRequestOptions()
+            {
+                MaxItemCount = 1,
+                MaxConcurrency = 1,
+            }))
+            {
+                Assert.IsTrue(query.Count <= 1);
+
+                totalRUs += query.RequestCharge;
+            }
+
+            double expectedRequestCharge = base.DirectRequestChargeHandler.StopTracking();
+
+            Console.WriteLine("expectedRequestCharge: " + expectedRequestCharge);
+
             Assert.AreEqual(expectedRequestCharge, totalRUs, 0.01);
         }
 

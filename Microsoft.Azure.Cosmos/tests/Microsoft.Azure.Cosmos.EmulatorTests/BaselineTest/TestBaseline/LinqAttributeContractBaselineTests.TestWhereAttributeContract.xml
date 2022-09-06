@@ -8,7 +8,7 @@
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["jsonProperty"] = "Hello") ]]></SqlQuery>
+WHERE (root["jsonProperty"] = "Hello")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -20,7 +20,7 @@ WHERE (root["jsonProperty"] = "Hello") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["dataMember"] = "Hello") ]]></SqlQuery>
+WHERE (root["dataMember"] = "Hello")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -32,7 +32,7 @@ WHERE (root["dataMember"] = "Hello") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["Default"] = "Hello") ]]></SqlQuery>
+WHERE (root["Default"] = "Hello")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -44,7 +44,7 @@ WHERE (root["Default"] = "Hello") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["jsonPropertyHasHigherPriority"] = "Hello") ]]></SqlQuery>
+WHERE (root["jsonPropertyHasHigherPriority"] = "Hello")]]></SqlQuery>
     </Output>
   </Result>
 </Results>

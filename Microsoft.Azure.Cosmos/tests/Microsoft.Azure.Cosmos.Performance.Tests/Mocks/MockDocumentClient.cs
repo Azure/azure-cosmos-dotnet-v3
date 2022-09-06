@@ -22,6 +22,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using Microsoft.CodeAnalysis.CSharp.Syntax;
     using System.IO;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Newtonsoft.Json;
 
     internal class MockDocumentClient : DocumentClient, ICosmosAuthorizationTokenProvider
     {
@@ -42,6 +44,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         public static CosmosClient CreateMockCosmosClient(
             bool useCustomSerializer = false,
+            bool? isClientTelemetryEnabled = null,
             Action < CosmosClientBuilder> customizeClientBuilder = null)
         {
             MockDocumentClient documentClient = new MockDocumentClient();
@@ -56,6 +59,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     {
                         IgnoreNullValues = true,
                     });
+            }
+
+            if (isClientTelemetryEnabled.HasValue && isClientTelemetryEnabled.Value)
+            {
+                cosmosClientBuilder.WithTelemetryEnabled();
             }
 
             documentClient.dummyHeaderNames = new string[100];
@@ -97,6 +105,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             return Convert.ToBase64String(randomEntries);
         }
 
+        private static readonly Task<QueryPartitionProvider> SingletonQueryPartitionProvider = Task.FromResult(
+            new QueryPartitionProvider(
+                JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLength\":262144,\"maxJoinsPerSqlQuery\":5,\"maxLogicalAndPerSqlQuery\":500,\"maxLogicalOrPerSqlQuery\":500,\"maxUdfRefPerSqlQuery\":10,\"maxInExpressionItemsCount\":16000,\"queryMaxInMemorySortDocumentCount\":500,\"maxQueryRequestTimeoutFraction\":0.9,\"sqlAllowNonFiniteNumbers\":false,\"sqlAllowAggregateFunctions\":true,\"sqlAllowSubQuery\":true,\"sqlAllowScalarSubQuery\":true,\"allowNewKeywords\":true,\"sqlAllowLike\":true,\"sqlAllowGroupByClause\":true,\"maxSpatialQueryCells\":12,\"spatialMaxGeometryPointCount\":256,\"sqlDisableOptimizationFlags\":0,\"sqlAllowTop\":true,\"enableSpatialIndexing\":true}")));
+
+        internal override Task<QueryPartitionProvider> QueryPartitionProvider => SingletonQueryPartitionProvider;
+
         internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(
             this.globalEndpointManager.Object,
             new ConnectionPolicy(), 
@@ -121,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             ITrace trace) // unused, use token based upon what is passed in constructor 
         {
             // this is masterkey authZ
-            headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
+            headers[HttpConstants.HttpHeaders.XDate] = Rfc1123DateTimeCache.UtcNow();
 
             string authorization = AuthorizationHelper.GenerateKeyAuthorizationSignature(
                     verb: requestVerb,
@@ -174,7 +188,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                             It.IsAny<string>(),
                             It.IsAny<CollectionRoutingMap>(),
                             It.IsAny<DocumentServiceRequest>(),
-                            It.IsAny<CancellationToken>(),
                             It.IsAny<ITrace>()
                         )
                 ).Returns(Task.FromResult<CollectionRoutingMap>(routingMap));
@@ -258,15 +271,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             // rntbd://yt1prdddc01-docdb-1.documents.azure.com:14003/apps/ce8ab332-f59e-4ce7-a68e-db7e7cfaa128/services/68cc0b50-04c6-4716-bc31-2dfefd29e3ee/partitions/5604283d-0907-4bf4-9357-4fa9e62de7b5/replicas/131170760736528207s/
             for (int i = 0; i <= 2; i++)
             {
-                addressInformation[i] = new AddressInformation
-                {
-                    PhysicalUri =
-                    "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/"
-                    + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/",
-                    IsPrimary = i == 0,
-                    Protocol = Protocol.Tcp,
-                    IsPublic = true
-                };
+                addressInformation[i] = new AddressInformation(
+                    physicalUri: "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/"
+                        + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/",
+                    isPrimary: i == 0,
+                    protocol: Protocol.Tcp,
+                    isPublic: true);
             }
             return addressInformation;
         }

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <AssemblyName>Cosmos.Samples.SystemTextJson</AssemblyName>
+    <RootNamespace>Cosmos.Samples.SystemTextJson</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Azure.Core" Version="1.19.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
+    <PackageReference Include="System.Text.Json" Version="5.0.2" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="*" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\AppSettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

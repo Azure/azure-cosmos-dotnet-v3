@@ -37,6 +37,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 2,
                 false,
                 MockCosmosUtil.Serializer,
+                isClientEncrypted: false,
+                intendedCollectionRidValue: null,
                 default(CancellationToken));
 
             Assert.AreEqual(operations.Count, request.Operations.Count);
@@ -65,6 +67,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 1,
                 false,
                 MockCosmosUtil.Serializer,
+                isClientEncrypted: false,
+                intendedCollectionRidValue: null,
                 default(CancellationToken));
 
             Assert.AreEqual(1, request.Operations.Count);
@@ -96,6 +100,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 1,
                 false,
                 MockCosmosUtil.Serializer,
+                isClientEncrypted: false,
+                intendedCollectionRidValue: null,
                 default(CancellationToken));
 
             Assert.AreEqual(1, request.Operations.Count);
@@ -170,6 +176,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 maxServerRequestOperationCount,
                 false,
                 MockCosmosUtil.Serializer,
+                isClientEncrypted: false,
+                intendedCollectionRidValue: null,
                 default(CancellationToken));
         }
     }

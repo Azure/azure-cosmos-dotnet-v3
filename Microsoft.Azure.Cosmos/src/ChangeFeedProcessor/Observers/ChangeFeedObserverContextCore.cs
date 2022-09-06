@@ -37,12 +37,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public Headers Headers => this.responseMessage.Headers;
 
-        public async Task<(bool isSuccess, Exception error)> TryCheckpointAsync()
+        public async Task CheckpointAsync()
         {
             try
             {
                 await this.checkpointer.CheckpointPartitionAsync(this.responseMessage.Headers.ContinuationToken);
-                return (isSuccess: true, error: null);
             }
             catch (LeaseLostException leaseLostException)
             {
@@ -55,11 +54,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     trace: NoOpTrace.Singleton,
                     error: null,
                     innerException: leaseLostException);
-                return (isSuccess: false, error: cosmosException);
-            }
-            catch (Exception exception)
-            {
-                return (isSuccess: false, error: exception);
+                throw cosmosException;
             }
         }
 

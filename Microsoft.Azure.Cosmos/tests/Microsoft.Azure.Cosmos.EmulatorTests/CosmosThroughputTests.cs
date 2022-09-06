@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             throughputResponse = await containerCore.ReplaceThroughputIfExistsAsync(
                 ThroughputProperties.CreateAutoscaleThroughput(6000),
                 requestOptions: null,
-                default(CancellationToken));
+                default);
             Assert.IsNotNull(throughputResponse);
             Assert.AreEqual(HttpStatusCode.NotFound, throughputResponse.StatusCode);
             Assert.IsNull(throughputResponse.Resource);

@@ -41,11 +41,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
             ItemResponse<ToDoActivity> response = await this.Container.CreateItemAsync(item);
+
             ClientSideRequestStatisticsTraceDatum datum = this.GetClientSideRequestStatsFromTrace(((CosmosTraceDiagnostics)response.Diagnostics).Value, "Transport");
             Assert.IsNotNull(datum.HttpResponseStatisticsList);
             Assert.AreEqual(datum.HttpResponseStatisticsList.Count, 1);
             Assert.IsNotNull(datum.HttpResponseStatisticsList[0].HttpResponseMessage);
-            Assert.AreEqual(datum.RequestEndTimeUtc, datum.HttpResponseStatisticsList[0].RequestEndTime);
+            Assert.AreEqual(datum.RequestEndTimeUtc, datum.HttpResponseStatisticsList[0].RequestStartTime + datum.HttpResponseStatisticsList[0].Duration);
         }
 
         [TestMethod]
@@ -69,6 +70,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using (CosmosClient cosmosClient = TestCommon.CreateCosmosClient(options))
             {
                 Container container = cosmosClient.GetContainer(this.Database.Id, this.Container.Id);
+                
                 ItemResponse<ToDoActivity> response = await container.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.pk));
                 ClientSideRequestStatisticsTraceDatum datum = this.GetClientSideRequestStatsFromTrace(((CosmosTraceDiagnostics)response.Diagnostics).Value, traceToFind);
                 Assert.IsNotNull(datum.HttpResponseStatisticsList);

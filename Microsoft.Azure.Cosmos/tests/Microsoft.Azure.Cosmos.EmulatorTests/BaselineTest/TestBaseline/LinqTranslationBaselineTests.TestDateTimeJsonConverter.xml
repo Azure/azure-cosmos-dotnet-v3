@@ -8,7 +8,7 @@
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["IsoTime"] = "2016-09-13T00:00:00") ]]></SqlQuery>
+WHERE (root["IsoTime"] = "2016-09-13T00:00:00")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -20,7 +20,7 @@ WHERE (root["IsoTime"] = "2016-09-13T00:00:00") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["IsoTime"] > "2016-09-13T00:00:00") ]]></SqlQuery>
+WHERE (root["IsoTime"] > "2016-09-13T00:00:00")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -32,7 +32,7 @@ WHERE (root["IsoTime"] > "2016-09-13T00:00:00") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["IsoTime"] < "2016-09-13T00:00:00") ]]></SqlQuery>
+WHERE (root["IsoTime"] < "2016-09-13T00:00:00")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -44,7 +44,7 @@ WHERE (root["IsoTime"] < "2016-09-13T00:00:00") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["UnixTime"] = 1473724800) ]]></SqlQuery>
+WHERE (root["UnixTime"] = 1473724800)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -56,7 +56,7 @@ WHERE (root["UnixTime"] = 1473724800) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["UnixTime"] > 1473724800) ]]></SqlQuery>
+WHERE (root["UnixTime"] > 1473724800)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -68,7 +68,7 @@ WHERE (root["UnixTime"] > 1473724800) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["UnixTime"] < 1473724800) ]]></SqlQuery>
+WHERE (root["UnixTime"] < 1473724800)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -80,7 +80,7 @@ WHERE (root["UnixTime"] < 1473724800) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["DefaultTime"] = "2016-09-13T00:00:00") ]]></SqlQuery>
+WHERE (root["DefaultTime"] = "2016-09-13T00:00:00")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -92,7 +92,7 @@ WHERE (root["DefaultTime"] = "2016-09-13T00:00:00") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["DefaultTime"] > "2016-09-13T00:00:00") ]]></SqlQuery>
+WHERE (root["DefaultTime"] > "2016-09-13T00:00:00")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -104,7 +104,7 @@ WHERE (root["DefaultTime"] > "2016-09-13T00:00:00") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["DefaultTime"] < "2016-09-13T00:00:00") ]]></SqlQuery>
+WHERE (root["DefaultTime"] < "2016-09-13T00:00:00")]]></SqlQuery>
     </Output>
   </Result>
 </Results>

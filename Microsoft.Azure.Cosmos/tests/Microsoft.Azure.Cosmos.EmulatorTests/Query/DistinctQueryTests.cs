@@ -9,12 +9,13 @@
     using Newtonsoft.Json;
 
     [TestClass]
+    [TestCategory("Query")]
     public sealed class DistinctQueryTests : QueryTestsBase
     {
         [TestMethod]
         public async Task TestDistinct_ExecuteNextAsync()
         {
-            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
                 #region Queries
                 // To verify distint queries you can run it once without the distinct clause and run it through a hash set 
@@ -109,16 +110,13 @@
                             documentsFromWithDistinct.AddRange(cosmosQueryResponse);
                         }
 
-                        Assert.AreEqual(documentsFromWithDistinct.Count, documentsFromWithoutDistinct.Count);
-                        for (int i = 0; i < documentsFromWithDistinct.Count; i++)
-                        {
-                            CosmosElement documentFromWithDistinct = documentsFromWithDistinct.ElementAt(i);
-                            CosmosElement documentFromWithoutDistinct = documentsFromWithoutDistinct.ElementAt(i);
-                            Assert.AreEqual(
-                                expected: documentFromWithoutDistinct,
-                                actual: documentFromWithDistinct,
-                                message: $"{documentFromWithDistinct} did not match {documentFromWithoutDistinct} at index {i} for {queryWithDistinct}, with page size: {pageSize} on a container");
-                        }
+                        string[] expectedDocuments = documentsFromWithoutDistinct.Select(x => x.ToString()).ToArray();
+                        string[] actualDocuments = documentsFromWithDistinct.Select(x => x.ToString()).ToArray();
+
+                        CollectionAssert.AreEquivalent(
+                            expected: expectedDocuments,
+                            actual: actualDocuments,
+                            message: $"Documents didn't match for {queryWithDistinct}, with page size: {pageSize} on a container");
 
                         if (allowDCount)
                         {
@@ -245,9 +243,12 @@
                             },
                             QueryDrainingMode.HoldState | QueryDrainingMode.CosmosElementContinuationToken);
 
-                        Assert.AreEqual(
-                            expected: CosmosArray.Create(documentsFromWithDistinct),
-                            actual: CosmosArray.Create(documentsFromWithoutDistinct),
+                        string[] expectedDocuments = documentsFromWithoutDistinct.Select(x => x.ToString()).ToArray();
+                        string[] actualDocuments = documentsFromWithDistinct.Select(x => x.ToString()).ToArray();
+
+                        CollectionAssert.AreEquivalent(
+                            expected: expectedDocuments,
+                            actual: actualDocuments,
                             message: $"Documents didn't match for {queryWithDistinct} on a Partitioned container");
 
                         if (allowDCount)
@@ -302,7 +303,7 @@
             }
 
             await this.CreateIngestQueryDeleteAsync(
-                ConnectionModes.Direct,
+                ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.MultiPartition,
                 documents,
                 query,

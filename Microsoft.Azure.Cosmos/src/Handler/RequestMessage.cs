@@ -137,6 +137,9 @@ namespace Microsoft.Azure.Cosmos
             this.ResourceType.IsPartitioned() && this.PartitionKeyRangeId == null &&
             this.Headers.PartitionKey == null;
 
+        internal string ContainerId { get; set; }
+        internal string DatabaseId { get; set; }
+
         /// <summary>
         /// Request properties Per request context available to handlers. 
         /// These will not be automatically included into the wire.
@@ -248,7 +251,7 @@ namespace Microsoft.Azure.Cosmos
                         resourceIdOrFullName: null,
                         resourceType: this.ResourceType,
                         body: this.Content,
-                        headers: this.Headers.CosmosMessageHeaders,
+                        headers: this.Headers.CosmosMessageHeaders.INameValueCollection,
                         isNameBased: false,
                         authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
                 }
@@ -260,7 +263,7 @@ namespace Microsoft.Azure.Cosmos
                         this.RequestUriString, 
                         this.Content, 
                         AuthorizationTokenType.PrimaryMasterKey, 
-                        this.Headers.CosmosMessageHeaders);
+                        this.Headers.CosmosMessageHeaders.INameValueCollection);
                 }
 
                 if (this.UseGatewayMode.HasValue)

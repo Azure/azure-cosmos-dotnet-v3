@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
     using System.Threading.Tasks;
+    using System.Text;
 
     [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public class LinqAggregateFunctionBaselineTests : BaselineTests<LinqAggregateInput, LinqAggregateOutput>
@@ -534,20 +535,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             }
             catch (Exception e)
             {
-                while (e.InnerException != null) e = e.InnerException;
-
-                if (e is CosmosException cosmosException)
-                {
-                    errorMessage = $"Status Code: {cosmosException.StatusCode}";
-                }
-                else if (e is DocumentClientException documentClientException)
-                {
-                    errorMessage = documentClientException.RawErrorMessage;
-                }
-                else
-                {
-                    errorMessage = e.Message;
-                }
+                errorMessage = LinqTestsCommon.BuildExceptionMessageForTest(e);
             }
 
             return new LinqAggregateOutput(query, errorMessage);

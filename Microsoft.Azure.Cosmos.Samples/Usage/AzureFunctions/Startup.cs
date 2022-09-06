@@ -1,5 +1,4 @@
 ﻿using System;
-using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Cosmos.Fluent;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
@@ -11,7 +10,7 @@ namespace Cosmos.Samples.AzureFunctions
 {
     public class Startup : FunctionsStartup
     {
-        private static IConfigurationRoot configuration = new ConfigurationBuilder()
+        private static readonly IConfigurationRoot configuration = new ConfigurationBuilder()
                 .SetBasePath(Environment.CurrentDirectory)
                 .AddJsonFile("AppSettings.json", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables()

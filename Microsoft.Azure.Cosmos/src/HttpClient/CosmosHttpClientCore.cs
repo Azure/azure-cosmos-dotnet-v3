@@ -156,6 +156,9 @@ namespace Microsoft.Azure.Cosmos
             httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version,
                 HttpConstants.Versions.CurrentVersion);
 
+            httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.SDKSupportedCapabilities,
+                Headers.SDKSUPPORTEDCAPABILITIES);
+
             httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Accept, RuntimeConstants.MediaTypes.Json);
 
             return new CosmosHttpClientCore(
@@ -244,7 +247,7 @@ namespace Microsoft.Azure.Cosmos
                     // If the default cancellation token is passed then use the timeout policy
                     using CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                     cancellationTokenSource.CancelAfter(requestTimeout);
-
+                    DateTime requestStartTime = DateTime.UtcNow;
                     try
                     {
                         HttpResponseMessage responseMessage = await this.ExecuteHttpHelperAsync(
@@ -254,20 +257,27 @@ namespace Microsoft.Azure.Cosmos
 
                         if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum datum)
                         {
-                            datum.RecordHttpResponse(requestMessage, responseMessage, resourceType, DateTime.UtcNow);
+                            datum.RecordHttpResponse(requestMessage, responseMessage, resourceType, requestStartTime);
                         }
 
-                        return responseMessage;
+                        if (!timeoutPolicy.ShouldRetryBasedOnResponse(requestMessage.Method, responseMessage))
+                        {
+                            return responseMessage;
+                        }
+
+                        bool isOutOfRetries = CosmosHttpClientCore.IsOutOfRetries(timeoutPolicy, startDateTimeUtc, timeoutEnumerator);
+                        if (isOutOfRetries)
+                        {
+                            return responseMessage;
+                        }
                     }
                     catch (Exception e)
                     {
                         if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum datum)
                         {
-                            datum.RecordHttpException(requestMessage, e, resourceType, DateTime.UtcNow);
+                            datum.RecordHttpException(requestMessage, e, resourceType, requestStartTime);
                         }
-
-                        bool isOutOfRetries = (DateTime.UtcNow - startDateTimeUtc) > timeoutPolicy.MaximumRetryTimeLimit || // Maximum of time for all retries
-                            !timeoutEnumerator.MoveNext(); // No more retries are configured
+                        bool isOutOfRetries = CosmosHttpClientCore.IsOutOfRetries(timeoutPolicy, startDateTimeUtc, timeoutEnumerator);
 
                         switch (e)
                         {
@@ -308,7 +318,7 @@ namespace Microsoft.Azure.Cosmos
                                 throw;
                         }
                     }
-                    
+
                 }
 
                 if (delayForNextRequest != TimeSpan.Zero)
@@ -316,6 +326,15 @@ namespace Microsoft.Azure.Cosmos
                     await Task.Delay(delayForNextRequest);
                 }
             }
+        }
+
+        private static bool IsOutOfRetries(
+            HttpTimeoutPolicy timeoutPolicy,
+            DateTime startDateTimeUtc,
+            IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator)
+        {
+            return (DateTime.UtcNow - startDateTimeUtc) > timeoutPolicy.MaximumRetryTimeLimit || // Maximum of time for all retries
+                !timeoutEnumerator.MoveNext(); // No more retries are configured
         }
 
         private async Task<HttpResponseMessage> ExecuteHttpHelperAsync(

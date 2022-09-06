@@ -52,7 +52,7 @@
       <CosmosElement><![CDATA[[null,false,true,1234,"asdfasdfasdfasdfasdfasdf"]]]></CosmosElement>
     </Input>
     <Output>
-      <Hash><![CDATA[25-69-E9-CB-22-6C-58-6E-C0-0B-1F-27-79-F6-9A-16]]></Hash>
+      <Hash><![CDATA[A9-40-79-16-DE-27-F3-16-CC-5A-8E-4E-B9-AF-D5-E6]]></Hash>
     </Output>
   </Result>
   <Result>
@@ -68,7 +68,7 @@
       <CosmosElement><![CDATA[{"null":null,"false":false,"true":true,"cosmosNumber":1234,"cosmosString":"asdfasdfasdfasdfasdfasdf"}]]></CosmosElement>
     </Input>
     <Output>
-      <Hash><![CDATA[7B-CC-4F-05-BB-F0-59-57-3E-3F-3E-66-C7-4D-DF-60]]></Hash>
+      <Hash><![CDATA[3B-6A-A9-F4-F4-3A-AE-C0-E4-8E-BE-2B-C0-20-D5-5C]]></Hash>
     </Output>
   </Result>
 </Results>

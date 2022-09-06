@@ -7,7 +7,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.IO;
     using System.Net;
+    using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
 
@@ -168,7 +170,8 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryResponseMessageHeaders responseMessageHeaders,
             CosmosDiagnostics diagnostics,
             CosmosSerializerCore serializerCore,
-            CosmosSerializationFormatOptions serializationOptions)
+            CosmosSerializationFormatOptions serializationOptions,
+            RequestMessage requestMessage)
         {
             this.QueryHeaders = responseMessageHeaders;
             this.Diagnostics = diagnostics;
@@ -179,6 +182,9 @@ namespace Microsoft.Azure.Cosmos
             this.Resource = CosmosElementSerializer.GetResources<T>(
                 cosmosArray: cosmosElements,
                 serializerCore: serializerCore);
+
+            this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(responseMessageHeaders);
+            this.RequestMessage = requestMessage;
         }
 
         public override string ContinuationToken => this.Headers.ContinuationToken;
@@ -195,12 +201,18 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosQueryResponseMessageHeaders QueryHeaders { get; }
 
+        private Lazy<string> IndexUtilizationText { get; }
+
+        public override string IndexMetrics => this.IndexUtilizationText?.Value;
+
         public override IEnumerator<T> GetEnumerator()
         {
             return this.Resource.GetEnumerator();
         }
 
         public override IEnumerable<T> Resource { get; }
+
+        internal override RequestMessage RequestMessage { get; }
 
         internal static QueryResponse<TInput> CreateResponse<TInput>(
             QueryResponse cosmosQueryResponse,
@@ -217,7 +229,8 @@ namespace Microsoft.Azure.Cosmos
                     responseMessageHeaders: cosmosQueryResponse.QueryHeaders,
                     diagnostics: cosmosQueryResponse.Diagnostics,
                     serializerCore: serializerCore,
-                    serializationOptions: cosmosQueryResponse.CosmosSerializationOptions);
+                    serializationOptions: cosmosQueryResponse.CosmosSerializationOptions,
+                    requestMessage: cosmosQueryResponse.RequestMessage);
             }
             return queryResponse;
         }

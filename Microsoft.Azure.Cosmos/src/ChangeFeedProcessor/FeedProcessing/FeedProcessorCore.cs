@@ -5,9 +5,7 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -16,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
 
     internal sealed class FeedProcessorCore : FeedProcessor
     {
@@ -48,11 +47,29 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 {
                     do
                     {
-                        ResponseMessage response = await this.resultSetIterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
+                        Task<ResponseMessage> task = this.resultSetIterator.ReadNextAsync(cancellationToken);
+                        
+                        using (CancellationTokenSource cts = new CancellationTokenSource())
+                        {
+                            if (!ReferenceEquals(await Task.WhenAny(task, Task.Delay(this.options.RequestTimeout, cts.Token)), task))
+                            {
+                                Task catchExceptionFromTask = task.ContinueWith(task => DefaultTrace.TraceInformation(
+                                "Timed out Change Feed request failed with exception: {2}", task.Exception.InnerException),
+                                TaskContinuationOptions.OnlyOnFaulted);
+                                throw CosmosExceptionFactory.CreateRequestTimeoutException("Change Feed request timed out", new Headers());
+                            }
+                            else
+                            {
+                                cts.Cancel();
+                            }
+                        }
+
+                        ResponseMessage response = await task;
+
                         if (response.StatusCode != HttpStatusCode.NotModified && !response.IsSuccessStatusCode)
                         {
                             DefaultTrace.TraceWarning("unsuccessful feed read: lease token '{0}' status code {1}. substatuscode {2}", this.options.LeaseToken, response.StatusCode, response.Headers.SubStatusCode);
-                            this.HandleFailedRequest(response.StatusCode, (int)response.Headers.SubStatusCode, lastContinuation);
+                            this.HandleFailedRequest(response, lastContinuation);
 
                             if (response.Headers.RetryAfter.HasValue)
                             {
@@ -71,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                     }
                     while (this.resultSetIterator.HasMoreResults && !cancellationToken.IsCancellationRequested);
                 }
-                catch (TaskCanceledException canceledException)
+                catch (OperationCanceledException canceledException)
                 {
                     if (cancellationToken.IsCancellationRequested)
                     {
@@ -89,25 +106,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         }
 
         private void HandleFailedRequest(
-            HttpStatusCode statusCode,
-            int subStatusCode,
+            ResponseMessage responseMessage,
             string lastContinuation)
         {
-            DocDbError docDbError = ExceptionClassifier.ClassifyStatusCodes(statusCode, subStatusCode);
+            DocDbError docDbError = ExceptionClassifier.ClassifyStatusCodes(responseMessage.StatusCode, (int)responseMessage.Headers.SubStatusCode);
             switch (docDbError)
             {
                 case DocDbError.PartitionSplit:
                     throw new FeedRangeGoneException("Partition split.", lastContinuation);
-                case DocDbError.PartitionNotFound:
-                    throw new FeedNotFoundException("Partition not found.", lastContinuation);
-                case DocDbError.ReadSessionNotAvailable:
-                    throw new FeedReadSessionNotAvailableException("Read session not availalbe.", lastContinuation);
                 case DocDbError.Undefined:
-                    throw new InvalidOperationException($"Undefined DocDbError for status code {statusCode} and substatus code {subStatusCode}");
+                    throw CosmosExceptionFactory.Create(responseMessage);
                 default:
                     DefaultTrace.TraceCritical($"Unrecognized DocDbError enum value {docDbError}");
                     Debug.Fail($"Unrecognized DocDbError enum value {docDbError}");
-                    throw new InvalidOperationException($"Unrecognized DocDbError enum value {docDbError} for status code {statusCode} and substatus code {subStatusCode}");
+                    throw new InvalidOperationException($"Unrecognized DocDbError enum value {docDbError} for status code {responseMessage.StatusCode} and substatus code {responseMessage.Headers.SubStatusCode}");
             }
         }
 

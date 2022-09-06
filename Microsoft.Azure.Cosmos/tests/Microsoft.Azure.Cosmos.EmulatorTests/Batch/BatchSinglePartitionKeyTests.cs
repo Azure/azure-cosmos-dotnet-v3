@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json;
 
     [TestClass]
+    [TestCategory("Batch")]
     public class BatchSinglePartitionKeyTests : BatchTestBase
     {
         [ClassInitialize]
@@ -666,7 +667,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.AreEqual(HttpStatusCode.Created, batchResponse[0].StatusCode);
             Assert.AreEqual(HttpStatusCode.OK, batchResponse[1].StatusCode);
-            testDoc.Cost = testDoc.Cost + 1;
+            testDoc.Cost++;
             await BatchTestBase.VerifyByReadAsync(BatchTestBase.JsonContainer, testDoc, isStream: false, isSchematized: false, useEpk:false);
         }
 
@@ -804,7 +805,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.AreEqual(this.TestDocPk1ExistingC, batchResponse.GetOperationResultAtIndex<TestDoc>(1).Resource);
                 Assert.AreEqual(HttpStatusCode.OK, batchResponse[6].StatusCode);
-                testDocToPatch.Cost = testDocToPatch.Cost + 1;
+                testDocToPatch.Cost++;
                 await BatchTestBase.VerifyByReadAsync(container, testDocToPatch, isStream, isSchematized, useEpk);
             }
             else
@@ -834,7 +835,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     BatchTestBase.Client.Endpoint.ToString(),
                     BatchTestBase.Client.AccountKey)
                     .WithThrottlingRetryOptions(
-                    maxRetryWaitTimeOnThrottledRequests: default(TimeSpan),
+                    maxRetryWaitTimeOnThrottledRequests: default,
                     maxRetryAttemptsOnThrottledRequests: 0)
                 .Build();
 

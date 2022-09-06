@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -46,6 +47,32 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             Assert.IsNull(handler);
+        }
+
+        [TestMethod]
+        public void HandlerOrderIfTelemetryIsEnabled()
+        {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "true");
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+
+            Type[] types = new Type[]
+            {
+                typeof(RequestInvokerHandler),
+                typeof(DiagnosticsHandler),
+                typeof(TelemetryHandler),
+                typeof(RetryHandler),
+                typeof(RouterHandler)
+            };
+
+            RequestHandler handler = client.RequestHandler;
+            foreach (Type type in types)
+            {
+                Assert.IsTrue(type.Equals(handler.GetType()));
+                handler = handler.InnerHandler;
+            }
+            Assert.IsNull(handler);
+
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, null);
         }
 
         [TestMethod]

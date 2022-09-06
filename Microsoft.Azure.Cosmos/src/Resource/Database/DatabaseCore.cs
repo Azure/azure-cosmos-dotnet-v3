@@ -684,12 +684,7 @@ namespace Microsoft.Azure.Cosmos
             return new ContainerBuilder(this, name, partitionKeyPath);
         }
 
-#if PREVIEW
-        public override
-#else
-        internal virtual
-#endif
-            ClientEncryptionKey GetClientEncryptionKey(string id)
+        public override ClientEncryptionKey GetClientEncryptionKey(string id)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -702,15 +697,10 @@ namespace Microsoft.Azure.Cosmos
                     id);
         }
 
-#if PREVIEW
-        public override
-#else
-        internal virtual
-#endif
-            FeedIterator<ClientEncryptionKeyProperties> GetClientEncryptionKeyQueryIterator(
-                QueryDefinition queryDefinition,
-                string continuationToken = null,
-                QueryRequestOptions requestOptions = null)
+        public override FeedIterator<ClientEncryptionKeyProperties> GetClientEncryptionKeyQueryIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
         {
             if (!(this.GetClientEncryptionKeyQueryStreamIterator(
                     queryDefinition: queryDefinition,
@@ -743,12 +733,7 @@ namespace Microsoft.Azure.Cosmos
                 options: requestOptions);
         }
 
-#if PREVIEW
-        public
-#else
-        internal virtual
-#endif
-            async Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
+        public async Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
                 ITrace trace,
                 ClientEncryptionKeyProperties clientEncryptionKeyProperties,
                 RequestOptions requestOptions = null,

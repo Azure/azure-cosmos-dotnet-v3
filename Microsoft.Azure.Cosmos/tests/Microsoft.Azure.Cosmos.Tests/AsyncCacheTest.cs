@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.Azure.Documents;
 
     [TestClass]
     public class AsyncCacheTest
@@ -96,6 +97,33 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(20, numberOfCacheRefreshes);
             Assert.AreEqual(5, await cache.GetAsync(2, -1, () => refreshFunc(2, CancellationToken.None), CancellationToken.None));
+        }
+
+        /// <summary>
+        /// The scenario tested here is that when a generator throws an
+        /// exception it removes itself from the cache. This behavior
+        /// is to prevent indefinite caching of items which are never used.
+        /// </summary>
+        [TestMethod]
+        public async Task TestRemoveWhenGeneratorThrowsException()
+        {
+            AsyncCache<int, int> cache = new AsyncCache<int, int>();
+            using SemaphoreSlim resetEventSlim = new SemaphoreSlim(0, 1);
+
+            Func<Task<int>> generatorFunc = () => Task.Run(async () =>
+            {
+                await resetEventSlim.WaitAsync();
+                throw new Exception(nameof(TestRemoveWhenGeneratorThrowsException));
+#pragma warning disable CS0162 // Unreachable code detected
+                return 1;
+#pragma warning restore CS0162 // Unreachable code detected
+            });
+
+            Task<int> getTask = cache.GetAsync(key: 1, obsoleteValue: -1, singleValueInitFunc: generatorFunc, cancellationToken: default);
+            resetEventSlim.Release();
+            Exception ex = await Assert.ThrowsExceptionAsync<Exception>(() => getTask);
+            Assert.AreEqual(nameof(TestRemoveWhenGeneratorThrowsException), ex.Message);
+            Assert.IsFalse(cache.Keys.Contains(1));
         }
 
         /// <summary>
@@ -271,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TestAsyncDeadlock()
         {
             AsyncCache<int, int> cache = new AsyncCache<int, int>();
-            Stopwatch stopwatch = new Stopwatch();
+            ValueStopwatch stopwatch = new ValueStopwatch();
 
             stopwatch.Start();
             await Task.Factory.StartNew(() =>

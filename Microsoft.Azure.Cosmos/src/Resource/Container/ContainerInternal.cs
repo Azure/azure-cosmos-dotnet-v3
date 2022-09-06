@@ -125,93 +125,37 @@ namespace Microsoft.Azure.Cosmos
             throw new ArgumentNullException(nameof(partitionKey));
         }
 
-#if !INTERNAL
-        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
-               Cosmos.PartitionKey partitionKey,
-               RequestOptions requestOptions = null,
-               CancellationToken cancellationToken = default(CancellationToken));
-#endif
-
-#if !PREVIEW
+        /// <summary>
+        /// Patches an item in the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <remarks>
+        /// By default, resource body will be returned as part of the response. User can request no content by setting <see cref="ItemRequestOptions.EnableContentResponseOnWrite"/> flag to false.
+        /// </remarks>
+        /// <param name="id">The Cosmos item id</param>
+        /// <param name="partitionKey">The partition key for the item.</param>
+        /// <param name="streamPayload">Represents a stream containing the list of operations to be sequentially applied to the referred Cosmos item.</param>
+        /// <param name="requestOptions">(Optional) The options for the item request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which wraps a <see cref="Stream"/> containing the patched resource record.
+        /// </returns>
         public abstract Task<ResponseMessage> PatchItemStreamAsync(
             string id,
             PartitionKey partitionKey,
-            IReadOnlyList<PatchOperation> patchOperations,
-            PatchItemRequestOptions requestOptions = null,
+            Stream streamPayload,
+            ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
-        public abstract Task<ItemResponse<T>> PatchItemAsync<T>(
-            string id,
-            PartitionKey partitionKey,
-            IReadOnlyList<PatchOperation> patchOperations,
-            PatchItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default);
-
-        public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default);
-
-        public abstract FeedIterator GetChangeFeedStreamIterator(
-            ChangeFeedStartFrom changeFeedStartFrom,
-            ChangeFeedMode changeFeedMode,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null);
-
-        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
-            ChangeFeedStartFrom changeFeedStartFrom,
-            ChangeFeedMode changeFeedMode,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+#if !PREVIEW
+        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+               Cosmos.PartitionKey partitionKey,
+               RequestOptions requestOptions = null,
+               CancellationToken cancellationToken = default);
 
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default);
 
-        public abstract FeedIterator GetItemQueryStreamIterator(
-            FeedRange feedRange,
-            QueryDefinition queryDefinition,
-            string continuationToken,
-            QueryRequestOptions requestOptions = null);
-
-        public abstract FeedIterator<T> GetItemQueryIterator<T>(
-            FeedRange feedRange,
-            QueryDefinition queryDefinition,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null);
-
-        public delegate Task ChangeFeedHandler<T>(
-            ChangeFeedProcessorContext context,
-            IReadOnlyCollection<T> changes,
-            CancellationToken cancellationToken);
-
-        public delegate Task ChangeFeedHandlerWithManualCheckpoint<T>(
-            ChangeFeedProcessorContext context,
-            IReadOnlyCollection<T> changes,
-            Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
-            CancellationToken cancellationToken);
-
-        public delegate Task ChangeFeedStreamHandler(
-            ChangeFeedProcessorContext context,
-            Stream changes,
-            CancellationToken cancellationToken);
-
-        public delegate Task ChangeFeedStreamHandlerWithManualCheckpoint(
-            ChangeFeedProcessorContext context,
-            Stream changes,
-            Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
-            CancellationToken cancellationToken);
-
-        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
-            string processorName,
-            ChangeFeedHandler<T> onChangesDelegate);
-
-        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(
-            string processorName,
-            ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate);
-
-        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
-            string processorName,
-            ChangeFeedStreamHandler onChangesDelegate);
-
-        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(
-            string processorName,
-            ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate);
 #endif
 
         public abstract class TryExecuteQueryResult

@@ -14,7 +14,7 @@
       <Query><![CDATA[SELECT c.age LIKE 'a!%' ESCAPE '!']]></Query>
     </Input>
     <Output>
-      <ParsedQuery><![CDATA[SELECT (c.age LIKE "a!%' ESCAPE '!")]]></ParsedQuery>
+      <ParsedQuery><![CDATA[SELECT (c.age LIKE "a!%" ESCAPE "!")]]></ParsedQuery>
     </Output>
   </Result>
   <Result>
@@ -23,7 +23,7 @@
       <Query><![CDATA[SELECT c.age NOT LIKE 'a!%' ESCAPE '!']]></Query>
     </Input>
     <Output>
-      <ParsedQuery><![CDATA[SELECT (c.age NOT  LIKE "a!%' ESCAPE '!")]]></ParsedQuery>
+      <ParsedQuery><![CDATA[SELECT (c.age NOT  LIKE "a!%" ESCAPE "!")]]></ParsedQuery>
     </Output>
   </Result>
   <Result>

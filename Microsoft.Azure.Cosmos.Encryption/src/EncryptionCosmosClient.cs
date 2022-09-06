@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure.Core.Cryptography;
     using Microsoft.Data.Encryption.Cryptography;
 
     /// <summary>
@@ -15,18 +16,49 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     internal sealed class EncryptionCosmosClient : CosmosClient
     {
+        internal static readonly SemaphoreSlim EncryptionKeyCacheSemaphore = new SemaphoreSlim(1, 1);
+
         private readonly CosmosClient cosmosClient;
 
         private readonly AsyncCache<string, ClientEncryptionKeyProperties> clientEncryptionKeyPropertiesCacheByKeyId;
 
-        public EncryptionCosmosClient(CosmosClient cosmosClient, EncryptionKeyStoreProvider encryptionKeyStoreProvider)
+        public EncryptionCosmosClient(
+            CosmosClient cosmosClient,
+            IKeyEncryptionKeyResolver keyEncryptionKeyResolver,
+            string keyEncryptionKeyResolverName,
+            TimeSpan? keyCacheTimeToLive)
         {
             this.cosmosClient = cosmosClient ?? throw new ArgumentNullException(nameof(cosmosClient));
-            this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
+            this.KeyEncryptionKeyResolver = keyEncryptionKeyResolver ?? throw new ArgumentNullException(nameof(keyEncryptionKeyResolver));
+            this.KeyEncryptionKeyResolverName = keyEncryptionKeyResolverName ?? throw new ArgumentNullException(nameof(keyEncryptionKeyResolverName));
             this.clientEncryptionKeyPropertiesCacheByKeyId = new AsyncCache<string, ClientEncryptionKeyProperties>();
+            this.EncryptionKeyStoreProviderImpl = new EncryptionKeyStoreProviderImpl(keyEncryptionKeyResolver, keyEncryptionKeyResolverName);
+
+            keyCacheTimeToLive ??= TimeSpan.FromHours(1);
+
+            if (EncryptionCosmosClient.EncryptionKeyCacheSemaphore.Wait(-1))
+            {
+                try
+                {
+                    // We pick the minimum between the existing and passed in value given this is a static cache.
+                    // This also means that the maximum cache duration is the originally initialized value for ProtectedDataEncryptionKey.TimeToLive which is 2 hours.
+                    if (keyCacheTimeToLive < ProtectedDataEncryptionKey.TimeToLive)
+                    {
+                        ProtectedDataEncryptionKey.TimeToLive = keyCacheTimeToLive.Value;
+                    }
+                }
+                finally
+                {
+                    EncryptionCosmosClient.EncryptionKeyCacheSemaphore.Release(1);
+                }
+            }
         }
 
-        public EncryptionKeyStoreProvider EncryptionKeyStoreProvider { get; }
+        public EncryptionKeyStoreProviderImpl EncryptionKeyStoreProviderImpl { get; }
+
+        public IKeyEncryptionKeyResolver KeyEncryptionKeyResolver { get; }
+
+        public string KeyEncryptionKeyResolverName { get; }
 
         public override CosmosClientOptions ClientOptions => this.cosmosClient.ClientOptions;
 
@@ -174,8 +206,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string clientEncryptionKeyId,
             EncryptionContainer encryptionContainer,
             string databaseRid,
-            CancellationToken cancellationToken = default,
-            bool shouldForceRefresh = false)
+            string ifNoneMatchEtag,
+            bool shouldForceRefresh,
+            CancellationToken cancellationToken)
         {
             if (encryptionContainer == null)
             {
@@ -195,31 +228,48 @@ namespace Microsoft.Azure.Cosmos.Encryption
             // Client Encryption key Id is unique within a Database.
             string cacheKey = databaseRid + "|" + clientEncryptionKeyId;
 
+            // this allows us to read from the Gateway Cache. If an IfNoneMatchEtag is passed the logic around the gateway cache allows us to fetch the latest ClientEncryptionKeyProperties
+            // from the servers if the gateway cache has a stale value. This can happen if a client connected via different Gateway has rewrapped the key.
+            RequestOptions requestOptions = new RequestOptions
+            {
+                AddRequestHeaders = (headers) =>
+                {
+                    headers.Add(Constants.AllowCachedReadsHeader, bool.TrueString);
+                    headers.Add(Constants.DatabaseRidHeader, databaseRid);
+                },
+            };
+
+            if (!string.IsNullOrEmpty(ifNoneMatchEtag))
+            {
+                requestOptions.IfNoneMatchEtag = ifNoneMatchEtag;
+            }
+
             return await this.clientEncryptionKeyPropertiesCacheByKeyId.GetAsync(
-                     cacheKey,
-                     obsoleteValue: null,
-                     async () => await this.FetchClientEncryptionKeyPropertiesAsync(encryptionContainer, clientEncryptionKeyId, cancellationToken),
-                     cancellationToken,
-                     forceRefresh: shouldForceRefresh);
+                cacheKey,
+                obsoleteValue: null,
+                async () => await this.FetchClientEncryptionKeyPropertiesAsync(encryptionContainer, clientEncryptionKeyId, requestOptions, cancellationToken),
+                cancellationToken,
+                forceRefresh: shouldForceRefresh);
         }
 
         private async Task<ClientEncryptionKeyProperties> FetchClientEncryptionKeyPropertiesAsync(
             EncryptionContainer encryptionContainer,
             string clientEncryptionKeyId,
-            CancellationToken cancellationToken = default)
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             ClientEncryptionKey clientEncryptionKey = encryptionContainer.Database.GetClientEncryptionKey(clientEncryptionKeyId);
             try
             {
-                return await clientEncryptionKey.ReadAsync(cancellationToken: cancellationToken);
+                return await clientEncryptionKey.ReadAsync(requestOptions: requestOptions, cancellationToken: cancellationToken);
             }
             catch (CosmosException ex)
             {
                 if (ex.StatusCode == HttpStatusCode.NotFound)
                 {
-                    throw new InvalidOperationException($"Encryption Based Container without Client Encryption Keys. Please make sure you have created the Client Encryption Keys:{ex.Message}. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                    throw new InvalidOperationException($"Encryption Based Container without Client Encryption Keys. Please make sure you have created the Client Encryption Keys:{ex.Message}. Please refer to https://aka.ms/CosmosClientEncryption for more details.");
                 }
                 else
                 {
