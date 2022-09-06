@@ -135,7 +135,7 @@ WHERE IS_OBJECT(c.field)]]></Query>
     <Query><![CDATA[SELECT VALUE MIN (c.field)
 FROM c
 WHERE IS_STRING(c.field)]]></Query>
-    <Aggregation><![CDATA["0.125416678900559"]]></Aggregation>
+    <Aggregation><![CDATA["0.12541667890055883"]]></Aggregation>
   </Result>
   <Result>
     <Query><![CDATA[SELECT VALUE MIN (c.field)
@@ -159,7 +159,7 @@ WHERE c.key = "doubleOnly"]]></Query>
     <Query><![CDATA[SELECT VALUE MIN (c.field)
 FROM c
 WHERE c.key = "stringOnly"]]></Query>
-    <Aggregation><![CDATA["0.125416678900559"]]></Aggregation>
+    <Aggregation><![CDATA["0.12541667890055883"]]></Aggregation>
   </Result>
   <Result>
     <Query><![CDATA[SELECT VALUE MIN (c.field)

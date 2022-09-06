@@ -1,14 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<PropertyGroup>
-		<ClientOfficialVersion>3.18.0</ClientOfficialVersion>
-		<ClientPreviewVersion>3.19.0</ClientPreviewVersion>
-		<ClientPreviewSuffixVersion>preview1</ClientPreviewSuffixVersion>
-		<DirectVersion>3.19.1</DirectVersion>
-		<EncryptionVersion>1.0.0-previewV14</EncryptionVersion>
+		<ClientOfficialVersion>3.30.1</ClientOfficialVersion>
+		<ClientPreviewVersion>3.30.1</ClientPreviewVersion>
+		<ClientPreviewSuffixVersion>preview</ClientPreviewSuffixVersion>
+		<DirectVersion>3.29.1</DirectVersion>
+		<EncryptionOfficialVersion>2.0.0</EncryptionOfficialVersion>
+		<EncryptionPreviewVersion>2.0.0</EncryptionPreviewVersion>
+		<EncryptionPreviewSuffixVersion>preview</EncryptionPreviewSuffixVersion>
+		<CustomEncryptionVersion>1.0.0-preview04</CustomEncryptionVersion>
 		<HybridRowVersion>1.1.0-preview3</HybridRowVersion>
+		<LangVersion>10.0</LangVersion>
 		<AboveDirBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</AboveDirBuildProps>
-		<DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW</DefineConstants>
+		<DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW;ENCRYPTIONPREVIEW</DefineConstants>
 	</PropertyGroup>
 	<Import Project="$(AboveDirBuildProps)" Condition=" '$(AboveDirBuildProps)' != '' " />
 </Project>

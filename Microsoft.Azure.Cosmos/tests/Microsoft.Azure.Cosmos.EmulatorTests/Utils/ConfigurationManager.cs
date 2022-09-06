@@ -38,5 +38,6 @@ namespace Microsoft.Azure.Cosmos.Utils
         }
 
         public static Dictionary<string, string> AppSettings { get; private set; }
+
     }
 }

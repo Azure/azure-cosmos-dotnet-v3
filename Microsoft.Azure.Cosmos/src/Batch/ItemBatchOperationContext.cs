@@ -18,6 +18,10 @@ namespace Microsoft.Azure.Cosmos
     {
         public string PartitionKeyRangeId { get; private set; }
 
+        public bool IsClientEncrypted { get; set; }
+
+        public string IntendedCollectionRidValue { get; set; }
+
         public BatchAsyncBatcher CurrentBatcher { get; set; }
 
         public Task<TransactionalBatchOperationResult> OperationTask => this.taskCompletionSource.Task;

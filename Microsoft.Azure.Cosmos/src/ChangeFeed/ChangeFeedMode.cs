@@ -10,12 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// Base class for the change feed mode <see cref="ChangeFeedRequestOptions"/>.
     /// </summary>
     /// <remarks>Use one of the static constructors to generate a ChangeFeedMode option.</remarks>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    abstract class ChangeFeedMode
+    public abstract class ChangeFeedMode
     {
         /// <summary>
         /// Initializes an instance of the <see cref="ChangeFeedMode"/> class.
@@ -49,6 +44,11 @@ namespace Microsoft.Azure.Cosmos
         /// but no events for deletes or intermediary updates would be included.
         /// </remarks>
         /// <returns>A <see cref="ChangeFeedMode"/>  to receive notifications for insertions, updates, and delete operations.</returns>
-        public static ChangeFeedMode FullFidelity => ChangeFeedModeFullFidelity.Instance;
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        static ChangeFeedMode FullFidelity => ChangeFeedModeFullFidelity.Instance;
     }
 }

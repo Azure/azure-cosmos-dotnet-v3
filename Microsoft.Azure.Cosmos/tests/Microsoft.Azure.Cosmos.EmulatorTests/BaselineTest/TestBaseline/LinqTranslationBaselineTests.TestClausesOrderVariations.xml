@@ -8,7 +8,7 @@
       <SqlQuery><![CDATA[
 SELECT VALUE root["NumericField"] 
 FROM root 
-WHERE (root["StringField"] = "str") ]]></SqlQuery>
+WHERE (root["StringField"] = "str")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -20,7 +20,7 @@ WHERE (root["StringField"] = "str") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["NumericField"] 
 FROM root 
-WHERE (root["NumericField"] = 0) ]]></SqlQuery>
+WHERE (root["NumericField"] = 0)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -32,7 +32,7 @@ WHERE (root["NumericField"] = 0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["Point"] 
 FROM root 
-WHERE (((((root["Point"]["coordinates"]["Latitude"] = 100) AND (root["Point"]["coordinates"]["Longitude"] = 50)) AND (root["Point"]["coordinates"]["Altitude"] = 20)) AND (root["Point"]["coordinates"]["Coordinates"][0] = 100)) AND (root["Point"]["coordinates"]["Coordinates"][1] = 50)) ]]></SqlQuery>
+WHERE (((((root["Point"]["coordinates"]["Latitude"] = 100) AND (root["Point"]["coordinates"]["Longitude"] = 50)) AND (root["Point"]["coordinates"]["Altitude"] = 20)) AND (root["Point"]["coordinates"]["Coordinates"][0] = 100)) AND (root["Point"]["coordinates"]["Coordinates"][1] = 50))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -44,7 +44,7 @@ WHERE (((((root["Point"]["coordinates"]["Latitude"] = 100) AND (root["Point"]["c
       <SqlQuery><![CDATA[
 SELECT VALUE root["Point"] 
 FROM root 
-WHERE (((((root["Point"]["coordinates"]["Latitude"] = 100) AND (root["Point"]["coordinates"]["Longitude"] = 50)) AND (root["Point"]["coordinates"]["Altitude"] = 20)) AND (root["Point"]["coordinates"]["Coordinates"][0] = 100)) AND (root["Point"]["coordinates"]["Coordinates"][1] = 50)) ]]></SqlQuery>
+WHERE (((((root["Point"]["coordinates"]["Latitude"] = 100) AND (root["Point"]["coordinates"]["Longitude"] = 50)) AND (root["Point"]["coordinates"]["Altitude"] = 20)) AND (root["Point"]["coordinates"]["Coordinates"][0] = 100)) AND (root["Point"]["coordinates"]["Coordinates"][1] = 50))]]></SqlQuery>
     </Output>
   </Result>
 </Results>

@@ -15,19 +15,19 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     {
         public SdkBenchmarkConfiguration()
         {
-            this.Add(JitOptimizationsValidator.DontFailOnError);
-            this.Add(DefaultConfig.Instance.GetLoggers().ToArray());
-            this.Add(StatisticColumn.Q3);
-            this.Add(StatisticColumn.P80);
-            this.Add(StatisticColumn.P85);
-            this.Add(StatisticColumn.P90);
-            this.Add(StatisticColumn.P95);
-            this.Add(StatisticColumn.P100);
-            this.Add(new IDiagnoser[] { MemoryDiagnoser.Default, ThreadingDiagnoser.Default });
-            this.Add(StatisticColumn.OperationsPerSecond);
-            this.Add(MarkdownExporter.Default);
-            this.Add(CsvExporter.Default);
-            this.Add(DefaultConfig.Instance.GetColumnProviders().ToArray());
+            this.AddValidator(JitOptimizationsValidator.DontFailOnError);
+            this.AddLogger(DefaultConfig.Instance.GetLoggers().ToArray());
+            this.AddColumn(StatisticColumn.Q3);
+            this.AddColumn(StatisticColumn.P80);
+            this.AddColumn(StatisticColumn.P85);
+            this.AddColumn(StatisticColumn.P90);
+            this.AddColumn(StatisticColumn.P95);
+            this.AddColumn(StatisticColumn.P100);
+            this.AddDiagnoser(new IDiagnoser[] { MemoryDiagnoser.Default, ThreadingDiagnoser.Default });
+            this.AddColumn(StatisticColumn.OperationsPerSecond);
+            this.AddExporter(MarkdownExporter.Default);
+            this.AddExporter(CsvExporter.Default);
+            this.AddColumnProvider(DefaultConfig.Instance.GetColumnProviders().ToArray());
         }
     }
 }

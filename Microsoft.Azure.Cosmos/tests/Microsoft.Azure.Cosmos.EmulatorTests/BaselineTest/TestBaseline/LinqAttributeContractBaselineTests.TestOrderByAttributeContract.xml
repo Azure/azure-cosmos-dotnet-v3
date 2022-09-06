@@ -8,7 +8,7 @@
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY root["jsonProperty"] ASC ]]></SqlQuery>
+ORDER BY root["jsonProperty"] ASC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -20,7 +20,7 @@ ORDER BY root["jsonProperty"] ASC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY root["jsonProperty"] DESC ]]></SqlQuery>
+ORDER BY root["jsonProperty"] DESC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -32,7 +32,7 @@ ORDER BY root["jsonProperty"] DESC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY root["dataMember"] ASC ]]></SqlQuery>
+ORDER BY root["dataMember"] ASC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -44,7 +44,7 @@ ORDER BY root["dataMember"] ASC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY root["dataMember"] DESC ]]></SqlQuery>
+ORDER BY root["dataMember"] DESC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -56,7 +56,7 @@ ORDER BY root["dataMember"] DESC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY root["Default"] ASC ]]></SqlQuery>
+ORDER BY root["Default"] ASC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -68,7 +68,7 @@ ORDER BY root["Default"] ASC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY root["Default"] DESC ]]></SqlQuery>
+ORDER BY root["Default"] DESC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -80,7 +80,7 @@ ORDER BY root["Default"] DESC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY root["jsonPropertyHasHigherPriority"] ASC ]]></SqlQuery>
+ORDER BY root["jsonPropertyHasHigherPriority"] ASC]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -92,7 +92,7 @@ ORDER BY root["jsonPropertyHasHigherPriority"] ASC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-ORDER BY root["jsonPropertyHasHigherPriority"] DESC ]]></SqlQuery>
+ORDER BY root["jsonPropertyHasHigherPriority"] DESC]]></SqlQuery>
     </Output>
   </Result>
 </Results>

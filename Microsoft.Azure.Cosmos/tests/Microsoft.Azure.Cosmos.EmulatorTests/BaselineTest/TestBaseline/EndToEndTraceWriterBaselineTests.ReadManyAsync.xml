@@ -12,113 +12,133 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── ReadManyItemsStreamAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── ReadManyItemsStreamAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
     │   )
-    ├── Execute query for a partitionkeyrange(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   ├── Create Query Pipeline(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   └── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │       └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │           └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │           └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Execute query for a partitionkeyrange(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   │   (
+    │   │       [Query Correlated ActivityId]
+    │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │   )
+    │   ├── Create Query Pipeline(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   │   └── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   │       └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   │           └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │           └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │               └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
     │                   │   (
     │                   │       [Query Metrics]
     │                   │       Redacted To Not Change The Baselines From Run To Run
     │                   │   )
-    │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │       │   (
+    │                   │       │       [System Info]
+    │                   │       │       Redacted To Not Change The Baselines From Run To Run
+    │                   │       │   )
+    │                   │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │                   │                           (
     │                   │                               [Client Side Request Stats]
     │                   │                               Redacted To Not Change The Baselines From Run To Run
     │                   │                           )
-    │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── Execute query for a partitionkeyrange(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   ├── Create Query Pipeline(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   └── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │       └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │           └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │           └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
+    ├── Execute query for a partitionkeyrange(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   │   (
+    │   │       [Query Correlated ActivityId]
+    │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │   )
+    │   ├── Create Query Pipeline(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   │   └── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   │       └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   │           └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │           └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │               └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
     │                   │   (
     │                   │       [Query Metrics]
     │                   │       Redacted To Not Change The Baselines From Run To Run
     │                   │   )
-    │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │       │   (
+    │                   │       │       [System Info]
+    │                   │       │       Redacted To Not Change The Baselines From Run To Run
+    │                   │       │   )
+    │                   │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │                   │                           (
     │                   │                               [Client Side Request Stats]
     │                   │                               Redacted To Not Change The Baselines From Run To Run
     │                   │                           )
-    │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    └── Execute query for a partitionkeyrange(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        ├── Create Query Pipeline(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │   └── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │       └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │           └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                    └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
+    └── Execute query for a partitionkeyrange(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+        │   (
+        │       [Query Correlated ActivityId]
+        │       Redacted To Not Change The Baselines From Run To Run
+        │   )
+        ├── Create Query Pipeline(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+        │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+        │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+        │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+        │   └── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+        │       └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+        │           └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+        └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+            ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+            └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+                └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+                    └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
                         │   (
                         │       [Query Metrics]
                         │       Redacted To Not Change The Baselines From Run To Run
                         │   )
-                        ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                        ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+                        │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+                        │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+                        │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │       │   (
+                        │       │       [System Info]
+                        │       │       Redacted To Not Change The Baselines From Run To Run
+                        │       │   )
+                        │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
                         │                           (
                         │                               [Client Side Request Stats]
                         │                               Redacted To Not Change The Baselines From Run To Run
                         │                           )
-                        └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                        └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "ReadManyItemsStreamAsync",
   "id": "00000000-0000-0000-0000-000000000000",
-  "caller info": {
-    "member": "MemberName",
-    "file": "FilePath",
-    "line": 42
-  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -128,44 +148,27 @@
     {
       "name": "Execute query for a partitionkeyrange",
       "id": "00000000-0000-0000-0000-000000000000",
-      "caller info": {
-        "member": "MemberName",
-        "file": "FilePath",
-        "line": 42
-      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
+      "data": {
+        "Query Correlated ActivityId": "Redacted To Not Change The Baselines From Run To Run"
+      },
       "children": [
         {
           "name": "Create Query Pipeline",
           "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Get Container Properties",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Collection Cache",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
@@ -174,44 +177,24 @@
             {
               "name": "Service Interop Query Plan",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "Get Overlapping Feed Ranges",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Partition Key Ranges",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Try Get Overlapping Ranges",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
@@ -224,55 +207,30 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Prefetching",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "data": {
@@ -288,33 +246,18 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
@@ -323,6 +266,9 @@
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
+                              "data": {
+                                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+                              },
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
@@ -345,11 +291,6 @@
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "caller info": {
-                                                "member": "MemberName",
-                                                "file": "FilePath",
-                                                "line": 42
-                                              },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
                                               "data": {
@@ -369,11 +310,6 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         }
@@ -390,44 +326,27 @@
     {
       "name": "Execute query for a partitionkeyrange",
       "id": "00000000-0000-0000-0000-000000000000",
-      "caller info": {
-        "member": "MemberName",
-        "file": "FilePath",
-        "line": 42
-      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
+      "data": {
+        "Query Correlated ActivityId": "Redacted To Not Change The Baselines From Run To Run"
+      },
       "children": [
         {
           "name": "Create Query Pipeline",
           "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Get Container Properties",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Collection Cache",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
@@ -436,44 +355,24 @@
             {
               "name": "Service Interop Query Plan",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "Get Overlapping Feed Ranges",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Partition Key Ranges",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Try Get Overlapping Ranges",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
@@ -486,55 +385,30 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Prefetching",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "[,05C1CFFFFFFFF8) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "[,05C1CFFFFFFFF8) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "data": {
@@ -550,33 +424,18 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
@@ -585,6 +444,9 @@
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
+                              "data": {
+                                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+                              },
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
@@ -607,11 +469,6 @@
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "caller info": {
-                                                "member": "MemberName",
-                                                "file": "FilePath",
-                                                "line": 42
-                                              },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
                                               "data": {
@@ -631,11 +488,6 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         }
@@ -652,44 +504,27 @@
     {
       "name": "Execute query for a partitionkeyrange",
       "id": "00000000-0000-0000-0000-000000000000",
-      "caller info": {
-        "member": "MemberName",
-        "file": "FilePath",
-        "line": 42
-      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
+      "data": {
+        "Query Correlated ActivityId": "Redacted To Not Change The Baselines From Run To Run"
+      },
       "children": [
         {
           "name": "Create Query Pipeline",
           "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Get Container Properties",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Collection Cache",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
@@ -698,44 +533,24 @@
             {
               "name": "Service Interop Query Plan",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "Get Overlapping Feed Ranges",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Partition Key Ranges",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Try Get Overlapping Ranges",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
@@ -748,55 +563,30 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Prefetching",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "[05C1E7FFFFFFFA,FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "[05C1E7FFFFFFFA,FF) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "data": {
@@ -812,33 +602,18 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
@@ -847,6 +622,9 @@
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
+                              "data": {
+                                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+                              },
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
@@ -869,11 +647,6 @@
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "caller info": {
-                                                "member": "MemberName",
-                                                "file": "FilePath",
-                                                "line": 42
-                                              },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
                                               "data": {
@@ -893,11 +666,6 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         }
@@ -913,6 +681,13 @@
     }
   ]
 }]]></Json>
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.ReadManyItemsStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+</OTelActivities>
     </Output>
   </Result>
   <Result>
@@ -925,113 +700,136 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── ReadManyItemsAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── ReadManyItemsAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
     │   )
-    ├── Execute query for a partitionkeyrange(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   ├── Create Query Pipeline(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   └── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │       └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │           └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │           └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Execute query for a partitionkeyrange(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   │   (
+    │   │       [Query Correlated ActivityId]
+    │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │   )
+    │   ├── Create Query Pipeline(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   │   └── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   │       └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   │           └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │           └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │               └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
     │                   │   (
     │                   │       [Query Metrics]
     │                   │       Redacted To Not Change The Baselines From Run To Run
     │                   │   )
-    │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │       │   (
+    │                   │       │       [System Info]
+    │                   │       │       Redacted To Not Change The Baselines From Run To Run
+    │                   │       │   )
+    │                   │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │                   │                           (
     │                   │                               [Client Side Request Stats]
     │                   │                               Redacted To Not Change The Baselines From Run To Run
     │                   │                           )
-    │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── Execute query for a partitionkeyrange(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   ├── Create Query Pipeline(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   └── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │       └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │           └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │           └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
+    ├── Execute query for a partitionkeyrange(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   │   (
+    │   │       [Query Correlated ActivityId]
+    │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │   )
+    │   ├── Create Query Pipeline(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   │   └── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   │       └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   │           └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │           └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │               └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
     │                   │   (
     │                   │       [Query Metrics]
     │                   │       Redacted To Not Change The Baselines From Run To Run
     │                   │   )
-    │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │       │   (
+    │                   │       │       [System Info]
+    │                   │       │       Redacted To Not Change The Baselines From Run To Run
+    │                   │       │   )
+    │                   │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │                   │                           (
     │                   │                               [Client Side Request Stats]
     │                   │                               Redacted To Not Change The Baselines From Run To Run
     │                   │                           )
-    │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    └── Execute query for a partitionkeyrange(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        ├── Create Query Pipeline(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │   └── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │       └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │           └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                    └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        │   (
-                        │       [Query Metrics]
-                        │       Redacted To Not Change The Baselines From Run To Run
-                        │   )
-                        ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        │                           (
-                        │                               [Client Side Request Stats]
-                        │                               Redacted To Not Change The Baselines From Run To Run
-                        │                           )
-                        └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
+    ├── Execute query for a partitionkeyrange(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   │   (
+    │   │       [Query Correlated ActivityId]
+    │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │   )
+    │   ├── Create Query Pipeline(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   │   └── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   │       └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   │           └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │           └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │               └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   (
+    │                   │       [Query Metrics]
+    │                   │       Redacted To Not Change The Baselines From Run To Run
+    │                   │   )
+    │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │       │   (
+    │                   │       │       [System Info]
+    │                   │       │       Redacted To Not Change The Baselines From Run To Run
+    │                   │       │   )
+    │                   │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                           (
+    │                   │                               [Client Side Request Stats]
+    │                   │                               Redacted To Not Change The Baselines From Run To Run
+    │                   │                           )
+    │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
+    ├── Query Response Serialization(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    ├── Query Response Serialization(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    └── Query Response Serialization(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "ReadManyItemsAsync",
   "id": "00000000-0000-0000-0000-000000000000",
-  "caller info": {
-    "member": "MemberName",
-    "file": "FilePath",
-    "line": 42
-  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -1041,44 +839,27 @@
     {
       "name": "Execute query for a partitionkeyrange",
       "id": "00000000-0000-0000-0000-000000000000",
-      "caller info": {
-        "member": "MemberName",
-        "file": "FilePath",
-        "line": 42
-      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
+      "data": {
+        "Query Correlated ActivityId": "Redacted To Not Change The Baselines From Run To Run"
+      },
       "children": [
         {
           "name": "Create Query Pipeline",
           "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Get Container Properties",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Collection Cache",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
@@ -1087,44 +868,24 @@
             {
               "name": "Service Interop Query Plan",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "Get Overlapping Feed Ranges",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Partition Key Ranges",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Try Get Overlapping Ranges",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
@@ -1137,55 +898,30 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Prefetching",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "data": {
@@ -1201,33 +937,18 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
@@ -1236,6 +957,9 @@
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
+                              "data": {
+                                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+                              },
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
@@ -1258,11 +982,6 @@
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "caller info": {
-                                                "member": "MemberName",
-                                                "file": "FilePath",
-                                                "line": 42
-                                              },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
                                               "data": {
@@ -1282,11 +1001,6 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         }
@@ -1303,44 +1017,27 @@
     {
       "name": "Execute query for a partitionkeyrange",
       "id": "00000000-0000-0000-0000-000000000000",
-      "caller info": {
-        "member": "MemberName",
-        "file": "FilePath",
-        "line": 42
-      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
+      "data": {
+        "Query Correlated ActivityId": "Redacted To Not Change The Baselines From Run To Run"
+      },
       "children": [
         {
           "name": "Create Query Pipeline",
           "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Get Container Properties",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Collection Cache",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
@@ -1349,44 +1046,24 @@
             {
               "name": "Service Interop Query Plan",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "Get Overlapping Feed Ranges",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Partition Key Ranges",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Try Get Overlapping Ranges",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
@@ -1399,55 +1076,30 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Prefetching",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "[,05C1CFFFFFFFF8) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "[,05C1CFFFFFFFF8) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "data": {
@@ -1463,33 +1115,18 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
@@ -1498,6 +1135,9 @@
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
+                              "data": {
+                                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+                              },
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
@@ -1520,11 +1160,6 @@
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "caller info": {
-                                                "member": "MemberName",
-                                                "file": "FilePath",
-                                                "line": 42
-                                              },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
                                               "data": {
@@ -1544,11 +1179,6 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         }
@@ -1565,44 +1195,27 @@
     {
       "name": "Execute query for a partitionkeyrange",
       "id": "00000000-0000-0000-0000-000000000000",
-      "caller info": {
-        "member": "MemberName",
-        "file": "FilePath",
-        "line": 42
-      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
+      "data": {
+        "Query Correlated ActivityId": "Redacted To Not Change The Baselines From Run To Run"
+      },
       "children": [
         {
           "name": "Create Query Pipeline",
           "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Get Container Properties",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Collection Cache",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
@@ -1611,44 +1224,24 @@
             {
               "name": "Service Interop Query Plan",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "Get Overlapping Feed Ranges",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Partition Key Ranges",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Try Get Overlapping Ranges",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
@@ -1661,55 +1254,30 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Prefetching",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "[05C1E7FFFFFFFA,FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "[05C1E7FFFFFFFA,FF) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "data": {
@@ -1725,33 +1293,18 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
@@ -1760,6 +1313,9 @@
                               "id": "00000000-0000-0000-0000-000000000000",
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
+                              "data": {
+                                "System Info": "Redacted To Not Change The Baselines From Run To Run"
+                              },
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
@@ -1782,11 +1338,6 @@
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "caller info": {
-                                                "member": "MemberName",
-                                                "file": "FilePath",
-                                                "line": 42
-                                              },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
                                               "data": {
@@ -1806,11 +1357,6 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         }
@@ -1823,9 +1369,29 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Query Response Serialization",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Query Response Serialization",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Query Response Serialization",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0
     }
   ]
 }]]></Json>
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.ReadManyItemsAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+</OTelActivities>
     </Output>
   </Result>
 </Results>

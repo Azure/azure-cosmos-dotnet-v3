@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -32,7 +33,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
                 await container.CreateItemAsync(toDoActivity, new PartitionKey(toDoActivity.pk));
                 await container.ReadItemAsync<ToDoActivity>(toDoActivity.id, new PartitionKey(toDoActivity.pk));
-                await container.UpsertItemAsync<ToDoActivity>(toDoActivity, new PartitionKey(toDoActivity.pk));
                 toDoActivity.cost = 8923498;
                 await container.ReplaceItemAsync<ToDoActivity>(toDoActivity, toDoActivity.id, new PartitionKey(toDoActivity.pk));
                 await container.DeleteItemAsync<ToDoActivity>(toDoActivity.id, new PartitionKey(toDoActivity.pk));
@@ -101,13 +101,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             private void ValidateLazyHeadersAreNotCreated(CosmosMessageHeadersInternal internalHeaders)
             {
-                StoreRequestNameValueCollection storeRequestHeaders = (StoreRequestNameValueCollection)internalHeaders;
-                FieldInfo lazyHeaders = typeof(StoreRequestNameValueCollection).GetField("lazyNotCommonHeaders", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                RequestNameValueCollection storeRequestHeaders = (RequestNameValueCollection)internalHeaders.INameValueCollection;
+                FieldInfo lazyHeaders = typeof(Documents.Collections.RequestNameValueCollection).GetField("lazyNotCommonHeaders", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
                 Lazy<Dictionary<string, string>> lazyNotCommonHeaders = (Lazy<Dictionary<string, string>>)lazyHeaders.GetValue(storeRequestHeaders);
+
                 // Use the if instead of Assert.IsFalse to avoid creating the dictionary in the error message
                 if (lazyNotCommonHeaders.IsValueCreated)
                 {
-                    Assert.Fail($"The lazy dictionary should not be created. Please add the following headers to the {nameof(StoreRequestNameValueCollection)}: {JsonConvert.SerializeObject(lazyNotCommonHeaders.Value)}");
+                    Assert.Fail($"The lazy dictionary should not be created. Please add the following headers to the {nameof(Documents.Collections.RequestNameValueCollection)}: {JsonConvert.SerializeObject(lazyNotCommonHeaders.Value)}");
                 }
             }
         }

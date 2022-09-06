@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Tracing;
     using ResourceId = Documents.ResourceId;
 
@@ -295,12 +296,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 uninitializedEnumerator.FeedRangeState.FeedRange,
                 trace,
                 this.cancellationToken);
-            if (childRanges.Count == 0)
-            {
-                throw new InvalidOperationException("Got back no children");
-            }
 
-            if (childRanges.Count == 1)
+            if (childRanges.Count <= 1)
             {
                 // We optimistically assumed that the cache is not stale.
                 // In the event that it is (where we only get back one child / the partition that we think got split)
@@ -312,24 +309,48 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     this.cancellationToken);
             }
 
-            if (childRanges.Count() <= 1)
+            if (childRanges.Count < 1)
             {
-                throw new InvalidOperationException("Expected more than 1 child");
+                string errorMessage = "SDK invariant violated 82086B2D: Must have at least one EPK range in a cross partition enumerator";
+                throw Resource.CosmosExceptions.CosmosExceptionFactory.CreateInternalServerErrorException(
+                                message: errorMessage,
+                                headers: null,
+                                stackTrace: null,
+                                trace: trace,
+                                error: new Microsoft.Azure.Documents.Error { Code = "SDK_invariant_violated_82086B2D", Message = errorMessage });
             }
 
-            foreach (FeedRangeInternal childRange in childRanges)
+            if (childRanges.Count == 1)
             {
-                this.cancellationToken.ThrowIfCancellationRequested();
-
+                // On a merge, the 410/1002 results in a single parent
+                // We maintain the current enumerator's range and let the RequestInvokerHandler logic kick in
                 OrderByQueryPartitionRangePageAsyncEnumerator childPaginator = new OrderByQueryPartitionRangePageAsyncEnumerator(
                     this.documentContainer,
                     uninitializedEnumerator.SqlQuerySpec,
-                    new FeedRangeState<QueryState>(childRange, uninitializedEnumerator.StartOfPageState),
+                    new FeedRangeState<QueryState>(uninitializedEnumerator.FeedRangeState.FeedRange, uninitializedEnumerator.StartOfPageState),
                     partitionKey: null,
                     uninitializedEnumerator.QueryPaginationOptions,
                     uninitializedEnumerator.Filter,
                     this.cancellationToken);
                 this.uninitializedEnumeratorsAndTokens.Enqueue((childPaginator, token));
+            }
+            else
+            {
+                // Split
+                foreach (FeedRangeInternal childRange in childRanges)
+                {
+                    this.cancellationToken.ThrowIfCancellationRequested();
+
+                    OrderByQueryPartitionRangePageAsyncEnumerator childPaginator = new OrderByQueryPartitionRangePageAsyncEnumerator(
+                        this.documentContainer,
+                        uninitializedEnumerator.SqlQuerySpec,
+                        new FeedRangeState<QueryState>(childRange, uninitializedEnumerator.StartOfPageState),
+                        partitionKey: null,
+                        uninitializedEnumerator.QueryPaginationOptions,
+                        uninitializedEnumerator.Filter,
+                        this.cancellationToken);
+                    this.uninitializedEnumeratorsAndTokens.Enqueue((childPaginator, token));
+                }
             }
 
             // Recursively retry
@@ -496,11 +517,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         //// In more mathematical terms
         ////  1) <x, y> always comes before <z, y> where x < z
         ////  2) <i, j> always come before <i, k> where j < k
-        public ValueTask<bool> MoveNextAsync()
-        {
-            return this.MoveNextAsync(NoOpTrace.Singleton);
-        }
-
         public ValueTask<bool> MoveNextAsync(ITrace trace)
         {
             this.cancellationToken.ThrowIfCancellationRequested();
@@ -821,7 +837,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 AppendToBuilders(builders, "( ");
 
                 // We need to add the filter for within the same type.
-                if (orderByItem != default)
+                if (orderByItem is not CosmosUndefined)
                 {
                     StringBuilder sb = new StringBuilder();
                     CosmosElementToQueryLiteral cosmosElementToQueryLiteral = new CosmosElementToQueryLiteral(sb);
@@ -848,9 +864,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 }
 
                 // Now we need to include all the types that match the sort order.
-                ReadOnlyMemory<string> isDefinedFunctions = orderByItem == default
-                    ? CosmosElementToIsSystemFunctionsVisitor.VisitUndefined(sortOrder == SortOrder.Ascending)
-                    : orderByItem.Accept(CosmosElementToIsSystemFunctionsVisitor.Singleton, sortOrder == SortOrder.Ascending);
+                ReadOnlyMemory<string> isDefinedFunctions = orderByItem.Accept(CosmosElementToIsSystemFunctionsVisitor.Singleton, sortOrder == SortOrder.Ascending);
                 foreach (string isDefinedFunction in isDefinedFunctions.Span)
                 {
                     AppendToBuilders(builders, " OR ");
@@ -909,7 +923,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
                         bool wasInequality;
                         // We need to add the filter for within the same type.
-                        if (orderByItem == default)
+                        if (orderByItem is CosmosUndefined)
                         {
                             ComparisionWithUndefinedFilters filters = new ComparisionWithUndefinedFilters(expression);
 
@@ -989,9 +1003,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         if (wasInequality)
                         {
                             // Now we need to include all the types that match the sort order.
-                            ReadOnlyMemory<string> isDefinedFunctions = orderByItem == default
-                                ? CosmosElementToIsSystemFunctionsVisitor.VisitUndefined(sortOrder == SortOrder.Ascending)
-                                : orderByItem.Accept(CosmosElementToIsSystemFunctionsVisitor.Singleton, sortOrder == SortOrder.Ascending);
+                            ReadOnlyMemory<string> isDefinedFunctions = orderByItem.Accept(CosmosElementToIsSystemFunctionsVisitor.Singleton, sortOrder == SortOrder.Ascending);
                             foreach (string isDefinedFunction in isDefinedFunctions.Span)
                             {
                                 AppendToBuilders(builders, " OR ");
@@ -1093,7 +1105,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 // If there is a tie in the sort order the documents should be in _rid order in the same direction as the index (given by the backend)
                 ResourceId rid = ResourceId.Parse(orderByResult.Rid);
                 int ridOrderCompare = continuationRid.Document.CompareTo(rid.Document);
-                if ((orderByQueryPage.Page.CosmosQueryExecutionInfo == null) || orderByQueryPage.Page.CosmosQueryExecutionInfo.ReverseRidEnabled)
+
+                Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo = orderByQueryPage.Page.CosmosQueryExecutionInfo;
+                if ((cosmosQueryExecutionInfo == null) || cosmosQueryExecutionInfo.Value.ReverseRidEnabled)
                 {
                     // If reverse rid is enabled on the backend then fallback to the old way of doing it.
                     if (sortOrders[0] == SortOrder.Descending)
@@ -1104,7 +1118,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 else
                 {
                     // Go by the whatever order the index wants
-                    if (orderByQueryPage.Page.CosmosQueryExecutionInfo.ReverseIndexScan)
+                    if (cosmosQueryExecutionInfo.Value.ReverseIndexScan)
                     {
                         ridOrderCompare = -ridOrderCompare;
                     }
@@ -1239,6 +1253,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 return GetIsDefinedFunctions(SortOrder.Null, isAscending);
             }
 
+            public ReadOnlyMemory<string> Visit(CosmosUndefined cosmosUndefined, bool isAscending)
+            {
+                return isAscending ? SystemFunctionSortOrder.Slice(start: 1) : ReadOnlyMemory<string>.Empty;
+            }
+
             public ReadOnlyMemory<string> Visit(CosmosNumber cosmosNumber, bool isAscending)
             {
                 return GetIsDefinedFunctions(SortOrder.Number, isAscending);
@@ -1252,11 +1271,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             public ReadOnlyMemory<string> Visit(CosmosString cosmosString, bool isAscending)
             {
                 return GetIsDefinedFunctions(SortOrder.String, isAscending);
-            }
-
-            public static ReadOnlyMemory<string> VisitUndefined(bool isAscending)
-            {
-                return isAscending ? SystemFunctionSortOrder.Slice(start: 1) : ReadOnlyMemory<string>.Empty;
             }
 
             private static ReadOnlyMemory<string> GetIsDefinedFunctions(int index, bool isAscending)

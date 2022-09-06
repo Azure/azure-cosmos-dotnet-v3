@@ -27,7 +27,7 @@ select_item : scalar_expression (K_AS IDENTIFIER)? ;
 /*--------------------------------------------------------------------------------*/
 from_clause : K_FROM collection_expression ;
 collection_expression
-	: collection (K_AS IDENTIFIER)? #AliasedCollectionExpression
+	: collection (K_AS? IDENTIFIER)? #AliasedCollectionExpression
 	| IDENTIFIER K_IN collection #ArrayIteratorCollectionExpression 
 	| collection_expression K_JOIN collection_expression #JoinCollectionExpression
 	;
@@ -210,7 +210,7 @@ K_ORDER : O R D E R;
 K_SELECT : S E L E C T;
 K_TOP : T O P;
 K_TRUE : 'true';
-K_UDF : U D F;
+K_UDF : 'udf';
 K_UNDEFINED : 'undefined';
 K_VALUE : V A L U E;
 K_WHERE : W H E R E;
@@ -238,8 +238,8 @@ NUMERIC_LITERAL
 	;
 
 STRING_LITERAL
-	: '"' (ESC | SAFECODEPOINT)* '"'
-	| '\'' (ESC | SAFECODEPOINT)* '\''
+	: '"' (ESC | SAFECODEPOINTWITHDOUBLEQUOTATION)* '"'
+	| '\'' (ESC | SAFECODEPOINTWITHSINGLEQUOTATION)* '\''
 	;
 
 fragment ESC
@@ -254,9 +254,13 @@ fragment HEX
    : [0-9a-fA-F]
    ;
 
-fragment SAFECODEPOINT
-   : ~ ["\\\u0000-\u001F]
-   ;
+fragment SAFECODEPOINTWITHSINGLEQUOTATION
+	: ~ ['\\\u0000-\u001F]
+	;
+
+fragment SAFECODEPOINTWITHDOUBLEQUOTATION
+	: ~ ["\\\u0000-\u001F]
+	;
 
 IDENTIFIER
 	: 

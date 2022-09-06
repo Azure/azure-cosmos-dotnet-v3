@@ -24,9 +24,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
         public TryCatch<QueryPage> Current { get; protected set; }
 
-        public ValueTask DisposeAsync() => this.inputStage.DisposeAsync();
-
-        public ValueTask<bool> MoveNextAsync() => this.MoveNextAsync(NoOpTrace.Singleton);
+        public ValueTask DisposeAsync()
+        {
+            return this.inputStage.DisposeAsync();
+        }
 
         public abstract ValueTask<bool> MoveNextAsync(ITrace trace);
 

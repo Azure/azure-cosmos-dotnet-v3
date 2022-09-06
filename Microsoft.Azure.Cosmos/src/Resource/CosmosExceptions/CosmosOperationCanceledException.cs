@@ -6,7 +6,11 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections;
+    using System.Threading;
+    using global::Azure.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
@@ -17,6 +21,9 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosOperationCanceledException : OperationCanceledException
     {
         private readonly OperationCanceledException originalException;
+        private readonly Lazy<string> lazyMessage;
+        private readonly Lazy<string> toStringMessage;
+        private readonly bool tokenCancellationRequested;
 
         /// <summary>
         /// Create an instance of CosmosOperationCanceledException
@@ -30,11 +37,15 @@ namespace Microsoft.Azure.Cosmos
         {
             this.originalException = originalException ?? throw new ArgumentNullException(nameof(originalException));
             this.Diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
+            this.tokenCancellationRequested = originalException.CancellationToken.IsCancellationRequested;
+            this.toStringMessage = this.CreateToStringMessage();
+            this.lazyMessage = this.CreateLazyMessage();
         }
 
         internal CosmosOperationCanceledException(
             OperationCanceledException originalException,
             ITrace trace)
+            : base(originalException.CancellationToken)
         {
             this.originalException = originalException ?? throw new ArgumentNullException(nameof(originalException));
             if (trace == null)
@@ -42,8 +53,14 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            trace.AddDatum("Operation Cancelled Exception", originalException);
+            using (ITrace child = trace.StartChild("CosmosOperationCanceledException"))
+            {
+                child.AddDatum("Operation Cancelled Exception", originalException);
+            }
             this.Diagnostics = new CosmosTraceDiagnostics(trace);
+            this.tokenCancellationRequested = originalException.CancellationToken.IsCancellationRequested;
+            this.toStringMessage = this.CreateToStringMessage();
+            this.lazyMessage = this.CreateLazyMessage();
         }
 
         /// <inheritdoc/>
@@ -54,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override string Message => this.originalException.Message;
+        public override string Message => this.lazyMessage.Value;
 
         /// <inheritdoc/>
         public override string StackTrace => this.originalException.StackTrace;
@@ -83,7 +100,28 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override string ToString()
         {
-            return $"{this.originalException} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}";
+            return this.toStringMessage.Value;
+        }
+
+        private Lazy<string> CreateLazyMessage()
+        {
+            return new Lazy<string>(() => $"{this.originalException.Message}{Environment.NewLine}Cancellation Token has expired: {this.tokenCancellationRequested}. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
+        }
+        private Lazy<string> CreateToStringMessage()
+        {
+            return new Lazy<string>(() => $"{this.originalException}{Environment.NewLine}Cancellation Token has expired: {this.tokenCancellationRequested}. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
+        }
+
+        /// <summary>
+        /// RecordOtelAttributes
+        /// </summary>
+        /// <param name="exception"></param>
+        /// <param name="scope"></param>
+        internal static void RecordOtelAttributes(CosmosOperationCanceledException exception, DiagnosticScope scope)
+        {
+            scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics));
+            scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, exception.Diagnostics);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.GetBaseException().Message);
         }
     }
 }

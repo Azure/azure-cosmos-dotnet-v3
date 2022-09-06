@@ -10,9 +10,9 @@ namespace PowerShellRestApi
     // ----------------------------------------------------------------------------------------------------------
     // This class runs the power shell scripts for database/container/items basic operations.
     // Sole purpose of this is user can take helps from the scripts if they having issue 
-    // in running rest api via power shell.
-    // However we recommend to use CosmosClient SDK for any user interaction with CosmosDB services
-    // instead of directly using rest api.
+    // in running REST API via PowerShell.
+    // However we recommend to use CosmosClient SDK for any user interaction with Cosmos DB services
+    // instead of directly using REST API.
     // ----------------------------------------------------------------------------------------------------------
     public class Program
     {

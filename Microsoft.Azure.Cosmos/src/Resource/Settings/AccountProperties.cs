@@ -7,8 +7,11 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Text;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary> 
     /// Represents a <see cref="AccountProperties"/>. A AccountProperties is the container for databases in the Azure Cosmos DB service.
@@ -17,6 +20,8 @@ namespace Microsoft.Azure.Cosmos
     {
         private Collection<AccountRegion> readRegions;
         private Collection<AccountRegion> writeRegions;
+
+        private string accountNameWithCloudInfo;
 
         internal readonly Lazy<IDictionary<string, object>> QueryEngineConfigurationInternal;
 
@@ -42,6 +47,9 @@ namespace Microsoft.Azure.Cosmos
         [JsonIgnore]
         public IEnumerable<AccountRegion> ReadableRegions => this.ReadLocationsInternal;
 
+        [JsonIgnore]
+        private string id;
+
         /// <summary>
         /// Gets the Id of the resource in the Azure Cosmos DB service.
         /// </summary>
@@ -64,7 +72,16 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.Id)]
-        public string Id { get; internal set; }
+        public string Id
+        {
+            get => this.id;
+
+            internal set
+            {
+                this.id = value;
+                this.accountNameWithCloudInfo = null;
+            }
+        }
 
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
@@ -233,5 +250,32 @@ namespace Microsoft.Azure.Cosmos
                 return new Dictionary<string, object>();
             }
         }
+        
+        [JsonIgnore]
+        internal string AccountNameWithCloudInformation => this.AppendAccountAndCloudInfo();
+
+        /// <summary>
+        /// if there is cached value AND there is no change in the account id.
+        /// Ideally, it should not change but it has internal setter that's why this check is required.
+        /// </summary>
+        /// <returns>accountNameWithCloudInfoSnapshot</returns>
+        private string AppendAccountAndCloudInfo()
+        {
+            string accountNameWithCloudInfoSnapshot = this.accountNameWithCloudInfo;
+            if (!string.IsNullOrEmpty(accountNameWithCloudInfoSnapshot))
+            {
+                return accountNameWithCloudInfoSnapshot;
+            }
+
+            return this.accountNameWithCloudInfo = $"{this.Id}({VmMetadataApiHandler.GetCloudInformation()})";
+
+        }
+
+        /// <summary>
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+        /// </summary>
+        [JsonExtensionData]
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
     }
 }

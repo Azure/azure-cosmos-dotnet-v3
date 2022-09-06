@@ -8,7 +8,7 @@
       <SqlQuery><![CDATA[
 SELECT VALUE root["StringField"] 
 FROM root 
-WHERE ((root["NumericField"] < 3) ? true : false) ]]></SqlQuery>
+WHERE ((root["NumericField"] < 3) ? true : false)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -20,7 +20,7 @@ WHERE ((root["NumericField"] < 3) ? true : false) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["StringField"] 
 FROM root 
-WHERE (root["NumericField"] = (ARRAY_CONTAINS(root["ArrayField"], 1) ? 1 : 5)) ]]></SqlQuery>
+WHERE (root["NumericField"] = (ARRAY_CONTAINS(root["ArrayField"], 1) ? 1 : 5))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -32,7 +32,7 @@ WHERE (root["NumericField"] = (ARRAY_CONTAINS(root["ArrayField"], 1) ? 1 : 5)) ]
       <SqlQuery><![CDATA[
 SELECT VALUE root["StringField"] 
 FROM root 
-WHERE (root["NumericField"] = ((root["StringField"] = "str") ? 1 : (ARRAY_CONTAINS(root["ArrayField"], 1) ? 3 : 4))) ]]></SqlQuery>
+WHERE (root["NumericField"] = ((root["StringField"] = "str") ? 1 : (ARRAY_CONTAINS(root["ArrayField"], 1) ? 3 : 4)))]]></SqlQuery>
     </Output>
   </Result>
 </Results>

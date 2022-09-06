@@ -21,13 +21,11 @@ namespace Microsoft.Azure.Cosmos
         public AuthorizationTokenProviderTokenCredential(
             TokenCredential tokenCredential,
             Uri accountEndpoint,
-            TimeSpan requestTimeout,
             TimeSpan? backgroundTokenCredentialRefreshInterval)
         {
             this.tokenCredentialCache = new TokenCredentialCache(
                 tokenCredential: tokenCredential,
                 accountEndpoint: accountEndpoint,
-                requestTimeout: requestTimeout,
                 backgroundTokenCredentialRefreshInterval: backgroundTokenCredentialRefreshInterval);
         }
 
@@ -38,9 +36,12 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers,
             AuthorizationTokenType tokenType)
         {
-            string token = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(
-                    await this.tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton));
-            return (token, default);
+            using (Trace trace = Trace.GetRootTrace(nameof(GetUserAuthorizationTokenAsync), TraceComponent.Authorization, TraceLevel.Info))
+            {
+                string token = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(
+                    await this.tokenCredentialCache.GetTokenAsync(trace));
+                return (token, default);
+            }
         }
 
         public override async ValueTask<string> GetUserAuthorizationTokenAsync(
@@ -61,10 +62,13 @@ namespace Microsoft.Azure.Cosmos
             string verb,
             AuthorizationTokenType tokenType)
         {
-            string token = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(
-                    await this.tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton));
+            using (Trace trace = Trace.GetRootTrace(nameof(GetUserAuthorizationTokenAsync), TraceComponent.Authorization, TraceLevel.Info))
+            {
+                string token = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(
+                    await this.tokenCredentialCache.GetTokenAsync(trace));
 
-            headersCollection.Add(HttpConstants.HttpHeaders.Authorization, token);
+                headersCollection.Add(HttpConstants.HttpHeaders.Authorization, token);
+            }
         }
 
         public override void TraceUnauthorized(

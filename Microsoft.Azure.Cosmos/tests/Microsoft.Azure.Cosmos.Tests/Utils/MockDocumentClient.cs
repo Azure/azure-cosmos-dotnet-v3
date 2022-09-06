@@ -232,7 +232,6 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                             It.IsAny<string>(),
                             It.IsAny<CollectionRoutingMap>(),
                             It.IsAny<DocumentServiceRequest>(),
-                            It.IsAny<CancellationToken>(),
                             It.IsAny<ITrace>()
                         )
                 ).Returns(Task.FromResult<CollectionRoutingMap>(null));
@@ -263,6 +262,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
             this.MockGlobalEndpointManager.Setup(gep => gep.InitializeAccountPropertiesAndStartBackgroundRefresh(It.IsAny<AccountProperties>()));
             SessionContainer sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
             this.sessionContainer = sessionContainer;
+
         }
     }
 }

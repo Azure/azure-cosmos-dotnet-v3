@@ -50,25 +50,35 @@ namespace Microsoft.Azure.Cosmos
 
         private FeedResponse<T> CreateQueryFeedResponseHelper<T>(
             ResponseMessage cosmosResponseMessage)
-        {
+        {            
             if (cosmosResponseMessage is QueryResponse queryResponse)
             {
-                return QueryResponse<T>.CreateResponse<T>(
-                    cosmosQueryResponse: queryResponse,
-                    serializerCore: this.serializerCore);
+                using (cosmosResponseMessage.Trace.StartChild("Query Response Serialization"))
+                {
+                    return QueryResponse<T>.CreateResponse<T>(
+                        cosmosQueryResponse: queryResponse,
+                        serializerCore: this.serializerCore);
+                }
             }
 
-            return ReadFeedResponse<T>.CreateResponse<T>(
+            using (cosmosResponseMessage.Trace.StartChild("Feed Response Serialization"))
+            {
+                return ReadFeedResponse<T>.CreateResponse<T>(
                        cosmosResponseMessage,
                        this.serializerCore);
+            }
+                
         }
 
         private FeedResponse<T> CreateChangeFeedResponseHelper<T>(
             ResponseMessage cosmosResponseMessage)
         {
-            return ReadFeedResponse<T>.CreateResponse<T>(
+            using (cosmosResponseMessage.Trace.StartChild("ChangeFeed Response Serialization"))
+            {
+                return ReadFeedResponse<T>.CreateResponse<T>(
                        cosmosResponseMessage,
                        this.serializerCore);
+            }
         }
 
         public override ItemResponse<T> CreateItemResponse<T>(
@@ -81,7 +91,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     item,
-                    cosmosResponseMessage.Trace);
+                    cosmosResponseMessage.Diagnostics,
+                    cosmosResponseMessage.RequestMessage);
             });
         }
 
@@ -97,7 +108,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.Headers,
                     containerProperties,
                     container,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    responseMessage.RequestMessage);
             });
         }
 
@@ -113,7 +125,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.Headers,
                     userProperties,
                     user,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    cosmosResponseMessage.RequestMessage);
             });
         }
 
@@ -129,7 +142,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.Headers,
                     permissionProperties,
                     permission,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    responseMessage.RequestMessage);
             });
         }
 
@@ -145,7 +159,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.Headers,
                     cekProperties,
                     clientEncryptionKey,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    cosmosResponseMessage.RequestMessage);
             });
         }
 
@@ -162,7 +177,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.Headers,
                     databaseProperties,
                     database,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    responseMessage.RequestMessage);
             });
         }
 
@@ -176,7 +192,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     throughputProperties,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    cosmosResponseMessage.RequestMessage);
             });
         }
 
@@ -189,7 +206,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     item,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    cosmosResponseMessage.RequestMessage);
             });
         }
 
@@ -202,7 +220,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     cosmosStoredProcedure,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    cosmosResponseMessage.RequestMessage);
             });
         }
 
@@ -215,7 +234,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     triggerProperties,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    cosmosResponseMessage.RequestMessage);
             });
         }
 
@@ -229,7 +249,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     settings,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Diagnostics,
+                    cosmosResponseMessage.RequestMessage);
             });
         }
 
@@ -240,7 +261,11 @@ namespace Microsoft.Azure.Cosmos
                 //Throw the exception
                 message.EnsureSuccessStatusCode();
 
-                return createResponse(message);
+                using (message.Trace.StartChild("Response Serialization"))
+                {
+                    return createResponse(message);
+                }
+                
             }
         }
 

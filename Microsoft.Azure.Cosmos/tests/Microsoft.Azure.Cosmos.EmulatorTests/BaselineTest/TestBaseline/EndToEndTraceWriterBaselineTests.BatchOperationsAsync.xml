@@ -34,34 +34,34 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── ExecuteAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── ExecuteAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
     │   )
-    └── Execute Next Batch(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        ├── Create Batch Request(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        └── Execute Batch Request(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    └── Execute Next Batch(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
+        ├── Create Batch Request(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
+        └── Execute Batch Request(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
+            ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            │       │   (
+            │       │       [System Info]
+            │       │       Redacted To Not Change The Baselines From Run To Run
+            │       │   )
+            │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
             │                           (
             │                               [Client Side Request Stats]
             │                               Redacted To Not Change The Baselines From Run To Run
             │                           )
-            └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+            └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "ExecuteAsync",
   "id": "00000000-0000-0000-0000-000000000000",
-  "caller info": {
-    "member": "MemberName",
-    "file": "FilePath",
-    "line": 42
-  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -71,33 +71,18 @@
     {
       "name": "Execute Next Batch",
       "id": "00000000-0000-0000-0000-000000000000",
-      "caller info": {
-        "member": "MemberName",
-        "file": "FilePath",
-        "line": 42
-      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "Create Batch Request",
           "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0
         },
         {
           "name": "Execute Batch Request",
           "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
@@ -112,6 +97,9 @@
                   "id": "00000000-0000-0000-0000-000000000000",
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
+                  "data": {
+                    "System Info": "Redacted To Not Change The Baselines From Run To Run"
+                  },
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
@@ -134,11 +122,6 @@
                                 {
                                   "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "caller info": {
-                                    "member": "MemberName",
-                                    "file": "FilePath",
-                                    "line": 42
-                                  },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
@@ -158,11 +141,6 @@
             {
               "name": "Create Trace",
               "id": "00000000-0000-0000-0000-000000000000",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
@@ -172,6 +150,8 @@
     }
   ]
 }]]></Json>
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.ExecuteAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+</OTelActivities>
     </Output>
   </Result>
 </Results>

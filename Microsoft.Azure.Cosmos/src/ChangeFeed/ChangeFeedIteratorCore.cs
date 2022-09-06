@@ -89,14 +89,28 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                                             message: $"Failed to parse get object in composite continuation: {startFromContinuation.Continuation}."));
                                 }
 
-                                if (!cosmosObject.TryGetValue("min", out CosmosString min))
+                                if (!cosmosObject.TryGetValue("range", out CosmosElement rangeItem))
+                                {
+                                    return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
+                                        new MalformedChangeFeedContinuationTokenException(
+                                            message: $"Failed to parse token: {cosmosObject}."));
+                                }
+
+                                if (!(rangeItem is CosmosObject rangeElement))
+                                {
+                                    return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
+                                        new MalformedChangeFeedContinuationTokenException(
+                                            message: $"Failed to parse get object in composite continuation: {startFromContinuation.Continuation}."));
+                                }
+
+                                if (!rangeElement.TryGetValue("min", out CosmosString min))
                                 {
                                     return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
                                         new MalformedChangeFeedContinuationTokenException(
                                             message: $"Failed to parse start of range: {cosmosObject}."));
                                 }
 
-                                if (!cosmosObject.TryGetValue("max", out CosmosString max))
+                                if (!rangeElement.TryGetValue("max", out CosmosString max))
                                 {
                                     return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
                                         new MalformedChangeFeedContinuationTokenException(
@@ -200,11 +214,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            return await this.clientContext.OperationHelperAsync("Change Feed Iterator Read Next Async",
-                                requestOptions: this.changeFeedRequestOptions,
-                                task: (trace) => this.ReadNextInternalAsync(trace, cancellationToken),
-                                traceComponent: TraceComponent.ChangeFeed,
-                                traceLevel: TraceLevel.Info);
+                return await this.clientContext.OperationHelperAsync("Change Feed Iterator Read Next Async",
+                                                requestOptions: this.changeFeedRequestOptions,
+                                                task: (trace) => this.ReadNextInternalAsync(trace, cancellationToken),
+                                                openTelemetry: (response) => new OpenTelemetryResponse(response),
+                                                traceComponent: TraceComponent.ChangeFeed,
+                                                traceLevel: TraceLevel.Info);
         }
 
         public override async Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
@@ -235,6 +250,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     trace,
                     out CosmosException cosmosException))
                 {
+                    // Initialization issue, there are no enumerators to invoke
+                    this.hasMoreResults = false;
                     throw createException;
                 }
 
@@ -247,9 +264,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
 
             CrossPartitionChangeFeedAsyncEnumerator enumerator = monadicEnumerator.Result;
-            if (!await enumerator.MoveNextAsync(trace))
+            enumerator.SetCancellationToken(cancellationToken);
+
+            try
             {
-                throw new InvalidOperationException("ChangeFeed enumerator should always have a next continuation");
+                if (!await enumerator.MoveNextAsync(trace))
+                {
+                    throw new InvalidOperationException("ChangeFeed enumerator should always have a next continuation");
+                }
+            }
+            catch (OperationCanceledException ex) when (!(ex is CosmosOperationCanceledException))
+            {
+                throw new CosmosOperationCanceledException(ex, trace);
             }
 
             if (enumerator.Current.Failed)
@@ -259,7 +285,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     trace,
                     out CosmosException cosmosException))
                 {
-                    throw enumerator.Current.Exception;
+                    throw ExceptionWithStackTraceException.UnWrapMonadExcepion(enumerator.Current.Exception, trace);
                 }
 
                 if (!IsRetriableException(cosmosException))
@@ -291,40 +317,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
 
             CrossFeedRangeState<ChangeFeedState> crossFeedRangeState = crossFeedRangePage.State;
-            string continuationToken;
-            if (this.changeFeedRequestOptions.EmitOldContinuationToken)
-            {
-                List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>();
-                for (int i = 0; i < crossFeedRangeState.Value.Length; i++)
-                {
-                    FeedRangeState<ChangeFeedState> changeFeedFeedRangeState = crossFeedRangeState.Value.Span[i];
-                    string token = changeFeedFeedRangeState.State is ChangeFeedStateContinuation changeFeedStateContinuation ? ((CosmosString)changeFeedStateContinuation.ContinuationToken).Value : null;
-                    Documents.Routing.Range<string> range = ((FeedRangeEpk)changeFeedFeedRangeState.FeedRange).Range;
-                    CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
-                    {
-                        Range = range,
-                        Token = token,
-                    };
-
-                    compositeContinuationTokens.Add(compositeContinuationToken);
-                }
-
-                FeedRangeCompositeContinuation feedRangeCompositeContinuationToken = new FeedRangeCompositeContinuation(
-                    await this.documentContainer.GetResourceIdentifierAsync(trace, cancellationToken),
-                    FeedRangeEpk.FullRange,
-                    compositeContinuationTokens);
-
-                continuationToken = feedRangeCompositeContinuationToken.ToString();
-            }
-            else
-            {
-                ChangeFeedCrossFeedRangeState changeFeedCrossFeedRangeState = new ChangeFeedCrossFeedRangeState(crossFeedRangeState.Value);
-                continuationToken = VersionedAndRidCheckedCompositeToken.ToCosmosElement(
-                    new VersionedAndRidCheckedCompositeToken(
-                        VersionedAndRidCheckedCompositeToken.Version.V2,
-                        changeFeedCrossFeedRangeState.ToCosmosElement(),
-                        await this.documentContainer.GetResourceIdentifierAsync(trace, cancellationToken))).ToString();
-            }
+            ChangeFeedCrossFeedRangeState changeFeedCrossFeedRangeState = new ChangeFeedCrossFeedRangeState(crossFeedRangeState.Value);
+            string continuationToken = VersionedAndRidCheckedCompositeToken.ToCosmosElement(
+                new VersionedAndRidCheckedCompositeToken(
+                    VersionedAndRidCheckedCompositeToken.Version.V2,
+                    changeFeedCrossFeedRangeState.ToCosmosElement(),
+                    await this.documentContainer.GetResourceIdentifierAsync(trace, cancellationToken))).ToString();
 
             responseMessage.Headers.ContinuationToken = continuationToken;
             responseMessage.Headers.RequestCharge = changeFeedPage.RequestCharge;

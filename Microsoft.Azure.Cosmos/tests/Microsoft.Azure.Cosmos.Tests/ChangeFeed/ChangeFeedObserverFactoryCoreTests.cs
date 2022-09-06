@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task WhenDelegateIsTyped_Manual()
         {
             bool executed = false;
-            Task changesHandler(ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, Func<Task<(bool isSuccess, Exception exception)>> tryCheckpointAsync, CancellationToken token)
+            Task changesHandler(ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, Func<Task> checkpointAsync, CancellationToken token)
             {
                 Assert.AreEqual(1, docs.Count);
                 Assert.AreEqual("Test", docs.First().id.ToString());
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             ResponseMessage responseMessage = this.BuildResponseMessage();
             bool executed = false;
-            Task changesHandler(ChangeFeedProcessorContext context, Stream stream, Func<Task<(bool isSuccess, Exception exception)>> tryCheckpointAsync, CancellationToken token)
+            Task changesHandler(ChangeFeedProcessorContext context, Stream stream, Func<Task> checkpointAsync, CancellationToken token)
             {
                 Assert.ReferenceEquals(responseMessage.Content, stream);
                 executed = true;

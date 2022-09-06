@@ -744,7 +744,15 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             string query,
             QueryRequestOptions queryRequestOptions = null)
         {
-            return RunQueryCombinationsAsync(
+            return RunQueryAsync<CosmosElement>(container, query, queryRequestOptions);
+        }
+
+        internal static Task<List<T>> RunQueryAsync<T>(
+            Container container,
+            string query,
+            QueryRequestOptions queryRequestOptions = null)
+        {
+            return RunQueryCombinationsAsync<T>(
                 container,
                 query,
                 queryRequestOptions,
@@ -760,7 +768,16 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             CosmosElementContinuationToken = 4,
         }
 
-        internal static async Task<List<CosmosElement>> RunQueryCombinationsAsync(
+        internal static Task<List<CosmosElement>> RunQueryCombinationsAsync(
+            Container container,
+            string query,
+            QueryRequestOptions queryRequestOptions,
+            QueryDrainingMode queryDrainingMode)
+        {
+            return RunQueryCombinationsAsync<CosmosElement>(container, query, queryRequestOptions, queryDrainingMode);
+        }
+
+            internal static async Task<List<T>> RunQueryCombinationsAsync<T>(
             Container container,
             string query,
             QueryRequestOptions queryRequestOptions,
@@ -771,11 +788,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 throw new ArgumentOutOfRangeException(nameof(queryDrainingMode));
             }
 
-            Dictionary<QueryDrainingMode, List<CosmosElement>> queryExecutionResults = new Dictionary<QueryDrainingMode, List<CosmosElement>>();
+            Dictionary<QueryDrainingMode, List<T>> queryExecutionResults = new Dictionary<QueryDrainingMode, List<T>>();
 
             if (queryDrainingMode.HasFlag(QueryDrainingMode.HoldState))
             {
-                List<CosmosElement> queryResultsWithoutContinuationToken = await QueryWithoutContinuationTokensAsync<CosmosElement>(
+                List<T> queryResultsWithoutContinuationToken = await QueryWithoutContinuationTokensAsync<T>(
                     container,
                     query,
                     queryRequestOptions);
@@ -785,7 +802,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             if (queryDrainingMode.HasFlag(QueryDrainingMode.ContinuationToken))
             {
-                List<CosmosElement> queryResultsWithContinuationTokens = await QueryWithContinuationTokensAsync<CosmosElement>(
+                List<T> queryResultsWithContinuationTokens = await QueryWithContinuationTokensAsync<T>(
                     container,
                     query,
                     queryRequestOptions);
@@ -795,7 +812,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             if (queryDrainingMode.HasFlag(QueryDrainingMode.CosmosElementContinuationToken))
             {
-                List<CosmosElement> queryResultsWithCosmosElementContinuationToken = await QueryWithCosmosElementContinuationTokenAsync<CosmosElement>(
+                List<T> queryResultsWithCosmosElementContinuationToken = await QueryWithCosmosElementContinuationTokenAsync<T>(
                     container,
                     query,
                     queryRequestOptions);
@@ -809,13 +826,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 {
                     if (queryDrainingMode1 != queryDrainingMode2)
                     {
-                        List<CosmosElement> first = queryExecutionResults[queryDrainingMode1];
-                        List<CosmosElement> second = queryExecutionResults[queryDrainingMode2];
-                        Assert.IsTrue(
-                            first.SequenceEqual(second),
-                            $"{query} returned different results.\n" +
-                            $"{queryDrainingMode1}: {JsonConvert.SerializeObject(first)}\n" +
-                            $"{queryDrainingMode2}: {JsonConvert.SerializeObject(second)}\n");
+                        List<T> first = queryExecutionResults[queryDrainingMode1];
+                        List<T> second = queryExecutionResults[queryDrainingMode2];
+                        Assert.IsTrue(first.SequenceEqual(second));
                     }
                 }
             }
@@ -836,6 +849,36 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 {
                     FeedResponse<T> response = await resultSetIterator.ReadNextAsync();
                     yield return response;
+                }
+            }
+        }
+
+        internal static async IAsyncEnumerable<FeedResponse<T>> RunSimpleQueryWithNewIteratorAsync<T>(
+           Container container,
+           string query,
+           QueryRequestOptions requestOptions = null)
+        {
+            string continuationToken = null;
+            while (true)
+            {
+                using (FeedIterator<T> resultSetIterator = container.GetItemQueryIterator<T>(
+                query,
+                continuationToken,
+                requestOptions: requestOptions))
+                {
+                    while (resultSetIterator.HasMoreResults)
+                    {
+                        FeedResponse<T> response = await resultSetIterator.ReadNextAsync();
+
+                        continuationToken = response.ContinuationToken;
+
+                        yield return response;
+
+                        break;
+                    }
+
+                    if (!resultSetIterator.HasMoreResults)
+                        break;
                 }
             }
         }

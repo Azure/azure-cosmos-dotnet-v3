@@ -39,8 +39,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
                 foreach (bool useAlias in new bool[] { false, true })
                 {
                     inputs.Add(CreateInput(
-                        description: $"collection: {collection} + useAlias: {useAlias}",
+                        description: $"collection: {collection} + useAlias with AS: {useAlias}",
                         fromClause: $"FROM {collection} {(useAlias ? "AS asdf" : string.Empty)}"));
+
+                    inputs.Add(CreateInput(
+                        description: $"collection: {collection} + useAlias without AS: {useAlias}",
+                        fromClause: $"FROM {collection} {(useAlias ? " asdf" : string.Empty)}"));
                 }
             }
 

@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -455,6 +456,47 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task VerifyPatchItemStreamOperation()
+        {
+            ResponseMessage response = null;
+            ItemRequestOptions requestOptions = null;
+            Mock<Stream> mockPayload = new Mock<Stream>();
+            HttpStatusCode httpStatusCode = HttpStatusCode.OK;
+            int testHandlerHitCount = 0;
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
+                Assert.IsTrue(request.RequestUri.OriginalString.StartsWith(@"dbs/testdb/colls/testcontainer/docs/cdbBinaryIdRequest"));
+                Assert.AreEqual(Cosmos.PartitionKey.Null.ToJsonString(), request.Headers.PartitionKey);
+                Assert.AreEqual(ResourceType.Document, request.ResourceType);
+                Assert.AreEqual(OperationType.Patch, request.OperationType);
+                Assert.AreEqual(mockPayload.Object, request.Content);
+                Assert.AreEqual(requestOptions, request.RequestOptions);
+                testHandlerHitCount++;
+                response = new ResponseMessage(httpStatusCode, request, errorMessage: null)
+                {
+                    Content = request.Content
+                };
+                return Task.FromResult(response);
+            });
+
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
+                (builder) => builder.AddCustomHandlers(testHandler));
+
+            Container container = client.GetDatabase("testdb")
+                                        .GetContainer("testcontainer");
+
+            ContainerInternal containerInternal = (ContainerInternal)container;
+            ResponseMessage responseMessage = await containerInternal.PatchItemStreamAsync(
+                id: "cdbBinaryIdRequest",
+                partitionKey: Cosmos.PartitionKey.Null,
+                streamPayload: mockPayload.Object,
+                requestOptions: requestOptions);
+            Assert.IsNotNull(responseMessage);
+            Assert.AreEqual(httpStatusCode, responseMessage.StatusCode);
+            Assert.AreEqual(1, testHandlerHitCount, "The operation did not make it to the handler");
+        }
+
+        [TestMethod]
         public async Task TestNestedPartitionKeyValueFromStreamAsync()
         {
             ContainerInternal originalContainer = (ContainerInternal)MockCosmosUtil.CreateMockCosmosClient().GetContainer("TestDb", "Test");
@@ -671,19 +713,21 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
+                It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, TraceComponent, TraceLevel>(
-                (operationName, requestOptions, func, comp, level) => func(NoOpTrace.Singleton));
+               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
+                (operationName, requestOptions, func, oTelFunc, comp, level) => func(NoOpTrace.Singleton));
 
             mockContext.Setup(x => x.OperationHelperAsync<ItemResponse<dynamic>>(
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ItemResponse<dynamic>>>>(),
+                It.IsAny<Func<ItemResponse<dynamic>, OpenTelemetryAttributes>>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ItemResponse<dynamic>>>, TraceComponent, TraceLevel>(
-                (operationName, requestOptions, func, comp, level) => func(NoOpTrace.Singleton));
+               .Returns<string, RequestOptions, Func<ITrace, Task<ItemResponse<dynamic>>>, Func<ItemResponse<dynamic>, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
+                (operationName, requestOptions, func, oTelFunc, comp, level) => func(NoOpTrace.Singleton));
 
             mockContext.Setup(x => x.ProcessResourceOperationStreamAsync(
                 It.IsAny<string>(),

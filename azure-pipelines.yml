@@ -8,7 +8,7 @@ pr:
     - releases/*
   paths:
     include:
-    - /*
+    - '*'
 
 variables:
   DebugArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
@@ -29,7 +29,21 @@ jobs:
 #    Arguments: $(DebugArguments)
 #    VmImage: $(VmImage)
 
+- template:  templates/nuget-pack.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage: $(VmImage)
+    ReleasePackage: false
+    OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/Release/Microsoft.Azure.Cosmos'
+
 - template:  templates/build-ctl.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage: $(VmImage)
+
+- template:  templates/build-samples.yml
   parameters:
     BuildConfiguration: Release
     Arguments: $(ReleaseArguments)
@@ -48,6 +62,12 @@ jobs:
     VmImage:  $(VmImage)
 
 - template:  templates/build-preview.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage:  $(VmImage)
+
+- template:  templates/build-benchmark.yml
   parameters:
     BuildConfiguration: Release
     Arguments: $(ReleaseArguments)

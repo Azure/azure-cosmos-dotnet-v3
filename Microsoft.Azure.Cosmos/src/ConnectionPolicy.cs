@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
     using System.Net.Http;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -39,12 +40,14 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionMode = ConnectionMode.Gateway;
             this.MaxConcurrentFanoutRequests = defaultMaxConcurrentFanoutRequests;
             this.MediaReadMode = MediaReadMode.Buffered;
-            this.UserAgentContainer = new UserAgentContainer();
+            this.UserAgentContainer = new UserAgentContainer(clientId: 0);
             this.preferredLocations = new ObservableCollection<string>();
             this.EnableEndpointDiscovery = true;
             this.MaxConnectionLimit = defaultMaxConcurrentConnectionLimit;
             this.RetryOptions = new RetryOptions();
             this.EnableReadRequestsFallback = null;
+
+            this.EnableClientTelemetry = ClientTelemetryOptions.IsClientTelemetryEnabled();
         }
 
         /// <summary>
@@ -56,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!RegionProximityUtil.SourceRegionToTargetRegionsRTTInMs.ContainsKey(location))
             {
-                throw new ArgumentException("Current location is not a valid Azure region.");
+                throw new ArgumentException($"ApplicationRegion configuration '{location}' is not a valid Azure region or the current SDK version does not recognize it. If the value represents a valid region, make sure you are using the latest SDK version.");
             }
 
             List<string> proximityBasedPreferredLocations = RegionProximityUtil.GeneratePreferredRegionList(location);
@@ -204,6 +207,12 @@ namespace Microsoft.Azure.Cosmos
         {
             get;
             set;
+        }
+
+        internal bool EnableClientTelemetry 
+        { 
+            get; 
+            set; 
         }
 
         /// <summary>

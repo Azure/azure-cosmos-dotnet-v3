@@ -10,6 +10,7 @@
     using Newtonsoft.Json;
 
     [TestClass]
+    [TestCategory("Query")]
     public sealed class SkipTakeQueryTests : QueryTestsBase
     {
         [TestMethod]
@@ -23,7 +24,7 @@
             IEnumerable<string> documentsToInsert = util.GetDocuments(numDocuments);
 
             await this.CreateIngestQueryDeleteAsync(
-                ConnectionModes.Direct,
+                ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documentsToInsert,
                 ImplementationAsync,
@@ -128,7 +129,7 @@
             }
 
             await this.CreateIngestQueryDeleteAsync(
-                ConnectionModes.Direct,
+                ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documentsToInsert,
                 ImplementationAsync,

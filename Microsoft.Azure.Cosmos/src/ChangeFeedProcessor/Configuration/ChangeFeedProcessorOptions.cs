@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
 {
     using System;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Monitoring;
 
     /// <summary>
     /// Options to control various aspects of partition distribution happening within <see cref="ChangeFeedProcessorCore"/> instance.
@@ -81,5 +82,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
         /// </remarks>
         /// <seealso cref="ChangeFeedOptions.StartFromBeginning"/>
         public bool StartFromBeginning { get; set; }
+
+        public ChangeFeedProcessorHealthMonitorCore HealthMonitor { get; set; } = new ChangeFeedProcessorHealthMonitorCore();
     }
 }

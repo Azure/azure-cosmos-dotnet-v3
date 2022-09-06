@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
@@ -176,14 +177,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 writer.Write("Component");
                 writer.Write(space);
 
-                writer.Write(trace.CallerInfo.MemberName);
-
-                writer.Write('@');
-                writer.Write(GetFileNameFromPath(trace.CallerInfo.FilePath));
-                writer.Write(':');
-                writer.Write(trace.CallerInfo.LineNumber);
-                writer.Write(space);
-
                 writer.Write(trace.StartTime.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture));
                 writer.Write(space);
 
@@ -345,8 +338,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     }
 
                     stringBuilder.AppendLine("Contacted Replicas");
-                    Dictionary<Uri, int> uriAndCounts = new Dictionary<Uri, int>();
-                    foreach (Uri uri in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
+                    Dictionary<Documents.TransportAddressUri, int> uriAndCounts = new Dictionary<Documents.TransportAddressUri, int>();
+                    foreach (Documents.TransportAddressUri uri in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
                     {
                         if (uri == null)
                         {
@@ -361,19 +354,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
                         uriAndCounts[uri] = ++count;
                     }
 
-                    foreach (KeyValuePair<Uri, int> uriAndCount in uriAndCounts)
+                    foreach (KeyValuePair<Documents.TransportAddressUri, int> uriAndCount in uriAndCounts)
                     {
                         stringBuilder.AppendLine($"{space}{uriAndCount.Key?.ToString() ?? "<null>"}: {uriAndCount.Value}");
                     }
 
                     stringBuilder.AppendLine("Failed to Contact Replicas");
-                    foreach (Uri failedToContactReplica in clientSideRequestStatisticsTraceDatum.FailedReplicas)
+                    foreach (Documents.TransportAddressUri failedToContactReplica in clientSideRequestStatisticsTraceDatum.FailedReplicas)
                     {
                         stringBuilder.AppendLine($"{space}{failedToContactReplica?.ToString() ?? "<null>"}");
                     }
 
                     stringBuilder.AppendLine("Regions Contacted");
-                    foreach (Uri regionContacted in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
+                    foreach (Documents.TransportAddressUri regionContacted in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
                     {
                         stringBuilder.AppendLine($"{space}{regionContacted?.ToString() ?? "<null>"}");
                     }
@@ -382,12 +375,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     stringBuilder.AppendLine(AddressResolutionStatisticsTextTable.Singleton.TopLine);
                     stringBuilder.AppendLine(AddressResolutionStatisticsTextTable.Singleton.Header);
                     stringBuilder.AppendLine(AddressResolutionStatisticsTextTable.Singleton.MiddleLine);
-                    foreach (AddressResolutionStatistics stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics.Values)
+                    foreach (KeyValuePair<string, AddressResolutionStatistics> stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics)
                     {
                         string row = AddressResolutionStatisticsTextTable.Singleton.GetRow(
-                            stat.StartTime.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture),
-                            stat.EndTime.HasValue ? stat.EndTime.Value.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture) : "NO END TIME",
-                            stat.TargetEndpoint);
+                            stat.Value.StartTime.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture),
+                            stat.Value.EndTime.HasValue ? stat.Value.EndTime.Value.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture) : "NO END TIME",
+                            stat.Value.TargetEndpoint);
                         stringBuilder.AppendLine(row);
                     }
 
@@ -427,7 +420,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
                             stringBuilder.AppendLine($"{space}{space}Quorum Info");
                             stringBuilder.AppendLine($"{space}{space}{space}Current Replica Set Size: {stat.StoreResult.CurrentReplicaSetSize}");
                             stringBuilder.AppendLine($"{space}{space}{space}Current Write Quorum: {stat.StoreResult.CurrentWriteQuorum}");
-                            stringBuilder.AppendLine($"{space}{space}Is Client CPU Overloaded: {stat.StoreResult.IsClientCpuOverloaded}");
                             stringBuilder.AppendLine($"{space}{space}Exception");
                             try
                             {
@@ -440,14 +432,14 @@ namespace Microsoft.Azure.Cosmos.Tracing
                         }
                     }
 
-                    if (clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList.Count > 0)
+                    if (clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList.Any())
                     {
                         stringBuilder.AppendLine("Http Response Statistics");
                         foreach (HttpResponseStatistics stat in clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList)
                         {
                             stringBuilder.AppendLine($"{space}HttpResponse");
                             stringBuilder.AppendLine($"{space}{space}RequestStartTime: {stat.RequestStartTime.ToString("o", CultureInfo.InvariantCulture)}");
-                            stringBuilder.AppendLine($"{space}{space}RequestEndTime: {stat.RequestEndTime.ToString("o", CultureInfo.InvariantCulture)}");
+                            stringBuilder.AppendLine($"{space}{space}DurationInMs: {stat.Duration.TotalMilliseconds:0.00}");
                             stringBuilder.AppendLine($"{space}{space}RequestUri: {stat.RequestUri}");
                             stringBuilder.AppendLine($"{space}{space}ResourceType: {stat.ResourceType}");
                             stringBuilder.AppendLine($"{space}{space}HttpMethod: {stat.HttpMethod}");
@@ -487,7 +479,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     StringBuilder stringBuilder = new StringBuilder();
                     stringBuilder.AppendLine("Client Configuration");
                     stringBuilder.AppendLine($"Client Created Time: {clientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture)}");
+                    stringBuilder.AppendLine($"Machine Id: {VmMetadataApiHandler.GetMachineId()}");
                     stringBuilder.AppendLine($"Number Of Clients Created: {CosmosClient.numberOfClientsCreated}");
+                    stringBuilder.AppendLine($"Number Of Active Clients: {CosmosClient.NumberOfActiveClients}");
+                    stringBuilder.AppendLine($"Connection Mode: {clientConfigurationTraceDatum.ConnectionMode}");
                     stringBuilder.AppendLine($"User Agent: {clientConfigurationTraceDatum.UserAgentContainer.UserAgent}");
                     stringBuilder.AppendLine("Connection Config:");
                     stringBuilder.AppendLine($"{space}'gw': {clientConfigurationTraceDatum.GatewayConnectionConfig}");
@@ -501,6 +496,15 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 public override string ToString()
                 {
                     return this.toStringValue;
+                }
+
+                public void Visit(PartitionKeyRangeCacheTraceDatum partitionKeyRangeCacheTraceDatum)
+                {
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.AppendLine($"Previous Continuation Token: {partitionKeyRangeCacheTraceDatum.PreviousContinuationToken ?? "<null>"}");
+                    stringBuilder.AppendLine($"Continuation Token: {partitionKeyRangeCacheTraceDatum.ContinuationToken ?? "<null>"}");
+
+                    this.toStringValue = stringBuilder.ToString();
                 }
             }
 

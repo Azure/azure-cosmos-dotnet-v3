@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return await this.leaseUpdater.UpdateLeaseAsync(
                 lease,
                 lease.Id,
-                this.requestOptionsFactory.GetPartitionKey(lease.Id),
+                this.requestOptionsFactory.GetPartitionKey(lease.Id, lease.PartitionKey),
                 serverLease =>
                 {
                     if (serverLease.Owner != lease.Owner)

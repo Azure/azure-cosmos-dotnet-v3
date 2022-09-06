@@ -10,28 +10,42 @@ namespace CosmosBenchmark
 
     public class RunSummary
     {
-        public string pk { get; set; } 
+        public RunSummary(
+            BenchmarkConfig benchmarkConfig,
+            int concurrency)
+        {
+            this.BenchmarkConfig = benchmarkConfig ?? throw new ArgumentNullException(nameof(benchmarkConfig));
+            DateTime utcNow = DateTime.UtcNow;
+            this.id = $"{utcNow:yyyy-MM-dd:HH-mm}-{benchmarkConfig.CommitId}";
+            this.Date = utcNow.ToString("yyyy-MM-dd");
+            this.Time = utcNow.ToString("HH-mm");
+            this.Concurrency = concurrency;
+        }
 
-        public string id { get; set; }
-        public string Commit { get; set; }
-        public string CommitDate { get; set; }
-        public string CommitTime { get; set; }
+        public string pk => this.BenchmarkConfig.ResultsPartitionKeyValue;
+
+        public string id { get; }
+        public string Commit => this.BenchmarkConfig.CommitId;
+        public string CommitDate => this.BenchmarkConfig.CommitDate;
+        public string CommitTime => this.BenchmarkConfig.CommitTime;
 
         public string Remarks { get; set; }
-        public string Date { get; set; }
-        public string Time { get; set; }
+        public string Date { get; }
+        public string Time { get; }
 
-        public string WorkloadType { get; set; }
-        public string BranchName { get; set; }
-        public string AccountName { get; set; }
-        public string Database { get; set; }
-        public string Container { get; set; }
+        public BenchmarkConfig BenchmarkConfig { get; }
+        public string WorkloadType => String.IsNullOrWhiteSpace(this.BenchmarkConfig.WorkloadName) ? this.BenchmarkConfig.WorkloadType : this.BenchmarkConfig.WorkloadName;
+        public string BranchName => this.BenchmarkConfig.BranchName;
+        public string AccountName => this.BenchmarkConfig.EndPoint;
+        public string Database => this.BenchmarkConfig.Database;
+        public string Container => this.BenchmarkConfig.Container;
         public string ConsistencyLevel { get; set; }
 
-        public int Concurrency { get; set; }
-        public int TotalOps { get; set; }
-        public int? MaxRequestsPerTcpConnection { get; set; }
-        public int? MaxTcpConnectionsPerEndpoint { get; set; }
+        public int Concurrency { get; }
+        public int TotalOps => this.BenchmarkConfig.ItemCount;
+        public int? MaxRequestsPerTcpConnection => this.BenchmarkConfig.MaxRequestsPerTcpConnection;
+        public int? MaxTcpConnectionsPerEndpoint => this.BenchmarkConfig.MaxTcpConnectionsPerEndpoint;
+
         [JsonProperty]
         public static string MachineName { get; set; } = Environment.MachineName;
         [JsonProperty]

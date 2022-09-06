@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using ResourceIdentifier = Cosmos.Pagination.ResourceIdentifier;
 
     // Collection useful for mocking requests and repartitioning (splits / merge).
-    internal sealed class InMemoryContainer : IMonadicDocumentContainer
+    internal class InMemoryContainer : IMonadicDocumentContainer
     {
         private readonly PartitionKeyDefinition partitionKeyDefinition;
         private readonly Dictionary<int, (int, int)> parentToChildMapping;
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             PartitionKeyDefinition partitionKeyDefinition)
         {
             this.partitionKeyDefinition = partitionKeyDefinition ?? throw new ArgumentNullException(nameof(partitionKeyDefinition));
-            PartitionKeyHashRange fullRange = new PartitionKeyHashRange(startInclusive: null, endExclusive: null);
+            PartitionKeyHashRange fullRange = new PartitionKeyHashRange(startInclusive: null, endExclusive: new PartitionKeyHash(Cosmos.UInt128.MaxValue));
             PartitionKeyHashRanges partitionKeyHashRanges = PartitionKeyHashRanges.Create(new PartitionKeyHashRange[] { fullRange });
             this.partitionedRecords = new PartitionKeyHashRangeDictionary<Records>(partitionKeyHashRanges);
             this.partitionedRecords[fullRange] = new Records();
@@ -449,14 +449,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
         }
 
-        public Task<TryCatch<QueryPage>> MonadicQueryAsync(
+        public virtual Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
             QueryPaginationOptions queryPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<TryCatch<QueryPage>>(cancellationToken);
+            }
             if (sqlQuerySpec == null)
             {
                 throw new ArgumentNullException(nameof(sqlQuerySpec));
@@ -1282,7 +1285,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         private static PartitionKeyHashRange FeedRangeEpkToHashRange(FeedRangeEpk feedRangeEpk)
         {
             PartitionKeyHash? start = feedRangeEpk.Range.Min == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Min);
-            PartitionKeyHash? end = feedRangeEpk.Range.Max == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Max);
+            PartitionKeyHash? end = feedRangeEpk.Range.Max == string.Empty || feedRangeEpk.Range.Max == "FF" ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Max);
             PartitionKeyHashRange hashRange = new PartitionKeyHashRange(start, end);
             return hashRange;
         }
@@ -1504,6 +1507,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             public SqlScalarExpression Visit(CosmosString cosmosString)
             {
                 return SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(cosmosString.Value));
+            }
+
+            public SqlScalarExpression Visit(CosmosUndefined cosmosUndefined)
+            {
+                return SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
             }
         }
     }

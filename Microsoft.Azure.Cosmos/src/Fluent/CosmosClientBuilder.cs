@@ -8,6 +8,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using System.Collections.Generic;
     using System.Net;
     using System.Net.Http;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Azure;
+    using global::Azure;
+    using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -20,6 +25,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private readonly CosmosClientOptions clientOptions = new CosmosClientOptions();
         private readonly string accountEndpoint;
         private readonly string accountKey;
+        private readonly AzureKeyCredential azureKeyCredential;
+        private readonly TokenCredential tokenCredential;
 
         /// <summary>
         /// Initialize a new CosmosConfiguration class that holds all the properties the CosmosClient requires.
@@ -69,6 +76,51 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Initialize a new CosmosConfiguration class that holds all the properties the CosmosClient requires with the account endpoint URI string and AzureKeyCredential.
+        /// AzureKeyCredential enables changing/updating master-key/ResourceToken while CosmosClient is still in use. 
+        /// 
+        /// </summary>
+        /// <param name="accountEndpoint">The Uri to the Cosmos Account. Example: https://{Cosmos Account Name}.documents.azure.com:443/ </param>
+        /// <param name="authKeyOrResourceTokenCredential">AzureKeyCredential with master-key or resource token.</param>
+        /// <example>
+        /// The example below creates a new <see cref="CosmosClientBuilder"/>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+        ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
+        ///     authKeyOrResourceTokenCredential: new AzureKeyCredential("SuperSecretKey"));
+        /// CosmosClient client = cosmosClientBuilder.Build();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <example>
+        /// The example below creates a new <see cref="CosmosClientBuilder"/> with a ConsistencyLevel and a list of preferred locations.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+        ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
+        ///     authKeyOrResourceTokenCredential: new AzureKeyCredential("SuperSecretKey"))
+        /// .WithConsistencyLevel(ConsistencyLevel.Strong)
+        /// .WithApplicationRegion("East US 2");
+        /// CosmosClient client = cosmosClientBuilder.Build();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks>AzureKeyCredential enables changing/updating master-key/ResourceToken whle CosmosClient is still in use.</remarks> 
+        public CosmosClientBuilder(
+            string accountEndpoint,
+            AzureKeyCredential authKeyOrResourceTokenCredential)
+        {
+            if (string.IsNullOrEmpty(accountEndpoint))
+            {
+                throw new ArgumentNullException(nameof(CosmosClientBuilder.accountEndpoint));
+            }
+
+            this.accountEndpoint = accountEndpoint;
+            this.azureKeyCredential = authKeyOrResourceTokenCredential ?? throw new ArgumentNullException(nameof(authKeyOrResourceTokenCredential));
+        }
+
+        /// <summary>
         /// Extracts the account endpoint and key from the connection string.
         /// </summary>
         /// <example>"AccountEndpoint=https://mytestcosmosaccount.documents.azure.com:443/;AccountKey={SecretAccountKey};"</example>
@@ -85,6 +137,35 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Initializes a new <see cref="CosmosClientBuilder"/> with a <see cref="TokenCredential"/> instance.
+        /// </summary>
+        /// <param name="accountEndpoint">The Uri to the Cosmos Account. Example: https://{Cosmos Account Name}.documents.azure.com:443/ </param>
+        /// <param name="tokenCredential">An instance of <see cref="TokenCredential"/></param>
+        /// <example>
+        /// The example below creates a new <see cref="CosmosClientBuilder"/> using a <see cref="TokenCredential"/>.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+        ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
+        ///     tokenCredential: new DefaultAzureCredential());
+        /// CosmosClient client = cosmosClientBuilder.Build();
+        /// ]]>
+        /// </code>
+        /// </example>
+        public CosmosClientBuilder(
+            string accountEndpoint, 
+            TokenCredential tokenCredential)
+        {
+            if (string.IsNullOrEmpty(accountEndpoint))
+            {
+                throw new ArgumentNullException(nameof(CosmosClientBuilder.accountEndpoint));
+            }
+
+            this.accountEndpoint = accountEndpoint;
+            this.tokenCredential = tokenCredential ?? throw new ArgumentNullException(nameof(CosmosClientBuilder.tokenCredential));
+        }
+
+        /// <summary>
         /// A method to create the cosmos client
         /// </summary>
         /// <remarks>
@@ -94,7 +175,41 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public CosmosClient Build()
         {
             DefaultTrace.TraceInformation($"CosmosClientBuilder.Build with configuration: {this.clientOptions.GetSerializedConfiguration()}");
+
+            if (this.tokenCredential != null)
+            {
+                return new CosmosClient(this.accountEndpoint, this.tokenCredential, this.clientOptions);
+            }
+
+            if (this.azureKeyCredential != null)
+            {
+                return new CosmosClient(this.accountEndpoint, this.azureKeyCredential, this.clientOptions);
+            }
+
             return new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions);
+        }
+
+        /// <summary>
+        /// A method to create the cosmos client and initialize the provided containers.
+        /// </summary>
+        /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
+        /// <param name="cancellationToken">(Optional) Cancellation Token</param>
+        /// <returns>
+        /// A CosmosClient object.
+        /// </returns>
+        public Task<CosmosClient> BuildAndInitializeAsync(IReadOnlyList<(string databaseId, string containerId)> containers, CancellationToken cancellationToken = default)
+        {
+            if (this.tokenCredential != null)
+            {
+                return CosmosClient.CreateAndInitializeAsync(this.accountEndpoint, this.tokenCredential, containers, this.clientOptions, cancellationToken);
+            }
+
+            if (this.azureKeyCredential != null)
+            {
+                return CosmosClient.CreateAndInitializeAsync(this.accountEndpoint, this.azureKeyCredential, containers, this.clientOptions, cancellationToken);
+            }
+
+            return CosmosClient.CreateAndInitializeAsync(this.accountEndpoint, this.accountKey, containers, this.clientOptions, cancellationToken);
         }
 
         /// <summary>
@@ -308,6 +423,21 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Enable OpenTelemetry and start emiting activities for each operations
+        /// </summary>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            CosmosClientBuilder EnableOpenTelemetry()
+        {
+            this.clientOptions.EnableOpenTelemetry = true;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the connection mode to Gateway. This is used by the client when connecting to the Azure Cosmos DB service.
         /// </summary>
         /// <param name="maxConnectionLimit">The number specifies the time to wait for response to come back from network peer. Default is 60 connections</param>
@@ -361,7 +491,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Sets the maximum time to wait between retry and the max number of times to retry on throttled requests.
         /// </summary>
-        /// <param name="maxRetryWaitTimeOnThrottledRequests">The maximum retry time in seconds for the Azure Cosmos DB service. Any interval that is smaller than a second will be ignored.</param>
+        /// <param name="maxRetryWaitTimeOnThrottledRequests">The maximum retry timespan for the Azure Cosmos DB service. Any interval that is smaller than a second will be ignored.</param>
         /// <param name="maxRetryAttemptsOnThrottledRequests">The number specifies the times retry requests for throttled requests.</param>
         /// <para>
         /// When a request fails due to a rate limiting error, the service sends back a response that
@@ -522,11 +652,42 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Disable Telemetry if enabled using environment properties
+        /// </summary>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        internal CosmosClientBuilder WithTelemetryDisabled()
+        {
+            this.clientOptions.EnableClientTelemetry = false;
+            return this;
+        }
+
+        /// <summary>
+        /// To enable Telemetry, set COSMOS.CLIENT_TELEMETRY_ENABLED environment property. 
+        /// This function is used by Test only.
+        /// </summary>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        internal CosmosClientBuilder WithTelemetryEnabled()
+        {
+            this.clientOptions.EnableClientTelemetry = true;
+            return this;
+        }
+
+        /// <summary>
         /// Enabled partition level failover in the SDK
         /// </summary>
         internal CosmosClientBuilder WithPartitionLevelFailoverEnabled()
         {
             this.clientOptions.EnablePartitionLevelFailover = true;
+            return this;
+        }
+
+        /// <summary>
+        /// To enable LocalQuorum Consistency, i.e. Allow Quorum read with Eventual Consistency Account
+        /// Use By Compute Only
+        /// </summary>
+        internal CosmosClientBuilder AllowUpgradeConsistencyToLocalQuorum()
+        {
+            this.clientOptions.EnableUpgradeConsistencyToLocalQuorum = true;
             return this;
         }
 

@@ -14,13 +14,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
         public Container LeaseContainer = null;
 
-        public async Task ChangeFeedTestInit()
+        public async Task ChangeFeedTestInit(string leaseContainerPk = "/id")
         {
             await base.TestInit(customizeClientBuilder: (builder) => builder.WithContentResponseOnWrite(false));
-            string PartitionKey = "/id";
 
             ContainerResponse response = await this.database.CreateContainerAsync(
-                new ContainerProperties(id: "leases", partitionKeyPath: PartitionKey),
+                new ContainerProperties(id: "leases", partitionKeyPath: leaseContainerPk),
                 cancellationToken: this.cancellationToken);
 
             this.LeaseContainer = response;

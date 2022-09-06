@@ -7,7 +7,10 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Net;
     using System.Text;
+    using global::Azure.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -17,6 +20,7 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosException : Exception
     {
         private readonly string stackTrace;
+        private readonly Lazy<string> lazyMessage;
 
         internal CosmosException(
             HttpStatusCode statusCode,
@@ -26,10 +30,8 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             Error error,
             Exception innerException)
-            : base(CosmosException.GetMessageHelper(
-                statusCode,
-                headers,
-                message), innerException)
+            // The message is overridden. Base exception does not have CTOR for just innerException and the property is not virtual
+            : base(string.Empty, innerException)
         {
             this.ResponseBody = message;
             this.stackTrace = stackTrace;
@@ -37,6 +39,12 @@ namespace Microsoft.Azure.Cosmos
             this.Headers = headers ?? new Headers();
             this.Error = error;
             this.Trace = trace;
+            this.Diagnostics = new CosmosTraceDiagnostics(this.Trace ?? NoOpTrace.Singleton);
+            this.lazyMessage = new Lazy<string>(() => CosmosException.GetMessageHelper(
+                statusCode,
+                this.Headers,
+                this.ResponseBody,
+                this.Diagnostics));
         }
 
         /// <summary>
@@ -59,6 +67,7 @@ namespace Microsoft.Azure.Cosmos
             this.StatusCode = statusCode;
             this.ResponseBody = message;
             this.Trace = NoOpTrace.Singleton;
+            this.lazyMessage = new Lazy<string>(() => message);
             this.Headers = new Headers()
             {
                 SubStatusCode = (SubStatusCodes)subStatusCode,
@@ -70,6 +79,9 @@ namespace Microsoft.Azure.Cosmos
                 this.Headers.ActivityId = activityId;
             }
         }
+
+        /// <inheritdoc/>
+        public override string Message => this.lazyMessage.Value;
 
         /// <summary>
         /// The body of the cosmos response message as a string
@@ -117,7 +129,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the diagnostics for the request
         /// </summary>
-        public virtual CosmosDiagnostics Diagnostics => new CosmosTraceDiagnostics(this.Trace ?? NoOpTrace.Singleton);
+        public virtual CosmosDiagnostics Diagnostics { get; }
 
         /// <inheritdoc/>
         public override string StackTrace
@@ -189,32 +201,61 @@ namespace Microsoft.Azure.Cosmos
         private static string GetMessageHelper(
             HttpStatusCode statusCode,
             Headers headers,
-            string responseBody)
+            string responseBody,
+            CosmosDiagnostics diagnostics)
         {
             StringBuilder stringBuilder = new StringBuilder();
 
+            CosmosException.AppendMessageWithoutDiagnostics(
+                stringBuilder,
+                statusCode,
+                headers,
+                responseBody);
+
+            // Include the diagnostics for exceptions where it is critical
+            // to root cause failures.
+            if (statusCode == HttpStatusCode.RequestTimeout
+                || statusCode == HttpStatusCode.InternalServerError
+                || statusCode == HttpStatusCode.ServiceUnavailable
+                || (statusCode == HttpStatusCode.NotFound && headers.SubStatusCode == SubStatusCodes.ReadSessionNotAvailable))
+            {
+                stringBuilder.Append("; Diagnostics:");
+                stringBuilder.Append(diagnostics.ToString());
+            }
+
+            return stringBuilder.ToString();
+        }
+
+        private static void AppendMessageWithoutDiagnostics(
+            StringBuilder stringBuilder,
+            HttpStatusCode statusCode,
+            Headers headers,
+            string responseBody)
+        {
             stringBuilder.Append($"Response status code does not indicate success: ");
             stringBuilder.Append($"{statusCode} ({(int)statusCode})");
             stringBuilder.Append("; Substatus: ");
-            stringBuilder.Append(headers?.SubStatusCodeLiteral ?? "0" );
+            stringBuilder.Append(headers?.SubStatusCodeLiteral ?? "0");
             stringBuilder.Append("; ActivityId: ");
             stringBuilder.Append(headers?.ActivityId ?? string.Empty);
             stringBuilder.Append("; Reason: (");
             stringBuilder.Append(responseBody ?? string.Empty);
             stringBuilder.Append(");");
-
-            return stringBuilder.ToString();
         }
 
         private string ToStringHelper(
-        StringBuilder stringBuilder)
+            StringBuilder stringBuilder)
         {
             if (stringBuilder == null)
             {
                 throw new ArgumentNullException(nameof(stringBuilder));
             }
 
-            stringBuilder.Append(this.Message);
+            CosmosException.AppendMessageWithoutDiagnostics(
+                stringBuilder,
+                this.StatusCode,
+                this.Headers,
+                this.ResponseBody);
             stringBuilder.AppendLine();
 
             if (this.InnerException != null)
@@ -240,6 +281,20 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return stringBuilder.ToString();
+        }
+
+        /// <summary>
+        /// RecordOtelAttributes
+        /// </summary>
+        /// <param name="exception"></param>
+        /// <param name="scope"></param>
+        internal static void RecordOtelAttributes(CosmosException exception, DiagnosticScope scope)
+        {
+            scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, exception.StatusCode);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, exception.RequestCharge);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics));
+            scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, exception.Diagnostics);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
         }
     }
 }

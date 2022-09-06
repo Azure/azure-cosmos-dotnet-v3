@@ -198,7 +198,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 System.Net.HttpStatusCode.OK,
                 headers,
                 result.FirstOrDefault(),
-                rootTrace);
+                new CosmosTraceDiagnostics(rootTrace),
+                null);
         }
 
         private FeedIteratorInternal CreateStreamIterator(bool isContinuationExcpected)

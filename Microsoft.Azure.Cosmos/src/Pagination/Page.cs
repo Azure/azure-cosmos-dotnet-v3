@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             Microsoft.Azure.Documents.HttpConstants.HttpHeaders.ActivityId,
         }.ToImmutableHashSet();
 
-        private static readonly ImmutableDictionary<string, string> EmptyDictionary = new Dictionary<string, string>().ToImmutableDictionary();
+        private static readonly IReadOnlyDictionary<string, string> EmptyDictionary = new Dictionary<string, string>();
 
         protected Page(
             double requestCharge,
@@ -29,6 +29,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
             this.ActivityId = activityId;
             this.State = state;
 
+#if DEBUG
+            // Only do the additional header validation on debug.
+            // This causes a significant impact to performance and is not necessary for release scenarios.
             if (additionalHeaders != null)
             {
                 foreach (string key in additionalHeaders.Keys)
@@ -39,15 +42,16 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     }
                 }
             }
+#endif
 
-            this.AdditionalHeaders = additionalHeaders == null ? EmptyDictionary : additionalHeaders.ToImmutableDictionary();
+            this.AdditionalHeaders = additionalHeaders ?? EmptyDictionary;
         }
 
         public double RequestCharge { get; }
 
         public string ActivityId { get; }
 
-        public ImmutableDictionary<string, string> AdditionalHeaders { get; }
+        public IReadOnlyDictionary<string, string> AdditionalHeaders { get; }
 
         public TState State { get; }
 

@@ -4,9 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos.Scripts
 {
+    using System.Collections.Generic;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents a trigger in the Azure Cosmos DB service.
@@ -88,5 +90,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.SelfLink, NullValueHandling = NullValueHandling.Ignore)]
         public string SelfLink { get; private set; }
+
+        /// <summary>
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+        /// </summary>
+        [JsonExtensionData]
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
     }
 }

@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
             PartitionKey? partitionKey,
-            QueryPaginationOptions queryPagingationOptions,
+            QueryPaginationOptions queryPaginationOptions,
             string filter,
             CancellationToken cancellationToken)
             : base(feedRangeState, cancellationToken)
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 sqlQuerySpec,
                 feedRangeState,
                 partitionKey,
-                queryPagingationOptions,
+                queryPaginationOptions,
                 filter,
                 cancellationToken);
             this.bufferedEnumerator = new BufferedPartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>(
@@ -63,7 +63,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         private sealed class InnerEnumerator : PartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>
         {
             private readonly IQueryDataSource queryDataSource;
-            private readonly QueryPaginationOptions queryPaginationOptions;
 
             public InnerEnumerator(
                 IQueryDataSource queryDataSource,
@@ -78,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
                 this.PartitionKey = partitionKey;
-                this.queryPaginationOptions = queryPaginationOptions ?? QueryPaginationOptions.Default;
+                this.QueryPaginationOptions = queryPaginationOptions ?? QueryPaginationOptions.Default;
                 this.Filter = filter;
             }
 
@@ -92,31 +91,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             public override ValueTask DisposeAsync() => default;
 
-            protected override Task<TryCatch<OrderByQueryPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
+            protected override async Task<TryCatch<OrderByQueryPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
             {
                 // Unfortunately we need to keep both the epk range and partition key for queries
                 // Since the continuation token format uses epk range even though we only need the partition key to route the request.
                 FeedRangeInternal feedRange = this.PartitionKey.HasValue ? new FeedRangePartitionKey(this.PartitionKey.Value) : this.FeedRangeState.FeedRange;
 
-                return this.queryDataSource
+                TryCatch<QueryPage> monadicQueryPage = await this.queryDataSource
                     .MonadicQueryAsync(
                         sqlQuerySpec: this.SqlQuerySpec,
                         feedRangeState: new FeedRangeState<QueryState>(feedRange, this.FeedRangeState.State),
-                        queryPaginationOptions: this.queryPaginationOptions,
+                        queryPaginationOptions: this.QueryPaginationOptions,
                         trace: trace,
-                        cancellationToken)
-                    .ContinueWith<TryCatch<OrderByQueryPage>>(antecedent =>
-                    {
-                        TryCatch<QueryPage> monadicQueryPage = antecedent.Result;
-                        if (monadicQueryPage.Failed)
-                        {
-                            Console.WriteLine(this.SqlQuerySpec);
-                            return TryCatch<OrderByQueryPage>.FromException(monadicQueryPage.Exception);
-                        }
-
-                        QueryPage queryPage = monadicQueryPage.Result;
-                        return TryCatch<OrderByQueryPage>.FromResult(new OrderByQueryPage(queryPage));
-                    });
+                        cancellationToken);
+                if (monadicQueryPage.Failed)
+                {
+                    return TryCatch<OrderByQueryPage>.FromException(monadicQueryPage.Exception);
+                }
+                QueryPage queryPage = monadicQueryPage.Result;
+                return TryCatch<OrderByQueryPage>.FromResult(new OrderByQueryPage(queryPage));
             }
         }
     }

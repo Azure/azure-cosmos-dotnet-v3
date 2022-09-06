@@ -6,9 +6,12 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;

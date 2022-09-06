@@ -9,17 +9,19 @@ namespace Microsoft.Azure.Cosmos
     internal class ReadFeedResponse<T> : FeedResponse<T>
     {
         internal ReadFeedResponse(
-            HttpStatusCode httpStatusCode,
-            IEnumerable<T> resources,
-            int resourceCount,
-            Headers responseMessageHeaders,
-            CosmosDiagnostics diagnostics)
+         HttpStatusCode httpStatusCode,
+         IEnumerable<T> resources,
+         int resourceCount,
+         Headers responseMessageHeaders,
+         CosmosDiagnostics diagnostics,
+         RequestMessage requestMessage)
         {
             this.Count = resourceCount;
             this.Headers = responseMessageHeaders;
             this.StatusCode = httpStatusCode;
             this.Diagnostics = diagnostics;
             this.Resource = resources;
+            this.RequestMessage = requestMessage;   
         }
 
         public override int Count { get; }
@@ -34,6 +36,10 @@ namespace Microsoft.Azure.Cosmos
 
         public override CosmosDiagnostics Diagnostics { get; }
 
+        public override string IndexMetrics { get; }
+
+        internal override RequestMessage RequestMessage { get; }
+
         public override IEnumerator<T> GetEnumerator()
         {
             return this.Resource.GetEnumerator();
@@ -45,7 +51,11 @@ namespace Microsoft.Azure.Cosmos
         {
             using (responseMessage)
             {
-                responseMessage.EnsureSuccessStatusCode();
+                // ReadFeed can return 304 on Change Feed responses
+                if (responseMessage.StatusCode != HttpStatusCode.NotModified)
+                {
+                    responseMessage.EnsureSuccessStatusCode();
+                }
 
                 IReadOnlyCollection<TInput> resources = CosmosFeedResponseSerializer.FromFeedResponseStream<TInput>(
                         serializerCore,
@@ -56,7 +66,8 @@ namespace Microsoft.Azure.Cosmos
                     resources: resources,
                     resourceCount: resources.Count,
                     responseMessageHeaders: responseMessage.Headers,
-                    diagnostics: responseMessage.Diagnostics);
+                    diagnostics: responseMessage.Diagnostics,
+                    requestMessage: responseMessage.RequestMessage);
 
                 return readFeedResponse;
             }

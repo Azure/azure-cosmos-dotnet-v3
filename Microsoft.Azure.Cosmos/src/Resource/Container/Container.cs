@@ -366,7 +366,7 @@ namespace Microsoft.Azure.Cosmos
         ///    status = "InProgress"
         /// };
         ///
-        /// ItemResponse item = await this.container.CreateItemAsync<ToDoActivity>(tests, new PartitionKey(test.status));
+        /// ItemResponse item = await this.container.CreateItemAsync<ToDoActivity>(test, new PartitionKey(test.status));
         /// ]]>
         /// </code>
         /// </example>
@@ -629,6 +629,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which wraps a <see cref="Stream"/> containing the response.
         /// </returns>
+        /// <remarks><see cref="Container.ReadManyItemsStreamAsync"/> is meant to perform better latency-wise than a query with IN statements to fetch a large number of independent items.</remarks>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
@@ -639,16 +640,20 @@ namespace Microsoft.Azure.Cosmos
         ///     ("Id3", new PartitionKey("pkValue3"))
         /// };
         /// 
-        /// using (ResponseMessage responseMessage = await this.Container.ReadManyItemsStreamAsync(itemList))
+        /// using (ResponseMessage response = await this.Container.ReadManyItemsStreamAsync(itemList))
         /// {
-        ///     using (Stream stream = response.ReadBodyAsync())
+        ///     if (!response.IsSuccessStatusCode)
         ///     {
-        ///         //Read or do other operations with the stream
-        ///         using (StreamReader streamReader = new StreamReader(stream))
-        ///         {
-        ///             string content = streamReader.ReadToEndAsync();
-        ///         }
+        ///         //Handle and log exception
+        ///         return;
         ///     }
+        ///
+        ///     //Read or do other operations with the stream
+        ///     using (StreamReader streamReader = new StreamReader(response.Content))
+        ///     {
+        ///         string content = streamReader.ReadToEndAsync();
+        ///     }
+        ///     
         /// }
         /// ]]>
         /// </code>
@@ -667,6 +672,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="FeedResponse{T}"/> which wraps the typed items.
         /// </returns>
+        /// <remarks><see cref="Container.ReadManyItemsAsync"/> is meant to perform better latency-wise than a query with IN statements to fetch a large number of independent items.</remarks>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
@@ -691,7 +697,6 @@ namespace Microsoft.Azure.Cosmos
             ReadManyRequestOptions readManyRequestOptions = null,
             CancellationToken cancellationToken = default);
 
-#if PREVIEW
         /// <summary>
         /// Patches an item in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
@@ -729,14 +734,14 @@ namespace Microsoft.Azure.Cosmos
         /// }*/
         /// 
         /// List<PatchOperation> patchOperations = new List<PatchOperation>()
-        ///                                             {
-        ///                                                 PatchOperation.CreateAddOperation("/daysOfWeek", new string[]{"Monday", "Thursday"}),
-        ///                                                 PatchOperation.CreateReplaceOperation("/frequency", 2),
-        ///                                                 PatchOperation.CreateRemoveOperation("/description")
-        ///                                             };
+        /// {
+        ///     PatchOperation.Add("/daysOfWeek", new string[]{"Monday", "Thursday"}),
+        ///     PatchOperation.Replace("/frequency", 2),
+        ///     PatchOperation.Remove("/description")
+        /// };
         /// 
-        /// ItemResponse item = await this.container.PatchItemAsync<dynamic>(toDoActivity.id, new PartitionKey(toDoActivity.status), patchOperations);
-        /// /* item = {
+        /// ItemResponse<dynamic> item = await this.container.PatchItemAsync<dynamic>(toDoActivity.id, new PartitionKey(toDoActivity.status), patchOperations);
+        /// /* item.Resource = {
         ///     "id" : "someId",
         ///     "status" : "someStatusPK",
         ///     "description" : null,
@@ -784,7 +789,6 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyList<PatchOperation> patchOperations,
             PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
-#endif
 
         /// <summary>
         /// Delete a item from the Azure Cosmos service as an asynchronous operation.
@@ -829,6 +833,9 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the item request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="ItemResponse{T}"/> which will contain information about the request issued.</returns>
+        /// <remarks>
+        /// <see cref="ItemResponse{T}.Resource"/> is <see href="https://docs.microsoft.com/rest/api/cosmos-db/delete-a-document#body">always null</see>
+        /// </remarks>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
         /// <example>
         /// <code language="c#">
@@ -838,7 +845,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public string status {get; set;}
         /// }
         /// 
-        /// ItemResponse item = await this.container.DeleteItemAsync<ToDoActivity>("partitionKey", "id");
+        /// ItemResponse item = await this.container.DeleteItemAsync<ToDoActivity>("id", new PartitionKey("partitionKey"));
         /// ]]>
         /// </code>
         /// </example>
@@ -937,8 +944,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null);
 
         /// <summary>
-        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
-        ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
+        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement. It returns a FeedIterator.
         /// </summary>
         /// <param name="queryText">The Cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
@@ -1014,8 +1020,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null);
 
         /// <summary>
-        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
-        ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
+        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement. It returns a FeedIterator.
         /// </summary>
         /// <param name="queryText">The Cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
@@ -1078,290 +1083,6 @@ namespace Microsoft.Azure.Cosmos
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
-
-        /// <summary>
-        /// This method creates a LINQ query for items under a container in an Azure Cosmos DB service.
-        /// IQueryable extension method ToFeedIterator() should be use for asynchronous execution with FeedIterator, please refer to example 2.
-        /// </summary>
-        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
-        /// <remarks>
-        /// LINQ execution is synchronous which will cause issues related to blocking calls. 
-        /// It is recommended to always use ToFeedIterator(), and to do the asynchronous execution.
-        /// </remarks>
-        /// <typeparam name="T">The type of object to query.</typeparam>
-        /// <param name="allowSynchronousQueryExecution">(Optional)the option which allows the query to be executed synchronously via IOrderedQueryable.</param>
-        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
-        /// <param name="linqSerializerOptions">(Optional) The options to configure Linq Serializer Properties. This overrides properties in CosmosSerializerOptions while creating client</param>
-        /// <returns>(Optional) An IOrderedQueryable{T} that can evaluate the query.</returns>
-        /// <example>
-        /// 1. This example below shows LINQ query generation and blocked execution.
-        /// <code language="c#">
-        /// <![CDATA[
-        /// public class Book 
-        /// {
-        ///     public string Title {get; set;}
-        ///     
-        ///     public Author Author {get; set;}
-        ///     
-        ///     public int Price {get; set;}
-        /// }
-        /// 
-        /// public class Author
-        /// {
-        ///     public string FirstName {get; set;}
-        ///     public string LastName {get; set;}
-        /// }
-        ///  
-        /// // Query by the Title property
-        /// Book book = container.GetItemLinqQueryable<Book>(true)
-        ///                      .Where(b => b.Title == "War and Peace")
-        ///                      .AsEnumerable()
-        ///                      .FirstOrDefault();
-        /// 
-        /// // Query a nested property
-        /// Book otherBook = container.GetItemLinqQueryable<Book>(true)
-        ///                           .Where(b => b.Author.FirstName == "Leo")
-        ///                           .AsEnumerable()
-        ///                           .FirstOrDefault();
-        /// 
-        /// // Perform iteration on books
-        /// foreach (Book matchingBook in container.GetItemLinqQueryable<Book>(true)
-        ///                            .Where(b => b.Price > 100))
-        /// {
-        ///     // Iterate through books
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <example>
-        /// 2. This example below shows LINQ query generation and asynchronous execution with FeedIterator.
-        /// <code language="c#">
-        /// <![CDATA[
-        ///
-        /// // LINQ query generation
-        /// using (FeedIterator setIterator = container.GetItemLinqQueryable<Book>()
-        ///                      .Where(b => b.Title == "War and Peace")
-        ///                      .ToFeedIterator())
-        /// {                   
-        ///     //Asynchronous query execution
-        ///     while (setIterator.HasMoreResults)
-        ///     {
-        ///         foreach(var item in await setIterator.ReadNextAsync())
-        ///         {
-        ///             Console.WriteLine(item.Price); 
-        ///         }
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <remarks>
-        /// The Azure Cosmos DB LINQ provider compiles LINQ to SQL statements. Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-linq-to-sql for the list of expressions supported by the Azure Cosmos DB LINQ provider. ToString() on the generated IQueryable returns the translated SQL statement. The Azure Cosmos DB provider translates JSON.NET and DataContract serialization attributes for members to their JSON property names.
-        /// </remarks>
-        /// <seealso cref="CosmosSerializationOptions"/>
-        public abstract IOrderedQueryable<T> GetItemLinqQueryable<T>(
-            bool allowSynchronousQueryExecution = false,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null,
-            CosmosLinqSerializerOptions linqSerializerOptions = null);
-
-        /// <summary>
-        /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution.
-        /// </summary>
-        /// <param name="changes">The changes that happened.</param>
-        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
-        public delegate Task ChangesHandler<T>(
-            IReadOnlyCollection<T> changes,
-            CancellationToken cancellationToken);
-
-        /// <summary>
-        /// Delegate to receive the estimation of pending changes to be read by the associated <see cref="ChangeFeedProcessor"/> instance.
-        /// </summary>
-        /// <param name="estimatedPendingChanges">An estimation in number of items.</param>
-        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the estimation.</returns>
-        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
-        public delegate Task ChangesEstimationHandler(
-            long estimatedPendingChanges,
-            CancellationToken cancellationToken);
-
-        /// <summary>
-        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.
-        /// </summary>
-        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
-        /// <param name="onChangesDelegate">Delegate to receive changes.</param>
-        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
-        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
-            string processorName,
-            ChangesHandler<T> onChangesDelegate);
-
-        /// <summary>
-        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed monitoring.
-        /// </summary>
-        /// <param name="processorName">The name of the Processor the Estimator is going to measure.</param>
-        /// <param name="estimationDelegate">Delegate to receive estimation.</param>
-        /// <param name="estimationPeriod">Time interval on which to report the estimation. Default is 5 seconds.</param>
-        /// <remarks>
-        /// The goal of the Estimator is to measure progress of a particular processor. In order to do that, the <paramref name="processorName"/> and other parameters, like the leases container, need to match that of the Processor to measure.
-        /// </remarks>
-        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
-        public abstract ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(
-            string processorName,
-            ChangesEstimationHandler estimationDelegate,
-            TimeSpan? estimationPeriod = null);
-
-        /// <summary>
-        /// Gets a <see cref="ChangeFeedEstimator"/> for change feed monitoring.
-        /// </summary>
-        /// <param name="processorName">The name of the Processor the Estimator is going to measure.</param>
-        /// <param name="leaseContainer">Instance of a Cosmos Container that holds the leases.</param>
-        /// <remarks>
-        /// The goal of the Estimator is to measure progress of a particular processor. In order to do that, the <paramref name="processorName"/> and other parameters, like the leases container, need to match that of the Processor to measure.
-        /// </remarks>
-        /// <returns>An instance of <see cref="ChangeFeedEstimator"/></returns>
-        public abstract ChangeFeedEstimator GetChangeFeedEstimator(
-            string processorName,
-            Container leaseContainer);
-
-        /// <summary>
-        /// Initializes a new instance of <see cref="TransactionalBatch"/>
-        /// that can be used to perform operations across multiple items
-        /// in the container with the provided partition key in a transactional manner.
-        /// </summary>
-        /// <param name="partitionKey">The partition key for all items in the batch.</param>
-        /// <returns>A new instance of <see cref="TransactionalBatch"/>.</returns>
-        public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
-
-#if INTERNAL
-        /// <summary>
-        /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.
-        /// Starts an asynchronous Cosmos DB background operation which deletes all items in the Container with the specified value. 
-        /// The asynchronous Cosmos DB background operation runs using a percentage of user RUs.
-        /// </summary>
-        /// <param name="partitionKey">The <see cref="PartitionKey"/> of the items to be deleted.</param>
-        /// <param name="requestOptions">(Optional) The options for the Partition Key Delete request.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/>.
-        /// </returns>
-        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
-               Cosmos.PartitionKey partitionKey,
-               RequestOptions requestOptions = null,
-               CancellationToken cancellationToken = default(CancellationToken));
-#endif
-
-#if PREVIEW
-        /// <summary>
-        /// Obtains a list of <see cref="FeedRange"/> that can be used to parallelize Feed operations.
-        /// </summary>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A list of <see cref="FeedRange"/>.</returns>
-        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
-        public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default);
-
-        /// <summary>
-        ///  This method creates an iterator to consume a Change Feed.
-        /// </summary>
-        /// <param name="changeFeedStartFrom">Where to start the changefeed from.</param>
-        /// <param name="changeFeedMode">Defines the mode on which to consume the change feed.</param>
-        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
-        /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
-        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangesAsync();
-        /// // Distribute feedRanges across multiple compute units and pass each one to a different iterator
-        ///
-        /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
-        /// {
-        ///     PageSizeHint = 10,
-        /// }
-        /// 
-        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(
-        ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
-        ///     ChangeFeedMode.Incremental,
-        ///     options);
-        ///
-        /// while (feedIterator.HasMoreResults)
-        /// {
-        ///     while (feedIterator.HasMoreResults)
-        ///     {
-        ///         using (ResponseMessage response = await feedIterator.ReadNextAsync())
-        ///         {
-        ///             using (StreamReader sr = new StreamReader(response.Content))
-        ///             using (JsonTextReader jtr = new JsonTextReader(sr))
-        ///             {
-        ///                 JObject result = JObject.Load(jtr);
-        ///             }
-        ///         }
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <returns>An iterator to go through the Change Feed.</returns>
-        public abstract FeedIterator GetChangeFeedStreamIterator(
-            ChangeFeedStartFrom changeFeedStartFrom,
-            ChangeFeedMode changeFeedMode,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null);
-
-        /// <summary>
-        ///  This method creates an iterator to consume a Change Feed.
-        /// </summary>
-        /// <param name="changeFeedStartFrom">Where to start the changefeed from.</param>
-        /// <param name="changeFeedMode">Defines the mode on which to consume the change feed.</param>
-        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
-        /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
-        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangessAsync();
-        /// // Distribute feedRangess across multiple compute units and pass each one to a different iterator
-        ///
-        /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
-        /// {
-        ///     PageSizeHint = 10,
-        /// }
-        /// 
-        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(
-        ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
-        ///     ChangeFeedMode.Incremental,
-        ///     options);
-        /// while (feedIterator.HasMoreResults)
-        /// {
-        ///     while (feedIterator.HasMoreResults)
-        ///     {
-        ///         FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
-        ///         foreach (var item in response)
-        ///         {
-        ///             Console.WriteLine(item);
-        ///         }
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <returns>An iterator to go through the Change Feed.</returns>
-        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
-            ChangeFeedStartFrom changeFeedStartFrom,
-            ChangeFeedMode changeFeedMode,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null);
-
-        /// <summary>
-        /// Gets the list of Partition Key Range identifiers for a <see cref="FeedRange"/>.
-        /// </summary>
-        /// <param name="feedRange">A <see cref="FeedRange"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>The list of Partition Key Range identifiers affected by a particular FeedRange.</returns>
-        /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
-        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
-        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
-            FeedRange feedRange,
-            CancellationToken cancellationToken = default);
 
         /// <summary>
         ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
@@ -1466,6 +1187,268 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null);
 
         /// <summary>
+        /// This method creates a LINQ query for items under a container in an Azure Cosmos DB service.
+        /// IQueryable extension method ToFeedIterator() should be use for asynchronous execution with FeedIterator, please refer to example 2.
+        /// </summary>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
+        /// <remarks>
+        /// LINQ execution is synchronous which will cause issues related to blocking calls. 
+        /// It is recommended to always use ToFeedIterator(), and to do the asynchronous execution.
+        /// </remarks>
+        /// <typeparam name="T">The type of object to query.</typeparam>
+        /// <param name="allowSynchronousQueryExecution">(Optional)the option which allows the query to be executed synchronously via IOrderedQueryable.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request.</param>
+        /// <param name="linqSerializerOptions">(Optional) The options to configure Linq Serializer Properties. This overrides properties in CosmosSerializerOptions while creating client</param>
+        /// <returns>(Optional) An IOrderedQueryable{T} that can evaluate the query.</returns>
+        /// <example>
+        /// 1. This example below shows LINQ query generation and blocked execution.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// public class Book 
+        /// {
+        ///     public string Title {get; set;}
+        ///     
+        ///     public Author Author {get; set;}
+        ///     
+        ///     public int Price {get; set;}
+        /// }
+        /// 
+        /// public class Author
+        /// {
+        ///     public string FirstName {get; set;}
+        ///     public string LastName {get; set;}
+        /// }
+        ///  
+        /// // Query by the Title property
+        /// Book book = container.GetItemLinqQueryable<Book>(true)
+        ///                      .Where(b => b.Title == "War and Peace")
+        ///                      .AsEnumerable()
+        ///                      .FirstOrDefault();
+        /// 
+        /// // Query a nested property
+        /// Book otherBook = container.GetItemLinqQueryable<Book>(true)
+        ///                           .Where(b => b.Author.FirstName == "Leo")
+        ///                           .AsEnumerable()
+        ///                           .FirstOrDefault();
+        /// 
+        /// // Perform iteration on books
+        /// foreach (Book matchingBook in container.GetItemLinqQueryable<Book>(true)
+        ///                            .Where(b => b.Price > 100))
+        /// {
+        ///     // Iterate through books
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <example>
+        /// 2. This example below shows LINQ query generation and asynchronous execution with FeedIterator.
+        /// <code language="c#">
+        /// <![CDATA[
+        ///
+        /// // LINQ query generation
+        /// using (FeedIterator<Book> setIterator = container.GetItemLinqQueryable<Book>()
+        ///                      .Where(b => b.Title == "War and Peace")
+        ///                      .ToFeedIterator())
+        /// {                   
+        ///     //Asynchronous query execution
+        ///     while (setIterator.HasMoreResults)
+        ///     {
+        ///         foreach(var item in await setIterator.ReadNextAsync())
+        ///         {
+        ///             Console.WriteLine(item.Price); 
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// The Azure Cosmos DB LINQ provider compiles LINQ to SQL statements. Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-linq-to-sql for the list of expressions supported by the Azure Cosmos DB LINQ provider. ToString() on the generated IQueryable returns the translated SQL statement. The Azure Cosmos DB provider translates JSON.NET and DataContract serialization attributes for members to their JSON property names.
+        /// </remarks>
+        /// <seealso cref="CosmosSerializationOptions"/>
+        public abstract IOrderedQueryable<T> GetItemLinqQueryable<T>(
+            bool allowSynchronousQueryExecution = false,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null,
+            CosmosLinqSerializerOptions linqSerializerOptions = null);
+
+        /// <summary>
+        /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution.
+        /// </summary>
+        /// <param name="changes">The changes that happened.</param>
+        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
+        public delegate Task ChangesHandler<T>(
+            IReadOnlyCollection<T> changes,
+            CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Delegate to receive the estimation of pending changes to be read by the associated <see cref="ChangeFeedProcessor"/> instance.
+        /// </summary>
+        /// <param name="estimatedPendingChanges">An estimation in number of transactions.</param>
+        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the estimation.</returns>
+        /// <remarks>
+        /// The estimation over the Change Feed identifies volumes of transactions. If operations in the container are performed through stored procedures, transactional batch or bulk, a group of operations may share the same <see href="https://docs.microsoft.com/azure/cosmos-db/stored-procedures-triggers-udfs#transactions">transaction scope</see> and represented by a single transaction. 
+        /// In those cases, the estimation might not exactly represent number of items, but it is still valid to understand if the pending volume is increasing, decreasing, or on a steady state.
+        /// </remarks>
+        public delegate Task ChangesEstimationHandler(
+            long estimatedPendingChanges,
+            CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.
+        /// </summary>
+        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
+        /// <param name="onChangesDelegate">Delegate to receive changes.</param>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+            string processorName,
+            ChangesHandler<T> onChangesDelegate);
+
+        /// <summary>
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed monitoring.
+        /// </summary>
+        /// <param name="processorName">The name of the Processor the Estimator is going to measure.</param>
+        /// <param name="estimationDelegate">Delegate to receive estimation.</param>
+        /// <param name="estimationPeriod">Time interval on which to report the estimation. Default is 5 seconds.</param>
+        /// <remarks>
+        /// The goal of the Estimator is to measure progress of a particular processor. In order to do that, the <paramref name="processorName"/> and other parameters, like the leases container, need to match that of the Processor to measure.
+        /// </remarks>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(
+            string processorName,
+            ChangesEstimationHandler estimationDelegate,
+            TimeSpan? estimationPeriod = null);
+
+        /// <summary>
+        /// Gets a <see cref="ChangeFeedEstimator"/> for change feed monitoring.
+        /// </summary>
+        /// <param name="processorName">The name of the Processor the Estimator is going to measure.</param>
+        /// <param name="leaseContainer">Instance of a Cosmos Container that holds the leases.</param>
+        /// <remarks>
+        /// The goal of the Estimator is to measure progress of a particular processor. In order to do that, the <paramref name="processorName"/> and other parameters, like the leases container, need to match that of the Processor to measure.
+        /// </remarks>
+        /// <returns>An instance of <see cref="ChangeFeedEstimator"/></returns>
+        public abstract ChangeFeedEstimator GetChangeFeedEstimator(
+            string processorName,
+            Container leaseContainer);
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="TransactionalBatch"/>
+        /// that can be used to perform operations across multiple items
+        /// in the container with the provided partition key in a transactional manner.
+        /// </summary>
+        /// <param name="partitionKey">The partition key for all items in the batch.</param>
+        /// <returns>A new instance of <see cref="TransactionalBatch"/>.</returns>
+        public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
+
+        /// <summary>
+        /// Obtains a list of <see cref="FeedRange"/> that can be used to parallelize Feed operations.
+        /// </summary>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A list of <see cref="FeedRange"/>.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
+        public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        ///  This method creates an iterator to consume a Change Feed.
+        /// </summary>
+        /// <param name="changeFeedStartFrom">Where to start the changefeed from.</param>
+        /// <param name="changeFeedMode">Defines the mode on which to consume the change feed.</param>
+        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
+        /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
+        /// {
+        ///     PageSizeHint = 10,
+        /// }
+        /// 
+        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(
+        ///     ChangeFeedStartFrom.Beginning(),
+        ///     ChangeFeedMode.Incremental,
+        ///     options);
+        ///
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     {
+        ///         if (response.StatusCode == NotModified) 
+        ///         {
+        ///             // No new changes
+        ///             // Capture response.ContinuationToken and break or sleep for some time
+        ///         }
+        ///         else 
+        ///         {
+        ///             using (StreamReader sr = new StreamReader(response.Content))
+        ///             using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///             {
+        ///                 JObject result = JObject.Load(jtr);
+        ///             }
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>An iterator to go through the Change Feed.</returns>
+        public abstract FeedIterator GetChangeFeedStreamIterator(
+            ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        /// <summary>
+        ///  This method creates an iterator to consume a Change Feed.
+        /// </summary>
+        /// <param name="changeFeedStartFrom">Where to start the changefeed from.</param>
+        /// <param name="changeFeedMode">Defines the mode on which to consume the change feed.</param>
+        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
+        /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
+        /// {
+        ///     PageSizeHint = 10,
+        /// }
+        /// 
+        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(
+        ///     ChangeFeedStartFrom.Beginning(),
+        ///     ChangeFeedMode.Incremental,
+        ///     options);
+        ///     
+        ///     while (feedIterator.HasMoreResults)
+        ///     {
+        ///         FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
+        ///
+        ///         if (response.StatusCode == NotModified) 
+        ///         {
+        ///             // No new changes
+        ///             // Capture response.ContinuationToken and break or sleep for some time
+        ///         }
+        ///         else 
+        ///         {
+        ///             foreach (var item in response)
+        ///             {
+        ///                 Console.WriteLine(item);
+        ///             }
+        ///         }
+        ///     }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>An iterator to go through the Change Feed.</returns>
+        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
+            ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        /// <summary>
         /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution.
         /// </summary>
         /// <param name="context">The context related to the changes.</param>
@@ -1482,23 +1465,18 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="context">The context related to the changes.</param>
         /// <param name="changes">The changes that happened.</param>
-        /// <param name="tryCheckpointAsync">A task representing an asynchronous checkpoint on the progress of a lease.</param>
+        /// <param name="checkpointAsync">A task representing an asynchronous checkpoint on the progress of a lease.</param>
         /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// (ChangeFeedProcessorContext context, IReadOnlyCollection<T> changes, Func<Task<(bool isSuccess, CosmosException error)>> tryCheckpointAsync, CancellationToken cancellationToken) =>
+        /// (ChangeFeedProcessorContext context, IReadOnlyCollection<T> changes, Func<Task> checkpointAsync, CancellationToken cancellationToken) =>
         /// {
         ///     // consume changes
         ///     
         ///     // On certain condition, we can checkpoint
-        ///     (bool isSuccess, Exception error) checkpointResult = await tryCheckpointAsync();
-        ///     if (!isSuccess)
-        ///     {
-        ///         // log error, could not checkpoint
-        ///         throw error;
-        ///     }
+        ///     await checkpointAsync();
         /// }
         /// ]]>
         /// </code>
@@ -1506,7 +1484,7 @@ namespace Microsoft.Azure.Cosmos
         public delegate Task ChangeFeedHandlerWithManualCheckpoint<T>(
             ChangeFeedProcessorContext context,
             IReadOnlyCollection<T> changes,
-            Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+            Func<Task> checkpointAsync,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -1526,23 +1504,18 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="context">The context related to the changes.</param>
         /// <param name="changes">The changes that happened.</param>
-        /// <param name="tryCheckpointAsync">A task representing an asynchronous checkpoint on the progress of a lease.</param>
+        /// <param name="checkpointAsync">A task representing an asynchronous checkpoint on the progress of a lease.</param>
         /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// (ChangeFeedProcessorContext context, Stream stream, Func<Task<(bool isSuccess, CosmosException error)>> tryCheckpointAsync, CancellationToken cancellationToken) =>
+        /// (ChangeFeedProcessorContext context, Stream stream, Func<Task> checkpointAsync, CancellationToken cancellationToken) =>
         /// {
         ///     // consume stream
         ///     
         ///     // On certain condition, we can checkpoint
-        ///     (bool isSuccess, Exception error) checkpointResult = await tryCheckpointAsync();
-        ///     if (!isSuccess)
-        ///     {
-        ///         // log error, could not checkpoint
-        ///         throw error;
-        ///     }
+        ///     await checkpointAsync();
         /// }
         /// ]]>
         /// </code>
@@ -1550,8 +1523,79 @@ namespace Microsoft.Azure.Cosmos
         public delegate Task ChangeFeedStreamHandlerWithManualCheckpoint(
             ChangeFeedProcessorContext context,
             Stream changes,
-            Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+            Func<Task> checkpointAsync,
             CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Delegate to notify errors during change feed operations.
+        /// </summary>
+        /// <param name="leaseToken">A unique identifier for the lease.</param>
+        /// <param name="exception">The exception that happened.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the notification.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// (string leaseToken, Exception exception) =>
+        /// {
+        ///     if (exception is ChangeFeedProcessorUserException userException)
+        ///     {
+        ///         Console.WriteLine($"Current instance's delegate had an unhandled when processing lease {leaseToken}.");
+        ///         Console.WriteLine($"Diagnostics {userException.ExceptionContext.Diagnostics}");
+        ///         Console.WriteLine($"Headers {userException.ExceptionContext.Headers}");
+        ///         Console.WriteLine(userException.ToString());
+        ///     }
+        ///     else 
+        ///     {
+        ///         Console.WriteLine($"Current instance faced an exception when processing lease {leaseToken}.");
+        ///         Console.WriteLine(exception.ToString());
+        ///     }
+        ///     
+        ///     return Task.CompletedTask;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public delegate Task ChangeFeedMonitorErrorDelegate(
+            string leaseToken,
+            Exception exception);
+
+        /// <summary>
+        /// Delegate to notify events of leases being acquired by a change feed processor.
+        /// </summary>
+        /// <param name="leaseToken">A unique identifier for the lease.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the notification.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// (string leaseToken) =>
+        /// {
+        ///     Console.WriteLine($"Current instance released lease {leaseToken} and stopped processing it.");
+        ///     
+        ///     return Task.CompletedTask;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public delegate Task ChangeFeedMonitorLeaseAcquireDelegate(string leaseToken);
+
+        /// <summary>
+        /// Delegate to notify events of leases being releases by a change feed processor.
+        /// </summary>
+        /// <param name="leaseToken">A unique identifier for the lease.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the notification.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// (string leaseToken) =>
+        /// {
+        ///     Console.WriteLine($"Current instance acquired lease {leaseToken} and will start processing it.");
+        ///     
+        ///     return Task.CompletedTask;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public delegate Task ChangeFeedMonitorLeaseReleaseDelegate(string leaseToken);
 
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.
@@ -1592,6 +1636,36 @@ namespace Microsoft.Azure.Cosmos
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(
             string processorName,
             ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate);
+
+#if PREVIEW
+        /// <summary>
+        /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.
+        /// Starts an asynchronous Cosmos DB background operation which deletes all items in the Container with the specified value. 
+        /// The asynchronous Cosmos DB background operation runs using a percentage of user RUs.
+        /// </summary>
+        /// <param name="partitionKey">The <see cref="PartitionKey"/> of the items to be deleted.</param>
+        /// <param name="requestOptions">(Optional) The options for the Partition Key Delete request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/>.
+        /// </returns>
+        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+               Cosmos.PartitionKey partitionKey,
+               RequestOptions requestOptions = null,
+               CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Gets the list of Partition Key Range identifiers for a <see cref="FeedRange"/>.
+        /// </summary>
+        /// <param name="feedRange">A <see cref="FeedRange"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>The list of Partition Key Range identifiers affected by a particular FeedRange.</returns>
+        /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
+        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+            FeedRange feedRange,
+            CancellationToken cancellationToken = default);
+
 #endif
     }
 }

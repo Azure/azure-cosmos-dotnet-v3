@@ -315,10 +315,8 @@ namespace Microsoft.Azure.Cosmos {
         /// <summary>
         ///   Looks up a localized string similar to Failed to get AAD token from the provided Azure.Core.TokenCredential..
         /// </summary>
-        internal static string FailedToGetAadToken
-        {
-            get
-            {
+        internal static string FailedToGetAadToken {
+            get {
                 return ResourceManager.GetString("FailedToGetAadToken", resourceCulture);
             }
         }
@@ -639,7 +637,7 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Consistency, Session, and Triggers are not allowed when AllowBulkExecution is set to true..
+        ///   Looks up a localized string similar to Consistency, Session, Properties, and Triggers are not allowed when AllowBulkExecution is set to true..
         /// </summary>
         internal static string UnsupportedBulkRequestOptions {
             get {

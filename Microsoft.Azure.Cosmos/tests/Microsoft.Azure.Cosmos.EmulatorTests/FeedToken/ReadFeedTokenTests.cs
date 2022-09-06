@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     using Newtonsoft.Json.Linq;
 
     [SDK.EmulatorTests.TestClass]
+    [TestCategory("ReadFeed")]
     public class ReadFeedRangeTests : BaseCosmosClientHelper
     {
         private ContainerInternal Container = null;
@@ -510,7 +511,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             }
             finally
             {
-                await container?.DeleteContainerAsync();
+                await container?.DeleteContainerStreamAsync();
             }
         }
 

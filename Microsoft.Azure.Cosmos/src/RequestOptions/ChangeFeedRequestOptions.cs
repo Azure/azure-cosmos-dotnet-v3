@@ -6,19 +6,12 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Diagnostics;
-    using System.Globalization;
     using Microsoft.Azure.Cosmos.Serializer;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The Cosmos Change Feed request options
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    sealed class ChangeFeedRequestOptions : RequestOptions
+    public sealed class ChangeFeedRequestOptions : RequestOptions
     {
         private int? pageSizeHint;
 
@@ -28,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The maximum number of items to be returned in the enumeration operation.
         /// </value>
-        /// <remarks>This is just a hint to the server which can return less items per page.</remarks>
+        /// <remarks>This is just a hint to the server which can return less or more items per page. If operations in the container are performed through stored procedures or transactional batch, <see href="https://docs.microsoft.com/azure/cosmos-db/stored-procedures-triggers-udfs#transactions">transaction scope</see> is preserved when reading items from the Change Feed. As a result, the number of items received could be higher than the specified value so that the items changed by the same transaction are returned as part of one atomic batch.</remarks>
         public int? PageSizeHint
         {
             get => this.pageSizeHint;
@@ -42,20 +35,6 @@ namespace Microsoft.Azure.Cosmos
                 this.pageSizeHint = value;
             }
         }
-
-        /// <summary>
-        /// Gets or sets whether or not to emit the old continuation token.
-        /// </summary>
-        /// <remarks>
-        /// This is useful for when you want to upgrade your SDK, but can not upgrade all nodes atomically. 
-        /// In that scenario perform a "two phase deployment".
-        /// In the first phase deploy with EmitOldContinuationToken = true; this will ensure that none of the old SDKs encounter a new continuation token.
-        /// Once the first phase is complete and all nodes are able to read the new continuation token, then
-        /// in the second phase redeploy with EmitOldContinuationToken = false.
-        /// This will succesfully migrate all nodes to emit the new continuation token format.
-        /// Eventually all your tokens from the previous version will be migrated. 
-        /// </remarks>
-        public bool EmitOldContinuationToken { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties

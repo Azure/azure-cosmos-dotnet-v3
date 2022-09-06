@@ -7,7 +7,7 @@
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE (root["StringField"] ?? "str") 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -19,7 +19,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["NumericField"] 
 FROM root 
-WHERE (root["StringField"] = (root["StringField2"] ?? "str")) ]]></SqlQuery>
+WHERE (root["StringField"] = (root["StringField2"] ?? "str"))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -31,7 +31,7 @@ WHERE (root["StringField"] = (root["StringField2"] ?? "str")) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["StringField"] 
 FROM root 
-WHERE ((root["StringField"] ?? "str") = "str2") ]]></SqlQuery>
+WHERE ((root["StringField"] ?? "str") = "str2")]]></SqlQuery>
     </Output>
   </Result>
 </Results>

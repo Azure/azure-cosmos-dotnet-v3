@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 "OpenAsync", // exposed public methods.
                 "get_PartitionResolvers", "get_ResourceTokens", // Obsolete getters.
-                "ToString", "Equals", "GetHashCode", "GetType"
+                "ToString", "Equals", "GetHashCode", "GetType", "get_httpClient"
             };
             
             // Get all public methods declared in DocumentClient and verify that they are a part of Interfaces implemented.

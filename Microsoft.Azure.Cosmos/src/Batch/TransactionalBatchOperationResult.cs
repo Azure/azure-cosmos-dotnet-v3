@@ -31,6 +31,8 @@ namespace Microsoft.Azure.Cosmos
             this.ResourceStream = other.ResourceStream;
             this.RequestCharge = other.RequestCharge;
             this.RetryAfter = other.RetryAfter;
+            this.SessionToken = other.SessionToken;
+            this.ActivityId = other.ActivityId;
         }
 
         /// <summary>
@@ -90,6 +92,16 @@ namespace Microsoft.Azure.Cosmos
         /// Gets detail on the completion status of the operation.
         /// </summary>
         internal virtual SubStatusCodes SubStatusCode { get; set; } 
+
+        /// <summary>
+        /// Gets the SessionToken assigned to this result, if any.
+        /// </summary>
+        internal virtual string SessionToken { get; set; }
+
+        /// <summary>
+        /// ActivityId related to the operation
+        /// </summary>
+        internal virtual string ActivityId { get; set; }
 
         internal ITrace Trace { get; set; }
 
@@ -205,6 +217,8 @@ namespace Microsoft.Azure.Cosmos
                 ETag = this.ETag,
                 RetryAfter = this.RetryAfter,
                 RequestCharge = this.RequestCharge,
+                Session = this.SessionToken,
+                ActivityId = this.ActivityId,
             };
 
             ResponseMessage responseMessage = new ResponseMessage(

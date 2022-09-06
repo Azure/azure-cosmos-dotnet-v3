@@ -5,8 +5,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary> 
     /// Represents a user in the Azure Cosmos DB service.
@@ -113,5 +115,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <value>The self-link of the permissions associated with the user.</value>
         internal string PermissionsLink => $"{this.SelfLink?.TrimEnd('/')}/{ this.Permissions}";
+
+        /// <summary>
+        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This ensures that if resource is read and updated none of the fields will be lost in the process.
+        /// </summary>
+        [JsonExtensionData]
+        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
     }
 }

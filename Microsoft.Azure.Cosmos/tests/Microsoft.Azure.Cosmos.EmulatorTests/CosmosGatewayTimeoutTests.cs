@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (CosmosException rte)
                 {
-                    Assert.IsTrue(handler.Count >= 6);
+                    Assert.IsTrue(handler.Count >= 3, $"HandlerCount: {handler.Count}; Expecte 6");
                     string message = rte.ToString();
                     Assert.IsTrue(message.Contains("Start Time"), "Start Time:" + message);
                     Assert.IsTrue(message.Contains("Total Duration"), "Total Duration:" + message);
@@ -129,9 +129,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                if (this.Count++ <= 3)
+                this.Count++;
+                if (this.Count < 3)
                 {
-                    throw new WebException();
+                    throw new WebException($"Mocked WebException {this.Count}");
                 }
 
                 throw new TaskCanceledException();

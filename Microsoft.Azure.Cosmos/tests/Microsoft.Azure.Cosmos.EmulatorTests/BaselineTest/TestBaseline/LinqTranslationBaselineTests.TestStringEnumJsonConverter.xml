@@ -8,7 +8,7 @@
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["EnumField1"] = "One") ]]></SqlQuery>
+WHERE (root["EnumField1"] = "One")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -20,7 +20,7 @@ WHERE (root["EnumField1"] = "One") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE ("One" = root["EnumField1"]) ]]></SqlQuery>
+WHERE ("One" = root["EnumField1"])]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -32,7 +32,7 @@ WHERE ("One" = root["EnumField1"]) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["EnumField2"] = "Two") ]]></SqlQuery>
+WHERE (root["EnumField2"] = "Two")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -44,7 +44,7 @@ WHERE (root["EnumField2"] = "Two") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["NullableEnum1"] = "One") ]]></SqlQuery>
+WHERE (root["NullableEnum1"] = "One")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -56,7 +56,7 @@ WHERE (root["NullableEnum1"] = "One") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["NullableEnum2"] = "Two") ]]></SqlQuery>
+WHERE (root["NullableEnum2"] = "Two")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -68,7 +68,7 @@ WHERE (root["NullableEnum2"] = "Two") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["EnumNumber"] = 0) ]]></SqlQuery>
+WHERE (root["EnumNumber"] = 0)]]></SqlQuery>
     </Output>
   </Result>
 </Results>

@@ -10,12 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// Represents a unit of feed consumption that can be used as unit of parallelism.
     /// </summary>
     [Serializable]
-#if PREVIEW || INTERNAL
-    public
-#else
-    internal
-#endif
-    abstract class FeedRange
+    public abstract class FeedRange
     {
         /// <summary>
         /// Gets a string representation of the current range.

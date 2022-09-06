@@ -43,9 +43,9 @@
         {
             [JsonIgnore]
             public Type Type { get; }
-            public Dictionary<string, TypeTree> Subclasses { get; } = new Dictionary<string, TypeTree>();
-            public Dictionary<string, MemberMetadata> Members { get; } = new Dictionary<string, MemberMetadata>();
-            public Dictionary<string, TypeTree> NestedTypes { get; } = new Dictionary<string, TypeTree>();
+            public SortedDictionary<string, TypeTree> Subclasses { get; } = new SortedDictionary<string, TypeTree>();
+            public SortedDictionary<string, MemberMetadata> Members { get; } = new SortedDictionary<string, MemberMetadata>();
+            public SortedDictionary<string, TypeTree> NestedTypes { get; } = new SortedDictionary<string, TypeTree>();
 
             public TypeTree(Type type)
             {
@@ -140,7 +140,7 @@
 
             IEnumerable<KeyValuePair<string, MemberInfo>> memberInfos =
                 root.Type.GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
-                    .Select(memberInfo => new KeyValuePair<string, MemberInfo>($"{memberInfo.ToString()}{string.Join("-", ContractEnforcement.RemoveDebugSpecificAttributes(memberInfo.CustomAttributes))}", memberInfo))
+                    .Select(memberInfo => new KeyValuePair<string, MemberInfo>($"{memberInfo}{string.Join("-", ContractEnforcement.RemoveDebugSpecificAttributes(memberInfo.CustomAttributes))}", memberInfo))
                     .OrderBy(o => o.Key, invariantComparer);
             foreach (KeyValuePair<string, MemberInfo> memberInfo in memberInfos)
             {

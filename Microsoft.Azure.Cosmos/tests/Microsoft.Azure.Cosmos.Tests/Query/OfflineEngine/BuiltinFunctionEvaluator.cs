@@ -16,8 +16,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
     internal static class BuiltinFunctionEvaluator
     {
-        private static readonly CosmosElement Undefined = null;
-
         private static readonly HashSet<BuiltinFunctionName> NullableFunctions = new HashSet<BuiltinFunctionName>()
         {
             BuiltinFunctionName.IS_ARRAY,
@@ -95,9 +93,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             }
 
             // TODO: make the nullable function check based on the function signature and parameters.
-            if (arguments.Any((arugment) => arugment == Undefined) && !NullableFunctions.Contains(builtinFunction))
+            if (arguments.Any((arg) => arg is CosmosUndefined) && !NullableFunctions.Contains(builtinFunction))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             CosmosElement result;
@@ -502,12 +500,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         {
             if (!(first is CosmosArray firstArray))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (!(second is CosmosArray secondArray))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (arrays != null)
@@ -516,7 +514,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 {
                     if (!(array is CosmosArray))
                     {
-                        return Undefined;
+                        return CosmosUndefined.Create();
                     }
                 }
             }
@@ -558,24 +556,24 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             CosmosElement needle,
             CosmosElement partialMatchToken = null)
         {
-            if (partialMatchToken == Undefined)
+            if (partialMatchToken == null || partialMatchToken is CosmosUndefined)
             {
                 partialMatchToken = CosmosBoolean.Create(false);
             }
 
             if (!(partialMatchToken is CosmosBoolean partialMatchAsBoolean))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (!(haystack is CosmosArray haystackAsArray))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
-            if (needle == Undefined)
+            if (needle is CosmosUndefined)
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             bool contains = false;
@@ -627,7 +625,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         {
             if (!(value is CosmosArray cosmosArray))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             return CosmosNumber64.Create(cosmosArray.Count);
@@ -652,22 +650,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
             if (!(value is CosmosArray valueAsArray))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (!(startIndex is CosmosNumber startIndexAsNumber))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (!(count is CosmosNumber countAsNumber))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (!startIndexAsNumber.Value.IsInteger)
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             long startIndexAsInteger = Number64.ToLong(startIndexAsNumber.Value);
@@ -683,7 +681,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
             if (!countAsNumber.Value.IsInteger)
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             long countAsInteger = Number64.ToLong(countAsNumber.Value);
@@ -757,12 +755,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         {
             if (!(string1 is CosmosString cosmosString1))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (!(string2 is CosmosString cosmosString2))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (otherStrings != null)
@@ -771,7 +769,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 {
                     if (!(otherString is CosmosString))
                     {
-                        return Undefined;
+                        return CosmosUndefined.Create();
                     }
                 }
             }
@@ -885,7 +883,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// </summary>
         /// <param name="value">The expression to check if it is defined.</param>
         /// <returns>A Boolean indicating if the property has been assigned a value.</returns>
-        private static CosmosElement IS_DEFINED(CosmosElement value) => CosmosBoolean.Create(value != Undefined);
+        private static CosmosElement IS_DEFINED(CosmosElement value) => CosmosBoolean.Create(value is not CosmosUndefined);
 
         /// <summary>
         /// Returns a Boolean indicating if the type of the value is null.
@@ -1021,22 +1019,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         {
             if (!(stringValue is CosmosString stringValueValue))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (!(subString is CosmosString subStringValue))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (subStringValue.Value.IsEmpty)
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (!(replacement is CosmosString replacementValue))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             return CosmosString.Create(stringValueValue.Value.ToString().Replace(subStringValue.Value, replacementValue.Value));
@@ -1054,17 +1052,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         {
             if (!(str is CosmosString strValue))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (!(repeatCount is CosmosNumber repeatCountValue))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (repeatCountValue.Value < 0)
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             long repeatCountAsLong = Number64.ToLong(repeatCountValue.Value);
@@ -1075,13 +1073,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 {
                     if ((strValue.Value.ToString().Length * repeatCountAsLong) > 10000)
                     {
-                        return Undefined;
+                        return CosmosUndefined.Create();
                     }
                 }
             }
             catch (ArithmeticException)
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             StringBuilder stringBuilder = new StringBuilder();
@@ -1114,17 +1112,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         {
             if (!(value is CosmosString stringValue))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (!(length is CosmosNumber lengthValue))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (!lengthValue.Value.IsInteger)
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             CosmosElement offset = CosmosNumber64.Create(Math.Max(stringValue.Value.ToString().Length - Number64.ToLong(lengthValue.Value), 0));
@@ -1378,7 +1376,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         {
             if (!(argument is CosmosNumber argumentAsNumber))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             return CosmosNumber64.Create(numberFunction(Number64.ToDouble(argumentAsNumber.Value)));
@@ -1391,12 +1389,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         {
             if (!(argument1 is CosmosNumber argumentAsNumber1))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (!(argument2 is CosmosNumber argumentAsNumber2))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             return CosmosNumber64.Create(numberFunction(
@@ -1410,7 +1408,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         {
             if (!(argument is CosmosString argumentAsString))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             return stringFunction(argumentAsString.Value);
@@ -1423,12 +1421,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         {
             if (!(argument1 is CosmosString argumentAsString1))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (!(argument2 is CosmosString argumentAsString2))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             return stringFunction(argumentAsString1.Value, argumentAsString2.Value);
@@ -1441,17 +1439,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         {
             if (!(stringArgument is CosmosString stringArgumentValue))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (!(startIndex is CosmosNumber startIndexAsNumber))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (!(length is CosmosNumber lengthAsNumber))
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (stringArgumentValue.Value.IsEmpty)
@@ -1461,12 +1459,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
             if (!startIndexAsNumber.Value.IsInteger)
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             if (!lengthAsNumber.Value.IsInteger)
             {
-                return Undefined;
+                return CosmosUndefined.Create();
             }
 
             long startIndexAsInteger = Number64.ToLong(startIndexAsNumber.Value);

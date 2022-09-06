@@ -281,7 +281,7 @@ FROM root]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value": -7.9228162514264338E+28} 
+SELECT VALUE {"value": -7.922816251426434E+28} 
 FROM root]]></SqlQuery>
     </Output>
   </Result>
@@ -292,7 +292,7 @@ FROM root]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value": 7.9228162514264338E+28} 
+SELECT VALUE {"value": 7.922816251426434E+28} 
 FROM root]]></SqlQuery>
     </Output>
   </Result>
@@ -310,7 +310,7 @@ FROM root]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Double MinValue]]></Description>
-      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = -1.79769313486232E+308))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = -1.7976931348623157E+308))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -321,7 +321,7 @@ FROM root]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Double MaxValue]]></Description>
-      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 1.79769313486232E+308))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 1.7976931348623157E+308))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -343,22 +343,22 @@ FROM root]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Single MinValue]]></Description>
-      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = -3.402823E+38))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = -3.4028235E+38))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value": -3.40282347E+38} 
+SELECT VALUE {"value": -3.4028235E+38} 
 FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Single MaxValue]]></Description>
-      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 3.402823E+38))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = 3.4028235E+38))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value": 3.40282347E+38} 
+SELECT VALUE {"value": 3.4028235E+38} 
 FROM root]]></SqlQuery>
     </Output>
   </Result>
