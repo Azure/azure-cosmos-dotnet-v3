@@ -31,7 +31,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private List<ProducedDiagnosticScope> Scopes { get; } = new List<ProducedDiagnosticScope>();
 
-        private List<string> Attributes { set;  get; }
+        private List<string> GeneratedActivities { set;  get; }
+        private List<string> GeneratedEvents { set; get; }
 
         public OpenTelemetryListener(string name, bool asyncLocal = false, Action<ProducedDiagnosticScope> scopeStartCallback = default)
             : this(n => n == name, asyncLocal, scopeStartCallback)
@@ -48,7 +49,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.sourceNameFilter = filter;
             this.scopeStartCallback = scopeStartCallback;
 
-            this.Attributes = new List<string>();
+            this.GeneratedActivities = new List<string>();
+            this.GeneratedEvents = new List<string>();
 
             DiagnosticListener.AllListeners.Subscribe(this);
         }
@@ -144,17 +146,31 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
             builder.Append("</ACTIVITY>");
 
-            this.Attributes.Add(builder.ToString());
+            this.GeneratedActivities.Add(builder.ToString());
         }
 
         public List<string> GetRecordedAttributes() 
         {
-            return this.Attributes;
+            List<string> outputList = new List<string>();
+
+            if(this.GeneratedActivities != null && this.GeneratedActivities.Count > 0)
+            {
+                outputList.AddRange(this.GeneratedActivities);
+               
+            }
+
+            if (this.GeneratedEvents != null && this.GeneratedEvents.Count > 0)
+            {
+                outputList.AddRange(this.GeneratedEvents);
+            }
+
+            return outputList;
         }
 
         public void ResetAttributes()
         {
-            this.Attributes = new List<string>();
+            this.GeneratedActivities = new List<string>();
+            this.GeneratedEvents = new List<string>();
         }
 
         public void OnNext(DiagnosticListener value)
@@ -184,11 +200,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             StringBuilder builder = new StringBuilder();
             builder.Append("<EVENT>")
                    .Append("Ideally, this should contain request diagnostics but request diagnostics is " +
-                   "sibject to change with each request as it contains few unique id. " +
+                   "subject to change with each request as it contains few unique id. " +
                    "So just putting this tag with this static text to make sure event is getting generated" +
                    " for each test.")
                    .Append("</EVENT>");
-            this.Attributes.Add(builder.ToString());
+            this.GeneratedEvents.Add(builder.ToString());
         }
 
         public override void Dispose()

@@ -39,11 +39,11 @@
         private static readonly TimeSpan delayTime = TimeSpan.FromSeconds(2);
         private static readonly RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
 
+        private const double DiagnosticsLatencyThresholdValue = .0001; // Very Very Small Value
         [ClassInitialize()]
         public static async Task ClassInitAsync(TestContext context)
         {
-            string sourceName = OpenTelemetryAttributeKeys.DiagnosticNamespace;
-            testListener = new OpenTelemetryListener(sourceName);
+            testListener = new OpenTelemetryListener(OpenTelemetryAttributeKeys.DiagnosticNamespace);
 
             string errorMessage = "Mock throttle exception" + Guid.NewGuid().ToString();
             Guid exceptionActivityId = Guid.NewGuid();
@@ -54,7 +54,9 @@
                 .WithBulkExecution(true));
             // Set a small retry count to reduce test time
             throttleClient = TestCommon.CreateCosmosClient(builder =>
-                builder.WithThrottlingRetryOptions(TimeSpan.FromSeconds(5), 3)
+                builder.WithThrottlingRetryOptions(
+                    maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
+                    maxRetryAttemptsOnThrottledRequests: 3)
                     .WithBulkExecution(true)
                     .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
                         transportClient,
@@ -77,22 +79,22 @@
 #endif
             client.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(1)
+                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
             };
 
             bulkClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(1)
+                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
             };
             
             throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(1)
+                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
             };
             
             miscCosmosClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(1)
+                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
             };
 
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
@@ -1225,10 +1227,6 @@
                 {
                     ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
                     createItemsTasks.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.id)));
-
-                    oTelActivities.Add(testListener.GetRecordedAttributes());
-
-                    testListener.ResetAttributes();
                 }
 
                 await Task.WhenAll(createItemsTasks);
@@ -1246,15 +1244,16 @@
 
                 endLineNumber = GetLineNumber();
 
-                int count = 0;
                 foreach (ITrace trace in traces)
                 {
-                    inputs.Add(new Input("Bulk Operation", trace, startLineNumber, endLineNumber, oTelActivities[count++]));
+                    inputs.Add(new Input("Bulk Operation", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
                 }
-                
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
+            Console.WriteLine("Thottling test started......................");
             //----------------------------------------------------------------
             //  Bulk with retry on throttle
             //----------------------------------------------------------------
@@ -1280,6 +1279,7 @@
                 {
                     trace = ((CosmosTraceDiagnostics)ce.Diagnostics).Value;
                 }
+
                 endLineNumber = GetLineNumber();
 
                 inputs.Add(new Input("Bulk Operation With Throttle", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
@@ -1406,7 +1406,7 @@
             string json = TraceWriter.TraceToJson(traceForBaselineTesting);
 
             StringBuilder oTelActivitiesString = new StringBuilder();
-            if (input.OTelActivities != null)
+            if (input.OTelActivities != null && input.OTelActivities.Count > 0)
             {
                 foreach (string attributes in input.OTelActivities)
                 {
@@ -1585,11 +1585,7 @@
             {
                 this.Text = text ?? throw new ArgumentNullException(nameof(text));
                 this.Json = json ?? throw new ArgumentNullException(nameof(json));
-
-                if(oTelActivities != null)
-                {
-                    this.OTelActivities = oTelActivities;
-                }
+                this.OTelActivities = oTelActivities;
             }
 
             public string Text { get; }
@@ -1608,7 +1604,7 @@
                 xmlWriter.WriteCData(this.Json);
                 xmlWriter.WriteEndElement();
 
-                if (this.OTelActivities != null)
+                if (!string.IsNullOrWhiteSpace(this.OTelActivities))
                 {
                     xmlWriter.WriteStartElement(nameof(this.OTelActivities));
                     xmlWriter.WriteRaw(this.OTelActivities);

@@ -172,7 +172,6 @@
     }
   ]
 }]]></Json>
-      <OTelActivities />
     </Output>
   </Result>
   <Result>
@@ -212,7 +211,13 @@
     │   )
     ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     ├── Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   │   └── Waiting for Initialization of client to complete(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    │   └── Read Collection(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │           (
+    │               [Client Side Request Stats]
+    │               Redacted To Not Change The Baselines From Run To Run
+    │           )
     ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
@@ -400,7 +405,24 @@
           "name": "Get Collection Cache",
           "id": "00000000-0000-0000-0000-000000000000",
           "start time": "12:00:00:000",
-          "duration in milliseconds": 0
+          "duration in milliseconds": 0,
+          "children": [
+            {
+              "name": "Waiting for Initialization of client to complete",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0
+            }
+          ]
+        },
+        {
+          "name": "Read Collection",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {
+            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+          }
         }
       ]
     },
@@ -1048,8 +1070,8 @@
     }
   ]
 }]]></Json>
-      <OTelActivities><EVENT>Ideally, this should contain request diagnostics but request diagnostics is sibject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
-<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.stacktrace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.message</ATTRIBUTE-KEY></ACTIVITY>
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.stacktrace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.message</ATTRIBUTE-KEY></ACTIVITY>
+<EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
 </OTelActivities>
     </Output>
   </Result>
@@ -1302,7 +1324,6 @@
     }
   ]
 }]]></Json>
-      <OTelActivities />
     </Output>
   </Result>
   <Result>
@@ -1592,7 +1613,6 @@
     }
   ]
 }]]></Json>
-      <OTelActivities />
     </Output>
   </Result>
   <Result>
@@ -1958,7 +1978,6 @@
     }
   ]
 }]]></Json>
-      <OTelActivities />
     </Output>
   </Result>
   <Result>
@@ -2134,7 +2153,6 @@
     }
   ]
 }]]></Json>
-      <OTelActivities />
     </Output>
   </Result>
 </Results>
