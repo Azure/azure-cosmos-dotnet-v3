@@ -4,8 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
+    using System;
+    using System.Collections.Generic;
     using System.Diagnostics.Tracing;
+    using System.Text;
     using global::Azure.Core.Diagnostics;
+    using Microsoft.Azure.Cosmos.Diagnostics;
 
     [EventSource(Name = EventSourceName)]
     internal sealed class CosmosDbEventSource : AzureEventSource
@@ -18,20 +22,27 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
         }
 
+        // we need to avoid serialization when nobody listens
+        public static bool IsErrorEnabled
+        {
+            [NonEvent]
+            get => Singleton.IsEnabled(EventLevel.Error, (EventKeywords)(-1));
+        }
+
         public static void RecordDiagnostics(CosmosDiagnostics diagnostics)
         {
-            if (Singleton.IsEnabled())
+            if (CosmosDbEventSource.IsErrorEnabled)
             {
                 Singleton.SendRequestDiagnostics(diagnostics.ToString());
             }
         }
 
         /// <summary>
-        /// We are generating this event only in specific scenarios where we need this information to be present.
-        /// thats why going with LogAlways EventLevel
+        /// We are generating this event only in specific scenarios where this information MUST be present.
+        /// thats why going with Error Event Level
         /// </summary>
         /// <param name="message"></param>
-        [Event(1, Level = EventLevel.LogAlways)]
+        [Event(1, Level = EventLevel.Error)]
         private void SendRequestDiagnostics(string message)
         {
             this.WriteEvent(1, message);

@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private List<ProducedDiagnosticScope> Scopes { get; } = new List<ProducedDiagnosticScope>();
 
-        private List<string> GeneratedActivities { set;  get; }
+        private ConcurrentBag<string> GeneratedActivities { set;  get; }
         private ConcurrentBag<string> GeneratedEvents { set; get; }
 
         public OpenTelemetryListener(string name, bool asyncLocal = false, Action<ProducedDiagnosticScope> scopeStartCallback = default)
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.sourceNameFilter = filter;
             this.scopeStartCallback = scopeStartCallback;
 
-            this.GeneratedActivities = new List<string>();
+            this.GeneratedActivities = new ConcurrentBag<string>();
             this.GeneratedEvents = new ConcurrentBag<string>();
 
             DiagnosticListener.AllListeners.Subscribe(this);
@@ -150,13 +150,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         public List<string> GetRecordedAttributes() 
         {
             List<string> outputList = new List<string>();
-
             if(this.GeneratedActivities != null && this.GeneratedActivities.Count > 0)
             {
                 outputList.AddRange(this.GeneratedActivities);
                
             }
-
             if (this.GeneratedEvents != null && this.GeneratedEvents.Count > 0)
             {
                 outputList.AddRange(this.GeneratedEvents);
@@ -167,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public void ResetAttributes()
         {
-            this.GeneratedActivities = new List<string>();
+            this.GeneratedActivities = new ConcurrentBag<string>();
             this.GeneratedEvents = new ConcurrentBag<string>();
         }
 
