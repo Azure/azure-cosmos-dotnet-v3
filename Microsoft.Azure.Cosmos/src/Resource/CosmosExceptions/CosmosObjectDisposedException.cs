@@ -7,11 +7,9 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections;
     using System.Globalization;
-    using global::Azure;
     using global::Azure.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Telemetry;
-    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>

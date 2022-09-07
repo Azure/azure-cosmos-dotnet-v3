@@ -4,12 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
-    using System;
-    using System.Collections.Generic;
     using System.Diagnostics.Tracing;
-    using System.Text;
     using global::Azure.Core.Diagnostics;
-    using Microsoft.Azure.Cosmos.Diagnostics;
 
     [EventSource(Name = EventSourceName)]
     internal sealed class CosmosDbEventSource : AzureEventSource
