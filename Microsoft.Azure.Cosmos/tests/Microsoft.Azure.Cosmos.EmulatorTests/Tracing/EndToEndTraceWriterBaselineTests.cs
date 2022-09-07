@@ -949,7 +949,6 @@
 
             int startLineNumber;
             int endLineNumber;
-
             //----------------------------------------------------------------
             //  Point Operation With Request Timeout
             //----------------------------------------------------------------
@@ -960,10 +959,11 @@
                 Guid exceptionActivityId = Guid.NewGuid();
                 string transportExceptionDescription = "transportExceptionDescription" + Guid.NewGuid();
                 Container containerWithTransportException = TransportClientHelper.GetContainerWithItemTransportException(
-                    database.Id,
-                    container.Id,
-                    exceptionActivityId,
-                    transportExceptionDescription);
+                    databaseId: database.Id,
+                    containerId: container.Id,
+                    activityId: exceptionActivityId,
+                    transportExceptionSourceDescription: transportExceptionDescription,
+                    enableDistributingTracing: true);
 
                 //Checking point operation diagnostics on typed operations
                 ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
@@ -1036,6 +1036,7 @@
                     Guid transportExceptionActivityId = Guid.NewGuid();
                     string transportErrorMessage = $"TransportErrorMessage{Guid.NewGuid()}";
                     Guid activityIdScope = Guid.Empty;
+
                     void interceptor(Uri uri, Documents.ResourceOperation operation, Documents.DocumentServiceRequest request)
                     {
                         Assert.AreNotEqual(System.Diagnostics.Trace.CorrelationManager.ActivityId, Guid.Empty, "Activity scope should be set");
@@ -1075,9 +1076,10 @@
                     }
 
                     Container containerWithTransportException = TransportClientHelper.GetContainerWithIntercepter(
-                        database.Id,
-                        container.Id,
-                        interceptor);
+                        databaseId: database.Id,
+                        containerId: container.Id,
+                        interceptor: interceptor,
+                        enableDistributingTracing: true);
                     //Checking point operation diagnostics on typed operations
                     ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
 
@@ -1110,6 +1112,7 @@
                         $"The diagnostic string is growing faster than linear. Length: {currLength}, Next Length: {nextLength}");
                 }
             }
+
             //----------------------------------------------------------------
 
             //----------------------------------------------------------------
@@ -1122,10 +1125,11 @@
                 Guid exceptionActivityId = Guid.NewGuid();
                 string ServiceUnavailableExceptionDescription = "ServiceUnavailableExceptionDescription" + Guid.NewGuid();
                 Container containerWithTransportException = TransportClientHelper.GetContainerWithItemServiceUnavailableException(
-                    database.Id,
-                    container.Id,
-                    exceptionActivityId,
-                    ServiceUnavailableExceptionDescription);
+                    databaseId: database.Id,
+                    containerId: container.Id,
+                    activityId: exceptionActivityId,
+                    serviceUnavailableExceptionSourceDescription: ServiceUnavailableExceptionDescription,
+                    enableDistributingTracing: true);
 
                 //Checking point operation diagnostics on typed operations
                 ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
@@ -1222,7 +1226,6 @@
                 Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
                 List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
-                List<List<string>> oTelActivities = new List<List<string>>();
                 for (int i = 0; i < 10; i++)
                 {
                     ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
@@ -1253,7 +1256,6 @@
             }
             //----------------------------------------------------------------
 
-            Console.WriteLine("Thottling test started......................");
             //----------------------------------------------------------------
             //  Bulk with retry on throttle
             //----------------------------------------------------------------

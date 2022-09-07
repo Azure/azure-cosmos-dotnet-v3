@@ -8,7 +8,6 @@
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
-    List<List<string>> oTelActivities = new List<List<string>>();
     for (int i = 0; i < 10; i++)
     {
         ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
@@ -192,7 +191,6 @@
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
-    List<List<string>> oTelActivities = new List<List<string>>();
     for (int i = 0; i < 10; i++)
     {
         ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
@@ -376,7 +374,6 @@
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
-    List<List<string>> oTelActivities = new List<List<string>>();
     for (int i = 0; i < 10; i++)
     {
         ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
@@ -560,7 +557,6 @@
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
-    List<List<string>> oTelActivities = new List<List<string>>();
     for (int i = 0; i < 10; i++)
     {
         ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
@@ -744,7 +740,6 @@
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
-    List<List<string>> oTelActivities = new List<List<string>>();
     for (int i = 0; i < 10; i++)
     {
         ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
@@ -928,7 +923,6 @@
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
-    List<List<string>> oTelActivities = new List<List<string>>();
     for (int i = 0; i < 10; i++)
     {
         ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
@@ -1112,7 +1106,6 @@
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
-    List<List<string>> oTelActivities = new List<List<string>>();
     for (int i = 0; i < 10; i++)
     {
         ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
@@ -1296,7 +1289,6 @@
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
-    List<List<string>> oTelActivities = new List<List<string>>();
     for (int i = 0; i < 10; i++)
     {
         ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
@@ -1480,7 +1472,6 @@
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
-    List<List<string>> oTelActivities = new List<List<string>>();
     for (int i = 0; i < 10; i++)
     {
         ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
@@ -1664,7 +1655,6 @@
     Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
     List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
-    List<List<string>> oTelActivities = new List<List<string>>();
     for (int i = 0; i < 10; i++)
     {
         ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);

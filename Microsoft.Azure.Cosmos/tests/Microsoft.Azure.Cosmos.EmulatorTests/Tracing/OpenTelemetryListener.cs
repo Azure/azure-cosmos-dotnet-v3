@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.Tracing;
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private List<ProducedDiagnosticScope> Scopes { get; } = new List<ProducedDiagnosticScope>();
 
         private List<string> GeneratedActivities { set;  get; }
-        private List<string> GeneratedEvents { set; get; }
+        private ConcurrentBag<string> GeneratedEvents { set; get; }
 
         public OpenTelemetryListener(string name, bool asyncLocal = false, Action<ProducedDiagnosticScope> scopeStartCallback = default)
             : this(n => n == name, asyncLocal, scopeStartCallback)
@@ -50,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.scopeStartCallback = scopeStartCallback;
 
             this.GeneratedActivities = new List<string>();
-            this.GeneratedEvents = new List<string>();
+            this.GeneratedEvents = new ConcurrentBag<string>();
 
             DiagnosticListener.AllListeners.Subscribe(this);
         }
@@ -167,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ResetAttributes()
         {
             this.GeneratedActivities = new List<string>();
-            this.GeneratedEvents = new List<string>();
+            this.GeneratedEvents = new ConcurrentBag<string>();
         }
 
         public void OnNext(DiagnosticListener value)
