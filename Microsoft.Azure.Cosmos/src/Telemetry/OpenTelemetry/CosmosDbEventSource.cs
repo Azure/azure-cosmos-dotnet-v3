@@ -9,28 +9,34 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Diagnostics.Tracing;
     using System.Text;
     using global::Azure.Core.Diagnostics;
+    using Microsoft.Azure.Cosmos.Diagnostics;
 
     [EventSource(Name = EventSourceName)]
     internal sealed class CosmosDbEventSource : AzureEventSource
     {
-        public const string EventSourceName = OpenTelemetryAttributeKeys.DiagnosticNamespace;
+        private const string EventSourceName = OpenTelemetryAttributeKeys.DiagnosticNamespace;
+        private static CosmosDbEventSource Singleton { get; } = new CosmosDbEventSource();
 
-        public static CosmosDbEventSource Singleton { get; } = new CosmosDbEventSource();
-
-        public CosmosDbEventSource()
+        private CosmosDbEventSource()
             : base(EventSourceName)
         {
         }
 
-        // we need to avoid serialization when nobody listens
-        public static bool IsWarnEnabled
+        public static void RecordDiagnostics(CosmosDiagnostics diagnostics)
         {
-            [NonEvent]
-            get => Singleton.IsEnabled(EventLevel.Warning, (EventKeywords)(-1));
+            if (Singleton.IsEnabled())
+            {
+                Singleton.SendRequestDiagnostics(diagnostics.ToString());
+            }
         }
 
-        [Event(1, Level = EventLevel.Warning)]
-        public void RecordRequestDiagnostics(string message)
+        /// <summary>
+        /// We are generating this event only in specific scenarios where we need this information to be present.
+        /// thats why going with LogAlways EventLevel
+        /// </summary>
+        /// <param name="message"></param>
+        [Event(1, Level = EventLevel.LogAlways)]
+        private void SendRequestDiagnostics(string message)
         {
             this.WriteEvent(1, message);
         }

@@ -136,13 +136,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                    .Append("</OPERATION>");
             foreach (KeyValuePair<string, string> tag in tags)
             {
-                if(tag.Key != OpenTelemetryAttributeKeys.RequestDiagnostics)
-                {
-                    builder
-                   .Append("<ATTRIBUTE-KEY>")
-                   .Append(tag.Key)
-                   .Append("</ATTRIBUTE-KEY>");
-                }
+                builder
+                .Append("<ATTRIBUTE-KEY>")
+                .Append(tag.Key)
+                .Append("</ATTRIBUTE-KEY>");
             }
             builder.Append("</ACTIVITY>");
 

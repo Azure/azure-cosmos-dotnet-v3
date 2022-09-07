@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections;
     using System.Globalization;
+    using global::Azure;
     using global::Azure.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Telemetry;
@@ -100,10 +101,7 @@ namespace Microsoft.Azure.Cosmos
             scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics));
             scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
 
-            if (CosmosDbEventSource.IsWarnEnabled)
-            {
-                CosmosDbEventSource.Singleton.RecordRequestDiagnostics(exception.Diagnostics.ToString());
-            }
+            CosmosDbEventSource.RecordDiagnostics(exception.Diagnostics);
         }
     }
 }

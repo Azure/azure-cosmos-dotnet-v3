@@ -96,10 +96,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             config: this.config,
                             response: response))
                     {
-                        if (CosmosDbEventSource.IsWarnEnabled)
-                        {
-                            CosmosDbEventSource.Singleton.RecordRequestDiagnostics(response.Diagnostics.ToString());
-                        }
+                        CosmosDbEventSource.RecordDiagnostics(response.Diagnostics);
                     }
                 }
                 else
