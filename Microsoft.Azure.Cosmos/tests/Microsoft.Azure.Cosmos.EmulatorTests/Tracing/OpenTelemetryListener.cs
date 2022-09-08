@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
     public class OpenTelemetryListener :
         EventListener,
-        IObserver<KeyValuePair<string, object>>, 
+        IObserver<KeyValuePair<string, object>>,
         IObserver<DiagnosticListener>,
         IDisposable
     {
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             if(this.GeneratedActivities != null && this.GeneratedActivities.Count > 0)
             {
                 outputList.AddRange(this.GeneratedActivities);
-               
+
             }
             if (this.GeneratedEvents != null && this.GeneratedEvents.Count > 0)
             {

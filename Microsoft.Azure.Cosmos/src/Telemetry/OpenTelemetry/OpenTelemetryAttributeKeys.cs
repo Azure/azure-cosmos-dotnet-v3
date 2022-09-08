@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public const string MachineId = "db.cosmosdb.machine_id";
         public const string UserAgent = "db.cosmosdb.user_agent";
         public const string ConnectionMode = "db.cosmosdb.connection_mode";
+        public const string OperationType = "db.cosmosdb.operation_type";
 
         // Request Specifics
         public const string ContainerName = "db.cosmosdb.container";
