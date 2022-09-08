@@ -29,11 +29,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             get => Singleton.IsEnabled(EventLevel.Error, (EventKeywords)(-1));
         }
 
-        public static void RecordDiagnostics(CosmosDiagnostics diagnostics)
+        public static void RequestError(CosmosDiagnostics diagnostics)
         {
             if (CosmosDbEventSource.IsErrorEnabled)
             {
-                Singleton.SendRequestDiagnostics(diagnostics.ToString());
+                Singleton.RequestError(diagnostics.ToString());
             }
         }
 
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         /// <param name="message"></param>
         [Event(1, Level = EventLevel.Error)]
-        private void SendRequestDiagnostics(string message)
+        private void RequestError(string message)
         {
             this.WriteEvent(1, message);
         }

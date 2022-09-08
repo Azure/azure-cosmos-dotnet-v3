@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             config: this.config,
                             response: response))
                     {
-                        CosmosDbEventSource.RecordDiagnostics(response.Diagnostics);
+                        CosmosDbEventSource.RequestError(response.Diagnostics);
                     }
                 }
                 else

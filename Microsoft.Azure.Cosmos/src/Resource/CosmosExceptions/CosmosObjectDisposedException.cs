@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
             scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics));
             scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
 
-            CosmosDbEventSource.RecordDiagnostics(exception.Diagnostics);
+            CosmosDbEventSource.RequestError(exception.Diagnostics);
         }
     }
 }
