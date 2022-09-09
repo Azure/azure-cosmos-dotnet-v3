@@ -19,81 +19,56 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
         }
 
-        public static bool IsErrorEnabled
+        [NonEvent]
+        public static bool IsEnabled(EventLevel level)
         {
-            [NonEvent]
-            get => Singleton.IsEnabled(EventLevel.Error, (EventKeywords)(-1));
+            return CosmosDbEventSource.Singleton.IsEnabled(level, EventKeywords.None);
         }
 
-        public static bool IsWarnEnabled
-        {
-            [NonEvent]
-            get => Singleton.IsEnabled(EventLevel.Warning, (EventKeywords)(-1));
-        }
-
-        public static bool IsInfoEnabled
-        {
-            [NonEvent]
-            get => Singleton.IsEnabled(EventLevel.Informational, (EventKeywords)(-1));
-        }
-
+        [NonEvent]
         public static void RecordDiagnosticsForRequests(DistributedTracingOptions config,
             OpenTelemetryAttributes response)
         {
-            if (CosmosDbEventSource.IsInfoEnabled)
+            if (CosmosDbEventSource.IsEnabled(EventLevel.Informational))
             {
-                Singleton.WriteInfoEvent(response.Diagnostics.ToString());
+                CosmosDbEventSource.Singleton.WriteInfoEvent(response.Diagnostics.ToString());
             } 
             else
             {
                 if (DiagnosticsFilterHelper.IsTracingNeeded(
                         config: config,
-                        response: response) && CosmosDbEventSource.IsWarnEnabled)
+                        response: response) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
                 {
-                    Singleton.WriteWarningEvent(response.Diagnostics.ToString());
+                    CosmosDbEventSource.Singleton.WriteWarningEvent(response.Diagnostics.ToString());
                 }
             }
         }
 
+        [NonEvent]
         public static void RecordDiagnosticsForExceptions(CosmosDiagnostics diagnostics)
         {
-            if (CosmosDbEventSource.IsErrorEnabled)
+            if (CosmosDbEventSource.IsEnabled(EventLevel.Error))
             {
-                Singleton.WriteErrorEvent(diagnostics.ToString());
+                CosmosDbEventSource.Singleton.WriteErrorEvent(diagnostics.ToString());
             }
         }
 
-        /// <summary>
-        /// We are generating this event only in specific scenarios where this information MUST be present.
-        /// thats why going with Error Event Level
-        /// </summary>
-        /// <param name="message"></param>
         [Event(1, Level = EventLevel.Error)]
         private void WriteErrorEvent(string message)
         {
             this.WriteEvent(1, message);
         }
 
-        /// <summary>
-        /// We are generating this event only in specific scenarios where this information MUST be present.
-        /// thats why going with Error Event Level
-        /// </summary>
-        /// <param name="message"></param>
-        [Event(1, Level = EventLevel.Warning)]
+        [Event(2, Level = EventLevel.Warning)]
         private void WriteWarningEvent(string message)
         {
-            this.WriteEvent(1, message);
+            this.WriteEvent(2, message);
         }
 
-        /// <summary>
-        /// We are generating this event only in specific scenarios where this information MUST be present.
-        /// thats why going with Error Event Level
-        /// </summary>
-        /// <param name="message"></param>
-        [Event(1, Level = EventLevel.Informational)]
+        [Event(3, Level = EventLevel.Informational)]
         private void WriteInfoEvent(string message)
         {
-            this.WriteEvent(1, message);
+            this.WriteEvent(3, message);
         }
     }
 }

@@ -13,8 +13,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Reflection;
     using System.Text;
     using System.Threading;
-    using Telemetry;
-    using VisualStudio.TestTools.UnitTesting;
 
     public class OpenTelemetryListener :
         EventListener,
