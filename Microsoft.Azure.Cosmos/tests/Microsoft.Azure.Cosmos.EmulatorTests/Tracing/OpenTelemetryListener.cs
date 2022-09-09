@@ -5,17 +5,23 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.Tracing;
     using System.Linq;
     using System.Reflection;
     using System.Text;
     using System.Threading;
-    using Telemetry;
-    using VisualStudio.TestTools.UnitTesting;
 
-    public class OpenTelemetryListener : IObserver<KeyValuePair<string, object>>, IObserver<DiagnosticListener>, IDisposable
+    public class OpenTelemetryListener :
+        EventListener,
+        IObserver<KeyValuePair<string, object>>, 
+        IObserver<DiagnosticListener>,
+        IDisposable
     {
+        private readonly string EventSourceName;
+
         private readonly Func<string, bool> sourceNameFilter;
         private readonly AsyncLocal<bool> collectThisStack;
 
@@ -24,11 +30,13 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private List<ProducedDiagnosticScope> Scopes { get; } = new List<ProducedDiagnosticScope>();
 
-        private List<string> Attributes { set;  get; }
+        private ConcurrentBag<string> GeneratedActivities { set;  get; }
+        private ConcurrentBag<string> GeneratedEvents { set; get; }
 
         public OpenTelemetryListener(string name, bool asyncLocal = false, Action<ProducedDiagnosticScope> scopeStartCallback = default)
             : this(n => n == name, asyncLocal, scopeStartCallback)
         {
+            this.EventSourceName = name;
         }
 
         public OpenTelemetryListener(Func<string, bool> filter, bool asyncLocal = false, Action<ProducedDiagnosticScope> scopeStartCallback = default)
@@ -40,7 +48,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.sourceNameFilter = filter;
             this.scopeStartCallback = scopeStartCallback;
 
-            this.Attributes = new List<string>();
+            this.GeneratedActivities = new ConcurrentBag<string>();
+            this.GeneratedEvents = new ConcurrentBag<string>();
 
             DiagnosticListener.AllListeners.Subscribe(this);
         }
@@ -126,27 +135,36 @@ namespace Microsoft.Azure.Cosmos.Tests
                    .Append("</OPERATION>");
             foreach (KeyValuePair<string, string> tag in tags)
             {
-                if(tag.Key != OpenTelemetryAttributeKeys.RequestDiagnostics)
-                {
-                    builder
-                   .Append("<ATTRIBUTE-KEY>")
-                   .Append(tag.Key)
-                   .Append("</ATTRIBUTE-KEY>");
-                }
+                builder
+                .Append("<ATTRIBUTE-KEY>")
+                .Append(tag.Key)
+                .Append("</ATTRIBUTE-KEY>");
             }
             builder.Append("</ACTIVITY>");
 
-            this.Attributes.Add(builder.ToString());
+            this.GeneratedActivities.Add(builder.ToString());
         }
 
         public List<string> GetRecordedAttributes() 
         {
-            return this.Attributes;
+            List<string> outputList = new List<string>();
+            if(this.GeneratedActivities != null && this.GeneratedActivities.Count > 0)
+            {
+                outputList.AddRange(this.GeneratedActivities);
+               
+            }
+            if (this.GeneratedEvents != null && this.GeneratedEvents.Count > 0)
+            {
+                outputList.AddRange(this.GeneratedEvents);
+            }
+
+            return outputList;
         }
 
         public void ResetAttributes()
         {
-            this.Attributes = new List<string>();
+            this.GeneratedActivities = new ConcurrentBag<string>();
+            this.GeneratedEvents = new ConcurrentBag<string>();
         }
 
         public void OnNext(DiagnosticListener value)
@@ -163,8 +181,30 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        public void Dispose()
+        protected override void OnEventSourceCreated(EventSource eventSource)
         {
+            if (eventSource.Name == this.EventSourceName)
+            {
+                this.EnableEvents(eventSource, EventLevel.Informational);
+            }
+        }
+
+        protected override void OnEventWritten(EventWrittenEventArgs eventData)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append("<EVENT>")
+                   .Append("Ideally, this should contain request diagnostics but request diagnostics is " +
+                   "subject to change with each request as it contains few unique id. " +
+                   "So just putting this tag with this static text to make sure event is getting generated" +
+                   " for each test.")
+                   .Append("</EVENT>");
+            this.GeneratedEvents.Add(builder.ToString());
+        }
+
+        public override void Dispose()
+        {
+            base.Dispose();
+
             if (this.subscriptions == null)
             {
                 return;

@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Runtime.CompilerServices;
 
     /// <summary>
     /// Open Telemetry Configuration

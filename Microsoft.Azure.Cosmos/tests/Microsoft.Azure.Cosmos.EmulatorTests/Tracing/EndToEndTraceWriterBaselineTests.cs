@@ -35,13 +35,15 @@
         public static Container container;
 
         private static OpenTelemetryListener testListener;
+
         private static readonly TimeSpan delayTime = TimeSpan.FromSeconds(2);
         private static readonly RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
 
+        private const double DiagnosticsLatencyThresholdValue = .0001; // Very Very Small Value
         [ClassInitialize()]
         public static async Task ClassInitAsync(TestContext context)
         {
-            testListener = new OpenTelemetryListener("Azure.Cosmos");
+            testListener = new OpenTelemetryListener(OpenTelemetryAttributeKeys.DiagnosticNamespace);
 
             string errorMessage = "Mock throttle exception" + Guid.NewGuid().ToString();
             Guid exceptionActivityId = Guid.NewGuid();
@@ -52,7 +54,9 @@
                 .WithBulkExecution(true));
             // Set a small retry count to reduce test time
             throttleClient = TestCommon.CreateCosmosClient(builder =>
-                builder.WithThrottlingRetryOptions(TimeSpan.FromSeconds(5), 3)
+                builder.WithThrottlingRetryOptions(
+                    maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
+                    maxRetryAttemptsOnThrottledRequests: 3)
                     .WithBulkExecution(true)
                     .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
                         transportClient,
@@ -75,22 +79,22 @@
 #endif
             client.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(1)
+                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
             };
 
             bulkClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(1)
+                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
             };
             
             throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(1)
+                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
             };
             
             miscCosmosClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(1)
+                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
             };
 
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
@@ -945,7 +949,6 @@
 
             int startLineNumber;
             int endLineNumber;
-
             //----------------------------------------------------------------
             //  Point Operation With Request Timeout
             //----------------------------------------------------------------
@@ -956,10 +959,11 @@
                 Guid exceptionActivityId = Guid.NewGuid();
                 string transportExceptionDescription = "transportExceptionDescription" + Guid.NewGuid();
                 Container containerWithTransportException = TransportClientHelper.GetContainerWithItemTransportException(
-                    database.Id,
-                    container.Id,
-                    exceptionActivityId,
-                    transportExceptionDescription);
+                    databaseId: database.Id,
+                    containerId: container.Id,
+                    activityId: exceptionActivityId,
+                    transportExceptionSourceDescription: transportExceptionDescription,
+                    enableDistributingTracing: true);
 
                 //Checking point operation diagnostics on typed operations
                 ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
@@ -1032,6 +1036,7 @@
                     Guid transportExceptionActivityId = Guid.NewGuid();
                     string transportErrorMessage = $"TransportErrorMessage{Guid.NewGuid()}";
                     Guid activityIdScope = Guid.Empty;
+
                     void interceptor(Uri uri, Documents.ResourceOperation operation, Documents.DocumentServiceRequest request)
                     {
                         Assert.AreNotEqual(System.Diagnostics.Trace.CorrelationManager.ActivityId, Guid.Empty, "Activity scope should be set");
@@ -1071,9 +1076,10 @@
                     }
 
                     Container containerWithTransportException = TransportClientHelper.GetContainerWithIntercepter(
-                        database.Id,
-                        container.Id,
-                        interceptor);
+                        databaseId: database.Id,
+                        containerId: container.Id,
+                        interceptor: interceptor,
+                        enableDistributingTracing: true);
                     //Checking point operation diagnostics on typed operations
                     ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
 
@@ -1106,6 +1112,7 @@
                         $"The diagnostic string is growing faster than linear. Length: {currLength}, Next Length: {nextLength}");
                 }
             }
+
             //----------------------------------------------------------------
 
             //----------------------------------------------------------------
@@ -1118,10 +1125,11 @@
                 Guid exceptionActivityId = Guid.NewGuid();
                 string ServiceUnavailableExceptionDescription = "ServiceUnavailableExceptionDescription" + Guid.NewGuid();
                 Container containerWithTransportException = TransportClientHelper.GetContainerWithItemServiceUnavailableException(
-                    database.Id,
-                    container.Id,
-                    exceptionActivityId,
-                    ServiceUnavailableExceptionDescription);
+                    databaseId: database.Id,
+                    containerId: container.Id,
+                    activityId: exceptionActivityId,
+                    serviceUnavailableExceptionSourceDescription: ServiceUnavailableExceptionDescription,
+                    enableDistributingTracing: true);
 
                 //Checking point operation diagnostics on typed operations
                 ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
@@ -1218,15 +1226,10 @@
                 Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
                 List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
 
-                List<List<string>> oTelActivities = new List<List<string>>();
                 for (int i = 0; i < 10; i++)
                 {
                     ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
                     createItemsTasks.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.id)));
-
-                    oTelActivities.Add(testListener.GetRecordedAttributes());
-
-                    testListener.ResetAttributes();
                 }
 
                 await Task.WhenAll(createItemsTasks);
@@ -1244,12 +1247,12 @@
 
                 endLineNumber = GetLineNumber();
 
-                int count = 0;
                 foreach (ITrace trace in traces)
                 {
-                    inputs.Add(new Input("Bulk Operation", trace, startLineNumber, endLineNumber, oTelActivities[count++]));
+                    inputs.Add(new Input("Bulk Operation", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
                 }
-                
+
+                testListener.ResetAttributes();
             }
             //----------------------------------------------------------------
 
@@ -1278,6 +1281,7 @@
                 {
                     trace = ((CosmosTraceDiagnostics)ce.Diagnostics).Value;
                 }
+
                 endLineNumber = GetLineNumber();
 
                 inputs.Add(new Input("Bulk Operation With Throttle", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
@@ -1404,7 +1408,7 @@
             string json = TraceWriter.TraceToJson(traceForBaselineTesting);
 
             StringBuilder oTelActivitiesString = new StringBuilder();
-            if (input.OTelActivities != null)
+            if (input.OTelActivities != null && input.OTelActivities.Count > 0)
             {
                 foreach (string attributes in input.OTelActivities)
                 {
@@ -1583,11 +1587,7 @@
             {
                 this.Text = text ?? throw new ArgumentNullException(nameof(text));
                 this.Json = json ?? throw new ArgumentNullException(nameof(json));
-
-                if(oTelActivities != null)
-                {
-                    this.OTelActivities = oTelActivities;
-                }
+                this.OTelActivities = oTelActivities;
             }
 
             public string Text { get; }
@@ -1606,7 +1606,7 @@
                 xmlWriter.WriteCData(this.Json);
                 xmlWriter.WriteEndElement();
 
-                if (this.OTelActivities != null)
+                if (!string.IsNullOrWhiteSpace(this.OTelActivities))
                 {
                     xmlWriter.WriteStartElement(nameof(this.OTelActivities));
                     xmlWriter.WriteRaw(this.OTelActivities);

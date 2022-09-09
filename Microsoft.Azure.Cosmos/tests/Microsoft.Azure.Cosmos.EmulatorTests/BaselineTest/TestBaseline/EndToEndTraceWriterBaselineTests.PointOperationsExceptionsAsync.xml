@@ -8,10 +8,11 @@
     Guid exceptionActivityId = Guid.NewGuid();
     string transportExceptionDescription = "transportExceptionDescription" + Guid.NewGuid();
     Container containerWithTransportException = TransportClientHelper.GetContainerWithItemTransportException(
-        database.Id,
-        container.Id,
-        exceptionActivityId,
-        transportExceptionDescription);
+        databaseId: database.Id,
+        containerId: container.Id,
+        activityId: exceptionActivityId,
+        transportExceptionSourceDescription: transportExceptionDescription,
+        enableDistributingTracing: true);
 
     //Checking point operation diagnostics on typed operations
     ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
@@ -172,7 +173,9 @@
     }
   ]
 }]]></Json>
-      <OTelActivities />
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.stacktrace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.message</ATTRIBUTE-KEY></ACTIVITY>
+<EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
+</OTelActivities>
     </Output>
   </Result>
   <Result>
@@ -1072,6 +1075,7 @@
   ]
 }]]></Json>
       <OTelActivities><ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.stacktrace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.message</ATTRIBUTE-KEY></ACTIVITY>
+<EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
 </OTelActivities>
     </Output>
   </Result>
@@ -1084,6 +1088,7 @@
         Guid transportExceptionActivityId = Guid.NewGuid();
         string transportErrorMessage = $"TransportErrorMessage{Guid.NewGuid()}";
         Guid activityIdScope = Guid.Empty;
+
         void interceptor(Uri uri, Documents.ResourceOperation operation, Documents.DocumentServiceRequest request)
         {
             Assert.AreNotEqual(System.Diagnostics.Trace.CorrelationManager.ActivityId, Guid.Empty, "Activity scope should be set");
@@ -1123,9 +1128,10 @@
         }
 
         Container containerWithTransportException = TransportClientHelper.GetContainerWithIntercepter(
-            database.Id,
-            container.Id,
-            interceptor);
+            databaseId: database.Id,
+            containerId: container.Id,
+            interceptor: interceptor,
+            enableDistributingTracing: true);
         //Checking point operation diagnostics on typed operations
         ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
 
@@ -1324,7 +1330,9 @@
     }
   ]
 }]]></Json>
-      <OTelActivities />
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.stacktrace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.message</ATTRIBUTE-KEY></ACTIVITY>
+<EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
+</OTelActivities>
     </Output>
   </Result>
   <Result>
@@ -1336,6 +1344,7 @@
         Guid transportExceptionActivityId = Guid.NewGuid();
         string transportErrorMessage = $"TransportErrorMessage{Guid.NewGuid()}";
         Guid activityIdScope = Guid.Empty;
+
         void interceptor(Uri uri, Documents.ResourceOperation operation, Documents.DocumentServiceRequest request)
         {
             Assert.AreNotEqual(System.Diagnostics.Trace.CorrelationManager.ActivityId, Guid.Empty, "Activity scope should be set");
@@ -1375,9 +1384,10 @@
         }
 
         Container containerWithTransportException = TransportClientHelper.GetContainerWithIntercepter(
-            database.Id,
-            container.Id,
-            interceptor);
+            databaseId: database.Id,
+            containerId: container.Id,
+            interceptor: interceptor,
+            enableDistributingTracing: true);
         //Checking point operation diagnostics on typed operations
         ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
 
@@ -1614,7 +1624,9 @@
     }
   ]
 }]]></Json>
-      <OTelActivities />
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.stacktrace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.message</ATTRIBUTE-KEY></ACTIVITY>
+<EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
+</OTelActivities>
     </Output>
   </Result>
   <Result>
@@ -1626,6 +1638,7 @@
         Guid transportExceptionActivityId = Guid.NewGuid();
         string transportErrorMessage = $"TransportErrorMessage{Guid.NewGuid()}";
         Guid activityIdScope = Guid.Empty;
+
         void interceptor(Uri uri, Documents.ResourceOperation operation, Documents.DocumentServiceRequest request)
         {
             Assert.AreNotEqual(System.Diagnostics.Trace.CorrelationManager.ActivityId, Guid.Empty, "Activity scope should be set");
@@ -1665,9 +1678,10 @@
         }
 
         Container containerWithTransportException = TransportClientHelper.GetContainerWithIntercepter(
-            database.Id,
-            container.Id,
-            interceptor);
+            databaseId: database.Id,
+            containerId: container.Id,
+            interceptor: interceptor,
+            enableDistributingTracing: true);
         //Checking point operation diagnostics on typed operations
         ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
 
@@ -1980,7 +1994,9 @@
     }
   ]
 }]]></Json>
-      <OTelActivities />
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.stacktrace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.message</ATTRIBUTE-KEY></ACTIVITY>
+<EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
+</OTelActivities>
     </Output>
   </Result>
   <Result>
@@ -1992,10 +2008,11 @@
     Guid exceptionActivityId = Guid.NewGuid();
     string ServiceUnavailableExceptionDescription = "ServiceUnavailableExceptionDescription" + Guid.NewGuid();
     Container containerWithTransportException = TransportClientHelper.GetContainerWithItemServiceUnavailableException(
-        database.Id,
-        container.Id,
-        exceptionActivityId,
-        ServiceUnavailableExceptionDescription);
+        databaseId: database.Id,
+        containerId: container.Id,
+        activityId: exceptionActivityId,
+        serviceUnavailableExceptionSourceDescription: ServiceUnavailableExceptionDescription,
+        enableDistributingTracing: true);
 
     //Checking point operation diagnostics on typed operations
     ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
@@ -2156,7 +2173,9 @@
     }
   ]
 }]]></Json>
-      <OTelActivities />
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.stacktrace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.message</ATTRIBUTE-KEY></ACTIVITY>
+<EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
+</OTelActivities>
     </Output>
   </Result>
 </Results>
