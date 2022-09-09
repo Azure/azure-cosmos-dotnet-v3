@@ -4,12 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
-    using System;
-    using System.Collections.Generic;
     using System.Diagnostics.Tracing;
-    using System.Text;
     using global::Azure.Core.Diagnostics;
-    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
 
     [EventSource(Name = EventSourceName)]
     internal sealed class CosmosDbEventSource : AzureEventSource
@@ -22,18 +19,47 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
         }
 
-        // we need to avoid serialization when nobody listens
         public static bool IsErrorEnabled
         {
             [NonEvent]
             get => Singleton.IsEnabled(EventLevel.Error, (EventKeywords)(-1));
         }
 
-        public static void RequestError(CosmosDiagnostics diagnostics)
+        public static bool IsWarnEnabled
+        {
+            [NonEvent]
+            get => Singleton.IsEnabled(EventLevel.Warning, (EventKeywords)(-1));
+        }
+
+        public static bool IsInfoEnabled
+        {
+            [NonEvent]
+            get => Singleton.IsEnabled(EventLevel.Informational, (EventKeywords)(-1));
+        }
+
+        public static void RecordDiagnosticsForRequests(DistributedTracingOptions config,
+            OpenTelemetryAttributes response)
+        {
+            if (CosmosDbEventSource.IsInfoEnabled)
+            {
+                Singleton.WriteInfoEvent(response.Diagnostics.ToString());
+            } 
+            else
+            {
+                if (DiagnosticsFilterHelper.IsTracingNeeded(
+                        config: config,
+                        response: response) && CosmosDbEventSource.IsWarnEnabled)
+                {
+                    Singleton.WriteWarningEvent(response.Diagnostics.ToString());
+                }
+            }
+        }
+
+        public static void RecordDiagnosticsForExceptions(CosmosDiagnostics diagnostics)
         {
             if (CosmosDbEventSource.IsErrorEnabled)
             {
-                Singleton.RequestError(diagnostics.ToString());
+                Singleton.WriteErrorEvent(diagnostics.ToString());
             }
         }
 
@@ -43,7 +69,29 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         /// <param name="message"></param>
         [Event(1, Level = EventLevel.Error)]
-        private void RequestError(string message)
+        private void WriteErrorEvent(string message)
+        {
+            this.WriteEvent(1, message);
+        }
+
+        /// <summary>
+        /// We are generating this event only in specific scenarios where this information MUST be present.
+        /// thats why going with Error Event Level
+        /// </summary>
+        /// <param name="message"></param>
+        [Event(1, Level = EventLevel.Warning)]
+        private void WriteWarningEvent(string message)
+        {
+            this.WriteEvent(1, message);
+        }
+
+        /// <summary>
+        /// We are generating this event only in specific scenarios where this information MUST be present.
+        /// thats why going with Error Event Level
+        /// </summary>
+        /// <param name="message"></param>
+        [Event(1, Level = EventLevel.Informational)]
+        private void WriteInfoEvent(string message)
         {
             this.WriteEvent(1, message);
         }
