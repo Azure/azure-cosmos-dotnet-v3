@@ -863,6 +863,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 $"Before connections: {JsonConvert.SerializeObject(excludeConnections)}; After connections: {JsonConvert.SerializeObject(afterConnections)}");
         }
 
+        [TestMethod]
+        public void InvalidApplicationNameCatchTest()
+        {
+            try
+            {
+                string invalidName = "<<";
+                Console.WriteLine("Invalid string:\t" + invalidName);
+                CosmosClient cosmosClient = new CosmosClient(
+                    ConfigurationManager.AppSettings["GatewayEndpoint"],
+                    ConfigurationManager.AppSettings["MasterKey"],
+                    new CosmosClientOptions
+                    {
+                        ApplicationName = invalidName
+                    }
+                );
+                Console.WriteLine("IT WORKED!");
+            }
+            catch(Exception exc)
+            {
+                Console.WriteLine("\n\n\n\n__________\n\nUH OH IT BE BAD");
+                Console.WriteLine(exc);
+                Console.WriteLine("\n_____\n\n\n\n");
+            }
+
+            //Assert.ThrowsExceptionAsync<HttpRequestException>(async () => {code in here});
+
+        }
         public static IReadOnlyList<string> GetActiveConnections()
         {
             string testPid = Process.GetCurrentProcess().Id.ToString();

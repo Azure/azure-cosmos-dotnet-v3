@@ -90,7 +90,28 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Setting this property after sending any request won't have any effect.
         /// </remarks>
-        public string ApplicationName { get; set; }
+        /// 
+        private string applicationName;
+        public string ApplicationName
+        {
+            get => this.applicationName;
+            set
+            {
+                HttpClient httpClient = new HttpClient();
+                try
+                {
+                    using System.Net.Http.Headers.HttpHeaderParser.ParseValue(value);
+                }
+                catch (FormatException formatException)
+                {
+                    ApplicationNameException e = new ApplicationNameException(value);//new exception i was thinking of making
+                    throw e;
+                }
+
+                this.applicationName = value;
+
+            }
+        }
 
         /// <summary>
         /// Get or set session container for the client
