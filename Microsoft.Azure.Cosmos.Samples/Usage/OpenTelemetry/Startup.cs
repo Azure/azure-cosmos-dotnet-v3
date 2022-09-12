@@ -26,10 +26,6 @@ namespace AspNetCoreWebApp
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            Environment.SetEnvironmentVariable("COSMOS.CLIENT_TELEMETRY_ENABLED", "true");
-            Environment.SetEnvironmentVariable("COSMOS.CLIENT_TELEMETRY_SCHEDULING_IN_SECONDS", "1");
-            Environment.SetEnvironmentVariable("COSMOS.CLIENT_TELEMETRY_ENDPOINT", "https://juno-test2.documents-dev.windows-int.net/api/clienttelemetry/trace");
-
             services.AddAuthorization();
 
             services.AddControllersWithViews();
@@ -39,9 +35,9 @@ namespace AspNetCoreWebApp
             CosmosDbSettings cosmosDbSettings = this.Configuration.GetSection("CosmosDb").Get<CosmosDbSettings>();
 
             Container container = this.CreateClientAndContainer(
-                connectionString: "",
-                mode: Enum.Parse<ConnectionMode>(cosmosDbSettings.ConnectionMode)/*,
-                isEnableOpenTelemetry: cosmosDbSettings.EnableOpenTelemetry*/).Result;
+                connectionString: cosmosDbSettings.ConnectionString,
+                mode: Enum.Parse<ConnectionMode>(cosmosDbSettings.ConnectionMode),
+                isEnableOpenTelemetry: cosmosDbSettings.EnableOpenTelemetry).Result;
 
             services.AddSingleton<Container>(container);
         }
@@ -50,8 +46,8 @@ namespace AspNetCoreWebApp
             string connectionString,
             ConnectionMode mode,
             Microsoft.Azure.Cosmos.ConsistencyLevel? consistency = null,
-            bool isLargeContainer = true/*,
-            bool isEnableOpenTelemetry = false*/)
+            bool isLargeContainer = true,
+            bool isEnableOpenTelemetry = false)
         {
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(connectionString)
                 .WithBulkExecution(true);// move it to corresponding test
@@ -59,12 +55,12 @@ namespace AspNetCoreWebApp
             {
                 cosmosClientBuilder = cosmosClientBuilder.WithConsistencyLevel(consistency.Value);
             }
-/*
+
             if (isEnableOpenTelemetry)
             {
                 cosmosClientBuilder = cosmosClientBuilder.EnableOpenTelemetry();
             }
- */
+ 
             this.cosmosClient = mode == ConnectionMode.Gateway
                 ? cosmosClientBuilder.WithConnectionModeGateway().Build()
                 : cosmosClientBuilder.Build();
