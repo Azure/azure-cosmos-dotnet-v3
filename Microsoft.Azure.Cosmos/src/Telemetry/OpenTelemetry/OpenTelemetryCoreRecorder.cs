@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private readonly DiagnosticScope scope;
         private readonly DistributedTracingOptions config;
-        private string accountHostWithCloudInfo = null;
 
         internal static IDictionary<Type, Action<Exception, DiagnosticScope>> OTelCompatibleExceptions = new Dictionary<Type, Action<Exception, DiagnosticScope>>()
         {
@@ -60,13 +59,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 // Other information
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.MachineId, VmMetadataApiHandler.GetMachineId());
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.NetPeerName, this.GetHostWithCloudInformation(clientContext.Client?.Endpoint?.Host));
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.NetPeerName, clientContext.Client?.Endpoint?.Host);
 
                 // Client Information
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext?.Client?.Id ?? OpenTelemetryAttributes.NotAvailable);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent ?? OpenTelemetryAttributes.NotAvailable);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode,
-                    clientContext.ClientOptions.ConnectionMode);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode, clientContext.ClientOptions.ConnectionMode);
             }
         }
 
@@ -82,22 +80,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, response.ContainerName);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, response.RequestContentLength);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength,
-                    response.ResponseContentLength);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, response.ResponseContentLength);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, response.StatusCode);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, response.RequestCharge);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, response.ItemCount);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, response.OperationType);
 
                 if (response.Diagnostics != null)
                 {
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics));
-
-                    if (this.IsEnabled && DiagnosticsFilterHelper.IsTracingNeeded(
-                            config: this.config,
-                            response: response))
-                    {
-                        this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, response.Diagnostics);
-                    }
+                    CosmosDbEventSource.RecordDiagnosticsForRequests(this.config, response);
                 }
                 else
                 {
@@ -105,7 +97,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, OpenTelemetryAttributes.NotAvailable);
                 }
             }
-
         }
 
         /// <summary>
@@ -157,21 +148,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 this.scope.Dispose();
             }
-        }
-
-        /// <summary>
-        /// Host Name with Cloud Information
-        /// </summary>
-        /// <param name="hostName"></param>
-        /// <returns>hostname(cloudInfo)</returns>
-        private string GetHostWithCloudInformation(string hostName)
-        {
-            string accountHostWithCloudInfoSnapshot = this.accountHostWithCloudInfo;
-            if (!string.IsNullOrEmpty(accountHostWithCloudInfoSnapshot))
-            {
-                return accountHostWithCloudInfoSnapshot;
-            }
-            return this.accountHostWithCloudInfo = $"{hostName}({VmMetadataApiHandler.GetCloudInformation()})";
         }
     }
 }

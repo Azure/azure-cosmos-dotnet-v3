@@ -136,8 +136,23 @@ namespace Microsoft.Azure.Cosmos
         internal static void RecordOtelAttributes(CosmosOperationCanceledException exception, DiagnosticScope scope)
         {
             scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics));
-            scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, exception.Diagnostics);
             scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.GetBaseException().Message);
+
+            CosmosDbEventSource.RecordDiagnosticsForExceptions(exception.Diagnostics);
+        }
+
+        /// <summary>
+        /// Sets the System.Runtime.Serialization.SerializationInfo with information about the exception.
+        /// </summary>
+        /// <param name="info">The SerializationInfo object that holds serialized object data for the exception being thrown.</param>
+        /// <param name="context">The StreamingContext that contains contextual information about the source or destination.</param>
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("originalException", this.originalException);
+            info.AddValue("tokenCancellationRequested", this.tokenCancellationRequested);
+            info.AddValue("lazyMessage", this.lazyMessage.Value);
+            info.AddValue("toStringMessage", this.toStringMessage.Value);
         }
 
         /// <summary>
