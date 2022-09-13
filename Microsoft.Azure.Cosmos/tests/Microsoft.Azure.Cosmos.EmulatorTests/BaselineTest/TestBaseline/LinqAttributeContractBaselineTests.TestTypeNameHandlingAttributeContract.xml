@@ -1,0 +1,14 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[TypeIs]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.Child Is DatumChild))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["Child"]["$type"] = "Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests.LinqAttributeContractBaselineTests+DatumChild, Microsoft.Azure.Cosmos.EmulatorTests")]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>
