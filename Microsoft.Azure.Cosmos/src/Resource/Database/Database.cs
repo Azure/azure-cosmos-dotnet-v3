@@ -32,7 +32,8 @@ namespace Microsoft.Azure.Cosmos
         public abstract CosmosClient Client { get; }
 
         /// <summary>
-        /// Reads a <see cref="DatabaseProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// Reads a <see cref="DatabaseProperties"/> from the Azure Cosmos service as an asynchronous operation. 
+        /// However, there is an implicit conversion from DatabaseResponse to DatabaseProperties
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
