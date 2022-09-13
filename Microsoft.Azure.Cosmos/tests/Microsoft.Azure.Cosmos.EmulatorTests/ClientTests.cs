@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Data.Common;
     using System.Diagnostics;
     using System.Formats.Asn1;
     using System.IO;
@@ -866,29 +867,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void InvalidApplicationNameCatchTest()
         {
-            try
-            {
-                string invalidName = "<<";
-                Console.WriteLine("Invalid string:\t" + invalidName);
-                CosmosClient cosmosClient = new CosmosClient(
-                    ConfigurationManager.AppSettings["GatewayEndpoint"],
-                    ConfigurationManager.AppSettings["MasterKey"],
-                    new CosmosClientOptions
-                    {
-                        ApplicationName = invalidName
-                    }
-                );
-                Console.WriteLine("String actually vaild");
-            }
-            catch(Exception exc)
-            {
-                Console.WriteLine("\n\n\n\n__________\n\nString was invalid, exception below");
-                Console.WriteLine(exc);
-                Console.WriteLine("\n_____\n\n\n\n");
-            }
 
-            //Assert.ThrowsExceptionAsync<exception type>(async () => {code in here});
+            string[] illegalChars = new string[] { "<", ">", "\"", "{", "}", "|", "\\", "^", "~", "[", "]", "`", ";", "/", ":", "@", "=", "$", "(", ")", "," };
+            string baseName = "illegal";
 
+            foreach (string illegal in illegalChars)
+            {
+                Assert.ThrowsException<ArgumentException>(() =>
+                {
+                    CosmosClient cosmosClient = new CosmosClient(
+                        ConfigurationManager.AppSettings["GatewayEndpoint"],
+                        ConfigurationManager.AppSettings["MasterKey"],
+                        new CosmosClientOptions
+                        {
+                            ApplicationName = baseName + illegal
+                        });
+                });
+
+                Assert.ThrowsException<ArgumentException>(() =>
+                {
+                    CosmosClient cosmosClient = new CosmosClient(
+                        ConfigurationManager.AppSettings["GatewayEndpoint"],
+                        ConfigurationManager.AppSettings["MasterKey"],
+                        new CosmosClientOptions
+                        {
+                            ApplicationName = illegal + baseName
+                        });
+                });
+
+                Assert.ThrowsException<ArgumentException>(() =>
+                {
+                    CosmosClient cosmosClient = new CosmosClient(
+                        ConfigurationManager.AppSettings["GatewayEndpoint"],
+                        ConfigurationManager.AppSettings["MasterKey"],
+                        new CosmosClientOptions
+                        {
+                            ApplicationName = illegal
+                        });
+                });
+            }
         }
         public static IReadOnlyList<string> GetActiveConnections()
         {

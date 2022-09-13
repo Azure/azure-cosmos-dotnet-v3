@@ -11,6 +11,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Net.Http.Headers; //THIS
+    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -69,6 +71,7 @@ namespace Microsoft.Azure.Cosmos
         private PortReuseMode? portReuseMode;
         private IWebProxy webProxy;
         private Func<HttpClient> httpClientFactory;
+        private string applicationName;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -90,26 +93,22 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Setting this property after sending any request won't have any effect.
         /// </remarks>
-        /// 
-        private string applicationName;
         public string ApplicationName
         {
             get => this.applicationName;
             set
             {
-                HttpClient httpClient = new HttpClient();
-                try
+                string[] illegalChars = new string[] {"<", ">", "\"", "{", "}", "|", "\\", "^", "~", "[", "]", "`", ";", "/", ":", "@",  "=", "$", "(", ")", ","};
+
+                foreach (string illegal in illegalChars)
                 {
-                    using System.Net.Http.Headers.HttpHeaderParser.ParseValue(value);
-                }
-                catch (FormatException formatException)
-                {
-                    ApplicationNameException e = new ApplicationNameException(value);//new exception i was thinking of making
-                    throw e;
+                    if (value.Contains(illegal))
+                    {
+                        throw new ArgumentException($"Application Name \"{value}\" contains an illegal character: ,.\"{{}}|\\^~[]`/:@=$(),");
+                    }
                 }
 
                 this.applicationName = value;
-
             }
         }
 
