@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private readonly ChangeFeedRequestOptions changeFeedRequestOptions;
         private readonly AsyncLazy<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>> lazyMonadicEnumerator;
         private readonly CosmosClientContext clientContext;
+        private readonly ChangeFeedQuerySpec changeFeedQuerySpec;
         private bool hasMoreResults;
 
         public ChangeFeedIteratorCore(
@@ -29,7 +30,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions,
             ChangeFeedStartFrom changeFeedStartFrom,
-            CosmosClientContext clientContext)
+            CosmosClientContext clientContext,
+            ChangeFeedQuerySpec changeFeedQuerySpec = null)
         {
             if (changeFeedStartFrom == null)
             {
@@ -44,6 +46,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.clientContext = clientContext;
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
             this.changeFeedRequestOptions = changeFeedRequestOptions ?? new ChangeFeedRequestOptions();
+            this.changeFeedQuerySpec = changeFeedQuerySpec;
+
             this.lazyMonadicEnumerator = new AsyncLazy<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>>(
                 valueFactory: async (trace, cancellationToken) =>
                 {
@@ -201,7 +205,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                             changeFeedMode,
                             changeFeedRequestOptions?.PageSizeHint,
                             changeFeedRequestOptions?.JsonSerializationFormatOptions?.JsonSerializationFormat,
-                            additionalHeaders),
+                            additionalHeaders,
+                            this.changeFeedQuerySpec),
                         cancellationToken: default);
 
                     TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromResult(enumerator);

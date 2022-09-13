@@ -1342,7 +1342,7 @@ namespace Microsoft.Azure.Cosmos
                options: requestOptions);
         }
 
-        private Task InitializeContainersAsync(IReadOnlyList<(string databaseId, string containerId)> containers,
+        internal async Task InitializeContainersAsync(IReadOnlyList<(string databaseId, string containerId)> containers,
                                           CancellationToken cancellationToken)
         {
             try
@@ -1353,7 +1353,7 @@ namespace Microsoft.Azure.Cosmos
                     tasks.Add(this.InitializeContainerAsync(databaseId, containerId, cancellationToken));
                 }
 
-                return Task.WhenAll(tasks);
+                await Task.WhenAll(tasks);
             }
             catch
             {

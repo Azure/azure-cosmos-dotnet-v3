@@ -81,11 +81,6 @@ namespace Microsoft.Azure.Cosmos
         /// Every resource within an Azure Cosmos DB database account needs to have a unique identifier. 
         /// </para>
         /// <para>
-        /// When working with document resources, they too have this settable Id property. 
-        /// If an Id is not supplied by the user the SDK will automatically generate a new GUID and assign its value to this property before
-        /// persisting the document in the database.
-        /// </para>
-        /// <para>
         /// The following characters are restricted and cannot be used in the Id property:
         ///  '/', '\\', '?', '#'
         /// </para>

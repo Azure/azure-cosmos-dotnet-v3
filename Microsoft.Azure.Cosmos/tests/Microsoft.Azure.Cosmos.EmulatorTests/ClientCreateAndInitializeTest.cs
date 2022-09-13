@@ -10,6 +10,8 @@
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
+    using Moq.Protected;
 
     [TestClass]
     public class ClientCreateAndInitializeTest : BaseCosmosClientHelper
@@ -156,6 +158,41 @@
                 Assert.IsTrue(ex.StatusCode == HttpStatusCode.NotFound);
                 throw ex;
             }
+        }
+
+        [TestMethod]
+        public async Task InitializeContainersAsync_WhenThrowsException_ShouldDisposeCosmosClient()
+        {
+            // Arrange.
+            List<(string databaseId, string containerId)> containers = new()
+            { ("IncorrectDatabase", "ClientCreateAndInitializeContainer")};
+
+            CosmosException cosmosException = new (
+                statusCode: HttpStatusCode.NotFound,
+                message: "Test",
+                stackTrace: null,
+                headers: null,
+                trace: default,
+                error: null,
+                innerException: null);
+
+            Mock<CosmosClient> cosmosClient = new ();
+            cosmosClient
+                .Setup(x => x.GetContainer(It.IsAny<string>(), It.IsAny<string>()))
+                .Throws(cosmosException);
+
+            cosmosClient
+                .Protected()
+                .Setup("Dispose", ItExpr.Is<bool>(x => x))
+                .Verifiable();
+
+            // Act.
+            CosmosException ex = await Assert.ThrowsExceptionAsync<CosmosException>(() => cosmosClient.Object.InitializeContainersAsync(containers, this.cancellationToken));
+
+            // Assert.
+            Assert.IsNotNull(ex);
+            Assert.IsTrue(ex.StatusCode == HttpStatusCode.NotFound);
+            cosmosClient.Verify();
         }
     }
 }
