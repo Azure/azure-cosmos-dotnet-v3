@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Net.Http.Headers;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -95,14 +96,13 @@ namespace Microsoft.Azure.Cosmos
             get => this.applicationName;
             set
             {
-                string[] illegalChars = new string[] {"<", ">", "\"", "{", "}", "|", "\\", "^", "~", "[", "]", "`", ";", "/", ":", "@",  "=", "$", "(", ")", ","};
-
-                foreach (string illegal in illegalChars)
+                try
                 {
-                    if (value.Contains(illegal))
-                    {
-                        throw new ArgumentException($"Application Name \"{value}\" contains an illegal character: ,.\"{{}}|\\^~[]`/:@=$()");
-                    }
+                    NameValueHeaderValue nvhv = NameValueHeaderValue.Parse(value);
+                }
+                catch (FormatException fme)
+                {
+                    throw new ArgumentException("Application Name " + fme.Message.Substring(20));
                 }
 
                 this.applicationName = value;

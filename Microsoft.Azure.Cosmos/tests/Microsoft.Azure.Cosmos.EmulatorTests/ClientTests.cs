@@ -868,7 +868,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void InvalidApplicationNameCatchTest()
         {
 
-            string[] illegalChars = new string[] { "<", ">", "\"", "{", "}", "|", "\\", "^", "~", "[", "]", "`", ";", "/", ":", "@", "=", "$", "(", ")", "," };
+            string[] illegalChars = new string[] { "<", ">", "\"", "{", "}", "\\", "[", "]", ";", "/", ":", "@", "=", "(", ")", ","};
             string baseName = "illegal";
 
             foreach (string illegal in illegalChars)
