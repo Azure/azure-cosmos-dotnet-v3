@@ -100,9 +100,9 @@ namespace Microsoft.Azure.Cosmos
                 {
                     NameValueHeaderValue nvhv = NameValueHeaderValue.Parse(value);
                 }
-                catch (FormatException fme)
+                catch (FormatException)
                 {
-                    throw new ArgumentException("Application Name " + fme.Message.Substring(20));
+                    throw new ArgumentException($"Application Name '{value}' is invalid.);
                 }
 
                 this.applicationName = value;
