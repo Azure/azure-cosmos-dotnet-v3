@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 try
                 {
-                    NameValueHeaderValue nvhv = NameValueHeaderValue.Parse(value);
+                    NameValueHeaderValue.Parse(value);
                 }
                 catch (FormatException fme)
                 {

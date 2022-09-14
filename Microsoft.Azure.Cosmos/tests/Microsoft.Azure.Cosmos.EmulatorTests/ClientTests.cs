@@ -863,50 +863,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(connectionDiff <= gatewayConnectionLimit, $"Connection before : {excludeConnections.Count}, after {afterConnections.Count};" +
                 $"Before connections: {JsonConvert.SerializeObject(excludeConnections)}; After connections: {JsonConvert.SerializeObject(afterConnections)}");
         }
-
-        [TestMethod]
-        public void InvalidApplicationNameCatchTest()
-        {
-
-            string[] illegalChars = new string[] { "<", ">", "\"", "{", "}", "\\", "[", "]", ";", "/", ":", "@", "=", "(", ")", ","};
-            string baseName = "illegal";
-
-            foreach (string illegal in illegalChars)
-            {
-                Assert.ThrowsException<ArgumentException>(() =>
-                {
-                    CosmosClient cosmosClient = new CosmosClient(
-                        ConfigurationManager.AppSettings["GatewayEndpoint"],
-                        ConfigurationManager.AppSettings["MasterKey"],
-                        new CosmosClientOptions
-                        {
-                            ApplicationName = baseName + illegal
-                        });
-                });
-
-                Assert.ThrowsException<ArgumentException>(() =>
-                {
-                    CosmosClient cosmosClient = new CosmosClient(
-                        ConfigurationManager.AppSettings["GatewayEndpoint"],
-                        ConfigurationManager.AppSettings["MasterKey"],
-                        new CosmosClientOptions
-                        {
-                            ApplicationName = illegal + baseName
-                        });
-                });
-
-                Assert.ThrowsException<ArgumentException>(() =>
-                {
-                    CosmosClient cosmosClient = new CosmosClient(
-                        ConfigurationManager.AppSettings["GatewayEndpoint"],
-                        ConfigurationManager.AppSettings["MasterKey"],
-                        new CosmosClientOptions
-                        {
-                            ApplicationName = illegal
-                        });
-                });
-            }
-        }
         public static IReadOnlyList<string> GetActiveConnections()
         {
             string testPid = Process.GetCurrentProcess().Id.ToString();

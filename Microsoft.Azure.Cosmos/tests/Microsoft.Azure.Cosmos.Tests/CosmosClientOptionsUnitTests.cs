@@ -539,6 +539,33 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(cosmosClientOptions.EnableUpgradeConsistencyToLocalQuorum);
         }
 
+        [TestMethod]
+        public void InvalidApplicationNameCatchTest()
+        {
+
+            string[] illegalChars = new string[] { "<", ">", "\"", "{", "}", "\\", "[", "]", ";", "/", ":", "@", "=", "(", ")", "," };
+            string baseName = "illegal";
+
+            foreach (string illegal in illegalChars)
+            {
+                Assert.ThrowsException<ArgumentException>(() => new CosmosClientOptions
+                {
+                    ApplicationName = baseName + illegal
+                });
+
+
+                Assert.ThrowsException<ArgumentException>(() => new CosmosClientOptions
+                {
+                    ApplicationName = illegal + baseName
+                });
+
+                Assert.ThrowsException<ArgumentException>(() => new CosmosClientOptions
+                {
+                    ApplicationName = illegal
+                });
+            }
+        }
+
         private class TestWebProxy : IWebProxy
         {
             public ICredentials Credentials { get; set; }
