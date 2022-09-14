@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (FormatException)
                 {
-                    throw new ArgumentException($"Application Name '{value}' is invalid.);
+                    throw new ArgumentException($"Application Name '{value}' is invalid.");
                 }
 
                 this.applicationName = value;
