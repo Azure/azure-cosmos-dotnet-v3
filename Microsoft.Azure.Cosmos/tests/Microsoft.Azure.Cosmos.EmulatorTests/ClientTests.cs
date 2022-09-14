@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
-    using System.Data.Common;
     using System.Diagnostics;
     using System.Formats.Asn1;
     using System.IO;
@@ -863,6 +862,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(connectionDiff <= gatewayConnectionLimit, $"Connection before : {excludeConnections.Count}, after {afterConnections.Count};" +
                 $"Before connections: {JsonConvert.SerializeObject(excludeConnections)}; After connections: {JsonConvert.SerializeObject(afterConnections)}");
         }
+
         public static IReadOnlyList<string> GetActiveConnections()
         {
             string testPid = Process.GetCurrentProcess().Id.ToString();
