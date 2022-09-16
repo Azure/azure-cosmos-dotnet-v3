@@ -96,14 +96,40 @@ namespace Microsoft.Azure.Cosmos
             get => this.applicationName;
             set
             {
-                try
-                {
-                    NameValueHeaderValue.Parse(value);
-                }
-                catch (FormatException fme)
-                {
-                    throw new ArgumentException($"Application Name '{value}' is invalid.", fme);
-                }
+                Console.WriteLine(value);
+
+                //HttpWebRequest dummyRequest = (HttpWebRequest)WebRequest.Create("https://microsoft.com");
+                //dummyRequest.Headers.Add("useragent", "cosmos-netstandard-sdk");
+                //dummyRequest.Headers.Add("ApplicationName", value);
+                //Console.WriteLine(dummyRequest);
+
+                //HttpRequestMessage dummyMessage = new HttpRequestMessage(HttpMethod.Head, "https://microsoft.com");
+                //dummyMessage.Headers.Add("ApplicationName", value);
+                //Console.WriteLine(dummyMessage);
+
+                //HttpClient dummyHttpClient = new HttpClient
+                //{
+                //    BaseAddress = new Uri("https://microsoft.com")
+                //};
+                //dummyHttpClient.AddUserAgentHeader(new UserAgentContainer(2, value));
+                //Console.WriteLine(dummyHttpClient);
+
+                HttpRequestMessage dummyMessage = new HttpRequestMessage(HttpMethod.Head, "https://microsoft.com"); 
+                dummyMessage.Headers.Add("User-Agent", value);
+
+                this.applicationName = value;
+                //NameValueHeaderValue.Parse(value);
+
+                Console.WriteLine();
+
+                //try
+                //{
+                //    NameValueHeaderValue.Parse(value);
+                //}
+                //catch (FormatException fme)
+                //{
+                //    throw new ArgumentException($"Application Name '{value}' is invalid.", fme);
+                //}
 
                 this.applicationName = value;
             }
