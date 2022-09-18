@@ -85,7 +85,9 @@ namespace Microsoft.Azure.Cosmos
 
             this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(this.Headers, true);
 
-            if (requestMessage != null && requestMessage.Trace != null)
+            if (requestMessage != null && 
+                requestMessage.Trace != null && 
+                requestMessage.Trace != NoOpTrace.Singleton)
             {
                 this.Trace = requestMessage.Trace;
             }
