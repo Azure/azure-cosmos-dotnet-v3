@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Tests
+namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Concurrent;
@@ -13,6 +13,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Reflection;
     using System.Text;
     using System.Threading;
+    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public class OpenTelemetryListener :
         EventListener,
@@ -128,13 +130,31 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private void RecordAttributes(string name, IEnumerable<KeyValuePair<string, string>> tags)
         {
+            List<string> mandatoryAttributes = new List<string>
+            {
+                OpenTelemetryAttributeKeys.ContainerName,
+                OpenTelemetryAttributeKeys.DbName
+            };
+
             StringBuilder builder = new StringBuilder();
             builder.Append("<ACTIVITY>")
                    .Append("<OPERATION>")
                    .Append(name)
                    .Append("</OPERATION>");
+
+            Console.WriteLine();
+
+
             foreach (KeyValuePair<string, string> tag in tags)
             {
+                if (tag.Value == OpenTelemetryAttributes.NotAvailable && mandatoryAttributes.Contains(tag.Key))
+                {
+                    Console.WriteLine(" ============> " + tag.Key + " value not available for operation " + name);
+                } else
+                {
+                   // Console.WriteLine(tag.Key + " => " + tag.Value);
+                }
+
                 builder
                 .Append("<ATTRIBUTE-KEY>")
                 .Append(tag.Key)
