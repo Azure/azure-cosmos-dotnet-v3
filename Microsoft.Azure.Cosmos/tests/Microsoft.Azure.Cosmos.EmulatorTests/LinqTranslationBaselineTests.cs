@@ -758,7 +758,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 // Substring
                 new LinqTestInput("Substring", b => getQuery(b).Select(doc => doc.StringField.Substring(0, 1))),
                 // ToString
-                new LinqTestInput("Substring", b => getQuery(b).Select(doc => doc.StringField.ToString())),
+                new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.StringField.ToString())),
                 // ToUpper
                 new LinqTestInput("ToUpper", b => getQuery(b).Select(doc => doc.StringField.ToUpper()))
             };

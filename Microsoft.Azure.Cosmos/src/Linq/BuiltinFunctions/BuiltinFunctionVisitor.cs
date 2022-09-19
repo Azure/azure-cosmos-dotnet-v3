@@ -65,7 +65,17 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return MathBuiltinFunctions.Visit(methodCallExpression, context);
             }
 
-            // String functions or ToString with Objects (String and Guid only)
+            // ToString with String and Guid only becomes passthrough
+            if (methodCallExpression.Method.Name == "ToString" &&
+                 methodCallExpression.Arguments.Count == 0 &&
+                 methodCallExpression.Object != null && 
+                 ((methodCallExpression.Object.Type == typeof(string)) ||
+                 (methodCallExpression.Object.Type == typeof(Guid))))
+            {
+                return ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Object, context);
+            }
+
+            // String functions or ToString with Objects that are not strings and guids
             if ((declaringType == typeof(string)) ||
                 (methodCallExpression.Method.Name == "ToString" &&
                  methodCallExpression.Arguments.Count == 0 &&

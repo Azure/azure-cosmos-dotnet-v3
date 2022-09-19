@@ -500,12 +500,12 @@ FROM root]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Substring]]></Description>
+      <Description><![CDATA[ToString]]></Description>
       <Expression><![CDATA[query.Select(doc => doc.StringField.ToString())]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ToString(root["StringField"]) 
+SELECT VALUE root["StringField"] 
 FROM root]]></SqlQuery>
     </Output>
   </Result>
