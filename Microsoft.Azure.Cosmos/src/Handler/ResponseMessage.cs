@@ -261,7 +261,7 @@ namespace Microsoft.Azure.Cosmos
 
                         // Try to deserialize with non-base64
                         bool tryDeserializeNonBase64 = IndexUtilizationInfo.TryCreateFromDelimitedString(responseMessageHeaders.IndexUtilizationText, out parsedIndexUtilizationInfo);
-                        if (tryDeserializeNonBase64 == false)
+                        if (!tryDeserializeNonBase64)
                         {
                             // Retry to deserialize with base64
                             IndexUtilizationInfo.TryCreateFromDelimitedBase64String(responseMessageHeaders.IndexUtilizationText, out parsedIndexUtilizationInfo);

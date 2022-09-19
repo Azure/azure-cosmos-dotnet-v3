@@ -137,9 +137,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                     // Allowing null values to be resilient to Json structure change
                     MissingMemberHandling = MissingMemberHandling.Ignore,
                     NullValueHandling = NullValueHandling.Ignore
-                });
-
-                result ??= IndexUtilizationInfo.Empty;
+                }) ?? IndexUtilizationInfo.Empty;
 
                 return true;
             }
