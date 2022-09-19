@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 try
                 {
-                    HttpRequestMessage dummyMessage = new HttpRequestMessage(HttpMethod.Head, "https://microsoft.com");
+                    HttpRequestMessage dummyMessage = new HttpRequestMessage();
                     dummyMessage.Headers.Add("User-Agent", value);
                 }
                 catch (FormatException fme)
