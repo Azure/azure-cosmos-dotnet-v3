@@ -562,6 +562,28 @@ namespace Microsoft.Azure.Cosmos
             Environment.SetEnvironmentVariable("MinimumIntervalForNonForceRefreshLocationInMS", originalConfigValue);
         }
 
+        [TestMethod]
+        public async Task MultiMasterRoutingTest()
+        {
+            string EndpointUri = "https://ntripician-eastus.documents.azure.com:443/";
+            string PrimaryKey = "LpUcGJC29hEyf9BqVFZVlZBGEHGhXMeY5k9BtJwwZY0xl7aXBAsPN5ilalkktiwdceHbKfyAShNoHpsBuPldLA==";
+
+            CosmosClient cosmosClient = new CosmosClient(
+                EndpointUri,
+                PrimaryKey,
+                new CosmosClientOptions
+                {
+                    LimitToEndpoint = true
+                });
+            string databaseString = Guid.NewGuid().ToString();
+            Console.WriteLine(databaseString);
+            await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseString);
+            Console.WriteLine("made database");
+            Database database = cosmosClient.GetDatabase(databaseString);
+            Console.WriteLine("");
+            await database.DeleteAsync();
+            Console.WriteLine("deleted");
+        }
         private class TestTraceListener : TraceListener
         {
             public Action<string> Callback { get; set; }

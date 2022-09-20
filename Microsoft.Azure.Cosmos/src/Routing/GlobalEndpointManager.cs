@@ -96,6 +96,11 @@ namespace Microsoft.Azure.Cosmos.Routing
         public int PreferredLocationCount => this.connectionPolicy.PreferredLocations != null ? this.connectionPolicy.PreferredLocations.Count : 0;
 
         /// <summary>
+        /// Gets total availible write locations from the current location information for a Cosmos account
+        /// </summary>
+        public int GetTotalAvailableWriteLocations => this.locationCache.GetTotalAvailableWriteLocations;
+
+        /// <summary>
         /// This will get the account information.
         /// It will try the global endpoint first. 
         /// If no response in 5 seconds it will create 2 additional tasks
@@ -541,7 +546,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
         }
-
         internal async Task<AccountProperties> GetDatabaseAccountAsync(bool forceRefresh = false)
         {
 #nullable disable  // Needed because AsyncCache does not have nullable enabled

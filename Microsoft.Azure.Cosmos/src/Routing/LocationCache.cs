@@ -78,7 +78,10 @@ namespace Microsoft.Azure.Cosmos.Routing
 #endif  
 #endif
         }
-
+        /// <summary>
+        /// Gets total availible write locations from the current location information for a Cosmos account
+        /// </summary>
+        public int GetTotalAvailableWriteLocations => this.locationInfo.AvailableWriteLocations.Count;
         /// <summary>
         /// Gets list of read endpoints ordered by
         /// 1. Preferred location
@@ -247,6 +250,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     locationIndex = Math.Min(locationIndex % 2, currentLocationInfo.AvailableWriteLocations.Count - 1);
                     string writeLocation = currentLocationInfo.AvailableWriteLocations[locationIndex];
+                    locationEndpointToRoute = currentLocationInfo.AvailableWriteEndpointByLocation[writeLocation];
+                }
+                else if (request.RequestContext.IsRetry && currentLocationInfo.AvailableWriteLocations.Count > 1 && request.ResourceType != ResourceType.Document)
+                {
+                    Console.WriteLine(currentLocationInfo);
+                    string writeLocation = currentLocationInfo.AvailableWriteLocations[0]; //Always want to rout to hub region, the first one in the list of available regions
                     locationEndpointToRoute = currentLocationInfo.AvailableWriteEndpointByLocation[writeLocation];
                 }
             }

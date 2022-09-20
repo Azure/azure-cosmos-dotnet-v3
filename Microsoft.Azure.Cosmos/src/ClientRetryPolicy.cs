@@ -139,6 +139,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 // set location-based routing directive based on request retry context
                 request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
+
+                if (!this.canUseMultipleWriteLocations && this.globalEndpointManager.GetTotalAvailableWriteLocations > 1 && !this.isReadRequest)
+                {
+                    request.RequestContext.IsRetry = true;
+                }
             }
 
             // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
@@ -184,6 +189,16 @@ namespace Microsoft.Azure.Cosmos
                 DefaultTrace.TraceWarning("ClientRetryPolicy: Endpoint not writable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
+                if (!this.canUseMultipleWriteLocations && this.globalEndpointManager.GetTotalAvailableWriteLocations > 1 && !this.isReadRequest)
+                {
+                    return await this.ShouldRetryOnEndpointFailureAsync(
+                    isReadRequest: false,
+                    markBothReadAndWriteAsUnavailable: false,
+                    forceRefresh: true,
+                    retryOnPreferredLocations: false,
+                    isMetadataWrite: true);
+                }
 
                 return await this.ShouldRetryOnEndpointFailureAsync(
                     isReadRequest: false,
@@ -237,9 +252,10 @@ namespace Microsoft.Azure.Cosmos
             bool isReadRequest,
             bool markBothReadAndWriteAsUnavailable,
             bool forceRefresh,
-            bool retryOnPreferredLocations)
+            bool retryOnPreferredLocations,
+            bool isMetadataWrite = false)
         {
-            if (!this.enableEndpointDiscovery || this.failoverRetryCount > MaxRetryCount)
+            if (this.failoverRetryCount > MaxRetryCount || (!this.enableEndpointDiscovery && !isMetadataWrite))
             {
                 DefaultTrace.TraceInformation("ClientRetryPolicy: ShouldRetryOnEndpointFailureAsync() Not retrying. Retry count = {0}, Endpoint = {1}", 
                     this.failoverRetryCount,
