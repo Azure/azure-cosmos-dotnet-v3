@@ -164,7 +164,8 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition,
                 continuationToken,
                 requestOptions),
-                this.ClientContext);
+                this.ClientContext,
+                databaseId: this.Id);
         }
 
         public override FeedIterator<T> GetContainerQueryIterator<T>(
@@ -176,7 +177,8 @@ namespace Microsoft.Azure.Cosmos
                 queryText,
                 continuationToken,
                 requestOptions),
-                this.ClientContext);
+                this.ClientContext,
+                databaseId: this.Id);
         }
 
         public override FeedIterator GetContainerQueryStreamIterator(QueryDefinition queryDefinition,
@@ -216,7 +218,8 @@ namespace Microsoft.Azure.Cosmos
                 queryText,
                 continuationToken,
                 requestOptions),
-                this.ClientContext);
+                this.ClientContext,
+                databaseId: this.Id);
         }
 
         public override FeedIterator<T> GetUserQueryIterator<T>(
@@ -228,7 +231,8 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition,
                 continuationToken,
                 requestOptions),
-                this.ClientContext);
+                this.ClientContext,
+                databaseId: this.Id);
         }
 
         public override Task<DatabaseResponse> ReadAsync(RequestOptions requestOptions = null,

@@ -379,7 +379,8 @@ namespace Microsoft.Azure.Cosmos
 
             return new FeedIteratorCore<T>(
                 changeFeedIteratorCore,
-                responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
+                responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>,
+                container: this);
         }
 
         internal async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
@@ -698,7 +699,8 @@ namespace Microsoft.Azure.Cosmos
 
             return new FeedIteratorCore<T>(
                 changeFeedIteratorCore,
-                responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
+                responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>,
+                container: this);
         }
     }
 }
