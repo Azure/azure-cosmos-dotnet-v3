@@ -35,7 +35,9 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             QueryDefinition queryDefinition,
             string continuationToken,
-            QueryRequestOptions options)
+            QueryRequestOptions options,
+            string databaseId = null,
+            ContainerInternal container = null)
         {
             this.resourceLink = resourceLink;
             this.clientContext = clientContext;
@@ -44,6 +46,9 @@ namespace Microsoft.Azure.Cosmos
             this.ContinuationToken = continuationToken;
             this.requestOptions = options;
             this.hasMoreResultsInternal = true;
+
+            this.databaseId = databaseId;
+            this.container = container;
         }
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
@@ -205,10 +210,15 @@ namespace Microsoft.Azure.Cosmos
 
         internal FeedIteratorCore(
             FeedIteratorInternal feedIterator,
-            Func<ResponseMessage, FeedResponse<T>> responseCreator)
+            Func<ResponseMessage, FeedResponse<T>> responseCreator,
+            string databaseId = null,
+            ContainerInternal container = null)
         {
             this.responseCreator = responseCreator;
             this.feedIterator = feedIterator;
+
+            this.databaseId = databaseId;
+            this.container = container;
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;

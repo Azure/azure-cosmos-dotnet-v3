@@ -125,5 +125,15 @@ namespace Microsoft.Azure.Cosmos
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             this.Dispose(disposing: true);
         }
+
+        /// <summary>
+        /// Making Container instance available in order to collect container related information in open telemetry attributes
+        /// </summary>
+        internal ContainerInternal container;
+
+        /// <summary>
+        /// Collect databaseid if container information not available in open telemetry attributes
+        /// </summary>
+        internal string databaseId;
     }
 }

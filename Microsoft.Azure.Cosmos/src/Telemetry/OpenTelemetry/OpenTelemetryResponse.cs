@@ -33,6 +33,30 @@ namespace Microsoft.Azure.Cosmos
             this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable;
         }
 
+        internal OpenTelemetryResponse(ContainerInternal container, ResponseMessage responseMessage)
+           : base(responseMessage.RequestMessage)
+        {
+            this.StatusCode = responseMessage.StatusCode;
+            this.RequestCharge = responseMessage.Headers?.RequestCharge;
+            this.ResponseContentLength = OpenTelemetryResponse.GetPayloadSize(responseMessage);
+            this.Diagnostics = responseMessage.Diagnostics;
+            this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable;
+
+            this.ContainerName = container?.Id ?? OpenTelemetryAttributes.NotAvailable;
+            this.DatabaseName = container?.Database?.Id ?? OpenTelemetryAttributes.NotAvailable;
+        }
+
+        internal OpenTelemetryResponse(string databaseId, ResponseMessage responseMessage)
+          : base(responseMessage.RequestMessage)
+        {
+            this.StatusCode = responseMessage.StatusCode;
+            this.RequestCharge = responseMessage.Headers?.RequestCharge;
+            this.ResponseContentLength = OpenTelemetryResponse.GetPayloadSize(responseMessage);
+            this.Diagnostics = responseMessage.Diagnostics;
+            this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable;
+            this.DatabaseName = databaseId ?? OpenTelemetryAttributes.NotAvailable;
+        }
+
         private static string GetPayloadSize(ResponseMessage response)
         {
             if (response?.Content != null

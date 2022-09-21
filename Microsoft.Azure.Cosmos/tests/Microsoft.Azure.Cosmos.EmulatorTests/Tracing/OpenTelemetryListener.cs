@@ -130,30 +130,15 @@ namespace Microsoft.Azure.Cosmos
 
         private void RecordAttributes(string name, IEnumerable<KeyValuePair<string, string>> tags)
         {
-            List<string> mandatoryAttributes = new List<string>
-            {
-                OpenTelemetryAttributeKeys.ContainerName,
-                OpenTelemetryAttributeKeys.DbName
-            };
-
             StringBuilder builder = new StringBuilder();
             builder.Append("<ACTIVITY>")
                    .Append("<OPERATION>")
                    .Append(name)
                    .Append("</OPERATION>");
 
-            Console.WriteLine();
-
-
             foreach (KeyValuePair<string, string> tag in tags)
             {
-                if (tag.Value == OpenTelemetryAttributes.NotAvailable && mandatoryAttributes.Contains(tag.Key))
-                {
-                    Console.WriteLine(" ============> " + tag.Key + " value not available for operation " + name);
-                } else
-                {
-                   // Console.WriteLine(tag.Key + " => " + tag.Value);
-                }
+                this.ValidateData(name, tag);
 
                 builder
                 .Append("<ATTRIBUTE-KEY>")
@@ -161,8 +146,33 @@ namespace Microsoft.Azure.Cosmos
                 .Append("</ATTRIBUTE-KEY>");
             }
             builder.Append("</ACTIVITY>");
-
             this.GeneratedActivities.Add(builder.ToString());
+        }
+
+        private void ValidateData(string name, KeyValuePair<string, string> tag)
+        {
+            IList<string> exceptionsForContainerAttribute = new List<string>
+            {
+                "Cosmos.Typed FeedIterator ReadNextAsync",
+                "Cosmos.CreateDatabaseAsync",
+                "Cosmos.ReadAsync",
+                "Cosmos.DeleteAsync",
+                "Cosmos.ExecuteAsync"
+            };
+
+            IList<string> exceptionsForDbNameAttribute = new List<string>
+            {
+                "Cosmos.Typed FeedIterator ReadNextAsync",
+                "Cosmos.DeleteAsync",
+                "Cosmos.ExecuteAsync"
+            };
+
+            if ((tag.Key == OpenTelemetryAttributeKeys.ContainerName && !exceptionsForContainerAttribute.Contains(name)) || 
+                (tag.Key == OpenTelemetryAttributeKeys.DbName && !exceptionsForDbNameAttribute.Contains(name)))
+            {
+                Assert.IsNotNull(tag.Value, $"{tag.Key} is 'null' for {name} operation");
+                Assert.AreNotEqual(OpenTelemetryAttributes.NotAvailable, $"{tag.Key} is {OpenTelemetryAttributes.NotAvailable} for {name} operation");
+            }
         }
 
         public List<string> GetRecordedAttributes() 

@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         }
 
         private readonly CosmosClientContext clientContext;
-        private readonly ContainerInternal container;
+
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private ChangeFeedStartFrom changeFeedStartFrom;
         private bool hasMoreResultsInternal;
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             return this.clientContext.OperationHelperAsync("Change Feed Processor Read Next Async",
                                 requestOptions: this.changeFeedOptions,
                                 task: (trace) => this.ReadNextAsync(trace, cancellationToken),
-                                openTelemetry: (response) => new OpenTelemetryResponse(response),
+                                openTelemetry: (response) => new OpenTelemetryResponse(this.container, response),
                                 traceComponent: TraceComponent.ChangeFeed,
                                 traceLevel: TraceLevel.Info);
         }

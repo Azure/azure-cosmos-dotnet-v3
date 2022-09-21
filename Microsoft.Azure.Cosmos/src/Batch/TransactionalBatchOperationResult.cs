@@ -209,32 +209,7 @@ namespace Microsoft.Azure.Cosmos
             return Result.Success;
         }
 
-        internal ResponseMessage ToResponseMessage()
-        {
-            Headers headers = new Headers()
-            {
-                SubStatusCode = this.SubStatusCode,
-                ETag = this.ETag,
-                RetryAfter = this.RetryAfter,
-                RequestCharge = this.RequestCharge,
-                Session = this.SessionToken,
-                ActivityId = this.ActivityId,
-            };
-
-            ResponseMessage responseMessage = new ResponseMessage(
-                statusCode: this.StatusCode,
-                requestMessage: null,
-                headers: headers,
-                cosmosException: null,
-                trace: this.Trace ?? NoOpTrace.Singleton)
-            {
-                Content = this.ResourceStream
-            };
-
-            return responseMessage;
-        }
-
-        internal ResponseMessage ToResponseMessage(ContainerInternal cosmosContainerCore)
+        internal ResponseMessage ToResponseMessage(ContainerInternal cosmosContainerCore = null)
         {
             Headers headers = new Headers()
             {

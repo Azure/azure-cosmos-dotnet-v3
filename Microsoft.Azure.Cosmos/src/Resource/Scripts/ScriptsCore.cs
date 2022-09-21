@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
     internal abstract class ScriptsCore : Scripts
     {
-        private readonly ContainerInternal container;
+        protected readonly ContainerInternal container;
 
         internal ScriptsCore(
             ContainerInternal container,
@@ -87,7 +87,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
                resourceType: ResourceType.StoredProcedure,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
-               options: requestOptions);
+               options: requestOptions,
+               container: this.container);
         }
 
         public override FeedIterator<T> GetStoredProcedureQueryIterator<T>(
@@ -107,7 +108,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 databaseStreamIterator,
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
-                    resourceType: ResourceType.StoredProcedure));
+                    resourceType: ResourceType.StoredProcedure),
+                container: this.container);
         }
 
         public Task<StoredProcedureResponse> ReadStoredProcedureAsync(
@@ -315,7 +317,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
                resourceType: ResourceType.Trigger,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
-               options: requestOptions);
+               options: requestOptions,
+               container: this.container);
         }
 
         public override FeedIterator<T> GetTriggerQueryIterator<T>(
@@ -335,7 +338,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 databaseStreamIterator,
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
-                    resourceType: ResourceType.Trigger));
+                    resourceType: ResourceType.Trigger),
+                container: this.container);
         }
 
         public Task<TriggerResponse> ReadTriggerAsync(
@@ -485,7 +489,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
                resourceType: ResourceType.UserDefinedFunction,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
-               options: requestOptions);
+               options: requestOptions,
+               container: this.container);
         }
 
         public override FeedIterator<T> GetUserDefinedFunctionQueryIterator<T>(
@@ -505,7 +510,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 databaseStreamIterator,
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
-                    resourceType: ResourceType.UserDefinedFunction));
+                    resourceType: ResourceType.UserDefinedFunction),
+                container: this.container);
         }
 
         public Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(

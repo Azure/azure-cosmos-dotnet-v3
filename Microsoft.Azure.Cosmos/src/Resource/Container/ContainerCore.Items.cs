@@ -492,7 +492,8 @@ namespace Microsoft.Azure.Cosmos
 
             return new FeedIteratorCore<T>(
                 feedIterator: feedIterator,
-                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedUserTypeResponse<T>);
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedUserTypeResponse<T>,
+                container: this);
         }
 
         public override IOrderedQueryable<T> GetItemLinqQueryable<T>(
@@ -540,7 +541,8 @@ namespace Microsoft.Azure.Cosmos
 
             return new FeedIteratorCore<T>(
                 feedIterator: feedIterator,
-                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedUserTypeResponse<T>);
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedUserTypeResponse<T>,
+                container: this);
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
@@ -821,7 +823,8 @@ namespace Microsoft.Azure.Cosmos
                     continuationToken,
                     readFeedPaginationOptions,
                     requestOptions,
-                    cancellationToken: default);
+                    cancellationToken: default,
+                    this);
             }
 
             return QueryIterator.Create(
@@ -893,7 +896,8 @@ namespace Microsoft.Azure.Cosmos
                     queryRequestOptions: queryRequestOptions,
                     continuationToken: continuationToken,
                     readFeedPaginationOptions: readFeedPaginationOptions,
-                    cancellationToken: default);
+                    cancellationToken: default,
+                    container: this);
             }
 
             return feedIterator;

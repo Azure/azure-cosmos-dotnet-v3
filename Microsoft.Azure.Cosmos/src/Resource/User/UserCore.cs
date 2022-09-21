@@ -237,7 +237,8 @@ namespace Microsoft.Azure.Cosmos
                 permissionStreamIterator,
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
-                    resourceType: ResourceType.Permission));
+                    resourceType: ResourceType.Permission),
+                databaseId: this.Database.Id);
         }
 
         public FeedIterator GetPermissionQueryStreamIterator(QueryDefinition queryDefinition,
@@ -250,7 +251,8 @@ namespace Microsoft.Azure.Cosmos
                resourceType: ResourceType.Permission,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
-               options: requestOptions);
+               options: requestOptions,
+               databaseId: this.Database.Id);
         }
 
         public override FeedIterator<T> GetPermissionQueryIterator<T>(string queryText = null,

@@ -15,6 +15,7 @@
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
+    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
@@ -39,7 +40,6 @@
         private static readonly RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
 
         private const double DiagnosticsLatencyThresholdValue = .0001; // Very Very Small Value
-
         [ClassInitialize()]
         public static async Task ClassInitAsync(TestContext context)
         {
@@ -659,6 +659,7 @@
 
             this.ExecuteTestSuite(inputs);
         }
+
 
         [TestMethod]
         public async Task ValidateInvalidCredentialsTraceAsync()
