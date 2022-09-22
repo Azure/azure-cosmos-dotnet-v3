@@ -11,13 +11,13 @@
     using WebApp.AspNetCore.Controllers;
     using WebApp.AspNetCore.Models;
 
-    public class QueryOperationController : Controller
+    public class QueryCrossPartitionOperationController : Controller
     {
         private readonly ILogger<HomeController> logger;
         private readonly Container container;
         private readonly SuccessViewModel successModel = new SuccessViewModel();
 
-        public QueryOperationController(ILogger<HomeController> logger, Container container)
+        public QueryCrossPartitionOperationController(ILogger<HomeController> logger, Container container)
         {
             this.logger = logger;
             this.container = container;
@@ -25,13 +25,9 @@
 
         public IActionResult Index()
         {
-            Task.Run(async () =>
-            {
-                await this.SinglePartitionQuery();
-                await this.CrossPartitionQuery();
-            });
+            Task.Run(async () => await this.CrossPartitionQuery());
 
-            this.successModel.QueryOpsMessage = "Query Operation Triggered Successfully";
+            this.successModel.QueryOpsMessage = "Cross Partition Query Operation Triggered Successfully";
 
             return this.View(this.successModel);
         }
@@ -60,42 +56,6 @@
                 }
             }
 
-        }
-
-        private async Task SinglePartitionQuery()
-        {
-            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue", "MyTestItemId");
-            ItemRequestOptions requestOptions = new ItemRequestOptions()
-            {
-                ConsistencyLevel = Microsoft.Azure.Cosmos.ConsistencyLevel.ConsistentPrefix
-            };
-
-            ItemResponse<ToDoActivity> createResponse = await this.container.CreateItemAsync<ToDoActivity>(
-                item: testItem,
-                requestOptions: requestOptions);
-
-            QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
-
-            List<object> families = new List<object>();
-            if (createResponse.StatusCode == HttpStatusCode.Created)
-            {
-                string sqlQueryText = "SELECT * FROM c WHERE c.id = '" + testItem.id +"'";
-
-                QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
-                using (FeedIterator<object> queryResultSetIterator = this.container.GetItemQueryIterator<object>(
-                    queryDefinition: queryDefinition,
-                    requestOptions: queryRequestOptions))
-                {
-                    while (queryResultSetIterator.HasMoreResults)
-                    {
-                        FeedResponse<object> currentResultSet = await queryResultSetIterator.ReadNextAsync();
-                        foreach (object family in currentResultSet)
-                        {
-                            families.Add(family);
-                        }
-                    }
-                }
-            }
         }
 
         public IActionResult Privacy()
