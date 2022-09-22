@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos
                 (tag.Key == OpenTelemetryAttributeKeys.DbName && !exceptionsForDbNameAttribute.Contains(name)))
             {
                 Assert.IsNotNull(tag.Value, $"{tag.Key} is 'null' for {name} operation");
-                Assert.AreNotEqual(OpenTelemetryAttributes.NotAvailable, $"{tag.Key} is {OpenTelemetryAttributes.NotAvailable} for {name} operation");
+                Assert.AreNotEqual(OpenTelemetryAttributes.NotAvailable, tag.Value, $"{tag.Key} is {OpenTelemetryAttributes.NotAvailable} for {name} operation");
             }
         }
 

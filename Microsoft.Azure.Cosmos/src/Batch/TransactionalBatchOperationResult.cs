@@ -221,10 +221,12 @@ namespace Microsoft.Azure.Cosmos
                 ActivityId = this.ActivityId,
             };
 
+            // Need this information in Open telemetry hence adding this information in the request
             RequestMessage requestMessage = new ()
             {
                 ContainerId = cosmosContainerCore?.Id,
-                DatabaseId = cosmosContainerCore?.Database?.Id
+                DatabaseId = cosmosContainerCore?.Database?.Id,
+                Trace = null
             };
 
             ResponseMessage responseMessage = new ResponseMessage(
