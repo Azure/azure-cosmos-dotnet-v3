@@ -95,10 +95,10 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public int PreferredLocationCount => this.connectionPolicy.PreferredLocations != null ? this.connectionPolicy.PreferredLocations.Count : 0;
 
-        /// <summary>
-        /// Gets total availible write locations from the current location information for a Cosmos account
-        /// </summary>
-        public int GetTotalAvailableWriteLocations => this.locationCache.GetTotalAvailableWriteLocations;
+        public bool IsMetadataWriteRequestMultimaster(DocumentServiceRequest request)
+        {
+            return this.locationCache.IsMetadataWriteRequestOnMultimasterAccount(request);
+        }
 
         /// <summary>
         /// This will get the account information.

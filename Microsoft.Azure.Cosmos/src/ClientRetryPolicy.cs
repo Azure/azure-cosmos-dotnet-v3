@@ -139,11 +139,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 // set location-based routing directive based on request retry context
                 request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
-
-                if (!this.canUseMultipleWriteLocations && this.globalEndpointManager.GetTotalAvailableWriteLocations > 1 && !this.isReadRequest)
-                {
-                    request.RequestContext.IsRetry = true;
-                }
             }
 
             // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
@@ -190,14 +185,18 @@ namespace Microsoft.Azure.Cosmos
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
-                if (!this.canUseMultipleWriteLocations && this.globalEndpointManager.GetTotalAvailableWriteLocations > 1 && !this.isReadRequest)
+                if (this.globalEndpointManager.IsMetadataWriteRequestMultimaster(this.documentServiceRequest))
                 {
-                    return await this.ShouldRetryOnEndpointFailureAsync(
-                    isReadRequest: false,
-                    markBothReadAndWriteAsUnavailable: false,
-                    forceRefresh: true,
-                    retryOnPreferredLocations: false,
-                    isMetadataWrite: true);
+                    Task<ShouldRetryResult> retryResult = this.ShouldRetryOnEndpointFailureAsync(
+                        isReadRequest: false,
+                        markBothReadAndWriteAsUnavailable: false,
+                        forceRefresh: true,
+                        retryOnPreferredLocations: false,
+                        overwriteEndpointDiscovery: true);
+
+                    this.retryContext.RetryLocationIndex = 0;
+
+                    return await retryResult;
                 }
 
                 return await this.ShouldRetryOnEndpointFailureAsync(
@@ -253,9 +252,9 @@ namespace Microsoft.Azure.Cosmos
             bool markBothReadAndWriteAsUnavailable,
             bool forceRefresh,
             bool retryOnPreferredLocations,
-            bool isMetadataWrite = false)
+            bool overwriteEndpointDiscovery = false)
         {
-            if (this.failoverRetryCount > MaxRetryCount || (!this.enableEndpointDiscovery && !isMetadataWrite))
+            if (this.failoverRetryCount > MaxRetryCount || (!this.enableEndpointDiscovery && !overwriteEndpointDiscovery))
             {
                 DefaultTrace.TraceInformation("ClientRetryPolicy: ShouldRetryOnEndpointFailureAsync() Not retrying. Retry count = {0}, Endpoint = {1}", 
                     this.failoverRetryCount,
@@ -265,7 +264,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.failoverRetryCount++;
 
-            if (this.locationEndpoint != null)
+            if (this.locationEndpoint != null && !overwriteEndpointDiscovery)
             {
                 if (isReadRequest || markBothReadAndWriteAsUnavailable)
                 {

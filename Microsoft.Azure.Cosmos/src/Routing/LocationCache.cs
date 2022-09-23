@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Gets total availible write locations from the current location information for a Cosmos account
         /// </summary>
-        public int GetTotalAvailableWriteLocations => this.locationInfo.AvailableWriteLocations.Count;
+        public int TotalAvailableWriteLocations => this.locationInfo.AvailableWriteLocations.Count;
         /// <summary>
         /// Gets list of read endpoints ordered by
         /// 1. Preferred location
@@ -209,6 +209,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 preferenceList: preferredLocations);
         }
 
+        public bool IsMetadataWriteRequestOnMultimasterAccount(DocumentServiceRequest request)
+        {
+            return !request.IsReadOnlyRequest && this.TotalAvailableWriteLocations > 1 && !this.CanUseMultipleWriteLocations(request);
+        }
+
         /// <summary>
         /// Resolves request to service endpoint. 
         /// 1. If this is a write request
@@ -246,16 +251,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 // first and the second writable region in DatabaseAccount (for manual failover)
                 DatabaseAccountLocationsInfo currentLocationInfo = this.locationInfo;
 
-                if (this.enableEndpointDiscovery && currentLocationInfo.AvailableWriteLocations.Count > 0)
+                if ((this.enableEndpointDiscovery && currentLocationInfo.AvailableWriteLocations.Count > 0) || this.IsMetadataWriteRequestOnMultimasterAccount(request))
                 {
                     locationIndex = Math.Min(locationIndex % 2, currentLocationInfo.AvailableWriteLocations.Count - 1);
                     string writeLocation = currentLocationInfo.AvailableWriteLocations[locationIndex];
-                    locationEndpointToRoute = currentLocationInfo.AvailableWriteEndpointByLocation[writeLocation];
-                }
-                else if (request.RequestContext.IsRetry && currentLocationInfo.AvailableWriteLocations.Count > 1 && request.ResourceType != ResourceType.Document)
-                {
-                    Console.WriteLine(currentLocationInfo);
-                    string writeLocation = currentLocationInfo.AvailableWriteLocations[0]; //Always want to rout to hub region, the first one in the list of available regions
                     locationEndpointToRoute = currentLocationInfo.AvailableWriteEndpointByLocation[writeLocation];
                 }
             }
