@@ -11,16 +11,16 @@
     using WebApp.AspNetCore.Controllers;
     using WebApp.AspNetCore.Models;
 
-    public class PointOperationController : Controller
+    public class MultiRegionPointOperationController : Controller
     {
         private readonly ILogger<HomeController> logger;
         private readonly Container container;
         private readonly SuccessViewModel successModel = new SuccessViewModel();
 
-        public PointOperationController(ILogger<HomeController> logger)
+        public MultiRegionPointOperationController(ILogger<HomeController> logger)
         {
             this.logger = logger;
-            this.container = CosmosClientInit.singleRegionAccount;
+            this.container = CosmosClientInit.multiRegionAccount;
         }
 
         public IActionResult Index()
@@ -49,7 +49,7 @@
 
             });
 
-            this.successModel.PointOpsMessage = "Point Operation Triggered Successfully With one failure Scenario";
+            this.successModel.MrPointOpsMessage = "Point Operation Triggered (Multi region) Successfully With one failure Scenario";
 
             return this.View(this.successModel);
         }

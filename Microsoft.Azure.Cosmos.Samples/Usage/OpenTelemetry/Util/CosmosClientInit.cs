@@ -6,6 +6,11 @@
 
     public static class CosmosClientInit
     {
+
+        public static Container singleRegionAccount;
+        public static Container largeRegionAccount;
+        public static Container multiRegionAccount;
+
         public static async Task<Container> CreateClientAndContainer(
          string connectionString,
          ConnectionMode mode,

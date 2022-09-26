@@ -16,6 +16,7 @@
     using WebApp.AspNetCore.Controllers;
     using WebApp.AspNetCore.Models;
     using System.Text;
+    using OpenTelemetry.Util;
 
     public class BulkOperationController : Controller
     {
@@ -23,10 +24,10 @@
         private readonly Container container;
         private readonly SuccessViewModel successModel = new SuccessViewModel();
 
-        public BulkOperationController(ILogger<HomeController> logger, Container container)
+        public BulkOperationController(ILogger<HomeController> logger)
         {
             this.logger = logger;
-            this.container = container;
+            this.container = CosmosClientInit.singleRegionAccount;
         }
 
         public IActionResult Index()

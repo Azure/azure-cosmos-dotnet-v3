@@ -19,10 +19,10 @@
         private readonly Container container;
         private readonly SuccessViewModel successModel = new SuccessViewModel();
 
-        public QueryOperationController(ILogger<HomeController> logger, Container container)
+        public QueryOperationController(ILogger<HomeController> logger)
         {
             this.logger = logger;
-            this.container = container;
+            this.container = CosmosClientInit.singleRegionAccount;
         }
 
         public IActionResult Index()

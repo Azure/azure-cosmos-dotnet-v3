@@ -19,15 +19,10 @@
         private readonly Container container;
         private readonly SuccessViewModel successModel = new SuccessViewModel();
 
-        public QueryCrossPartitionOperationController(ILogger<HomeController> logger, CosmosDbSettings cosmosDbSettings)
+        public QueryCrossPartitionOperationController(ILogger<HomeController> logger)
         {
             this.logger = logger;
-            this.container = CosmosClientInit.CreateClientAndContainer(
-                connectionString: cosmosDbSettings.ConnectionString,
-                mode: Enum.Parse<ConnectionMode>(cosmosDbSettings.ConnectionMode),
-                dbAndContainerNameSuffix: "_large",
-                isLargeContainer: true,
-                isEnableOpenTelemetry: cosmosDbSettings.EnableOpenTelemetry).Result;
+            this.container = CosmosClientInit.largeRegionAccount;
         }
 
         public IActionResult Index()

@@ -24,6 +24,18 @@
             }
         </div>
     </div>
+
+     <div class="row">
+        <div class="col-sm-12 p-3">
+            @using (Html.BeginForm("Index", "MultiRegionPointOperation", FormMethod.Post))
+            {
+                <div class="item">
+                    <button type="submit" class="btn btn-primary">Fire Point Operations (Multi Region Account)</button><span color="blue">@Model?.MrPointOpsMessage</span>
+                </div>
+            }
+        </div>
+    </div>
+
     <div class="row">
         <div class="col-sm-12 p-3">
             @using (Html.BeginForm("Index", "QueryOperation", FormMethod.Post))

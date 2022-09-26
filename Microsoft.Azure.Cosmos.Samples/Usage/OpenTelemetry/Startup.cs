@@ -36,8 +36,22 @@ namespace AspNetCoreWebApp
                 connectionString: cosmosDbSettings.ConnectionString,
                 mode: Enum.Parse<ConnectionMode>(cosmosDbSettings.ConnectionMode),
                 isEnableOpenTelemetry: cosmosDbSettings.EnableOpenTelemetry).Result;
+            CosmosClientInit.singleRegionAccount = container;
 
-            services.AddSingleton<Container>(container);
+            Container largeContainer = CosmosClientInit.CreateClientAndContainer(
+                connectionString: cosmosDbSettings.ConnectionString,
+                mode: Enum.Parse<ConnectionMode>(cosmosDbSettings.ConnectionMode),
+                dbAndContainerNameSuffix: "_large",
+                isLargeContainer: true,
+                isEnableOpenTelemetry: cosmosDbSettings.EnableOpenTelemetry).Result;
+            CosmosClientInit.largeRegionAccount = largeContainer;
+
+            Container multiContainer = CosmosClientInit.CreateClientAndContainer(
+                connectionString: "",
+                mode: Enum.Parse<ConnectionMode>(cosmosDbSettings.ConnectionMode),
+                isEnableOpenTelemetry: cosmosDbSettings.EnableOpenTelemetry).Result;
+            CosmosClientInit.multiRegionAccount = multiContainer;
+
             services.AddSingleton<CosmosDbSettings>(cosmosDbSettings);
         }
 
