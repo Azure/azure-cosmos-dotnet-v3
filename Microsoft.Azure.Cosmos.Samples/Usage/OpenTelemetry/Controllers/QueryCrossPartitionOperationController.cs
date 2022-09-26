@@ -1,5 +1,6 @@
 ﻿namespace OpenTelemetry.Controllers
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Net;
@@ -8,6 +9,7 @@
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
     using Models;
+    using OpenTelemetry.Util;
     using WebApp.AspNetCore.Controllers;
     using WebApp.AspNetCore.Models;
 
@@ -17,17 +19,22 @@
         private readonly Container container;
         private readonly SuccessViewModel successModel = new SuccessViewModel();
 
-        public QueryCrossPartitionOperationController(ILogger<HomeController> logger, Container container)
+        public QueryCrossPartitionOperationController(ILogger<HomeController> logger, CosmosDbSettings cosmosDbSettings)
         {
             this.logger = logger;
-            this.container = container;
+            this.container = CosmosClientInit.CreateClientAndContainer(
+                connectionString: cosmosDbSettings.ConnectionString,
+                mode: Enum.Parse<ConnectionMode>(cosmosDbSettings.ConnectionMode),
+                dbAndContainerNameSuffix: "_large",
+                isLargeContainer: true,
+                isEnableOpenTelemetry: cosmosDbSettings.EnableOpenTelemetry).Result;
         }
 
         public IActionResult Index()
         {
             Task.Run(async () => await this.CrossPartitionQuery());
 
-            this.successModel.QueryOpsMessage = "Cross Partition Query Operation Triggered Successfully";
+            this.successModel.CrossQueryOpsMessage = "Cross Partition Query Operation Triggered Successfully";
 
             return this.View(this.successModel);
         }

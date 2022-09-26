@@ -38,6 +38,7 @@ namespace AspNetCoreWebApp
                 isEnableOpenTelemetry: cosmosDbSettings.EnableOpenTelemetry).Result;
 
             services.AddSingleton<Container>(container);
+            services.AddSingleton<CosmosDbSettings>(cosmosDbSettings);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

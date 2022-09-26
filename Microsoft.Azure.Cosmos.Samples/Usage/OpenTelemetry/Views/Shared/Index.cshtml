@@ -37,6 +37,17 @@
     </div>
     <div class="row">
         <div class="col-sm-12 p-3">
+            @using (Html.BeginForm("Index", "QueryCrossPartitionOperation", FormMethod.Post))
+            {
+                <div class="item">
+                    <button type="submit" class="btn btn-primary">Fire Cross Partition Query Operations</button> <span color="blue">@Model?.CrossQueryOpsMessage</span>
+                </div>
+
+            }
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-12 p-3">
             @using (Html.BeginForm("Index", "StreamOperation", FormMethod.Post))
             {
                 <div class="item">

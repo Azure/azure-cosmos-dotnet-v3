@@ -158,6 +158,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// </summary>
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
+
+            Assert.IsNotNull(eventData.Payload[0]);
             StringBuilder builder = new StringBuilder();
             builder.Append("<EVENT>")
                    .Append("<EVENT-NAME>").Append(eventData.EventName).Append("</EVENT-NAME>")

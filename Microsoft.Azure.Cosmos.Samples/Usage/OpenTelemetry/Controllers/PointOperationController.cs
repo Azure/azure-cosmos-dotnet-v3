@@ -1,5 +1,6 @@
 ﻿namespace OpenTelemetry.Controllers
 {
+    using System;
     using System.Diagnostics;
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Mvc;
@@ -33,6 +34,9 @@
                 // Read an Item
                 await this.container.ReadItemAsync<ToDoActivity>(testItem.id, new Microsoft.Azure.Cosmos.PartitionKey(testItem.id));
 
+                // Read failure scenario Item
+                await this.container.ReadItemAsync<ToDoActivity>(new Guid().ToString(), new Microsoft.Azure.Cosmos.PartitionKey(testItem.id));
+
                 // Upsert an Item
                 await this.container.UpsertItemAsync<ToDoActivity>(testItem);
 
@@ -44,7 +48,7 @@
 
             });
 
-            this.successModel.PointOpsMessage = "Point Operation Triggered Successfully";
+            this.successModel.PointOpsMessage = "Point Operation Triggered Successfully With one failure Scenario";
 
             return this.View(this.successModel);
         }
