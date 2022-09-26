@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Linq;
     using System.Net;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -78,10 +79,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 #endif  
 #endif
         }
-        /// <summary>
-        /// Gets total availible write locations from the current location information for a Cosmos account
-        /// </summary>
-        public int TotalAvailableWriteLocations => this.locationInfo.AvailableWriteLocations.Count;
+
         /// <summary>
         /// Gets list of read endpoints ordered by
         /// 1. Preferred location
@@ -211,7 +209,15 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public bool IsMetadataWriteRequestOnMultimasterAccount(DocumentServiceRequest request)
         {
-            return !request.IsReadOnlyRequest && this.TotalAvailableWriteLocations > 1 && !this.CanUseMultipleWriteLocations(request);
+            return !request.IsReadOnlyRequest && this.locationInfo.AvailableWriteLocations.Count > 1 && !this.CanUseMultipleWriteLocations(request);
+        }
+
+        public Uri GetHubUri()
+        {
+            DatabaseAccountLocationsInfo currentLocationInfo = this.locationInfo;
+            string writeLocation = currentLocationInfo.AvailableWriteLocations[0];
+            Uri locationEndpointToRoute = currentLocationInfo.AvailableWriteEndpointByLocation[writeLocation];
+            return locationEndpointToRoute;
         }
 
         /// <summary>
@@ -251,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 // first and the second writable region in DatabaseAccount (for manual failover)
                 DatabaseAccountLocationsInfo currentLocationInfo = this.locationInfo;
 
-                if ((this.enableEndpointDiscovery && currentLocationInfo.AvailableWriteLocations.Count > 0) || this.IsMetadataWriteRequestOnMultimasterAccount(request))
+                if (this.enableEndpointDiscovery && currentLocationInfo.AvailableWriteLocations.Count > 0)
                 {
                     locationIndex = Math.Min(locationIndex % 2, currentLocationInfo.AvailableWriteLocations.Count - 1);
                     string writeLocation = currentLocationInfo.AvailableWriteLocations[locationIndex];

@@ -100,6 +100,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.locationCache.IsMetadataWriteRequestOnMultimasterAccount(request);
         }
 
+        public Uri GetHubUri()
+        {
+            return this.locationCache.GetHubUri();
+        }
+
         /// <summary>
         /// This will get the account information.
         /// It will try the global endpoint first. 
