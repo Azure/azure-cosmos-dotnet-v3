@@ -585,6 +585,7 @@ namespace Microsoft.Azure.Cosmos
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
                options: requestOptions,
+               container: null,
                databaseId: this.Id);
         }
 
@@ -607,6 +608,7 @@ namespace Microsoft.Azure.Cosmos
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
                     resourceType: ResourceType.Collection),
+                null,
                 databaseId: this.Id);
         }
 
@@ -629,6 +631,7 @@ namespace Microsoft.Azure.Cosmos
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
                     resourceType: ResourceType.User),
+                null,
                 databaseId: this.Id);
         }
 
@@ -644,6 +647,7 @@ namespace Microsoft.Azure.Cosmos
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
                options: requestOptions,
+               container: null,
                databaseId: this.Id);
         }
 
@@ -721,6 +725,7 @@ namespace Microsoft.Azure.Cosmos
                     FeedResponse<ClientEncryptionKeyProperties> results = this.ClientContext.ResponseFactory.CreateQueryFeedResponse<ClientEncryptionKeyProperties>(responseMessage, ResourceType.ClientEncryptionKey);
                     return results;
                 },
+                null,
                 databaseId: this.Id);
         }
 
@@ -736,6 +741,7 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition: queryDefinition,
                 continuationToken: continuationToken,
                 options: requestOptions,
+                container: null,
                 databaseId: this.Id);
         }
 

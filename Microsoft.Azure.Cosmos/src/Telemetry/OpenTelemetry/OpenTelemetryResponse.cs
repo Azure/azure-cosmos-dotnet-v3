@@ -5,18 +5,22 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.IO;
+    using System.Net;
     using Telemetry;
 
     internal sealed class OpenTelemetryResponse : OpenTelemetryAttributes
     {
         internal OpenTelemetryResponse(ResponseMessage responseMessage) 
-            : base(responseMessage.RequestMessage)
+            : this(
+                  statusCode: responseMessage.StatusCode,
+                  requestCharge: responseMessage.Headers?.RequestCharge,
+                  responseContentLength: OpenTelemetryResponse.GetPayloadSize(responseMessage),
+                  diagnostics: responseMessage.Diagnostics,
+                  itemCount: responseMessage.Headers?.ItemCount,
+                  databaseName: null,
+                  containerName: null,
+                  requestMessage: responseMessage.RequestMessage)
         {
-            this.StatusCode = responseMessage.StatusCode;
-            this.RequestCharge = responseMessage.Headers?.RequestCharge;
-            this.ResponseContentLength = OpenTelemetryResponse.GetPayloadSize(responseMessage);
-            this.Diagnostics = responseMessage.Diagnostics;
-            this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable;
         }
 
         /// <summary>
@@ -24,37 +28,69 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="responseMessage"></param>
         internal OpenTelemetryResponse(TransactionalBatchResponse responseMessage)
-           : base(null)
+           : this(
+                  statusCode: responseMessage.StatusCode,
+                  requestCharge: responseMessage.Headers?.RequestCharge,
+                  responseContentLength: null,
+                  diagnostics: responseMessage.Diagnostics,
+                  itemCount: responseMessage.Headers?.ItemCount,
+                  databaseName: null,
+                  containerName: null,
+                  requestMessage: null)
         {
-            // TODO: Add Request Information in TransactionalBatchResponse
-            this.StatusCode = responseMessage.StatusCode;
-            this.RequestCharge = responseMessage.Headers?.RequestCharge;
-            this.Diagnostics = responseMessage.Diagnostics;
-            this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable;
         }
 
-        internal OpenTelemetryResponse(ContainerInternal container, ResponseMessage responseMessage)
-           : base(responseMessage.RequestMessage)
+        internal OpenTelemetryResponse(ResponseMessage responseMessage, ContainerInternal container)
+           : this(
+                  statusCode: responseMessage.StatusCode,
+                  requestCharge: responseMessage.Headers?.RequestCharge,
+                  responseContentLength: OpenTelemetryResponse.GetPayloadSize(responseMessage),
+                  diagnostics: responseMessage.Diagnostics,
+                  itemCount: responseMessage.Headers?.ItemCount,
+                  databaseName: container?.Database?.Id,
+                  containerName: container?.Id,
+                  requestMessage: responseMessage.RequestMessage)
         {
-            this.StatusCode = responseMessage.StatusCode;
-            this.RequestCharge = responseMessage.Headers?.RequestCharge;
-            this.ResponseContentLength = OpenTelemetryResponse.GetPayloadSize(responseMessage);
-            this.Diagnostics = responseMessage.Diagnostics;
-            this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable;
-
-            this.ContainerName = container?.Id ?? OpenTelemetryAttributes.NotAvailable;
-            this.DatabaseName = container?.Database?.Id ?? OpenTelemetryAttributes.NotAvailable;
         }
 
-        internal OpenTelemetryResponse(string databaseId, ResponseMessage responseMessage)
-          : base(responseMessage.RequestMessage)
+        internal OpenTelemetryResponse(ResponseMessage responseMessage, string databaseId)
+           : this(
+                  statusCode: responseMessage.StatusCode,
+                  requestCharge: responseMessage.Headers?.RequestCharge,
+                  responseContentLength: OpenTelemetryResponse.GetPayloadSize(responseMessage),
+                  diagnostics: responseMessage.Diagnostics,
+                  itemCount: responseMessage.Headers?.ItemCount,
+                  databaseName: databaseId,
+                  containerName: null,
+                  requestMessage: responseMessage.RequestMessage)
         {
-            this.StatusCode = responseMessage.StatusCode;
-            this.RequestCharge = responseMessage.Headers?.RequestCharge;
-            this.ResponseContentLength = OpenTelemetryResponse.GetPayloadSize(responseMessage);
-            this.Diagnostics = responseMessage.Diagnostics;
-            this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable;
-            this.DatabaseName = databaseId ?? OpenTelemetryAttributes.NotAvailable;
+        }
+
+        private OpenTelemetryResponse(
+            HttpStatusCode statusCode, 
+            double? requestCharge,
+            string responseContentLength,
+            CosmosDiagnostics diagnostics,
+            string itemCount,
+            string databaseName,
+            string containerName,
+            RequestMessage requestMessage)
+            : base(requestMessage)
+        {
+            this.StatusCode = statusCode;
+            this.RequestCharge = requestCharge;
+            this.ResponseContentLength = responseContentLength ?? OpenTelemetryAttributes.NotAvailable;
+            this.Diagnostics = diagnostics;
+            this.ItemCount = itemCount ?? OpenTelemetryAttributes.NotAvailable;
+
+            if (string.IsNullOrEmpty(this.DatabaseName))
+            {
+                this.DatabaseName = databaseName ?? OpenTelemetryAttributes.NotAvailable;
+            }
+            if (string.IsNullOrEmpty(this.ContainerName))
+            {
+                this.ContainerName = containerName ?? OpenTelemetryAttributes.NotAvailable;
+            }
         }
 
         private static string GetPayloadSize(ResponseMessage response)

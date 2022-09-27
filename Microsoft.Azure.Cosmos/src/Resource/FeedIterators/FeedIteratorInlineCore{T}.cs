@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
         internal FeedIteratorInlineCore(
             FeedIterator<T> feedIterator,
             CosmosClientContext clientContext,
-            ContainerInternal container = null,
+            ContainerInternal container,
             string databaseId = null)
         {
             if (!(feedIterator is FeedIteratorInternal<T> feedIteratorInternal))

@@ -374,6 +374,7 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedStartFrom: changeFeedStartFrom,
                 changeFeedMode: changeFeedMode,
                 changeFeedRequestOptions: changeFeedRequestOptions,
+                container: this,
                 clientContext: this.ClientContext);
 
             return new FeedIteratorCore<T>(
@@ -693,6 +694,7 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedMode: changeFeedMode,
                 changeFeedRequestOptions: changeFeedRequestOptions,
                 clientContext: this.ClientContext,
+                container: this,
                 changeFeedQuerySpec: changeFeedQuerySpec);
 
             return new FeedIteratorCore<T>(

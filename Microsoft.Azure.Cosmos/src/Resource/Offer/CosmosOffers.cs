@@ -227,7 +227,8 @@ namespace Microsoft.Azure.Cosmos
                 databaseStreamIterator,
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
-                    resourceType: ResourceType.Offer));
+                    resourceType: ResourceType.Offer),
+                null);
         }
 
         internal virtual FeedIterator GetOfferQueryStreamIterator(
@@ -242,7 +243,8 @@ namespace Microsoft.Azure.Cosmos
                resourceType: ResourceType.Offer,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
-               options: requestOptions);
+               options: requestOptions,
+               container: null);
         }
 
         private async Task<(T item, double requestCharge)> SingleOrDefaultAsync<T>(

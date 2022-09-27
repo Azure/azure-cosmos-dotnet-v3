@@ -21,10 +21,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal OpenTelemetryAttributes(RequestMessage requestMessage)
         {
             this.RequestContentLength = requestMessage?.Headers?.ContentLength ?? OpenTelemetryAttributes.NotAvailable;
-            this.ContainerName = requestMessage?.ContainerId ?? OpenTelemetryAttributes.NotAvailable;
-            this.DatabaseName = requestMessage?.DatabaseId ?? OpenTelemetryAttributes.NotAvailable;
+            this.OperationType = requestMessage?.OperationType.ToOperationTypeString() ?? OpenTelemetryAttributes.NotAvailable;
 
-            this.OperationType = requestMessage?.OperationType ?? OperationType.Invalid;
+            this.ContainerName = requestMessage?.ContainerId;
+            this.DatabaseName = requestMessage?.DatabaseId;
         }
 
         /// <summary>
@@ -70,6 +70,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// OperationType
         /// </summary>
-        internal OperationType OperationType { get; set; }
+        internal string OperationType { get; set; }
     }
 }

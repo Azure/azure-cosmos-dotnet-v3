@@ -96,6 +96,7 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions),
                 this.ClientContext,
+                null,
                 databaseId: this.Database.Id);
         }
 
@@ -109,6 +110,7 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions),
                 this.ClientContext,
+                null,
                 databaseId: this.Database.Id);
         }
     }

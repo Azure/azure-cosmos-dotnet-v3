@@ -141,6 +141,7 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions),
                 this.ClientContext,
+                null,
                 databaseId: this.Id);
         }
 
@@ -154,6 +155,7 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions),
                 this.ClientContext,
+                null,
                 databaseId: this.Id);
         }
 
@@ -165,7 +167,8 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition,
                 continuationToken,
                 requestOptions),
-                this.ClientContext);
+                this.ClientContext,
+                null);
         }
 
         public override FeedIterator GetContainerQueryStreamIterator(
@@ -177,7 +180,8 @@ namespace Microsoft.Azure.Cosmos
                 queryText,
                 continuationToken,
                 requestOptions),
-                this.ClientContext);
+                this.ClientContext,
+                null);
         }
 
         public override User GetUser(string id)
@@ -195,6 +199,7 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions),
                 this.ClientContext,
+                null,
                 databaseId: this.Id);
         }
 
@@ -208,6 +213,7 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions),
                 this.ClientContext,
+                null,
                 databaseId: this.Id);
         }
 

@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Query
             RequestOptions requestOptions,
             CosmosClientContext clientContext,
             Guid correlatedActivityId,
-            ContainerInternal container = null)
+            ContainerInternal container)
         {
             this.cosmosQueryContext = cosmosQueryContext ?? throw new ArgumentNullException(nameof(cosmosQueryContext));
             this.queryPipelineStage = cosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));

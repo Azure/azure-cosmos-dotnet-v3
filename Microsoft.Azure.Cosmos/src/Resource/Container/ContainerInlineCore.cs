@@ -353,7 +353,7 @@ namespace Microsoft.Azure.Cosmos
                 nameof(ReadManyItemsStreamAsync),
                 null,
                 (trace) => base.ReadManyItemsStreamAsync(items, trace, readManyRequestOptions, cancellationToken),
-                (response) => new OpenTelemetryResponse(this, response));
+                (response) => new OpenTelemetryResponse(response, this));
         }
 
         public override Task<FeedResponse<T>> ReadManyItemsAsync<T>(

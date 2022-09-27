@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
         internal FeedIteratorInlineCore(
             FeedIterator feedIterator,
             CosmosClientContext clientContext,
-            ContainerInternal container = null,
+            ContainerInternal container,
             string databaseId = null)
         {
             if (!(feedIterator is FeedIteratorInternal feedIteratorInternal))
@@ -57,9 +57,9 @@ namespace Microsoft.Azure.Cosmos
                         {
                             if (this.container == null)
                             {
-                                return new OpenTelemetryResponse(this.databaseId, response);
+                                return new OpenTelemetryResponse(response, this.databaseId);
                             }
-                            return new OpenTelemetryResponse(this.container, response);
+                            return new OpenTelemetryResponse(response, this.container);
                         });
         }
 

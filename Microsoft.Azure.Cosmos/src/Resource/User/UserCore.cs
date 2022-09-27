@@ -238,6 +238,7 @@ namespace Microsoft.Azure.Cosmos
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
                     resourceType: ResourceType.Permission),
+                null,
                 databaseId: this.Database.Id);
         }
 
@@ -247,11 +248,12 @@ namespace Microsoft.Azure.Cosmos
         {
             return new FeedIteratorCore(
                clientContext: this.ClientContext,
-               this.LinkUri,
+               resourceLink: this.LinkUri,
                resourceType: ResourceType.Permission,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
                options: requestOptions,
+               container: null,
                databaseId: this.Database.Id);
         }
 

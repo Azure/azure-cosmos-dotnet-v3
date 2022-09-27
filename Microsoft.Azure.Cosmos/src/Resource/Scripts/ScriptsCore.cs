@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         {
             return new FeedIteratorCore(
                clientContext: this.ClientContext,
-               this.container.LinkUri,
+               resourceLink: this.container.LinkUri,
                resourceType: ResourceType.StoredProcedure,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
@@ -313,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         {
             return new FeedIteratorCore(
                clientContext: this.ClientContext,
-               this.container.LinkUri,
+               resourceLink: this.container.LinkUri,
                resourceType: ResourceType.Trigger,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
@@ -485,7 +485,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         {
             return new FeedIteratorCore(
                clientContext: this.ClientContext,
-               this.container.LinkUri,
+               resourceLink: this.container.LinkUri,
                resourceType: ResourceType.UserDefinedFunction,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,

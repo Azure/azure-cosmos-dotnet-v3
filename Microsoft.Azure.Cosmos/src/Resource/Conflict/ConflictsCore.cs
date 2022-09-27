@@ -130,7 +130,8 @@ namespace Microsoft.Azure.Cosmos
                 databaseStreamIterator,
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
-                    resourceType: ResourceType.Conflict));
+                    resourceType: ResourceType.Conflict),
+                null);
         }
 
         public async Task<ItemResponse<T>> ReadCurrentAsync<T>(

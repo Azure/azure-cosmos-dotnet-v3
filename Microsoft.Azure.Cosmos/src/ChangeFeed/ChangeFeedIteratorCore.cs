@@ -31,8 +31,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ChangeFeedRequestOptions changeFeedRequestOptions,
             ChangeFeedStartFrom changeFeedStartFrom,
             CosmosClientContext clientContext,
-            ChangeFeedQuerySpec changeFeedQuerySpec = null,
-            ContainerInternal container = null)
+            ContainerInternal container,
+            ChangeFeedQuerySpec changeFeedQuerySpec = null)
         {
             if (changeFeedStartFrom == null)
             {
@@ -224,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 return await this.clientContext.OperationHelperAsync("Change Feed Iterator Read Next Async",
                                                 requestOptions: this.changeFeedRequestOptions,
                                                 task: (trace) => this.ReadNextInternalAsync(trace, cancellationToken),
-                                                openTelemetry: (response) => new OpenTelemetryResponse(this.container, response),
+                                                openTelemetry: (response) => new OpenTelemetryResponse(response, this.container),
                                                 traceComponent: TraceComponent.ChangeFeed,
                                                 traceLevel: TraceLevel.Info);
         }
