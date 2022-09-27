@@ -35,8 +35,14 @@
                 // Read an Item
                 await this.container.ReadItemAsync<ToDoActivity>(testItem.id, new Microsoft.Azure.Cosmos.PartitionKey(testItem.id));
 
-                // Read failure scenario Item
-                await this.container.ReadItemAsync<ToDoActivity>(new Guid().ToString(), new Microsoft.Azure.Cosmos.PartitionKey(testItem.id));
+                try
+                {
+                    // Read failure scenario Item
+                    await this.container.ReadItemAsync<ToDoActivity>(new Guid().ToString(), new Microsoft.Azure.Cosmos.PartitionKey(testItem.id));
+                }
+                catch (Exception)
+                {
+                }
 
                 // Upsert an Item
                 await this.container.UpsertItemAsync<ToDoActivity>(testItem);

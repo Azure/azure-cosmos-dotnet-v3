@@ -30,6 +30,8 @@ namespace AspNetCoreWebApp
             // Add and initialize the Application Insights SDK.
             services.AddApplicationInsightsTelemetry();
 
+            string multiRegionAccountConnectionString = "";
+
             CosmosDbSettings cosmosDbSettings = this.Configuration.GetSection("CosmosDb").Get<CosmosDbSettings>();
 
             Container container = CosmosClientInit.CreateClientAndContainer(
@@ -46,11 +48,14 @@ namespace AspNetCoreWebApp
                 isEnableOpenTelemetry: cosmosDbSettings.EnableOpenTelemetry).Result;
             CosmosClientInit.largeRegionAccount = largeContainer;
 
-            Container multiContainer = CosmosClientInit.CreateClientAndContainer(
-                connectionString: "",
-                mode: Enum.Parse<ConnectionMode>(cosmosDbSettings.ConnectionMode),
-                isEnableOpenTelemetry: cosmosDbSettings.EnableOpenTelemetry).Result;
-            CosmosClientInit.multiRegionAccount = multiContainer;
+            if(!string.IsNullOrEmpty(multiRegionAccountConnectionString))
+            {
+                Container multiContainer = CosmosClientInit.CreateClientAndContainer(
+                 connectionString: "",
+                 mode: Enum.Parse<ConnectionMode>(cosmosDbSettings.ConnectionMode),
+                 isEnableOpenTelemetry: cosmosDbSettings.EnableOpenTelemetry).Result;
+                CosmosClientInit.multiRegionAccount = multiContainer;
+            }
 
             services.AddSingleton<CosmosDbSettings>(cosmosDbSettings);
         }
