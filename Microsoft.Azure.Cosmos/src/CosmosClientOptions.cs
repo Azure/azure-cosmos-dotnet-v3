@@ -11,11 +11,11 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Net.Http.Headers;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
-    using Telemetry;
 
     /// <summary>
     /// Defines all the configurable options that the CosmosClient requires.
@@ -69,6 +69,7 @@ namespace Microsoft.Azure.Cosmos
         private PortReuseMode? portReuseMode;
         private IWebProxy webProxy;
         private Func<HttpClient> httpClientFactory;
+        private string applicationName;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -90,7 +91,24 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Setting this property after sending any request won't have any effect.
         /// </remarks>
-        public string ApplicationName { get; set; }
+        public string ApplicationName
+        {
+            get => this.applicationName;
+            set
+            {
+                try
+                {
+                    HttpRequestMessage dummyMessage = new HttpRequestMessage();
+                    dummyMessage.Headers.Add(HttpConstants.HttpHeaders.UserAgent, value);
+                }
+                catch (FormatException fme)
+                {
+                    throw new ArgumentException($"Application name '{value}' is invalid.", fme);
+                }
+
+                this.applicationName = value;
+            }
+        }
 
         /// <summary>
         /// Get or set session container for the client
