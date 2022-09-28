@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
             this.clientContext = clientContext;
 
             this.container = feedIteratorInternal.container;
-            this.databaseId = feedIteratorInternal.databaseId;
+            this.databaseName = feedIteratorInternal.databaseName;
         }
 
         internal FeedIteratorInlineCore(
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
             this.clientContext = clientContext;
 
             this.container = feedIteratorInternal.container;
-            this.databaseId = feedIteratorInternal.databaseId;
+            this.databaseName = feedIteratorInternal.databaseName;
         }
 
         public override bool HasMoreResults => this.feedIteratorInternal.HasMoreResults;
@@ -56,12 +56,12 @@ namespace Microsoft.Azure.Cosmos
                                 return new OpenTelemetryResponse<T>(
                                     responseMessage: response, 
                                     containerName: null,
-                                    databaseName: this.databaseId);
+                                    databaseName: this.databaseName);
                             }
                             return new OpenTelemetryResponse<T>(
                                     responseMessage: response, 
                                     containerName: this.container?.Id,
-                                    databaseName: this.container?.Database?.Id);
+                                    databaseName: this.container?.Database?.Id ?? this.databaseName);
                         });
         }
 

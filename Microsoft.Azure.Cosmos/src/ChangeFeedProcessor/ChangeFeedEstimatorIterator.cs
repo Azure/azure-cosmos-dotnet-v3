@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                                 openTelemetry: (response) => new OpenTelemetryResponse<ChangeFeedProcessorState>(
                                     responseMessage: response, 
                                     containerName: this.monitoredContainer?.Id,
-                                    databaseName: this.monitoredContainer?.Database?.Id),
+                                    databaseName: this.monitoredContainer?.Database?.Id ?? this.databaseName),
                                 traceComponent: TraceComponent.ChangeFeed,
                                 traceLevel: TraceLevel.Info);
         }

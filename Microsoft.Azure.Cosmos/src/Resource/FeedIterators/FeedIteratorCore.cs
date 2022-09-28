@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
             this.requestOptions = options;
             this.hasMoreResultsInternal = true;
 
-            this.databaseId = databaseId;
+            this.databaseName = databaseId;
             this.container = container;
         }
 
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos
             this.responseCreator = responseCreator;
             this.feedIterator = feedIterator;
 
-            this.databaseId = feedIterator.databaseId;
+            this.databaseName = feedIterator.databaseName;
             this.container = feedIterator.container;
         }
 

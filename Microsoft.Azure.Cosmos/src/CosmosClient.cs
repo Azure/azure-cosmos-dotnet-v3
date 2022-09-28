@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -107,7 +108,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly string DatabaseRootUri = Paths.Databases_Root;
         private ConsistencyLevel? accountConsistencyLevel;
         private bool isDisposed = false;
-        private ContainerInternal container = null;
 
         internal static int numberOfClientsCreated;
         internal static int NumberOfActiveClients;
@@ -1339,7 +1339,7 @@ namespace Microsoft.Azure.Cosmos
                resourceType: ResourceType.Database,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
-               container: this.container,
+               container: null,
                options: requestOptions);
         }
 
@@ -1389,7 +1389,6 @@ namespace Microsoft.Azure.Cosmos
         private async Task InitializeContainerAsync(string databaseId, string containerId, CancellationToken cancellationToken = default)
         {
             ContainerInternal container = (ContainerInternal)this.GetContainer(databaseId, containerId);
-            this.container = container;
 
             IReadOnlyList<FeedRange> feedRanges = await container.GetFeedRangesAsync(cancellationToken);
             List<Task> tasks = new List<Task>();

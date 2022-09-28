@@ -132,8 +132,8 @@ namespace Microsoft.Azure.Cosmos
         internal ContainerInternal container;
 
         /// <summary>
-        /// Collect databaseid if container information not available in open telemetry attributes
+        /// Collect database name if container information not available in open telemetry attributes
         /// </summary>
-        internal string databaseId;
+        internal string databaseName;
     }
 }
