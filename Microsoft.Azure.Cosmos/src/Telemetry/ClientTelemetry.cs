@@ -316,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 async ValueTask<HttpRequestMessage> CreateRequestMessage()
                 {
-                    INameValueCollection headersCollection = new NameValueCollectionWrapperFactory().CreateNewNameValueCollection();
+                    INameValueCollection headersCollection = new StoreResponseNameValueCollection();
                     await this.tokenProvider.AddAuthorizationHeaderAsync(
                             headersCollection,
                             endpointUrl,

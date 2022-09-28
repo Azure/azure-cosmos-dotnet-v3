@@ -68,13 +68,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Unlike <see cref="Resource.ResourceId"/>, which is set internally, this Id is settable by the user and is not immutable.
         /// </para>
         /// <para>
-        /// When working with document resources, they too have this settable Id property. 
-        /// If an Id is not supplied by the user the SDK will automatically generate a new GUID and assign its value to this property before
-        /// persisting the document in the database. 
-        /// You can override this auto Id generation by setting the disableAutomaticIdGeneration parameter on the <see cref="Microsoft.Azure.Cosmos.DocumentClient"/> instance to true.
-        /// This will prevent the SDK from generating new Ids. 
-        /// </para>
-        /// <para>
         /// The following characters are restricted and cannot be used in the Id property:
         ///  '/', '\\', '?', '#'
         /// </para>

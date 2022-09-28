@@ -36,13 +36,11 @@ namespace Microsoft.Azure.Cosmos.Json
                 Number, Number, Number, Number, Number, Number, Number, Number,
                 Number, Number, Number, Number, Number, Number, Number, Number,
 
-                // Encoded 1-byte system string (32 values)
+                // Encoded 1-byte system string (64 values)
                 String, String, String, String, String, String, String, String,
                 String, String, String, String, String, String, String, String,
                 String, String, String, String, String, String, String, String,
                 String, String, String, String, String, String, String, String,
-
-                // Encoded 1-byte user string (32 values)
                 String, String, String, String, String, String, String, String,
                 String, String, String, String, String, String, String, String,
                 String, String, String, String, String, String, String, String,

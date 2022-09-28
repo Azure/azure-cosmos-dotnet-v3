@@ -17,8 +17,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry;
-    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
-    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -266,7 +264,8 @@ namespace Microsoft.Azure.Cosmos
                     trace,
                     task,
                     openTelemetry,
-                    operationName);
+                    operationName,
+                    requestOptions);
             }
         }
 
@@ -295,7 +294,8 @@ namespace Microsoft.Azure.Cosmos
                         trace,
                         task,
                         openTelemetry,
-                        operationName);
+                        operationName,
+                        requestOptions);
                 }
             });
         }
@@ -471,22 +471,24 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             Func<ITrace, Task<TResult>> task,
             Func<TResult, OpenTelemetryAttributes> openTelemetry,
-            string operationName)
+            string operationName,
+            RequestOptions requestOptions)
         {
             using (OpenTelemetryCoreRecorder recorder = 
                                 OpenTelemetryRecorderFactory.CreateRecorder(
                                     operationName: operationName,
-                                    isFeatureEnabled: this.clientOptions.EnableOpenTelemetry))
+                                    requestOptions: requestOptions,
+                                    clientContext: this.isDisposed ? null : this))
             using (new ActivityScope(Guid.NewGuid()))
             {
                 try
                 {
+                    // Record Operation Name
+                    recorder.Record(OpenTelemetryAttributeKeys.DbOperation, operationName);
+
                     TResult result = await task(trace).ConfigureAwait(false);
                     if (openTelemetry != null && recorder.IsEnabled)
                     {
-                        // Record client and other information
-                        recorder.Record(operationName, this);
-
                         // Record request response information
                         OpenTelemetryAttributes response = openTelemetry(result);
                         recorder.Record(response);
