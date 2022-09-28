@@ -153,7 +153,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             IList<string> exceptionsForContainerAttribute = new List<string>
             {
-                "Cosmos.Typed FeedIterator ReadNextAsync",
                 "Cosmos.CreateDatabaseAsync",
                 "Cosmos.ReadAsync",
                 "Cosmos.DeleteAsync",
@@ -162,7 +161,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             IList<string> exceptionsForDbNameAttribute = new List<string>
             {
-                "Cosmos.Typed FeedIterator ReadNextAsync",
                 "Cosmos.DeleteAsync",
                 "Cosmos.ExecuteAsync"
             };

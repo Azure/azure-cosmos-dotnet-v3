@@ -17,9 +17,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal FeedIteratorInlineCore(
             FeedIterator<T> feedIterator,
-            CosmosClientContext clientContext,
-            ContainerInternal container,
-            string databaseId = null)
+            CosmosClientContext clientContext)
         {
             if (!(feedIterator is FeedIteratorInternal<T> feedIteratorInternal))
             {
@@ -29,8 +27,8 @@ namespace Microsoft.Azure.Cosmos
             this.feedIteratorInternal = feedIteratorInternal;
             this.clientContext = clientContext;
 
-            this.container = container;
-            this.databaseId = databaseId;
+            this.container = feedIteratorInternal.container;
+            this.databaseId = feedIteratorInternal.databaseId;
         }
 
         internal FeedIteratorInlineCore(
@@ -39,6 +37,9 @@ namespace Microsoft.Azure.Cosmos
         {
             this.feedIteratorInternal = feedIteratorInternal ?? throw new ArgumentNullException(nameof(feedIteratorInternal));
             this.clientContext = clientContext;
+
+            this.container = feedIteratorInternal.container;
+            this.databaseId = feedIteratorInternal.databaseId;
         }
 
         public override bool HasMoreResults => this.feedIteratorInternal.HasMoreResults;

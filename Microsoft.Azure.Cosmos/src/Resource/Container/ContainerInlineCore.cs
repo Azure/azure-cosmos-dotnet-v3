@@ -383,8 +383,7 @@ namespace Microsoft.Azure.Cosmos
                     queryDefinition,
                     continuationToken,
                     requestOptions),
-                    this.ClientContext,
-                    this);
+                    this.ClientContext);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -396,8 +395,7 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition,
                 continuationToken,
                 requestOptions),
-                this.ClientContext,
-                this);
+                this.ClientContext);
         }
 
         public override FeedIterator GetItemQueryStreamIterator(string queryText = null,
@@ -408,8 +406,7 @@ namespace Microsoft.Azure.Cosmos
                 queryText,
                 continuationToken,
                 requestOptions),
-                this.ClientContext,
-                this);
+                this.ClientContext);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -421,8 +418,7 @@ namespace Microsoft.Azure.Cosmos
                 queryText,
                 continuationToken,
                 requestOptions),
-                this.ClientContext,
-                this);
+                this.ClientContext);
         }
 
         public override IOrderedQueryable<T> GetItemLinqQueryable<T>(bool allowSynchronousQueryExecution = false,
@@ -515,8 +511,7 @@ namespace Microsoft.Azure.Cosmos
             return new FeedIteratorInlineCore<T>(base.GetChangeFeedIterator<T>(changeFeedStartFrom, 
                                                  changeFeedMode, 
                                                  changeFeedRequestOptions),
-                                                 this.ClientContext,
-                                                 this);
+                                                 this.ClientContext);
         }
 
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
@@ -537,8 +532,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return new FeedIteratorInlineCore(
                 base.GetItemQueryStreamIterator(feedRange, queryDefinition, continuationToken, requestOptions),
-                this.ClientContext,
-                this);
+                this.ClientContext);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -549,8 +543,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return new FeedIteratorInlineCore<T>(
                 base.GetItemQueryIterator<T>(feedRange, queryDefinition, continuationToken, requestOptions),
-                this.ClientContext,
-                this);
+                this.ClientContext);
         }
 
         public override FeedIteratorInternal GetReadFeedIterator(QueryDefinition queryDefinition, QueryRequestOptions queryRequestOptions, string resourceLink, Documents.ResourceType resourceType, string continuationToken, int pageSize)

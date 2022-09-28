@@ -40,8 +40,7 @@ namespace Microsoft.Azure.Cosmos
                 queryText,
                 continuationToken,
                 requestOptions),
-                this.ClientContext,
-                this.container);
+                this.ClientContext);
         }
 
         public override FeedIterator<T> GetConflictQueryIterator<T>(
@@ -53,8 +52,7 @@ namespace Microsoft.Azure.Cosmos
                 queryText,
                 continuationToken,
                 requestOptions),
-                this.ClientContext,
-                this.container);
+                this.ClientContext);
         }
 
         public override FeedIterator GetConflictQueryStreamIterator(
@@ -66,8 +64,7 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition,
                 continuationToken,
                 requestOptions),
-                this.ClientContext,
-                this.container);
+                this.ClientContext);
         }
 
         public override FeedIterator<T> GetConflictQueryIterator<T>(
@@ -79,8 +76,7 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition,
                 continuationToken,
                 requestOptions),
-                this.ClientContext, 
-                this.container);
+                this.ClientContext);
         }
 
         public override Task<ItemResponse<T>> ReadCurrentAsync<T>(

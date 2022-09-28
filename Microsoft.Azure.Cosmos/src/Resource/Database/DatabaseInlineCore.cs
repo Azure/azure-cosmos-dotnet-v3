@@ -140,9 +140,7 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition,
                 continuationToken,
                 requestOptions),
-                this.ClientContext,
-                null,
-                databaseId: this.Id);
+                this.ClientContext);
         }
 
         public override FeedIterator<T> GetContainerQueryIterator<T>(
@@ -154,9 +152,7 @@ namespace Microsoft.Azure.Cosmos
                 queryText,
                 continuationToken,
                 requestOptions),
-                this.ClientContext,
-                null,
-                databaseId: this.Id);
+                this.ClientContext);
         }
 
         public override FeedIterator GetContainerQueryStreamIterator(QueryDefinition queryDefinition,
@@ -167,8 +163,7 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition,
                 continuationToken,
                 requestOptions),
-                this.ClientContext,
-                null);
+                this.ClientContext);
         }
 
         public override FeedIterator GetContainerQueryStreamIterator(
@@ -180,8 +175,7 @@ namespace Microsoft.Azure.Cosmos
                 queryText,
                 continuationToken,
                 requestOptions),
-                this.ClientContext,
-                null);
+                this.ClientContext);
         }
 
         public override User GetUser(string id)
@@ -198,9 +192,7 @@ namespace Microsoft.Azure.Cosmos
                 queryText,
                 continuationToken,
                 requestOptions),
-                this.ClientContext,
-                null,
-                databaseId: this.Id);
+                this.ClientContext);
         }
 
         public override FeedIterator<T> GetUserQueryIterator<T>(
@@ -212,9 +204,7 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition,
                 continuationToken,
                 requestOptions),
-                this.ClientContext,
-                null,
-                databaseId: this.Id);
+                this.ClientContext);
         }
 
         public override Task<DatabaseResponse> ReadAsync(RequestOptions requestOptions = null,

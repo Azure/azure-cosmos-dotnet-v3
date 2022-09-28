@@ -31,8 +31,8 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             string continuationToken,
             ReadFeedPaginationOptions readFeedPaginationOptions,
             QueryRequestOptions queryRequestOptions,
-            CancellationToken cancellationToken,
-            ContainerInternal container)
+            ContainerInternal container,
+            CancellationToken cancellationToken)
         {
             this.container = container;
 

@@ -42,8 +42,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 queryDefinition,
                 continuationToken,
                 requestOptions),
-                this.ClientContext,
-                this.container);
+                this.ClientContext);
         }
 
         public override FeedIterator GetStoredProcedureQueryStreamIterator(
@@ -55,8 +54,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 queryDefinition,
                 continuationToken,
                 requestOptions),
-                this.ClientContext,
-                this.container);
+                this.ClientContext);
         }
 
         public override FeedIterator<T> GetStoredProcedureQueryIterator<T>(
@@ -68,8 +66,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 queryText,
                 continuationToken,
                 requestOptions),
-                this.ClientContext,
-                this.container);
+                this.ClientContext);
         }
 
         public override FeedIterator GetStoredProcedureQueryStreamIterator(
@@ -81,8 +78,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 queryText,
                 continuationToken,
                 requestOptions),
-                this.ClientContext, 
-                this.container);
+                this.ClientContext);
         }
 
         public override Task<StoredProcedureResponse> ReadStoredProcedureAsync(
@@ -184,8 +180,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 queryDefinition,
                 continuationToken,
                 requestOptions),
-                this.ClientContext, 
-                this.container);
+                this.ClientContext);
         }
 
         public override FeedIterator GetTriggerQueryStreamIterator(
@@ -197,8 +192,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 queryDefinition,
                 continuationToken,
                 requestOptions),
-                this.ClientContext, 
-                this.container);
+                this.ClientContext);
         }
 
         public override FeedIterator<T> GetTriggerQueryIterator<T>(
@@ -210,8 +204,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 queryText,
                 continuationToken,
                 requestOptions),
-                this.ClientContext, 
-                this.container);
+                this.ClientContext);
         }
 
         public override FeedIterator GetTriggerQueryStreamIterator(
@@ -223,8 +216,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 queryText,
                 continuationToken,
                 requestOptions),
-                this.ClientContext, 
-                this.container);
+                this.ClientContext);
         }
 
         public override Task<TriggerResponse> ReadTriggerAsync(
@@ -284,8 +276,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 queryDefinition,
                 continuationToken,
                 requestOptions),
-                this.ClientContext, 
-                this.container);
+                this.ClientContext);
         }
 
         public override FeedIterator GetUserDefinedFunctionQueryStreamIterator(
@@ -297,8 +288,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 queryDefinition,
                 continuationToken,
                 requestOptions),
-                this.ClientContext, 
-                this.container);
+                this.ClientContext);
         }
 
         public override FeedIterator<T> GetUserDefinedFunctionQueryIterator<T>(
@@ -310,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 queryText,
                 continuationToken,
                 requestOptions),
-                this.ClientContext, this.container);
+                this.ClientContext);
         }
 
         public override FeedIterator GetUserDefinedFunctionQueryStreamIterator(
@@ -322,8 +312,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 queryText,
                 continuationToken,
                 requestOptions),
-                this.ClientContext, 
-                this.container);
+                this.ClientContext);
         }
 
         public override Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(

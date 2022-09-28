@@ -1122,8 +1122,7 @@ namespace Microsoft.Azure.Cosmos
                     queryDefinition,
                     continuationToken,
                     requestOptions),
-                this.ClientContext,
-                this.container);
+                this.ClientContext);
         }
 
         /// <summary>

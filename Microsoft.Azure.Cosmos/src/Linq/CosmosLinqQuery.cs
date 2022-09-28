@@ -151,15 +151,13 @@ namespace Microsoft.Azure.Cosmos.Linq
         public FeedIterator<T> ToFeedIterator()
         {
             return new FeedIteratorInlineCore<T>(this.CreateFeedIterator(true),
-                                                 this.container.ClientContext,
-                                                 this.container);
+                                                 this.container.ClientContext);
         }
 
         public FeedIterator ToStreamIterator()
         {
             return new FeedIteratorInlineCore(this.CreateStreamIterator(true),
-                                              this.container.ClientContext,
-                                              this.container);
+                                              this.container.ClientContext);
         }
 
         public void Dispose()

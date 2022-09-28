@@ -821,8 +821,8 @@ namespace Microsoft.Azure.Cosmos
                     continuationToken,
                     readFeedPaginationOptions,
                     requestOptions,
-                    cancellationToken: default,
-                    this);
+                    this,
+                    cancellationToken: default);
             }
 
             return QueryIterator.Create(
@@ -894,8 +894,8 @@ namespace Microsoft.Azure.Cosmos
                     queryRequestOptions: queryRequestOptions,
                     continuationToken: continuationToken,
                     readFeedPaginationOptions: readFeedPaginationOptions,
-                    cancellationToken: default,
-                    container: this);
+                    container: this,
+                    cancellationToken: default);
             }
 
             return feedIterator;
