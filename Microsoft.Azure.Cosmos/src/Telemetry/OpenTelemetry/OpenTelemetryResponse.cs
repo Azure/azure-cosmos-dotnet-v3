@@ -40,28 +40,15 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
-        internal OpenTelemetryResponse(ResponseMessage responseMessage, ContainerInternal container)
+        internal OpenTelemetryResponse(ResponseMessage responseMessage, string containerName, string databaseName)
            : this(
                   statusCode: responseMessage.StatusCode,
                   requestCharge: responseMessage.Headers?.RequestCharge,
                   responseContentLength: OpenTelemetryResponse.GetPayloadSize(responseMessage),
                   diagnostics: responseMessage.Diagnostics,
                   itemCount: responseMessage.Headers?.ItemCount,
-                  databaseName: container?.Database?.Id,
-                  containerName: container?.Id,
-                  requestMessage: responseMessage.RequestMessage)
-        {
-        }
-
-        internal OpenTelemetryResponse(ResponseMessage responseMessage, string databaseId)
-           : this(
-                  statusCode: responseMessage.StatusCode,
-                  requestCharge: responseMessage.Headers?.RequestCharge,
-                  responseContentLength: OpenTelemetryResponse.GetPayloadSize(responseMessage),
-                  diagnostics: responseMessage.Diagnostics,
-                  itemCount: responseMessage.Headers?.ItemCount,
-                  databaseName: databaseId,
-                  containerName: null,
+                  databaseName: databaseName,
+                  containerName: containerName,
                   requestMessage: responseMessage.RequestMessage)
         {
         }

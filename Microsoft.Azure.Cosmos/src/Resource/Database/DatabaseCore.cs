@@ -607,9 +607,7 @@ namespace Microsoft.Azure.Cosmos
                 containerStreamIterator,
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
-                    resourceType: ResourceType.Collection),
-                null,
-                databaseId: this.Id);
+                    resourceType: ResourceType.Collection));
         }
 
         public override FeedIterator<T> GetUserQueryIterator<T>(
@@ -630,9 +628,7 @@ namespace Microsoft.Azure.Cosmos
                 userStreamIterator,
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
-                    resourceType: ResourceType.User),
-                null,
-                databaseId: this.Id);
+                    resourceType: ResourceType.User));
         }
 
         public override FeedIterator GetUserQueryStreamIterator(
@@ -724,9 +720,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     FeedResponse<ClientEncryptionKeyProperties> results = this.ClientContext.ResponseFactory.CreateQueryFeedResponse<ClientEncryptionKeyProperties>(responseMessage, ResourceType.ClientEncryptionKey);
                     return results;
-                },
-                null,
-                databaseId: this.Id);
+                });
         }
 
         private FeedIterator GetClientEncryptionKeyQueryStreamIterator(

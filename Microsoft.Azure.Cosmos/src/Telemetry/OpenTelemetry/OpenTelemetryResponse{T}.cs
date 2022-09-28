@@ -22,19 +22,6 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
-        internal OpenTelemetryResponse(FeedResponse<T> responseMessage)
-            : this(
-                  statusCode: responseMessage.StatusCode,
-                  requestCharge: responseMessage.Headers?.RequestCharge,
-                  responseContentLength: responseMessage?.Headers?.ContentLength,
-                  diagnostics: responseMessage.Diagnostics,
-                  itemCount: responseMessage.Headers?.ItemCount,
-                  databaseName: null,
-                  containerName: null,
-                  requestMessage: responseMessage.RequestMessage)
-        {
-        }
-
         internal OpenTelemetryResponse(Response<DatabaseProperties> responseMessage)
             : this(
                   statusCode: responseMessage.StatusCode,
@@ -44,19 +31,6 @@ namespace Microsoft.Azure.Cosmos
                   itemCount: responseMessage.Headers?.ItemCount,
                   databaseName: responseMessage.Resource?.Id,
                   containerName: null,
-                  requestMessage: responseMessage.RequestMessage)
-        {
-        }
-
-        internal OpenTelemetryResponse(Response<ContainerProperties> responseMessage)
-             : this(
-                  statusCode: responseMessage.StatusCode,
-                  requestCharge: responseMessage.Headers?.RequestCharge,
-                  responseContentLength: responseMessage?.Headers?.ContentLength,
-                  diagnostics: responseMessage.Diagnostics,
-                  itemCount: responseMessage.Headers?.ItemCount,
-                  databaseName: null,
-                  containerName: responseMessage.Resource?.Id,
                   requestMessage: responseMessage.RequestMessage)
         {
         }
@@ -74,28 +48,15 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
-        internal OpenTelemetryResponse(FeedResponse<T> responseMessage, ContainerInternal container)
+        internal OpenTelemetryResponse(FeedResponse<T> responseMessage, string containerName, string databaseName)
            : this(
                   statusCode: responseMessage.StatusCode,
                   requestCharge: responseMessage.Headers?.RequestCharge,
                   responseContentLength: responseMessage?.Headers?.ContentLength,
                   diagnostics: responseMessage.Diagnostics,
                   itemCount: responseMessage.Headers?.ItemCount,
-                  databaseName: container?.Database?.Id,
-                  containerName: container?.Id,
-                  requestMessage: responseMessage.RequestMessage)
-        {
-        }
-
-        internal OpenTelemetryResponse(FeedResponse<T> responseMessage, string databaseName)
-            : this(
-                  statusCode: responseMessage.StatusCode,
-                  requestCharge: responseMessage.Headers?.RequestCharge,
-                  responseContentLength: responseMessage?.Headers?.ContentLength,
-                  diagnostics: responseMessage.Diagnostics,
-                  itemCount: responseMessage.Headers?.ItemCount,
                   databaseName: databaseName,
-                  containerName: null,
+                  containerName: containerName,
                   requestMessage: responseMessage.RequestMessage)
         {
         }

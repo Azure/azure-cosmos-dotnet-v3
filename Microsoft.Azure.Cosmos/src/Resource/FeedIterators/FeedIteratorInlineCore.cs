@@ -57,9 +57,14 @@ namespace Microsoft.Azure.Cosmos
                         {
                             if (this.container == null)
                             {
-                                return new OpenTelemetryResponse(response, this.databaseId);
+                                return new OpenTelemetryResponse(
+                                    responseMessage: response, 
+                                    containerName: null,
+                                    databaseName: this.databaseId);
                             }
-                            return new OpenTelemetryResponse(response, this.container);
+                            return new OpenTelemetryResponse(responseMessage: response,
+                                    containerName: this.container?.Id,
+                                    databaseName: this.container?.Database?.Id);
                         });
         }
 

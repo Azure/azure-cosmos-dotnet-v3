@@ -227,8 +227,7 @@ namespace Microsoft.Azure.Cosmos
                 databaseStreamIterator,
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
-                    resourceType: ResourceType.Offer),
-                null);
+                    resourceType: ResourceType.Offer));
         }
 
         internal virtual FeedIterator GetOfferQueryStreamIterator(

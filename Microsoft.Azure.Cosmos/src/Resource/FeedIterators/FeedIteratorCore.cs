@@ -210,15 +210,13 @@ namespace Microsoft.Azure.Cosmos
 
         internal FeedIteratorCore(
             FeedIteratorInternal feedIterator,
-            Func<ResponseMessage, FeedResponse<T>> responseCreator,
-            ContainerInternal container,
-            string databaseId = null)
+            Func<ResponseMessage, FeedResponse<T>> responseCreator)
         {
             this.responseCreator = responseCreator;
             this.feedIterator = feedIterator;
 
-            this.databaseId = databaseId;
-            this.container = container;
+            this.databaseId = feedIterator.databaseId;
+            this.container = feedIterator.container;
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;

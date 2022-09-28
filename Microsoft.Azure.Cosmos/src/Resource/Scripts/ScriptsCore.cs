@@ -108,8 +108,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 databaseStreamIterator,
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
-                    resourceType: ResourceType.StoredProcedure),
-                container: this.container);
+                    resourceType: ResourceType.StoredProcedure));
         }
 
         public Task<StoredProcedureResponse> ReadStoredProcedureAsync(
@@ -338,8 +337,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 databaseStreamIterator,
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
-                    resourceType: ResourceType.Trigger),
-                container: this.container);
+                    resourceType: ResourceType.Trigger));
         }
 
         public Task<TriggerResponse> ReadTriggerAsync(
@@ -510,8 +508,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 databaseStreamIterator,
                 (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                     responseMessage: response,
-                    resourceType: ResourceType.UserDefinedFunction),
-                container: this.container);
+                    resourceType: ResourceType.UserDefinedFunction));
         }
 
         public Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(

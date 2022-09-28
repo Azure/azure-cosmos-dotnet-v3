@@ -94,7 +94,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             return this.clientContext.OperationHelperAsync("Change Feed Processor Read Next Async",
                                 requestOptions: this.changeFeedOptions,
                                 task: (trace) => this.ReadNextAsync(trace, cancellationToken),
-                                openTelemetry: (response) => new OpenTelemetryResponse(response, this.container),
+                                openTelemetry: (response) => new OpenTelemetryResponse(
+                                    responseMessage: response, 
+                                    containerName: this.container?.Id,
+                                    databaseName: this.container?.Database?.Id),
                                 traceComponent: TraceComponent.ChangeFeed,
                                 traceLevel: TraceLevel.Info);
         }

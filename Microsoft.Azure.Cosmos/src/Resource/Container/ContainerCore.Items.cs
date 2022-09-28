@@ -492,8 +492,7 @@ namespace Microsoft.Azure.Cosmos
 
             return new FeedIteratorCore<T>(
                 feedIterator: feedIterator,
-                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedUserTypeResponse<T>,
-                container: this);
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedUserTypeResponse<T>);
         }
 
         public override IOrderedQueryable<T> GetItemLinqQueryable<T>(
@@ -541,8 +540,7 @@ namespace Microsoft.Azure.Cosmos
 
             return new FeedIteratorCore<T>(
                 feedIterator: feedIterator,
-                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedUserTypeResponse<T>,
-                container: this);
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedUserTypeResponse<T>);
         }
 
         public override FeedIterator GetItemQueryStreamIterator(

@@ -1326,8 +1326,7 @@ namespace Microsoft.Azure.Cosmos
                     databaseStreamIterator,
                     (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
                         responseMessage: response,
-                        resourceType: ResourceType.Database),
-                    this.container);
+                        resourceType: ResourceType.Database));
         }
 
         private FeedIteratorInternal GetDatabaseQueryStreamIteratorHelper(
