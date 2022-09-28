@@ -41,7 +41,7 @@ flowchart
 
 ## Throttling retries
 
-Any HTTP 429 response from the service means the current operation is being [rate limited](https://learn.microsoft.com/azure/cosmos-db/sql/troubleshoot-request-rate-too-large) and it's handled by the [RetryHandler](../Microsoft.Azure.Cosmos/src/Handler/RetryHandler.cs) through the [ResourceThrottleRetryPolicy](../Microsoft.Azure.Cosmos/src/ResourceThrottleRetryPolicy.cs).
+Any HTTP response, with a status code `429` from the service means the current operation is being [rate limited](https://learn.microsoft.com/azure/cosmos-db/sql/troubleshoot-request-rate-too-large) and it's handled by the [RetryHandler](../Microsoft.Azure.Cosmos/src/Handler/RetryHandler.cs) through the [ResourceThrottleRetryPolicy](../Microsoft.Azure.Cosmos/src/ResourceThrottleRetryPolicy.cs).
 
 The policy will retry the operation using the delay indicated in the `x-ms-retryafter` response header up to the maximum configured in `CosmosClientOptions.MaxRetryAttemptsOnRateLimitedRequests` with a default value of 9.
 
