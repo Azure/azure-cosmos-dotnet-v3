@@ -42,48 +42,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
              IReadOnlyList<CompositeIndexUtilizationEntity> utilizedCompositeIndexes,
              IReadOnlyList<CompositeIndexUtilizationEntity> potentialCompositeIndexes)
         {
-            List<SingleIndexUtilizationEntity> utilizedSingleIndexesCopy = new List<SingleIndexUtilizationEntity>();
-            if (utilizedSingleIndexes != null)
-            {
-                foreach (SingleIndexUtilizationEntity indexUtilizationEntity in utilizedSingleIndexes)
-                {
-                    if (indexUtilizationEntity != null) utilizedSingleIndexesCopy.Add(indexUtilizationEntity);
-                }
-            }
-            
-            List<SingleIndexUtilizationEntity> potentialSingleIndexesCopy = new List<SingleIndexUtilizationEntity>();
-            if (potentialSingleIndexes != null)
-            {
-                foreach (SingleIndexUtilizationEntity indexUtilizationEntity in potentialSingleIndexes)
-                {
-                    if (indexUtilizationEntity != null) potentialSingleIndexesCopy.Add(indexUtilizationEntity);
-                }
-            }
-            
-            List<CompositeIndexUtilizationEntity> utilizedCompositeIndexesCopy = new List<CompositeIndexUtilizationEntity>();
-
-            if (utilizedCompositeIndexes != null)
-            {
-                foreach (CompositeIndexUtilizationEntity indexUtilizationEntity in utilizedCompositeIndexes)
-                {
-                    if (indexUtilizationEntity != null) utilizedCompositeIndexesCopy.Add(indexUtilizationEntity);
-                }
-            }
-
-            List<CompositeIndexUtilizationEntity> potentialCompositeIndexesCopy = new List<CompositeIndexUtilizationEntity>();
-
-            if (potentialCompositeIndexes != null)
-            {
-                foreach (CompositeIndexUtilizationEntity indexUtilizationEntity in potentialCompositeIndexes)
-                {
-                    if (indexUtilizationEntity != null) potentialCompositeIndexesCopy.Add(indexUtilizationEntity);
-                }
-            }            
-
-            this.UtilizedSingleIndexes = utilizedSingleIndexesCopy;
-            this.PotentialSingleIndexes = potentialSingleIndexesCopy;
-            this.UtilizedCompositeIndexes = utilizedCompositeIndexesCopy;
-            this.PotentialCompositeIndexes = potentialCompositeIndexesCopy;
+            this.UtilizedSingleIndexes = (utilizedSingleIndexes ?? Enumerable.Empty<SingleIndexUtilizationEntity>()).Where(item => item != null).ToList();
+            this.PotentialSingleIndexes = (potentialSingleIndexes ?? Enumerable.Empty<SingleIndexUtilizationEntity>()).Where(item => item != null).ToList();
+            this.UtilizedCompositeIndexes = (utilizedCompositeIndexes ?? Enumerable.Empty<CompositeIndexUtilizationEntity>()).Where(item => item != null).ToList();
+            this.PotentialCompositeIndexes = (potentialCompositeIndexes ?? Enumerable.Empty<CompositeIndexUtilizationEntity>()).Where(item => item != null).ToList();
         }
 
         public IReadOnlyList<SingleIndexUtilizationEntity> UtilizedSingleIndexes { get; }
@@ -104,17 +66,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 result = IndexUtilizationInfo.Empty;
                 return true;
             }
-            try
-            {
-                string indexString = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(delimitedString));
-
-                return TryCreateFromDelimitedString(indexString, out result);
-            }
-            catch
-            {
-                result = IndexUtilizationInfo.Empty;
-                return false;
-            }
+            
+            return TryCreateFromDelimitedString(System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(delimitedString)), out result);
         }
 
         /// <summary>
@@ -130,29 +83,44 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 result = IndexUtilizationInfo.Empty;
                 return true;
             }
+
             try
             {
                 result = JsonConvert.DeserializeObject<IndexUtilizationInfo>(delimitedString, new JsonSerializerSettings()
                 {
                     // Allowing null values to be resilient to Json structure change
                     MissingMemberHandling = MissingMemberHandling.Ignore,
-                    NullValueHandling = NullValueHandling.Ignore
+                    NullValueHandling = NullValueHandling.Ignore,
+                    // Ignore parsing error encountered in desrialization
+                    Error = (sender, parsingErrorEvent) => parsingErrorEvent.ErrorContext.Handled = true
                 }) ?? IndexUtilizationInfo.Empty;
 
                 return true;
             }
-            catch
+            catch (JsonException)
             {
                 result = IndexUtilizationInfo.Empty;
                 return false;
             }
         }
 
-        public static IndexUtilizationInfo CreateFromString(string delimitedString)
+        /// <summary>
+        /// Materialize the Index Utilization String into Concrete objects.
+        /// </summary>
+        /// <param name="delimitedString">The index utilization response string as sent by the back end.</param>
+        /// <param name="isBse64Encoded">The encoding of the string.</param>
+        /// <returns>Cpncrete Index utilization object.</returns>
+        public static IndexUtilizationInfo CreateFromString(string delimitedString, bool isBse64Encoded)
         {
-            if (!TryCreateFromDelimitedBase64String(delimitedString, out IndexUtilizationInfo indexUtilizationInfo))
+            IndexUtilizationInfo indexUtilizationInfo;
+
+            if (isBse64Encoded)
             {
-                throw new FormatException($"Failed to parse {nameof(IndexUtilizationInfo)} : '{delimitedString}'");
+                TryCreateFromDelimitedBase64String(delimitedString, out indexUtilizationInfo);
+            }
+            else
+            {
+                TryCreateFromDelimitedString(delimitedString, out indexUtilizationInfo);
             }
 
             return indexUtilizationInfo;

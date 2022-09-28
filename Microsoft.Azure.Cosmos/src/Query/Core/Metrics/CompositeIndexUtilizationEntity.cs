@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.IndexPlanFullFidelity = indexPlanFullFidelity;
             this.IndexImpactScore = indexImpactScore;
         }
+
         [JsonProperty(PropertyName = "IndexSpecs")]
         public IReadOnlyList<string> IndexDocumentExpressions { get; }
 

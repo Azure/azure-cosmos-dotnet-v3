@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Text;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -82,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
             this.CosmosException = cosmosException;
             this.Headers = headers ?? new Headers();
 
-            this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(this.Headers);
+            this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(this.Headers, requestMessage.Headers.IndexUtilizationText.IsNull());
 
             if (requestMessage != null && requestMessage.Trace != null)
             {
@@ -250,23 +251,16 @@ namespace Microsoft.Azure.Cosmos
         /// Decode the Index Metrics from the response headers, if exists.
         /// </summary>
         /// <param name="responseMessageHeaders">The response headers</param>
+        /// <param name="isBse64Encoded">The encoding of the IndexMetrics response</param>
         /// <returns>Lazy implementation of the pretty-printed IndexMetrics</returns>
-        static internal Lazy<string> DecodeIndexMetrics(Headers responseMessageHeaders)
+        static internal Lazy<string> DecodeIndexMetrics(Headers responseMessageHeaders, bool isBse64Encoded)
         {
             if (responseMessageHeaders?.IndexUtilizationText != null)
             {
                 return new Lazy<string>(() =>
                     {
-                        IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.Empty;
-
-                        // Try to deserialize with non-base64
-                        bool tryDeserializeNonBase64 = IndexUtilizationInfo.TryCreateFromDelimitedString(responseMessageHeaders.IndexUtilizationText, out parsedIndexUtilizationInfo);
-                        if (!tryDeserializeNonBase64)
-                        {
-                            // Retry to deserialize with base64
-                            IndexUtilizationInfo.TryCreateFromDelimitedBase64String(responseMessageHeaders.IndexUtilizationText, out parsedIndexUtilizationInfo);
-                        }
-
+                        IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText, isBse64Encoded);
+                       
                         StringBuilder stringBuilder = new StringBuilder();
                         IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
                         indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);

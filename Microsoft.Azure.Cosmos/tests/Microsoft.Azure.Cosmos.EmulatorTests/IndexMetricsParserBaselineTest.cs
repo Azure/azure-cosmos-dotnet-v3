@@ -16,9 +16,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using Antlr4.Runtime.Sharpen;
     using System.Collections.Generic;
 
-    /**
-     * End-to-end testing for IndexMetrics handling and parsing.
-     **/
+    // End-to-end testing for IndexMetrics handling and parsing.
     [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public class IndexMetricsParserBaselineTest : BaselineTests<IndexMetricsParserTestInput, IndexMetricsParserTestOutput>
     {
@@ -133,27 +131,19 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
         public override IndexMetricsParserTestOutput ExecuteTest(IndexMetricsParserTestInput input)
         {
-            try
-            {
-                QueryRequestOptions requestOptions = new QueryRequestOptions() { PopulateIndexMetrics = true };
+            QueryRequestOptions requestOptions = new QueryRequestOptions() { PopulateIndexMetrics = true };
 
-                FeedIterator<CosmosElement> itemQuery = testContainer.GetItemQueryIterator<CosmosElement>(
-                    input.Query,
-                    requestOptions: requestOptions);
+            FeedIterator<CosmosElement> itemQuery = testContainer.GetItemQueryIterator<CosmosElement>(
+                input.Query,
+                requestOptions: requestOptions);
 
-                // Index Metrics is returned fully on the first page so no need to worry about result set
-                FeedResponse<CosmosElement> page = itemQuery.ReadNextAsync().Result;
-                Assert.IsTrue(page.Headers.AllKeys().Length > 1);
-                Assert.IsNotNull(page.Headers.Get(HttpConstants.HttpHeaders.IndexUtilization), "Expected index utilization headers for query");
-                Assert.IsNotNull(page.IndexMetrics, "Expected index metrics response for query");
+            // Index Metrics is returned fully on the first page so no need to worry about result set
+            FeedResponse<CosmosElement> page = itemQuery.ReadNextAsync().Result;
+            Assert.IsTrue(page.Headers.AllKeys().Length > 1);
+            Assert.IsNotNull(page.Headers.Get(HttpConstants.HttpHeaders.IndexUtilization), "Expected index utilization headers for query");
+            Assert.IsNotNull(page.IndexMetrics, "Expected index metrics response for query");
 
-                return new IndexMetricsParserTestOutput(page.IndexMetrics);
-            }
-            catch (Exception e)
-            {
-                return new IndexMetricsParserTestOutput(String.Empty, LinqTestsCommon.BuildExceptionMessageForTest(e));
-            }
-           
+            return new IndexMetricsParserTestOutput(page.IndexMetrics);            
         }
     }
 
