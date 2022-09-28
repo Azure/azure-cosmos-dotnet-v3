@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
             this.CosmosException = cosmosException;
             this.Headers = headers ?? new Headers();
 
-            this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(this.Headers, requestMessage.Headers.IndexUtilizationText.IsNull());
+            this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(this.Headers, true);
 
             if (requestMessage != null && requestMessage.Trace != null)
             {
