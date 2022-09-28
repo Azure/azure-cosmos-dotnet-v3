@@ -7,11 +7,10 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Reflection;
+    using Cosmos.Telemetry;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
@@ -57,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
                 authKeyOrResourceToken: key);
-
+            
             CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
 
@@ -146,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual((int)maxRetryWaitTime.TotalSeconds, policy.RetryOptions.MaxRetryWaitTimeInSeconds);
             Assert.AreEqual((Documents.ConsistencyLevel)consistencyLevel, clientOptions.GetDocumentsConsistencyLevel());
             Assert.IsTrue(policy.EnablePartitionLevelFailover);
-
+            
             IReadOnlyList<string> preferredLocations = new List<string>() { Regions.AustraliaCentral, Regions.AustraliaCentral2 };
             //Verify Direct Mode settings
             cosmosClientBuilder = new CosmosClientBuilder(
@@ -159,7 +158,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 maxTcpConnectionsPerEndpoint,
                 portReuseMode,
                 enableTcpConnectionEndpointRediscovery)
-                .WithApplicationPreferredRegions(preferredLocations);
+                .WithApplicationPreferredRegions(preferredLocations)
+                .WithDistributingTracing(new DistributedTracingOptions
+                {
+                    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(100)
+                });
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
@@ -171,6 +174,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, clientOptions.PortReuseMode);
             Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), clientOptions.ApplicationPreferredRegions.ToArray());
+            Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.DistributedTracingOptions.DiagnosticsLatencyThreshold);
+            Assert.IsFalse(clientOptions.EnableDistributedTracing);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -532,6 +537,33 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             cosmosClientOptions = cosmosClientBuilder.Build(new MockDocumentClient()).ClientOptions;
             Assert.IsTrue(cosmosClientOptions.EnableUpgradeConsistencyToLocalQuorum);
+        }
+
+        [TestMethod]
+        public void InvalidApplicationNameCatchTest()
+        {
+
+            string[] illegalChars = new string[] { "<", ">", "\"", "{", "}", "\\", "[", "]", ";", ":", "@", "=", "(", ")", "," };
+            string baseName = "illegal";
+
+            foreach (string illegal in illegalChars)
+            {
+                Assert.ThrowsException<ArgumentException>(() => new CosmosClientOptions
+                {
+                    ApplicationName = baseName + illegal
+                });
+
+
+                Assert.ThrowsException<ArgumentException>(() => new CosmosClientOptions
+                {
+                    ApplicationName = illegal + baseName
+                });
+
+                Assert.ThrowsException<ArgumentException>(() => new CosmosClientOptions
+                {
+                    ApplicationName = illegal
+                });
+            }
         }
 
         private class TestWebProxy : IWebProxy

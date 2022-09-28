@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using Microsoft.Azure.Documents;
+    using Telemetry;
 
     /// <summary>
     /// The default cosmos request options
@@ -41,6 +42,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public Action<Headers> AddRequestHeaders { get; set; }
 
+        /// <summary>
+        /// Set Request Level Distributed Tracing Options.
+        /// </summary>
+        internal DistributedTracingOptions DistributedTracingOptions { get; set; }
+        
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
         /// </summary>
