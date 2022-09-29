@@ -235,13 +235,8 @@ namespace Microsoft.Azure.Cosmos
 
         private static bool IsRetriableServiceUnavailable(SubStatusCodes? subStatusCode)
         {
-            if (subStatusCode == SubStatusCodes.Unknown || 
-                (subStatusCode.HasValue && subStatusCode.Value.IsSDKGeneratedSubStatus()))
-            {
-                return true;
-            }
-
-            return false;
+            return subStatusCode == SubStatusCodes.Unknown ||
+                (subStatusCode.HasValue && subStatusCode.Value.IsSDKGeneratedSubStatus());
         }
 
         private async Task<ShouldRetryResult> ShouldRetryOnEndpointFailureAsync(
