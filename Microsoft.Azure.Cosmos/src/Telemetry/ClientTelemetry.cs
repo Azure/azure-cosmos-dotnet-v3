@@ -15,6 +15,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Handler;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Rntbd;
@@ -35,12 +37,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
 
         private readonly ClientTelemetryProperties clientTelemetryInfo;
-        private readonly DocumentClient documentClient;
         private readonly CosmosHttpClient httpClient;
         private readonly AuthorizationTokenProvider tokenProvider;
         private readonly DiagnosticsHandlerHelper diagnosticsHelper;
 
         private readonly CancellationTokenSource cancellationTokenSource;
+
+        private readonly GlobalEndpointManager globalEndpointManager;
 
         private Task telemetryTask;
 
@@ -53,32 +56,35 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Factory method to intiakize telemetry object and start observer task
         /// </summary>
         /// <param name="clientId"></param>
-        /// <param name="documentClient"></param>
+        /// <param name="httpClient"></param>
         /// <param name="userAgent"></param>
         /// <param name="connectionMode"></param>
         /// <param name="authorizationTokenProvider"></param>
         /// <param name="diagnosticsHelper"></param>
         /// <param name="preferredRegions"></param>
+        /// <param name="globalEndpointManager"></param>
         /// <returns>ClientTelemetry</returns>
         public static ClientTelemetry CreateAndStartBackgroundTelemetry(
             string clientId,
-            DocumentClient documentClient,
+            CosmosHttpClient httpClient,
             string userAgent,
             ConnectionMode connectionMode,
             AuthorizationTokenProvider authorizationTokenProvider,
             DiagnosticsHandlerHelper diagnosticsHelper,
-            IReadOnlyList<string> preferredRegions)
+            IReadOnlyList<string> preferredRegions,
+            GlobalEndpointManager globalEndpointManager)
         {
             DefaultTrace.TraceInformation("Initiating telemetry with background task.");
 
             ClientTelemetry clientTelemetry = new ClientTelemetry(
                 clientId,
-                documentClient,
+                httpClient,
                 userAgent,
                 connectionMode,
                 authorizationTokenProvider,
                 diagnosticsHelper,
-                preferredRegions);
+                preferredRegions,
+                globalEndpointManager);
 
             clientTelemetry.StartObserverTask();
 
@@ -87,16 +93,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private ClientTelemetry(
             string clientId,
-            DocumentClient documentClient,
+            CosmosHttpClient httpClient,
             string userAgent,
             ConnectionMode connectionMode,
             AuthorizationTokenProvider authorizationTokenProvider,
             DiagnosticsHandlerHelper diagnosticsHelper,
-            IReadOnlyList<string> preferredRegions)
+            IReadOnlyList<string> preferredRegions,
+            GlobalEndpointManager globalEndpointManager)
         {
-            this.documentClient = documentClient ?? throw new ArgumentNullException(nameof(documentClient));
+            this.httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             this.diagnosticsHelper = diagnosticsHelper ?? throw new ArgumentNullException(nameof(diagnosticsHelper));
             this.tokenProvider = authorizationTokenProvider ?? throw new ArgumentNullException(nameof(authorizationTokenProvider));
+
+            // Load host information from cache
+            Compute vmInformation = VmMetadataApiHandler.GetMachineInfo();
 
             this.clientTelemetryInfo = new ClientTelemetryProperties(
                 clientId: clientId, 
@@ -104,10 +114,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 userAgent: userAgent, 
                 connectionMode: connectionMode,
                 preferredRegions: preferredRegions,
-                aggregationIntervalInSec: (int)observingWindow.TotalSeconds);
+                aggregationIntervalInSec: (int)observingWindow.TotalSeconds,
+                machineId: VmMetadataApiHandler.GetMachineId(),
+                applicationRegion: vmInformation?.Location,
+                hostEnvInfo: ClientTelemetryOptions.GetHostInformation(vmInformation));
 
-            this.httpClient = documentClient.httpClient;
             this.cancellationTokenSource = new CancellationTokenSource();
+            this.globalEndpointManager = globalEndpointManager;
         }
 
         /// <summary>
@@ -138,24 +151,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         break;
                     }
 
-                    // Load account information if not available, cache is already implemented
-                    if (String.IsNullOrEmpty(this.clientTelemetryInfo.GlobalDatabaseAccountName))
+                    if (string.IsNullOrEmpty(this.clientTelemetryInfo.GlobalDatabaseAccountName))
                     {
-                        AccountProperties accountProperties = await ClientTelemetryHelper.SetAccountNameAsync(this.documentClient);
-                        this.clientTelemetryInfo.GlobalDatabaseAccountName = accountProperties?.Id;
+                        AccountProperties accountProperties = await ClientTelemetryHelper.SetAccountNameAsync(this.globalEndpointManager);
+                        this.clientTelemetryInfo.GlobalDatabaseAccountName = accountProperties.Id;
                     }
-
-                    // Load host information from cache
-                    Compute vmInformation = VmMetadataApiHandler.GetMachineInfo();
-                    if (vmInformation != null)
-                    {
-                        this.clientTelemetryInfo.ApplicationRegion = vmInformation.Location;
-                        this.clientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(vmInformation);
-                       
-                        //TODO: Set AcceleratingNetwork flag from instance metadata once it is available.
-                    }
-
-                    this.clientTelemetryInfo.MachineId = VmMetadataApiHandler.GetMachineId();
                     
                     await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
 

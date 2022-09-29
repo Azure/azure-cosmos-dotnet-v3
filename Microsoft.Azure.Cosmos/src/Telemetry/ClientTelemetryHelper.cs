@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Threading.Tasks;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 
@@ -20,14 +21,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Task to get Account Properties from cache if available otherwise make a network call.
         /// </summary>
         /// <returns>Async Task</returns>
-        internal static async Task<AccountProperties> SetAccountNameAsync(DocumentClient documentclient)
+        internal static async Task<AccountProperties> SetAccountNameAsync(GlobalEndpointManager globalEndpointManager)
         {
             DefaultTrace.TraceVerbose("Getting Account Information for Telemetry.");
             try
             {
-                if (documentclient.GlobalEndpointManager != null)
+                if (globalEndpointManager != null)
                 {
-                    return await documentclient.GlobalEndpointManager.GetDatabaseAccountAsync();
+                    return await globalEndpointManager.GetDatabaseAccountAsync();
                 }
             }
             catch (Exception ex)
