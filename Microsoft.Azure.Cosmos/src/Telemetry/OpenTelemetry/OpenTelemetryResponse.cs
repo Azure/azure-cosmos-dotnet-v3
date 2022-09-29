@@ -10,37 +10,20 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class OpenTelemetryResponse : OpenTelemetryAttributes
     {
-        internal OpenTelemetryResponse(ResponseMessage responseMessage) 
-            : this(
-                  statusCode: responseMessage.StatusCode,
-                  requestCharge: responseMessage.Headers?.RequestCharge,
-                  responseContentLength: OpenTelemetryResponse.GetPayloadSize(responseMessage),
-                  diagnostics: responseMessage.Diagnostics,
-                  itemCount: responseMessage.Headers?.ItemCount,
-                  databaseName: null,
-                  containerName: null,
-                  requestMessage: responseMessage.RequestMessage)
-        {
-        }
-
-        /// <summary>
-        /// No request message in TransactionalBatchResponse
-        /// </summary>
-        /// <param name="responseMessage"></param>
-        internal OpenTelemetryResponse(TransactionalBatchResponse responseMessage)
+        internal OpenTelemetryResponse(TransactionalBatchResponse responseMessage, string containerName = null, string databaseName = null)
            : this(
                   statusCode: responseMessage.StatusCode,
                   requestCharge: responseMessage.Headers?.RequestCharge,
                   responseContentLength: null,
                   diagnostics: responseMessage.Diagnostics,
                   itemCount: responseMessage.Headers?.ItemCount,
-                  databaseName: null,
-                  containerName: null,
+                  databaseName: databaseName,
+                  containerName: containerName,
                   requestMessage: null)
         {
         }
 
-        internal OpenTelemetryResponse(ResponseMessage responseMessage, string containerName, string databaseName)
+        internal OpenTelemetryResponse(ResponseMessage responseMessage, string containerName = null, string databaseName = null)
            : this(
                   statusCode: responseMessage.StatusCode,
                   requestCharge: responseMessage.Headers?.RequestCharge,

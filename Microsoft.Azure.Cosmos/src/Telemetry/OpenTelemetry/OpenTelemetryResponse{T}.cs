@@ -9,46 +9,20 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class OpenTelemetryResponse<T> : OpenTelemetryAttributes
     {
-        internal OpenTelemetryResponse(Response<T> responseMessage)
-                : this(
-                  statusCode: responseMessage.StatusCode,
-                  requestCharge: responseMessage.Headers?.RequestCharge,
-                  responseContentLength: responseMessage?.Headers?.ContentLength,
-                  diagnostics: responseMessage.Diagnostics,
-                  itemCount: responseMessage.Headers?.ItemCount,
-                  databaseName: null,
-                  containerName: null,
-                  requestMessage: responseMessage.RequestMessage)
+        internal OpenTelemetryResponse(FeedResponse<T> responseMessage, string containerName = null, string databaseName = null)
+        : this(
+               statusCode: responseMessage.StatusCode,
+               requestCharge: responseMessage.Headers?.RequestCharge,
+               responseContentLength: responseMessage?.Headers?.ContentLength,
+               diagnostics: responseMessage.Diagnostics,
+               itemCount: responseMessage.Headers?.ItemCount,
+               databaseName: databaseName,
+               containerName: containerName,
+               requestMessage: responseMessage.RequestMessage)
         {
         }
 
-        internal OpenTelemetryResponse(Response<DatabaseProperties> responseMessage)
-            : this(
-                  statusCode: responseMessage.StatusCode,
-                  requestCharge: responseMessage.Headers?.RequestCharge,
-                  responseContentLength: responseMessage?.Headers?.ContentLength,
-                  diagnostics: responseMessage.Diagnostics,
-                  itemCount: responseMessage.Headers?.ItemCount,
-                  databaseName: responseMessage.Resource?.Id,
-                  containerName: null,
-                  requestMessage: responseMessage.RequestMessage)
-        {
-        }
-
-        internal OpenTelemetryResponse(Response<ContainerProperties> responseMessage, string databaseName)
-            : this(
-                  statusCode: responseMessage.StatusCode,
-                  requestCharge: responseMessage.Headers?.RequestCharge,
-                  responseContentLength: responseMessage?.Headers?.ContentLength,
-                  diagnostics: responseMessage.Diagnostics,
-                  itemCount: responseMessage.Headers?.ItemCount,
-                  databaseName: databaseName,
-                  containerName: responseMessage.Resource?.Id,
-                  requestMessage: responseMessage.RequestMessage)
-        {
-        }
-
-        internal OpenTelemetryResponse(FeedResponse<T> responseMessage, string containerName, string databaseName)
+        internal OpenTelemetryResponse(Response<T> responseMessage, string containerName = null, string databaseName = null)
            : this(
                   statusCode: responseMessage.StatusCode,
                   requestCharge: responseMessage.Headers?.RequestCharge,

@@ -728,7 +728,7 @@ namespace Microsoft.Azure.Cosmos
                         trace: trace,
                         cancellationToken: cancellationToken);
                 },
-                (response) => new OpenTelemetryResponse<DatabaseProperties>(response));
+                (response) => new OpenTelemetryResponse<DatabaseProperties>(response, null, response.Resource?.Id));
         }
 
         /// <summary>
@@ -773,7 +773,7 @@ namespace Microsoft.Azure.Cosmos
                         trace: trace,
                         cancellationToken: cancellationToken);
                 },
-                (response) => new OpenTelemetryResponse<DatabaseProperties>(response));
+                (response) => new OpenTelemetryResponse<DatabaseProperties>(response, null, response.Resource?.Id));
         }
 
         /// <summary>
@@ -866,7 +866,7 @@ namespace Microsoft.Azure.Cosmos
                     return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), readResponseAfterConflict);
                 }
             },
-                (response) => new OpenTelemetryResponse<DatabaseProperties>(response));
+                (response) => new OpenTelemetryResponse<DatabaseProperties>(response, null, response.Resource?.Id));
         }
 
         /// <summary>

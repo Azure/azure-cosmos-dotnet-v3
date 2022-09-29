@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
                 nameof(CreateContainerAsync),
                 requestOptions,
                 (trace) => base.CreateContainerAsync(containerProperties, throughput, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<ContainerProperties>(response, this.Id));
+                (response) => new OpenTelemetryResponse<ContainerProperties>(response, response.Resource?.Id, this.Id));
         }
 
         public override Task<ContainerResponse> CreateContainerAsync(string id,
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
                 nameof(CreateContainerAsync),
                 requestOptions,
                 (trace) => base.CreateContainerAsync(id, partitionKeyPath, throughput, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<ContainerProperties>(response, this.Id));
+                (response) => new OpenTelemetryResponse<ContainerProperties>(response, response.Resource?.Id, this.Id));
         }
 
         public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
                 nameof(CreateContainerIfNotExistsAsync),
                 requestOptions,
                 (trace) => base.CreateContainerIfNotExistsAsync(containerProperties, throughput, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<ContainerProperties>(response, this.Id));
+                (response) => new OpenTelemetryResponse<ContainerProperties>(response, response.Resource?.Id, this.Id));
         }
 
         public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
                 nameof(CreateContainerIfNotExistsAsync),
                 requestOptions,
                 (trace) => base.CreateContainerIfNotExistsAsync(id, partitionKeyPath, throughput, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<ContainerProperties>(response, this.Id));
+                (response) => new OpenTelemetryResponse<ContainerProperties>(response, response.Resource?.Id, this.Id));
         }
 
         public override Task<ResponseMessage> CreateContainerStreamAsync(
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
                 nameof(DeleteAsync),
                 requestOptions,
                 (trace) => base.DeleteAsync(requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<DatabaseProperties>(response));
+                (response) => new OpenTelemetryResponse<DatabaseProperties>(response, null, response.Resource?.Id));
         }
 
         public override Task<ResponseMessage> DeleteStreamAsync(
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos
                 nameof(ReadAsync),
                 requestOptions,
                 (trace) => base.ReadAsync(requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<DatabaseProperties>(response));
+                (response) => new OpenTelemetryResponse<DatabaseProperties>(response, null, response.Resource?.Id));
         }
 
         public override Task<ResponseMessage> ReadStreamAsync(
@@ -281,7 +281,7 @@ namespace Microsoft.Azure.Cosmos
                 nameof(CreateContainerAsync),
                 requestOptions,
                 (trace) => base.CreateContainerAsync(containerProperties, throughputProperties, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<ContainerProperties>(response));
+                (response) => new OpenTelemetryResponse<ContainerProperties>(response, response.Resource?.Id, this.Id));
         }
 
         public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
@@ -294,7 +294,7 @@ namespace Microsoft.Azure.Cosmos
                 nameof(CreateContainerIfNotExistsAsync),
                 requestOptions,
                 (trace) => base.CreateContainerIfNotExistsAsync(containerProperties, throughputProperties, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<ContainerProperties>(response));
+                (response) => new OpenTelemetryResponse<ContainerProperties>(response, response.Resource?.Id, this.Id));
         }
 
         public override Task<ResponseMessage> CreateContainerStreamAsync(
