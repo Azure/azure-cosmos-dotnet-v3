@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
         /// A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="DatabaseProperties"/> containing the read resource record.
         /// </returns>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
-        <remarks>
+///        <remarks>
         <see cref="DatabaseResponse.Resource"/> contains the <see cref="DatabaseProperties"/> that include the resource information.
         </remarks>
         /// <example>
