@@ -644,7 +644,12 @@ namespace Microsoft.Azure.Cosmos
             catch (DocumentClientException ex)
             {
                 // Clear the caches to ensure that we don't have partial results
-                this.collectionCache = new ClientCollectionCache(this.sessionContainer, this.GatewayStoreModel, this, this.retryPolicy);
+                this.collectionCache = new ClientCollectionCache(
+                    sessionContainer: this.sessionContainer, 
+                    storeModel: this.GatewayStoreModel, 
+                    tokenProvider: this, 
+                    retryPolicy: this.retryPolicy,
+                    clientTelemetry: this.clientTelemetry);
                 this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
 
                 DefaultTrace.TraceWarning("{0} occurred while OpenAsync. Exception Message: {1}", ex.ToString(), ex.Message);
