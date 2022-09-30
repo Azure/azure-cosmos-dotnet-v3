@@ -242,7 +242,8 @@ namespace Microsoft.Azure.Cosmos
                resourceType: ResourceType.Offer,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
-               options: requestOptions);
+               options: requestOptions,
+               container: null);
         }
 
         private async Task<(T item, double requestCharge)> SingleOrDefaultAsync<T>(
