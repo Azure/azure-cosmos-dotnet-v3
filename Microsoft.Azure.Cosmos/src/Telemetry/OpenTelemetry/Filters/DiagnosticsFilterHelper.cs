@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             }
             else
             {
-                latencyThreshold = response.OperationType == OperationType.Query ? DistributedTracingOptions.DefaultQueryTimeoutThreshold : DistributedTracingOptions.DefaultCrudLatencyThreshold;
+                latencyThreshold = response.OperationType == OperationType.Query.ToOperationTypeString() ? DistributedTracingOptions.DefaultQueryTimeoutThreshold : DistributedTracingOptions.DefaultCrudLatencyThreshold;
             }
 
             return response.Diagnostics.GetClientElapsedTime() > latencyThreshold || !response.StatusCode.IsSuccess();

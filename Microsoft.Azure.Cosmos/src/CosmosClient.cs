@@ -728,7 +728,10 @@ namespace Microsoft.Azure.Cosmos
                         trace: trace,
                         cancellationToken: cancellationToken);
                 },
-                (response) => new OpenTelemetryResponse<DatabaseProperties>(response));
+                (response) => new OpenTelemetryResponse<DatabaseProperties>(
+                    responseMessage: response, 
+                    containerName: null, 
+                    databaseName: response.Resource?.Id));
         }
 
         /// <summary>
@@ -773,7 +776,10 @@ namespace Microsoft.Azure.Cosmos
                         trace: trace,
                         cancellationToken: cancellationToken);
                 },
-                (response) => new OpenTelemetryResponse<DatabaseProperties>(response));
+                (response) => new OpenTelemetryResponse<DatabaseProperties>(
+                    responseMessage: response, 
+                    containerName: null, 
+                    databaseName: response.Resource?.Id));
         }
 
         /// <summary>
@@ -866,7 +872,10 @@ namespace Microsoft.Azure.Cosmos
                     return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), readResponseAfterConflict);
                 }
             },
-                (response) => new OpenTelemetryResponse<DatabaseProperties>(response));
+                (response) => new OpenTelemetryResponse<DatabaseProperties>(
+                    responseMessage: response, 
+                    containerName: null, 
+                    databaseName: response.Resource?.Id));
         }
 
         /// <summary>
@@ -1339,6 +1348,7 @@ namespace Microsoft.Azure.Cosmos
                resourceType: ResourceType.Database,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
+               container: null,
                options: requestOptions);
         }
 
@@ -1388,6 +1398,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task InitializeContainerAsync(string databaseId, string containerId, CancellationToken cancellationToken = default)
         {
             ContainerInternal container = (ContainerInternal)this.GetContainer(databaseId, containerId);
+
             IReadOnlyList<FeedRange> feedRanges = await container.GetFeedRangesAsync(cancellationToken);
             List<Task> tasks = new List<Task>();
             foreach (FeedRange feedRange in feedRanges)

@@ -821,6 +821,7 @@ namespace Microsoft.Azure.Cosmos
                     continuationToken,
                     readFeedPaginationOptions,
                     requestOptions,
+                    this,
                     cancellationToken: default);
             }
 
@@ -893,6 +894,7 @@ namespace Microsoft.Azure.Cosmos
                     queryRequestOptions: queryRequestOptions,
                     continuationToken: continuationToken,
                     readFeedPaginationOptions: readFeedPaginationOptions,
+                    container: this,
                     cancellationToken: default);
             }
 
