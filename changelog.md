@@ -13,12 +13,12 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### <a name="3.31.0-preview"/> [3.31.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.31.0-preview) - 2022-09-30
+### <a name="3.31.0-preview"/> [3.31.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.31.0-preview) - 2022-10-03
 
 #### Added
 - [#3362](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3362) AI Integration: Adds latency based filters to add request diagnostics in Activity and some minor changes
 
-### <a name="3.31.0"/> [3.30.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.31.0) - 2022-09-30
+### <a name="3.31.0"/> [3.30.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.31.0) - 2022-10-03
 
 #### Fixed
 - [#3479](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3479) ClientRetryPolicy: Fixes behavior to handling of 503 HTTP errors
