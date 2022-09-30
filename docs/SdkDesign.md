@@ -29,7 +29,8 @@ flowchart
     UserHandlers <--> DiagnosticHandler
     DiagnosticHandler <--> TelemetryHandler
     TelemetryHandler <--> RetryHandler[Cross region retries]
-    RetryHandler <--> RouteHandler
+    RetryHandler <--> ThrottlingRetries[Throttling retries]
+    ThrottlingRetries <--> RouteHandler
     RouteHandler <--> IsPartitionedFeedOperation{{Partitioned Feed operation?}}
     IsPartitionedFeedOperation <-- No --> TransportHandler
     IsPartitionedFeedOperation <-- Yes --> InvalidPartitionExceptionRetryHandler
@@ -37,6 +38,12 @@ flowchart
     PartitionKeyRangeHandler <--> TransportHandler
     TransportHandler <--> TransportClient[[Selected Transport]]
 ```
+
+## Throttling retries
+
+Any HTTP response, with a status code `429` from the service means the current operation is being [rate limited](https://learn.microsoft.com/azure/cosmos-db/sql/troubleshoot-request-rate-too-large) and it's handled by the [RetryHandler](../Microsoft.Azure.Cosmos/src/Handler/RetryHandler.cs) through the [ResourceThrottleRetryPolicy](../Microsoft.Azure.Cosmos/src/ResourceThrottleRetryPolicy.cs).
+
+The policy will retry the operation using the delay indicated in the `x-ms-retryafter` response header up to the maximum configured in `CosmosClientOptions.MaxRetryAttemptsOnRateLimitedRequests` with a default value of 9.
 
 ## Cross region retries
 
