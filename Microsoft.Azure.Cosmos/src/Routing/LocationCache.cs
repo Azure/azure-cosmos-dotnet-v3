@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         public bool IsMetadataWriteRequestOnMultimasterAccount(DocumentServiceRequest request)
         {
             return !request.IsReadOnlyRequest && this.locationInfo.AvailableWriteLocations.Count > 1 
-                && !this.CanUseMultipleWriteLocations(request) && request.ResourceType != ResourceType.Document;
+                && !this.CanUseMultipleWriteLocations(request);
         }
 
         public Uri GetHubUri()
