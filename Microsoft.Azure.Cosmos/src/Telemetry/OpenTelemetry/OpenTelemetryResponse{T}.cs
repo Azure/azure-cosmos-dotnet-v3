@@ -44,22 +44,13 @@ namespace Microsoft.Azure.Cosmos
            string databaseName,
            string containerName,
            RequestMessage requestMessage)
-           : base(requestMessage)
+           : base(requestMessage, containerName, databaseName)
         {
             this.StatusCode = statusCode;
             this.RequestCharge = requestCharge;
             this.ResponseContentLength = responseContentLength ?? OpenTelemetryAttributes.NotAvailable;
             this.Diagnostics = diagnostics;
             this.ItemCount = itemCount ?? OpenTelemetryAttributes.NotAvailable;
-
-            if (string.IsNullOrEmpty(this.DatabaseName))
-            {
-                this.DatabaseName = databaseName ?? OpenTelemetryAttributes.NotAvailable;
-            }
-            if (string.IsNullOrEmpty(this.ContainerName))
-            {
-                this.ContainerName = containerName ?? OpenTelemetryAttributes.NotAvailable;
-            }
         }
     }
 }

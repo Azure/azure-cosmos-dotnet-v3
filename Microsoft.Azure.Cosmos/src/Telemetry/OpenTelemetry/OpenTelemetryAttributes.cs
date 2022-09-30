@@ -18,13 +18,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
         }
 
-        internal OpenTelemetryAttributes(RequestMessage requestMessage)
+        internal OpenTelemetryAttributes(RequestMessage requestMessage, string containerName, string databaseName)
         {
             this.RequestContentLength = requestMessage?.Headers?.ContentLength ?? OpenTelemetryAttributes.NotAvailable;
             this.OperationType = requestMessage?.OperationType.ToOperationTypeString() ?? OpenTelemetryAttributes.NotAvailable;
-
-            this.ContainerName = requestMessage?.ContainerId;
-            this.DatabaseName = requestMessage?.DatabaseId;
+            this.DatabaseName = requestMessage?.DatabaseId ?? databaseName ?? OpenTelemetryAttributes.NotAvailable;
+            this.ContainerName = requestMessage?.ContainerId ?? containerName ?? OpenTelemetryAttributes.NotAvailable;
         }
 
         /// <summary>
