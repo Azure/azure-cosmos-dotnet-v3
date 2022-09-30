@@ -34,7 +34,6 @@ namespace Microsoft.Azure.Cosmos
         private int serviceUnavailableRetryCount;
         private bool isReadRequest;
         private bool canUseMultipleWriteLocations;
-        private bool retryMetadataMultiMasterWrite403dot3;
         private Uri locationEndpoint;
         private RetryContext retryContext;
         private DocumentServiceRequest documentServiceRequest;
@@ -141,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
                 // set location-based routing directive based on request retry context
                 request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
 
-                if (this.retryMetadataMultiMasterWrite403dot3)
+                if (this.retryContext.RouteToHub)
                 {
                     request.RequestContext.RouteToLocation(this.globalEndpointManager.GetHubUri());
                 }
@@ -200,7 +199,7 @@ namespace Microsoft.Azure.Cosmos
                         retryOnPreferredLocations: false,
                         overwriteEndpointDiscovery: true);
 
-                    this.retryMetadataMultiMasterWrite403dot3 = true;
+                    this.retryContext.RouteToHub = true;
 
                     return retryResult;
                 }
@@ -421,6 +420,8 @@ namespace Microsoft.Azure.Cosmos
         {
             public int RetryLocationIndex { get; set; }
             public bool RetryRequestOnPreferredLocations { get; set; }
+
+            public bool RouteToHub { get; set; }
         }
     }
 }

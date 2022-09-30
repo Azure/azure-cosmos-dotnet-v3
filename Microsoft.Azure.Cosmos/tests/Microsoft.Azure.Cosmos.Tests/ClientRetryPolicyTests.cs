@@ -1,25 +1,18 @@
 ﻿namespace Microsoft.Azure.Cosmos.Client.Tests
 {
     using System;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.Routing;
-    using Moq;
     using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq;
     using System.Net;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Collections;
-    using Microsoft.Azure.Documents.Routing;
-    using System.Net.WebSockets;
-    using System.Net.Http.Headers;
-    using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
-    using System.Collections.Specialized;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Cosmos.Common;
 
