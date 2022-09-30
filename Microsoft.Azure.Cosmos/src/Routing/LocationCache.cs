@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Globalization;
     using System.Linq;
     using System.Net;
     using Microsoft.Azure.Cosmos.Core.Trace;

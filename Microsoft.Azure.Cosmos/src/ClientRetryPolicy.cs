@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 // set location-based routing directive based on request retry context
                 request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
-                
+
                 if (this.retryMetadataMultiMasterWrite403dot3)
                 {
                     request.RequestContext.RouteToLocation(this.globalEndpointManager.GetHubUri());
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos
 
                 if (this.globalEndpointManager.IsMetadataWriteRequestMultimaster(this.documentServiceRequest))
                 {
-                    Task<ShouldRetryResult> retryResult = this.ShouldRetryOnEndpointFailureAsync(
+                    ShouldRetryResult retryResult = await this.ShouldRetryOnEndpointFailureAsync(
                         isReadRequest: false,
                         markBothReadAndWriteAsUnavailable: false,
                         forceRefresh: true,
@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos
 
                     this.retryMetadataMultiMasterWrite403dot3 = true;
 
-                    return await retryResult;
+                    return retryResult;
                 }
 
                 return await this.ShouldRetryOnEndpointFailureAsync(
