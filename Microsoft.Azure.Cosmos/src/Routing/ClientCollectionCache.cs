@@ -212,16 +212,20 @@ namespace Microsoft.Azure.Cosmos.Routing
                                 await this.storeModel.ProcessMessageAsync(request))
                             {
                                 ContainerProperties containerProperties = CosmosResource.FromStream<ContainerProperties>(response);
+                                
+                                if (this.clientTelemetry != null)
+                                {
+                                    this.clientTelemetry.Collect(
+                                                    cacheRefreshSource: "ClientCollectionCache",
+                                                    statusCode: response.StatusCode,
+                                                    operationType: request.OperationType,
+                                                    resourceType: request.ResourceType,
+                                                    regionsContactedList: response.RequestStats.RegionsContacted,
+                                                    requestLatency: response.RequestStats.RequestLatency,
+                                                    subStatusCode: response.SubStatusCode.ToSubStatusCodeString(),
+                                                    containerId: containerProperties.Id);
 
-                                this.clientTelemetry.Collect(
-                                    cacheRefreshSource: "ClientCollectionCache",
-                                    statusCode: response.StatusCode,
-                                    operationType: request.OperationType,
-                                    resourceType: request.ResourceType,
-                                    regionsContactedList: response.RequestStats.RegionsContacted,
-                                    requestLatency: response.RequestStats.RequestLatency,
-                                    subStatusCode: response.SubStatusCode.ToSubStatusCodeString(),
-                                    containerId: containerProperties.Id);
+                                }
 
                                 return containerProperties;
                             }

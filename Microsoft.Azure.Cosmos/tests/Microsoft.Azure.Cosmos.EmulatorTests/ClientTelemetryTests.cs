@@ -803,6 +803,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             while (localCopyOfActualInfo == null);
 
             List<OperationInfo> actualOperationList = new List<OperationInfo>();
+            List<CacheRefreshInfo> actualCacheRefreshInfoList = new List<CacheRefreshInfo>();
             List<SystemInfo> actualSystemInformation = new List<SystemInfo>();
 
             if (localCopyOfActualInfo[0].ConnectionMode == ConnectionMode.Direct.ToString().ToUpperInvariant())
