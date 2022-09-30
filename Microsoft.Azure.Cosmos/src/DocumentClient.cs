@@ -1001,7 +1001,12 @@ namespace Microsoft.Azure.Cosmos
 
             this.GatewayStoreModel = gatewayStoreModel;
 
-            this.collectionCache = new ClientCollectionCache(this.sessionContainer, this.GatewayStoreModel, this, this.retryPolicy);
+            this.collectionCache = new ClientCollectionCache(
+                    sessionContainer: this.sessionContainer, 
+                    storeModel: this.GatewayStoreModel, 
+                    tokenProvider: this, 
+                    retryPolicy: this.retryPolicy,
+                    clientTelemetry: this.clientTelemetry);
             this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 

@@ -190,6 +190,47 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Collects Telemetry Information.
         /// </summary>
+        internal void Collect(string cacheRefreshSource,
+                            HttpStatusCode statusCode,
+                            OperationType operationType,
+                            ResourceType resourceType,
+                            HashSet<(string regionName, Uri uri)> regionsContactedList,
+                            TimeSpan? requestLatency,
+                            string subStatusCode)
+        {
+            DefaultTrace.TraceVerbose($"Collecting cacheRefreshSource {cacheRefreshSource} data for Telemetry.");
+
+            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(new List<(string regionName, Uri uri)>(regionsContactedList));
+
+            // Recording Request Latency and Request Charge
+            OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
+                                            responseSizeInBytes: null,
+                                            consistency: null,
+                                            databaseName: null,
+                                            containerName: null,
+                                            operation: operationType,
+                                            resource: resourceType,
+                                            statusCode: (int)statusCode,
+                                            subStatusCode: subStatusCode);
+
+            (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
+                    .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+                                                        ClientTelemetryOptions.RequestLatencyMax,
+                                                        ClientTelemetryOptions.RequestLatencyPrecision),
+                            requestcharge: null));
+            try
+            {
+                latency.RecordValue(requestLatency.Value.Ticks);
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Collects Telemetry Information.
+        /// </summary>
         /// <param name="cosmosDiagnostics"></param>
         /// <param name="statusCode"></param>
         /// <param name="responseSizeInBytes"></param>
@@ -218,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 throw new ArgumentNullException(nameof(cosmosDiagnostics));
             }
 
-            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics);
+            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics.GetContactedRegions());
 
             // Recording Request Latency and Request Charge
             OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),

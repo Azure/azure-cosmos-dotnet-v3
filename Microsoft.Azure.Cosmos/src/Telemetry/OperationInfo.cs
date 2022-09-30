@@ -39,6 +39,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         [JsonProperty(PropertyName = "subStatusCode")]
         public string SubStatusCode { get; }
 
+        [JsonProperty(PropertyName = "cacheRefreshSource")]
+        internal string CacheRefreshSource { get; }
+
         [JsonProperty(PropertyName = "metricInfo")]
         internal MetricInfo MetricInfo { get; set; }
 
@@ -55,7 +58,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             OperationType? operation, 
             ResourceType? resource, 
             int? statusCode,
-            string subStatusCode)
+            string subStatusCode,
+            string cacheRefreshSource = null)
         {
             this.RegionsContacted = regionsContacted;
             if (responseSizeInBytes != null)
@@ -69,6 +73,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.Resource = resource?.ToResourceTypeString();
             this.StatusCode = statusCode;
             this.SubStatusCode = subStatusCode;
+            this.CacheRefreshSource = cacheRefreshSource;
         }
 
         public OperationInfo(string regionsContacted, 

@@ -109,12 +109,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Get comma separated list of regions contacted from the diagnostic
         /// </summary>
-        /// <param name="cosmosDiagnostics"></param>
         /// <returns>Comma separated region list</returns>
-        internal static string GetContactedRegions(CosmosDiagnostics cosmosDiagnostics)
+        internal static string GetContactedRegions(IReadOnlyList<(string regionName, Uri uri)> regionList)
         {
-            IReadOnlyList<(string regionName, Uri uri)> regionList = cosmosDiagnostics.GetContactedRegions();
-
             if (regionList == null || regionList.Count == 0)
             {
                 return null;

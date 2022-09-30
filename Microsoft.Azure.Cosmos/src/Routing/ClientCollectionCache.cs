@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -22,17 +23,20 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly ICosmosAuthorizationTokenProvider tokenProvider;
         private readonly IRetryPolicyFactory retryPolicy;
         private readonly ISessionContainer sessionContainer;
+        private readonly ClientTelemetry clientTelemetry;
 
         public ClientCollectionCache(
             ISessionContainer sessionContainer,
             IStoreModel storeModel,
             ICosmosAuthorizationTokenProvider tokenProvider,
-            IRetryPolicyFactory retryPolicy)
+            IRetryPolicyFactory retryPolicy,
+            ClientTelemetry clientTelemetry)
         {
             this.storeModel = storeModel ?? throw new ArgumentNullException("storeModel");
             this.tokenProvider = tokenProvider;
             this.retryPolicy = retryPolicy;
             this.sessionContainer = sessionContainer;
+            this.clientTelemetry = clientTelemetry;
         }
 
         protected override Task<ContainerProperties> GetByRidAsync(string apiVersion,
@@ -207,6 +211,15 @@ namespace Microsoft.Azure.Cosmos.Routing
                             using (DocumentServiceResponse response =
                                 await this.storeModel.ProcessMessageAsync(request))
                             {
+
+                                this.clientTelemetry.Collect(
+                                    cacheRefreshSource: "ClientCollectionCache",
+                                    statusCode: response.StatusCode,
+                                    operationType: request.OperationType,
+                                    resourceType: request.ResourceType,
+                                    regionsContactedList: response.RequestStats.RegionsContacted,
+                                    requestLatency: response.RequestStats.RequestLatency,
+                                    subStatusCode: response.SubStatusCode.ToSubStatusCodeString());
                                 return CosmosResource.FromStream<ContainerProperties>(response);
                             }
                         }
