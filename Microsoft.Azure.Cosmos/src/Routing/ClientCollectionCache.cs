@@ -211,6 +211,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             using (DocumentServiceResponse response =
                                 await this.storeModel.ProcessMessageAsync(request))
                             {
+                                ContainerProperties containerProperties = CosmosResource.FromStream<ContainerProperties>(response);
 
                                 this.clientTelemetry.Collect(
                                     cacheRefreshSource: "ClientCollectionCache",
@@ -219,8 +220,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                                     resourceType: request.ResourceType,
                                     regionsContactedList: response.RequestStats.RegionsContacted,
                                     requestLatency: response.RequestStats.RequestLatency,
-                                    subStatusCode: response.SubStatusCode.ToSubStatusCodeString());
-                                return CosmosResource.FromStream<ContainerProperties>(response);
+                                    subStatusCode: response.SubStatusCode.ToSubStatusCodeString(),
+                                    containerId: containerProperties.Id);
+
+                                return containerProperties;
                             }
                         }
                         catch (DocumentClientException ex)

@@ -196,7 +196,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             ResourceType resourceType,
                             HashSet<(string regionName, Uri uri)> regionsContactedList,
                             TimeSpan? requestLatency,
-                            string subStatusCode)
+                            string subStatusCode,
+                            string containerId,
+                            string databaseId = null)
         {
             DefaultTrace.TraceVerbose($"Collecting cacheRefreshSource {cacheRefreshSource} data for Telemetry.");
 
@@ -206,8 +208,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
                                             responseSizeInBytes: null,
                                             consistency: null,
-                                            databaseName: null,
-                                            containerName: null,
+                                            databaseName: databaseId,
+                                            containerName: containerId,
                                             operation: operationType,
                                             resource: resourceType,
                                             statusCode: (int)statusCode,
