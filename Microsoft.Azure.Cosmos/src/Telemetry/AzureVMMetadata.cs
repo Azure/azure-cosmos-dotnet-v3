@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Newtonsoft.Json;
 
     [Serializable]
