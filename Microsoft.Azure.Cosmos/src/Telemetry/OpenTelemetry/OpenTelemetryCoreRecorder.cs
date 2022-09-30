@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 if (response.Diagnostics != null)
                 {
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics));
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics) ?? OpenTelemetryAttributes.NotAvailable);
                     CosmosDbEventSource.RecordDiagnosticsForRequests(this.config, response);
                 }
                 else

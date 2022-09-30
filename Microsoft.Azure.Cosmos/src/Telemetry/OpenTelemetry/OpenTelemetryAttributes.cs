@@ -18,13 +18,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
         }
 
-        internal OpenTelemetryAttributes(RequestMessage requestMessage)
+        internal OpenTelemetryAttributes(RequestMessage requestMessage, string containerName, string databaseName)
         {
             this.RequestContentLength = requestMessage?.Headers?.ContentLength ?? OpenTelemetryAttributes.NotAvailable;
-            this.ContainerName = requestMessage?.ContainerId ?? OpenTelemetryAttributes.NotAvailable;
-            this.DatabaseName = requestMessage?.DatabaseId ?? OpenTelemetryAttributes.NotAvailable;
-
-            this.OperationType = requestMessage?.OperationType ?? OperationType.Invalid;
+            this.OperationType = requestMessage?.OperationType.ToOperationTypeString() ?? OpenTelemetryAttributes.NotAvailable;
+            this.DatabaseName = requestMessage?.DatabaseId ?? databaseName ?? OpenTelemetryAttributes.NotAvailable;
+            this.ContainerName = requestMessage?.ContainerId ?? containerName ?? OpenTelemetryAttributes.NotAvailable;
         }
 
         /// <summary>
@@ -70,6 +69,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// OperationType
         /// </summary>
-        internal OperationType OperationType { get; set; }
+        internal string OperationType { get; set; }
     }
 }
