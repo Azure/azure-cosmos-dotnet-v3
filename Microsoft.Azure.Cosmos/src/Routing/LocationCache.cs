@@ -211,8 +211,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         public bool IsMetadataWriteRequestOnMultimasterAccount(DocumentServiceRequest request)
         {
             return !request.IsReadOnlyRequest && this.locationInfo.AvailableWriteLocations.Count > 1 
-                && request.ResourceType != ResourceType.Document && request.ResourceType != ResourceType.StoredProcedure 
-                && request.OperationType != Documents.OperationType.ExecuteJavaScript && this.CanUseMultipleWriteLocations();
+                && (request.ResourceType != ResourceType.Document || 
+                (request.OperationType != Documents.OperationType.ExecuteJavaScript && request.ResourceType == ResourceType.StoredProcedure)) 
+                && this.CanUseMultipleWriteLocations();
+
         }
 
         public Uri GetHubUri()
