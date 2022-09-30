@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Globalization;
     using System.Linq;
     using Cosmos.Util;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
 
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper

@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Rntbd;
@@ -49,6 +50,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
             = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
+
+        private ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoMap 
+            = new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>();
 
         private int numberOfFailures = 0;
 
@@ -174,7 +178,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
                         = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
 
+                    ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot
+                       = Interlocked.Exchange(ref this.cacheRefreshInfoMap, new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>());
+
                     this.clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot);
+
+                    this.clientTelemetryInfo.CacheRefreshInfo = ClientTelemetryHelper.ToListWithMetricsInfo(cacheRefreshInfoSnapshot);
 
                     await this.SendAsync();
                 }
@@ -204,8 +213,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             string regionsContacted = ClientTelemetryHelper.GetContactedRegions(new List<(string regionName, Uri uri)>(regionsContactedList));
 
-            // Recording Request Latency and Request Charge
-            OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
+            // Recording Request Latency
+            CacheRefreshInfo payloadKey = new CacheRefreshInfo(cacheRefreshSource: cacheRefreshSource,
+                                            regionsContacted: regionsContacted?.ToString(),
                                             responseSizeInBytes: null,
                                             consistency: null,
                                             databaseName: databaseId,
@@ -215,11 +225,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                             statusCode: (int)statusCode,
                                             subStatusCode: subStatusCode);
 
-            (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
-                    .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+            LongConcurrentHistogram latency = this.cacheRefreshInfoMap
+                    .GetOrAdd(payloadKey, new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                         ClientTelemetryOptions.RequestLatencyMax,
-                                                        ClientTelemetryOptions.RequestLatencyPrecision),
-                            requestcharge: null));
+                                                        ClientTelemetryOptions.RequestLatencyPrecision));
             try
             {
                 latency.RecordValue(requestLatency.Value.Ticks);

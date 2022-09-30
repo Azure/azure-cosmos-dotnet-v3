@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 
@@ -102,6 +103,30 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
 
             DefaultTrace.TraceInformation("Aggregating operation information to list done");
+
+            return payloadWithMetricInformation;
+        }
+
+        /// <summary>
+        /// Convert map with CacheRefreshInfo information to list of operations along with request latency and request charge metrics
+        /// </summary>
+        /// <param name="metrics"></param>
+        /// <returns>Collection of ReportPayload</returns>
+        internal static List<CacheRefreshInfo> ToListWithMetricsInfo(IDictionary<CacheRefreshInfo, LongConcurrentHistogram> metrics)
+        {
+            DefaultTrace.TraceInformation("Aggregating CacheRefreshInfo information to list started");
+
+            List<CacheRefreshInfo> payloadWithMetricInformation = new List<CacheRefreshInfo>();
+            foreach (KeyValuePair<CacheRefreshInfo, LongConcurrentHistogram> entry in metrics)
+            {
+                CacheRefreshInfo payloadForLatency = entry.Key;
+                payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
+                payloadForLatency.SetAggregators(entry.Value, ClientTelemetryOptions.TicksToMsFactor);
+
+                payloadWithMetricInformation.Add(payloadForLatency);
+            }
+
+            DefaultTrace.TraceInformation("Aggregating CacheRefreshInfo information to list done");
 
             return payloadWithMetricInformation;
         }

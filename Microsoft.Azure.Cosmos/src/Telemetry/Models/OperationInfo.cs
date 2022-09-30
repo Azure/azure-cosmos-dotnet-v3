@@ -11,40 +11,41 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
     using Newtonsoft.Json;
 
     [Serializable]
-    internal sealed class OperationInfo
+    internal class OperationInfo
     {
         [JsonProperty(PropertyName = "regionsContacted")]
-        internal string RegionsContacted { get; }
+        internal string RegionsContacted { get; set; }
 
         [JsonProperty(PropertyName = "greaterThan1Kb")]
         internal bool? GreaterThan1Kb { get; set; }
 
         [JsonProperty(PropertyName = "databaseName")]
-        private string DatabaseName { get; }
+        internal string DatabaseName { get; set; }
 
         [JsonProperty(PropertyName = "containerName")]
-        private string ContainerName { get; }
+        internal string ContainerName { get; set; }
 
         [JsonProperty(PropertyName = "operation")]
-        internal string Operation { get; }
+        internal string Operation { get; set; }
 
         [JsonProperty(PropertyName = "resource")]
-        internal string Resource { get; }
+        internal string Resource { get; set; }
 
         [JsonProperty(PropertyName = "consistency")]
-        internal string Consistency { get; }
+        internal string Consistency { get; set; }
 
         [JsonProperty(PropertyName = "statusCode")]
-        public int? StatusCode { get; }
+        public int? StatusCode { get; set; }
 
         [JsonProperty(PropertyName = "subStatusCode")]
-        public string SubStatusCode { get; }
-
-        [JsonProperty(PropertyName = "cacheRefreshSource")]
-        internal string CacheRefreshSource { get; }
+        public string SubStatusCode { get; set; }
 
         [JsonProperty(PropertyName = "metricInfo")]
         internal MetricInfo MetricInfo { get; set; }
+
+        internal OperationInfo()
+        {
+        }
 
         internal OperationInfo(string metricsName, string unitName)
         {
@@ -59,8 +60,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             OperationType? operation,
             ResourceType? resource,
             int? statusCode,
-            string subStatusCode,
-            string cacheRefreshSource = null)
+            string subStatusCode)
         {
             this.RegionsContacted = regionsContacted;
             if (responseSizeInBytes != null)
@@ -74,7 +74,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             this.Resource = resource?.ToResourceTypeString();
             this.StatusCode = statusCode;
             this.SubStatusCode = subStatusCode;
-            this.CacheRefreshSource = cacheRefreshSource;
         }
 
         public OperationInfo(string regionsContacted,
