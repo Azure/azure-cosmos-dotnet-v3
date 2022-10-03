@@ -5,32 +5,53 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.IO;
+    using System.Net;
     using Telemetry;
 
     internal sealed class OpenTelemetryResponse : OpenTelemetryAttributes
     {
-        internal OpenTelemetryResponse(ResponseMessage responseMessage) 
-            : base(responseMessage.RequestMessage)
+        internal OpenTelemetryResponse(TransactionalBatchResponse responseMessage, string containerName = null, string databaseName = null)
+           : this(
+                  statusCode: responseMessage.StatusCode,
+                  requestCharge: responseMessage.Headers?.RequestCharge,
+                  responseContentLength: null,
+                  diagnostics: responseMessage.Diagnostics,
+                  itemCount: responseMessage.Headers?.ItemCount,
+                  databaseName: databaseName,
+                  containerName: containerName,
+                  requestMessage: null)
         {
-            this.StatusCode = responseMessage.StatusCode;
-            this.RequestCharge = responseMessage.Headers?.RequestCharge;
-            this.ResponseContentLength = OpenTelemetryResponse.GetPayloadSize(responseMessage);
-            this.Diagnostics = responseMessage.Diagnostics;
-            this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable;
         }
 
-        /// <summary>
-        /// No request message in TransactionalBatchResponse
-        /// </summary>
-        /// <param name="responseMessage"></param>
-        internal OpenTelemetryResponse(TransactionalBatchResponse responseMessage)
-           : base(null)
+        internal OpenTelemetryResponse(ResponseMessage responseMessage, string containerName = null, string databaseName = null)
+           : this(
+                  statusCode: responseMessage.StatusCode,
+                  requestCharge: responseMessage.Headers?.RequestCharge,
+                  responseContentLength: OpenTelemetryResponse.GetPayloadSize(responseMessage),
+                  diagnostics: responseMessage.Diagnostics,
+                  itemCount: responseMessage.Headers?.ItemCount,
+                  databaseName: databaseName,
+                  containerName: containerName,
+                  requestMessage: responseMessage.RequestMessage)
         {
-            // TODO: Add Request Information in TransactionalBatchResponse
-            this.StatusCode = responseMessage.StatusCode;
-            this.RequestCharge = responseMessage.Headers?.RequestCharge;
-            this.Diagnostics = responseMessage.Diagnostics;
-            this.ItemCount = responseMessage.Headers?.ItemCount ?? OpenTelemetryAttributes.NotAvailable;
+        }
+
+        private OpenTelemetryResponse(
+            HttpStatusCode statusCode, 
+            double? requestCharge,
+            string responseContentLength,
+            CosmosDiagnostics diagnostics,
+            string itemCount,
+            string databaseName,
+            string containerName,
+            RequestMessage requestMessage)
+            : base(requestMessage, containerName, databaseName)
+        {
+            this.StatusCode = statusCode;
+            this.RequestCharge = requestCharge;
+            this.ResponseContentLength = responseContentLength ?? OpenTelemetryAttributes.NotAvailable;
+            this.Diagnostics = diagnostics;
+            this.ItemCount = itemCount ?? OpenTelemetryAttributes.NotAvailable;
         }
 
         private static string GetPayloadSize(ResponseMessage response)

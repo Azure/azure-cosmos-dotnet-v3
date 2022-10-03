@@ -559,7 +559,7 @@ namespace Microsoft.Azure.Cosmos
                 itemRequestOptions,
                 cancellationToken);
 
-            return batchOperationResult.ToResponseMessage();
+            return batchOperationResult.ToResponseMessage(cosmosContainerCore);
         }
 
         private bool IsBulkOperationSupported(
