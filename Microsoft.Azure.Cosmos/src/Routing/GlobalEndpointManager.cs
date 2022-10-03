@@ -95,9 +95,9 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public int PreferredLocationCount => this.connectionPolicy.PreferredLocations != null ? this.connectionPolicy.PreferredLocations.Count : 0;
 
-        public bool IsMetadataWriteRequestMultimaster(DocumentServiceRequest request)
+        public bool IsMultimasterMetadataWriteRequest(DocumentServiceRequest request)
         {
-            return this.locationCache.IsMetadataWriteRequestOnMultimasterAccount(request);
+            return this.locationCache.IsMultimasterMetadataWriteRequest(request);
         }
 
         public Uri GetHubUri()

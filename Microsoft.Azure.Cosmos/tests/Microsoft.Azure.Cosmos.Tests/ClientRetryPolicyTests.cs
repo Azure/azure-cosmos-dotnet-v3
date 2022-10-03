@@ -52,7 +52,7 @@
             //Creates a metadata write request
             DocumentServiceRequest request = this.CreateRequest(false, true);
 
-            Assert.IsTrue(endpointManager.IsMetadataWriteRequestMultimaster(request));
+            Assert.IsTrue(endpointManager.IsMultimasterMetadataWriteRequest(request));
 
             //On first attempt should get incorrect (default/non hub) location
             retryPolicy.OnBeforeSendRequest(request);

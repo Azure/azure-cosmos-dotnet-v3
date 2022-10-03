@@ -137,12 +137,14 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.retryContext != null)
             {
-                // set location-based routing directive based on request retry context
-                request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
-
                 if (this.retryContext.RouteToHub)
                 {
                     request.RequestContext.RouteToLocation(this.globalEndpointManager.GetHubUri());
+                }
+                else
+                {
+                    // set location-based routing directive based on request retry context
+                    request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
                 }
             }
 
@@ -190,17 +192,28 @@ namespace Microsoft.Azure.Cosmos
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
-                if (this.globalEndpointManager.IsMetadataWriteRequestMultimaster(this.documentServiceRequest))
+                if (this.globalEndpointManager.IsMultimasterMetadataWriteRequest(this.documentServiceRequest))
                 {
+                    bool forceRefresh = false;
+
+                    if (this.retryContext != null && this.retryContext.RouteToHub)
+                    {
+                        forceRefresh = true;
+                        
+                    }
+
                     ShouldRetryResult retryResult = await this.ShouldRetryOnEndpointFailureAsync(
                         isReadRequest: false,
                         markBothReadAndWriteAsUnavailable: false,
-                        forceRefresh: true,
+                        forceRefresh: forceRefresh,
                         retryOnPreferredLocations: false,
                         overwriteEndpointDiscovery: true);
 
-                    this.retryContext.RouteToHub = true;
-
+                    if (retryResult.ShouldRetry)
+                    {
+                        this.retryContext.RouteToHub = true;
+                    }
+                    
                     return retryResult;
                 }
 

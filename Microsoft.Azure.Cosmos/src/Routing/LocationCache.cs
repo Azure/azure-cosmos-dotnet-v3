@@ -208,11 +208,16 @@ namespace Microsoft.Azure.Cosmos.Routing
                 preferenceList: preferredLocations);
         }
 
-        public bool IsMetadataWriteRequestOnMultimasterAccount(DocumentServiceRequest request)
+        public bool IsMetaData(DocumentServiceRequest request)
         {
-            return !request.IsReadOnlyRequest && this.locationInfo.AvailableWriteLocations.Count > 1 
-                && (request.ResourceType != ResourceType.Document || 
-                (request.OperationType != Documents.OperationType.ExecuteJavaScript && request.ResourceType == ResourceType.StoredProcedure)) 
+            return (request.OperationType != Documents.OperationType.ExecuteJavaScript && request.ResourceType == ResourceType.StoredProcedure) ||
+                request.ResourceType != ResourceType.Document;
+   
+        }
+        public bool IsMultimasterMetadataWriteRequest(DocumentServiceRequest request)
+        {
+            return !request.IsReadOnlyRequest && this.locationInfo.AvailableWriteLocations.Count > 1
+                && this.IsMetaData(request) 
                 && this.CanUseMultipleWriteLocations();
 
         }
