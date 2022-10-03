@@ -39,6 +39,14 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             }
         }
 
+        public override void Visit(SqlAllScalarExpression sqlExistsScalarExpression)
+        {
+            this.writer.Write("ALL");
+            this.WriteStartContext("(");
+            sqlExistsScalarExpression.Subquery.Accept(this);
+            this.WriteEndContext(")");
+        }
+
         public override void Visit(SqlArrayCreateScalarExpression sqlArrayCreateScalarExpression)
         {
             int numberOfItems = sqlArrayCreateScalarExpression.Items.Count();
