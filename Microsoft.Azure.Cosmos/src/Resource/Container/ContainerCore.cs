@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -342,7 +343,8 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedStartFrom: changeFeedStartFrom,
                 changeFeedMode: changeFeedMode,
                 changeFeedRequestOptions: changeFeedRequestOptions,
-                clientContext: this.ClientContext);
+                clientContext: this.ClientContext,
+                container: this);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
@@ -372,6 +374,7 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedStartFrom: changeFeedStartFrom,
                 changeFeedMode: changeFeedMode,
                 changeFeedRequestOptions: changeFeedRequestOptions,
+                container: this,
                 clientContext: this.ClientContext);
 
             return new FeedIteratorCore<T>(
@@ -657,7 +660,8 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedMode: changeFeedMode,
                 changeFeedRequestOptions: changeFeedRequestOptions,
                 clientContext: this.ClientContext,
-                changeFeedQuerySpec: changeFeedQuerySpec);
+                changeFeedQuerySpec: changeFeedQuerySpec,
+                container: this);
         }
 
         public override FeedIterator<T> GetChangeFeedIteratorWithQuery<T>(
@@ -689,6 +693,7 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedMode: changeFeedMode,
                 changeFeedRequestOptions: changeFeedRequestOptions,
                 clientContext: this.ClientContext,
+                container: this,
                 changeFeedQuerySpec: changeFeedQuerySpec);
 
             return new FeedIteratorCore<T>(
