@@ -797,7 +797,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         break;
                     }
 
-                    Assert.IsTrue(stopwatch.Elapsed.TotalMinutes < 1, $"The expected operation count({expectedOperationCount}) was never hit, Actual Operation Count is {actualOperationSet.Count}.  ActualInfo:{JsonConvert.SerializeObject(this.actualInfo)}");
+                    Assert.IsTrue(stopwatch.Elapsed.TotalSeconds < 10, $"The expected operation count({expectedOperationCount}) was never hit, Actual Operation Count is {actualOperationSet.Count}.  ActualInfo:{JsonConvert.SerializeObject(this.actualInfo)}");
                 }
             }
             while (localCopyOfActualInfo == null);
@@ -902,7 +902,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (expectedOperationRecordCountMap != null)
             {
-                Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo<string,long>(actualOperationRecordCountMap), $"actual record i.e. ({actualOperationRecordCountMap}) for operation does not match with expected record i.e. ({expectedOperationRecordCountMap})");
+                    Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo<string,long>(actualOperationRecordCountMap), $"actual record i.e. ({actualOperationRecordCountMap}) for operation does not match with expected record i.e. ({expectedOperationRecordCountMap})");
             }
         }
 
