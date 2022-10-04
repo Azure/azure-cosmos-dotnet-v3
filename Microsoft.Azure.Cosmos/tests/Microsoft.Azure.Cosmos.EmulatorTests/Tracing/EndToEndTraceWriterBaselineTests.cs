@@ -70,13 +70,11 @@
                 builder
                     .AddCustomHandlers(requestHandler));
 
-#if !PREVIEW
             client.ClientOptions.EnableDistributedTracing = true;
             bulkClient.ClientOptions.EnableDistributedTracing = true;
             throttleClient.ClientOptions.EnableDistributedTracing = true;
             miscCosmosClient.ClientOptions.EnableDistributedTracing = true;
 
-#endif
             client.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
                 DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
