@@ -137,8 +137,15 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.retryContext != null)
             {
-                // set location-based routing directive based on request retry context
-                request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
+                if (this.retryContext.RouteToHub)
+                {
+                    request.RequestContext.RouteToLocation(this.globalEndpointManager.GetHubUri());
+                }
+                else
+                {
+                    // set location-based routing directive based on request retry context
+                    request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
+                }
             }
 
             // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
@@ -184,6 +191,31 @@ namespace Microsoft.Azure.Cosmos
                 DefaultTrace.TraceWarning("ClientRetryPolicy: Endpoint not writable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
+                if (this.globalEndpointManager.IsMultimasterMetadataWriteRequest(this.documentServiceRequest))
+                {
+                    bool forceRefresh = false;
+
+                    if (this.retryContext != null && this.retryContext.RouteToHub)
+                    {
+                        forceRefresh = true;
+                        
+                    }
+
+                    ShouldRetryResult retryResult = await this.ShouldRetryOnEndpointFailureAsync(
+                        isReadRequest: false,
+                        markBothReadAndWriteAsUnavailable: false,
+                        forceRefresh: forceRefresh,
+                        retryOnPreferredLocations: false,
+                        overwriteEndpointDiscovery: true);
+
+                    if (retryResult.ShouldRetry)
+                    {
+                        this.retryContext.RouteToHub = true;
+                    }
+                    
+                    return retryResult;
+                }
 
                 return await this.ShouldRetryOnEndpointFailureAsync(
                     isReadRequest: false,
@@ -243,9 +275,10 @@ namespace Microsoft.Azure.Cosmos
             bool isReadRequest,
             bool markBothReadAndWriteAsUnavailable,
             bool forceRefresh,
-            bool retryOnPreferredLocations)
+            bool retryOnPreferredLocations,
+            bool overwriteEndpointDiscovery = false)
         {
-            if (!this.enableEndpointDiscovery || this.failoverRetryCount > MaxRetryCount)
+            if (this.failoverRetryCount > MaxRetryCount || (!this.enableEndpointDiscovery && !overwriteEndpointDiscovery))
             {
                 DefaultTrace.TraceInformation("ClientRetryPolicy: ShouldRetryOnEndpointFailureAsync() Not retrying. Retry count = {0}, Endpoint = {1}", 
                     this.failoverRetryCount,
@@ -255,7 +288,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.failoverRetryCount++;
 
-            if (this.locationEndpoint != null)
+            if (this.locationEndpoint != null && !overwriteEndpointDiscovery)
             {
                 if (isReadRequest || markBothReadAndWriteAsUnavailable)
                 {
@@ -400,6 +433,8 @@ namespace Microsoft.Azure.Cosmos
         {
             public int RetryLocationIndex { get; set; }
             public bool RetryRequestOnPreferredLocations { get; set; }
+
+            public bool RouteToHub { get; set; }
         }
     }
 }
