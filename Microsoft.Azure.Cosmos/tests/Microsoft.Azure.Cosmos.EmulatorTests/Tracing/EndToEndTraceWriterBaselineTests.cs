@@ -28,7 +28,6 @@
     {
         public static CosmosClient client;
         public static CosmosClient bulkClient;
-        public static CosmosClient throttleClient;
         public static CosmosClient miscCosmosClient;
 
         public static Database database;
@@ -44,50 +43,25 @@
         public static async Task ClassInitAsync(TestContext context)
         {
             testListener = new OpenTelemetryListener(OpenTelemetryAttributeKeys.DiagnosticNamespace);
-
-            string errorMessage = "Mock throttle exception" + Guid.NewGuid().ToString();
-            Guid exceptionActivityId = Guid.NewGuid();
-            
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
                 useGateway: false);
             bulkClient = TestCommon.CreateCosmosClient(builder => builder
                 .WithBulkExecution(true));
             // Set a small retry count to reduce test time
-            throttleClient = TestCommon.CreateCosmosClient(builder =>
-                builder.WithThrottlingRetryOptions(
-                    maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
-                    maxRetryAttemptsOnThrottledRequests: 3)
-                    .WithBulkExecution(true)
-                    .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
-                        transportClient,
-                        (uri, resourceOperation, request) => TransportClientHelper.ReturnThrottledStoreResponseOnItemOperation(
-                            uri,
-                            resourceOperation,
-                            request,
-                            exceptionActivityId,
-                            errorMessage))));
             miscCosmosClient = TestCommon.CreateCosmosClient(builder =>
                 builder
                     .AddCustomHandlers(requestHandler));
 
-#if !PREVIEW
             client.ClientOptions.EnableDistributedTracing = true;
             bulkClient.ClientOptions.EnableDistributedTracing = true;
-            throttleClient.ClientOptions.EnableDistributedTracing = true;
             miscCosmosClient.ClientOptions.EnableDistributedTracing = true;
 
-#endif
             client.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
                 DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
             };
 
             bulkClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
-            {
-                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
-            };
-            
-            throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
                 DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
             };
@@ -995,6 +969,24 @@
                 startLineNumber = GetLineNumber();
                 string errorMessage = "Mock throttle exception" + Guid.NewGuid().ToString();
                 Guid exceptionActivityId = Guid.NewGuid();
+                using CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
+                    builder.WithThrottlingRetryOptions(
+                        maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
+                        maxRetryAttemptsOnThrottledRequests: 3)
+                        .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
+                            transportClient,
+                            (uri, resourceOperation, request) => TransportClientHelper.ReturnThrottledStoreResponseOnItemOperation(
+                                uri,
+                                resourceOperation,
+                                request,
+                                exceptionActivityId,
+                                errorMessage))));
+
+                throttleClient.ClientOptions.EnableDistributedTracing = true;
+                throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
+                {
+                    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
+                };
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
                 Container containerWithThrottleException = throttleClient.GetContainer(
@@ -1261,6 +1253,27 @@
             //----------------------------------------------------------------
             {
                 startLineNumber = GetLineNumber();
+                string errorMessage = "Mock throttle exception" + Guid.NewGuid().ToString();
+                Guid exceptionActivityId = Guid.NewGuid();
+                using CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
+                    builder.WithThrottlingRetryOptions(
+                        maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
+                        maxRetryAttemptsOnThrottledRequests: 3)
+                        .WithBulkExecution(true)
+                        .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
+                            transportClient,
+                            (uri, resourceOperation, request) => TransportClientHelper.ReturnThrottledStoreResponseOnItemOperation(
+                                uri,
+                                resourceOperation,
+                                request,
+                                exceptionActivityId,
+                                errorMessage))));
+
+                throttleClient.ClientOptions.EnableDistributedTracing = true;
+                throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
+                {
+                    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
+                };
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
                 Container containerWithThrottleException = throttleClient.GetContainer(
