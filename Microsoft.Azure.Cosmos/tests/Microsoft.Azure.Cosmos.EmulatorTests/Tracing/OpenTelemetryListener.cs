@@ -156,13 +156,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "Cosmos.CreateDatabaseAsync",
                 "Cosmos.ReadAsync",
                 "Cosmos.DeleteAsync",
-                "Cosmos.ExecuteAsync"
+                "Cosmos.ExecuteAsync",
+                "Cosmos.DeleteStreamAsync"
             };
 
             IList<string> exceptionsForDbNameAttribute = new List<string>
             {
                 "Cosmos.DeleteAsync",
-                "Cosmos.ExecuteAsync"
+                "Cosmos.ExecuteAsync",
+                "Cosmos.DeleteStreamAsync"
             };
 
             if ((tag.Key == OpenTelemetryAttributeKeys.ContainerName && !exceptionsForContainerAttribute.Contains(name)) || 
