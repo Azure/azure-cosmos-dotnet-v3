@@ -246,7 +246,7 @@ namespace Microsoft.Azure.Cosmos
                 return this.ShouldRetryOnSessionNotAvailable();
             }
 
-            // Received 503.0 due to client connect timeout or Gateway
+            // Received 503 due to client connect timeout or Gateway
             if (statusCode == HttpStatusCode.ServiceUnavailable
                 && ClientRetryPolicy.IsRetriableServiceUnavailable(subStatusCode))
             {
