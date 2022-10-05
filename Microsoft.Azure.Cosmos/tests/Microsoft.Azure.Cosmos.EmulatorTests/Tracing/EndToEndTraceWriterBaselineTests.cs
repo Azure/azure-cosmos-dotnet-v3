@@ -969,7 +969,7 @@
                 startLineNumber = GetLineNumber();
                 string errorMessage = "Mock throttle exception" + Guid.NewGuid().ToString();
                 Guid exceptionActivityId = Guid.NewGuid();
-                CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
+                using CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
                     builder.WithThrottlingRetryOptions(
                         maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
                         maxRetryAttemptsOnThrottledRequests: 3)
@@ -1256,7 +1256,7 @@
                 startLineNumber = GetLineNumber();
                 string errorMessage = "Mock throttle exception" + Guid.NewGuid().ToString();
                 Guid exceptionActivityId = Guid.NewGuid();
-                CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
+                using CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
                     builder.WithThrottlingRetryOptions(
                         maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
                         maxRetryAttemptsOnThrottledRequests: 3)
