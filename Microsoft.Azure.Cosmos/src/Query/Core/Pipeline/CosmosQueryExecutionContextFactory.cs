@@ -250,6 +250,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                             inputParameters.PartitionKey != null,
                             cosmosQueryContext.UseSystemPrefix,
                             createQueryPipelineTrace,
+                            containerQueryProperties.GeospatialType,
                             cancellationToken);
                     }
                 }

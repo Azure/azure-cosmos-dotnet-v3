@@ -351,6 +351,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             FeedRangeInternal feedRangeInternal,
             QueryRequestOptions requestOptions,
+            GeospatialType geospatialType,
             CancellationToken cancellationToken = default)
         {
             if (queryDefinition == null)
@@ -418,6 +419,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKeyDefinition,
                 requestOptions.PartitionKey.HasValue,
                 useSystemPrefix: QueryIterator.IsSystemPrefixExpected(requestOptions),
+                geospatialType: geospatialType,
                 cancellationToken);
 
             if (tryGetQueryInfoAndIfSupported.Failed)

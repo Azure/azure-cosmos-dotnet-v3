@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             bool hasLogicalPartitionKey,
             bool useSystemPrefix,
             ITrace trace,
+            GeospatialType geospatialType,
             CancellationToken cancellationToken = default)
         {
             if (queryClient == null)
@@ -70,6 +71,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     QueryPlanRetriever.SupportedQueryFeatures,
                     hasLogicalPartitionKey,
                     useSystemPrefix,
+                    geospatialType,
                     cancellationToken);
 
                 if (!tryGetQueryPlan.Succeeded)

@@ -1589,7 +1589,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ContainerQueryProperties containerQueryProperties = new ContainerQueryProperties(
                     containerResponse.Resource.ResourceId,
                     null,
-                    containerResponse.Resource.PartitionKey);
+                    containerResponse.Resource.PartitionKey,
+                    containerResponse.Resource.GeospatialConfig.GeospatialType);
 
                 // There should only be one range since the EPK option is set.
                 List<PartitionKeyRange> partitionKeyRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(

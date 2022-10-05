@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
+                It.IsAny<Cosmos.GeospatialType>(),
                 It.IsAny<CancellationToken>())).ReturnsAsync(TryCatch<PartitionedQueryExecutionInfo>.FromException(innerException));
 
             Mock<ITrace> trace = new Mock<ITrace>();
@@ -73,6 +74,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
+                It.IsAny<Cosmos.GeospatialType>(),
                 It.IsAny<CancellationToken>())).ReturnsAsync(TryCatch<PartitionedQueryExecutionInfo>.FromException(expectedException));
 
             Mock<ITrace> trace = new Mock<ITrace>();

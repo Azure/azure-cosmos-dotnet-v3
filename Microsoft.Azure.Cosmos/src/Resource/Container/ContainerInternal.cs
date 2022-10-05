@@ -71,6 +71,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             FeedRangeInternal feedRangeInternal,
             QueryRequestOptions requestOptions,
+            GeospatialType geospatialType,
             CancellationToken cancellationToken = default);
 
         public abstract FeedIterator GetStandByFeedIterator(
