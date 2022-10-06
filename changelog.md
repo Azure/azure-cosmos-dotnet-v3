@@ -13,6 +13,26 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.31.0"/> [3.31.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.31.0) - 2022-10-03
+### <a name="3.31.0-preview"/> [3.31.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.31.0-preview) - 2022-10-03
+
+#### Fixed
+- [#3480](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3480) FeedRange: Fixes a NullRef in `FeedRangePartitionKey.ToString()`
+- [#3479](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3479) ClientRetryPolicy: Fixes behavior to handling of 503 HTTP errors. Introduced in 3.24.0 PR [#3008](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3008)
+- [#3431](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3431) Documentation: Fixes ApplicationRegion and ApplicationPreferredRegions remarks
+- [#3405](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3405) CosmosClient Initialization: Fixes TokenCredentialCache to respect cancellation token
+- [#3401](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3401) Change Feed Processor: Fixes LeaseLostException leaks on notification APIs
+- [#3377](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3377) Documentation: Fixes ItemRequestOptions Example
+
+#### Added
+- [#3455](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3455) CosmosClientOptions: Adds validation for ApplicationName
+- [#3449](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3449) Documentation: Adds link to supported operations doc for PatchOperationType Enum
+- [#3433](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3433) CosmosOperationCanceledException: Adds serializable functionality
+- [#3419](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3419) Documentation: Removes mention of obsolete disableAutomaticIdGeneration
+- [#3404](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3404) Patch: Adds public to `PatchOperation<T>` class for testing
+- [#3400](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3400) Query: Adds new system strings in JsonBinaryEncoding, replacing 1-byte user strings
+- [#3380](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3380) Query: Adds aggressive prefetching for `GROUP BY` and `COUNT(DISTINCT)`
+
 ### <a name="3.30.1"/> [3.30.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.30.1) - 2022-09-01
 ### <a name="3.30.1-preview"/> [3.30.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.30.1-preview) - 2022-09-01
 
