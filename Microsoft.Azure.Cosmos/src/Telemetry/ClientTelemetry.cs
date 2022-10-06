@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -182,7 +181,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                        = Interlocked.Exchange(ref this.cacheRefreshInfoMap, new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>());
 
                     this.clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot);
-
                     this.clientTelemetryInfo.CacheRefreshInfo = ClientTelemetryHelper.ToListWithMetricsInfo(cacheRefreshInfoSnapshot);
 
                     await this.SendAsync();

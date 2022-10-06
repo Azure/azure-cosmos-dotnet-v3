@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using System.Net;
     using System.Net.Http;
-    using System.Diagnostics;
     using System.Reflection;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -784,11 +783,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     // Setting the number of unique OperationInfo irrespective of response size as response size is varying in case of queries.
                     this.actualInfo
                         .ForEach(x => x.OperationInfo
-                                       .ForEach(y =>
-                                       {
-                                           y.GreaterThan1Kb = false;
-                                           actualOperationSet.Add(y);
-                                       }));
+                                .ForEach(y =>
+                                {
+                                    y.GreaterThan1Kb = false;
+                                    actualOperationSet.Add(y);
+                                }));
 
                     if (actualOperationSet.Count == expectedOperationCount / 2)
                     {
@@ -797,13 +796,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         break;
                     }
 
-                    Assert.IsTrue(stopwatch.Elapsed.TotalSeconds < 10, $"The expected operation count({expectedOperationCount}) was never hit, Actual Operation Count is {actualOperationSet.Count}.  ActualInfo:{JsonConvert.SerializeObject(this.actualInfo)}");
+                    Assert.IsTrue(stopwatch.Elapsed.TotalMinutes < 1, $"The expected operation count({expectedOperationCount}) was never hit, Actual Operation Count is {actualOperationSet.Count}.  ActualInfo:{JsonConvert.SerializeObject(this.actualInfo)}");
                 }
             }
             while (localCopyOfActualInfo == null);
 
             List<OperationInfo> actualOperationList = new List<OperationInfo>();
-            List<CacheRefreshInfo> actualCacheRefreshInfoList = new List<CacheRefreshInfo>();
             List<SystemInfo> actualSystemInformation = new List<SystemInfo>();
 
             if (localCopyOfActualInfo[0].ConnectionMode == ConnectionMode.Direct.ToString().ToUpperInvariant())

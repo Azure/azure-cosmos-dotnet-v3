@@ -21,6 +21,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
         {
         }
 
+        internal CacheRefreshInfo()
+        {
+        }
+
         internal CacheRefreshInfo(string regionsContacted,
             long? responseSizeInBytes,
             string consistency,

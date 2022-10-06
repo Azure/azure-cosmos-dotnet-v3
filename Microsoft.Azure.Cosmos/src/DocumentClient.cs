@@ -923,10 +923,10 @@ namespace Microsoft.Azure.Cosmos
                 this.sendingRequest,
                 this.receivedResponse);
 
-            this.InitializeClientTelemetry();
-
             // Loading VM Information (non blocking call and initialization won't fail if this call fails)
             VmMetadataApiHandler.TryInitialize(this.httpClient);
+
+            this.InitializeClientTelemetry();
 
             if (sessionContainer != null)
             {

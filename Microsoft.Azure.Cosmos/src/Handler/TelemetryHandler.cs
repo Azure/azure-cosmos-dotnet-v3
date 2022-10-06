@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 try
                 {
+                    Console.WriteLine("inside TelemetryHandler.............");
                     this.telemetry
                         .Collect(
                                 cosmosDiagnostics: response.Diagnostics,
