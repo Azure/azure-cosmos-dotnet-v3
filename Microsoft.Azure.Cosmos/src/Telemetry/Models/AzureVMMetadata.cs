@@ -2,10 +2,9 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Telemetry
+namespace Microsoft.Azure.Cosmos.Telemetry.Models
 {
     using System;
-    using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Newtonsoft.Json;
 
     [Serializable]
