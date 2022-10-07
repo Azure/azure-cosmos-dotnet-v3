@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using Cosmos.Util;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
-    using global::Azure;
 
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper
@@ -72,8 +71,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-
-                        Console.WriteLine(jsonObject);
                         lock (this.actualInfo)
                         {
                             this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
