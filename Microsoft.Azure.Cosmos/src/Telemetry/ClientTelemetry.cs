@@ -195,17 +195,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         /// <summary>
-        /// Collects Telemetry Information.
+        /// Collects Cache Telemetry Information.
         /// </summary>
         internal void Collect(string cacheRefreshSource,
-                            HttpStatusCode statusCode,
-                            OperationType operationType,
-                            ResourceType resourceType,
                             HashSet<(string regionName, Uri uri)> regionsContactedList,
                             TimeSpan? requestLatency,
-                            SubStatusCodes subStatusCode,
+                            HttpStatusCode statusCode,
                             string containerId,
-                            string databaseId = null)
+                            OperationType operationType,
+                            ResourceType resourceType,
+                            SubStatusCodes subStatusCode,
+                            string databaseId = null,
+                            long responseSizeInBytes = 0,
+                            string consistencyLevel = null )
         {
             if (string.IsNullOrEmpty(cacheRefreshSource))
             {
@@ -219,8 +221,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             // Recording Request Latency
             CacheRefreshInfo payloadKey = new CacheRefreshInfo(cacheRefreshSource: cacheRefreshSource,
                                             regionsContacted: regionsContacted?.ToString(),
-                                            responseSizeInBytes: null,
-                                            consistency: null,
+                                            responseSizeInBytes: responseSizeInBytes,
+                                            consistency: consistencyLevel,
                                             databaseName: databaseId,
                                             containerName: containerId,
                                             operation: operationType,

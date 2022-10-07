@@ -987,7 +987,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(cacheRefreshInfo.StatusCode, "StatusCode is null");
                 Assert.IsNotNull(cacheRefreshInfo.SubStatusCode);
                 Assert.IsNull(cacheRefreshInfo.Consistency);
-
+                Assert.IsNotNull(cacheRefreshInfo.ContainerName, "ContainerName is null");
                 Assert.IsNotNull(cacheRefreshInfo.MetricInfo, "MetricInfo is null");
                 Assert.IsNotNull(cacheRefreshInfo.MetricInfo.MetricsName, "MetricsName is null");
                 Assert.IsNotNull(cacheRefreshInfo.MetricInfo.UnitName, "UnitName is null");

@@ -217,13 +217,13 @@ namespace Microsoft.Azure.Cosmos.Routing
                                 {
                                     this.clientTelemetry.Collect(
                                                     cacheRefreshSource: "ClientCollectionCache",
-                                                    statusCode: response.StatusCode,
-                                                    operationType: request.OperationType,
-                                                    resourceType: request.ResourceType,
                                                     regionsContactedList: response.RequestStats.RegionsContacted,
                                                     requestLatency: response.RequestStats.RequestLatency,
-                                                    subStatusCode: response.SubStatusCode,
-                                                    containerId: containerProperties.Id);
+                                                    statusCode: response.StatusCode,
+                                                    containerId: containerProperties.Id,
+                                                    operationType: request.OperationType,
+                                                    resourceType: request.ResourceType,
+                                                    subStatusCode: response.SubStatusCode);
 
                                 }
 
