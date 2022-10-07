@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                                                     resourceType: request.ResourceType,
                                                     regionsContactedList: response.RequestStats.RegionsContacted,
                                                     requestLatency: response.RequestStats.RequestLatency,
-                                                    subStatusCode: response.SubStatusCode.ToSubStatusCodeString(),
+                                                    subStatusCode: response.SubStatusCode,
                                                     containerId: containerProperties.Id);
 
                                 }

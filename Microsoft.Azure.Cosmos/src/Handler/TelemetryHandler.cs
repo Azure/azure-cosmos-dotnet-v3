@@ -29,7 +29,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 try
                 {
-                    Console.WriteLine("inside TelemetryHandler.............");
                     this.telemetry
                         .Collect(
                                 cosmosDiagnostics: response.Diagnostics,
@@ -41,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 resourceType: request.ResourceType,
                                 consistencyLevel: request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
                                 requestCharge: response.Headers.RequestCharge,
-                                subStatusCode: response.Headers.SubStatusCodeLiteral);
+                                subStatusCode: response.Headers.SubStatusCode);
                 }
                 catch (Exception ex)
                 {

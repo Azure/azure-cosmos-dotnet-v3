@@ -203,10 +203,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             ResourceType resourceType,
                             HashSet<(string regionName, Uri uri)> regionsContactedList,
                             TimeSpan? requestLatency,
-                            string subStatusCode,
+                            SubStatusCodes subStatusCode,
                             string containerId,
                             string databaseId = null)
         {
+            if (string.IsNullOrEmpty(cacheRefreshSource))
+            {
+                throw new ArgumentNullException(nameof(cacheRefreshSource));
+            }
+
             DefaultTrace.TraceVerbose($"Collecting cacheRefreshSource {cacheRefreshSource} data for Telemetry.");
 
             string regionsContacted = ClientTelemetryHelper.GetContactedRegions(new List<(string regionName, Uri uri)>(regionsContactedList));
@@ -221,7 +226,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                             operation: operationType,
                                             resource: resourceType,
                                             statusCode: (int)statusCode,
-                                            subStatusCode: subStatusCode);
+                                            subStatusCode: (int)subStatusCode);
 
             LongConcurrentHistogram latency = this.cacheRefreshInfoMap
                     .GetOrAdd(payloadKey, new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
@@ -259,7 +264,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             ResourceType resourceType,
                             string consistencyLevel,
                             double requestCharge,
-                            string subStatusCode)
+                            SubStatusCodes subStatusCode)
         {
             DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
 
@@ -279,7 +284,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                             operation: operationType,
                                             resource: resourceType,
                                             statusCode: (int)statusCode,
-                                            subStatusCode: subStatusCode);
+                                            subStatusCode: (int)subStatusCode);
 
             (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
                     .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,

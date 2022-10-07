@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
         {
         }
 
+        [JsonConstructor]
         internal CacheRefreshInfo(string regionsContacted,
             long? responseSizeInBytes,
             string consistency,
@@ -33,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             OperationType? operation,
             ResourceType? resource,
             int? statusCode,
-            string subStatusCode,
+            int subStatusCode,
             string cacheRefreshSource)
         {
             this.RegionsContacted = regionsContacted;
@@ -62,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             hash = (hash * 7) ^ (this.Operation == null ? 0 : this.Operation.GetHashCode());
             hash = (hash * 7) ^ (this.Resource == null ? 0 : this.Resource.GetHashCode());
             hash = (hash * 7) ^ (this.StatusCode == null ? 0 : this.StatusCode.GetHashCode());
-            hash = (hash * 7) ^ (this.SubStatusCode == null ? 0 : this.SubStatusCode.GetHashCode());
+            hash = (hash * 7) ^ (this.SubStatusCode.GetHashCode());
             hash = (hash * 7) ^ (this.CacheRefreshSource == null ? 0 : this.CacheRefreshSource.GetHashCode());
             return hash;
         }
@@ -70,16 +71,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
         public override bool Equals(object obj)
         {
             bool isequal = obj is CacheRefreshInfo payload &&
-                   (this.RegionsContacted == null && payload.RegionsContacted == null || this.RegionsContacted != null && payload.RegionsContacted != null && this.RegionsContacted.Equals(payload.RegionsContacted)) &&
-                   (this.GreaterThan1Kb == null && payload.GreaterThan1Kb == null || this.GreaterThan1Kb != null && payload.GreaterThan1Kb != null && this.GreaterThan1Kb.Equals(payload.GreaterThan1Kb)) &&
-                   (this.Consistency == null && payload.Consistency == null || this.Consistency != null && payload.Consistency != null && this.Consistency.Equals(payload.Consistency)) &&
-                   (this.DatabaseName == null && payload.DatabaseName == null || this.DatabaseName != null && payload.DatabaseName != null && this.DatabaseName.Equals(payload.DatabaseName)) &&
-                   (this.ContainerName == null && payload.ContainerName == null || this.ContainerName != null && payload.ContainerName != null && this.ContainerName.Equals(payload.ContainerName)) &&
-                   (this.Operation == null && payload.Operation == null || this.Operation != null && payload.Operation != null && this.Operation.Equals(payload.Operation)) &&
-                   (this.Resource == null && payload.Resource == null || this.Resource != null && payload.Resource != null && this.Resource.Equals(payload.Resource)) &&
-                   (this.StatusCode == null && payload.StatusCode == null || this.StatusCode != null && payload.StatusCode != null && this.StatusCode.Equals(payload.StatusCode)) &&
-                   (this.CacheRefreshSource == null && payload.CacheRefreshSource == null || this.CacheRefreshSource != null && payload.CacheRefreshSource != null && this.CacheRefreshSource.Equals(payload.CacheRefreshSource)) &&
-                   (this.SubStatusCode == null && payload.SubStatusCode == null || this.SubStatusCode != null && payload.SubStatusCode != null && this.SubStatusCode.Equals(payload.SubStatusCode));
+                   ((this.RegionsContacted == null && payload.RegionsContacted == null) || (this.RegionsContacted != null && payload.RegionsContacted != null && this.RegionsContacted.Equals(payload.RegionsContacted))) &&
+                   ((this.GreaterThan1Kb == null && payload.GreaterThan1Kb == null) || (this.GreaterThan1Kb != null && payload.GreaterThan1Kb != null && this.GreaterThan1Kb.Equals(payload.GreaterThan1Kb))) &&
+                   ((this.Consistency == null && payload.Consistency == null) || (this.Consistency != null && payload.Consistency != null && this.Consistency.Equals(payload.Consistency))) &&
+                   ((this.DatabaseName == null && payload.DatabaseName == null) || (this.DatabaseName != null && payload.DatabaseName != null && this.DatabaseName.Equals(payload.DatabaseName))) &&
+                   ((this.ContainerName == null && payload.ContainerName == null) || (this.ContainerName != null && payload.ContainerName != null && this.ContainerName.Equals(payload.ContainerName))) &&
+                   ((this.Operation == null && payload.Operation == null) || (this.Operation != null && payload.Operation != null && this.Operation.Equals(payload.Operation))) &&
+                   ((this.Resource == null && payload.Resource == null) || (this.Resource != null && payload.Resource != null && this.Resource.Equals(payload.Resource))) &&
+                   ((this.StatusCode == null && payload.StatusCode == null) || (this.StatusCode != null && payload.StatusCode != null && this.StatusCode.Equals(payload.StatusCode))) &&
+                   ((this.CacheRefreshSource == null && payload.CacheRefreshSource == null) || (this.CacheRefreshSource != null && payload.CacheRefreshSource != null && this.CacheRefreshSource.Equals(payload.CacheRefreshSource))) &&
+                   this.SubStatusCode == payload.SubStatusCode;
 
             return isequal;
         }
