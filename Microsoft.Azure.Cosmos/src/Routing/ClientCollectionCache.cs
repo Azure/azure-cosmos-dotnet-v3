@@ -19,6 +19,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// </summary>
     internal class ClientCollectionCache : CollectionCache
     {
+        private const string TelemetrySourceName = "ClientCollectionCache";
+
         private readonly IStoreModel storeModel;
         private readonly ICosmosAuthorizationTokenProvider tokenProvider;
         private readonly IRetryPolicyFactory retryPolicy;
@@ -216,7 +218,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                                 if (this.clientTelemetry != null)
                                 {
                                     this.clientTelemetry.Collect(
-                                                    cacheRefreshSource: "ClientCollectionCache",
+                                                    cacheRefreshSource: ClientCollectionCache.TelemetrySourceName,
                                                     regionsContactedList: response.RequestStats.RegionsContacted,
                                                     requestLatency: response.RequestStats.RequestLatency,
                                                     statusCode: response.StatusCode,
