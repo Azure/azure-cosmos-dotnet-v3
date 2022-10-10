@@ -110,8 +110,7 @@ namespace Microsoft.Azure.Cosmos
                 queryText,
                 continuationToken,
                 requestOptions),
-                this.ClientContext,
-                databaseId: this.Database.Id);
+                this.ClientContext);
         }
 
         public override FeedIterator<T> GetPermissionQueryIterator<T>(
@@ -123,8 +122,7 @@ namespace Microsoft.Azure.Cosmos
                 queryDefinition,
                 continuationToken,
                 requestOptions),
-                this.ClientContext,
-                databaseId: this.Database.Id);
+                this.ClientContext);
         }
     }
 }
