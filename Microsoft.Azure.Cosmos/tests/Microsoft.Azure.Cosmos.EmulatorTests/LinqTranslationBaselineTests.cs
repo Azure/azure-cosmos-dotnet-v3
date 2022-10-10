@@ -114,6 +114,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public int? NullableField;
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value false
             public bool BooleanField;
+            public Guid GuidField;
 #pragma warning restore // Field is never assigned to, and will always have its default value false
 
             [JsonConverter(typeof(StringEnumConverter))]
@@ -150,8 +151,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public string Id;
 
             public string Pk;
-
-            public Guid GuidField;
         }
 
         class DateJsonConverter : IsoDateTimeConverter
