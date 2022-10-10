@@ -30,23 +30,26 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default)
         {
-            (OfferV2 offerV2, double requestCharge) = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: false, cancellationToken: cancellationToken);
+            if (requestOptions == null)
+            {
+                (OfferV2 nullOfferV2, _) = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: false, cancellationToken: cancellationToken);
+                if (nullOfferV2 == null)
+                {
+                    return new ThroughputResponse(HttpStatusCode.NoContent, null, null, null, null);
+                }
+            }
 
-            if (requestOptions == null && offerV2 == null)
-            {
-                return new ThroughputResponse(HttpStatusCode.NoContent, null, null, null, null);
-            }
-            else
-            {
-                return await this.GetThroughputResponseAsync(
-                    streamPayload: null,
-                    operationType: OperationType.Read,
-                    linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
-                    resourceType: ResourceType.Offer,
-                    currentRequestCharge: requestCharge,
-                    requestOptions: requestOptions,
-                    cancellationToken: cancellationToken);
-            }
+            (OfferV2 offerV2, double requestCharge) = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
+
+            return await this.GetThroughputResponseAsync(
+                streamPayload: null,
+                operationType: OperationType.Read,
+                linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
+                resourceType: ResourceType.Offer,
+                currentRequestCharge: requestCharge,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+                     
         }
 
         internal async Task<ThroughputResponse> ReadThroughputIfExistsAsync(
