@@ -636,6 +636,20 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Reads the <see cref="Microsoft.Azure.Cosmos.AccountProperties"/> for the Azure Cosmos DB account.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="AccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
+        /// </returns>
+        public virtual Task<string> ReadAccountClientConfigAsync()
+        {
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReadAccountClientConfigAsync),
+                null,
+                (trace) => ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountClientConfigurationInternalAsync(this.Endpoint));
+        }
+
+        /// <summary>
         /// Returns a proxy reference to a database. 
         /// </summary>
         /// <param name="id">The Cosmos database id</param>
