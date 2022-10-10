@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                                 
                                 if (this.clientTelemetry != null)
                                 {
-                                    this.clientTelemetry.Collect(
+                                    this.clientTelemetry.CollectCacheInfo(
                                                     cacheRefreshSource: ClientCollectionCache.TelemetrySourceName,
                                                     regionsContactedList: response.RequestStats.RegionsContacted,
                                                     requestLatency: response.RequestStats.RequestLatency,

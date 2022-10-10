@@ -80,8 +80,7 @@ namespace Microsoft.Azure.Cosmos
                desiredConsistencyLevel: clientOptions.GetDocumentsConsistencyLevel(),
                handler: httpMessageHandler,
                sessionContainer: clientOptions.SessionContainer,
-               cosmosClientId: cosmosClient.Id,
-               applicationPreferredRegions: clientOptions.ApplicationPreferredRegions);
+               cosmosClientId: cosmosClient.Id);
 
             return ClientContextCore.Create(
                 cosmosClient,

@@ -134,7 +134,6 @@ namespace Microsoft.Azure.Cosmos
         private bool enableCpuMonitor = DefaultEnableCpuMonitor;
         private int rntbdMaxConcurrentOpeningConnectionCount = 5;
         private string clientId;
-        private IReadOnlyList<string> applicationPreferredRegions;
 
         //Consistency
         private Documents.ConsistencyLevel? desiredConsistencyLevel;
@@ -422,7 +421,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="storeClientFactory">Factory that creates store clients sharing the same transport client to optimize network resource reuse across multiple document clients in the same process.</param>
         /// <param name="isLocalQuorumConsistency">Flag to allow Quorum Read with Eventual Consistency Account</param>
         /// <param name="cosmosClientId"></param>
-        /// <param name="applicationPreferredRegions"></param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -448,8 +446,7 @@ namespace Microsoft.Azure.Cosmos
                               Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
                               IStoreClientFactory storeClientFactory = null,
                               bool isLocalQuorumConsistency = false,
-                              string cosmosClientId = null,
-                              IReadOnlyList<string> applicationPreferredRegions = null)
+                              string cosmosClientId = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -481,8 +478,7 @@ namespace Microsoft.Azure.Cosmos
                 sessionContainer: sessionContainer,
                 enableCpuMonitor: enableCpuMonitor,
                 storeClientFactory: storeClientFactory,
-                cosmosClientId: cosmosClientId,
-                applicationPreferredRegions: applicationPreferredRegions);
+                cosmosClientId: cosmosClientId);
         }
 
         /// <summary>
@@ -664,8 +660,7 @@ namespace Microsoft.Azure.Cosmos
             bool? enableCpuMonitor = null,
             IStoreClientFactory storeClientFactory = null,
             TokenCredential tokenCredential = null,
-            string cosmosClientId = null,
-            IReadOnlyList<string> applicationPreferredRegions = null)
+            string cosmosClientId = null)
         {
             if (serviceEndpoint == null)
             {
@@ -673,7 +668,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.clientId = cosmosClientId;
-            this.applicationPreferredRegions = applicationPreferredRegions;
 
             this.queryPartitionProvider = new AsyncLazy<QueryPartitionProvider>(async () =>
             {
@@ -1046,7 +1040,7 @@ namespace Microsoft.Azure.Cosmos
                         connectionMode: this.ConnectionPolicy.ConnectionMode,
                         authorizationTokenProvider: this.cosmosAuthorization,
                         diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
-                        preferredRegions: this.applicationPreferredRegions,
+                        preferredRegions: this.ConnectionPolicy.PreferredLocations,
                         globalEndpointManager: this.GlobalEndpointManager);
 
                 }

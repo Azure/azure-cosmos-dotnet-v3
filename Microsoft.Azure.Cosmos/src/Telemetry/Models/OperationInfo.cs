@@ -14,31 +14,31 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
     internal class OperationInfo
     {
         [JsonProperty(PropertyName = "regionsContacted")]
-        internal string RegionsContacted { get; set; }
+        internal string RegionsContacted { get; }
 
         [JsonProperty(PropertyName = "greaterThan1Kb")]
         internal bool? GreaterThan1Kb { get; set; }
 
         [JsonProperty(PropertyName = "databaseName")]
-        internal string DatabaseName { get; set; }
+        internal string DatabaseName { get; }
 
         [JsonProperty(PropertyName = "containerName")]
-        internal string ContainerName { get; set; }
+        internal string ContainerName { get; }
 
         [JsonProperty(PropertyName = "operation")]
-        internal string Operation { get; set; }
+        internal string Operation { get; }
 
         [JsonProperty(PropertyName = "resource")]
-        internal string Resource { get; set; }
+        internal string Resource { get; }
 
         [JsonProperty(PropertyName = "consistency")]
-        internal string Consistency { get; set; }
+        internal string Consistency { get; }
 
         [JsonProperty(PropertyName = "statusCode")]
-        public int? StatusCode { get; set; }
+        public int? StatusCode { get; }
 
         [JsonProperty(PropertyName = "subStatusCode")]
-        public int SubStatusCode { get; set; }
+        public int SubStatusCode { get; }
 
         [JsonProperty(PropertyName = "metricInfo")]
         internal MetricInfo MetricInfo { get; set; }

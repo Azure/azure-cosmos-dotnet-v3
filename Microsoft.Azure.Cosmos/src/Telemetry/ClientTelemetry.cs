@@ -60,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         internal ClientTelemetry()
         {
+            this.cancellationTokenSource = new CancellationTokenSource();
         }
 
         /// <summary>
@@ -204,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Collects Cache Telemetry Information.
         /// </summary>
-        internal void Collect(string cacheRefreshSource,
+        internal void CollectCacheInfo(string cacheRefreshSource,
                             HashSet<(string regionName, Uri uri)> regionsContactedList,
                             TimeSpan? requestLatency,
                             HttpStatusCode statusCode,
@@ -223,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             DefaultTrace.TraceVerbose($"Collecting cacheRefreshSource {cacheRefreshSource} data for Telemetry.");
 
-            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(new List<(string regionName, Uri uri)>(regionsContactedList));
+            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(regionsContactedList);
 
             // Recording Request Latency
             CacheRefreshInfo payloadKey = new CacheRefreshInfo(cacheRefreshSource: cacheRefreshSource,
@@ -264,7 +265,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="consistencyLevel"></param>
         /// <param name="requestCharge"></param>
         /// <param name="subStatusCode"></param>
-        internal void Collect(CosmosDiagnostics cosmosDiagnostics,
+        internal void CollectOperationInfo(CosmosDiagnostics cosmosDiagnostics,
                             HttpStatusCode statusCode,
                             long responseSizeInBytes,
                             string containerId,
@@ -447,8 +448,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         public void Dispose()
         {
-            if (this.cancellationTokenSource != null && 
-                    !this.cancellationTokenSource.IsCancellationRequested)
+            if (!this.cancellationTokenSource.IsCancellationRequested)
             {
                 this.cancellationTokenSource.Cancel();
                 this.cancellationTokenSource.Dispose();
