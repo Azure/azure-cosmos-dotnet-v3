@@ -13,6 +13,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Reflection;
     using System.Text;
     using System.Threading;
+    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public class OpenTelemetryListener :
         EventListener,
@@ -133,16 +135,44 @@ namespace Microsoft.Azure.Cosmos.Tests
                    .Append("<OPERATION>")
                    .Append(name)
                    .Append("</OPERATION>");
+
             foreach (KeyValuePair<string, string> tag in tags)
             {
+                this.ValidateData(name, tag);
+
                 builder
                 .Append("<ATTRIBUTE-KEY>")
                 .Append(tag.Key)
                 .Append("</ATTRIBUTE-KEY>");
             }
             builder.Append("</ACTIVITY>");
-
             this.GeneratedActivities.Add(builder.ToString());
+        }
+
+        private void ValidateData(string name, KeyValuePair<string, string> tag)
+        {
+            IList<string> exceptionsForContainerAttribute = new List<string>
+            {
+                "Cosmos.CreateDatabaseAsync",
+                "Cosmos.ReadAsync",
+                "Cosmos.DeleteAsync",
+                "Cosmos.ExecuteAsync",
+                "Cosmos.DeleteStreamAsync"
+            };
+
+            IList<string> exceptionsForDbNameAttribute = new List<string>
+            {
+                "Cosmos.DeleteAsync",
+                "Cosmos.ExecuteAsync",
+                "Cosmos.DeleteStreamAsync"
+            };
+
+            if ((tag.Key == OpenTelemetryAttributeKeys.ContainerName && !exceptionsForContainerAttribute.Contains(name)) || 
+                (tag.Key == OpenTelemetryAttributeKeys.DbName && !exceptionsForDbNameAttribute.Contains(name)))
+            {
+                Assert.IsNotNull(tag.Value, $"{tag.Key} is 'null' for {name} operation");
+                Assert.AreNotEqual(OpenTelemetryAttributes.NotAvailable, tag.Value, $"{tag.Key} is {OpenTelemetryAttributes.NotAvailable} for {name} operation");
+            }
         }
 
         public List<string> GetRecordedAttributes() 

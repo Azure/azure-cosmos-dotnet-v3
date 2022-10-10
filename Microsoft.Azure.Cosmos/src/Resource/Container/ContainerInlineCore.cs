@@ -353,7 +353,10 @@ namespace Microsoft.Azure.Cosmos
                 nameof(ReadManyItemsStreamAsync),
                 null,
                 (trace) => base.ReadManyItemsStreamAsync(items, trace, readManyRequestOptions, cancellationToken),
-                (response) => new OpenTelemetryResponse(response));
+                (response) => new OpenTelemetryResponse(
+                    responseMessage: response, 
+                    containerName: this.Id,
+                    databaseName: this.Database?.Id));
         }
 
         public override Task<FeedResponse<T>> ReadManyItemsAsync<T>(
@@ -365,7 +368,10 @@ namespace Microsoft.Azure.Cosmos
                 nameof(ReadManyItemsAsync),
                 null,
                 (trace) => base.ReadManyItemsAsync<T>(items, trace, readManyRequestOptions, cancellationToken),
-                (response) => new OpenTelemetryResponse<T>(response));
+                (response) => new OpenTelemetryResponse<T>(
+                    responseMessage: response,
+                    containerName: this.Id,
+                    databaseName: this.Database?.Id));
         }
 
         public override FeedIterator GetItemQueryStreamIterator(

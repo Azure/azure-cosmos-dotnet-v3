@@ -114,7 +114,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             return this.monitoredContainer.ClientContext.OperationHelperAsync("Change Feed Estimator Read Next Async",
                                 requestOptions: null,
                                 task: (trace) => this.ReadNextAsync(trace, cancellationToken),
-                                openTelemetry: (response) => new OpenTelemetryResponse<ChangeFeedProcessorState>(response),
+                                openTelemetry: (response) => new OpenTelemetryResponse<ChangeFeedProcessorState>(
+                                    responseMessage: response, 
+                                    containerName: this.monitoredContainer?.Id,
+                                    databaseName: this.monitoredContainer?.Database?.Id ?? this.databaseName),
                                 traceComponent: TraceComponent.ChangeFeed,
                                 traceLevel: TraceLevel.Info);
         }
