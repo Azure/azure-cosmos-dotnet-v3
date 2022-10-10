@@ -2527,6 +2527,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
 
+                //use ReadFeed on fixed container with CosmosContainerSettings.NonePartitionKeyValue.
+                using (FeedIterator<dynamic> feedIterator = fixedContainer.GetItemQueryIterator<dynamic>(
+                    queryText: null,
+                    requestOptions: new QueryRequestOptions() { MaxItemCount = 10, PartitionKey = Cosmos.PartitionKey.None, }))
+                {
+                    while (feedIterator.HasMoreResults)
+                    {
+                        FeedResponse<dynamic> readFeedResponse = await feedIterator.ReadNextAsync();
+                        Assert.AreEqual(2, readFeedResponse.Count());
+                    }
+                }
+
                 //Quering items on fixed container with non-none PK.
                 using (FeedIterator<dynamic> feedIterator = fixedContainer.GetItemQueryIterator<dynamic>(
                     sql,
@@ -2536,6 +2548,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         FeedResponse<dynamic> queryResponse = await feedIterator.ReadNextAsync();
                         Assert.AreEqual(1, queryResponse.Count());
+                    }
+                }
+
+                //ReadFeed on on fixed container with non-none PK.
+                using (FeedIterator<dynamic> feedIterator = fixedContainer.GetItemQueryIterator<dynamic>(
+                    queryText: null,
+                    requestOptions: new QueryRequestOptions() { MaxItemCount = 10, PartitionKey = new Cosmos.PartitionKey(itemWithPK.partitionKey) }))
+                {
+                    while (feedIterator.HasMoreResults)
+                    {
+                        FeedResponse<dynamic> readFeedResponse = await feedIterator.ReadNextAsync();
+                        Assert.AreEqual(1, readFeedResponse.Count());
                     }
                 }
 

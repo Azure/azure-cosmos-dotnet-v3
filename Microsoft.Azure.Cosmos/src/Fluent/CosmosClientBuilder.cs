@@ -10,12 +10,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Azure;
     using global::Azure;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
+    using Telemetry;
 
     /// <summary>
     /// This is a Builder class that creates a cosmos client
@@ -409,7 +409,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
             return this;
         }
-
+        
         /// <summary>
         /// This can be used to weaken the database account consistency level for read operations.
         /// If this is not set the database account consistency level will be used for all requests.
@@ -420,20 +420,18 @@ namespace Microsoft.Azure.Cosmos.Fluent
         {
             this.clientOptions.ConsistencyLevel = consistencyLevel;
             return this;
+
         }
 
         /// <summary>
-        /// Enable OpenTelemetry and start emiting activities for each operations
+        /// If Open Telemetry listener is subscribed for Azure.Cosmos namespace, There are <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> you can leverage to control it.<br></br>
         /// </summary>
+        /// <param name="options">Tracing Options <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/></param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-            CosmosClientBuilder EnableOpenTelemetry()
+        internal CosmosClientBuilder WithDistributingTracing(DistributedTracingOptions options)
         {
-            this.clientOptions.EnableOpenTelemetry = true;
+            this.clientOptions.DistributedTracingOptions = options;
+
             return this;
         }
 

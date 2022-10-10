@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure.Core.Serialization;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.Azure.Cosmos.Scripts;
@@ -918,6 +919,123 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.itemContainer, doc1ToReplace);
         }
 
+         [TestMethod]
+        public async Task VerifyDekOperationWithSystemTextSerializer()
+        {
+            System.Text.Json.JsonSerializerOptions jsonSerializerOptions = new System.Text.Json.JsonSerializerOptions()
+            {
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            };
+
+            CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer = new CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+
+            CosmosClient clientWithCosmosSystemTextJsonSerializer = TestCommon.CreateCosmosClient(builder => builder
+                .WithCustomSerializer(cosmosSystemTextJsonSerializer)
+                .Build());
+
+            // get database and container
+            Database databaseWithCosmosSystemTextJsonSerializer = clientWithCosmosSystemTextJsonSerializer.GetDatabase(LegacyEncryptionTests.database.Id);
+            Container containerWithCosmosSystemTextJsonSerializer = databaseWithCosmosSystemTextJsonSerializer.GetContainer(LegacyEncryptionTests.itemContainer.Id);
+                        
+            // create the Dek container
+            Container dekContainerWithCosmosSystemTextJsonSerializer = await databaseWithCosmosSystemTextJsonSerializer.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", 400);
+            
+            CosmosDataEncryptionKeyProvider dekProviderWithCosmosSystemTextJsonSerializer = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
+            await dekProviderWithCosmosSystemTextJsonSerializer.InitializeAsync(databaseWithCosmosSystemTextJsonSerializer, dekContainerWithCosmosSystemTextJsonSerializer.Id);
+            
+            TestEncryptor encryptorWithCosmosSystemTextJsonSerializer =  new TestEncryptor(dekProviderWithCosmosSystemTextJsonSerializer);
+            
+            // enable encryption on container
+            Container encryptionContainerWithCosmosSystemTextJsonSerializer = containerWithCosmosSystemTextJsonSerializer.WithEncryptor(encryptorWithCosmosSystemTextJsonSerializer);
+
+            string dekId = "dekWithSystemTextJson";
+            DataEncryptionKeyProperties dekProperties = await LegacyEncryptionTests.CreateDekAsync(dekProviderWithCosmosSystemTextJsonSerializer, dekId);
+            Assert.AreEqual(
+                new EncryptionKeyWrapMetadata(LegacyEncryptionTests.metadata1.Value + LegacyEncryptionTests.metadataUpdateSuffix),
+                dekProperties.EncryptionKeyWrapMetadata);
+
+            // Use different DEK provider to avoid (unintentional) cache impact
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
+            await dekProvider.InitializeAsync(databaseWithCosmosSystemTextJsonSerializer, dekContainerWithCosmosSystemTextJsonSerializer.Id);
+            DataEncryptionKeyProperties readProperties = await dekProviderWithCosmosSystemTextJsonSerializer.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
+            Assert.AreEqual(dekProperties, readProperties);
+
+            // rewrap
+            ItemResponse<DataEncryptionKeyProperties> dekResponse = await dekProviderWithCosmosSystemTextJsonSerializer.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
+               dekId,
+               LegacyEncryptionTests.metadata2);
+
+            Assert.AreEqual(HttpStatusCode.OK, dekResponse.StatusCode);
+            dekProperties = LegacyEncryptionTests.VerifyDekResponse(
+                dekResponse,
+                dekId);
+            Assert.AreEqual(
+                new EncryptionKeyWrapMetadata(LegacyEncryptionTests.metadata2.Value + LegacyEncryptionTests.metadataUpdateSuffix),
+                dekProperties.EncryptionKeyWrapMetadata);
+
+            readProperties = await dekProviderWithCosmosSystemTextJsonSerializer.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
+            Assert.AreEqual(dekProperties, readProperties);
+
+            TestDocSystemText testDocSystemText = new TestDocSystemText()
+            {
+                Id = Guid.NewGuid().ToString(),
+                ActivityId = Guid.NewGuid().ToString(),
+                PartitionKey = "myPartitionKey",
+                Status = "Active"
+            };
+
+            // Create items that use System.Text.Json serialization attributes
+            ItemResponse<TestDocSystemText> createTestDoc = await encryptionContainerWithCosmosSystemTextJsonSerializer.CreateItemAsync(
+                testDocSystemText,
+                new PartitionKey(testDocSystemText.PartitionKey),
+                LegacyEncryptionTests.GetRequestOptions(dekId, new List<string>() { "/status"}));
+
+            Assert.AreEqual(HttpStatusCode.Created, createTestDoc.StatusCode);
+
+            string contosoV1 = "Contoso_v001";
+            string contosoV2 = "Contoso_v002";
+            string fabrikamV1 = "Fabrikam_v001";
+            string fabrikamV2 = "Fabrikam_v002";
+
+            await LegacyEncryptionTests.CreateDekAsync(dekProviderWithCosmosSystemTextJsonSerializer, contosoV1);
+            await LegacyEncryptionTests.CreateDekAsync(dekProviderWithCosmosSystemTextJsonSerializer, contosoV2);
+            await LegacyEncryptionTests.CreateDekAsync(dekProviderWithCosmosSystemTextJsonSerializer, fabrikamV1);
+            await LegacyEncryptionTests.CreateDekAsync(dekProviderWithCosmosSystemTextJsonSerializer, fabrikamV2);
+
+            // Test getting all keys
+            await LegacyEncryptionTests.IterateDekFeedAsync(
+                dekProviderWithCosmosSystemTextJsonSerializer,
+                new List<string> { dekId, contosoV1, contosoV2, fabrikamV1, fabrikamV2 },
+                isExpectedDeksCompleteSetForRequest: true,
+                isResultOrderExpected: false,
+                "SELECT * from c");
+
+            // Test getting specific subset of keys
+            await LegacyEncryptionTests.IterateDekFeedAsync(
+                dekProviderWithCosmosSystemTextJsonSerializer,
+                new List<string> { contosoV2 },
+                isExpectedDeksCompleteSetForRequest: false,
+                isResultOrderExpected: true,
+                "SELECT TOP 1 * from c where c.id >= 'Contoso_v000' and c.id <= 'Contoso_v999' ORDER BY c.id DESC");
+
+            // Ensure only required results are returned
+            await LegacyEncryptionTests.IterateDekFeedAsync(
+                dekProviderWithCosmosSystemTextJsonSerializer,
+                new List<string> { contosoV1, contosoV2 },
+                isExpectedDeksCompleteSetForRequest: true,
+                isResultOrderExpected: true,
+                "SELECT * from c where c.id >= 'Contoso_v000' and c.id <= 'Contoso_v999' ORDER BY c.id ASC");
+
+            // Test pagination
+            await LegacyEncryptionTests.IterateDekFeedAsync(
+                dekProviderWithCosmosSystemTextJsonSerializer,
+                new List<string> { dekId, contosoV1, contosoV2, fabrikamV1, fabrikamV2 },
+                isExpectedDeksCompleteSetForRequest: true,
+                isResultOrderExpected: false,
+                "SELECT * from c",
+                itemCountInPage: 3);
+        }
+
         [TestMethod]
         public async Task EncryptionTransactionalBatchConflictResponse()
         {
@@ -1559,6 +1677,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
         }
 
+        public class TestDocSystemText
+        {
+            [System.Text.Json.Serialization.JsonPropertyName("id")]
+            public string Id { get; set; }
+
+            [System.Text.Json.Serialization.JsonPropertyName("PK")]
+            public string PartitionKey { get; set; }
+
+            [System.Text.Json.Serialization.JsonPropertyName("activityId")]
+            public string ActivityId { get; set; }
+
+            [System.Text.Json.Serialization.JsonPropertyName("status")]
+            public string Status { get; set; }
+        }
+
         private class TestKeyWrapProvider : EncryptionKeyWrapProvider
         {
             public Dictionary<string, int> WrapKeyCallsCount { get; private set; }
@@ -1672,6 +1805,43 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     }
                 }
 
+                streamPayload.Position = 0;
+                return streamPayload;
+            }
+        }
+
+        internal class CosmosSystemTextJsonSerializer : CosmosSerializer
+        {
+            private readonly JsonObjectSerializer systemTextJsonSerializer;
+
+            public CosmosSystemTextJsonSerializer(System.Text.Json.JsonSerializerOptions jsonSerializerOptions)
+            {
+                this.systemTextJsonSerializer = new JsonObjectSerializer(jsonSerializerOptions);
+            }
+
+            public override T FromStream<T>(Stream stream)
+            {
+                using (stream)
+                {
+                    if (stream.CanSeek
+                           && stream.Length == 0)
+                    {
+                        return default;
+                    }
+
+                    if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                    {
+                        return (T)(object)stream;
+                    }
+
+                    return (T)this.systemTextJsonSerializer.Deserialize(stream, typeof(T), default);
+                }
+            }
+
+            public override Stream ToStream<T>(T input)
+            {
+                MemoryStream streamPayload = new MemoryStream();
+                this.systemTextJsonSerializer.Serialize(streamPayload, input, typeof(T), default);
                 streamPayload.Position = 0;
                 return streamPayload;
             }

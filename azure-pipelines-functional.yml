@@ -10,6 +10,10 @@ pr:
     include:
     - Microsoft.Azure.Cosmos/*
     - NuGet.config
+    exclude:
+    - '*.md'
+    - 'docs/**/*'
+    - 'Microsoft.Azure.Cosmos/contracts/**/*'
 
 variables:
   DebugArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal '

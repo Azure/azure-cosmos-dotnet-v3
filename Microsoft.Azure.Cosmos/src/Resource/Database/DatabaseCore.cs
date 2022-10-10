@@ -584,7 +584,9 @@ namespace Microsoft.Azure.Cosmos
                resourceType: ResourceType.Collection,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
-               options: requestOptions);
+               options: requestOptions,
+               container: null,
+               databaseId: this.Id);
         }
 
         public override FeedIterator<T> GetContainerQueryIterator<T>(
@@ -640,7 +642,9 @@ namespace Microsoft.Azure.Cosmos
                resourceType: ResourceType.User,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
-               options: requestOptions);
+               options: requestOptions,
+               container: null,
+               databaseId: this.Id);
         }
 
         public override FeedIterator<T> GetUserQueryIterator<T>(
@@ -730,7 +734,9 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: ResourceType.ClientEncryptionKey,
                 queryDefinition: queryDefinition,
                 continuationToken: continuationToken,
-                options: requestOptions);
+                options: requestOptions,
+                container: null,
+                databaseId: this.Id);
         }
 
         public async Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
