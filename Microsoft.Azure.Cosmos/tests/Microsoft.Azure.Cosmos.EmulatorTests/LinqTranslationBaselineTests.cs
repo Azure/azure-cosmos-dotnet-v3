@@ -150,6 +150,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public string Id;
 
             public string Pk;
+
+            public Guid GuidField;
         }
 
         class DateJsonConverter : IsoDateTimeConverter
@@ -663,7 +665,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 {
                     StringField = sb.ToString(),
                     Id = Guid.NewGuid().ToString(),
-                    Pk = "Test"
+                    Pk = "Test",
                 };
             };
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
@@ -758,14 +760,21 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 // Substring
                 new LinqTestInput("Substring", b => getQuery(b).Select(doc => doc.StringField.Substring(0, 1))),
                 // ToString
+                new LinqTestInput("String constant StartsWith", b => getQuery(b).Select(doc => "str".StartsWith(doc.StringField.ToString()))),
                 new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.StringField.ToString())),
+                new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.NumericField.ToString())),
+                new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.ArrayField.ToString())),
+                new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.Point.ToString())),
+                new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.BooleanField.ToString())),
+                new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.UnixTime.ToString())),
+                 new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.GuidField.ToString())),
                 // ToUpper
                 new LinqTestInput("ToUpper", b => getQuery(b).Select(doc => doc.StringField.ToUpper()))
             };
             this.ExecuteTestSuite(inputs);
-        }
+    }
 
-        [TestMethod]
+    [TestMethod]
         public void TestArrayFunctions()
         {
             const int Records = 100;
