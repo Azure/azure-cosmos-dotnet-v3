@@ -241,37 +241,6 @@ namespace Microsoft.Azure.Cosmos
 
             return responseMessage;
         }
-
-        internal ResponseMessage ToResponseMessage(ContainerInternal cosmosContainerCore)
-        {
-            Headers headers = new Headers()
-            {
-                SubStatusCode = this.SubStatusCode,
-                ETag = this.ETag,
-                RetryAfter = this.RetryAfter,
-                RequestCharge = this.RequestCharge,
-                Session = this.SessionToken,
-                ActivityId = this.ActivityId,
-            };
-
-            RequestMessage requestMessage = new ()
-            {
-                ContainerId = cosmosContainerCore?.Id,
-                DatabaseId = cosmosContainerCore?.Database?.Id
-            };
-
-            ResponseMessage responseMessage = new ResponseMessage(
-                statusCode: this.StatusCode,
-                requestMessage: requestMessage,
-                headers: headers,
-                cosmosException: null,
-                trace: this.Trace ?? NoOpTrace.Singleton)
-            {
-                Content = this.ResourceStream
-            };
-
-            return responseMessage;
-        }
     }
 
     /// <summary>

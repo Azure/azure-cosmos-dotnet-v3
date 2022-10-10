@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
+    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
@@ -637,6 +638,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 
             this.ExecuteTestSuite(inputs);
         }
+
 
         [TestMethod]
         public async Task ValidateInvalidCredentialsTraceAsync()
