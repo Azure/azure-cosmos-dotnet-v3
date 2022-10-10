@@ -182,7 +182,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             ClientTelemetryTests.ResetSystemUsageMonitor(false);
         }
-            
+
+        [TestMethod]
+        public async Task RandomTesting()
+        {
+            CosmosClientBuilder clientBuilder = new CosmosClientBuilder(accountEndpoint: "", authKeyOrResourceToken: "");
+
+            CosmosClient client = clientBuilder.Build();
+
+            AccountProperties accountProperty = await client.ReadAccountAsync();
+            Console.WriteLine("========================> " + accountProperty.Id);
+
+            string data = await client.ReadAccountClientConfigAsync();
+            Console.WriteLine("========================> " + data);
+        }
+
         [TestMethod]
         [DataRow(ConnectionMode.Direct, true)]
         [DataRow(ConnectionMode.Gateway, true)]
