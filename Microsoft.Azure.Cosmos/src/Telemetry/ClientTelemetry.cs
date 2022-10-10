@@ -56,6 +56,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private int numberOfFailures = 0;
 
         /// <summary>
+        /// Only for Mocking in tests
+        /// </summary>
+        internal ClientTelemetry()
+        {
+        }
+
+        /// <summary>
         /// Factory method to intiakize telemetry object and start observer task
         /// </summary>
         /// <param name="clientId"></param>
@@ -440,7 +447,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         public void Dispose()
         {
-            if (!this.cancellationTokenSource.IsCancellationRequested)
+            if (this.cancellationTokenSource != null && 
+                    !this.cancellationTokenSource.IsCancellationRequested)
             {
                 this.cancellationTokenSource.Cancel();
                 this.cancellationTokenSource.Dispose();

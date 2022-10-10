@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
         private Documents.ConsistencyLevel? desiredConsistencyLevel;
 
         internal CosmosAccountServiceConfiguration accountServiceConfiguration { get; private set; }
-        internal ClientTelemetry clientTelemetry { get; private set; }
+        internal ClientTelemetry clientTelemetry { get; set; }
 
         private ClientCollectionCache collectionCache;
 
