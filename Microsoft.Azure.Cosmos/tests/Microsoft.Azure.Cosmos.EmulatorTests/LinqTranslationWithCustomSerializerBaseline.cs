@@ -33,14 +33,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [ClassInitialize]
         public async static Task Initialize(TestContext textContext)
         {
-            string authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
-            Uri uri = new Uri(Utils.ConfigurationManager.AppSettings["GatewayEndpoint"]);
-            ConnectionPolicy connectionPolicy = new ConnectionPolicy
-            {
-                ConnectionMode = ConnectionMode.Gateway,
-                EnableEndpointDiscovery = true,
-            };
-
             cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) 
                 => cosmosClientBuilder.WithCustomSerializer(new SystemTextJsonSerializer(new JsonSerializerOptions())).WithConnectionModeGateway());
 
