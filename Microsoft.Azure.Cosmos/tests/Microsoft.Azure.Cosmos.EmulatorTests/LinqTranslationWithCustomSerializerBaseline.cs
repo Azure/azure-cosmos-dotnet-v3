@@ -134,8 +134,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             {
                 DataObject obj = new DataObject
                 {
-                    NumericField = 1,
-                    StringField = "a",
+                    NumericField = random.Next(NumAbsMax * 2) - NumAbsMax,
+                    StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
                     Id = Guid.NewGuid().ToString(),
                     Pk = "Test"
                 };
