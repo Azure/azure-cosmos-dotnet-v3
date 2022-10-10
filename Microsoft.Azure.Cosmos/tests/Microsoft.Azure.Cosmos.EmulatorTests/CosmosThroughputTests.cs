@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ThroughputResponse offer = await container.ReadThroughputAsync(requestOptions: null);
             Assert.AreEqual(offer.RequestCharge, this.requestChargeHandler.TotalRequestCharges);
             Assert.AreEqual(400, offer.Resource.Throughput);
-
+            
             this.requestChargeHandler.TotalRequestCharges = 0;
             ThroughputResponse replaceOffer = await container.ReplaceThroughputAsync(2000);
             Assert.AreEqual(replaceOffer.RequestCharge, this.requestChargeHandler.TotalRequestCharges);
@@ -160,6 +160,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await db1.DeleteAsync();
         }
 
+        [TestMethod]
+        public async Task ReadThroughutNullRequestOptions()
+        {
+            Database db1 = await this.cosmosClient.CreateDatabaseAsync(
+                Guid.NewGuid().ToString(),
+                throughput: null);
+            try
+            {
+                await db1.ReadThroughputAsync(requestOptions: null);
+            }
+            catch
+            {
+                await db1.DeleteAsync();
+                Assert.Fail();
+            }
+        }
         private async Task RecreateContainerUsingDifferentClient(
             string databaseId,
             string containerId,
