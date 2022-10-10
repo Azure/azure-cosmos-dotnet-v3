@@ -602,9 +602,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 queryPageResults = queryPageResults.Take((queryPaginationOptions ?? QueryPaginationOptions.Default).PageSizeLimit.GetValueOrDefault(int.MaxValue));
                 List<CosmosElement> queryPageResultList = queryPageResults.ToList();
                 QueryState queryState;
-                if (queryPageResultList.LastOrDefault() is CosmosObject lastDocument)
+                if (queryPageResultList.LastOrDefault() is CosmosObject lastDocument
+                    && lastDocument.TryGetValue<CosmosString>("_rid", out CosmosString resourceId))
                 {
-                    string currentResourceId = ((CosmosString)lastDocument["_rid"]).Value;
+                    string currentResourceId = resourceId.Value;
                     int currentSkipCount = queryPageResultList
                         .Where(document => ((CosmosString)((CosmosObject)document)["_rid"]).Value == currentResourceId)
                         .Count();
