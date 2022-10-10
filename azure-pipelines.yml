@@ -9,6 +9,10 @@ pr:
   paths:
     include:
     - '*'
+    exclude:
+    - '*.md'
+    - 'docs/**/*'
+    - 'Microsoft.Azure.Cosmos/contracts/**/*'
 
 variables:
   DebugArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
@@ -21,13 +25,6 @@ jobs:
   parameters:
     BuildConfiguration: Release
     VmImage: $(VmImage)
-    
-
-#- template:  templates/build-test.yml
-#  parameters:
-#    BuildConfiguration: Debug
-#    Arguments: $(DebugArguments)
-#    VmImage: $(VmImage)
 
 - template:  templates/nuget-pack.yml
   parameters:

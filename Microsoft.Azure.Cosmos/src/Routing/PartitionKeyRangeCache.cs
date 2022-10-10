@@ -264,7 +264,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 throw new NotFoundException($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: GetRoutingMapForCollectionAsync(collectionRid: {collectionRid}), Range information either doesn't exist or is not complete.");
             }
 
-            trace.AddDatum($"PKRangeCache Info({DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)})",
+            trace.AddDatum($"PKRangeCache Info({previousRoutingMap?.ChangeFeedNextIfNoneMatch}#{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)})",
                                           new PartitionKeyRangeCacheTraceDatum(
                                               previousContinuationToken: previousRoutingMap?.ChangeFeedNextIfNoneMatch,
                                               continuationToken: routingMap.ChangeFeedNextIfNoneMatch));

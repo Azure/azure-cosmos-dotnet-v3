@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
@@ -309,6 +310,66 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             this.healthMonitor
                 .Verify(m => m.NotifyErrorAsync(this.lease.CurrentLeaseToken, exception), Times.Once);
+
+            Mock.Get(this.leaseManager)
+                .Verify(manager => manager.ReleaseAsync(this.lease), Times.Once);
+
+            this.healthMonitor
+                .Verify(m => m.NotifyLeaseReleaseAsync(this.lease.CurrentLeaseToken), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task AddLease_ShouldNotNotify_IfLeaseAcquireFailsWithLeaseLost_WithoutInnerException()
+        {
+            Mock.Get(this.partitionProcessor)
+                .Reset();
+
+            Mock<PartitionSupervisor> supervisor = new Mock<PartitionSupervisor>();
+
+            LeaseLostException exception = new LeaseLostException();
+
+            // Fail on Acquire
+            Mock.Get(this.leaseManager)
+                .Setup(manager => manager.AcquireAsync(this.lease))
+                .ThrowsAsync(exception);
+
+            Exception thrownException = await Assert.ThrowsExceptionAsync<LeaseLostException>(() => this.sut.AddOrUpdateLeaseAsync(this.lease));
+
+            Assert.AreEqual(exception, thrownException);
+
+            this.healthMonitor
+                .Verify(m => m.NotifyErrorAsync(this.lease.CurrentLeaseToken, exception), Times.Never);
+
+            Mock.Get(this.leaseManager)
+                .Verify(manager => manager.ReleaseAsync(this.lease), Times.Once);
+
+            this.healthMonitor
+                .Verify(m => m.NotifyLeaseReleaseAsync(this.lease.CurrentLeaseToken), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task AddLease_ShouldNotify_IfLeaseAcquireFailsWithLeaseLost_WithInnerException()
+        {
+            Mock.Get(this.partitionProcessor)
+                .Reset();
+
+            Mock<PartitionSupervisor> supervisor = new Mock<PartitionSupervisor>();
+
+            Exception internalException = new Exception();
+
+            LeaseLostException exception = new LeaseLostException("some error", internalException);
+
+            // Fail on Acquire
+            Mock.Get(this.leaseManager)
+                .Setup(manager => manager.AcquireAsync(this.lease))
+                .ThrowsAsync(exception);
+
+            Exception thrownException = await Assert.ThrowsExceptionAsync<LeaseLostException>(() => this.sut.AddOrUpdateLeaseAsync(this.lease));
+
+            Assert.AreEqual(exception, thrownException);
+
+            this.healthMonitor
+                .Verify(m => m.NotifyErrorAsync(this.lease.CurrentLeaseToken, internalException), Times.Once);
 
             Mock.Get(this.leaseManager)
                 .Verify(manager => manager.ReleaseAsync(this.lease), Times.Once);

@@ -8,10 +8,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
-    using Microsoft.Azure.Cosmos.Core.Trace;
+    using Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
-    using Microsoft.Azure.Cosmos.Tests.Contracts;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -41,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
             foreach(Type className in actualClasses)
             {
-                Assert.IsTrue(OpenTelemetryCoreRecorder.oTelCompatibleExceptions.Keys.Contains(className), $"{className.Name} is not added in {typeof(OpenTelemetryCoreRecorder).Name} Class oTelCompatibleExceptions dictionary");
+                Assert.IsTrue(OpenTelemetryCoreRecorder.OTelCompatibleExceptions.Keys.Contains(className), $"{className.Name} is not added in {typeof(OpenTelemetryCoreRecorder).Name} Class OTelCompatibleExceptions dictionary");
             }
             
         }

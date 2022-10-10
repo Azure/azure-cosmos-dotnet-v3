@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Rntbd;
     using Newtonsoft.Json;
+    using Util;
 
     /// <summary>
     /// This class collects and send all the telemetry information.
@@ -99,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             this.clientTelemetryInfo = new ClientTelemetryProperties(
                 clientId: clientId, 
-                processId: System.Diagnostics.Process.GetCurrentProcess().ProcessName, 
+                processId: HashingExtension.ComputeHash(System.Diagnostics.Process.GetCurrentProcess().ProcessName), 
                 userAgent: userAgent, 
                 connectionMode: connectionMode,
                 preferredRegions: preferredRegions,
@@ -315,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 async ValueTask<HttpRequestMessage> CreateRequestMessage()
                 {
-                    INameValueCollection headersCollection = new NameValueCollectionWrapperFactory().CreateNewNameValueCollection();
+                    INameValueCollection headersCollection = new StoreResponseNameValueCollection();
                     await this.tokenProvider.AddAuthorizationHeaderAsync(
                             headersCollection,
                             endpointUrl,
