@@ -134,8 +134,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             {
                 DataObject obj = new DataObject
                 {
-                    NumericField = random.Next(NumAbsMax * 2) - NumAbsMax,
-                    StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
+                    NumericField = 1,
+                    StringField = "a",
                     Id = Guid.NewGuid().ToString(),
                     Pk = "Test"
                 };
@@ -146,11 +146,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
                 new LinqTestInput("Filter w/ DataObject initializer with constant value", b => getQuery(b).Where(doc => doc == new DataObject() { NumericField = 12, StringField = "12" })),
-                new LinqTestInput("Select w/ DataObject initializer", b => getQuery(b).Select(doc => new DataObject() { NumericField = 12, StringField = "12" }))
+                new LinqTestInput("Select w/ DataObject initializer", b => getQuery(b).Select(doc => new DataObject() { NumericField = 12, StringField = "12" })),
+                new LinqTestInput("Deeper than top level reference", b => getQuery(b).Select(doc => doc.NumericField > 12 ? new DataObject() { NumericField = 12, StringField = "12" } : new DataObject() { NumericField = 12, StringField = "12" })),
+
 
                 // Negative test case: serializing only field name using custom serializer not currently supported
-                //new LinqTestInput("Select w/ DataObject initializer", b => getQuery(b).Select(doc => new DataObject() { NumericField = doc.NumericField, StringField = doc.StringField })),
-                //new LinqTestInput("Filter w/ DataObject initializer with member initialization", b => getQuery(b).Where(doc => doc == new DataObject() { NumericField = doc.NumericField, StringField = doc.StringField }))
+                new LinqTestInput("Filter w/ DataObject initializer with member initialization", b => getQuery(b).Where(doc => doc == new DataObject() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"))
             };
             this.ExecuteTestSuite(inputs);
         }

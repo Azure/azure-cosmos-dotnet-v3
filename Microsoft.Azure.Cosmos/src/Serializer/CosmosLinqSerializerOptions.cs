@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos
         public CosmosLinqSerializerOptions()
         {
             this.PropertyNamingPolicy = CosmosPropertyNamingPolicy.Default;
-            this.CustomerCosmosSerializer = null;
         }
 
         /// <summary>
