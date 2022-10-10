@@ -11,5 +11,6 @@ namespace Microsoft.Azure.Cosmos
     internal interface IDocumentClientInternal : IDocumentClient
     {
         Task<AccountProperties> GetDatabaseAccountInternalAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default);
+        Task<string> GetDatabaseAccountClientConfigurationInternalAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default);
     }
 }
