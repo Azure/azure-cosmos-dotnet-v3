@@ -665,6 +665,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     StringField = sb.ToString(),
                     Id = Guid.NewGuid().ToString(),
                     Pk = "Test",
+                    
+                    // For ToString tests
+                    ArrayField = new int[] {1,2,3},
+                    Point = new Point(0, 0)
                 };
             };
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
