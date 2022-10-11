@@ -1313,8 +1313,7 @@
 
                 // ST_WITHIN
                 new { Description = @"ST_WITHIN Constant Foldable", Query = @"SELECT * FROM c WHERE NOT ST_WITHIN({'type': 'Point', 'coordinates': [0, 40]}, {'type':'Polygon','coordinates':[[[-60,20], [70,20], [70,70], [-60,70], [-60,20]]]})" },
-                new { Description = @"ST_WITHIN", Query = @"SELECT * FROM c WHERE NOT ST_WITHIN(c.geojson,
-                  {'type':'Polygon','coordinates':[[[-60,20], [70,20], [70,70], [-60,70], [-60,20]]]})" },
+                new { Description = @"ST_WITHIN", Query = @"SELECT * FROM c WHERE NOT ST_WITHIN(c.geojson, {'type':'Polygon','coordinates':[[[-60,20], [70,20], [70,70], [-60,70], [-60,20]]]})" },
             };
 
             List<QueryPlanBaselineTestInput> testVariations = variations
