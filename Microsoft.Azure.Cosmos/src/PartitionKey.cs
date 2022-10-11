@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
@@ -47,6 +48,11 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the boolean to verify partitionKey is None.
         /// </summary>
         internal bool IsNone { get; }
+
+        /// <summary>
+        /// String representation of None for use when representing Partition Key as none.
+        /// </summary>
+        private const string NoneString = "None";
 
         /// <summary>
         /// Creates a new partition key value.
@@ -175,7 +181,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.IsNone)
             {
-                return "None";
+                return NoneString;
             }
             
             if (this.InternalKey == null)
