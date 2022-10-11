@@ -510,7 +510,7 @@ namespace Microsoft.Azure.Cosmos
                     PropertyNamingPolicy = this.ClientContext.ClientOptions.SerializerOptions != null 
                                             ? this.ClientContext.ClientOptions.SerializerOptions.PropertyNamingPolicy
                                             : CosmosPropertyNamingPolicy.Default,
-                    CustomerCosmosSerializer = this.ClientContext.ClientOptions.Serializer
+                    CustomCosmosSerializer = this.ClientContext.ClientOptions.Serializer
                 };
             }
 

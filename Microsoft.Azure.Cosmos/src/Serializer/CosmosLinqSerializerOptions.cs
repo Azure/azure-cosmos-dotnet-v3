@@ -38,6 +38,6 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// The default value is null
         /// </remarks>
-        public CosmosSerializer CustomerCosmosSerializer { get; set; }
+        public CosmosSerializer CustomCosmosSerializer { get; set; }
     }
 }

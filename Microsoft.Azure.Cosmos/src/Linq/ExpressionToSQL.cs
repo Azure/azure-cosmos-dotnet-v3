@@ -713,12 +713,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return SqlArrayCreateScalarExpression.Create(arrayItems.ToImmutableArray());
             }
 
-            if (context.linqSerializerOptions?.CustomerCosmosSerializer != null)
+            if (context.linqSerializerOptions?.CustomCosmosSerializer != null)
             {
                 StringWriter writer = new StringWriter(CultureInfo.InvariantCulture);
 
                 // Use the user serializer for the parameter values so custom conversions are correctly handled
-                using (Stream stream = context.linqSerializerOptions.CustomerCosmosSerializer.ToStream(inputExpression.Value))
+                using (Stream stream = context.linqSerializerOptions.CustomCosmosSerializer.ToStream(inputExpression.Value))
                 {
                     using (StreamReader streamReader = new StreamReader(stream))
                     {
