@@ -173,6 +173,11 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The string representation of the partition key value</returns>
         public override string ToString()
         {
+            if (this.IsNone)
+            {
+                return "None";
+            }
+            
             if (this.InternalKey == null)
             {
                 return PartitionKey.NullPartitionKeyInternal.ToJsonString();
