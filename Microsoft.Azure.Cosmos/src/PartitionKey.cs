@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// String representation of None for use when representing Partition Key as none.
         /// </summary>
-        private const string NoneString = "None";
+        internal const string NoneString = "None";
 
         /// <summary>
         /// Creates a new partition key value.
