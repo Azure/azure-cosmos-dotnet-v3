@@ -214,7 +214,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                                 await this.storeModel.ProcessMessageAsync(request))
                             {
                                 ContainerProperties containerProperties = CosmosResource.FromStream<ContainerProperties>(response);
-                                
+
+                                ClientCollectionCache.GetDatabaseAndCollectionName(collectionLink, out string databaseName, out string collectionName);
+
                                 if (this.clientTelemetry != null)
                                 {
                                     this.clientTelemetry.CollectCacheInfo(
@@ -222,11 +224,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                                                     regionsContactedList: response.RequestStats.RegionsContacted,
                                                     requestLatency: response.RequestStats.RequestLatency,
                                                     statusCode: response.StatusCode,
-                                                    containerId: containerProperties.Id,
+                                                    containerId: collectionName,
                                                     operationType: request.OperationType,
                                                     resourceType: request.ResourceType,
-                                                    subStatusCode: response.SubStatusCode);
-
+                                                    subStatusCode: response.SubStatusCode,
+                                                    databaseId: databaseName);
                                 }
 
                                 return containerProperties;
@@ -240,6 +242,13 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                 }
             }
+        }
+
+        private static void GetDatabaseAndCollectionName(string path, out string databaseName, out string collectionName)
+        {
+            string[] segments = path.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+
+            PathsHelper.ParseDatabaseNameAndCollectionNameFromUrlSegments(segments, out databaseName, out collectionName);
         }
     }
 }
