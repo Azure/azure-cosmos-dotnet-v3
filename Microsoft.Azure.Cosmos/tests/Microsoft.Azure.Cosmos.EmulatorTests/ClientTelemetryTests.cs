@@ -653,6 +653,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Container container = await this.CreateClientAndContainer(mode);
 
+            // Create an item : First successful request to load Cache
+            var testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working", status = "done" };
+            await container
+                .CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem),
+                new Cosmos.PartitionKey(testItem.id));
+
             List<ToDoActivity> results = new List<ToDoActivity>();
             using (FeedIterator<ToDoActivity> resultSetIterator = container.GetItemQueryIterator<ToDoActivity>(
                   "SELECT * FROM c",
@@ -673,7 +679,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-            await this.WaitAndAssert(expectedOperationCount: 0); // Does not record telemetry
+            IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
+            {
+                { Documents.OperationType.Create.ToString(), 1}
+            };
+
+            await this.WaitAndAssert(expectedOperationCount: 2,
+                expectedOperationRecordCountMap: expectedRecordCountInOperation);
         }
 
         [TestMethod]
@@ -835,6 +847,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 actualOperationList: actualOperationList,
                 expectedSubstatuscode: expectedSubstatuscode);
 
+            Assert.IsTrue(cacheRefreshInfoSet.Count > 0, "Cache Refresh Information is not there");
+
             ClientTelemetryTests.AssertCacheRefreshInfoInformation(
               cacheRefreshInfoSet: cacheRefreshInfoSet);
 
@@ -856,7 +870,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.AreEqual(systemInfo.MetricInfo.UnitName, actualMetricNameUnitMap[systemInfo.MetricInfo.MetricsName]);
                 }
 
-                if(!systemInfo.MetricInfo.MetricsName.Equals(ClientTelemetryOptions.IsThreadStarvingName))
+                if(!systemInfo.MetricInfo.MetricsName.Equals(ClientTelemetryOptions.IsThreadStarvingName) &&
+                    !systemInfo.MetricInfo.MetricsName.Equals(ClientTelemetryOptions.ThreadWaitIntervalInMsName))
                 {
                     Assert.IsTrue(systemInfo.MetricInfo.Count > 0, $"MetricInfo ({systemInfo.MetricInfo.MetricsName}) Count is not greater than 0");
                     Assert.IsNotNull(systemInfo.MetricInfo.Percentiles, $"Percentiles is null for metrics ({systemInfo.MetricInfo.MetricsName})");
