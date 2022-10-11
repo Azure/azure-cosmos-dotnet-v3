@@ -4,8 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
+    using System;
     using Newtonsoft.Json;
 
+    [Serializable]
     internal sealed class AzureVMMetadata
     {
         public AzureVMMetadata(Compute compute)

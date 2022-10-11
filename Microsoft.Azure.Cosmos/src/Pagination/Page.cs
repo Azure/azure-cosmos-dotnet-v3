@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             Microsoft.Azure.Documents.HttpConstants.HttpHeaders.ActivityId,
         }.ToImmutableHashSet();
 
-        private static readonly ImmutableDictionary<string, string> EmptyDictionary = new Dictionary<string, string>().ToImmutableDictionary();
+        private static readonly IReadOnlyDictionary<string, string> EmptyDictionary = new Dictionary<string, string>();
 
         protected Page(
             double requestCharge,
@@ -44,14 +44,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
 #endif
 
-            this.AdditionalHeaders = additionalHeaders == null ? EmptyDictionary : additionalHeaders.ToImmutableDictionary();
+            this.AdditionalHeaders = additionalHeaders ?? EmptyDictionary;
         }
 
         public double RequestCharge { get; }
 
         public string ActivityId { get; }
 
-        public ImmutableDictionary<string, string> AdditionalHeaders { get; }
+        public IReadOnlyDictionary<string, string> AdditionalHeaders { get; }
 
         public TState State { get; }
 

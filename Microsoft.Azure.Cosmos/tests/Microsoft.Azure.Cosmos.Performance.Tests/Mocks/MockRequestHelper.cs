@@ -7,15 +7,24 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
+    using System.Runtime.Serialization.Formatters.Binary;
+    using System.Text;
     using Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     internal static class MockRequestHelper
     {
         internal static readonly byte[] testItemResponsePayload;
         internal static readonly byte[] testItemFeedResponsePayload;
         internal static readonly BatchResponsePayloadWriter batchResponsePayloadWriter;
+        internal static int pagenumber;
+
+        internal static readonly byte[] notFoundPayload = Encoding.ASCII.GetBytes("{\"Errors\":[\"Resource Not Found.Learn more: https:\\/\\/ aka.ms\\/ cosmosdb - tsg - not - found\"]}");
+
 
         static MockRequestHelper()
         {
@@ -34,16 +43,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             }
 
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>
+            {
+                new TransactionalBatchOperationResult(System.Net.HttpStatusCode.OK)
                 {
-                    new TransactionalBatchOperationResult(System.Net.HttpStatusCode.OK)
-                    {
-                        ResourceStream = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
-                        ETag = Guid.NewGuid().ToString()
-                    }
-                };
+                    ResourceStream = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
+                    ETag = Guid.NewGuid().ToString()
+                }
+            };
 
             batchResponsePayloadWriter = new BatchResponsePayloadWriter(results);
             batchResponsePayloadWriter.PrepareAsync().GetAwaiter().GetResult();
+
+            pagenumber = 0;
         }
 
         /// <summary>
@@ -67,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 }
 
                 return new DocumentServiceResponse(
-                    Stream.Null,
+                    new MemoryStream(MockRequestHelper.notFoundPayload),
                     headers,
                     System.Net.HttpStatusCode.NotFound
                 );
@@ -85,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 }
 
                 return new DocumentServiceResponse(
-                    Stream.Null,
+                    new MemoryStream(MockRequestHelper.notFoundPayload),
                     headers,
                     System.Net.HttpStatusCode.NotFound
                 );
@@ -152,8 +163,29 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     ServerVersion = " version=2.14.0.0",
                     SessionToken = "0:-1#2540",
                     TransportRequestID = "2",
-                    XPRole = "0",
+                    XPRole = "0"
                 };
+
+                // Multipage Scenario
+                if (!request.Headers.Get(HttpConstants.HttpHeaders.PageSize).Equals("1000"))
+                {
+                    pagenumber++;
+
+                    // return only 5 pages
+                    queryHeaders.Continuation = pagenumber <= 5 ? "dummyToken" : null;
+
+                    if (pagenumber > 5)
+                    {
+                        pagenumber = 0;
+                    }
+
+                    return new StoreResponse()
+                    {
+                        ResponseBody = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
+                        Status = (int)System.Net.HttpStatusCode.OK,
+                        Headers = queryHeaders,
+                    };
+                }
 
                 return new StoreResponse()
                 {
@@ -170,7 +202,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 headers.Add(WFConstants.BackendHeaders.LSN, "1");
                 if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
                 {
-
                     return new StoreResponse()
                     {
                         ResponseBody = new MemoryStream(MockRequestHelper.testItemResponsePayload, 0, MockRequestHelper.testItemResponsePayload.Length, writable: false, publiclyVisible: true),
@@ -181,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
                 return new StoreResponse()
                 {
-                    ResponseBody = Stream.Null,
+                    ResponseBody = new MemoryStream(MockRequestHelper.notFoundPayload, 0, MockRequestHelper.notFoundPayload.Length, writable: false, publiclyVisible: true),
                     Status = (int)System.Net.HttpStatusCode.NotFound,
                     Headers = headers,
                 };
@@ -201,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
                 return new StoreResponse()
                 {
-                    ResponseBody = Stream.Null,
+                    ResponseBody = new MemoryStream(MockRequestHelper.notFoundPayload, 0, MockRequestHelper.notFoundPayload.Length, writable: false, publiclyVisible: true),
                     Status = (int)System.Net.HttpStatusCode.NotFound,
                     Headers = headers,
                 };

@@ -20,11 +20,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
 
     [TestClass]
     public class FullPipelineTests
     {
-        private static readonly PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
+        internal static readonly PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
         {
             Paths = new Collection<string>()
             {
@@ -53,11 +54,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             string query = "SELECT * FROM c ORDER BY c._ts";
             int pageSize = 10;
-            IQueryPipelineStage pipelineStage = CreatePipeline(mergeTest.DocumentContainer, query, pageSize);
+            IQueryPipelineStage pipelineStage = await CreatePipelineAsync(mergeTest.DocumentContainer, query, pageSize);
 
             List<CosmosElement> elements = new List<CosmosElement>();
             int iteration = 0;
-            while (await pipelineStage.MoveNextAsync())
+            while (await pipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
                 TryCatch<QueryPage> tryGetQueryPage = pipelineStage.Current;
                 tryGetQueryPage.ThrowIfFailed();
@@ -161,8 +162,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public async Task Aggregates()
         {
+            const int DocumentCount = 250;
             List<CosmosObject> documents = new List<CosmosObject>();
-            for (int i = 0; i < 250; i++)
+            for (int i = 0; i < DocumentCount; i++)
             {
                 documents.Add(CosmosObject.Parse($"{{\"pk\" : {i} }}"));
             }
@@ -172,16 +174,23 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documents: documents);
 
             Assert.AreEqual(expected: 1, actual: documentsQueried.Count);
+            if (documentsQueried[0] is CosmosNumber number)
+            {
+                Assert.AreEqual(expected: DocumentCount, actual: Number64.ToLong(number.Value));
+            }
+            else
+            {
+                Assert.Fail();
+            }
         }
 
         [TestMethod]
-        [Ignore("[TODO]: ndeshpan enable after ServiceInterop.dll is refreshed")]
         public async Task DCount()
         {
             List<CosmosObject> documents = new List<CosmosObject>();
             for (int i = 0; i < 250; i++)
             {
-                documents.Add(CosmosObject.Parse($"{{\"pk\" : {i}, \"val\": {i % 50} }}"));
+                documents.Add(CosmosObject.Parse($"{{\"pk\" : {i}, \"val\": {i % 49} }}"));
             }
 
             List<CosmosElement> documentsQueried = await ExecuteQueryAsync(
@@ -191,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Assert.AreEqual(expected: 1, actual: documentsQueried.Count);
             Assert.IsTrue(documentsQueried[0] is CosmosNumber);
             CosmosNumber result = documentsQueried[0] as CosmosNumber;
-            Assert.AreEqual(expected: 50, actual: result);
+            Assert.AreEqual(expected: 49, actual: Number64.ToLong(result.Value));
         }
 
         [TestMethod]
@@ -222,10 +231,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             }
 
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(documents);
-            IQueryPipelineStage pipelineStage = CreatePipeline(documentContainer, "SELECT * FROM c", pageSize: 10);
+            IQueryPipelineStage pipelineStage = await CreatePipelineAsync(documentContainer, "SELECT * FROM c", pageSize: 10);
 
             Trace rootTrace;
-            int numTraces = 1;
+            int numTraces = (await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, default)).Count;
             using (rootTrace = Trace.GetRootTrace("Cross Partition Query"))
             {
                 while (await pipelineStage.MoveNextAsync(rootTrace))
@@ -237,24 +246,23 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 }
             }
 
-            string traceString = TraceWriter.TraceToText(rootTrace);
-
-            Console.WriteLine(traceString);
-
             Assert.AreEqual(numTraces, rootTrace.Children.Count);
         }
 
-        private static async Task<List<CosmosElement>> ExecuteQueryAsync(
+        internal static async Task<List<CosmosElement>> ExecuteQueryAsync(
             string query,
             IReadOnlyList<CosmosObject> documents,
-            IDocumentContainer documentContainer = null,
             int pageSize = 10)
         {
-            if (documentContainer == null)
-            {
-                documentContainer = await CreateDocumentContainerAsync(documents);
-            }
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(documents);
+            return await ExecuteQueryAsync(query, documentContainer, pageSize);
+        }
 
+        internal static async Task<List<CosmosElement>> ExecuteQueryAsync(
+            string query,
+            IDocumentContainer documentContainer,
+            int pageSize)
+        {
             List<CosmosElement> resultsFromDrainWithoutState = await DrainWithoutStateAsync(query, documentContainer, pageSize);
             List<CosmosElement> resultsFromDrainWithState = await DrainWithStateAsync(query, documentContainer, pageSize);
 
@@ -279,12 +287,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Assert.AreEqual(expected: 249, actual: documentsQueried.Count);
         }
 
-        private static async Task<List<CosmosElement>> DrainWithoutStateAsync(string query, IDocumentContainer documentContainer, int pageSize = 10)
+        internal static async Task<List<CosmosElement>> DrainWithoutStateAsync(string query, IDocumentContainer documentContainer, int pageSize)
         {
-            IQueryPipelineStage pipelineStage = CreatePipeline(documentContainer, query, pageSize);
+            IQueryPipelineStage pipelineStage = await CreatePipelineAsync(documentContainer, query, pageSize);
 
             List<CosmosElement> elements = new List<CosmosElement>();
-            while (await pipelineStage.MoveNextAsync())
+            while (await pipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
                 TryCatch<QueryPage> tryGetQueryPage = pipelineStage.Current;
                 tryGetQueryPage.ThrowIfFailed();
@@ -295,7 +303,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             return elements;
         }
 
-        private static async Task<List<CosmosElement>> DrainWithStateAsync(string query, IDocumentContainer documentContainer, int pageSize = 10)
+        private static async Task<List<CosmosElement>> DrainWithStateAsync(string query, IDocumentContainer documentContainer, int pageSize)
         {
             IQueryPipelineStage pipelineStage;
             CosmosElement state = null;
@@ -303,9 +311,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             List<CosmosElement> elements = new List<CosmosElement>();
             do
             {
-                pipelineStage = CreatePipeline(documentContainer, query, pageSize, state);
+                pipelineStage = await CreatePipelineAsync(documentContainer, query, pageSize, state);
 
-                if (!await pipelineStage.MoveNextAsync())
+                if (!await pipelineStage.MoveNextAsync(NoOpTrace.Singleton))
                 {
                     break;
                 }
@@ -321,10 +329,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             return elements;
         }
 
-        private static async Task<IDocumentContainer> CreateDocumentContainerAsync(
+        internal static Task<IDocumentContainer> CreateDocumentContainerAsync(
             IReadOnlyList<CosmosObject> documents,
             int numPartitions = 3,
             FlakyDocumentContainer.FailureConfigs failureConfigs = null)
+        {
+            IMonadicDocumentContainer monadicDocumentContainer = CreateMonadicDocumentContainerAsync(failureConfigs);
+            return CreateDocumentContainerAsync(documents, monadicDocumentContainer, numPartitions);
+        }
+
+        internal static IMonadicDocumentContainer CreateMonadicDocumentContainerAsync(FlakyDocumentContainer.FailureConfigs failureConfigs)
         {
             IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(partitionKeyDefinition);
             if (failureConfigs != null)
@@ -332,6 +346,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 monadicDocumentContainer = new FlakyDocumentContainer(monadicDocumentContainer, failureConfigs);
             }
 
+            return monadicDocumentContainer;
+        }
+
+        internal static async Task<IDocumentContainer> CreateDocumentContainerAsync(
+            IReadOnlyList<CosmosObject> documents,
+            IMonadicDocumentContainer monadicDocumentContainer,
+            int numPartitions)
+        {
             DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
 
             for (int i = 0; i < numPartitions; i++)
@@ -364,13 +386,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             return documentContainer;
         }
 
-        private static IQueryPipelineStage CreatePipeline(IDocumentContainer documentContainer, string query, int pageSize = 10, CosmosElement state = null)
+        private static async Task<IQueryPipelineStage> CreatePipelineAsync(
+            IDocumentContainer documentContainer,
+            string query,
+            int pageSize,
+            CosmosElement state = null)
         {
+            IReadOnlyList<FeedRangeEpk> feedRanges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
+
             TryCatch<IQueryPipelineStage> tryCreatePipeline = PipelineFactory.MonadicCreate(
-                ExecutionEnvironment.Compute,
+                ExecutionEnvironment.Client,
                 documentContainer,
                 new SqlQuerySpec(query),
-                documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default).Result,
+                feedRanges,
                 partitionKey: null,
                 GetQueryPlan(query),
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: pageSize),
@@ -386,13 +414,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         private static QueryInfo GetQueryPlan(string query)
         {
             TryCatch<PartitionedQueryExecutionInfoInternal> info = QueryPartitionProviderTestInstance.Object.TryGetPartitionedQueryExecutionInfoInternal(
-                new SqlQuerySpec(query),
+                JsonConvert.SerializeObject(new SqlQuerySpec(query)),
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
                 allowDCount: true,
-                hasLogicalPartitionKey: false);
+                hasLogicalPartitionKey: false,
+                useSystemPrefix: false);
 
             info.ThrowIfFailed();
             return info.Result.QueryInfo;

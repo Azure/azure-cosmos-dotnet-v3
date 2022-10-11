@@ -7,9 +7,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Net;
     using System.Net.Http;
     using System.Text;
     using Microsoft.Azure.Cosmos.Handler;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 
@@ -18,6 +20,9 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private static readonly IReadOnlyDictionary<string, AddressResolutionStatistics> EmptyEndpointToAddressResolutionStatistics = new Dictionary<string, AddressResolutionStatistics>();
         private static readonly IReadOnlyList<StoreResponseStatistics> EmptyStoreResponseStatistics = new List<StoreResponseStatistics>();
         private static readonly IReadOnlyList<HttpResponseStatistics> EmptyHttpResponseStatistics = new List<HttpResponseStatistics>();
+        private readonly List<(PartitionAddressInformation existing, PartitionAddressInformation newInfo)> partitionAddressInformationRefreshes = new List<(PartitionAddressInformation existing, PartitionAddressInformation newInfo)>();
+
+        internal static readonly string HttpRequestRegionNameProperty = "regionName";
 
         private readonly object requestEndTimeLock = new object();
         private readonly Dictionary<string, AddressResolutionStatistics> endpointToAddressResolutionStats;
@@ -28,8 +33,9 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private IReadOnlyList<StoreResponseStatistics> shallowCopyOfStoreResponseStatistics = null;
         private IReadOnlyList<HttpResponseStatistics> shallowCopyOfHttpResponseStatistics = null;
         private SystemUsageHistory systemUsageHistory = null;
+        public TraceSummary TraceSummary = null;
 
-        public ClientSideRequestStatisticsTraceDatum(DateTime startTime)
+        public ClientSideRequestStatisticsTraceDatum(DateTime startTime, TraceSummary summary)
         {
             this.RequestStartTimeUtc = startTime;
             this.RequestEndTimeUtc = null;
@@ -39,6 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.FailedReplicas = new HashSet<TransportAddressUri>();
             this.RegionsContacted = new HashSet<(string, Uri)>();
             this.httpResponseStatistics = new List<HttpResponseStatistics>();
+            this.TraceSummary = summary;
         }
 
         public DateTime RequestStartTimeUtc { get; }
@@ -123,6 +130,117 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         {
         }
 
+        public void RecordAddressCachRefreshContent(
+            PartitionAddressInformation existingInfo,
+            PartitionAddressInformation newInfo)
+        {
+            lock (this.partitionAddressInformationRefreshes)
+            {
+                this.partitionAddressInformationRefreshes.Add((existingInfo, newInfo));
+            }
+        }
+
+        public void WriteAddressCachRefreshContent(IJsonWriter jsonWriter)
+        {
+            if (this.partitionAddressInformationRefreshes.Count == 0)
+            {
+                return;
+            }
+
+            lock (this.partitionAddressInformationRefreshes)
+            {
+                if (this.partitionAddressInformationRefreshes.Count == 0)
+                {
+                    return;
+                }
+
+                jsonWriter.WriteFieldName("ForceAddressRefresh");
+
+                jsonWriter.WriteArrayStart();
+                foreach ((PartitionAddressInformation existing, PartitionAddressInformation newInfo) in this.partitionAddressInformationRefreshes)
+                {
+                    // Avoid printing the same list twice if the cache update did not change any values
+                    if (ClientSideRequestStatisticsTraceDatum.IsSamePartitionAddressInformation(existing, newInfo))
+                    {
+                        jsonWriter.WriteObjectStart();
+                        jsonWriter.WriteFieldName("No change to cache");
+                        jsonWriter.WriteArrayStart();
+                        foreach (AddressInformation addressInformation in existing.AllAddresses)
+                        {
+                            jsonWriter.WriteStringValue(addressInformation.PhysicalUri);
+                        }
+
+                        jsonWriter.WriteArrayEnd();
+                        jsonWriter.WriteObjectEnd();
+                    }
+                    else
+                    {
+                        jsonWriter.WriteObjectStart();
+                        jsonWriter.WriteFieldName("Original");
+                        jsonWriter.WriteArrayStart();
+                        foreach (AddressInformation addressInformation in existing.AllAddresses)
+                        {
+                            jsonWriter.WriteStringValue(addressInformation.PhysicalUri);
+                        }
+
+                        jsonWriter.WriteArrayEnd();
+
+                        jsonWriter.WriteFieldName("New");
+                        jsonWriter.WriteArrayStart();
+                        foreach (AddressInformation addressInformation in newInfo.AllAddresses)
+                        {
+                            jsonWriter.WriteStringValue(addressInformation.PhysicalUri);
+                        }
+                        jsonWriter.WriteArrayEnd();
+                        jsonWriter.WriteObjectEnd();
+                    }
+                }
+
+                jsonWriter.WriteArrayEnd();
+            }
+        }
+
+        private static bool IsSamePartitionAddressInformation(
+            PartitionAddressInformation info1,
+            PartitionAddressInformation info2)
+        {
+            if (info1 == null && info2 == null)
+            {
+                return true;
+            }
+
+            if (info1 != null && info2 == null)
+            {
+                return false;
+            }
+
+            if (info1 == null && info2 != null)
+            {
+                return false;
+            }
+
+            if (info1.AllAddresses.Count != info2.AllAddresses.Count)
+            {
+                return false;
+            }
+
+            // Assumes both lists are in the same order.
+            for (int i = 0; i < info1.AllAddresses.Count; i++)
+            {
+                AddressInformation info1AddressInfo = info1.AllAddresses[i];
+                AddressInformation info2AddressInfo = info2.AllAddresses[i];
+                if (info1AddressInfo.Protocol != info2AddressInfo.Protocol
+                    || info1AddressInfo.IsPrimary != info2AddressInfo.IsPrimary
+                    || info1AddressInfo.IsPublic != info2AddressInfo.IsPublic
+                    || info1AddressInfo.PhysicalUri != info2AddressInfo.PhysicalUri)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         public void RecordResponse(
             DocumentServiceRequest request,
             StoreResult storeResult,
@@ -138,15 +256,27 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 storeResult,
                 request.ResourceType,
                 request.OperationType,
+                request.Headers[HttpConstants.HttpHeaders.SessionToken],
                 locationEndpoint);
 
             lock (this.storeResponseStatistics)
             {
                 if (locationEndpoint != null)
                 {
-                    this.RegionsContacted.Add((regionName, locationEndpoint));
+                    this.TraceSummary?.AddRegionContacted(regionName, locationEndpoint);
                 }
 
+                if (responseStatistics.StoreResult != null && !((HttpStatusCode)responseStatistics.StoreResult.StatusCode).IsSuccess()
+                    && !(responseStatistics.StoreResult.StatusCode == StatusCodes.NotFound && responseStatistics.StoreResult.SubStatusCode == SubStatusCodes.Unknown)
+                    && !(responseStatistics.StoreResult.StatusCode == StatusCodes.Conflict && responseStatistics.StoreResult.SubStatusCode == SubStatusCodes.Unknown)
+                    && !(responseStatistics.StoreResult.StatusCode == StatusCodes.PreconditionFailed && responseStatistics.StoreResult.SubStatusCode == SubStatusCodes.Unknown))
+                {
+                    if (this.TraceSummary != null)
+                    {
+                        this.TraceSummary.IncrementFailedCount();
+                    }
+                }
+                
                 // Reset the shallow copy
                 this.shallowCopyOfStoreResponseStatistics = null;
                 this.storeResponseStatistics.Add(responseStatistics);
@@ -218,6 +348,13 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
             lock (this.httpResponseStatistics)
             {
+                Uri locationEndpoint = request.RequestUri;
+                if (request.Properties != null && 
+                        request.Properties.TryGetValue(HttpRequestRegionNameProperty, out object regionName))
+                {
+                    this.TraceSummary.AddRegionContacted(Convert.ToString(regionName), locationEndpoint);
+                }
+
                 this.shallowCopyOfHttpResponseStatistics = null;
                 this.httpResponseStatistics.Add(new HttpResponseStatistics(requestStartTimeUtc,
                                                                            requestEndTimeUtc,
@@ -239,6 +376,13 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
             lock (this.httpResponseStatistics)
             {
+                Uri locationEndpoint = request.RequestUri;
+                if (request.Properties != null &&
+                        request.Properties.TryGetValue(HttpRequestRegionNameProperty, out object regionName))
+                {
+                    this.TraceSummary.AddRegionContacted(Convert.ToString(regionName), locationEndpoint);
+                }
+
                 this.shallowCopyOfHttpResponseStatistics = null;
                 this.httpResponseStatistics.Add(new HttpResponseStatistics(requestStartTimeUtc,
                                                                            requestEndTimeUtc,
@@ -312,6 +456,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 StoreResult storeResult,
                 ResourceType resourceType,
                 OperationType operationType,
+                string requestSessionToken,
                 Uri locationEndpoint)
             {
                 this.RequestStartTime = requestStartTime;
@@ -319,6 +464,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 this.StoreResult = storeResult;
                 this.RequestResourceType = resourceType;
                 this.RequestOperationType = operationType;
+                this.RequestSessionToken = requestSessionToken;
                 this.LocationEndpoint = locationEndpoint;
                 this.IsSupplementalResponse = operationType == OperationType.Head || operationType == OperationType.HeadFeed;
             }
@@ -328,6 +474,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             public StoreResult StoreResult { get; }
             public ResourceType RequestResourceType { get; }
             public OperationType RequestOperationType { get; }
+            public string RequestSessionToken { get; }
             public Uri LocationEndpoint { get; }
             public bool IsSupplementalResponse { get; }
         }

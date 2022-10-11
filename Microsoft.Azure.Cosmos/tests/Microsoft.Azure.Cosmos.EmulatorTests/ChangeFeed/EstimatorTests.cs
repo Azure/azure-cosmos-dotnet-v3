@@ -251,7 +251,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 receivedEstimation += response.Sum(r => r.EstimatedLag);
                 Assert.IsTrue(response.Headers.RequestCharge > 0);
                 Assert.IsNotNull(response.Diagnostics);
-                Assert.IsTrue(response.Diagnostics.ToString().Length > 0);
+                string asString = response.Diagnostics.ToString();
+                Assert.IsTrue(asString.Length > 0);
+                Assert.IsTrue(asString.Contains("cosmos-netstandard-sdk"));
             }
 
             Assert.AreEqual(10, receivedEstimation);

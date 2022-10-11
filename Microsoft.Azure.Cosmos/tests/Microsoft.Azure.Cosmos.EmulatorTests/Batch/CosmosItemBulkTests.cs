@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json.Linq;
 
     [TestClass]
+    [TestCategory("Batch")]
     public class CosmosItemBulkTests
     {
         private Container container;

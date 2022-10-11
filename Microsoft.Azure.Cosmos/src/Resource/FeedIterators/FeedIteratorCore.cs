@@ -35,7 +35,9 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             QueryDefinition queryDefinition,
             string continuationToken,
-            QueryRequestOptions options)
+            QueryRequestOptions options,
+            ContainerInternal container,
+            string databaseId = null)
         {
             this.resourceLink = resourceLink;
             this.clientContext = clientContext;
@@ -44,6 +46,9 @@ namespace Microsoft.Azure.Cosmos
             this.ContinuationToken = continuationToken;
             this.requestOptions = options;
             this.hasMoreResultsInternal = true;
+
+            this.databaseName = databaseId;
+            this.container = container;
         }
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
@@ -209,6 +214,9 @@ namespace Microsoft.Azure.Cosmos
         {
             this.responseCreator = responseCreator;
             this.feedIterator = feedIterator;
+
+            this.databaseName = feedIterator.databaseName;
+            this.container = feedIterator.container;
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
@@ -244,10 +252,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ResponseMessage response = await this.feedIterator.ReadNextAsync(trace, cancellationToken);
-            using (ITrace childTrace = trace.StartChild("POCO Materialization", TraceComponent.Poco, TraceLevel.Info))
-            {
-                return this.responseCreator(response);
-            }
+            return this.responseCreator(response);
         }
 
         protected override void Dispose(bool disposing)

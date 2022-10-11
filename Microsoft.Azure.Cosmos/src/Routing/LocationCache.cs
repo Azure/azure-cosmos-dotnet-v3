@@ -8,8 +8,10 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Globalization;
     using System.Linq;
     using System.Net;
+    using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
 
@@ -144,6 +146,30 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         /// <summary>
+        /// Set region name for a location if present in the locationcache otherwise set region name as null.
+        /// If endpoint's hostname is same as default endpoint hostname, set regionName as null.
+        /// </summary>
+        /// <param name="endpoint"></param>
+        /// <param name="regionName"></param>
+        /// <returns>true if region found else false</returns>
+        public bool TryGetLocationForGatewayDiagnostics(Uri endpoint, out string regionName)
+        {
+            if (Uri.Compare(
+                    endpoint, 
+                    this.defaultEndpoint, 
+                    UriComponents.Host, 
+                    UriFormat.SafeUnescaped, 
+                    StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                regionName = null;
+                return false;
+            }
+
+            regionName = this.GetLocation(endpoint);
+            return true;
+        }
+
+        /// <summary>
         /// Marks the current location unavailable for read
         /// </summary>
         public void MarkEndpointUnavailableForRead(Uri endpoint)
@@ -180,6 +206,28 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             this.UpdateLocationCache(
                 preferenceList: preferredLocations);
+        }
+
+        public bool IsMetaData(DocumentServiceRequest request)
+        {
+            return (request.OperationType != Documents.OperationType.ExecuteJavaScript && request.ResourceType == ResourceType.StoredProcedure) ||
+                request.ResourceType != ResourceType.Document;
+   
+        }
+        public bool IsMultimasterMetadataWriteRequest(DocumentServiceRequest request)
+        {
+            return !request.IsReadOnlyRequest && this.locationInfo.AvailableWriteLocations.Count > 1
+                && this.IsMetaData(request) 
+                && this.CanUseMultipleWriteLocations();
+
+        }
+
+        public Uri GetHubUri()
+        {
+            DatabaseAccountLocationsInfo currentLocationInfo = this.locationInfo;
+            string writeLocation = currentLocationInfo.AvailableWriteLocations[0];
+            Uri locationEndpointToRoute = currentLocationInfo.AvailableWriteEndpointByLocation[writeLocation];
+            return locationEndpointToRoute;
         }
 
         /// <summary>

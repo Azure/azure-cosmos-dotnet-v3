@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Cosmos.Query.Core.Pipeline.Pagination;
     using Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tests.Query.Pipeline;
     using Pagination;
     using VisualStudio.TestTools.UnitTesting;
 
@@ -35,26 +36,38 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 throw new NotImplementedException();
             }
 
-            public override IAsyncEnumerable<TryCatch<OrderByQueryPage>> CreateEnumerable(IDocumentContainer documentContainer, QueryState state = null)
+            protected override IAsyncEnumerable<TryCatch<OrderByQueryPage>> CreateEnumerable(
+                IDocumentContainer documentContainer,
+                bool aggressivePrefetch = false,
+                QueryState state = null)
             {
                 throw new NotImplementedException();
             }
 
-            public override IAsyncEnumerator<TryCatch<OrderByQueryPage>> CreateEnumerator(
-                IDocumentContainer documentContainer, QueryState state = null, CancellationToken cancellationToken = default)
+            protected override Task<IAsyncEnumerator<TryCatch<OrderByQueryPage>>> CreateEnumeratorAsync(
+                IDocumentContainer documentContainer,
+                bool aggressivePrefetch = false,
+                bool exercisePrefetch = false,
+                QueryState state = null,
+                CancellationToken cancellationToken = default)
             {
                 List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(
                     trace: NoOpTrace.Singleton,
                     cancellationToken: cancellationToken).Result;
                 Assert.AreEqual(1, ranges.Count);
-                return new OrderByQueryPartitionRangePageAsyncEnumerator(
-                    queryDataSource: documentContainer,
-                    sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
-                    feedRangeState: new FeedRangeState<QueryState>(ranges[0], state),
-                    partitionKey: null,
-                    queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
-                    filter: "filter",
-                    cancellationToken: cancellationToken);
+                
+                IAsyncEnumerator<TryCatch<OrderByQueryPage>> enumerator = new TracingAsyncEnumerator<TryCatch<OrderByQueryPage>>(
+                    new OrderByQueryPartitionRangePageAsyncEnumerator(
+                        queryDataSource: documentContainer,
+                        sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
+                        feedRangeState: new FeedRangeState<QueryState>(ranges[0], state),
+                        partitionKey: null,
+                        queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                        filter: "filter",
+                        cancellationToken: cancellationToken),
+                    NoOpTrace.Singleton);
+
+                return Task.FromResult(enumerator);
             }
         }
     }

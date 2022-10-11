@@ -6,18 +6,24 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections;
+    using System.Runtime.Serialization;
+    using global::Azure.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// The exception that is thrown in a thread upon cancellation of an operation that
     ///  the thread was executing. This extends the OperationCanceledException to include the
     ///  diagnostics of the operation that was canceled.
-    /// </summary>
+    /// </summary> 
+    [Serializable]
     public class CosmosOperationCanceledException : OperationCanceledException
     {
         private readonly OperationCanceledException originalException;
         private readonly Lazy<string> lazyMessage;
+        private readonly Lazy<string> toStringMessage;
+        private readonly bool tokenCancellationRequested;
 
         /// <summary>
         /// Create an instance of CosmosOperationCanceledException
@@ -31,6 +37,8 @@ namespace Microsoft.Azure.Cosmos
         {
             this.originalException = originalException ?? throw new ArgumentNullException(nameof(originalException));
             this.Diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
+            this.tokenCancellationRequested = originalException.CancellationToken.IsCancellationRequested;
+            this.toStringMessage = this.CreateToStringMessage();
             this.lazyMessage = this.CreateLazyMessage();
         }
 
@@ -45,9 +53,30 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            trace.AddDatum("Operation Cancelled Exception", originalException);
+            using (ITrace child = trace.StartChild("CosmosOperationCanceledException"))
+            {
+                child.AddDatum("Operation Cancelled Exception", originalException);
+            }
             this.Diagnostics = new CosmosTraceDiagnostics(trace);
+            this.tokenCancellationRequested = originalException.CancellationToken.IsCancellationRequested;
+            this.toStringMessage = this.CreateToStringMessage();
             this.lazyMessage = this.CreateLazyMessage();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CosmosOperationCanceledException"/> class.
+        /// </summary>
+        /// <param name="info">The SerializationInfo object that holds serialized object data for the exception being thrown.</param>
+        /// <param name="context">The StreamingContext that contains contextual information about the source or destination.</param>
+        protected CosmosOperationCanceledException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            this.originalException = (OperationCanceledException)info.GetValue("originalException", typeof(OperationCanceledException));
+            this.tokenCancellationRequested = (bool)info.GetValue("tokenCancellationRequested", typeof(bool));
+            this.lazyMessage = new Lazy<string>(() => (string)info.GetValue("lazyMessage", typeof(string)));
+            this.toStringMessage = new Lazy<string>(() => (string)info.GetValue("toStringMessage", typeof(string)));
+            //Diagnostics cannot be serialized
+            this.Diagnostics = new CosmosTraceDiagnostics(NoOpTrace.Singleton);
         }
 
         /// <inheritdoc/>
@@ -87,12 +116,43 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override string ToString()
         {
-            return $"{this.originalException} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}";
+            return this.toStringMessage.Value;
         }
 
         private Lazy<string> CreateLazyMessage()
         {
-            return new Lazy<string>(() => $"{this.originalException.Message} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
+            return new Lazy<string>(() => $"{this.originalException.Message}{Environment.NewLine}Cancellation Token has expired: {this.tokenCancellationRequested}. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
+        }
+        private Lazy<string> CreateToStringMessage()
+        {
+            return new Lazy<string>(() => $"{this.originalException}{Environment.NewLine}Cancellation Token has expired: {this.tokenCancellationRequested}. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
+        }
+         
+        /// <summary>
+        /// RecordOtelAttributes
+        /// </summary>
+        /// <param name="exception"></param>
+        /// <param name="scope"></param>
+        internal static void RecordOtelAttributes(CosmosOperationCanceledException exception, DiagnosticScope scope)
+        {
+            scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics));
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.GetBaseException().Message);
+
+            CosmosDbEventSource.RecordDiagnosticsForExceptions(exception.Diagnostics);
+        }
+
+        /// <summary>
+        /// Sets the System.Runtime.Serialization.SerializationInfo with information about the exception.
+        /// </summary>
+        /// <param name="info">The SerializationInfo object that holds serialized object data for the exception being thrown.</param>
+        /// <param name="context">The StreamingContext that contains contextual information about the source or destination.</param>
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("originalException", this.originalException);
+            info.AddValue("tokenCancellationRequested", this.tokenCancellationRequested);
+            info.AddValue("lazyMessage", this.lazyMessage.Value);
+            info.AddValue("toStringMessage", this.toStringMessage.Value);
         }
     }
 }

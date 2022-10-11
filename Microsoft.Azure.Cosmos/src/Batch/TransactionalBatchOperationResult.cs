@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos
             return Result.Success;
         }
 
-        internal ResponseMessage ToResponseMessage()
+        internal ResponseMessage ToResponseMessage(ContainerInternal cosmosContainerCore = null)
         {
             Headers headers = new Headers()
             {
@@ -221,9 +221,17 @@ namespace Microsoft.Azure.Cosmos
                 ActivityId = this.ActivityId,
             };
 
+            // Need this information in Open telemetry hence adding this information in the request
+            RequestMessage requestMessage = new ()
+            {
+                ContainerId = cosmosContainerCore?.Id,
+                DatabaseId = cosmosContainerCore?.Database?.Id,
+                Trace = null
+            };
+
             ResponseMessage responseMessage = new ResponseMessage(
                 statusCode: this.StatusCode,
-                requestMessage: null,
+                requestMessage: requestMessage,
                 headers: headers,
                 cosmosException: null,
                 trace: this.Trace ?? NoOpTrace.Singleton)

@@ -13,6 +13,7 @@
     using Newtonsoft.Json.Converters;
 
     [TestClass]
+    [TestCategory("Query")]
     public sealed class PartitioningQueryTests : QueryTestsBase
     {
         [TestMethod]

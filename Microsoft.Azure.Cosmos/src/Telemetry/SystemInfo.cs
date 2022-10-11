@@ -9,14 +9,22 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Newtonsoft.Json;
 
     [Serializable]
-    internal class SystemInfo
+    internal sealed class SystemInfo
     {
+        [JsonProperty(PropertyName = "resource")]
+        internal string Resource => "HostMachine";
+
         [JsonProperty(PropertyName = "metricInfo")]
         internal MetricInfo MetricInfo { get; set; }
 
         internal SystemInfo(string metricsName, string unitName)
         {
             this.MetricInfo = new MetricInfo(metricsName, unitName);
+        }
+
+        internal SystemInfo(string metricsName, string unitName, int count)
+        {
+            this.MetricInfo = new MetricInfo(metricsName, unitName, count: count);
         }
 
         public SystemInfo(MetricInfo metricInfo)

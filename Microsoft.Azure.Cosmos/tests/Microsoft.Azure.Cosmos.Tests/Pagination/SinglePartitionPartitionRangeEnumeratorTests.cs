@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tests.Query.Pipeline;
 
     [TestClass]
     public sealed class SinglePartitionPartitionRangeEnumeratorTests
@@ -21,35 +22,35 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         public async Task Test429sAsync()
         {
             Implementation implementation = new Implementation();
-            await implementation.Test429sAsync();
+            await implementation.Test429sAsync(false);
         }
 
         [TestMethod]
         public async Task Test429sWithContinuationsAsync()
         {
             Implementation implementation = new Implementation();
-            await implementation.Test429sWithContinuationsAsync();
+            await implementation.Test429sWithContinuationsAsync(false, false);
         }
 
         [TestMethod]
         public async Task TestDrainFullyAsync()
         {
             Implementation implementation = new Implementation();
-            await implementation.TestDrainFullyAsync();
+            await implementation.TestDrainFullyAsync(false);
         }
 
         [TestMethod]
         public async Task TestEmptyPages()
         {
             Implementation implementation = new Implementation();
-            await implementation.TestEmptyPages();
+            await implementation.TestEmptyPages(false);
         }
 
         [TestMethod]
         public async Task TestResumingFromStateAsync()
         {
             Implementation implementation = new Implementation();
-            await implementation.TestResumingFromStateAsync();
+            await implementation.TestResumingFromStateAsync(false, false);
         }
 
         [TestMethod]
@@ -75,11 +76,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 IReadOnlyList<FeedRangeInternal> ranges = await inMemoryCollection.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
                 Assert.AreEqual(1, ranges.Count);
 
-                ReadFeedPartitionRangeEnumerator enumerator = new ReadFeedPartitionRangeEnumerator(
-                    inMemoryCollection,
-                    feedRangeState: new FeedRangeState<ReadFeedState>(ranges[0], ReadFeedState.Beginning()),
-                    readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
-                    cancellationToken: default);
+                TracingAsyncEnumerator<TryCatch<ReadFeedPage>> enumerator = new(
+                    new ReadFeedPartitionRangeEnumerator(
+                        inMemoryCollection,
+                        feedRangeState: new FeedRangeState<ReadFeedState>(ranges[0], ReadFeedState.Beginning()),
+                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                        cancellationToken: default),
+                    NoOpTrace.Singleton);
 
 
                 (HashSet<string> parentIdentifiers, ReadFeedState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
@@ -104,7 +107,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                                 inMemoryCollection,
                                 feedRangeState: feedRangeState,
                                 readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
-                                cancellationToken: default));
+                                cancellationToken: default),
+                        trace: NoOpTrace.Singleton);
                     HashSet<string> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
 
                     childIdentifiers.UnionWith(resourceIdentifiers);
@@ -118,28 +122,41 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 return page.GetRecords();
             }
 
-            public override IAsyncEnumerable<TryCatch<ReadFeedPage>> CreateEnumerable(
+            protected override IAsyncEnumerable<TryCatch<ReadFeedPage>> CreateEnumerable(
                 IDocumentContainer documentContainer,
-                ReadFeedState state = null) => new PartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState>(
-                    feedRangeState: new FeedRangeState<ReadFeedState>(
-                        new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"), 
-                        state ?? ReadFeedState.Beginning()),
-                    (feedRangeState) => new ReadFeedPartitionRangeEnumerator(
-                        documentContainer,
-                        feedRangeState: feedRangeState,
-                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
-                        cancellationToken: default));
-
-            public override IAsyncEnumerator<TryCatch<ReadFeedPage>> CreateEnumerator(
-                IDocumentContainer inMemoryCollection,  ReadFeedState state = null, CancellationToken cancellationToken = default)
+                bool aggressivePrefetch = false,
+                ReadFeedState state = null)
             {
-                return new ReadFeedPartitionRangeEnumerator(
-                    inMemoryCollection,
+                return new PartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState>(
                     feedRangeState: new FeedRangeState<ReadFeedState>(
-                        new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
+                    new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                         state ?? ReadFeedState.Beginning()),
-                    readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
-                    cancellationToken: cancellationToken);
+                        (feedRangeState) => new ReadFeedPartitionRangeEnumerator(
+                            documentContainer,
+                            feedRangeState: feedRangeState,
+                            readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                            cancellationToken: default),
+                    trace: NoOpTrace.Singleton);
+            }
+
+            protected override Task<IAsyncEnumerator<TryCatch<ReadFeedPage>>> CreateEnumeratorAsync(
+                IDocumentContainer inMemoryCollection,
+                bool aggressivePrefetch = false,
+                bool exercisePrefetch = false,
+                ReadFeedState state = null,
+                CancellationToken cancellationToken = default)
+            {
+                IAsyncEnumerator<TryCatch<ReadFeedPage>> enumerator = new TracingAsyncEnumerator<TryCatch<ReadFeedPage>>(
+                    new ReadFeedPartitionRangeEnumerator(
+                        inMemoryCollection,
+                        feedRangeState: new FeedRangeState<ReadFeedState>(
+                            new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
+                            state ?? ReadFeedState.Beginning()),
+                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                        cancellationToken: cancellationToken),
+                    trace: NoOpTrace.Singleton);
+
+                return Task.FromResult(enumerator);
             }
         }
     }

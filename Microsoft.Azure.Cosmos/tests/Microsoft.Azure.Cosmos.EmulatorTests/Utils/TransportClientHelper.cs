@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Text;
     using System.Threading.Tasks;
+    using Castle.DynamicProxy;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -24,17 +25,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string databaseId,
             string containerId,
             Guid activityId,
-            string transportExceptionSourceDescription)
+            string transportExceptionSourceDescription,
+            bool enableDistributingTracing = false)
         {
             return GetContainerWithIntercepter(
-                databaseId,
-                containerId,
-                (uri, resourceOperation, request) => TransportClientHelper.ThrowTransportExceptionOnItemOperation(
+                databaseId: databaseId,
+                containerId: containerId,
+                interceptor: (uri, resourceOperation, request) => TransportClientHelper.ThrowTransportExceptionOnItemOperation(
                     uri,
                     resourceOperation,
                     request,
                     activityId,
-                    transportExceptionSourceDescription));
+                    transportExceptionSourceDescription),
+                enableDistributingTracing: enableDistributingTracing);
+        }
+
+        internal static Container GetContainerWithItemServiceUnavailableException(
+            string databaseId,
+            string containerId,
+            Guid activityId,
+            string serviceUnavailableExceptionSourceDescription,
+            bool enableDistributingTracing = false)
+        {
+            return GetContainerWithIntercepter(
+                databaseId: databaseId,
+                containerId: containerId,
+                interceptor : (uri, resourceOperation, request) => TransportClientHelper.ThrowServiceUnavailableExceptionOnItemOperation(
+                    uri,
+                    resourceOperation,
+                    request,
+                    activityId,
+                    serviceUnavailableExceptionSourceDescription),
+                enableDistributingTracing: enableDistributingTracing);
         }
 
         internal static Container GetContainerWithIntercepter(
@@ -42,7 +64,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string containerId,
             Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor,
             bool useGatewayMode = false,
-            Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> interceptorWithStoreResult = null)
+            Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> interceptorWithStoreResult = null,
+            ISessionContainer sessionContainer = null,
+            bool enableDistributingTracing = false)
         {
             CosmosClient clientWithIntercepter = TestCommon.CreateCosmosClient(
                builder =>
@@ -52,11 +76,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                        builder.WithConnectionModeGateway();
                    }
 
+                   if (sessionContainer != null)
+                   {
+                       builder.WithSessionContainer(sessionContainer);
+                   }
+
                    builder.WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
                        transportClient,
                        interceptor,
                        interceptorWithStoreResult));
                });
+
+            if(enableDistributingTracing)
+            {
+                clientWithIntercepter.ClientOptions.EnableDistributedTracing = true;
+                clientWithIntercepter.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
+                {
+                    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(.0001)
+                };
+            }
 
             return clientWithIntercepter.GetContainer(databaseId, containerId);
         }
@@ -70,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             if (request.ResourceType == ResourceType.Document)
             {
-                StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+                RequestNameValueCollection headers = new();
                 headers.Add(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
                 headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.WriteForbidden).ToString(CultureInfo.InvariantCulture));
                 headers.Add(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, TimeSpan.FromMilliseconds(100).TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
@@ -112,6 +150,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        public static void ThrowServiceUnavailableExceptionOnItemOperation(
+                Uri physicalAddress,
+                ResourceOperation resourceOperation,
+                DocumentServiceRequest request,
+                Guid activityId,
+                string transportExceptionSourceDescription)
+        {
+            if (request.ResourceType == ResourceType.Document)
+            {
+                TransportException transportException = new TransportException(
+                    errorCode: TransportErrorCode.RequestTimeout,
+                    innerException: null,
+                    activityId: activityId,
+                    requestUri: physicalAddress,
+                    sourceDescription: transportExceptionSourceDescription,
+                    userPayload: true,
+                    payloadSent: false);
+
+                throw Documents.Rntbd.TransportExceptions.GetServiceUnavailableException(physicalAddress, Guid.NewGuid(),
+                    transportException);
+            }
+        }
+
         public static void ThrowForbiddendExceptionOnItemOperation(
                 Uri physicalAddress,
                 DocumentServiceRequest request,
@@ -120,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             if (request.ResourceType == ResourceType.Document)
             {
-                StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+                RequestNameValueCollection headers = new();
                 headers.Add(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
                 headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.WriteForbidden).ToString(CultureInfo.InvariantCulture));
                 headers.Add(HttpConstants.HttpHeaders.RequestCharge, ((double)9001).ToString(CultureInfo.InvariantCulture));

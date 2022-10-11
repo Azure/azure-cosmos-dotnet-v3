@@ -107,8 +107,8 @@ namespace Microsoft.Azure.Cosmos.Query
                                 {
                                     partitionIdentifier,
                                     new QueryMetrics(
-                                        BackendMetrics.ParseFromDelimitedString(response.ResponseHeaders[HttpConstants.HttpHeaders.QueryMetrics]),
-                                        IndexUtilizationInfo.CreateFromString(response.ResponseHeaders[HttpConstants.HttpHeaders.IndexUtilization]),
+                                        response.ResponseHeaders[HttpConstants.HttpHeaders.QueryMetrics],
+                                        IndexUtilizationInfo.CreateFromString(response.ResponseHeaders[HttpConstants.HttpHeaders.IndexUtilization], true),
                                         new ClientSideMetrics(
                                             this.retries,
                                             response.RequestCharge,
@@ -308,13 +308,14 @@ namespace Microsoft.Azure.Cosmos.Query
                     }
 
                     providedRanges = PartitionRoutingHelper.GetProvidedPartitionKeyRanges(
-                        querySpec: this.QuerySpec,
+                        querySpecJsonString: JsonConvert.SerializeObject(this.QuerySpec),
                         enableCrossPartitionQuery: enableCrossPartitionQuery,
                         parallelizeCrossPartitionQuery: false,
                         isContinuationExpected: this.isContinuationExpected,
                         hasLogicalPartitionKey: false,
                         allowDCount: false,
                         allowNonValueAggregates: false,
+                        useSystemPrefix: false,
                         partitionKeyDefinition: partitionKeyDefinition,
                         queryPartitionProvider: queryPartitionProvider,
                         clientApiVersion: version,

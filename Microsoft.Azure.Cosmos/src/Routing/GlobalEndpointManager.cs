@@ -95,6 +95,16 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public int PreferredLocationCount => this.connectionPolicy.PreferredLocations != null ? this.connectionPolicy.PreferredLocations.Count : 0;
 
+        public bool IsMultimasterMetadataWriteRequest(DocumentServiceRequest request)
+        {
+            return this.locationCache.IsMultimasterMetadataWriteRequest(request);
+        }
+
+        public Uri GetHubUri()
+        {
+            return this.locationCache.GetHubUri();
+        }
+
         /// <summary>
         /// This will get the account information.
         /// It will try the global endpoint first. 
@@ -350,6 +360,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.locationCache.GetLocation(endpoint);
         }
 
+        public bool TryGetLocationForGatewayDiagnostics(Uri endpoint, out string regionName)
+        {
+            return this.locationCache.TryGetLocationForGatewayDiagnostics(endpoint, out regionName);
+        }
+
         public virtual void MarkEndpointUnavailableForRead(Uri endpoint)
         {
             DefaultTrace.TraceInformation("GlobalEndpointManager: Marking endpoint {0} unavailable for read", endpoint);
@@ -467,12 +482,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceCritical("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Unable to refresh database account from any location. Exception: {0}", ex.ToString());
-
                 if (this.cancellationTokenSource.IsCancellationRequested && (ex is OperationCanceledException || ex is ObjectDisposedException))
                 {
                     return;
                 }
+                
+                DefaultTrace.TraceCritical("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Unable to refresh database account from any location. Exception: {0}", ex.ToString());
             }
 
             // Call itself to create a loop to continuously do background refresh every 5 minutes
@@ -536,7 +551,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
         }
-
         internal async Task<AccountProperties> GetDatabaseAccountAsync(bool forceRefresh = false)
         {
 #nullable disable  // Needed because AsyncCache does not have nullable enabled

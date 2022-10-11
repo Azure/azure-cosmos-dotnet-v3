@@ -1090,25 +1090,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
         }
 
         private static void AssertEvaluation(
-            IEnumerable<CosmosElement> expected,
+            IEnumerable<CosmosElement> expectedElements,
             SqlQuery sqlQuery,
             IEnumerable<CosmosElement> dataSource,
             IReadOnlyDictionary<string, PartitionKeyRange> ridToPartitionKeyRange = null)
         {
-            IEnumerable<CosmosElement> actual = SqlInterpreter.ExecuteQuery(
+            List<CosmosElement> actual = SqlInterpreter.ExecuteQuery(
                 dataSource,
                 sqlQuery,
-                ridToPartitionKeyRange);
-            if (expected.Count() != actual.Count())
-            {
-                Assert.Fail($"Expected had {expected.Count()} results while Actual has {actual.Count()} results.");
-            }
+                ridToPartitionKeyRange).ToList();
 
-            IEnumerable<Tuple<CosmosElement, CosmosElement>> expectedActuals = expected.Zip(actual, (first, second) => new Tuple<CosmosElement, CosmosElement>(first, second));
-            foreach (Tuple<CosmosElement, CosmosElement> expectedActual in expectedActuals)
-            {
-                Assert.AreEqual(expectedActual.Item1, expectedActual.Item2);
-            }
+            List<CosmosElement> expected = expectedElements.ToList();
+
+            CollectionAssert.AreEqual(expected, actual);
         }
 
         private static void AssertEvaluationNoOrder(

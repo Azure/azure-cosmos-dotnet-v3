@@ -79,6 +79,36 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
         }
 
+
+        [TestMethod]
+        [Owner("sourabhjain")]
+        public void ValidateTryGetLocationForGatewayDiagnostics()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: true);
+
+            Assert.AreEqual(false, this.cache.TryGetLocationForGatewayDiagnostics(LocationCacheTests.DefaultEndpoint, out string regionName));
+            Assert.IsNull(regionName);
+
+            // Default Endpoint with path
+            Assert.AreEqual(false, this.cache.TryGetLocationForGatewayDiagnostics(new Uri(LocationCacheTests.DefaultEndpoint, "random/path"), out regionName));
+            Assert.IsNull(regionName);
+
+            foreach (AccountRegion databaseAccountLocation in this.databaseAccount.WriteLocationsInternal)
+            {
+                Assert.AreEqual(true, this.cache.TryGetLocationForGatewayDiagnostics(new Uri(databaseAccountLocation.Endpoint), out regionName));
+                Assert.AreEqual(databaseAccountLocation.Name, regionName);
+            }
+
+            foreach (AccountRegion databaseAccountLocation in this.databaseAccount.ReadLocationsInternal)
+            {
+                Assert.AreEqual(true, this.cache.TryGetLocationForGatewayDiagnostics(new Uri(databaseAccountLocation.Endpoint), out regionName));
+                Assert.AreEqual(databaseAccountLocation.Name, regionName);
+            }
+        }
+
         [TestMethod]
         [Owner("atulk")]
         public async Task ValidateRetryOnSessionNotAvailabeWithDisableMultipleWriteLocationsAndEndpointDiscoveryDisabled()
@@ -125,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                             retryCount++;
 
-                            StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+                            StoreResponseNameValueCollection headers = new();
                             headers[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString();
                             DocumentClientException notFoundException = new NotFoundException(RMResources.NotFound, headers);
 
@@ -207,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                             retryCount++;
 
-                            StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+                            StoreResponseNameValueCollection headers = new();
                             headers[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString();
                             DocumentClientException notFoundException = new NotFoundException(RMResources.NotFound, headers);
 
@@ -290,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                             retryCount++;
 
-                            StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+                            StoreResponseNameValueCollection headers = new();
                             headers[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString();
                             DocumentClientException notFoundException = new NotFoundException(RMResources.NotFound, headers);
 
@@ -370,7 +400,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                             retryCount++;
 
-                            StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+                            StoreResponseNameValueCollection headers = new();
                             headers[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString();
                             DocumentClientException notFoundException = new NotFoundException(RMResources.NotFound, headers);
 
@@ -426,7 +456,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                             Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
 
-                            StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+                            StoreResponseNameValueCollection headers = new();
                             headers[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.WriteForbidden).ToString();
                             DocumentClientException forbiddenException = new ForbiddenException(RMResources.Forbidden, headers);
 
@@ -493,7 +523,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
 
-                                StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+                                StoreResponseNameValueCollection headers = new();
                                 headers[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.DatabaseAccountNotFound).ToString();
                                 DocumentClientException forbiddenException = new ForbiddenException(RMResources.NotFound, headers);
 

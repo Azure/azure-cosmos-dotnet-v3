@@ -16,6 +16,8 @@ namespace Microsoft.Azure.Cosmos
         public abstract IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> GetTimeoutEnumerator();
         public abstract bool IsSafeToRetry(HttpMethod httpMethod);
 
+        public abstract bool ShouldRetryBasedOnResponse(HttpMethod requestHttpMethod, HttpResponseMessage responseMessage);
+
         public static HttpTimeoutPolicy GetTimeoutPolicy(
            DocumentServiceRequest documentServiceRequest)
         {

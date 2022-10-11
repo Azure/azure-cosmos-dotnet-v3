@@ -82,11 +82,12 @@ namespace CosmosBenchmark
         }
 
         /// <summary>
-        /// Run samples for Order By queries.
+        /// Executing benchmarks for V2/V3 cosmosdb SDK.
         /// </summary>
         /// <returns>a Task object.</returns>
         private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config)
         {
+            // V3 SDK client initialization
             using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key))
             {
                 Microsoft.Azure.Cosmos.Database database = cosmosClient.GetDatabase(config.Database);
@@ -119,6 +120,8 @@ namespace CosmosBenchmark
 
                 // TBD: 2 clients SxS some overhead
                 RunSummary runSummary;
+
+                // V2 SDK client initialization
                 using (Microsoft.Azure.Documents.Client.DocumentClient documentClient = config.CreateDocumentClient(config.Key))
                 {
                     Func<IBenchmarkOperation> benchmarkOperationFactory = this.GetBenchmarkFactory(
@@ -133,8 +136,8 @@ namespace CosmosBenchmark
                         Program.ClearCoreSdkListeners();
                     }
 
-                    IExecutionStrategy execution = IExecutionStrategy.StartNew(config, benchmarkOperationFactory);
-                    runSummary = await execution.ExecuteAsync(taskCount, opsPerTask, config.TraceFailures, 0.01);
+                    IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory);
+                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask,  0.01);
                 }
 
                 if (config.CleanupOnFinish)
@@ -142,24 +145,6 @@ namespace CosmosBenchmark
                     Console.WriteLine($"Deleting Database {config.Database}");
                     await database.DeleteStreamAsync();
                 }
-
-                runSummary.WorkloadType = config.WorkloadType;
-                runSummary.id = $"{DateTime.UtcNow:yyyy-MM-dd:HH-mm}-{config.CommitId}";
-                runSummary.Commit = config.CommitId;
-                runSummary.CommitDate = config.CommitDate;
-                runSummary.CommitTime = config.CommitTime;
-
-                runSummary.Date = DateTime.UtcNow.ToString("yyyy-MM-dd");
-                runSummary.Time = DateTime.UtcNow.ToString("HH-mm");
-                runSummary.BranchName = config.BranchName;
-                runSummary.TotalOps = config.ItemCount;
-                runSummary.Concurrency = taskCount;
-                runSummary.Database = config.Database;
-                runSummary.Container = config.Container;
-                runSummary.AccountName = config.EndPoint;
-                runSummary.pk = config.ResultsPartitionKeyValue;
-                runSummary.MaxTcpConnectionsPerEndpoint = config.MaxTcpConnectionsPerEndpoint;
-                runSummary.MaxRequestsPerTcpConnection = config.MaxRequestsPerTcpConnection;
 
                 string consistencyLevel = config.ConsistencyLevel;
                 if (string.IsNullOrWhiteSpace(consistencyLevel))
@@ -268,7 +253,7 @@ namespace CosmosBenchmark
         }
 
         /// <summary>
-        /// Create a partitioned container.
+        /// Get or Create a partitioned container and display cost of running this test.
         /// </summary>
         /// <returns>The created container.</returns>
         private static async Task<ContainerResponse> CreatePartitionedContainerAsync(BenchmarkConfig options, CosmosClient cosmosClient)

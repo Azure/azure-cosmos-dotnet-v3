@@ -11,13 +11,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Type of Patch operation.
     /// </summary>
+    /// <remarks>
+    /// For more information, see <see href="https://docs.microsoft.com/azure/cosmos-db/partial-document-update#supported-operations">Partial document update in Azure Cosmos DB: Supported operations</see>
+    /// </remarks>
     [JsonConverter(typeof(StringEnumConverter))]
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-        enum PatchOperationType
+
+    public enum PatchOperationType
     {
         /// <summary>
         /// Operation to add a value.

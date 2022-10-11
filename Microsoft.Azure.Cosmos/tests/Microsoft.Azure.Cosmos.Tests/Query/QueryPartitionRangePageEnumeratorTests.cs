@@ -10,6 +10,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
+    using Microsoft.Azure.Cosmos.Tests.Query.Pipeline;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -21,35 +22,35 @@
         public async Task Test429sAsync()
         {
             Implementation implementation = new Implementation();
-            await implementation.Test429sAsync();
+            await implementation.Test429sAsync(false);
         }
 
         [TestMethod]
         public async Task Test429sWithContinuationsAsync()
         {
             Implementation implementation = new Implementation();
-            await implementation.Test429sWithContinuationsAsync();
+            await implementation.Test429sWithContinuationsAsync(false, false);
         }
 
         [TestMethod]
         public async Task TestDrainFullyAsync()
         {
             Implementation implementation = new Implementation();
-            await implementation.TestDrainFullyAsync();
+            await implementation.TestDrainFullyAsync(false);
         }
 
         [TestMethod]
         public async Task TestEmptyPages()
         {
             Implementation implementation = new Implementation();
-            await implementation.TestEmptyPages();
+            await implementation.TestEmptyPages(false);
         }
 
         [TestMethod]
         public async Task TestResumingFromStateAsync()
         {
             Implementation implementation = new Implementation();
-            await implementation.TestResumingFromStateAsync();
+            await implementation.TestResumingFromStateAsync(false, false);
         }
 
         [TestMethod]
@@ -72,7 +73,7 @@
             {
                 int numItems = 100;
                 IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems);
-                IAsyncEnumerator<TryCatch<QueryPage>> enumerator = this.CreateEnumerator(documentContainer);
+                IAsyncEnumerator<TryCatch<QueryPage>> enumerator = await this.CreateEnumeratorAsync(documentContainer);
 
                 (HashSet<string> parentIdentifiers, QueryState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
@@ -100,7 +101,8 @@
                             feedRangeState: feedRangeState,
                             partitionKey: null,
                             queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
-                            cancellationToken: default));
+                            cancellationToken: default),
+                        trace: NoOpTrace.Singleton);
                     HashSet<string> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
 
                     childIdentifiers.UnionWith(resourceIdentifiers);
@@ -125,8 +127,9 @@
                 return records;
             }
 
-            public override IAsyncEnumerable<TryCatch<QueryPage>> CreateEnumerable(
+            protected override IAsyncEnumerable<TryCatch<QueryPage>> CreateEnumerable(
                 IDocumentContainer documentContainer,
+                bool aggressivePrefetch = false,
                 QueryState state = null)
             {
                 List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(
@@ -141,11 +144,14 @@
                         feedRangeState: feedRangeState,
                         partitionKey: null,
                         queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
-                        cancellationToken: default));
+                        cancellationToken: default),
+                    trace: NoOpTrace.Singleton);
             }
 
-            public override IAsyncEnumerator<TryCatch<QueryPage>> CreateEnumerator(
+            protected override Task<IAsyncEnumerator<TryCatch<QueryPage>>> CreateEnumeratorAsync(
                 IDocumentContainer documentContainer,
+                bool aggressivePrefetch = false,
+                bool exercisePrefetch = false,
                 QueryState state = default,
                 CancellationToken cancellationToken = default)
             {
@@ -153,13 +159,18 @@
                     trace: NoOpTrace.Singleton, 
                     cancellationToken: default).Result;
                 Assert.AreEqual(1, ranges.Count);
-                return new QueryPartitionRangePageAsyncEnumerator(
-                    queryDataSource: documentContainer,
-                    sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
-                    feedRangeState: new FeedRangeState<QueryState>(ranges[0], state),
-                    partitionKey: null,
-                    queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
-                    cancellationToken: cancellationToken);
+
+                IAsyncEnumerator<TryCatch<QueryPage>> enumerator = new TracingAsyncEnumerator<TryCatch<QueryPage>>(
+                    enumerator: new QueryPartitionRangePageAsyncEnumerator(
+                        queryDataSource: documentContainer,
+                        sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
+                        feedRangeState: new FeedRangeState<QueryState>(ranges[0], state),
+                        partitionKey: null,
+                        queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                        cancellationToken: cancellationToken),
+                    trace: NoOpTrace.Singleton);
+
+                return Task.FromResult(enumerator);
             }
         }
     }

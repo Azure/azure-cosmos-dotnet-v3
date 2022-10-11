@@ -46,11 +46,9 @@ namespace Microsoft.Azure.Cosmos
             this.MaxConnectionLimit = defaultMaxConcurrentConnectionLimit;
             this.RetryOptions = new RetryOptions();
             this.EnableReadRequestsFallback = null;
-#if PREVIEW
-            this.EnableClientTelemetry = ConfigurationManager.GetEnvironmentVariable<bool>(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, false);
-#endif
 
-    }
+            this.EnableClientTelemetry = ClientTelemetryOptions.IsClientTelemetryEnabled();
+        }
 
         /// <summary>
         /// Automatically populates the <see cref="PreferredLocations"/> for geo-replicated database accounts in the Azure Cosmos DB service,
@@ -61,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!RegionProximityUtil.SourceRegionToTargetRegionsRTTInMs.ContainsKey(location))
             {
-                throw new ArgumentException("Current location is not a valid Azure region.");
+                throw new ArgumentException($"ApplicationRegion configuration '{location}' is not a valid Azure region or the current SDK version does not recognize it. If the value represents a valid region, make sure you are using the latest SDK version.");
             }
 
             List<string> proximityBasedPreferredLocations = RegionProximityUtil.GeneratePreferredRegionList(location);

@@ -18,7 +18,7 @@ dynamic testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue"
 ItemResponse<dynamic> createResponse = await container.CreateItemAsync(testItem);
 
 // Query for an item
-using (FeedIterator<dynamic> feedIterator = await container.GetItemQueryIterator<dynamic>(
+using (FeedIterator<dynamic> feedIterator = container.GetItemQueryIterator<dynamic>(
     "select * from T where T.status = 'done'"))
 {
     while (feedIterator.HasMoreResults)
@@ -40,6 +40,7 @@ using (FeedIterator<dynamic> feedIterator = await container.GetItemQueryIterator
 
 - [Get Started APP](https://docs.microsoft.com/azure/cosmos-db/sql-api-get-started)
 - [GitHub samples](https://github.com/Azure/azure-cosmos-dotnet-v3/tree/master/Microsoft.Azure.Cosmos.Samples)
+- [SDK Best practices](https://docs.microsoft.com/azure/cosmos-db/sql/best-practice-dotnet)
 - [MultiMaster samples](https://github.com/markjbrown/azure-cosmosdb-dotnet/tree/master/samples/MultiMaster)
 - [Resource Model of Azure Cosmos DB Service](https://docs.microsoft.com/azure/cosmos-db/sql-api-resources)
 - [Cosmos DB Resource URI](https://docs.microsoft.com/rest/api/documentdb/documentdb-resource-uri-syntax-for-rest)
@@ -62,6 +63,8 @@ Resources:
 
 
 ## Contributing
+
+For details on contributing to this repository, see the [contributing guide](CONTRIBUTING.md).
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
 Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us

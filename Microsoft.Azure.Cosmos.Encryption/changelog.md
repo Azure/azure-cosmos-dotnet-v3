@@ -3,6 +3,58 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="2.0.0"/> [2.0.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/2.0.0) - 2022-06-28
+
+#### Added
+- [#3241](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3241) Adds code to support PartitionKey and Id encryption.
+
+### <a name="2.0.0-preview"/> [2.0.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/2.0.0-preview) - 2022-06-28
+
+#### Added
+- [#3241](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3241) Adds code to support PartitionKey and Id encryption.
+
+### <a name="1.0.1"/> [1.0.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.1) - 2022-06-01
+
+#### Added
+- [#3200](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3200) Adds fix to retain the original key vault error/exception and upgrades core SDK package dependency.
+
+### <a name="1.0.1-preview"/> [1.0.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.1-preview) - 2022-06-01
+
+#### Added
+- [#3200](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3200) Adds fix to retain the original key vault error/exception and upgrades core SDK preview package dependency.
+
+### <a name="1.0.0"/> [1.0.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0) - 2022-03-22
+
+#### Added
+- [#3070](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3070) Adds support for preview and non-preview version of Cosmos SDK in Encryption package.
+
+### <a name="1.0.0-previewV20"/> [1.0.0-previewV20](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV20) - 2022-03-07
+
+#### Added
+- [#3066](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3066) Adds dependency on the latest preview SDK version with Algorithm in EncryptionKeyWrapMetadata.
+- [#3050](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3050) Adds the use of Azure.Core interfaces in public surface.
+
+### <a name="1.0.0-previewV19"/> [1.0.0-previewV19](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV19) - 2022-01-13
+
+#### Added
+- [#2906](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2906) Adds an abstraction layer to hide the underlying usage of Microsoft Data Encryption(MDE) library.
+
+#### Fixes 
+- [#2648](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2648) Removes retry behavior for point operations during client encryption policy change. 
+
+### <a name="1.0.0-previewV18"/> [1.0.0-previewV18](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV18) - 2021-10-29
+
+#### Fixes 
+- [#2835](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2835) Adds fix to add encryption header for patch operation.
+- [#2727](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2727) Fixes JSON property name of ClientEncryptionKeyProperties to match backend.
+
+### <a name="1.0.0-previewV17"/> [1.0.0-previewV17](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV17) - 2021-10-07
+
+#### Added 
+- [#2633](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2633) Adds basic diagnostics information regarding encryption / decryption operation.
+- [#2634](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2634) Adds support for PatchItem in Transactional Batch.
+- [#2572](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2572) Adds ReadMany API support.
+
 ### <a name="1.0.0-previewV16"/> [1.0.0-previewV16](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV16) - 2021-08-30
 
 #### Fixes 

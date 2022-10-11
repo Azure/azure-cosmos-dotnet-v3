@@ -79,7 +79,6 @@ namespace CosmosCTL
                     Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
                 };
 
-                long diagnosticsThresholdDuration = (long)config.DiagnosticsThresholdDurationAsTimespan.TotalMilliseconds;
                 Container container = cosmosClient.GetContainer(config.Database, config.Collection);
                 while (stopWatch.Elapsed <= config.RunningTimeDurationAsTimespan
                     && !cancellationToken.IsCancellationRequested)
@@ -90,11 +89,12 @@ namespace CosmosCTL
                         using (TimerContext timerContext = metrics.Measure.Timer.Time(readLatencyTimer))
                         {
                             response = await container.ReadManyItemsAsync<Dictionary<string, string>>(this.idAndPkPairs);
-                            long latency = (long)timerContext.Elapsed.TotalMilliseconds;
-                            if (latency > diagnosticsThresholdDuration)
-                            {
-                                logger.LogInformation("ReadMany request took more than latency threshold {0}, diagnostics: {1}", config.DiagnosticsThresholdDuration, response.Diagnostics.ToString());
-                            }
+                            Utils.LogDiagnostics(
+                                logger: logger,
+                                operationName: nameof(ReadManyScenario),
+                                timerContextLatency: timerContext.Elapsed,
+                                config: config,
+                                cosmosDiagnostics: response.Diagnostics);
                         }
 
                         metrics.Measure.Gauge.SetValue(documentGauge, response.Count);

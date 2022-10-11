@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System;
+    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -34,8 +35,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         public static async Task<PartitionedQueryExecutionInfo> GetQueryPlanWithServiceInteropAsync(
             CosmosQueryClient queryClient,
             SqlQuerySpec sqlQuerySpec,
+            Documents.ResourceType resourceType,
             PartitionKeyDefinition partitionKeyDefinition,
             bool hasLogicalPartitionKey,
+            bool useSystemPrefix,
             ITrace trace,
             CancellationToken cancellationToken = default)
         {
@@ -62,22 +65,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
                 TryCatch<PartitionedQueryExecutionInfo> tryGetQueryPlan = await queryPlanHandler.TryGetQueryPlanAsync(
                     sqlQuerySpec,
+                    resourceType,
                     partitionKeyDefinition,
                     QueryPlanRetriever.SupportedQueryFeatures,
                     hasLogicalPartitionKey,
+                    useSystemPrefix,
                     cancellationToken);
 
                 if (!tryGetQueryPlan.Succeeded)
                 {
-                    if (tryGetQueryPlan.Exception is CosmosException)
+                    Exception originalException = ExceptionWithStackTraceException.UnWrapMonadExcepion(tryGetQueryPlan.Exception, serviceInteropTrace);
+                    if (originalException is CosmosException)
                     {
-                        throw tryGetQueryPlan.Exception;
+                        throw originalException;
                     }
 
                     throw CosmosExceptionFactory.CreateBadRequestException(
-                        message: tryGetQueryPlan.Exception.ToString(),
+                        message: originalException.Message,
                         headers: new Headers(),
                         stackTrace: tryGetQueryPlan.Exception.StackTrace,
+                        innerException: originalException,
                         trace: trace);
                 }
 
@@ -112,6 +119,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             using (ITrace gatewayQueryPlanTrace = trace.StartChild("Gateway QueryPlan", TraceComponent.Query, TraceLevel.Info))
             {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                            && Documents.ServiceInteropWrapper.Is64BitProcess)
+                {
+                    // It's Windows and x64, should have loaded the DLL
+                    gatewayQueryPlanTrace.AddDatum("ServiceInterop unavailable", true);
+                }
+                
                 return queryContext.ExecuteQueryPlanRequestAsync(
                     resourceLink,
                     ResourceType.Document,

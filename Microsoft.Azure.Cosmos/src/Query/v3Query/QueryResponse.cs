@@ -170,7 +170,8 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryResponseMessageHeaders responseMessageHeaders,
             CosmosDiagnostics diagnostics,
             CosmosSerializerCore serializerCore,
-            CosmosSerializationFormatOptions serializationOptions)
+            CosmosSerializationFormatOptions serializationOptions,
+            RequestMessage requestMessage)
         {
             this.QueryHeaders = responseMessageHeaders;
             this.Diagnostics = diagnostics;
@@ -182,14 +183,8 @@ namespace Microsoft.Azure.Cosmos
                 cosmosArray: cosmosElements,
                 serializerCore: serializerCore);
 
-            this.IndexUtilizationText = new Lazy<string>(() =>
-            {
-                IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText);
-                StringBuilder stringBuilder = new StringBuilder();
-                IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
-                indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);
-                return stringBuilder.ToString();
-            });
+            this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(responseMessageHeaders, true);
+            this.RequestMessage = requestMessage;
         }
 
         public override string ContinuationToken => this.Headers.ContinuationToken;
@@ -208,7 +203,7 @@ namespace Microsoft.Azure.Cosmos
 
         private Lazy<string> IndexUtilizationText { get; }
 
-        public override string IndexMetrics => this.IndexUtilizationText.Value;
+        public override string IndexMetrics => this.IndexUtilizationText?.Value;
 
         public override IEnumerator<T> GetEnumerator()
         {
@@ -216,6 +211,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override IEnumerable<T> Resource { get; }
+
+        internal override RequestMessage RequestMessage { get; }
 
         internal static QueryResponse<TInput> CreateResponse<TInput>(
             QueryResponse cosmosQueryResponse,
@@ -232,7 +229,8 @@ namespace Microsoft.Azure.Cosmos
                     responseMessageHeaders: cosmosQueryResponse.QueryHeaders,
                     diagnostics: cosmosQueryResponse.Diagnostics,
                     serializerCore: serializerCore,
-                    serializationOptions: cosmosQueryResponse.CosmosSerializationOptions);
+                    serializationOptions: cosmosQueryResponse.CosmosSerializationOptions,
+                    requestMessage: cosmosQueryResponse.RequestMessage);
             }
             return queryResponse;
         }

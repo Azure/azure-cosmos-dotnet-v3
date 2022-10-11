@@ -28,6 +28,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         private readonly CosmosClient client;
         private readonly Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
 
+        private bool? IsLocalQuorumConsistency;
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
 
         public RequestInvokerHandler(
@@ -35,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Cosmos.ConsistencyLevel? requestedClientConsistencyLevel)
         {
             this.client = client;
-            this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;
+            this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;       
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -143,7 +144,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 try
                 {
-                    HttpMethod method = RequestInvokerHandler.GetHttpMethod(resourceType, operationType);
+                    HttpMethod method = RequestInvokerHandler.GetHttpMethod(resourceType, operationType, streamPayload != null);
+
                     RequestMessage request = new RequestMessage(
                         method,
                         resourceUriString,
@@ -154,6 +156,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         RequestOptions = requestOptions,
                         Content = streamPayload,
                     };
+
+                    request.Headers.SDKSupportedCapabilities = Headers.SDKSUPPORTEDCAPABILITIES;
 
                     if (feedRange != null)
                     {
@@ -254,9 +258,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                     // In this case we route to the physical partition and 
                                     // pass the epk range headers to filter within partition
                                     request.PartitionKeyRangeId = new Documents.PartitionKeyRangeIdentity(overlappingRanges[0].Id);
-                                    request.Headers[HttpConstants.HttpHeaders.ReadFeedKeyType] = RntbdConstants.RntdbReadFeedKeyType.EffectivePartitionKeyRange.ToString();
-                                    request.Headers[HttpConstants.HttpHeaders.StartEpk] = feedRangeEpk.Range.Min;
-                                    request.Headers[HttpConstants.HttpHeaders.EndEpk] = feedRangeEpk.Range.Max;
+                                    request.Headers.ReadFeedKeyType = RntbdConstants.RntdbReadFeedKeyType.EffectivePartitionKeyRange.ToString();
+                                    request.Headers.StartEpk = feedRangeEpk.Range.Min;
+                                    request.Headers.EndEpk = feedRangeEpk.Range.Max;
                                 }
                             }
                         }
@@ -277,6 +281,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         request.Headers.ContentType = RuntimeConstants.MediaTypes.JsonPatch;
                     }
 
+                    if (ChangeFeedHelper.IsChangeFeedWithQueryRequest(operationType, streamPayload != null))
+                    {
+                        request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
+                        request.Headers.Add(HttpConstants.HttpHeaders.ContentType, RuntimeConstants.MediaTypes.QueryJson);
+                    }
+
                     if (cosmosContainerCore != null)
                     {
                         request.ContainerId = cosmosContainerCore?.Id;
@@ -295,7 +305,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         internal static HttpMethod GetHttpMethod(
             ResourceType resourceType,
-            OperationType operationType)
+            OperationType operationType,
+            bool hasPayload = false)
         {
             if (operationType == OperationType.Create ||
                 operationType == OperationType.Upsert ||
@@ -307,6 +318,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 operationType == OperationType.CompleteUserTransaction ||
                 (resourceType == ResourceType.PartitionKey && operationType == OperationType.Delete))
             {
+                return HttpMethod.Post;
+            }
+            else if (ChangeFeedHelper.IsChangeFeedWithQueryRequest(operationType, hasPayload))
+            {
+                // ChangeFeed with payload is a CF with query support and will
+                // be a POST request.
                 return HttpMethod.Post;
             }
             else if (operationType == OperationType.Read ||
@@ -354,10 +371,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
 
+        /// <summary>
+        /// Validate the request consistency compatibility with account consistency
+        /// Type based access context for requested consistency preferred for performance
+        /// </summary>
+        /// <param name="requestMessage"></param>
+        /// <exception cref="ArgumentException">In case, Invalid consistency is passed</exception>
         private async Task ValidateAndSetConsistencyLevelAsync(RequestMessage requestMessage)
         {
-            // Validate the request consistency compatibility with account consistency
-            // Type based access context for requested consistency preferred for performance
             Cosmos.ConsistencyLevel? consistencyLevel = null;
             RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
             if (promotedRequestOptions != null && promotedRequestOptions.BaseConsistencyLevel.HasValue)
@@ -376,10 +397,20 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     this.AccountConsistencyLevel = await this.client.GetAccountConsistencyLevelAsync();
                 }
 
-                if (ValidationHelpers.IsValidConsistencyLevelOverwrite(this.AccountConsistencyLevel.Value, consistencyLevel.Value))
+                if (!this.IsLocalQuorumConsistency.HasValue)
+                {
+                    this.IsLocalQuorumConsistency = this.client.ClientOptions.EnableUpgradeConsistencyToLocalQuorum;
+                }
+
+                if (ValidationHelpers.IsValidConsistencyLevelOverwrite(
+                            backendConsistency: this.AccountConsistencyLevel.Value, 
+                            desiredConsistency: consistencyLevel.Value,
+                            isLocalQuorumConsistency: this.IsLocalQuorumConsistency.Value,
+                            operationType: requestMessage.OperationType,
+                            resourceType: requestMessage.ResourceType))
                 {
                     // ConsistencyLevel compatibility with back-end configuration will be done by RequestInvokeHandler
-                    requestMessage.Headers.Add(HttpConstants.HttpHeaders.ConsistencyLevel, consistencyLevel.Value.ToString());
+                    requestMessage.Headers.ConsistencyLevel = consistencyLevel.Value.ToString();
                 }
                 else
                 {

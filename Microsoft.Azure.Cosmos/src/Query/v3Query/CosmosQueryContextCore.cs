@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos.Query
             Guid correlatedActivityId,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
+            bool useSystemPrefix,
             string containerResourceId = null)
             : base(
                 client,
@@ -35,6 +36,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 correlatedActivityId,
                 isContinuationExpected,
                 allowNonValueAggregateQuery,
+                useSystemPrefix,
                 containerResourceId)
         {
         }
@@ -81,6 +83,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 sqlQuerySpec,
                 partitionKey,
                 supportedQueryFeatures,
+                this.CorrelatedActivityId,
                 trace,
                 cancellationToken);
         }

@@ -6,15 +6,15 @@ namespace CosmosCTL
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Net;
-    using System.Diagnostics;
     using App.Metrics;
-    using Microsoft.Azure.Cosmos;
-    using Microsoft.Extensions.Logging;
     using App.Metrics.Gauge;
     using App.Metrics.Timer;
+    using Microsoft.Azure.Cosmos;
+    using Microsoft.Extensions.Logging;
 
     internal class ChangeFeedPullScenario : ICTLScenario
     {
@@ -55,7 +55,6 @@ namespace CosmosCTL
         {
             Stopwatch stopWatch = Stopwatch.StartNew();
 
-            long diagnosticsThresholdDuration = (long)config.DiagnosticsThresholdDurationAsTimespan.TotalMilliseconds;
             GaugeOptions documentGauge= new GaugeOptions { Name = "#Documents received", Context = loggingContextIdentifier };
 
             TimerOptions readLatencyTimer = new TimerOptions
@@ -87,11 +86,12 @@ namespace CosmosCTL
                             using (TimerContext timerContext = metrics.Measure.Timer.Time(readLatencyTimer))
                             {
                                 response = await changeFeedPull.ReadNextAsync();
-                                long latency = (long)timerContext.Elapsed.TotalMilliseconds;
-                                if (latency > diagnosticsThresholdDuration)
-                                {
-                                    logger.LogInformation("Change Feed request took more than latency threshold {0}, diagnostics: {1}", config.DiagnosticsThresholdDuration, response.Diagnostics.ToString());
-                                }
+                                Utils.LogDiagnostics(
+                                    logger: logger,
+                                    operationName: nameof(ChangeFeedPullScenario),
+                                    timerContextLatency: timerContext.Elapsed,
+                                    config: config,
+                                    cosmosDiagnostics: response.Diagnostics);
                             }
 
                             documentTotal += response.Count;

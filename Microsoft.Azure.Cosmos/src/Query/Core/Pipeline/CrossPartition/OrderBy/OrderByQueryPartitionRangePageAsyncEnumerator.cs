@@ -63,7 +63,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         private sealed class InnerEnumerator : PartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>
         {
             private readonly IQueryDataSource queryDataSource;
-            private readonly QueryPaginationOptions queryPaginationOptions;
 
             public InnerEnumerator(
                 IQueryDataSource queryDataSource,
@@ -78,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
                 this.PartitionKey = partitionKey;
-                this.queryPaginationOptions = queryPaginationOptions ?? QueryPaginationOptions.Default;
+                this.QueryPaginationOptions = queryPaginationOptions ?? QueryPaginationOptions.Default;
                 this.Filter = filter;
             }
 
@@ -102,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     .MonadicQueryAsync(
                         sqlQuerySpec: this.SqlQuerySpec,
                         feedRangeState: new FeedRangeState<QueryState>(feedRange, this.FeedRangeState.State),
-                        queryPaginationOptions: this.queryPaginationOptions,
+                        queryPaginationOptions: this.QueryPaginationOptions,
                         trace: trace,
                         cancellationToken);
                 if (monadicQueryPage.Failed)

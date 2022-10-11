@@ -48,26 +48,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 writer.WriteFieldName("id");
                 writer.WriteStringValue(trace.Id.ToString());
 
-                // Request handler use the base class to create the trace.
-                // This makes it pointless to log the caller info because 
-                // it is always just the base class info.
-                if (trace.Component != TraceComponent.RequestHandler)
-                {
-                    writer.WriteFieldName("caller info");
-                    writer.WriteObjectStart();
-
-                    writer.WriteFieldName("member");
-                    writer.WriteStringValue(trace.CallerInfo.MemberName);
-
-                    writer.WriteFieldName("file");
-                    writer.WriteStringValue(GetFileNameFromPath(trace.CallerInfo.FilePath));
-
-                    writer.WriteFieldName("line");
-                    writer.WriteNumber64Value(trace.CallerInfo.LineNumber);
-
-                    writer.WriteObjectEnd();
-                }
-
                 writer.WriteFieldName("start time");
                 writer.WriteStringValue(trace.StartTime.ToString("hh:mm:ss:fff"));
 
@@ -221,6 +201,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.WriteRegionsContactedArray("RegionsContacted", clientSideRequestStatisticsTraceDatum.RegionsContacted);
                 this.WriteJsonUriArray("FailedReplicas", clientSideRequestStatisticsTraceDatum.FailedReplicas);
 
+                clientSideRequestStatisticsTraceDatum.WriteAddressCachRefreshContent(this.jsonWriter);
+
                 this.jsonWriter.WriteFieldName("AddressResolutionStatistics");
                 this.jsonWriter.WriteArrayStart();
 
@@ -348,6 +330,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName("OperationType");
                 this.jsonWriter.WriteStringValue(storeResponseStatistics.RequestOperationType.ToString());
 
+                if (!string.IsNullOrEmpty(storeResponseStatistics.RequestSessionToken))
+                {
+                    this.jsonWriter.WriteFieldName("RequestSessionToken");
+                    this.jsonWriter.WriteStringValue(storeResponseStatistics.RequestSessionToken);
+                }
+
                 this.jsonWriter.WriteFieldName("LocationEndpoint");
                 this.WriteStringValueOrNull(storeResponseStatistics.LocationEndpoint?.ToString());
 
@@ -438,6 +426,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName(nameof(storeResult.RequestCharge));
                 this.jsonWriter.WriteNumber64Value(storeResult.RequestCharge);
 
+                this.jsonWriter.WriteFieldName(nameof(storeResult.RetryAfterInMs));
+                this.WriteStringValueOrNull(storeResult.RetryAfterInMs);
+
                 this.jsonWriter.WriteFieldName("BELatencyInMs");
                 this.WriteStringValueOrNull(storeResult.BackendRequestDurationInMs);
 
@@ -446,6 +437,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName("TransportException");
                 TransportException transportException = storeResult.Exception?.InnerException as TransportException;
                 this.WriteStringValueOrNull(transportException?.Message);
+
+                this.jsonWriter.WriteObjectEnd();
+            }
+
+            public void Visit(PartitionKeyRangeCacheTraceDatum partitionKeyRangeCacheTraceDatum)
+            {
+                this.jsonWriter.WriteObjectStart();
+
+                this.jsonWriter.WriteFieldName("Previous Continuation Token");
+                this.WriteStringValueOrNull(partitionKeyRangeCacheTraceDatum.PreviousContinuationToken);
+
+                this.jsonWriter.WriteFieldName("Continuation Token");
+                this.WriteStringValueOrNull(partitionKeyRangeCacheTraceDatum.ContinuationToken);
 
                 this.jsonWriter.WriteObjectEnd();
             }
@@ -514,42 +518,32 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 if (uris != null)
                 {
-                    TransportAddressUri previous = null;
-                    int duplicateCount = 1;
-                    int totalCount = uris.Count;
-                    for (int i = 0; i < totalCount; i++)
+                    Dictionary<TransportAddressUri, int> uriCount = new ();
+                    foreach (TransportAddressUri transportAddressUri in uris)
                     {
-                        TransportAddressUri contactedReplica = uris[i];
-                        if (contactedReplica == null)
+                        if (transportAddressUri == null)
                         {
                             continue;
                         }
 
-                        if (contactedReplica.Equals(previous))
+                        if (uriCount.ContainsKey(transportAddressUri))
                         {
-                            duplicateCount++;
-                            // Don't continue for last link so it get's printed
-                            if (i < totalCount - 1)
-                            {
-                                continue;
-                            }
+                            uriCount[transportAddressUri]++;
                         }
-
-                        // The URI is not a duplicate.
-                        // Write previous URI and count.
-                        // Then update them to the new URI and count
-                        if (previous != null)
+                        else
                         {
-                            this.jsonWriter.WriteObjectStart();
-                            this.jsonWriter.WriteFieldName("Count");
-                            this.jsonWriter.WriteNumber64Value(duplicateCount);
-                            this.jsonWriter.WriteFieldName("Uri");
-                            this.WriteStringValueOrNull(contactedReplica?.ToString());
-                            this.jsonWriter.WriteObjectEnd();
+                            uriCount.Add(transportAddressUri, 1);
                         }
+                    }
 
-                        previous = contactedReplica;
-                        duplicateCount = 1;
+                    foreach (KeyValuePair<TransportAddressUri, int> contactedCount in uriCount) 
+                    {
+                        this.jsonWriter.WriteObjectStart();
+                        this.jsonWriter.WriteFieldName("Count");
+                        this.jsonWriter.WriteNumber64Value(contactedCount.Value);
+                        this.jsonWriter.WriteFieldName("Uri");
+                        this.WriteStringValueOrNull(contactedCount.Key.ToString());
+                        this.jsonWriter.WriteObjectEnd();
                     }
                 }
 
@@ -579,6 +573,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     this.jsonWriter.WriteStringValue(value.ToString("o", CultureInfo.InvariantCulture));
                 }
             }
+
         }
     }
 }

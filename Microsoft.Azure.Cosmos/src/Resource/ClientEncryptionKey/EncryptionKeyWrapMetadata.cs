@@ -10,7 +10,8 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json.Linq;
 
     /// <summary>
-    /// Metadata that a key wrapping provider can use to wrap/unwrap data encryption keys.
+    /// Metadata that can be used to wrap/unwrap a Data Encryption Key using a Customer Managed Key.
+    /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
     public class EncryptionKeyWrapMetadata : IEquatable<EncryptionKeyWrapMetadata>
     {
@@ -22,14 +23,16 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Creates a new instance of key wrap metadata.
         /// </summary> 
-        /// <param name="type">ProviderName of KeyStoreProvider.</param>
-        /// <param name="name">Name of the metadata.</param>
-        /// <param name="value">Value of the metadata.</param>
-        public EncryptionKeyWrapMetadata(string type, string name, string value)
+        /// <param name="type">Identifier for the key resolver.</param>
+        /// <param name="name">Identifier for the customer managed key.</param>
+        /// <param name="value">Path to the customer managed key.</param>
+        /// <param name="algorithm">Algorithm used in wrapping and unwrapping of the data encryption key.</param>
+        public EncryptionKeyWrapMetadata(string type, string name, string value, string algorithm)
         {
             this.Type = type ?? throw new ArgumentNullException(nameof(type));
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Value = value ?? throw new ArgumentNullException(nameof(value));
+            this.Algorithm = algorithm ?? throw new ArgumentNullException(nameof(algorithm));
         }
 
         /// <summary>
@@ -37,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="source">Existing instance from which to initialize.</param>
         public EncryptionKeyWrapMetadata(EncryptionKeyWrapMetadata source)
-            : this(source?.Type, source?.Name, source?.Value)
+            : this(source?.Type, source?.Name, source?.Value, source?.Algorithm)
         {
         }
 
@@ -66,6 +69,14 @@ namespace Microsoft.Azure.Cosmos
         public string Value { get; private set; }
 
         /// <summary>
+        /// Serialized form of metadata.
+        /// Note: This value is saved in the Cosmos DB service.
+        /// Implementors of derived implementations should ensure that this does not have (private) key material or credential information.
+        /// </summary>
+        [JsonProperty(PropertyName = "algorithm", NullValueHandling = NullValueHandling.Ignore)]
+        public string Algorithm { get; private set; }
+
+        /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
@@ -86,6 +97,7 @@ namespace Microsoft.Azure.Cosmos
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Type);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Name);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Value);
+            hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Algorithm);
             return hashCode;
         }
 
@@ -102,6 +114,7 @@ namespace Microsoft.Azure.Cosmos
                    this.Type == other.Type &&
                    this.Name == other.Name &&
                    this.Value == other.Value &&
+                   this.Algorithm == other.Algorithm &&
                    this.AdditionalProperties.EqualsTo(other.AdditionalProperties);
         }
     }

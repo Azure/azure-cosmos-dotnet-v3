@@ -7,11 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-#if PREVIEW
     using static Microsoft.Azure.Cosmos.Container;
-#else
-    using static Microsoft.Azure.Cosmos.ContainerInternal;
-#endif
 
     /// <summary>
     /// Provides a flexible way to create an instance of <see cref="ChangeFeedProcessor"/> with custom set of parameters.
@@ -58,9 +54,14 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Sets the Host name.
+        /// Sets the compute instance name that will host the processor.
         /// </summary>
-        /// <param name="instanceName">Name to be used for the processor instance. When using multiple processor hosts, each host must have a unique name.</param>
+        /// <param name="instanceName">Name of compute instance hosting the processor.</param>
+        /// <remarks>
+        /// Instance name refers to the unique identifier of the compute that is running the processor. 
+        /// Examples could be a VM instance identifier, a machine name, a pod id.
+        /// When distributing a processor across a cluster of compute hosts, each compute host should use a different instance name.
+        /// </remarks>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         public ChangeFeedProcessorBuilder WithInstanceName(string instanceName)
         {
@@ -149,6 +150,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="maxItemCount">Maximum amount of items to be returned in a Change Feed request.</param>
         /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/>.</returns>
+        /// <remarks>This is just a hint to the server which can return less or more items per page. If operations in the container are performed through stored procedures or transactional batch, <see href="https://docs.microsoft.com/azure/cosmos-db/stored-procedures-triggers-udfs#transactions">transaction scope</see> is preserved when reading items from the Change Feed. As a result, the number of items received could be higher than the specified value so that the items changed by the same transaction are returned as part of one atomic batch.</remarks>
         public ChangeFeedProcessorBuilder WithMaxItems(int maxItemCount)
         {
             if (maxItemCount <= 0)
@@ -219,12 +221,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="errorDelegate">A delegate to receive notifications for change feed processor related errors.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        ChangeFeedProcessorBuilder WithErrorNotification(ChangeFeedMonitorErrorDelegate errorDelegate)
+        public ChangeFeedProcessorBuilder WithErrorNotification(ChangeFeedMonitorErrorDelegate errorDelegate)
         {
             if (errorDelegate == null)
             {
@@ -240,12 +237,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="acquireDelegate">A delegate to receive notifications when a change feed processor acquires a lease.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        ChangeFeedProcessorBuilder WithLeaseAcquireNotification(ChangeFeedMonitorLeaseAcquireDelegate acquireDelegate)
+        public ChangeFeedProcessorBuilder WithLeaseAcquireNotification(ChangeFeedMonitorLeaseAcquireDelegate acquireDelegate)
         {
             if (acquireDelegate == null)
             {
@@ -261,12 +253,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="releaseDelegate">A delegate to receive notifications when a change feed processor releases a lease.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        ChangeFeedProcessorBuilder WithLeaseReleaseNotification(ChangeFeedMonitorLeaseReleaseDelegate releaseDelegate)
+        public ChangeFeedProcessorBuilder WithLeaseReleaseNotification(ChangeFeedMonitorLeaseReleaseDelegate releaseDelegate)
         {
             if (releaseDelegate == null)
             {

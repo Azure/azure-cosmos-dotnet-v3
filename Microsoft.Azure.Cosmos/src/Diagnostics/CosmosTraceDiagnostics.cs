@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     internal sealed class CosmosTraceDiagnostics : CosmosDiagnostics
     {
@@ -45,27 +46,44 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override IReadOnlyList<(string regionName, Uri uri)> GetContactedRegions()
         {
-            HashSet<(string, Uri)> regionsContacted = new HashSet<(string, Uri)>();
-            ITrace rootTrace = this.Value;
-            this.WalkTraceTreeForRegionsContated(rootTrace, regionsContacted);
-            return regionsContacted.ToList();
+            return this.Value?.Summary?.RegionsContacted;
         }
 
-        private void WalkTraceTreeForRegionsContated(ITrace currentTrace, HashSet<(string, Uri)> regionsContacted)
+        internal bool IsGoneExceptionHit()
         {
+            return this.WalkTraceTreeForGoneException(this.Value);
+        }
+
+        private bool WalkTraceTreeForGoneException(ITrace currentTrace)
+        {
+            if (currentTrace == null)
+            {
+                return false;
+            }
+
             foreach (object datums in currentTrace.Data.Values)
             {
                 if (datums is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
                 {
-                    regionsContacted.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
-                    return;
+                    foreach (StoreResponseStatistics responseStatistics in clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList)
+                    {
+                        if (responseStatistics.StoreResult != null && responseStatistics.StoreResult.StatusCode == Documents.StatusCodes.Gone)
+                        {
+                            return true;
+                        }
+                    }
                 }
             }
 
             foreach (ITrace childTrace in currentTrace.Children)
             {
-                this.WalkTraceTreeForRegionsContated(childTrace, regionsContacted);
+                if (this.WalkTraceTreeForGoneException(childTrace))
+                {
+                    return true;
+                }
             }
+
+            return false;
         }
 
         private string ToJsonString()
@@ -80,5 +98,25 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             TraceWriter.WriteTrace(jsonTextWriter, this.Value);
             return jsonTextWriter.GetResult();
         }
+
+        public override DateTime? GetStartTimeUtc()
+        {
+            if (this.Value == null || this.Value.StartTime == null)
+            {
+                return null;
+            }
+
+            return this.Value.StartTime;
+        }
+
+        public override int GetFailedRequestCount()
+        {
+            if (this.Value == null || this.Value.Summary == null)
+            {
+                return 0;
+            }
+
+            return this.Value.Summary.GetFailedCount();
+       }
     }
 }

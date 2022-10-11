@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
         /// The trigger to be invoked before the operation.
         /// </value>
         /// <remarks>
-        /// Only valid when used with Create, Replace and Delete methods for documents.
+        /// Only valid when used with Create, Replace and Delete methods for items.
         /// Currently only one PreTrigger is permitted per operation.
         /// </remarks>
         public IEnumerable<string> PreTriggers { get; set; }
@@ -32,8 +32,8 @@ namespace Microsoft.Azure.Cosmos
         /// The trigger to be invoked after the operation.
         /// </value>
         /// <remarks>
-        /// Only valid when used with Create, Replace and Delete methods for documents.
-        /// Currently only one PreTrigger is permitted per operation.
+        /// Only valid when used with Create, Replace and Delete methods for items.
+        /// Currently only one PostTriggers is permitted per operation.
         /// </remarks>
         public IEnumerable<string> PostTriggers { get; set; }
 
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// ItemRequestOption requestOptions = new ItemRequestOptions() { EnableContentResponseOnWrite = false };
+        /// ItemRequestOptions requestOptions = new ItemRequestOptions() { EnableContentResponseOnWrite = false };
         /// ItemResponse itemResponse = await this.container.CreateItemAsync<ToDoActivity>(tests, new PartitionKey(test.status), requestOptions);
         /// Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
         /// Assert.IsNull(itemResponse.Resource);
@@ -125,12 +125,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Learn more about dedicated gateway <a href="https://azure.microsoft.com/services/cosmos-db/">here</a>. 
         /// </remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-            DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
+        public DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties

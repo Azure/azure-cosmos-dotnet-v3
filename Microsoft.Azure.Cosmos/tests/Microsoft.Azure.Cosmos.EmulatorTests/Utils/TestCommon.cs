@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 cosmosClientBuilder.WithConnectionModeGateway();
             }
-
+            
             return cosmosClientBuilder.Build();
         }
 
@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (string.IsNullOrEmpty(key)) throw new ArgumentException("key");
             if (headers == null) throw new ArgumentNullException("headers");
 
-            string xDate = DateTime.UtcNow.ToString("r");
+            string xDate = Rfc1123DateTimeCache.UtcNow();
 
             client.DefaultRequestHeaders.Remove(HttpConstants.HttpHeaders.XDate);
             client.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.XDate, xDate);
@@ -282,7 +282,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             List<T> result = new List<T>();
 
-            INameValueCollection localHeaders = new StoreRequestNameValueCollection();
+            INameValueCollection localHeaders = new RequestNameValueCollection();
             if (headers != null)
             {
                 localHeaders.Add(headers);
@@ -369,14 +369,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string dekId,
             DatabaseInlineCore databaseInlineCore)
         {
-            EncryptionKeyWrapMetadata metadata = new EncryptionKeyWrapMetadata("custom", dekId, "tempMetadata");
+            EncryptionKeyWrapMetadata metadata = new EncryptionKeyWrapMetadata("custom", dekId, "tempMetadata", "algo");
 
-            byte[] wrappedDataEncryptionKey = new byte[32];
             // Generate random bytes cryptographically.
-            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
-            {
-                rngCsp.GetBytes(wrappedDataEncryptionKey);
-            }
+            byte[] wrappedDataEncryptionKey =  RandomNumberGenerator.GetBytes(32);
 
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = new ClientEncryptionKeyProperties(
                 dekId,

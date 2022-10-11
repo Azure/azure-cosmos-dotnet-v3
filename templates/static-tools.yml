@@ -14,6 +14,29 @@ jobs:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
 
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos PREVIEW
+    inputs: 
+      command: build
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj
+      arguments: '-p:Optimize=true -p:IsPreview=true --configuration Release'
+      versioningScheme: OFF
+
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@3
+    displayName: 'BinSkim'
+    inputs:
+        toolVersion:        Latest
+        InputType:          Basic
+        Function:           analyze
+        AnalyzeTarget:      $(Build.SourcesDirectory)\Microsoft.Azure.Cosmos\src\bin\Release\netstandard2.0\Microsoft.Azure.Cosmos.Client.dll
+        AnalyzeConfigPath:  default
+        AnalyzeRecurse:     true
+        AnalyzeVerbose:     true
+        AnalyzeHashes:      false
+        AnalyzeStatistics:  false
+        AnalyzeEnvironment: false
+
   #Analyze source code for type of content and target types to help determine which tools to run
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-autoapplicability.AutoApplicability@1
     displayName: 'AutoApplicability'
@@ -56,11 +79,6 @@ jobs:
     inputs:
       alertWarningLevel: Medium
       failOnAlert: true
-
-#  - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@3
-#    displayName: 'BinSkim'
-#    inputs:
-#      InputType: Basic
 
   # Publish Analysis Results (position after all tools ran)
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-publishsecurityanalysislogs.PublishSecurityAnalysisLogs@2

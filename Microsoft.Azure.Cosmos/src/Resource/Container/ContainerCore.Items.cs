@@ -414,8 +414,10 @@ namespace Microsoft.Azure.Cosmos
             TryCatch<(PartitionedQueryExecutionInfo queryPlan, bool supported)> tryGetQueryInfoAndIfSupported = await queryPlanHandler.TryGetQueryInfoAndIfSupportedAsync(
                 supportedQueryFeatures,
                 queryDefinition.ToSqlQuerySpec(),
+                ResourceType.Document,
                 partitionKeyDefinition,
                 requestOptions.PartitionKey.HasValue,
+                useSystemPrefix: QueryIterator.IsSystemPrefixExpected(requestOptions),
                 cancellationToken);
 
             if (tryGetQueryInfoAndIfSupported.Failed)
@@ -713,6 +715,7 @@ namespace Microsoft.Azure.Cosmos
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
+                Guid.NewGuid(),
                 changeFeedRequestOptions: changeFeedRequestOptions);
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
@@ -798,6 +801,7 @@ namespace Microsoft.Azure.Cosmos
                 NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                     this,
                     this.queryClient,
+                    Guid.NewGuid(),
                     requestOptions);
 
                 DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
@@ -817,6 +821,7 @@ namespace Microsoft.Azure.Cosmos
                     continuationToken,
                     readFeedPaginationOptions,
                     requestOptions,
+                    this,
                     cancellationToken: default);
             }
 
@@ -848,6 +853,7 @@ namespace Microsoft.Azure.Cosmos
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
+                Guid.NewGuid(),
                 queryRequestOptions,
                 resourceLink: resourceLink,
                 resourceType: resourceType);
@@ -888,6 +894,7 @@ namespace Microsoft.Azure.Cosmos
                     queryRequestOptions: queryRequestOptions,
                     continuationToken: continuationToken,
                     readFeedPaginationOptions: readFeedPaginationOptions,
+                    container: this,
                     cancellationToken: default);
             }
 
@@ -901,6 +908,7 @@ namespace Microsoft.Azure.Cosmos
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
+                Guid.NewGuid(),
                 queryRequestOptions);
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
@@ -1279,6 +1287,49 @@ namespace Microsoft.Azure.Cosmos
                 itemId: id,
                 streamPayload: patchOperationsStream,
                 requestEnricher: null,
+                trace: trace,
+                cancellationToken: cancellationToken);
+        }
+
+        public Task<ResponseMessage> PatchItemStreamAsync(
+            string id,
+            PartitionKey partitionKey,
+            Stream streamPayload,
+            ITrace trace,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            if (partitionKey == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKey));
+            }
+
+            if (id == null)
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (streamPayload == null)
+            {
+                throw new ArgumentNullException(nameof(streamPayload));
+            }
+
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            return this.ProcessItemStreamAsync(
+                partitionKey: partitionKey,
+                itemId: id,
+                streamPayload: streamPayload,
+                operationType: OperationType.Patch,
+                requestOptions: requestOptions,
                 trace: trace,
                 cancellationToken: cancellationToken);
         }

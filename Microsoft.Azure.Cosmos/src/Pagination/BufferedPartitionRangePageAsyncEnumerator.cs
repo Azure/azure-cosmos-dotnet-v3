@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tracing;
 
-    internal sealed class BufferedPartitionRangePageAsyncEnumerator<TPage, TState> : PartitionRangePageAsyncEnumerator<TPage, TState>, IPrefetcher
+    internal sealed class BufferedPartitionRangePageAsyncEnumerator<TPage, TState> : BufferedPartitionRangePageAsyncEnumeratorBase<TPage, TState>
         where TPage : Page<TState>
         where TState : State
     {
@@ -23,7 +23,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
             this.enumerator = enumerator ?? throw new ArgumentNullException(nameof(enumerator));
         }
 
-        public override ValueTask DisposeAsync() => this.enumerator.DisposeAsync();
+        public override ValueTask DisposeAsync()
+        {
+            return this.enumerator.DisposeAsync();
+        }
 
         protected override async Task<TryCatch<TPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
         {
@@ -40,20 +43,22 @@ namespace Microsoft.Azure.Cosmos.Pagination
             return returnValue;
         }
 
-        public async ValueTask PrefetchAsync(ITrace trace, CancellationToken cancellationToken)
+        public override async ValueTask PrefetchAsync(ITrace trace, CancellationToken cancellationToken)
         {
             if (trace == null)
             {
                 throw new ArgumentNullException(nameof(trace));
             }
 
+            if (this.bufferedPage.HasValue)
+            {
+                return;
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
             using (ITrace prefetchTrace = trace.StartChild("Prefetch", TraceComponent.Pagination, TraceLevel.Info))
             {
-                if (this.bufferedPage.HasValue)
-                {
-                    return;
-                }
-
                 await this.enumerator.MoveNextAsync(prefetchTrace);
                 this.bufferedPage = this.enumerator.Current;
             }

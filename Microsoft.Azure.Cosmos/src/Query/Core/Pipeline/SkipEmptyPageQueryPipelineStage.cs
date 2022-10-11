@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
         private readonly IQueryPipelineStage inputStage;
         private double cumulativeRequestCharge;
         private long cumulativeResponseLengthInBytes;
-        private ImmutableDictionary<string, string> cumulativeAdditionalHeaders;
+        private IReadOnlyDictionary<string, string> cumulativeAdditionalHeaders;
         private CancellationToken cancellationToken;
         private bool returnedFinalStats;
 
@@ -35,11 +35,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
         public ValueTask DisposeAsync() => this.inputStage.DisposeAsync();
 
-        public ValueTask<bool> MoveNextAsync()
-        {
-            return this.MoveNextAsync(NoOpTrace.Singleton);
-        }
-
         public async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
             this.cancellationToken.ThrowIfCancellationRequested();
@@ -49,88 +44,95 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            if (!await this.inputStage.MoveNextAsync(trace))
+            for (int documentCount = 0; documentCount == 0;)
             {
-                if (!this.returnedFinalStats)
+                if (!await this.inputStage.MoveNextAsync(trace))
                 {
-                    QueryPage queryPage = new QueryPage(
-                        documents: EmptyPage,
-                        requestCharge: this.cumulativeRequestCharge,
-                        activityId: Guid.Empty.ToString(),
-                        responseLengthInBytes: this.cumulativeResponseLengthInBytes,
-                        cosmosQueryExecutionInfo: default,
-                        disallowContinuationTokenMessage: default,
-                        additionalHeaders: this.cumulativeAdditionalHeaders,
-                        state: default);
-                    this.cumulativeRequestCharge = 0;
-                    this.cumulativeResponseLengthInBytes = 0;
-                    this.cumulativeAdditionalHeaders = null;
-                    this.returnedFinalStats = true;
-                    this.Current = TryCatch<QueryPage>.FromResult(queryPage);
+                    if (!this.returnedFinalStats)
+                    {
+                        QueryPage queryPage = new QueryPage(
+                            documents: EmptyPage,
+                            requestCharge: this.cumulativeRequestCharge,
+                            activityId: Guid.Empty.ToString(),
+                            responseLengthInBytes: this.cumulativeResponseLengthInBytes,
+                            cosmosQueryExecutionInfo: default,
+                            disallowContinuationTokenMessage: default,
+                            additionalHeaders: this.cumulativeAdditionalHeaders,
+                            state: default);
+                        this.cumulativeRequestCharge = 0;
+                        this.cumulativeResponseLengthInBytes = 0;
+                        this.cumulativeAdditionalHeaders = null;
+                        this.returnedFinalStats = true;
+                        this.Current = TryCatch<QueryPage>.FromResult(queryPage);
+                        return true;
+                    }
+
+                    this.Current = default;
+                    return false;
+                }
+
+                // if we are here then it means the inputStage told us there's more pages
+                // so we tell the same thing to our consumer
+                TryCatch<QueryPage> tryGetSourcePage = this.inputStage.Current;
+                if (tryGetSourcePage.Failed)
+                {
+                    this.Current = tryGetSourcePage;
                     return true;
                 }
 
-                this.Current = default;
-                return false;
-            }
-
-            TryCatch<QueryPage> tryGetSourcePage = this.inputStage.Current;
-            if (tryGetSourcePage.Failed)
-            {
-                this.Current = tryGetSourcePage;
-                return true;
-            }
-
-            QueryPage sourcePage = tryGetSourcePage.Result;
-            if (sourcePage.Documents.Count == 0)
-            {
-                if (sourcePage.State == null)
+                QueryPage sourcePage = tryGetSourcePage.Result;
+                documentCount = sourcePage.Documents.Count;
+                if (documentCount == 0)
                 {
-                    QueryPage queryPage = new QueryPage(
-                        documents: EmptyPage,
-                        requestCharge: sourcePage.RequestCharge + this.cumulativeRequestCharge,
-                        activityId: sourcePage.ActivityId,
-                        responseLengthInBytes: sourcePage.ResponseLengthInBytes + this.cumulativeResponseLengthInBytes,
-                        cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
-                        disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
-                        additionalHeaders: sourcePage.AdditionalHeaders,
-                        state: default);
-                    this.cumulativeRequestCharge = 0;
-                    this.cumulativeResponseLengthInBytes = 0;
-                    this.cumulativeAdditionalHeaders = null;
-                    this.Current = TryCatch<QueryPage>.FromResult(queryPage);
-                    return true;
+                    if (sourcePage.State == null)
+                    {
+                        QueryPage queryPage = new QueryPage(
+                            documents: EmptyPage,
+                            requestCharge: sourcePage.RequestCharge + this.cumulativeRequestCharge,
+                            activityId: sourcePage.ActivityId,
+                            responseLengthInBytes: sourcePage.ResponseLengthInBytes + this.cumulativeResponseLengthInBytes,
+                            cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
+                            disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
+                            additionalHeaders: sourcePage.AdditionalHeaders,
+                            state: default);
+                        this.cumulativeRequestCharge = 0;
+                        this.cumulativeResponseLengthInBytes = 0;
+                        this.cumulativeAdditionalHeaders = null;
+                        this.Current = TryCatch<QueryPage>.FromResult(queryPage);
+                        return true;
+                    }
+
+                    this.cumulativeRequestCharge += sourcePage.RequestCharge;
+                    this.cumulativeResponseLengthInBytes += sourcePage.ResponseLengthInBytes;
+                    this.cumulativeAdditionalHeaders = sourcePage.AdditionalHeaders;
                 }
+                else
+                {
+                    QueryPage cumulativeQueryPage;
+                    if (this.cumulativeRequestCharge != 0)
+                    {
+                        cumulativeQueryPage = new QueryPage(
+                            documents: sourcePage.Documents,
+                            requestCharge: sourcePage.RequestCharge + this.cumulativeRequestCharge,
+                            activityId: sourcePage.ActivityId,
+                            responseLengthInBytes: sourcePage.ResponseLengthInBytes + this.cumulativeResponseLengthInBytes,
+                            cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
+                            disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
+                            additionalHeaders: sourcePage.AdditionalHeaders,
+                            state: sourcePage.State);
+                        this.cumulativeRequestCharge = 0;
+                        this.cumulativeResponseLengthInBytes = 0;
+                        this.cumulativeAdditionalHeaders = null;
+                    }
+                    else
+                    {
+                        cumulativeQueryPage = sourcePage;
+                    }
 
-                this.cumulativeRequestCharge += sourcePage.RequestCharge;
-                this.cumulativeResponseLengthInBytes += sourcePage.ResponseLengthInBytes;
-                this.cumulativeAdditionalHeaders = sourcePage.AdditionalHeaders;
-
-                return await this.MoveNextAsync();
+                    this.Current = TryCatch<QueryPage>.FromResult(cumulativeQueryPage);
+                }
             }
 
-            QueryPage cumulativeQueryPage;
-            if (this.cumulativeRequestCharge != 0)
-            {
-                cumulativeQueryPage = new QueryPage(
-                    documents: sourcePage.Documents,
-                    requestCharge: sourcePage.RequestCharge + this.cumulativeRequestCharge,
-                    activityId: sourcePage.ActivityId,
-                    responseLengthInBytes: sourcePage.ResponseLengthInBytes + this.cumulativeResponseLengthInBytes,
-                    cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
-                    disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
-                    additionalHeaders: sourcePage.AdditionalHeaders,
-                    state: sourcePage.State);
-                this.cumulativeRequestCharge = 0;
-                this.cumulativeResponseLengthInBytes = 0;
-                this.cumulativeAdditionalHeaders = null;
-            }
-            else
-            {
-                cumulativeQueryPage = sourcePage;
-            }
-
-            this.Current = TryCatch<QueryPage>.FromResult(cumulativeQueryPage);
             return true;
         }
 

@@ -9,13 +9,13 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
-    using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
@@ -256,6 +256,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 httpMethod = HttpMethod.Post;
             }
+            else if (ChangeFeedHelper.IsChangeFeedWithQueryRequest(request.OperationType, request.Body != null))
+            {
+                // ChangeFeed with payload is a CF with query support and will
+                // be a query POST request.
+                httpMethod = HttpMethod.Post;
+            }
             else if (request.OperationType == OperationType.Read
                 || request.OperationType == OperationType.ReadFeed)
             {
@@ -319,6 +325,12 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(activityId != Guid.Empty);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
 
+            string regionName = request?.RequestContext?.RegionName;
+            if (regionName != null)
+            {
+                requestMessage.Properties.Add(ClientSideRequestStatisticsTraceDatum.HttpRequestRegionNameProperty, regionName);
+            }
+            
             return requestMessage;
         }
 

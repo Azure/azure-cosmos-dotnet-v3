@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using Newtonsoft.Json.Linq;
 
     [TestClass]
+    [TestCategory("Query")]
     public sealed class SanityQueryTests : QueryTestsBase
     {
         [TestMethod]
