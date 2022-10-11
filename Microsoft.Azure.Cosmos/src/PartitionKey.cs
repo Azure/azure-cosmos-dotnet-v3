@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
