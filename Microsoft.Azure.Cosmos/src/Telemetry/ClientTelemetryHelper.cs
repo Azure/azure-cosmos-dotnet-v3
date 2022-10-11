@@ -142,11 +142,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return null;
             }
 
-            if (regionList.Count == 1)
-            {
-                return regionList.GetEnumerator().Current.regionName;
-            }
-
             StringBuilder regionsContacted = new StringBuilder();
             foreach ((string name, _) in regionList)
             {
