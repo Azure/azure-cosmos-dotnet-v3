@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void CheckJsonSerializerContract()
         {
-            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties("clientId", "", null, ConnectionMode.Direct, null, 10, null, null, null), ClientTelemetryOptions.JsonSerializerSettings);
+            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties("clientId", "", null, ConnectionMode.Direct, null, 10, null), ClientTelemetryOptions.JsonSerializerSettings);
             Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"DIRECT\",\"aggregationIntervalInSec\":10,\"systemInfo\":[]}", json);
         }
 
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 "region1"
             };
-            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties("clientId", "", null, ConnectionMode.Direct, preferredRegion, 1, null, null, null), ClientTelemetryOptions.JsonSerializerSettings);
+            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties("clientId", "", null, ConnectionMode.Direct, preferredRegion, 1, null), ClientTelemetryOptions.JsonSerializerSettings);
             Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"DIRECT\",\"preferredRegions\":[\"region1\"],\"aggregationIntervalInSec\":1,\"systemInfo\":[]}", json);
         }
 

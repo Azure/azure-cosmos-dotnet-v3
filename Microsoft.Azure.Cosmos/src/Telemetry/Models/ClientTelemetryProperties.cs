@@ -70,9 +70,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
                                    ConnectionMode connectionMode,
                                    IReadOnlyList<string> preferredRegions,
                                    int aggregationIntervalInSec,
-                                   string machineId,
-                                   string applicationRegion,
-                                   string hostEnvInfo)
+                                   string machineId)
         {
             this.ClientId = clientId;
             this.ProcessId = processId;
@@ -86,8 +84,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             this.PreferredRegions = preferredRegions;
             this.AggregationIntervalInSec = aggregationIntervalInSec;
             this.MachineId = machineId;
-            this.ApplicationRegion = applicationRegion;
-            this.HostEnvInfo = hostEnvInfo;
         }
 
         /// <summary>

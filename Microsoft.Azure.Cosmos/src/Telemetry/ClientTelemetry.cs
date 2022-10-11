@@ -116,9 +116,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.diagnosticsHelper = diagnosticsHelper ?? throw new ArgumentNullException(nameof(diagnosticsHelper));
             this.tokenProvider = authorizationTokenProvider ?? throw new ArgumentNullException(nameof(authorizationTokenProvider));
 
-            // Load host information from cache
-            Compute vmInformation = VmMetadataApiHandler.GetMachineInfo();
-
             this.clientTelemetryInfo = new ClientTelemetryProperties(
                 clientId: clientId, 
                 processId: HashingExtension.ComputeHash(System.Diagnostics.Process.GetCurrentProcess().ProcessName), 
@@ -126,9 +123,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 connectionMode: connectionMode,
                 preferredRegions: preferredRegions,
                 aggregationIntervalInSec: (int)observingWindow.TotalSeconds,
-                machineId: VmMetadataApiHandler.GetMachineId(),
-                applicationRegion: vmInformation?.Location,
-                hostEnvInfo: ClientTelemetryOptions.GetHostInformation(vmInformation));
+                machineId: VmMetadataApiHandler.GetMachineId());
 
             this.cancellationTokenSource = new CancellationTokenSource();
             this.globalEndpointManager = globalEndpointManager;
@@ -169,6 +164,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     }
                     
                     await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
+
+                    // Load host information from cache
+                    Compute vmInformation = VmMetadataApiHandler.GetMachineInfo();
+                    this.clientTelemetryInfo.ApplicationRegion = vmInformation?.Location;
+                    this.clientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(vmInformation);
 
                     // If cancellation is requested after the delay then return from here.
                     if (this.cancellationTokenSource.IsCancellationRequested)
