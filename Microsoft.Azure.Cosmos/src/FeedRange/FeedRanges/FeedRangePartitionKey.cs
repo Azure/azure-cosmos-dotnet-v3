@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.PartitionKey.IsNone)
             {
-                return "None";
+                return PartitionKey.NoneString;
             }
 
             return this.PartitionKey.InternalKey.ToJsonString();
