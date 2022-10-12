@@ -19,7 +19,7 @@ selection
 select_star_spec : '*' ;
 select_value_spec : K_VALUE scalar_expression ;
 select_list_spec : select_item ( ',' select_item )* ;
-select_item : scalar_expression (K_AS IDENTIFIER)? ;
+select_item : scalar_expression (K_AS identifier)? ;
 /*--------------------------------------------------------------------------------*/
 
 /*--------------------------------------------------------------------------------*/
@@ -27,16 +27,16 @@ select_item : scalar_expression (K_AS IDENTIFIER)? ;
 /*--------------------------------------------------------------------------------*/
 from_clause : K_FROM collection_expression ;
 collection_expression
-	: collection (K_AS? IDENTIFIER)? #AliasedCollectionExpression
-	| IDENTIFIER K_IN collection #ArrayIteratorCollectionExpression 
+	: collection (K_AS? identifier)? #AliasedCollectionExpression
+	| identifier K_IN collection #ArrayIteratorCollectionExpression 
 	| collection_expression K_JOIN collection_expression #JoinCollectionExpression
 	;
 collection
-	: IDENTIFIER path_expression?  #InputPathCollection
+	: identifier path_expression?  #InputPathCollection
 	| '(' sql_query ')' #SubqueryCollection
 	;
 path_expression
-	: path_expression'.'IDENTIFIER #IdentifierPathExpression
+	: path_expression'.'identifier #IdentifierPathExpression
 	| path_expression'[' NUMERIC_LITERAL ']' #NumberPathExpression
 	| path_expression'[' STRING_LITERAL ']' #StringPathExpression
 	| /*epsilon*/ #EpsilonPathExpression
@@ -161,18 +161,19 @@ unary_operator
 	;
 
 primary_expression
-	: IDENTIFIER #PropertyRefScalarExpressionBase
+	: identifier #PropertyRefScalarExpressionBase
 	| PARAMETER #ParameterRefScalarExpression
 	| literal #LiteralScalarExpression
 	| '[' scalar_expression_list? ']' #ArrayCreateScalarExpression
 	| '{' object_property_list? '}' #ObjectCreateScalarExpression
-	| (K_UDF '.')? IDENTIFIER '(' scalar_expression_list? ')' #FunctionCallScalarExpression
+	| (K_UDF '.')? identifier '(' scalar_expression_list? ')' #FunctionCallScalarExpression
 	| '(' scalar_expression ')' #ParenthesizedScalarExperession
 	| '(' sql_query ')' #SubqueryScalarExpression
-	| primary_expression '.' IDENTIFIER #PropertyRefScalarExpressionRecursive
+	| primary_expression '.' identifier #PropertyRefScalarExpressionRecursive
 	| primary_expression '[' scalar_expression  ']' #MemberIndexerScalarExpression
 	| K_EXISTS '(' sql_query ')' #ExistsScalarExpression
 	| K_ARRAY '(' sql_query ')' #ArrayScalarExpression
+	| K_ALL '(' sql_query ')' #AllScalarExpression
 	;
 
 scalar_expression_list : scalar_expression (',' scalar_expression)*;
@@ -180,11 +181,17 @@ scalar_expression_list : scalar_expression (',' scalar_expression)*;
 object_property_list : object_property (',' object_property)* ;
 
 object_property : STRING_LITERAL ':' scalar_expression ;
+
+identifier
+	: LEX_IDENTIFIER
+	| K_ALL
+	;
 /*--------------------------------------------------------------------------------*/
 
 /*--------------------------------------------------------------------------------*/
 /* KEYWORDS */
 /*--------------------------------------------------------------------------------*/
+K_ALL : A L L;
 K_AND : A N D;
 K_ARRAY : A R R A Y;
 K_AS : A S;
@@ -262,13 +269,13 @@ fragment SAFECODEPOINTWITHDOUBLEQUOTATION
 	: ~ ["\\\u0000-\u001F]
 	;
 
-IDENTIFIER
+LEX_IDENTIFIER
 	: 
 	| [a-zA-Z_]([a-zA-Z_]|DIGIT)*
 	;
 
 PARAMETER
-	: '@'IDENTIFIER
+	: '@'LEX_IDENTIFIER
 	;
 /*--------------------------------------------------------------------------------*/
 

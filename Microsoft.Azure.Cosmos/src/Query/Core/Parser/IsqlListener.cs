@@ -28,7 +28,6 @@ using IToken = Antlr4.Runtime.IToken;
 /// <see cref="sqlParser"/>.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("ANTLR", "4.7.2")]
-[System.CLSCompliant(false)]
 internal interface IsqlListener : IParseTreeListener {
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="sqlParser.program"/>.
@@ -712,6 +711,16 @@ internal interface IsqlListener : IParseTreeListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	void ExitObject_property([NotNull] sqlParser.Object_propertyContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="sqlParser.identifier"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterIdentifier([NotNull] sqlParser.IdentifierContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="sqlParser.identifier"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitIdentifier([NotNull] sqlParser.IdentifierContext context);
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="sqlParser.literal"/>.
 	/// </summary>

@@ -32,7 +32,6 @@ using ParserRuleContext = Antlr4.Runtime.ParserRuleContext;
 /// of the available methods.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("ANTLR", "4.7.2")]
-[System.CLSCompliant(false)]
 internal partial class sqlBaseListener : IsqlListener {
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="sqlParser.program"/>.
@@ -842,6 +841,18 @@ internal partial class sqlBaseListener : IsqlListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitObject_property([NotNull] sqlParser.Object_propertyContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="sqlParser.identifier"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterIdentifier([NotNull] sqlParser.IdentifierContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="sqlParser.identifier"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitIdentifier([NotNull] sqlParser.IdentifierContext context) { }
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="sqlParser.literal"/>.
 	/// <para>The default implementation does nothing.</para>

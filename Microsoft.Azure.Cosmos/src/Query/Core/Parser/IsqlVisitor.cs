@@ -29,7 +29,6 @@ using IToken = Antlr4.Runtime.IToken;
 /// </summary>
 /// <typeparam name="Result">The return type of the visit operation.</typeparam>
 [System.CodeDom.Compiler.GeneratedCode("ANTLR", "4.7.2")]
-[System.CLSCompliant(false)]
 internal interface IsqlVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="sqlParser.program"/>.
@@ -435,6 +434,12 @@ internal interface IsqlVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitObject_property([NotNull] sqlParser.Object_propertyContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="sqlParser.identifier"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitIdentifier([NotNull] sqlParser.IdentifierContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="sqlParser.literal"/>.
 	/// </summary>

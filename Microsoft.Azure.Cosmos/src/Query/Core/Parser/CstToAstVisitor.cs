@@ -183,9 +183,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
             SqlScalarExpression sqlScalarExpression = (SqlScalarExpression)this.Visit(context.scalar_expression());
             SqlIdentifier alias;
-            if (context.IDENTIFIER() != null)
+            if (context.identifier() != null)
             {
-                alias = SqlIdentifier.Create(context.IDENTIFIER().GetText());
+                alias = SqlIdentifier.Create(context.identifier().GetText());
             }
             else
             {
@@ -233,9 +233,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
             SqlCollection sqlCollection = (SqlCollection)this.Visit(context.collection());
             SqlIdentifier alias;
-            if (context.IDENTIFIER() != null)
+            if (context.identifier() != null)
             {
-                alias = SqlIdentifier.Create(context.IDENTIFIER().GetText());
+                alias = SqlIdentifier.Create(context.identifier().GetText());
             }
             else
             {
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             Contract.Requires(context != null);
 
             SqlCollection sqlCollection = (SqlCollection)this.Visit(context.collection());
-            SqlIdentifier identifier = SqlIdentifier.Create(context.IDENTIFIER().GetText());
+            SqlIdentifier identifier = SqlIdentifier.Create(context.identifier().GetText());
 
             return SqlArrayIteratorCollectionExpression.Create(identifier, sqlCollection);
         }
@@ -269,7 +269,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         {
             Contract.Requires(context != null);
 
-            SqlIdentifier identifier = SqlIdentifier.Create(context.IDENTIFIER().GetText());
+            SqlIdentifier identifier = SqlIdentifier.Create(context.identifier().GetText());
             SqlPathExpression pathExpression;
             if (context.path_expression() != null)
             {
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             Contract.Requires(context != null);
 
             SqlPathExpression pathExpression = (SqlPathExpression)this.Visit(context.path_expression());
-            SqlIdentifier identifier = SqlIdentifier.Create(context.IDENTIFIER().GetText());
+            SqlIdentifier identifier = SqlIdentifier.Create(context.identifier().GetText());
 
             return SqlIdentifierPathExpression.Create(parentPath: pathExpression, value: identifier);
         }
@@ -458,6 +458,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         #endregion
         #region ScalarExpressions
 
+        public override SqlObject VisitAllScalarExpression([NotNull] sqlParser.AllScalarExpressionContext context)
+        {
+            Contract.Requires(context != null);
+            // K_ALL '(' sql_query ')'
+            Contract.Requires(context.ChildCount == 4);
+
+            SqlQuery subquery = (SqlQuery)this.Visit(context.children[2]);
+            return SqlAllScalarExpression.Create(subquery);
+        }
         public override SqlObject VisitArrayCreateScalarExpression([NotNull] sqlParser.ArrayCreateScalarExpressionContext context)
         {
             Contract.Requires(context != null);
@@ -562,10 +571,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         public override SqlObject VisitFunctionCallScalarExpression([NotNull] sqlParser.FunctionCallScalarExpressionContext context)
         {
             Contract.Requires(context != null);
-            // (K_UDF '.')? IDENTIFIER '(' scalar_expression_list? ')'
+            // (K_UDF '.')? identifier '(' scalar_expression_list? ')'
 
             bool udf = context.K_UDF() != null;
-            SqlIdentifier identifier = SqlIdentifier.Create(context.IDENTIFIER().GetText());
+            SqlIdentifier identifier = SqlIdentifier.Create(context.identifier().GetText());
             List<SqlScalarExpression> arguments = new List<SqlScalarExpression>();
             if (context.scalar_expression_list() != null)
             {
@@ -719,20 +728,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         public override SqlObject VisitPropertyRefScalarExpressionBase([NotNull] sqlParser.PropertyRefScalarExpressionBaseContext context)
         {
             Contract.Requires(context != null);
-            // IDENTIFIER
+            // identifier
 
             return SqlPropertyRefScalarExpression.Create(
                 member: null,
-                SqlIdentifier.Create(context.IDENTIFIER().GetText()));
+                SqlIdentifier.Create(context.identifier().GetText()));
         }
 
         public override SqlObject VisitPropertyRefScalarExpressionRecursive([NotNull] sqlParser.PropertyRefScalarExpressionRecursiveContext context)
         {
             Contract.Requires(context != null);
-            // primary_expression '.' IDENTIFIER
+            // primary_expression '.' identifier
 
             SqlScalarExpression memberExpression = (SqlScalarExpression)this.Visit(context.primary_expression());
-            SqlIdentifier indentifier = SqlIdentifier.Create(context.IDENTIFIER().GetText());
+            SqlIdentifier indentifier = SqlIdentifier.Create(context.identifier().GetText());
 
             return SqlPropertyRefScalarExpression.Create(memberExpression, indentifier);
         }
