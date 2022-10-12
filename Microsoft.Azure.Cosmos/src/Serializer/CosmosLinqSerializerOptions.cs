@@ -23,6 +23,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets or sets the user defined customer serializer. If no customer serializer was defined, 
+        /// then the value is set to the default value
+        /// </summary>
+        /// <remarks>
+        /// The default value is null
+        /// </remarks>
+        internal CosmosSerializer CustomCosmosSerializer { get; set; }
+
+        /// <summary>
         /// Gets or sets whether the naming policy used to convert a string-based name to another format,
         /// such as a camel-casing format.
         /// </summary>
@@ -30,14 +39,5 @@ namespace Microsoft.Azure.Cosmos
         /// The default value is CosmosPropertyNamingPolicy.Default
         /// </remarks>
         public CosmosPropertyNamingPolicy PropertyNamingPolicy { get; set; }
-
-        /// <summary>
-        /// Gets or sets the user defined customer serializer. If no customer serializer was defined, 
-        /// then the value is set to the default value
-        /// </summary>
-        /// <remarks>
-        /// The default value is null
-        /// </remarks>
-        public CosmosSerializer CustomCosmosSerializer { get; set; }
     }
 }
