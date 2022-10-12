@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void RetryExceedingMaxTimeLimit()
         {
-            Mock<IStoreModel> mockStoreModel = new Mock<IStoreModel>();
+            Mock<IStoreModelExtension> mockStoreModel = new Mock<IStoreModelExtension>();
             mockStoreModel.Setup(model => model.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), default(CancellationToken)))
                 .Throws(this.CreateTooManyRequestException(100));
 
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private void TestRetryOnThrottled(int? numberOfRetries)
         {
-            Mock<IStoreModel> mockStoreModel = new Mock<IStoreModel>();
+            Mock<IStoreModelExtension> mockStoreModel = new Mock<IStoreModelExtension>();
             mockStoreModel.Setup(model => model.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), default(CancellationToken)))
                 .Throws(this.CreateTooManyRequestException(100));
 

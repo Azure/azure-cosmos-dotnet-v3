@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
@@ -1352,15 +1353,30 @@ namespace Microsoft.Azure.Cosmos
                options: requestOptions);
         }
 
-        internal async Task InitializeContainersAsync(IReadOnlyList<(string databaseId, string containerId)> containers,
-                                          CancellationToken cancellationToken)
+        /// <summary>
+        /// Initializes the container by creating the Rntbd
+        /// connection to all of the backend replica nodes.
+        /// </summary>
+        /// <param name="containers">A read-only list containing the database id
+        /// and their respective container id.</param>
+        /// <param name="cancellationToken">An instance of <see cref="CancellationToken"/>.</param>
+        internal async Task InitializeContainersAsync(
+            IReadOnlyList<(string databaseId, string containerId)> containers,
+            CancellationToken cancellationToken)
         {
             try
             {
-                List<Task> tasks = new List<Task>();
+                List<Task> tasks = new ();
                 foreach ((string databaseId, string containerId) in containers)
                 {
-                    tasks.Add(this.InitializeContainerAsync(databaseId, containerId, cancellationToken));
+                    ContainerInternal container = (ContainerInternal)this.GetContainer(
+                        databaseId,
+                        containerId);
+
+                    tasks.Add(this.InitializeContainerUsingRntbdAsync(
+                        databaseId,
+                        container.LinkUri,
+                        cancellationToken));
                 }
 
                 await Task.WhenAll(tasks);
@@ -1395,36 +1411,22 @@ namespace Microsoft.Azure.Cosmos
             return 0;
         }
 
-        private async Task InitializeContainerAsync(string databaseId, string containerId, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Initializes the given container by establishing the
+        /// Rntbd connection to all of the backend backend replica nodes.
+        /// </summary>
+        /// <param name="databaseId">A string containing the cosmos database identifier.</param>
+        /// <param name="containerLinkUri">A string containing the cosmos container link uri.</param>
+        /// <param name="cancellationToken">An instance of the <see cref="CancellationToken"/>.</param>
+        private async Task InitializeContainerUsingRntbdAsync(
+            string databaseId,
+            string containerLinkUri,
+            CancellationToken cancellationToken = default)
         {
-            ContainerInternal container = (ContainerInternal)this.GetContainer(databaseId, containerId);
-
-            IReadOnlyList<FeedRange> feedRanges = await container.GetFeedRangesAsync(cancellationToken);
-            List<Task> tasks = new List<Task>();
-            foreach (FeedRange feedRange in feedRanges)
-            {
-                tasks.Add(CosmosClient.InitializeFeedRangeAsync(container, feedRange, cancellationToken));
-            }
-
-            await Task.WhenAll(tasks);
-        }
-
-        private static async Task InitializeFeedRangeAsync(ContainerInternal container, FeedRange feedRange, CancellationToken cancellationToken = default)
-        {
-            // Do a dummy querry for each Partition Key Range to warm up the caches and connections
-            string guidToCheck = Guid.NewGuid().ToString();
-            QueryDefinition queryDefinition = new QueryDefinition($"select * from c where c.id = '{guidToCheck}'");
-            using (FeedIterator feedIterator = container.GetItemQueryStreamIterator(feedRange,
-                                                                                    queryDefinition,
-                                                                                    continuationToken: null,
-                                                                                    requestOptions: new QueryRequestOptions() { }))
-            {
-                while (feedIterator.HasMoreResults)
-                {
-                    using ResponseMessage response = await feedIterator.ReadNextAsync(cancellationToken);
-                    response.EnsureSuccessStatusCode();
-                }
-            }
+            await this.ClientContext.InitializeContainerUsingRntbdAsync(
+                databaseId,
+                containerLinkUri,
+                cancellationToken);
         }
 
         /// <summary>

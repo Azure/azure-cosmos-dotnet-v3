@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Linq;
     using System.Net;
@@ -24,6 +23,9 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Documents.Rntbd;
     using Microsoft.Azure.Documents.Routing;
 
+    /// <summary>
+    /// Add applicable documentation.
+    /// </summary>
     internal class GatewayAddressCache : IAddressCache, IDisposable
     {
         private const string protocolFilterFormat = "{0} eq {1}";
@@ -84,12 +86,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public Uri ServiceEndpoint => this.serviceEndpoint;
 
-        [SuppressMessage("", "AsyncFixer02", Justification = "Multi task completed with await")]
-        [SuppressMessage("", "AsyncFixer04", Justification = "Multi task completed outside of await")]
-        public async Task OpenAsync(
+        public async Task OpenConnectionsAsync(
             string databaseName,
             ContainerProperties collection,
             IReadOnlyList<PartitionKeyRangeIdentity> partitionKeyRangeIdentities,
+            Func<Uri, Task> openConnectionHandler,
             CancellationToken cancellationToken)
         {
             List<Task<DocumentServiceResponse>> tasks = new List<Task<DocumentServiceResponse>>();
@@ -146,8 +147,37 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.serverPartitionAddressCache.Set(
                             new PartitionKeyRangeIdentity(collection.ResourceId, addressInfo.Item1.PartitionKeyRangeId),
                             addressInfo.Item2);
+
+                        if (openConnectionHandler != null)
+                        {
+                            await this.OpenConnectionsAsync(
+                                addressInfo,
+                                openConnectionHandler);
+                        }
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Invokes the transport client delegate to open the Rntbd connection
+        /// and establish Rntbd context negotiation to the backend replica nodes.
+        /// </summary>
+        /// <param name="addressInfo">An instance of <see cref="Tuple{T1, T2}"/> containing the partition key id
+        /// and it's corresponding address information.</param>
+        /// <param name="openConnectionHandlerAsync">The transport client callback delegate to be invoked at a
+        /// later point of time.</param>
+        private async Task OpenConnectionsAsync(
+             Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> addressInfo,
+             Func<Uri, Task> openConnectionHandlerAsync)
+        {
+            // Invoke the open connection handler. Add batching and exception handling.
+            List<string> physicalUris = (from AddressInformation address in addressInfo.Item2.AllAddresses
+                                         select address.PhysicalUri).ToList();
+            foreach (string physicalUri in physicalUris)
+            {
+                Console.WriteLine("Opening Connection to: " + physicalUri);
+                await openConnectionHandlerAsync(new Uri(physicalUri));
             }
         }
 

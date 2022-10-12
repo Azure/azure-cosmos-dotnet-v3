@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
 
     // Marking it as non-sealed in order to unit test it using Moq framework
-    internal class GatewayStoreModel : IStoreModel, IDisposable
+    internal class GatewayStoreModel : IStoreModelExtension, IDisposable
     {
         private static readonly string sessionConsistencyAsString = ConsistencyLevel.Session.ToString();
 
@@ -481,6 +481,11 @@ namespace Microsoft.Azure.Cosmos
         private Uri GetFeedUri(DocumentServiceRequest request)
         {
             return new Uri(this.endpointManager.ResolveServiceEndpoint(request), PathsHelper.GeneratePath(request.ResourceType, request, true));
+        }
+
+        public Task OpenConnectionsToAllReplicasAsync(string databaseName, string containerLinkUri, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
         }
     }
 }

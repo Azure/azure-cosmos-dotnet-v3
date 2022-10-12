@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -20,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// AddressCache implementation for client SDK. Supports cross region address routing based on
     /// avaialbility and preference list.
     /// </summary>
-    internal sealed class GlobalAddressResolver : IAddressResolver, IDisposable
+    internal sealed class GlobalAddressResolver : IAddressResolverExtension, IDisposable
     {
         private const int MaxBackupReadRegions = 3;
 
@@ -100,7 +101,64 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             foreach (EndpointCache endpointCache in this.addressCacheByEndpoint.Values)
             {
-                tasks.Add(endpointCache.AddressCache.OpenAsync(databaseName, collection, ranges, cancellationToken));
+                tasks.Add(endpointCache.AddressCache.OpenConnectionsAsync(
+                    databaseName: databaseName,
+                    collection: collection,
+                    partitionKeyRangeIdentities: ranges,
+                    openConnectionHandler: null,
+                    cancellationToken: cancellationToken));
+            }
+
+            await Task.WhenAll(tasks);
+        }
+
+        /// <inheritdoc/>
+        public async Task OpenConnectionsToAllReplicasAsync(
+            string databaseName,
+            string containerLinkUri,
+            Func<Uri, Task> openConnectionHandlerAsync,
+            CancellationToken cancellationToken = default)
+        {
+            // TODO: Update code to use the returned collection and call Open Async in Gateway Address Cache.
+            ContainerProperties collection = null;
+            try
+            {
+                collection = await this.collectionCache.ResolveByNameAsync(
+                        HttpConstants.Versions.CurrentVersion,
+                        containerLinkUri,
+                        forceRefesh: false,
+                        trace: NoOpTrace.Singleton,
+                        clientSideRequestStatistics: null,
+                        cancellationToken: cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
+            if (collection == null)
+            {
+                return;
+            }
+
+            IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await this.routingMapProvider.TryGetOverlappingRangesAsync(
+                    collectionRid: collection.ResourceId,
+                    range: FeedRangeEpk.FullRange.Range,
+                    trace: NoOpTrace.Singleton);
+
+            IReadOnlyList<PartitionKeyRangeIdentity> partitionKeyRangeIdentities = partitionKeyRanges.Select(
+                range => new PartitionKeyRangeIdentity(collection.ResourceId, range.Id)).ToList();
+
+            List<Task> tasks = new ();
+
+            foreach (EndpointCache endpointCache in this.addressCacheByEndpoint.Values)
+            {
+                tasks.Add(endpointCache.AddressCache.OpenConnectionsAsync(
+                    databaseName: databaseName,
+                    collection: collection,
+                    partitionKeyRangeIdentities: partitionKeyRangeIdentities,
+                    openConnectionHandler: openConnectionHandlerAsync,
+                    cancellationToken: cancellationToken));
             }
 
             await Task.WhenAll(tasks);
