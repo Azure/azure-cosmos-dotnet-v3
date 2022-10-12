@@ -32,6 +32,7 @@ using ParserRuleContext = Antlr4.Runtime.ParserRuleContext;
 /// of the available methods.
 /// </summary>
 [System.CodeDom.Compiler.GeneratedCode("ANTLR", "4.7.2")]
+[System.CLSCompliant(false)]
 internal partial class sqlBaseListener : IsqlListener {
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="sqlParser.program"/>.
@@ -624,6 +625,76 @@ internal partial class sqlBaseListener : IsqlListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitUnary_operator([NotNull] sqlParser.Unary_operatorContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by the <c>AllScalarExpression</c>
+	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterAllScalarExpression([NotNull] sqlParser.AllScalarExpressionContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>AllScalarExpression</c>
+	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitAllScalarExpression([NotNull] sqlParser.AllScalarExpressionContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>LiteralScalarExpression</c>
+	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterLiteralScalarExpression([NotNull] sqlParser.LiteralScalarExpressionContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>LiteralScalarExpression</c>
+	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitLiteralScalarExpression([NotNull] sqlParser.LiteralScalarExpressionContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>ObjectCreateScalarExpression</c>
+	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterObjectCreateScalarExpression([NotNull] sqlParser.ObjectCreateScalarExpressionContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>ObjectCreateScalarExpression</c>
+	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitObjectCreateScalarExpression([NotNull] sqlParser.ObjectCreateScalarExpressionContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>ArrayCreateScalarExpression</c>
+	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterArrayCreateScalarExpression([NotNull] sqlParser.ArrayCreateScalarExpressionContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>ArrayCreateScalarExpression</c>
+	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitArrayCreateScalarExpression([NotNull] sqlParser.ArrayCreateScalarExpressionContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>MemberIndexerScalarExpression</c>
+	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterMemberIndexerScalarExpression([NotNull] sqlParser.MemberIndexerScalarExpressionContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>MemberIndexerScalarExpression</c>
+	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitMemberIndexerScalarExpression([NotNull] sqlParser.MemberIndexerScalarExpressionContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by the <c>SubqueryScalarExpression</c>
 	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
 	/// <para>The default implementation does nothing.</para>
@@ -666,34 +737,6 @@ internal partial class sqlBaseListener : IsqlListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitFunctionCallScalarExpression([NotNull] sqlParser.FunctionCallScalarExpressionContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by the <c>LiteralScalarExpression</c>
-	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
-	/// <para>The default implementation does nothing.</para>
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	public virtual void EnterLiteralScalarExpression([NotNull] sqlParser.LiteralScalarExpressionContext context) { }
-	/// <summary>
-	/// Exit a parse tree produced by the <c>LiteralScalarExpression</c>
-	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
-	/// <para>The default implementation does nothing.</para>
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	public virtual void ExitLiteralScalarExpression([NotNull] sqlParser.LiteralScalarExpressionContext context) { }
-	/// <summary>
-	/// Enter a parse tree produced by the <c>ObjectCreateScalarExpression</c>
-	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
-	/// <para>The default implementation does nothing.</para>
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	public virtual void EnterObjectCreateScalarExpression([NotNull] sqlParser.ObjectCreateScalarExpressionContext context) { }
-	/// <summary>
-	/// Exit a parse tree produced by the <c>ObjectCreateScalarExpression</c>
-	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
-	/// <para>The default implementation does nothing.</para>
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	public virtual void ExitObjectCreateScalarExpression([NotNull] sqlParser.ObjectCreateScalarExpressionContext context) { }
-	/// <summary>
 	/// Enter a parse tree produced by the <c>ParenthesizedScalarExperession</c>
 	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
 	/// <para>The default implementation does nothing.</para>
@@ -722,20 +765,6 @@ internal partial class sqlBaseListener : IsqlListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitParameterRefScalarExpression([NotNull] sqlParser.ParameterRefScalarExpressionContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by the <c>ArrayCreateScalarExpression</c>
-	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
-	/// <para>The default implementation does nothing.</para>
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	public virtual void EnterArrayCreateScalarExpression([NotNull] sqlParser.ArrayCreateScalarExpressionContext context) { }
-	/// <summary>
-	/// Exit a parse tree produced by the <c>ArrayCreateScalarExpression</c>
-	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
-	/// <para>The default implementation does nothing.</para>
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	public virtual void ExitArrayCreateScalarExpression([NotNull] sqlParser.ArrayCreateScalarExpressionContext context) { }
-	/// <summary>
 	/// Enter a parse tree produced by the <c>ExistsScalarExpression</c>
 	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
 	/// <para>The default implementation does nothing.</para>
@@ -763,20 +792,6 @@ internal partial class sqlBaseListener : IsqlListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitArrayScalarExpression([NotNull] sqlParser.ArrayScalarExpressionContext context) { }
-	/// <summary>
-	/// Enter a parse tree produced by the <c>MemberIndexerScalarExpression</c>
-	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
-	/// <para>The default implementation does nothing.</para>
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	public virtual void EnterMemberIndexerScalarExpression([NotNull] sqlParser.MemberIndexerScalarExpressionContext context) { }
-	/// <summary>
-	/// Exit a parse tree produced by the <c>MemberIndexerScalarExpression</c>
-	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
-	/// <para>The default implementation does nothing.</para>
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	public virtual void ExitMemberIndexerScalarExpression([NotNull] sqlParser.MemberIndexerScalarExpressionContext context) { }
 	/// <summary>
 	/// Enter a parse tree produced by the <c>PropertyRefScalarExpressionRecursive</c>
 	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.

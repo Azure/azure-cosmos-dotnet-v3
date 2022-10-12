@@ -31,6 +31,7 @@ using ParserRuleContext = Antlr4.Runtime.ParserRuleContext;
 /// </summary>
 /// <typeparam name="Result">The return type of the visit operation.</typeparam>
 [System.CodeDom.Compiler.GeneratedCode("ANTLR", "4.7.2")]
+[System.CLSCompliant(false)]
 internal partial class sqlBaseVisitor<Result> : AbstractParseTreeVisitor<Result>, IsqlVisitor<Result> {
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="sqlParser.program"/>.
@@ -516,6 +517,61 @@ internal partial class sqlBaseVisitor<Result> : AbstractParseTreeVisitor<Result>
 	/// <return>The visitor result.</return>
 	public virtual Result VisitUnary_operator([NotNull] sqlParser.Unary_operatorContext context) { return VisitChildren(context); }
 	/// <summary>
+	/// Visit a parse tree produced by the <c>AllScalarExpression</c>
+	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitAllScalarExpression([NotNull] sqlParser.AllScalarExpressionContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>LiteralScalarExpression</c>
+	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitLiteralScalarExpression([NotNull] sqlParser.LiteralScalarExpressionContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>ObjectCreateScalarExpression</c>
+	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitObjectCreateScalarExpression([NotNull] sqlParser.ObjectCreateScalarExpressionContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>ArrayCreateScalarExpression</c>
+	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitArrayCreateScalarExpression([NotNull] sqlParser.ArrayCreateScalarExpressionContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>MemberIndexerScalarExpression</c>
+	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitMemberIndexerScalarExpression([NotNull] sqlParser.MemberIndexerScalarExpressionContext context) { return VisitChildren(context); }
+	/// <summary>
 	/// Visit a parse tree produced by the <c>SubqueryScalarExpression</c>
 	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
 	/// <para>
@@ -549,28 +605,6 @@ internal partial class sqlBaseVisitor<Result> : AbstractParseTreeVisitor<Result>
 	/// <return>The visitor result.</return>
 	public virtual Result VisitFunctionCallScalarExpression([NotNull] sqlParser.FunctionCallScalarExpressionContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by the <c>LiteralScalarExpression</c>
-	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
-	/// <para>
-	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
-	/// on <paramref name="context"/>.
-	/// </para>
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	public virtual Result VisitLiteralScalarExpression([NotNull] sqlParser.LiteralScalarExpressionContext context) { return VisitChildren(context); }
-	/// <summary>
-	/// Visit a parse tree produced by the <c>ObjectCreateScalarExpression</c>
-	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
-	/// <para>
-	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
-	/// on <paramref name="context"/>.
-	/// </para>
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	public virtual Result VisitObjectCreateScalarExpression([NotNull] sqlParser.ObjectCreateScalarExpressionContext context) { return VisitChildren(context); }
-	/// <summary>
 	/// Visit a parse tree produced by the <c>ParenthesizedScalarExperession</c>
 	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
 	/// <para>
@@ -593,17 +627,6 @@ internal partial class sqlBaseVisitor<Result> : AbstractParseTreeVisitor<Result>
 	/// <return>The visitor result.</return>
 	public virtual Result VisitParameterRefScalarExpression([NotNull] sqlParser.ParameterRefScalarExpressionContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by the <c>ArrayCreateScalarExpression</c>
-	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
-	/// <para>
-	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
-	/// on <paramref name="context"/>.
-	/// </para>
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	public virtual Result VisitArrayCreateScalarExpression([NotNull] sqlParser.ArrayCreateScalarExpressionContext context) { return VisitChildren(context); }
-	/// <summary>
 	/// Visit a parse tree produced by the <c>ExistsScalarExpression</c>
 	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
 	/// <para>
@@ -625,17 +648,6 @@ internal partial class sqlBaseVisitor<Result> : AbstractParseTreeVisitor<Result>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	public virtual Result VisitArrayScalarExpression([NotNull] sqlParser.ArrayScalarExpressionContext context) { return VisitChildren(context); }
-	/// <summary>
-	/// Visit a parse tree produced by the <c>MemberIndexerScalarExpression</c>
-	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
-	/// <para>
-	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
-	/// on <paramref name="context"/>.
-	/// </para>
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	public virtual Result VisitMemberIndexerScalarExpression([NotNull] sqlParser.MemberIndexerScalarExpressionContext context) { return VisitChildren(context); }
 	/// <summary>
 	/// Visit a parse tree produced by the <c>PropertyRefScalarExpressionRecursive</c>
 	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
