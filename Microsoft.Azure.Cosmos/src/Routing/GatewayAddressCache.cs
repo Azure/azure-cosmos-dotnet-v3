@@ -111,8 +111,14 @@ namespace Microsoft.Azure.Cosmos.Routing
 #endif  
 #endif
 
-            string collectionAltLink = string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}", Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseName),
-                Paths.CollectionsPathSegment, Uri.EscapeUriString(collection.Id));
+            string collectionAltLink = string.Format(
+                CultureInfo.InvariantCulture,
+                "{0}/{1}/{2}/{3}",
+                Paths.DatabasesPathSegment,
+                Uri.EscapeUriString(databaseName),
+                Paths.CollectionsPathSegment,
+                Uri.EscapeUriString(collection.Id));
+
             using (DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(
                 OperationType.Read,
                 collectionAltLink,
@@ -171,13 +177,27 @@ namespace Microsoft.Azure.Cosmos.Routing
              Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> addressInfo,
              Func<Uri, Task> openConnectionHandlerAsync)
         {
-            // Invoke the open connection handler. Add batching and exception handling.
             List<string> physicalUris = (from AddressInformation address in addressInfo.Item2.AllAddresses
                                          select address.PhysicalUri).ToList();
             foreach (string physicalUri in physicalUris)
             {
                 Console.WriteLine("Opening Connection to: " + physicalUri);
-                await openConnectionHandlerAsync(new Uri(physicalUri));
+                DefaultTrace.TraceInformation("Attempting to open Rntbd connection to backend uri: {0}. '{1}'",
+                                    physicalUri,
+                                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                try
+                {
+                    await openConnectionHandlerAsync(
+                        new Uri(physicalUri));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Exception Occurred inside {nameof(GatewayAddressCache)}: " + ex.Message);
+                    DefaultTrace.TraceWarning("Failed to open Rntbd connection to backend uri: {0} with exception: {1}. '{2}'",
+                                        physicalUri,
+                                        ex.Message,
+                                        System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                }
             }
         }
 

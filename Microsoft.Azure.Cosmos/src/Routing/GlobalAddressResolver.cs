@@ -7,11 +7,13 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -119,49 +121,67 @@ namespace Microsoft.Azure.Cosmos.Routing
             Func<Uri, Task> openConnectionHandlerAsync,
             CancellationToken cancellationToken = default)
         {
-            // TODO: Update code to use the returned collection and call Open Async in Gateway Address Cache.
-            ContainerProperties collection = null;
             try
             {
-                collection = await this.collectionCache.ResolveByNameAsync(
-                        HttpConstants.Versions.CurrentVersion,
-                        containerLinkUri,
+                ContainerProperties collection = await this.collectionCache.ResolveByNameAsync(
+                        apiVersion: HttpConstants.Versions.CurrentVersion,
+                        resourceAddress: containerLinkUri,
                         forceRefesh: false,
                         trace: NoOpTrace.Singleton,
                         clientSideRequestStatistics: null,
                         cancellationToken: cancellationToken);
+
+                if (collection == null)
+                {
+                    DefaultTrace.TraceWarning("Could not resolve the collection: {0} for database: {1}. '{2}'",
+                        containerLinkUri,
+                        databaseName,
+                        System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                    return;
+                }
+
+                IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await this.routingMapProvider?.TryGetOverlappingRangesAsync(
+                        collectionRid: collection.ResourceId,
+                        range: FeedRangeEpk.FullRange.Range,
+                        trace: NoOpTrace.Singleton);
+
+                IReadOnlyList<PartitionKeyRangeIdentity> partitionKeyRangeIdentities = partitionKeyRanges?.Select(
+                    range => new PartitionKeyRangeIdentity(
+                        collection.ResourceId,
+                        range.Id))
+                    .ToList();
+
+                Uri firstPreferredReadRegion = this.endpointManager
+                    .ReadEndpoints
+                    .First();
+
+                if (!this.addressCacheByEndpoint.ContainsKey(firstPreferredReadRegion))
+                {
+                    DefaultTrace.TraceWarning("The Address Cache doesn't contain a value for the first preferred read region: {0} under the database: {1}. '{2}'",
+                        firstPreferredReadRegion,
+                        databaseName,
+                        System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                    return;
+                }
+
+                await this.addressCacheByEndpoint[firstPreferredReadRegion]
+                    .AddressCache
+                    .OpenConnectionsAsync(
+                        databaseName: databaseName,
+                        collection: collection,
+                        partitionKeyRangeIdentities: partitionKeyRangeIdentities,
+                        openConnectionHandler: openConnectionHandlerAsync,
+                        cancellationToken: cancellationToken);
+
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Console.WriteLine($"Exception Occurred inside {nameof(GlobalAddressResolver)}: " + ex.Message);
+                DefaultTrace.TraceWarning("Failed to open Rntbd connection to backend uri for container: {0} with exception: {1}. '{2}'",
+                                    containerLinkUri,
+                                    ex.Message,
+                                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
             }
-
-            if (collection == null)
-            {
-                return;
-            }
-
-            IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await this.routingMapProvider.TryGetOverlappingRangesAsync(
-                    collectionRid: collection.ResourceId,
-                    range: FeedRangeEpk.FullRange.Range,
-                    trace: NoOpTrace.Singleton);
-
-            IReadOnlyList<PartitionKeyRangeIdentity> partitionKeyRangeIdentities = partitionKeyRanges.Select(
-                range => new PartitionKeyRangeIdentity(collection.ResourceId, range.Id)).ToList();
-
-            List<Task> tasks = new ();
-
-            foreach (EndpointCache endpointCache in this.addressCacheByEndpoint.Values)
-            {
-                tasks.Add(endpointCache.AddressCache.OpenConnectionsAsync(
-                    databaseName: databaseName,
-                    collection: collection,
-                    partitionKeyRangeIdentities: partitionKeyRangeIdentities,
-                    openConnectionHandler: openConnectionHandlerAsync,
-                    cancellationToken: cancellationToken));
-            }
-
-            await Task.WhenAll(tasks);
         }
 
         public async Task<PartitionAddressInformation> ResolveAsync(

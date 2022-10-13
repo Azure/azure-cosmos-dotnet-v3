@@ -1474,22 +1474,36 @@ namespace Microsoft.Azure.Cosmos
             string containerLinkUri,
             CancellationToken cancellationToken)
         {
-            if (databaseName == null)
+            if (string.IsNullOrEmpty(databaseName) ||
+                string.IsNullOrEmpty(containerLinkUri))
             {
-                throw new ArgumentNullException(nameof(databaseName));
-            }
+                string resource = string.IsNullOrEmpty(databaseName) ?
+                    "databaseName" :
+                    "containerLinkUri";
 
-            if (containerLinkUri == null)
-            {
-                throw new ArgumentNullException(nameof(containerLinkUri));
+                DefaultTrace.TraceWarning("Failed to open connections to backend replicas. {0} cannot be left empty. '{1}'",
+                    resource,
+                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
+
+                return;
             }
 
             if (this.StoreModel != null)
             {
-                await this.StoreModel.OpenConnectionsToAllReplicasAsync(
-                    databaseName,
-                    containerLinkUri,
-                    cancellationToken);
+                try
+                {
+                    await this.StoreModel.OpenConnectionsToAllReplicasAsync(
+                        databaseName,
+                        containerLinkUri,
+                        cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    DefaultTrace.TraceWarning("Failed to open connections to backend replicas for container: {0} with exception: {1}. '{2}'",
+                        containerLinkUri,
+                        ex.Message,
+                        System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                }
             }
         }
 
