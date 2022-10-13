@@ -79,7 +79,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal static void RecordOtelAttributes(CosmosNullReferenceException exception, DiagnosticScope scope)
         {
-            scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics.GetContactedRegions()));
+            scope.AddAttribute(OpenTelemetryAttributeKeys.Region, 
+                ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics?.GetContactedRegions()));
             scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.GetBaseException().Message);
 
             CosmosDbEventSource.RecordDiagnosticsForExceptions(exception.Diagnostics);

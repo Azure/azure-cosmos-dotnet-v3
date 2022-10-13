@@ -43,10 +43,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
         [JsonProperty(PropertyName = "metricInfo")]
         internal MetricInfo MetricInfo { get; set; }
 
-        internal OperationInfo()
-        {
-        }
-
         internal OperationInfo(string metricsName, string unitName)
         {
             this.MetricInfo = new MetricInfo(metricsName, unitName);

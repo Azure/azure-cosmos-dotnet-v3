@@ -122,8 +122,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 userAgent: userAgent, 
                 connectionMode: connectionMode,
                 preferredRegions: preferredRegions,
-                aggregationIntervalInSec: (int)observingWindow.TotalSeconds,
-                machineId: VmMetadataApiHandler.GetMachineId());
+                aggregationIntervalInSec: (int)observingWindow.TotalSeconds);
 
             this.cancellationTokenSource = new CancellationTokenSource();
             this.globalEndpointManager = globalEndpointManager;
@@ -164,6 +163,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     }
                     
                     await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
+
+                    this.clientTelemetryInfo.MachineId = VmMetadataApiHandler.GetMachineId();
 
                     // Load host information from cache
                     Compute vmInformation = VmMetadataApiHandler.GetMachineInfo();
@@ -213,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             OperationType operationType,
                             ResourceType resourceType,
                             SubStatusCodes subStatusCode,
-                            string databaseId = null,
+                            string databaseId,
                             long responseSizeInBytes = 0,
                             string consistencyLevel = null )
         {

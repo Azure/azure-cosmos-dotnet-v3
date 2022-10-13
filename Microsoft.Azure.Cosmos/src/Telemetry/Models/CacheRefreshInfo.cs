@@ -5,8 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Telemetry.Models
 {
     using System;
-    using HdrHistogram;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
@@ -18,10 +16,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
 
         internal CacheRefreshInfo(string metricsName, string unitName)
             : base(metricsName, unitName)
-        {
-        }
-
-        internal CacheRefreshInfo()
         {
         }
 
@@ -59,12 +53,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
 
         public override bool Equals(object obj)
         {
-            bool isequal = base.Equals(obj) && obj is CacheRefreshInfo payload &&
-                   ((this.CacheRefreshSource == null && payload.CacheRefreshSource == null) || 
-                        (this.CacheRefreshSource != null && payload.CacheRefreshSource != null && 
-                            this.CacheRefreshSource.Equals(payload.CacheRefreshSource)));
-
-            return isequal;
+            return base.Equals(obj) && 
+                obj is CacheRefreshInfo payload &&
+                String.CompareOrdinal(this.CacheRefreshSource, payload.CacheRefreshSource) == 0;
         }
     }
 }

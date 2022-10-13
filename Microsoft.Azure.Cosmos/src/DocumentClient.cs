@@ -1043,13 +1043,13 @@ namespace Microsoft.Azure.Cosmos
                         preferredRegions: this.ConnectionPolicy.PreferredLocations,
                         globalEndpointManager: this.GlobalEndpointManager);
 
+                    DefaultTrace.TraceInformation("Client Telemetry Enabled.");
                 }
                 catch (Exception ex)
                 {
                     DefaultTrace.TraceInformation($"Error While starting Telemetry Job : {ex.Message}. Hence disabling Client Telemetry");
                     this.ConnectionPolicy.EnableClientTelemetry = false;
                 }
-
             }
             else
             {

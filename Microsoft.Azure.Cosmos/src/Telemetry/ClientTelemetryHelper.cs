@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net.Http;
     using System.Text;
     using System.Threading;
@@ -142,6 +143,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return null;
             }
 
+            if (regionList.Count == 1)
+            {
+                return regionList.ElementAt(0).regionName;
+            }
+            
             StringBuilder regionsContacted = new StringBuilder();
             foreach ((string name, _) in regionList)
             {

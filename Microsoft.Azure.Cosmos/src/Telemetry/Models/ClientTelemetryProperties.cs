@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
     using System;
     using System.Collections.Generic;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
     using Newtonsoft.Json.Serialization;
 
     [Serializable]
@@ -69,21 +68,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
                                    string userAgent,
                                    ConnectionMode connectionMode,
                                    IReadOnlyList<string> preferredRegions,
-                                   int aggregationIntervalInSec,
-                                   string machineId)
+                                   int aggregationIntervalInSec)
         {
             this.ClientId = clientId;
             this.ProcessId = processId;
             this.UserAgent = userAgent;
             this.ConnectionMode = connectionMode.ToString().ToUpperInvariant();
-            if (connectionMode == Cosmos.ConnectionMode.Direct)
-            {
-                this.IsDirectConnectionMode = true;
-            }
+            this.IsDirectConnectionMode = connectionMode == Cosmos.ConnectionMode.Direct;
             this.SystemInfo = new List<SystemInfo>();
             this.PreferredRegions = preferredRegions;
             this.AggregationIntervalInSec = aggregationIntervalInSec;
-            this.MachineId = machineId;
         }
 
         /// <summary>

@@ -45,8 +45,6 @@ namespace Microsoft.Azure.Cosmos
 #if !INTERNAL
             this.diagnosticsHandler = new DiagnosticsHandler();
             Debug.Assert(this.diagnosticsHandler.InnerHandler == null, nameof(this.diagnosticsHandler));
-#else
-            this.diagnosticsHandler = null;
 #endif
             if (telemetry != null)
             {
