@@ -24,6 +24,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using Cosmos.Util;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Common;
 
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper
@@ -248,6 +250,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 Container container = await this.CreateClientAndContainer(mode, Microsoft.Azure.Cosmos.ConsistencyLevel.ConsistentPrefix);
+
                 await container.ReadItemAsync<JObject>(
                     new Guid().ToString(),
                     new Cosmos.PartitionKey(new Guid().ToString()),
@@ -269,7 +272,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.WaitAndAssert(expectedOperationCount: 2,
                 expectedConsistencyLevel: Microsoft.Azure.Cosmos.ConsistencyLevel.Eventual,
-                expectedOperationRecordCountMap: expectedRecordCountInOperation);
+                expectedOperationRecordCountMap: expectedRecordCountInOperation, 
+                expectedCacheSource: null);
         }
 
         [TestMethod]
@@ -303,7 +307,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.WaitAndAssert(expectedOperationCount: 2,
                 expectedConsistencyLevel: Microsoft.Azure.Cosmos.ConsistencyLevel.ConsistentPrefix,
-                expectedOperationRecordCountMap: expectedRecordCountInOperation);
+                expectedOperationRecordCountMap: expectedRecordCountInOperation,
+                expectedCacheSource: null);
         }
 
         [TestMethod]
@@ -312,6 +317,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task StreamOperationsTest(ConnectionMode mode)
         {
             Container container = await this.CreateClientAndContainer(mode);
+
             // Create an item
             var testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working", status = "done" };
             await container
@@ -351,7 +357,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             await this.WaitAndAssert(expectedOperationCount: 12,
-                expectedOperationRecordCountMap: expectedRecordCountInOperation);
+                expectedOperationRecordCountMap: expectedRecordCountInOperation,
+                expectedCacheSource: null);
         }
 
         [TestMethod]
@@ -654,10 +661,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container = await this.CreateClientAndContainer(mode);
 
             // Create an item : First successful request to load Cache
-            var testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working", status = "done" };
-            await container
-                .CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem),
-                new Cosmos.PartitionKey(testItem.id));
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
+            await container.CreateItemAsync<ToDoActivity>(testItem);
 
             List<ToDoActivity> results = new List<ToDoActivity>();
             using (FeedIterator<ToDoActivity> resultSetIterator = container.GetItemQueryIterator<ToDoActivity>(
@@ -777,7 +782,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Microsoft.Azure.Cosmos.ConsistencyLevel? expectedConsistencyLevel = null,
             IDictionary<string, long> expectedOperationRecordCountMap = null,
             int expectedSubstatuscode = 0,
-            bool? isAzureInstance = null)
+            bool? isAzureInstance = null,
+            string expectedCacheSource = "ClientCollectionCache")
         {
             Assert.IsNotNull(this.actualInfo, "Telemetry Information not available");
 
@@ -847,11 +853,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 actualOperationList: actualOperationList,
                 expectedSubstatuscode: expectedSubstatuscode);
 
-            Assert.IsTrue(cacheRefreshInfoSet.Count > 0, "Cache Refresh Information is not there");
+            if(!string.IsNullOrEmpty(expectedCacheSource))
+            {
+                Assert.IsTrue(cacheRefreshInfoSet.Count > 0, "Cache Refresh Information is not there");
 
-            ClientTelemetryTests.AssertCacheRefreshInfoInformation(
-              cacheRefreshInfoSet: cacheRefreshInfoSet);
-
+                ClientTelemetryTests.AssertCacheRefreshInfoInformation(
+                  cacheRefreshInfoSet: cacheRefreshInfoSet,
+                  expectedCacheSource: expectedCacheSource);
+            }
+           
             ClientTelemetryTests.AssertSystemLevelInformation(actualSystemInformation, this.expectedMetricNameUnitMap);
         }
 
@@ -993,11 +1003,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
 
         private static void AssertCacheRefreshInfoInformation(
-            HashSet<CacheRefreshInfo> cacheRefreshInfoSet)
+            HashSet<CacheRefreshInfo> cacheRefreshInfoSet,
+            string expectedCacheSource)
         {
             foreach(CacheRefreshInfo cacheRefreshInfo in cacheRefreshInfoSet)
             {
                 Assert.IsNotNull(cacheRefreshInfo.CacheRefreshSource);
+                Assert.IsTrue(expectedCacheSource.Contains(cacheRefreshInfo.CacheRefreshSource));
                 Assert.IsNotNull(cacheRefreshInfo.Operation, "Operation Type is null");
                 Assert.IsNotNull(cacheRefreshInfo.Resource, "Resource Type is null");
                 Assert.IsNotNull(cacheRefreshInfo.StatusCode, "StatusCode is null");
