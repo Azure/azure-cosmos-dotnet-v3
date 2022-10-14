@@ -215,10 +215,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                             {
                                 ContainerProperties containerProperties = CosmosResource.FromStream<ContainerProperties>(response);
 
-                                ClientCollectionCache.GetDatabaseAndCollectionName(collectionLink, out string databaseName, out string collectionName);
-
                                 if (this.clientTelemetry != null)
                                 {
+                                    ClientCollectionCache.GetDatabaseAndCollectionName(collectionLink, out string databaseName, out string collectionName);
                                     this.clientTelemetry.CollectCacheInfo(
                                                     cacheRefreshSource: ClientCollectionCache.TelemetrySourceName,
                                                     regionsContactedList: response.RequestStats.RegionsContacted,
