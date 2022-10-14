@@ -26,6 +26,9 @@ namespace Microsoft.Azure.Cosmos
 
             this.feedIteratorInternal = feedIteratorInternal;
             this.clientContext = clientContext;
+
+            this.container = feedIteratorInternal.container;
+            this.databaseName = feedIteratorInternal.databaseName;
         }
 
         internal FeedIteratorInlineCore(
@@ -34,6 +37,9 @@ namespace Microsoft.Azure.Cosmos
         {
             this.feedIteratorInternal = feedIteratorInternal ?? throw new ArgumentNullException(nameof(feedIteratorInternal));
             this.clientContext = clientContext;
+
+            this.container = feedIteratorInternal.container;
+            this.databaseName = feedIteratorInternal.databaseName;
         }
 
         public override bool HasMoreResults => this.feedIteratorInternal.HasMoreResults;
@@ -47,7 +53,20 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.clientContext.OperationHelperAsync("FeedIterator Read Next Async",
                         requestOptions: null,
-                        task: (trace) => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken));
+                        task: (trace) => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken),
+                        openTelemetry: (response) =>
+                        {
+                            if (this.container == null)
+                            {
+                                return new OpenTelemetryResponse(
+                                    responseMessage: response, 
+                                    containerName: null,
+                                    databaseName: this.databaseName);
+                            }
+                            return new OpenTelemetryResponse(responseMessage: response,
+                                    containerName: this.container?.Id,
+                                    databaseName: this.container?.Database?.Id ?? this.databaseName);
+                        });
         }
 
         public override Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)

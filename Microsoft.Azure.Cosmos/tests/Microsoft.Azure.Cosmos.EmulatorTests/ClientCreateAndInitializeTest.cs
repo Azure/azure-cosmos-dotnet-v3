@@ -6,9 +6,12 @@
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
+    using Moq.Protected;
 
     [TestClass]
     public class ClientCreateAndInitializeTest : BaseCosmosClientHelper
@@ -67,10 +70,40 @@
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
             {
-                HttpClientFactory = () => new HttpClient(httpClientHandlerHelper)
+                HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
             };
 
             CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync(endpoint, authKey, containers, cosmosClientOptions);
+            Assert.IsNotNull(cosmosClient);
+            int httpCallsMadeAfterCreation = httpCallsMade;
+
+            ContainerInternal container = (ContainerInternal)cosmosClient.GetContainer("ClientCreateAndInitializeDatabase", "ClientCreateAndInitializeContainer");
+            ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>("1", new Cosmos.PartitionKey("Status1"));
+            string diagnostics = readResponse.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("\"ConnectionMode\":\"Direct\""));
+            Assert.AreEqual(httpCallsMade, httpCallsMadeAfterCreation);
+            cosmosClient.Dispose();
+        }
+
+        [TestMethod]
+        public async Task CreateAndInitializeWithCosmosClientBuilderTest()
+        {
+            int httpCallsMade = 0;
+            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper
+            {
+                RequestCallBack = (request, cancellationToken) =>
+                {
+                    httpCallsMade++;
+                    return null;
+                }
+            };
+
+            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+            List<(string, string)> containers = new List<(string, string)>
+            { ("ClientCreateAndInitializeDatabase", "ClientCreateAndInitializeContainer")};
+
+            CosmosClientBuilder builder = new CosmosClientBuilder(endpoint, authKey).WithHttpClientFactory(() => new HttpClient(httpClientHandlerHelper));
+            CosmosClient cosmosClient = await builder.BuildAndInitializeAsync(containers);
             Assert.IsNotNull(cosmosClient);
             int httpCallsMadeAfterCreation = httpCallsMade;
 
@@ -125,6 +158,41 @@
                 Assert.IsTrue(ex.StatusCode == HttpStatusCode.NotFound);
                 throw ex;
             }
+        }
+
+        [TestMethod]
+        public async Task InitializeContainersAsync_WhenThrowsException_ShouldDisposeCosmosClient()
+        {
+            // Arrange.
+            List<(string databaseId, string containerId)> containers = new()
+            { ("IncorrectDatabase", "ClientCreateAndInitializeContainer")};
+
+            CosmosException cosmosException = new (
+                statusCode: HttpStatusCode.NotFound,
+                message: "Test",
+                stackTrace: null,
+                headers: null,
+                trace: default,
+                error: null,
+                innerException: null);
+
+            Mock<CosmosClient> cosmosClient = new ();
+            cosmosClient
+                .Setup(x => x.GetContainer(It.IsAny<string>(), It.IsAny<string>()))
+                .Throws(cosmosException);
+
+            cosmosClient
+                .Protected()
+                .Setup("Dispose", ItExpr.Is<bool>(x => x))
+                .Verifiable();
+
+            // Act.
+            CosmosException ex = await Assert.ThrowsExceptionAsync<CosmosException>(() => cosmosClient.Object.InitializeContainersAsync(containers, this.cancellationToken));
+
+            // Assert.
+            Assert.IsNotNull(ex);
+            Assert.IsTrue(ex.StatusCode == HttpStatusCode.NotFound);
+            cosmosClient.Verify();
         }
     }
 }

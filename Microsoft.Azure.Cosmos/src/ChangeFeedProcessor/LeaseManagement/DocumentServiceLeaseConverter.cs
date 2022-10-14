@@ -58,13 +58,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             if (value is DocumentServiceLeaseCore documentServiceLeaseCore)
             {
                 serializer.ContractResolver.ResolveContract(typeof(DocumentServiceLeaseCore)).Converter = null;
-                serializer.Serialize(writer, documentServiceLeaseCore);
+                serializer.Serialize(writer, documentServiceLeaseCore, typeof(DocumentServiceLeaseCore));
             }
 
             if (value is DocumentServiceLeaseCoreEpk documentServiceLeaseCoreEpk)
             {
                 serializer.ContractResolver.ResolveContract(typeof(DocumentServiceLeaseCoreEpk)).Converter = null;
-                serializer.Serialize(writer, documentServiceLeaseCoreEpk);
+                serializer.Serialize(writer, documentServiceLeaseCoreEpk, typeof(DocumentServiceLeaseCoreEpk));
             }
         }
     }

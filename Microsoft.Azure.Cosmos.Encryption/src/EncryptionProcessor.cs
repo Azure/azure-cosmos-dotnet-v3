@@ -18,12 +18,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal static class EncryptionProcessor
     {
-        private static readonly CosmosJsonDotNetSerializer BaseSerializer = new CosmosJsonDotNetSerializer(
-            new JsonSerializerSettings()
-            {
-                DateParseHandling = DateParseHandling.None,
-            });
-
         private static readonly SqlSerializerFactory SqlSerializerFactory = SqlSerializerFactory.Default;
 
         // UTF-8 Encoding
@@ -37,6 +31,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Long = 4,
             String = 5,
         }
+
+        public static CosmosJsonDotNetSerializer BaseSerializer { get; } = new CosmosJsonDotNetSerializer(
+            new JsonSerializerSettings()
+            {
+                DateParseHandling = DateParseHandling.None,
+                MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+            });
 
         /// <remarks>
         /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.
@@ -78,6 +79,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 await EncryptJTokenAsync(
                     propertyToEncrypt.Value,
                     settingforProperty,
+                    propertyName == "id",
                     cancellationToken);
 
                 propertiesEncryptedCount++;
@@ -106,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 return input;
             }
 
-            Debug.Assert(input.CanSeek);
+            Debug.Assert(input.CanSeek, "DecryptAsync input.CanSeek false");
 
             operationDiagnostics?.Begin(Constants.DiagnosticsDecryptOperation);
             JObject itemJObj = RetrieveItem(input);
@@ -129,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionSettings encryptionSettings,
             CancellationToken cancellationToken)
         {
-            Debug.Assert(document != null);
+            Debug.Assert(document != null,  "DecryptAsync document null");
 
             int propertiesDecryptedCount = await DecryptObjectAsync(
                 document,
@@ -181,30 +183,40 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         internal static async Task<Stream> EncryptValueStreamAsync(
-            Stream valueStream,
-            EncryptionSettingForProperty settingsForProperty,
+            Stream valueStreamToEncrypt,
+            EncryptionSettingForProperty encryptionSettingForProperty,
+            bool shouldEscape,
             CancellationToken cancellationToken)
         {
-            if (valueStream == null)
+            if (valueStreamToEncrypt == null)
             {
-                throw new ArgumentNullException(nameof(valueStream));
+                throw new ArgumentNullException(nameof(valueStreamToEncrypt));
             }
 
-            if (settingsForProperty == null)
+            if (encryptionSettingForProperty == null)
             {
-                throw new ArgumentNullException(nameof(settingsForProperty));
+                throw new ArgumentNullException(nameof(encryptionSettingForProperty));
             }
 
-            JToken propertyValueToEncrypt = EncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);
+            JToken propertyValueToEncrypt = EncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStreamToEncrypt);
 
             JToken encryptedPropertyValue = propertyValueToEncrypt;
+
             if (propertyValueToEncrypt.Type == JTokenType.Object || propertyValueToEncrypt.Type == JTokenType.Array)
             {
-                await EncryptJTokenAsync(encryptedPropertyValue, settingsForProperty, cancellationToken);
+                await EncryptJTokenAsync(
+                    jTokenToEncrypt: encryptedPropertyValue,
+                    encryptionSettingForProperty: encryptionSettingForProperty,
+                    shouldEscape: shouldEscape,
+                    cancellationToken: cancellationToken);
             }
             else
             {
-                encryptedPropertyValue = await SerializeAndEncryptValueAsync(propertyValueToEncrypt, settingsForProperty, cancellationToken);
+                encryptedPropertyValue = await SerializeAndEncryptValueAsync(
+                    jTokenToEncrypt: propertyValueToEncrypt,
+                    encryptionSettingForProperty: encryptionSettingForProperty,
+                    shouldEscape: shouldEscape,
+                    cancellationToken: cancellationToken);
             }
 
             return EncryptionProcessor.BaseSerializer.ToStream(encryptedPropertyValue);
@@ -239,6 +251,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private static async Task EncryptJTokenAsync(
            JToken jTokenToEncrypt,
            EncryptionSettingForProperty encryptionSettingForProperty,
+           bool shouldEscape,
            CancellationToken cancellationToken)
         {
             // Top Level can be an Object
@@ -249,6 +262,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     await EncryptJTokenAsync(
                         jProperty.Value,
                         encryptionSettingForProperty,
+                        shouldEscape,
                         cancellationToken);
                 }
             }
@@ -261,28 +275,42 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         await EncryptJTokenAsync(
                             jTokenToEncrypt[i],
                             encryptionSettingForProperty,
+                            shouldEscape,
                             cancellationToken);
                     }
                 }
             }
             else
             {
-                jTokenToEncrypt.Replace(await SerializeAndEncryptValueAsync(jTokenToEncrypt, encryptionSettingForProperty, cancellationToken));
+                jTokenToEncrypt.Replace(await SerializeAndEncryptValueAsync(
+                    jTokenToEncrypt,
+                    encryptionSettingForProperty,
+                    shouldEscape,
+                    cancellationToken));
             }
 
             return;
         }
 
         private static async Task<JToken> SerializeAndEncryptValueAsync(
-           JToken jToken,
+           JToken jTokenToEncrypt,
            EncryptionSettingForProperty encryptionSettingForProperty,
+           bool shouldEscape,
            CancellationToken cancellationToken)
         {
-            JToken propertyValueToEncrypt = jToken;
+            JToken propertyValueToEncrypt = jTokenToEncrypt;
 
             if (propertyValueToEncrypt.Type == JTokenType.Null)
             {
                 return propertyValueToEncrypt;
+            }
+
+            if (shouldEscape)
+            {
+                if (jTokenToEncrypt.Type != JTokenType.String)
+                {
+                    throw new ArgumentException("Unsupported argument type. The value to escape has to be string type. Please refer to https://aka.ms/CosmosClientEncryption for more details.");
+                }
             }
 
             (TypeMarker typeMarker, byte[] plainText) = Serialize(propertyValueToEncrypt);
@@ -298,15 +326,37 @@ namespace Microsoft.Azure.Cosmos.Encryption
             byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
             cipherTextWithTypeMarker[0] = (byte)typeMarker;
             Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
+
+            if (shouldEscape)
+            {
+                // case: id does not support '/','\','?','#'. Convert Base64 string to Uri safe string
+                return ConvertToBase64UriSafeString(cipherTextWithTypeMarker);
+            }
+
             return cipherTextWithTypeMarker;
         }
 
         private static async Task<JToken> DecryptAndDeserializeValueAsync(
            JToken jToken,
            EncryptionSettingForProperty encryptionSettingForProperty,
+           bool isEscaped,
            CancellationToken cancellationToken)
         {
-            byte[] cipherTextWithTypeMarker = jToken.ToObject<byte[]>();
+            byte[] cipherTextWithTypeMarker = null;
+
+            if (isEscaped)
+            {
+                if (jToken.Type == JTokenType.Null)
+                {
+                    return null;
+                }
+
+                cipherTextWithTypeMarker = ConvertFromBase64UriSafeString(jToken.ToObject<string>());
+            }
+            else
+            {
+                cipherTextWithTypeMarker = jToken.ToObject<byte[]>();
+            }
 
             if (cipherTextWithTypeMarker == null)
             {
@@ -332,6 +382,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private static async Task DecryptJTokenAsync(
             JToken jTokenToDecrypt,
             EncryptionSettingForProperty encryptionSettingForProperty,
+            bool isEscaped,
             CancellationToken cancellationToken)
         {
             if (jTokenToDecrypt.Type == JTokenType.Object)
@@ -341,6 +392,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     await DecryptJTokenAsync(
                         jProperty.Value,
                         encryptionSettingForProperty,
+                        isEscaped,
                         cancellationToken);
                 }
             }
@@ -353,6 +405,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         await DecryptJTokenAsync(
                             jTokenToDecrypt[i],
                             encryptionSettingForProperty,
+                            isEscaped,
                             cancellationToken);
                     }
                 }
@@ -362,6 +415,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 jTokenToDecrypt.Replace(await DecryptAndDeserializeValueAsync(
                     jTokenToDecrypt,
                     encryptionSettingForProperty,
+                    isEscaped,
                     cancellationToken));
             }
         }
@@ -387,6 +441,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     await DecryptJTokenAsync(
                         propertyToDecrypt.Value,
                         settingsForProperty,
+                        propertyName == "id",
                         cancellationToken);
 
                     propertiesDecryptedCount++;
@@ -399,7 +454,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private static JObject RetrieveItem(
             Stream input)
         {
-            Debug.Assert(input != null);
+            Debug.Assert(input != null, "RetrieveItem input stream null");
 
             JObject itemJObj;
             using (StreamReader sr = new StreamReader(input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
@@ -408,12 +463,29 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
                 {
                     DateParseHandling = DateParseHandling.None,
+                    MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
                 };
 
                 itemJObj = JsonSerializer.Create(jsonSerializerSettings).Deserialize<JObject>(jsonTextReader);
             }
 
             return itemJObj;
+        }
+
+        private static string ConvertToBase64UriSafeString(byte[] bytesToProcess)
+        {
+            string base64String = Convert.ToBase64String(bytesToProcess);
+
+            // Base 64 Encoding with URL and Filename Safe Alphabet  https://datatracker.ietf.org/doc/html/rfc4648#section-5
+            // https://docs.microsoft.com/en-us/azure/cosmos-db/concepts-limits#per-item-limits, due to base64 conversion and encryption
+            // the permissible size of the property will further reduce.
+            return new StringBuilder(base64String, base64String.Length).Replace("/", "_").Replace("+", "-").ToString();
+        }
+
+        private static byte[] ConvertFromBase64UriSafeString(string uriSafeBase64String)
+        {
+            StringBuilder fromUriSafeBase64String = new StringBuilder(uriSafeBase64String, uriSafeBase64String.Length).Replace("_", "/").Replace("-", "+");
+            return Convert.FromBase64String(fromUriSafeBase64String.ToString());
         }
     }
 }

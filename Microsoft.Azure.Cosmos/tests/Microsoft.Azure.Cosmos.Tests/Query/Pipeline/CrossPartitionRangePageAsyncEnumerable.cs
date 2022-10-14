@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         private readonly IComparer<PartitionRangePageAsyncEnumerator<TPage, TState>> comparer;
         private readonly IFeedRangeProvider feedRangeProvider;
         private readonly int maxConcurrency;
+        private readonly PrefetchPolicy prefetchPolicy;
         private readonly ITrace trace;
 
         public CrossPartitionRangePageAsyncEnumerable(
@@ -28,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             CreatePartitionRangePageAsyncEnumerator<TPage, TState> createPartitionRangeEnumerator,
             IComparer<PartitionRangePageAsyncEnumerator<TPage, TState>> comparer,
             int maxConcurrency,
+            PrefetchPolicy prefetchPolicy,
             ITrace trace,
             CrossFeedRangeState<TState> state = default)
         {
@@ -36,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             this.comparer = comparer ?? throw new ArgumentNullException(nameof(comparer));
             this.state = state;
             this.maxConcurrency = maxConcurrency < 0 ? throw new ArgumentOutOfRangeException(nameof(maxConcurrency)) : maxConcurrency;
+            this.prefetchPolicy = prefetchPolicy;
             this.trace = trace ?? throw new ArgumentNullException(nameof(trace));
         }
 
@@ -49,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     this.createPartitionRangeEnumerator,
                     this.comparer,
                     this.maxConcurrency,
+                    this.prefetchPolicy,
                     cancellationToken,
                     this.state),
                 this.trace);

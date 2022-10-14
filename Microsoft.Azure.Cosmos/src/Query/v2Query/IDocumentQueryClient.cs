@@ -39,7 +39,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
         Task<Documents.ConsistencyLevel?> GetDesiredConsistencyLevelAsync();
 
-        Task EnsureValidOverwriteAsync(Documents.ConsistencyLevel desiredConsistencyLevel);
+        Task EnsureValidOverwriteAsync(Documents.ConsistencyLevel desiredConsistencyLevel, OperationType operationType,
+                ResourceType resourceType);
 
         Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync();
     }

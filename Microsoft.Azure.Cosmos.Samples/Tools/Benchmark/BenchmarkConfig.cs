@@ -98,13 +98,13 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Disable core SDK logging")]
         public bool DisableCoreSdkLogging { get; set; }
 
-        [Option(Required = false, HelpText = "Enable Telemetry")]
+        [Option(Required = false, HelpText = "Enable Client Telemetry")]
         public bool EnableTelemetry { get; set; }
 
-        [Option(Required = false, HelpText = "Telemetry Schedule in Seconds")]
+        [Option(Required = false, HelpText = "Client Telemetry Schedule in Seconds")]
         public int  TelemetryScheduleInSec { get; set; }
 
-        [Option(Required = false, HelpText = "Telemetry Endpoint")]
+        [Option(Required = false, HelpText = "Client Telemetry Endpoint")]
         public string TelemetryEndpoint { get; set; }
 
         [Option(Required = false, HelpText = "Endpoint to publish results to")]

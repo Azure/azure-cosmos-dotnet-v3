@@ -82,8 +82,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             ContainerProperties collection,
             CancellationToken cancellationToken)
         {
-            CollectionRoutingMap routingMap =
-                await this.routingMapProvider.TryLookupAsync(collection.ResourceId, null, null, cancellationToken, NoOpTrace.Singleton);
+            CollectionRoutingMap routingMap = await this.routingMapProvider.TryLookupAsync(
+                    collectionRid: collection.ResourceId,
+                    previousValue: null,
+                    request: null,
+                    trace: NoOpTrace.Singleton);
 
             if (routingMap == null)
             {

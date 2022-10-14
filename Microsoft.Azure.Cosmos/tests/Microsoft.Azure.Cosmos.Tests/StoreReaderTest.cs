@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -34,10 +35,11 @@ namespace Microsoft.Azure.Cosmos
             AddressInformation[] addressInformation = new AddressInformation[3];
             for (int i = 0; i < 3; i++)
             {
-                addressInformation[i] = new AddressInformation
-                {
-                    PhysicalUri = "http://replica-" + i.ToString("G", CultureInfo.CurrentCulture)
-                };
+                addressInformation[i] = new AddressInformation(
+                    physicalUri: "http://replica-" + i.ToString("G", CultureInfo.CurrentCulture),
+                    isPrimary: false,
+                    protocol: default,
+                    isPublic: false);
             }
 
             // Address Selector is an internal sealed class that can't be mocked, but its dependency
@@ -72,12 +74,12 @@ namespace Microsoft.Azure.Cosmos
             // rntbd://yt1prdddc01-docdb-1.documents.azure.com:14003/apps/ce8ab332-f59e-4ce7-a68e-db7e7cfaa128/services/68cc0b50-04c6-4716-bc31-2dfefd29e3ee/partitions/5604283d-0907-4bf4-9357-4fa9e62de7b5/replicas/131170760736528207s/
             for (int i = 0; i < 3; i++)
             {
-                addressInformation[i] = new AddressInformation
-                {
-                    PhysicalUri =
-                    "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/"
-                    + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/"
-                };
+                addressInformation[i] = new AddressInformation(
+                    physicalUri: "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/"
+                        + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/",
+                    isPrimary: false,
+                    protocol: default,
+                    isPublic: false);
             }
 
             // create objects for all the dependencies of the StoreReader
@@ -88,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
             {
 
                 // set lsn and activityid on the store response.
-                Headers = new StoreRequestNameValueCollection
+                Headers = new Documents.Collections.RequestNameValueCollection()
                 {
                     { WFConstants.BackendHeaders.LSN, "50"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" }
@@ -124,14 +126,14 @@ namespace Microsoft.Azure.Cosmos
             StoreResponse mockStoreResponseSlow = new StoreResponse();
 
             // set lsn and activityid on the store response.
-            mockStoreResponseFast.Headers = new StoreRequestNameValueCollection
+            mockStoreResponseFast.Headers = new StoreResponseNameValueCollection()
                 {
                     { WFConstants.BackendHeaders.LSN, "50"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" }
                 };
 
             // set lsn and activityid on the store response.
-            mockStoreResponseSlow.Headers = new StoreRequestNameValueCollection
+            mockStoreResponseSlow.Headers = new StoreResponseNameValueCollection()
                 {
                     { WFConstants.BackendHeaders.LSN, "30"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" }
@@ -204,7 +206,7 @@ namespace Microsoft.Azure.Cosmos
             StoreResponse mockStoreResponse5 = new StoreResponse();
 
             // set lsn and activityid on the store response.
-            mockStoreResponse1.Headers = new StoreRequestNameValueCollection
+            mockStoreResponse1.Headers = new StoreResponseNameValueCollection()
             {
                 { WFConstants.BackendHeaders.LSN, "100"},
                 { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" },
@@ -212,7 +214,7 @@ namespace Microsoft.Azure.Cosmos
                 { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
             };
 
-            mockStoreResponse2.Headers = new StoreRequestNameValueCollection
+            mockStoreResponse2.Headers = new StoreResponseNameValueCollection()
             {
                 { WFConstants.BackendHeaders.LSN, "90"},
                 { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_2" },
@@ -220,7 +222,7 @@ namespace Microsoft.Azure.Cosmos
                 { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
             };
 
-            mockStoreResponse3.Headers = new StoreRequestNameValueCollection
+            mockStoreResponse3.Headers = new StoreResponseNameValueCollection()
             {
                 { WFConstants.BackendHeaders.LSN, "92"},
                 { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
@@ -228,7 +230,7 @@ namespace Microsoft.Azure.Cosmos
                 { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
             };
 
-            mockStoreResponse4.Headers = new StoreRequestNameValueCollection
+            mockStoreResponse4.Headers = new StoreResponseNameValueCollection()
             {
                 { WFConstants.BackendHeaders.LSN, "100"},
                 { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
@@ -236,7 +238,7 @@ namespace Microsoft.Azure.Cosmos
                 { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
             };
 
-            mockStoreResponse5.Headers = new StoreRequestNameValueCollection
+            mockStoreResponse5.Headers = new StoreResponseNameValueCollection()
             {
                 { WFConstants.BackendHeaders.LSN, "100"},
                 { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
@@ -337,7 +339,7 @@ namespace Microsoft.Azure.Cosmos
 
 
             // set lsn and activityid on the store response.
-            mockStoreResponse1.Headers = new StoreRequestNameValueCollection
+            mockStoreResponse1.Headers = new StoreResponseNameValueCollection()
                 {
                     { WFConstants.BackendHeaders.LSN, "100"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" },
@@ -345,7 +347,7 @@ namespace Microsoft.Azure.Cosmos
                     { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
                 };
 
-            mockStoreResponse2.Headers = new StoreRequestNameValueCollection
+            mockStoreResponse2.Headers = new StoreResponseNameValueCollection()
                 {
                     { WFConstants.BackendHeaders.LSN, "100"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_2" },
@@ -353,7 +355,7 @@ namespace Microsoft.Azure.Cosmos
                     { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
                 };
 
-            mockStoreResponse3.Headers = new StoreRequestNameValueCollection
+            mockStoreResponse3.Headers = new StoreResponseNameValueCollection()
                 {
                     { WFConstants.BackendHeaders.LSN, "103"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
@@ -361,7 +363,7 @@ namespace Microsoft.Azure.Cosmos
                     { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
                 };
 
-            mockStoreResponse4.Headers = new StoreRequestNameValueCollection
+            mockStoreResponse4.Headers = new StoreResponseNameValueCollection()
                 {
                     { WFConstants.BackendHeaders.LSN, "103"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
@@ -369,7 +371,7 @@ namespace Microsoft.Azure.Cosmos
                     { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
                 };
 
-            mockStoreResponse5.Headers = new StoreRequestNameValueCollection
+            mockStoreResponse5.Headers = new StoreResponseNameValueCollection()
                 {
                     { WFConstants.BackendHeaders.LSN, "106"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
@@ -441,15 +443,12 @@ namespace Microsoft.Azure.Cosmos
             // rntbd://yt1prdddc01-docdb-1.documents.azure.com:14003/apps/ce8ab332-f59e-4ce7-a68e-db7e7cfaa128/services/68cc0b50-04c6-4716-bc31-2dfefd29e3ee/partitions/5604283d-0907-4bf4-9357-4fa9e62de7b5/replicas/131170760736528207s/
             for (int i = 0; i <= 2; i++)
             {
-                addressInformation[i] = new AddressInformation
-                {
-                    PhysicalUri =
-                    "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/"
-                    + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/",
-                    IsPrimary = i == 0,
-                    Protocol = Protocol.Tcp,
-                    IsPublic = true
-                };
+                addressInformation[i] = new AddressInformation(
+                    physicalUri: "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/"
+                        + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/",
+                    isPrimary: i == 0,
+                    protocol: Documents.Client.Protocol.Tcp,
+                    isPublic: true);
             }
             return addressInformation;
         }

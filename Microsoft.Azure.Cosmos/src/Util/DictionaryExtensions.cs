@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        internal static bool EqualsTo(this IDictionary<string, long> dict1, IDictionary<string, long> dict2)
+        internal static bool EqualsTo<U, T>(this IDictionary<U, T> dict1, IDictionary<U, T> dict2)
         {
             if (dict1 == null && dict2 == null)
             {
@@ -49,9 +49,9 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            foreach (KeyValuePair<string, long> pair in dict1)
+            foreach (KeyValuePair<U, T> pair in dict1)
             {
-                if (!dict2.TryGetValue(pair.Key, out long value) || pair.Value != value)
+                if (!dict2.TryGetValue(pair.Key, out T value) || !pair.Value.Equals(value))
                 {
                     return false;
                 }

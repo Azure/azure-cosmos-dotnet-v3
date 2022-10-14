@@ -6,14 +6,24 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Collections.Specialized;
     using System.Globalization;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Web;
+    using FluentAssertions;
+    using global::Azure;
     using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Authorization;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -63,8 +73,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     await asyncFunc();
                     Assert.Fail("Should throw ObjectDisposedException");
                 }
-                catch (CosmosObjectDisposedException e) 
-                { 
+                catch (CosmosObjectDisposedException e)
+                {
                     string expectedMessage = $"Cannot access a disposed 'CosmosClient'. Follow best practices and use the CosmosClient as a singleton." +
                         $" CosmosClient was disposed at: {cosmosClient.DisposedDateTimeUtc.Value.ToString("o", CultureInfo.InvariantCulture)}; CosmosClient Endpoint: https://localtestcosmos.documents.azure.com/; Created at: {cosmosClient.ClientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture)}; UserAgent: {userAgent};";
                     Assert.IsTrue(e.Message.Contains(expectedMessage));
@@ -160,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Exception exceptionToThrow = new Exception("TestException");
             Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>();
             mockHttpHandler.Setup(x => x.SendAsync(
-                It.IsAny<HttpRequestMessage>(), 
+                It.IsAny<HttpRequestMessage>(),
                 It.IsAny<CancellationToken>()))
                 .Callback<HttpRequestMessage, CancellationToken>(
                 (request, cancellationToken) =>
@@ -185,9 +195,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 await container.ReadItemAsync<ToDoActivity>(Guid.NewGuid().ToString(), new PartitionKey(Guid.NewGuid().ToString()));
             }
             catch (Exception e) when (object.ReferenceEquals(e, exceptionToThrow))
-            { 
+            {
             }
-            
+
             Assert.IsTrue(validAuth);
         }
 
@@ -229,6 +239,236 @@ namespace Microsoft.Azure.Cosmos.Tests
                 HttpClientFactory = () => new HttpClient(),
                 WebProxy = null,
             };
+        }
+
+        [TestMethod]
+        public void ValidateMasterKeyAuthProvider()
+        {
+            string masterKeyCredential = CosmosClientTests.NewRamdonMasterKey();
+
+            using (CosmosClient client = new CosmosClient(
+                    CosmosClientTests.AccountEndpoint,
+                    masterKeyCredential,
+                    new CosmosClientOptions()
+                    {
+                        EnableClientTelemetry = false,
+                    }))
+            {
+                Assert.AreEqual(typeof(AuthorizationTokenProviderMasterKey), client.AuthorizationTokenProvider.GetType());
+            }
+        }
+
+        [TestMethod]
+        public void ValidateResourceTokenAuthProvider()
+        {
+            string resourceToken = CosmosClientTests.NewRamdonResourceToken();
+
+            using (CosmosClient client = new CosmosClient(
+                    CosmosClientTests.AccountEndpoint,
+                    resourceToken,
+                    new CosmosClientOptions()
+                    {
+                        EnableClientTelemetry = false,
+                    }))
+            {
+                Assert.AreEqual(typeof(AuthorizationTokenProviderResourceToken), client.AuthorizationTokenProvider.GetType());
+            }
+        }
+
+        [TestMethod]
+        public void ValidateMasterKeyAzureCredentialAuthProvider()
+        {
+            string originalKey = CosmosClientTests.NewRamdonMasterKey();
+
+            AzureKeyCredential masterKeyCredential = new AzureKeyCredential(originalKey);
+            using (CosmosClient client = new CosmosClient(
+                    CosmosClientTests.AccountEndpoint,
+                    masterKeyCredential,
+                    new CosmosClientOptions()
+                    {
+                        EnableClientTelemetry = false,
+                    }))
+            {
+                Assert.AreEqual(typeof(AzureKeyCredentialAuthorizationTokenProvider), client.AuthorizationTokenProvider.GetType());
+
+                AzureKeyCredentialAuthorizationTokenProvider tokenProvider = (AzureKeyCredentialAuthorizationTokenProvider)client.AuthorizationTokenProvider;
+                Assert.AreEqual(typeof(AuthorizationTokenProviderMasterKey), tokenProvider.authorizationTokenProvider.GetType());
+            }
+        }
+
+        [TestMethod]
+        public void ValidateResourceTokenAzureCredentialAuthProvider()
+        {
+            string resourceToken = CosmosClientTests.NewRamdonResourceToken();
+
+            AzureKeyCredential resourceTokenCredential = new AzureKeyCredential(resourceToken);
+            using (CosmosClient client = new CosmosClient(
+                    CosmosClientTests.AccountEndpoint,
+                    resourceTokenCredential,
+                    new CosmosClientOptions()
+                    {
+                        EnableClientTelemetry = false,
+                    }))
+            {
+                Assert.AreEqual(typeof(AzureKeyCredentialAuthorizationTokenProvider), client.AuthorizationTokenProvider.GetType());
+
+                AzureKeyCredentialAuthorizationTokenProvider tokenProvider = (AzureKeyCredentialAuthorizationTokenProvider)client.AuthorizationTokenProvider;
+                Assert.AreEqual(typeof(AuthorizationTokenProviderResourceToken), tokenProvider.authorizationTokenProvider.GetType());
+            }
+        }
+
+        [TestMethod]
+        public async Task ValidateAzureKeyCredentialGatewayModeUpdateAsync()
+        {
+            const int defaultStatusCode = 401;
+            const int defaultSubStatusCode = 50000;
+            const int authMisMatchStatusCode = 70000;
+
+            string originalKey = CosmosClientTests.NewRamdonMasterKey();
+            string newKey = CosmosClientTests.NewRamdonResourceToken();
+            string currentKey = originalKey;
+
+            Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>();
+            mockHttpHandler.Setup(x => x.SendAsync(
+                    It.IsAny<HttpRequestMessage>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns((HttpRequestMessage request, CancellationToken cancellationToken) => {
+
+                    HttpResponseMessage responseMessage = new HttpResponseMessage((HttpStatusCode)defaultStatusCode);
+                    if (request.RequestUri != VmMetadataApiHandler.vmMetadataEndpointUrl)
+                    {
+                        bool authHeaderPresent = request.Headers.TryGetValues(Documents.HttpConstants.HttpHeaders.Authorization, out IEnumerable<string> authValues);
+                        Assert.IsTrue(authHeaderPresent);
+                        Assert.AreNotEqual(0, authValues.Count());
+
+                        AuthorizationHelper.GetResourceTypeAndIdOrFullName(request.RequestUri, out _, out string resourceType, out string resourceIdValue);
+
+                        AuthorizationHelper.ParseAuthorizationToken(authValues.First(),
+                            out ReadOnlyMemory<char> authType,
+                            out ReadOnlyMemory<char> _,
+                            out ReadOnlyMemory<char> tokenFromAuthHeader);
+
+                        bool authValidated = false;
+                        if (MemoryExtensions.Equals(authType.Span, Documents.Constants.Properties.ResourceToken.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                        {
+                            authValidated = HttpUtility.UrlDecode(authValues.First()) == currentKey;
+                        }
+                        else
+                        { 
+                            authValidated = AuthorizationHelper.CheckPayloadUsingKey(
+                                tokenFromAuthHeader,
+                                request.Method.Method,
+                                resourceIdValue,
+                                resourceType,
+                                request.Headers.Aggregate(new NameValueCollectionWrapper(), (c, kvp) => { c.Add(kvp.Key, kvp.Value); return c; }),
+                                currentKey);
+                        }
+
+                        int subStatusCode = authValidated ? defaultSubStatusCode : authMisMatchStatusCode;
+                        responseMessage.Headers.Add(Documents.WFConstants.BackendHeaders.SubStatus, subStatusCode.ToString());
+                    }
+
+                    return Task.FromResult(responseMessage);
+                });
+
+            AzureKeyCredential masterKeyCredential = new AzureKeyCredential(originalKey);
+            using (CosmosClient client = new CosmosClient(
+                    CosmosClientTests.AccountEndpoint,
+                    masterKeyCredential,
+                    new CosmosClientOptions()
+                    {
+                        HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
+                        EnableClientTelemetry = false,
+                    }))
+            {
+                Container container = client.GetContainer(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+
+                Func<int, int, Task> authValidation = async (int statusCode, int subStatusCode) =>
+                {
+                    try
+                    {
+                        await container.ReadItemAsync<ToDoActivity>(Guid.NewGuid().ToString(), new Cosmos.PartitionKey(Guid.NewGuid().ToString()));
+
+                        Assert.Fail("Expected client to throw a authentication exception");
+                    }
+                    catch (CosmosException ex)
+                    {
+                        Assert.AreEqual(statusCode, (int)ex.StatusCode, ex.ToString());
+                        Assert.AreEqual(subStatusCode, ex.SubStatusCode, ex.ToString());
+                    }
+                };
+
+                // Key(V1)
+                await authValidation(defaultStatusCode, defaultSubStatusCode);
+
+                // Update key(V2) and let the auth validation fail 
+                masterKeyCredential.Update(newKey);
+                await authValidation(defaultStatusCode, authMisMatchStatusCode);
+
+                // Updated Key(V2) and now lets succeed auth validation 
+                Interlocked.Exchange(ref currentKey, newKey);
+                await authValidation(defaultStatusCode, defaultSubStatusCode);
+            }
+        }
+
+        private static string NewRamdonMasterKey()
+        {
+            return Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()));
+        }
+
+        private static string NewRamdonResourceToken()
+        {
+            return "type=resource&ver=1.0&sig="  + Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()));
+        }
+
+        [TestMethod]
+        public void CosmosClientEarlyDisposeTest()
+        {
+            string disposeErrorMsg = "Cannot access a disposed object";
+            HashSet<string> errors = new HashSet<string>();
+
+            void TraceHandler(string message)
+            {
+                if (message.Contains(disposeErrorMsg))
+                {
+                    errors.Add(message);
+                }
+            }
+
+            DefaultTrace.TraceSource.Listeners.Add(new TestTraceListener { Callback = TraceHandler });
+            DefaultTrace.InitEventListener();
+
+            for (int z = 0; z < 100; ++z)
+            {
+                using CosmosClient cosmos = new(ConnectionString, new CosmosClientOptions
+                {
+                    EnableClientTelemetry = true
+                });
+            }
+
+            string assertMsg = String.Empty;
+
+            foreach (string s in errors)
+            {
+                assertMsg += s + Environment.NewLine;
+            }
+
+            Assert.AreEqual(0, errors.Count, $"{Environment.NewLine}Errors found in trace:{Environment.NewLine}{assertMsg}");
+        }
+
+        private class TestTraceListener : TraceListener
+        {
+            public Action<string> Callback { get; set; }
+            public override bool IsThreadSafe => true;
+            public override void Write(string message)
+            {
+                this.Callback(message);
+            }
+
+            public override void WriteLine(string message)
+            {
+                this.Callback(message);
+            }
         }
     }
 }

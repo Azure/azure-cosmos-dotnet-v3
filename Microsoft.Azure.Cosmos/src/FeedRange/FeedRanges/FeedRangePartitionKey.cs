@@ -75,7 +75,15 @@ namespace Microsoft.Azure.Cosmos
            TArg argument,
            CancellationToken cancellationToken) => visitor.VisitAsync(this, argument, cancellationToken);
 
-        public override string ToString() => this.PartitionKey.InternalKey.ToJsonString();
+        public override string ToString()
+        {
+            if (this.PartitionKey.IsNone)
+            {
+                return PartitionKey.NoneString;
+            }
+
+            return this.PartitionKey.InternalKey.ToJsonString();
+         }
 
         internal override TResult Accept<TResult>(IFeedRangeTransformer<TResult> transformer)
         {

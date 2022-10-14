@@ -338,6 +338,22 @@
                         .Select(grouping => grouping.Key)
                         .ToList()
                 ),
+
+                // ------------------------------------------
+                // GROUP BY undefined
+                // ------------------------------------------
+
+                (
+                    "SELECT COUNT(1) as count, c.DoesNotExist as DoesNotExist FROM c GROUP BY c.DoesNotExist",
+                    new[]
+                    {
+                        CosmosObject.Create(
+                            new Dictionary<string, CosmosElement>()
+                            {
+                                { "count", CosmosNumber64.Create(documents.Count) }
+                            })
+                    }
+                ),
             };
 
             // Test query correctness.

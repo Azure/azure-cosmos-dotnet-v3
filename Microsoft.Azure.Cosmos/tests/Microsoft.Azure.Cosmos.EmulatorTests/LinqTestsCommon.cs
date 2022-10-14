@@ -455,9 +455,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return getQuery;
         }
 
-        public static Func<bool, IQueryable<Data>> GenerateSimpleCosmosData(
-         Cosmos.Database cosmosDatabase
-         )
+        public static Func<bool, IQueryable<Data>> GenerateSimpleCosmosData(Cosmos.Database cosmosDatabase)
         {
             const int DocumentCount = 10;
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Pk" }), Kind = PartitionKind.Hash };
@@ -515,24 +513,37 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
             catch (Exception e)
             {
-                while (e.InnerException != null) e = e.InnerException;
+                return new LinqTestOutput(querySqlStr, LinqTestsCommon.BuildExceptionMessageForTest(e));
+            }
+        }
 
-                string message;
-                if (e is CosmosException cosmosException)
+        public static string BuildExceptionMessageForTest(Exception ex)
+        {
+            StringBuilder message = new StringBuilder();
+            do
+            {
+                if (ex is CosmosException cosmosException)
                 {
-                    message = $"Status Code: {cosmosException.StatusCode}";
+                    message.Append($"Status Code: {cosmosException.StatusCode}");
                 }
-                else if(e is DocumentClientException documentClientException)
+                else if (ex is DocumentClientException documentClientException)
                 {
-                    message = documentClientException.RawErrorMessage;
+                    message.Append(documentClientException.RawErrorMessage);
                 }
                 else
                 {
-                    message = e.Message;
+                    message.Append(ex.Message);
                 }
 
-                return new LinqTestOutput(querySqlStr, message);
+                ex = ex.InnerException;
+                if (ex != null)
+                {
+                    message.Append(",");
+                }
             }
+            while (ex != null);
+
+            return message.ToString();
         }
     }
 

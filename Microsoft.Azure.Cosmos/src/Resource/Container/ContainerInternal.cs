@@ -146,29 +146,16 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
-#if !INTERNAL
+#if !PREVIEW
         public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
                Cosmos.PartitionKey partitionKey,
                RequestOptions requestOptions = null,
-               CancellationToken cancellationToken = default(CancellationToken));
-#endif
+               CancellationToken cancellationToken = default);
 
-#if !PREVIEW
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default);
 
-        public abstract FeedIterator GetItemQueryStreamIterator(
-            FeedRange feedRange,
-            QueryDefinition queryDefinition,
-            string continuationToken,
-            QueryRequestOptions requestOptions = null);
-
-        public abstract FeedIterator<T> GetItemQueryIterator<T>(
-            FeedRange feedRange,
-            QueryDefinition queryDefinition,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null);
 #endif
 
         public abstract class TryExecuteQueryResult
@@ -204,5 +191,17 @@ namespace Microsoft.Azure.Cosmos
 
             public QueryIterator QueryIterator { get; }
         }
+
+        public abstract FeedIterator GetChangeFeedStreamIteratorWithQuery(
+            ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
+            ChangeFeedQuerySpec changeFeedQuerySpec,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        public abstract FeedIterator<T> GetChangeFeedIteratorWithQuery<T>(
+           ChangeFeedStartFrom changeFeedStartFrom,
+           ChangeFeedMode changeFeedMode,
+           ChangeFeedQuerySpec changeFeedQuerySpec,
+           ChangeFeedRequestOptions changeFeedRequestOptions = null);
     }
 }

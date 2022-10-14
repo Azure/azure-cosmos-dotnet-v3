@@ -7,38 +7,40 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Runtime.CompilerServices;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using Microsoft.Azure.Documents;
 
     internal sealed class Trace : ITrace
     {
+        private static readonly IReadOnlyDictionary<string, object> EmptyDictionary = new Dictionary<string, object>();
         private readonly List<ITrace> children;
-        private readonly Dictionary<string, object> data;
-        private readonly Stopwatch stopwatch;
+        private readonly Lazy<Dictionary<string, object>> data;
+        private ValueStopwatch stopwatch;
 
         private Trace(
             string name,
-            CallerInfo callerInfo,
             TraceLevel level,
             TraceComponent component,
-            Trace parent)
+            Trace parent,
+            TraceSummary summary)
         {
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Id = Guid.NewGuid();
-            this.CallerInfo = callerInfo;
             this.StartTime = DateTime.UtcNow;
-            this.stopwatch = Stopwatch.StartNew();
+            this.stopwatch = ValueStopwatch.StartNew();
             this.Level = level;
             this.Component = component;
             this.Parent = parent;
             this.children = new List<ITrace>();
-            this.data = new Dictionary<string, object>();
+            this.data = new Lazy<Dictionary<string, object>>();
+            this.Summary = summary ?? throw new ArgumentNullException(nameof(summary));
         }
 
         public string Name { get; }
 
         public Guid Id { get; }
-
-        public CallerInfo CallerInfo { get; }
 
         public DateTime StartTime { get; }
 
@@ -48,11 +50,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public TraceComponent Component { get; }
 
+        public TraceSummary Summary { get; }
+
         public ITrace Parent { get; }
 
         public IReadOnlyList<ITrace> Children => this.children;
 
-        public IReadOnlyDictionary<string, object> Data => this.data;
+        public IReadOnlyDictionary<string, object> Data => this.data.IsValueCreated ? this.data.Value : Trace.EmptyDictionary;
 
         public void Dispose()
         {
@@ -60,37 +64,32 @@ namespace Microsoft.Azure.Cosmos.Tracing
         }
 
         public ITrace StartChild(
-            string name,
-            [CallerMemberName] string memberName = "",
-            [CallerFilePath] string sourceFilePath = "",
-            [CallerLineNumber] int sourceLineNumber = 0)
+            string name)
         {
             return this.StartChild(
                 name,
                 level: TraceLevel.Verbose,
-                component: this.Component,
-                memberName: memberName,
-                sourceFilePath: sourceFilePath,
-                sourceLineNumber: sourceLineNumber);
+                component: this.Component);
         }
 
         public ITrace StartChild(
             string name,
             TraceComponent component,
-            TraceLevel level,
-            [CallerMemberName] string memberName = "",
-            [CallerFilePath] string sourceFilePath = "",
-            [CallerLineNumber] int sourceLineNumber = 0)
+            TraceLevel level)
         {
+            if (this.Parent != null && !this.stopwatch.IsRunning)
+            {
+                return this.Parent.StartChild(name, component, level);
+            }
+
             Trace child = new Trace(
                 name: name,
-                callerInfo: new CallerInfo(memberName, sourceFilePath, sourceLineNumber),
                 level: level,
                 component: component,
-                parent: this);
+                parent: this,
+                summary: this.Summary);
 
             this.AddChild(child);
-
             return child;
         }
 
@@ -113,27 +112,30 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public static Trace GetRootTrace(
             string name,
             TraceComponent component,
-            TraceLevel level,
-            [CallerMemberName] string memberName = "",
-            [CallerFilePath] string sourceFilePath = "",
-            [CallerLineNumber] int sourceLineNumber = 0)
+            TraceLevel level)
         {
             return new Trace(
                 name: name,
-                callerInfo: new CallerInfo(memberName, sourceFilePath, sourceLineNumber),
                 level: level,
                 component: component,
-                parent: null);
+                parent: null,
+                summary: new TraceSummary());
         }
 
         public void AddDatum(string key, TraceDatum traceDatum)
         {
-            this.data.Add(key, traceDatum);
+            this.data.Value.Add(key, traceDatum);
+            this.Summary.UpdateRegionContacted(traceDatum);
         }
 
         public void AddDatum(string key, object value)
         {
-            this.data.Add(key, value);
+            this.data.Value.Add(key, value);
+        }
+
+        public void AddOrUpdateDatum(string key, object value)
+        {
+            this.data.Value[key] = value;
         }
     }
 }

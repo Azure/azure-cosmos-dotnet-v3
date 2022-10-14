@@ -414,8 +414,10 @@ namespace Microsoft.Azure.Cosmos
             TryCatch<(PartitionedQueryExecutionInfo queryPlan, bool supported)> tryGetQueryInfoAndIfSupported = await queryPlanHandler.TryGetQueryInfoAndIfSupportedAsync(
                 supportedQueryFeatures,
                 queryDefinition.ToSqlQuerySpec(),
+                ResourceType.Document,
                 partitionKeyDefinition,
                 requestOptions.PartitionKey.HasValue,
+                useSystemPrefix: QueryIterator.IsSystemPrefixExpected(requestOptions),
                 cancellationToken);
 
             if (tryGetQueryInfoAndIfSupported.Failed)
@@ -501,11 +503,14 @@ namespace Microsoft.Azure.Cosmos
         {
             requestOptions ??= new QueryRequestOptions();
 
-            if (linqSerializerOptions == null && this.ClientContext.ClientOptions.SerializerOptions != null)
+            if (linqSerializerOptions == null && this.ClientContext.ClientOptions != null)
             {
                 linqSerializerOptions = new CosmosLinqSerializerOptions
                 {
-                    PropertyNamingPolicy = this.ClientContext.ClientOptions.SerializerOptions.PropertyNamingPolicy
+                    PropertyNamingPolicy = this.ClientContext.ClientOptions.SerializerOptions != null 
+                                            ? this.ClientContext.ClientOptions.SerializerOptions.PropertyNamingPolicy
+                                            : CosmosPropertyNamingPolicy.Default,
+                    CustomCosmosSerializer = this.ClientContext.ClientOptions.Serializer
                 };
             }
 
@@ -713,6 +718,7 @@ namespace Microsoft.Azure.Cosmos
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
+                Guid.NewGuid(),
                 changeFeedRequestOptions: changeFeedRequestOptions);
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
@@ -798,6 +804,7 @@ namespace Microsoft.Azure.Cosmos
                 NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                     this,
                     this.queryClient,
+                    Guid.NewGuid(),
                     requestOptions);
 
                 DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
@@ -817,6 +824,7 @@ namespace Microsoft.Azure.Cosmos
                     continuationToken,
                     readFeedPaginationOptions,
                     requestOptions,
+                    this,
                     cancellationToken: default);
             }
 
@@ -848,6 +856,7 @@ namespace Microsoft.Azure.Cosmos
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
+                Guid.NewGuid(),
                 queryRequestOptions,
                 resourceLink: resourceLink,
                 resourceType: resourceType);
@@ -888,6 +897,7 @@ namespace Microsoft.Azure.Cosmos
                     queryRequestOptions: queryRequestOptions,
                     continuationToken: continuationToken,
                     readFeedPaginationOptions: readFeedPaginationOptions,
+                    container: this,
                     cancellationToken: default);
             }
 
@@ -901,6 +911,7 @@ namespace Microsoft.Azure.Cosmos
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
+                Guid.NewGuid(),
                 queryRequestOptions);
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 

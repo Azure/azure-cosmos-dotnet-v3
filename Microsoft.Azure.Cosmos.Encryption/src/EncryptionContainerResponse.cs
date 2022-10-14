@@ -9,6 +9,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class EncryptionContainerResponse : ContainerResponse
     {
+        private readonly ContainerResponse containerResponse;
+
+        private readonly EncryptionContainer encryptionContainer;
+
         public EncryptionContainerResponse(
             ContainerResponse containerResponse,
             EncryptionContainer encryptionContainer)
@@ -16,10 +20,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.containerResponse = containerResponse ?? throw new ArgumentNullException(nameof(containerResponse));
             this.encryptionContainer = encryptionContainer ?? throw new ArgumentNullException(nameof(encryptionContainer));
         }
-
-        private readonly ContainerResponse containerResponse;
-
-        private readonly EncryptionContainer encryptionContainer;
 
         public override Container Container => this.encryptionContainer;
 

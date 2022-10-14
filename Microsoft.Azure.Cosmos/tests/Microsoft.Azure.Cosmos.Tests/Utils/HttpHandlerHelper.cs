@@ -22,7 +22,6 @@
             HttpRequestMessage request, 
             CancellationToken cancellationToken)
         {
-            Console.WriteLine(request.RequestUri.ToString());
             return this.MockHttpHandler.SendAsync(request, cancellationToken);
         }
     }

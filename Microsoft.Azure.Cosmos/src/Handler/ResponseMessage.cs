@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Text;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -20,9 +21,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class ResponseMessage : IDisposable
     {
-#if PREVIEW
         private CosmosDiagnostics diagnostics = null;
-#endif
 
         /// <summary>
         /// Create a <see cref="ResponseMessage"/>
@@ -84,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
             this.CosmosException = cosmosException;
             this.Headers = headers ?? new Headers();
 
-            this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(this.Headers);
+            this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(this.Headers, true);
 
             if (requestMessage != null && requestMessage.Trace != null)
             {
@@ -149,21 +148,14 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual RequestMessage RequestMessage { get; internal set; }
 
-#if PREVIEW
         /// <summary>
-        /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
+        /// Gets or sets the cosmos diagnostic information for the current request to Azure Cosmos DB service
         /// </summary>
         public virtual CosmosDiagnostics Diagnostics
         {
             get => this.diagnostics ?? new CosmosTraceDiagnostics(this.Trace ?? NoOpTrace.Singleton);
             set => this.diagnostics = value ?? throw new ArgumentNullException(nameof(this.Diagnostics));
         }
-#else
-        /// <summary>
-        /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
-        /// </summary>
-        public virtual CosmosDiagnostics Diagnostics => new CosmosTraceDiagnostics(this.Trace ?? NoOpTrace.Singleton);
-#endif
 
         internal ITrace Trace { get; set; }
 
@@ -259,14 +251,16 @@ namespace Microsoft.Azure.Cosmos
         /// Decode the Index Metrics from the response headers, if exists.
         /// </summary>
         /// <param name="responseMessageHeaders">The response headers</param>
+        /// <param name="isBse64Encoded">The encoding of the IndexMetrics response</param>
         /// <returns>Lazy implementation of the pretty-printed IndexMetrics</returns>
-        static internal Lazy<string> DecodeIndexMetrics(Headers responseMessageHeaders)
+        static internal Lazy<string> DecodeIndexMetrics(Headers responseMessageHeaders, bool isBse64Encoded)
         {
             if (responseMessageHeaders?.IndexUtilizationText != null)
             {
                 return new Lazy<string>(() =>
                     {
-                        IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText);
+                        IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText, isBse64Encoded);
+                       
                         StringBuilder stringBuilder = new StringBuilder();
                         IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
                         indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);

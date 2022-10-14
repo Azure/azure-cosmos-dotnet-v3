@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -337,10 +338,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<string>(str => str.Contains("Change Feed Estimator")),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>>(),
+                It.IsAny<Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>, TraceComponent, TraceLevel>(
-                (operationName, requestOptions, func, comp, level) =>
+               .Returns<string, RequestOptions, Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
+                (operationName, requestOptions, func, oTelFunc, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
                     {
@@ -431,10 +433,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<string>(str => str.Contains("Change Feed Estimator")),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>>(),
+                It.IsAny<Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>, TraceComponent, TraceLevel>(
-                (operationName, requestOptions, func, comp, level) =>
+               .Returns<string, RequestOptions, Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
+                (operationName, requestOptions, func, oTelFunc, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
                     {

@@ -288,12 +288,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKeyRangeCache,
                 clientCollectionCache);
 
-            if (!isSuccess)
-            {
-                sessionToken = sessionContainer.ResolveGlobalSessionToken(request);
-            }
-
-            if (!string.IsNullOrEmpty(sessionToken))
+            if (isSuccess && !string.IsNullOrEmpty(sessionToken))
             {
                 request.Headers[HttpConstants.HttpHeaders.SessionToken] = sessionToken;
             }
@@ -374,7 +369,6 @@ namespace Microsoft.Azure.Cosmos
                     collectionRid: collection.ResourceId,
                     previousValue: null,
                     request: request,
-                    cancellationToken: CancellationToken.None,
                     NoOpTrace.Singleton);
 
                 if (refreshCache && collectionRoutingMap != null)
@@ -383,7 +377,6 @@ namespace Microsoft.Azure.Cosmos
                         collectionRid: collection.ResourceId,
                         previousValue: collectionRoutingMap,
                         request: request,
-                        cancellationToken: CancellationToken.None,
                         NoOpTrace.Singleton);
                 }
 

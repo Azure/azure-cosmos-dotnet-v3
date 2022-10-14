@@ -18,7 +18,7 @@ dynamic testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue"
 ItemResponse<dynamic> createResponse = await container.CreateItemAsync(testItem);
 
 // Query for an item
-using (FeedIterator<dynamic> feedIterator = await container.GetItemQueryIterator<dynamic>(
+using (FeedIterator<dynamic> feedIterator = container.GetItemQueryIterator<dynamic>(
     "select * from T where T.status = 'done'"))
 {
     while (feedIterator.HasMoreResults)
@@ -63,6 +63,8 @@ Resources:
 
 
 ## Contributing
+
+For details on contributing to this repository, see the [contributing guide](CONTRIBUTING.md).
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
 Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us

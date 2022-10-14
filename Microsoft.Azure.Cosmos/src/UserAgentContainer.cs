@@ -33,14 +33,12 @@ namespace Microsoft.Azure.Cosmos
 
         protected virtual void GetEnvironmentInformation(
             out string clientVersion,
-            out string directVersion,
             out string processArchitecture,
             out string operatingSystem,
             out string runtimeFramework)
         {
             EnvironmentInformation environmentInformation = new EnvironmentInformation();
             clientVersion = environmentInformation.ClientVersion;
-            directVersion = environmentInformation.DirectVersion;
             processArchitecture = environmentInformation.ProcessArchitecture;
             operatingSystem = environmentInformation.OperatingSystem;
             runtimeFramework = environmentInformation.RuntimeFramework;
@@ -52,7 +50,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.GetEnvironmentInformation(
                 out string clientVersion,
-                out string directVersion,
                 out string processArchitecture,
                 out string operatingSystem,
                 out string runtimeFramework);
@@ -68,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
 #if PREVIEW
             previewFlag = "P";
 #endif
-            string baseUserAgent = $"cosmos-netstandard-sdk/{clientVersion}" + previewFlag + Regex.Replace($"|{directVersion}|{this.clientId}|{processArchitecture}|{operatingSystem}|{runtimeFramework}|", @"[^0-9a-zA-Z\.\|\-]+", " ");
+            string baseUserAgent = $"cosmos-netstandard-sdk/{clientVersion}" + previewFlag + Regex.Replace($"|{this.clientId}|{processArchitecture}|{operatingSystem}|{runtimeFramework}|", @"[^0-9a-zA-Z\.\|\-]+", " ");
             if (!string.IsNullOrEmpty(regionConfiguration))
             {
                 baseUserAgent += $"{regionConfiguration}|";

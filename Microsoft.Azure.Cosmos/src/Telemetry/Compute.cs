@@ -6,17 +6,26 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using Newtonsoft.Json;
+    using Util;
 
     [Serializable]
     internal sealed class Compute
     {
-        public Compute(string location, string sKU, string azEnvironment, string oSType, string vMSize)
+        [JsonConstructor]
+        public Compute(
+            string vMId, 
+            string location, 
+            string sKU, 
+            string azEnvironment, 
+            string oSType, 
+            string vMSize)
         {
             this.Location = location;
             this.SKU = sKU;
             this.AzEnvironment = azEnvironment;
             this.OSType = oSType;
             this.VMSize = vMSize;
+            this.VMId = $"{VmMetadataApiHandler.HashedVmIdPrefix}{HashingExtension.ComputeHash(vMId)}";
         }
 
         [JsonProperty(PropertyName = "location")]
@@ -33,6 +42,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         [JsonProperty(PropertyName = "vmSize")]
         internal string VMSize { get; }
+
+        [JsonProperty(PropertyName = "vmId")]
+        internal string VMId { get; }
     }
 
 }
