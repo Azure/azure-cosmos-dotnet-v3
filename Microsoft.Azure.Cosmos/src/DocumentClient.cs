@@ -6361,6 +6361,9 @@ namespace Microsoft.Azure.Cosmos
                 AccountProperties databaseAccount = await gatewayModel.GetDatabaseAccountAsync(CreateRequestMessage,
                                                                                                clientSideRequestStatistics: null);
                 this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && databaseAccount.EnableMultipleWriteLocations;
+
+                (await this.QueryPartitionProvider).Update(databaseAccount.QueryEngineConfiguration);
+
                 return databaseAccount;
             }
 

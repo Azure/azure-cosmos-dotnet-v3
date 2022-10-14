@@ -86,16 +86,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             {
                 lock (this.serviceProviderStateLock)
                 {
-                    this.queryengineConfiguration = JsonConvert.SerializeObject(queryengineConfiguration);
+                    string newConfiguration = JsonConvert.SerializeObject(queryengineConfiguration);
 
-                    if (!this.disposed && this.serviceProvider != IntPtr.Zero)
+                    if (!String.Equals(this.queryengineConfiguration, newConfiguration))
                     {
-                        uint errorCode = ServiceInteropWrapper.UpdateServiceProvider(
-                            this.serviceProvider,
-                            this.queryengineConfiguration);
+                        this.queryengineConfiguration = newConfiguration;
 
-                        Exception exception = Marshal.GetExceptionForHR((int)errorCode);
-                        if (exception != null) throw exception;
+                        if (!this.disposed && this.serviceProvider != IntPtr.Zero)
+                        {
+                            uint errorCode = ServiceInteropWrapper.UpdateServiceProvider(
+                                this.serviceProvider,
+                                this.queryengineConfiguration);
+
+                            Exception exception = Marshal.GetExceptionForHR((int)errorCode);
+                            if (exception != null) throw exception;
+                        }
                     }
                 }
             }
